@@ -7,4 +7,6 @@ message("building Egolib")
 
 add_subdirectory(library)
 
-add_subdirectory(tests)
+if (NOT CMAKE_CROSSCOMPILING OR CMAKE_CROSSCOMPILING_EMULATOR)
+    add_subdirectory(tests)
+endif()

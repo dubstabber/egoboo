@@ -37,27 +37,12 @@ add_executable(egoboo ${SOURCE_FILES})
 # Link libraries.
 target_link_libraries(egoboo egolib-library)
 
-# Copy runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library to the executable.
-if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
-  get_property(runtime-libraries TARGET idlib-game-engine-library PROPERTY runtime-libraries)
-  foreach( runtime-library ${runtime-libraries} )
-    get_filename_component(barename ${runtime-library} NAME)
-    #message("copying ${runtime-library} to $<TARGET_FILE_DIR:egoboo>/${barename}")
-    add_custom_command(TARGET egoboo
-                       PRE_LINK
-                       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${runtime-library} $<TARGET_FILE_DIR:egoboo>/${barename})
-  endforeach()
-  set_target_properties(egoboo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")
-endif()
-
-# Install runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library with the executable.
-if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
-  get_property(runtime-libraries TARGET idlib-game-engine-library PROPERTY runtime-libraries)
-  foreach( runtime-library ${runtime-libraries} )
-	install(FILES ${runtime-library}
-			DESTINATION bin
-			COMPONENT applications)
-  endforeach()
+# Copy and install runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library with the executable.
+if (WIN32)
+  egoboo_stage_windows_runtime_libraries(egoboo idlib-game-engine-library)
+  if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
+    set_target_properties(egoboo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")
+  endif()
 endif()
 
 IF(DOXYGEN_FOUND)

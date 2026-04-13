@@ -13,6 +13,10 @@ add_executable(egoboo-content-validator
 target_link_libraries(egoboo-content-validator
     egolib-library)
 
+if (WIN32)
+    egoboo_stage_windows_runtime_libraries(egoboo-content-validator idlib-game-engine-library)
+endif()
+
 install(TARGETS egoboo-content-validator
         RUNTIME
         DESTINATION bin

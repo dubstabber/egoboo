@@ -26,6 +26,8 @@
 
 #include "egolib/Log/_Include.hpp"
 
+#include <array>
+
 namespace Ego {
 
 FontManager::FontManager() {
@@ -43,12 +45,81 @@ FontManager::~FontManager() {
 }
 
 std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int pointSize) {
-    auto *font = new Font(fileName, pointSize);
     try {
-        return std::shared_ptr<Font>(font);
-    } catch (...) {
-        delete font;
-        std::rethrow_exception(std::current_exception());
+        return std::shared_ptr<Font>(new Font(fileName, pointSize));
+    } catch (const idlib::exception& e) {
+        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                         "[font manager]: failed to load font `", fileName,
+                                         "` at ", pointSize, "pt: ", e.to_string(),
+                                         ". Trying bundled fallbacks.", Log::EndOfEntry);
+
+        static const std::array<const char *, 4> fallbackFonts = {
+            "mp_data/DejaVuSansMono.ttf",
+            "mp_data/Bo_Chen.ttf",
+            "mp_data/IMMORTAL.ttf",
+            "mp_data/Egobooish.ttf"
+        };
+
+        for (const char *fallbackFont : fallbackFonts) {
+            if (fileName == fallbackFont) {
+                continue;
+            }
+
+            try {
+                auto font = std::shared_ptr<Font>(new Font(fallbackFont, pointSize));
+                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                 "[font manager]: using fallback font `",
+                                                 fallbackFont, "` for `", fileName, "`",
+                                                 Log::EndOfEntry);
+                return font;
+            } catch (const idlib::exception& fallbackError) {
+                Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                                                 "[font manager]: fallback font `", fallbackFont,
+                                                 "` also failed: ", fallbackError.to_string(),
+                                                 Log::EndOfEntry);
+            } catch (const std::exception& fallbackError) {
+                Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                                                 "[font manager]: fallback font `", fallbackFont,
+                                                 "` also failed: ", fallbackError.what(),
+                                                 Log::EndOfEntry);
+            }
+        }
+
+        throw;
+    } catch (const std::exception& e) {
+        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                         "[font manager]: failed to load font `", fileName,
+                                         "` at ", pointSize, "pt: ", e.what(),
+                                         ". Trying bundled fallbacks.", Log::EndOfEntry);
+
+        static const std::array<const char *, 4> fallbackFonts = {
+            "mp_data/DejaVuSansMono.ttf",
+            "mp_data/Bo_Chen.ttf",
+            "mp_data/IMMORTAL.ttf",
+            "mp_data/Egobooish.ttf"
+        };
+
+        for (const char *fallbackFont : fallbackFonts) {
+            if (fileName == fallbackFont) {
+                continue;
+            }
+
+            try {
+                auto font = std::shared_ptr<Font>(new Font(fallbackFont, pointSize));
+                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                 "[font manager]: using fallback font `",
+                                                 fallbackFont, "` for `", fileName, "`",
+                                                 Log::EndOfEntry);
+                return font;
+            } catch (const std::exception& fallbackError) {
+                Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                                                 "[font manager]: fallback font `", fallbackFont,
+                                                 "` also failed: ", fallbackError.what(),
+                                                 Log::EndOfEntry);
+            }
+        }
+
+        throw;
     }
 }
 } // namespace Ego

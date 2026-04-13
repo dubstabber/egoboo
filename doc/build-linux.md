@@ -11,8 +11,13 @@ Clone the repository and initialize submodules:
 ```bash
 git clone https://github.com/egoboo/egoboo
 cd egoboo
-git submodule update --init --recursive
+git submodule update --init data external idlib idlib-game-engine
 ```
+
+For the normal Egoboo superproject build, only these top-level submodules are
+required. The root `CMakeLists.txt` passes `IDLIB_PATH` to
+`idlib-game-engine`, so the nested `idlib-game-engine/idlib` checkout is not
+needed unless you are working on `idlib-game-engine` as a standalone project.
 
 ## Linux dependencies
 
@@ -42,11 +47,11 @@ If your environment differs, inspect `idlib-game-engine/library/CMakeLists.txt` 
 
 ## Configure and build
 
-Use the root CMake project:
+Use the root CMake project from the repository root:
 
 ```bash
 cmake -S . -B build
-cmake --build build -j
+cmake --build build -j4
 ```
 
 The default runtime outputs land in:
@@ -59,6 +64,14 @@ Important binaries:
 
 - game: `build/products/x64/bin/egoboo`
 - validator: `build/products/x64/bin/egoboo-content-validator`
+
+If you want a clean rebuild:
+
+```bash
+rm -rf build
+cmake -S . -B build
+cmake --build build -j4
+```
 
 ## Run the game from the source tree
 
@@ -135,7 +148,7 @@ Treat those as current operational requirements, not accidental local trivia.
 
 Check these first:
 
-1. `git submodule update --init --recursive`
+1. `git submodule update --init data external idlib idlib-game-engine`
 2. `pkg-config --modversion sdl2 SDL2_image SDL2_mixer SDL2_ttf`
 3. `echo "$EGOBOO_DATA_DIR"`
 4. `ls build/products/x64/bin`

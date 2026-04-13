@@ -25,6 +25,9 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 
+#include <cstdlib>
+#include <cstring>
+
 AudioSystem *AudioSystemCreateFunctor::operator()() const
 { return new AudioSystem(); }
 
@@ -67,6 +70,25 @@ static const std::array<const char*, GSND_COUNT> wavenames =
     "stealth_end"
 };
 
+namespace {
+
+bool is_audio_disabled_by_environment()
+{
+    const char *value = std::getenv("EGOBOO_DISABLE_AUDIO");
+    if (!value)
+    {
+        return false;
+    }
+
+    return 0 == std::strcmp(value, "1")
+        || 0 == std::strcmp(value, "true")
+        || 0 == std::strcmp(value, "TRUE")
+        || 0 == std::strcmp(value, "yes")
+        || 0 == std::strcmp(value, "YES");
+}
+
+} // namespace
+
 AudioSystem::AudioSystem() :
     _musicLoaded(),
     _musicIDToNameMap(),
@@ -77,6 +99,14 @@ AudioSystem::AudioSystem() :
     _maxSoundDistance(DEFAULT_MAX_DISTANCE)
 {
     _globalSounds.fill(INVALID_SOUND_ID);
+
+    if (is_audio_disabled_by_environment())
+    {
+        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                         "audio disabled by EGOBOO_DISABLE_AUDIO",
+                                         Log::EndOfEntry);
+        return;
+    }
 
     // Initialize SDL mixer.
     if (egoboo_config_t::get().sound_effects_enable.getValue() || egoboo_config_t::get().sound_music_enable.getValue())
@@ -217,6 +247,16 @@ void AudioSystem::stopMusic()
 
 SoundID AudioSystem::loadSound(const std::string &fileName)
 {
+    if (is_audio_disabled_by_environment())
+    {
+        return INVALID_SOUND_ID;
+    }
+
+    if (!egoboo_config_t::get().sound_effects_enable.getValue())
+    {
+        return INVALID_SOUND_ID;
+    }
+
     // Valid filename?
     if (fileName.empty())
     {
@@ -265,6 +305,11 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
 
 MusicID AudioSystem::loadMusic(const std::string &fileName)
 {
+    if (is_audio_disabled_by_environment())
+    {
+        return INVALID_SOUND_ID;
+    }
+
     // Valid filename?
     if (fileName.empty()) {
         return INVALID_SOUND_ID;
@@ -289,6 +334,11 @@ MusicID AudioSystem::loadMusic(const std::string &fileName)
 
 void AudioSystem::playMusic(const std::string& songName, const uint16_t fadetime)
 { 
+    if (is_audio_disabled_by_environment())
+    {
+        return;
+    }
+
     // Dont restart a song we are already playing.
     if (songName == _currentSongPlaying) {
         return;
@@ -330,6 +380,11 @@ void AudioSystem::playMusic(const int musicID, const uint16_t fadetime)
 
 void AudioSystem::loadAllMusic()
 {
+    if (is_audio_disabled_by_environment())
+    {
+        return;
+    }
+
     if (!_musicLoaded.empty() || !egoboo_config_t::get().sound_music_enable.getValue()) return;
 
     // Open the playlist listing all music files

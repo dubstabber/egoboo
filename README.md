@@ -11,26 +11,52 @@ Egoboo is made available publicly under the
 Developers can usually be contacted via GitHub.
 
 ### Building from Source
-Checkout the repository 
-```
+Clone the repository:
+
+```bash
 git clone https://github.com/egoboo/egoboo
+cd egoboo
+git submodule update --init data external idlib idlib-game-engine
 ```
-into some directory called the *source directory*.
 
-Change into the *source directory* and initialize and update the submodules
-```
-git submodule update --init --recursive
-```
-Next, perform an out of source build by creating a directory called the *build directory*.
-The *build directory* must reside outside of the *source directory*.
-Change into the *buid directory* and enter
-```
-cmake <path to source directory>
-```
-where `<path to source directory>` is replaced by the actual path to your *source directory*.
-CMake will generate the environment specific build files (e.g., Visual Studio files, Make files, etc.) in the *build directory*.
+For normal Egoboo development, only the root submodules are required.
+The superproject passes the top-level `idlib/` into `idlib-game-engine` during
+the CMake build, so `idlib-game-engine/idlib` does not need to be initialized.
 
-For Linux-specific dependency, run, and validation notes, see `doc/build-linux.md`.
+Supported build documents:
+
+- Linux: `doc/build-linux.md`
+- Windows: `doc/build-windows.md`
+
+Quick start:
+
+Linux:
+
+```bash
+cmake -S . -B build
+cmake --build build -j4
+```
+
+Windows with Visual Studio:
+
+```bash
+cmake -S . -B build-vs -G "Visual Studio 17 2022" -A x64
+cmake --build build-vs --config Release -j4
+```
+
+Fedora cross-build to Windows:
+
+```bash
+cmake -S . -B build-windows \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/mingw-w64-x86_64.cmake"
+cmake --build build-windows -j4
+```
+
+Important output directories:
+
+- Linux binaries: `build/products/x64/bin/`
+- Windows Visual Studio binaries: `build-vs/products/release/x64/bin/`
+- Fedora cross-built Windows binaries: `build-windows/products/x64/bin/`
 
 #### Appveyor CI Build Status
 - [master](https://github.com/egoboo/egoboo/tree/master) branch Windows 11:

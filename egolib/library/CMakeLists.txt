@@ -787,7 +787,11 @@ add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
-  target_link_libraries(egolib-library Shlwapi.lib)
+  if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
+    target_link_libraries(egolib-library Shlwapi.lib)
+  else()
+    target_link_libraries(egolib-library shlwapi)
+  endif()
 endif()
 
 # == Doxygen ==================================================================================== #

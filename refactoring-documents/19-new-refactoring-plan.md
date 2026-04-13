@@ -45,6 +45,12 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 - **Why:** Prevents further bit-rot of the map editor.
 - **Risk:** Low. Gate with a CMake option.
 
+### A5: Simplify the documented submodule workflow
+
+- **Action:** Document the normal Egoboo setup as root-submodules-only (`data`, `external`, `idlib`, `idlib-game-engine`) instead of a recursive submodule checkout.
+- **Why:** The superproject already injects the top-level `idlib/` into `idlib-game-engine`, so requiring `idlib-game-engine/idlib` for standard builds adds repository noise without changing the active architecture.
+- **Risk:** Low. This is a documentation and onboarding cleanup unless `idlib-game-engine` is later changed to require its nested checkout in superproject builds.
+
 ---
 
 ## Phase B: Test Infrastructure (Medium Risk, Critical Foundation)

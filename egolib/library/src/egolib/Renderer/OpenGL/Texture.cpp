@@ -29,8 +29,30 @@
 #include "egolib/Renderer/OpenGL/DefaultTexture.hpp"
 #include "egolib/Image/ImageManager.hpp"
 
+#include <cstdlib>
+#include <cstring>
+
 namespace Ego {
 namespace OpenGL {
+
+namespace {
+
+bool are_mipmaps_disabled_by_environment()
+{
+    const char *value = std::getenv("EGOBOO_DISABLE_MIPMAPS");
+    if (!value)
+    {
+        return false;
+    }
+
+    return 0 == std::strcmp(value, "1")
+        || 0 == std::strcmp(value, "true")
+        || 0 == std::strcmp(value, "TRUE")
+        || 0 == std::strcmp(value, "yes")
+        || 0 == std::strcmp(value, "YES");
+}
+
+} // namespace
 
 Texture::Texture(Renderer *renderer) :
     Texture
@@ -148,7 +170,8 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
     {
         case idlib::texture_type::_2D:
         {
-            if (idlib::texture_filter_method::none != sampler.mip_filter_method())
+            if (!are_mipmaps_disabled_by_environment() &&
+                idlib::texture_filter_method::none != sampler.mip_filter_method())
             {
                 Utilities2::upload_2d_mipmap(pixel_format, newSurface->w, newSurface->h, newSurface->pixels);
             }

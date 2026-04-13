@@ -33,6 +33,7 @@
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/vfs.h"
+#include "idlib/exception.hpp"
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -621,8 +622,11 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
     }
 
     if (!atlas) {
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to fit a atlas into a texture of size ", maxTextureSize, Log::EndOfEntry);
-        SDL_assert(atlas);
+        auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+                                    "unable to fit a atlas into a texture of size ", maxTextureSize,
+                                    Log::EndOfEntry);
+        Log::get() << e;
+        throw idlib::environment_error(__FILE__, __LINE__, "font atlas", e.getText());
     }
 
     FontAtlas retval;
@@ -816,4 +820,3 @@ int Font::getFontKerning(uint16_t prev, uint16_t curr) const {
 #undef IS_KERNING_FIXED
 
 } // namespace Ego
-
