@@ -39,6 +39,7 @@ The validator currently checks:
 - local object enumeration under module `objects/`
 - object profile loading through lightweight `ObjectProfile::loadFromFile(...)`
 - presence of `data.txt` and `tris.md2`
+- narrow semantic `data.txt` validation for raw `DRES`, `SKIN`, and `LEVL` tagged expansions plus loaded skin-override and ammo-vs-max-ammo invariants
 - spawn-referenced object resolution against `mp_objects`
 - object script compilation or fallback to `mp_data/script.txt`
 
@@ -133,7 +134,7 @@ XDG_DATA_HOME=/tmp/egoboo-xdg \
 
 The JSON refresh produced the same top-level totals as the original console baseline.
 
-A follow-up 2026-04-13 validator pass added narrow post-load `data.txt` semantic checks for saved-character skin overrides, ammo-vs-max-ammo, and required particle-profile hooks. That pass also produced the same top-level totals as the original baseline, meaning those new warnings did not trigger on the shipped content set.
+A follow-up 2026-04-13 validator pass added narrow `data.txt` semantic checks for raw `DRES`, `SKIN`, and `LEVL` tagged expansions plus loaded skin-override and ammo-vs-max-ammo invariants. That pass also produced the same top-level totals as the original baseline, meaning those new warnings did not trigger on the shipped content set.
 
 Summary:
 

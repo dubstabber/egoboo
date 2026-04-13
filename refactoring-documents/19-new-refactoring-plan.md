@@ -71,7 +71,7 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 ### B3: Expand validator to cover profile parsing
 
-- **Action:** Extend `egoboo-content-validator` to validate `data.txt` field ranges, particle profile completeness, and enchant profile integrity.
+- **Action:** Extend `egoboo-content-validator` from pure parse/load coverage into narrow semantic `data.txt` validation first, then widen toward broader field-range and enchant integrity checks.
 - **Why:** The validator currently only checks file presence and spawn-name resolution.
 
 ### B4: Add a build-time compile test for each proposed module boundary
@@ -346,9 +346,11 @@ A (build hygiene)
   - Full `game_begin_module()` / `game_quit_module()` lifecycle unload coverage remains pending because the live module path is still coupled to audio/graphics runtime startup
 - **B3** 🟡 Validator semantic profile checks started (2026-04-13):
   - validator now warns on a small set of post-load `data.txt` invariants when encountered:
+    - raw `DRES` expansion values must reference a valid skin slot
+    - raw saved-character `SKIN` expansions must resolve to a valid skin index or accepted sentinel
+    - raw saved-character `LEVL` expansions must stay within `0..MAXLEVEL-1`
     - saved-character `SKIN` override must resolve to a valid skin or sentinel
     - current ammo must not exceed max ammo
-    - enabled attack or attached or go-poof or blud particle hooks must resolve to valid particle profiles
   - current full baseline totals remain unchanged, so these checks did not surface new issues in shipped content yet
 - **B4** ❌ Build-time compile test per module boundary
 

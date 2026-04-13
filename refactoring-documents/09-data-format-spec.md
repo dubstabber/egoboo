@@ -215,9 +215,11 @@ The validator currently treats `data.txt` as required for any resolved object pr
 - `missing_required_file` when `data.txt` is absent
 - `parse_failure` when `ObjectProfile::loadFromFile(...)` or `loadDataFile(...)` cannot produce a valid lightweight profile
 - `profile_field_invalid` warning when lightweight post-load invariants fail, such as:
+  - raw `DRES` expansions that point outside the valid skin-slot range
+  - raw saved-character `SKIN` expansions that do not resolve to a valid skin index or accepted sentinel
+  - raw saved-character `LEVL` expansions that fall outside `0..MAXLEVEL-1`
   - saved-character `SKIN` overrides that do not resolve to a valid skin or sentinel
   - current ammo exceeding max ammo
-  - enabled attack or attached or go-poof or blud particle hooks that do not resolve to valid particle profiles
 
 This semantic pass is intentionally narrow. It does not yet validate the full positional payload or every tagged expansion separately from general profile-parse failures.
 

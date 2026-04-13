@@ -397,6 +397,56 @@ std::string lowerCase(std::string value)
     return value;
 }
 
+std::string trimCopy(const std::string& value)
+{
+    const auto first = std::find_if_not(value.begin(),
+                                        value.end(),
+                                        [](unsigned char character)
+                                        {
+                                            return std::isspace(character) != 0;
+                                        });
+    if (first == value.end())
+    {
+        return std::string();
+    }
+
+    const auto last = std::find_if_not(value.rbegin(),
+                                       value.rend(),
+                                       [](unsigned char character)
+                                       {
+                                           return std::isspace(character) != 0;
+                                       }).base();
+    return std::string(first, last);
+}
+
+bool parseTaggedExpansionInteger(const std::string& line,
+                                 const std::string& tag,
+                                 int& value)
+{
+    const std::string marker = ":[" + tag + "]";
+    const std::string::size_type markerPos = line.find(marker);
+    if (markerPos == std::string::npos)
+    {
+        return false;
+    }
+
+    std::string payload = line.substr(markerPos + marker.size());
+    const std::string::size_type commentPos = payload.find("//");
+    if (commentPos != std::string::npos)
+    {
+        payload.resize(commentPos);
+    }
+    payload = trimCopy(payload);
+    if (payload.empty())
+    {
+        return false;
+    }
+
+    size_t consumed = 0;
+    value = std::stoi(payload, &consumed);
+    return consumed > 0;
+}
+
 bool hasObjectDirectorySuffix(const std::string& entryName)
 {
     const std::string lower = lowerCase(entryName);
@@ -984,6 +1034,61 @@ bool validateObjectProfile(const std::string& moduleName,
                              dataPath);
         };
 
+        auto validateExpansionLine = [&](const std::string& line)
+        {
+            int expansionValue = 0;
+            if (parseTaggedExpansionInteger(line, "DRES", expansionValue))
+            {
+                if (expansionValue < 0 || expansionValue >= static_cast<int>(SKINS_PEROBJECT_MAX))
+                {
+                    warnProfileField("`DRES` expansion references invalid skin index " + std::to_string(expansionValue));
+                }
+            }
+
+            if (parseTaggedExpansionInteger(line, "SKIN", expansionValue))
+            {
+                const bool validSkinSentinel =
+                    expansionValue < 0
+                 || expansionValue == static_cast<int>(SKINS_PEROBJECT_MAX)
+                 || expansionValue == static_cast<int>(ObjectProfile::NO_SKIN_OVERRIDE);
+                const bool validSkinIndex =
+                    expansionValue >= 0
+                 && expansionValue < static_cast<int>(SKINS_PEROBJECT_MAX);
+
+                if (!validSkinSentinel && !validSkinIndex)
+                {
+                    warnProfileField("`SKIN` expansion references invalid skin override value " + std::to_string(expansionValue));
+                }
+            }
+
+            if (parseTaggedExpansionInteger(line, "LEVL", expansionValue))
+            {
+                if (expansionValue < 0 || expansionValue >= MAXLEVEL)
+                {
+                    warnProfileField("`LEVL` expansion references invalid saved-character level " + std::to_string(expansionValue));
+                }
+            }
+        };
+
+        std::string pendingLine;
+        vfs_readEntireFile(dataPath,
+                           [&](size_t numberOfBytes, const char* bytes)
+                           {
+                               pendingLine.append(bytes, numberOfBytes);
+
+                               std::string::size_type newlinePos = std::string::npos;
+                               while ((newlinePos = pendingLine.find('\n')) != std::string::npos)
+                               {
+                                   std::string line = pendingLine.substr(0, newlinePos);
+                                   pendingLine.erase(0, newlinePos + 1);
+                                   validateExpansionLine(line);
+                               }
+                           });
+        if (!pendingLine.empty())
+        {
+            validateExpansionLine(pendingLine);
+        }
+
         const uint16_t skinOverride = profile->getSkinOverride();
         if (skinOverride != ObjectProfile::NO_SKIN_OVERRIDE
          && skinOverride != SKINS_PEROBJECT_MAX
@@ -997,26 +1102,6 @@ bool validateObjectProfile(const std::string& moduleName,
         {
             warnProfileField("current ammo " + std::to_string(profile->getAmmo())
                            + " exceeds max ammo " + std::to_string(profile->getMaxAmmo()));
-        }
-
-        if (profile->hasAttachParticleToWeapon() && INVALID_PIP_REF == profile->getAttackParticleProfile())
-        {
-            warnProfileField("weapon attack particle is enabled but no valid particle profile was resolved");
-        }
-
-        if (profile->getAttachedParticleAmount() > 0 && INVALID_PIP_REF == profile->getAttachedParticleProfile())
-        {
-            warnProfileField("attached particle count is non-zero but no valid attached particle profile was resolved");
-        }
-
-        if (profile->getParticlePoofAmount() > 0 && INVALID_PIP_REF == profile->getParticlePoofProfile())
-        {
-            warnProfileField("go-poof particle count is non-zero but no valid go-poof particle profile was resolved");
-        }
-
-        if (profile->getBludType() && INVALID_PIP_REF == profile->getBludParticleProfile())
-        {
-            warnProfileField("blud effect is enabled but no valid blud particle profile was resolved");
         }
 
         if (!options.skipScripts)
