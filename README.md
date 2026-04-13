@@ -1,11 +1,12 @@
 # Egoboo
 
-Egoboo is a working cool 3D dungeon crawling game in the spirit of NetHack.
-It supports Windows, Linux and Mac.
+Egoboo is an open-source 3D dungeon crawler in the spirit of NetHack.
+The current maintained build documents in this repository cover Linux and
+Windows.
 
 ### License
 Egoboo is made available publicly under the
-[GNU GPLv3 License](https://github.com/egoboo/egoboo/LICENSE).
+[GNU GPLv3 License](https://github.com/dubstabber/egoboo/LICENSE).
 
 ### Contact
 Developers can usually be contacted via GitHub.
@@ -14,7 +15,7 @@ Developers can usually be contacted via GitHub.
 Clone the repository:
 
 ```bash
-git clone https://github.com/egoboo/egoboo
+git clone https://github.com/dubstabber/egoboo
 cd egoboo
 git submodule update --init data external idlib idlib-game-engine
 ```
@@ -28,6 +29,10 @@ Supported build documents:
 - Linux: `doc/build-linux.md`
 - Windows: `doc/build-windows.md`
 
+Older platform-specific `README.*` files are still present in the repository,
+but the `doc/build-*.md` files are the current source of truth for active build
+paths.
+
 Quick start:
 
 Linux:
@@ -35,6 +40,7 @@ Linux:
 ```bash
 cmake -S . -B build
 cmake --build build -j4
+ctest --test-dir build --output-on-failure
 ```
 
 Windows with Visual Studio:
@@ -67,9 +73,37 @@ Important output directories:
 - Windows Visual Studio binaries: `build-vs/products/release/x64/bin/`
 - Fedora cross-built Windows binaries: `build-windows/products/x64/bin/`
 
-#### Appveyor CI Build Status
-- [master](https://github.com/egoboo/egoboo/tree/master) branch Windows 11:
-[![Build status](https://ci.appveyor.com/api/projects/status/7sjmdgolmvmv3hc1/branch/master?svg=true)](https://ci.appveyor.com/project/michaelheilmann-com/egoboo-windows/branch/master)
+### Running From The Source Tree
 
-- [master](https://github.com/egoboo/egoboo/tree/master) branch Linux (Ubuntu):
-[![Build status](https://ci.appveyor.com/api/projects/status/8u6ubxw52foc2rat/branch/master?svg=true)](https://ci.appveyor.com/project/michaelheilmann-com/egoboo-linux/branch/master)
+Preferred Linux launch path:
+
+```bash
+./run-egoboo.sh
+```
+
+This uses the repository `data/` checkout directly and keeps generated runtime
+data under `.egoboo-runtime/` in the repository root.
+
+### Content Validator
+
+The repository now includes a lightweight non-UI validation tool for content
+and parser smoke checks:
+
+```bash
+./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data"
+```
+
+Fast single-module smoke check:
+
+```bash
+./build/products/x64/bin/egoboo-content-validator \
+  --data-dir "$PWD/data" \
+  --module test.mod
+```
+
+### CI Notes
+
+Legacy AppVeyor configuration files are still checked in as
+`appveyor-linux.yml` and `appveyor-windows.yml`, but they are not the primary
+source of truth for the current build workflow. Prefer the local build
+documents and commands above.
