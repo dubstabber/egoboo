@@ -25,6 +25,7 @@
 #include "egolib/game/GameStates/LoadingState.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Label.hpp"
@@ -120,18 +121,21 @@ void LoadingState::beginState()
 
 bool LoadingState::loadPlayers()
 {
+    auto& session = GameSessionContext::get();
+    import_list_t& importList = session.importList();
+
     // blank out any existing data
-    import_list_t::init(g_importList);
+    import_list_t::init(importList);
 
     // loop through the selected players and store all the valid data in the list of imported players
     for(const std::string &loadPath : _playersToLoad)
     {
         // get a new import data pointer
-        import_element_t *import_ptr = g_importList.lst + g_importList.count;
-        g_importList.count++;
+        import_element_t *import_ptr = importList.lst + importList.count;
+        importList.count++;
 
         //figure out which player we are (1, 2, 3 or 4)
-        import_ptr->local_player_num = g_importList.count-1;
+        import_ptr->local_player_num = importList.count - 1;
 
         // set the import info
         import_ptr->slot            = (import_ptr->local_player_num) * MAX_IMPORT_PER_PLAYER;
@@ -141,9 +145,9 @@ bool LoadingState::loadPlayers()
         import_ptr->dstDir = "";
     }
 
-    if(g_importList.count > 0) {
+    if(importList.count > 0) {
 
-        if(game_copy_imports(&g_importList) == rv_success) {
+        if(game_copy_imports(&importList) == rv_success) {
             return true;
         }
         else {
@@ -199,12 +203,12 @@ void LoadingState::loadModuleData()
 
         // try to start a new module
         setProgressText("Loading module data...", 60);
-        if(!game_begin_module(_loadModule)) {
+        if(!GameSessionContext::get().beginModule(_loadModule)) {
     		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load module", Log::EndOfEntry);
             endState();
             return;
         }
-        _currentModule->setImportPlayers(_playersToLoad);
+        GameSessionContext::get().activeModule().setImportPlayers(_playersToLoad);
 
         setProgressText("Almost done...", 90);
 

@@ -19,6 +19,8 @@
 /// @author Johan Jansen
 
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/egolib.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/GameStates/MainMenuState.hpp"
@@ -79,10 +81,13 @@ GameEngine::GameEngine() :
     keyboardFocusLost(),
 #endif
     // Submodules
+    _contentRuntimeBootstrap(nullptr),
     _uiManager(nullptr)
 {
     //ctor
 }
+
+GameEngine::~GameEngine() = default;
 
 void GameEngine::shutdown()
 {
@@ -173,10 +178,11 @@ void GameEngine::estimateFrameRate()
     }
 
     _estimatedFPS = (_totalFramesRendered-_lastFPSCount) / dt;
-    _estimatedUPS = (update_wld-_lastUPSCount) / dt;
+    const uint32_t worldUpdateCount = GameSessionContext::get().worldUpdateCount();
+    _estimatedUPS = (worldUpdateCount - _lastUPSCount) / dt;
 
     _lastFPSCount = _totalFramesRendered;
-    _lastUPSCount = update_wld;
+    _lastUPSCount = worldUpdateCount;
     _lastFrameEstimation = now;
 }
 
@@ -367,11 +373,10 @@ bool GameEngine::initialize()
     // load input
     input_settings_load_vfs("/controls.txt");
 
-    // Initialize Perks
-    Ego::Perks::PerkHandler::initialize();
-
-    // Initialize the profile system.
-    ProfileSystem::initialize();
+    ContentRuntimeBootstrap::Options contentBootstrapOptions;
+    contentBootstrapOptions.initializePerkHandler = true;
+    contentBootstrapOptions.initializeProfileSystem = true;
+    _contentRuntimeBootstrap = std::make_unique<ContentRuntimeBootstrap>(contentBootstrapOptions);
 
     // Initialize the collision system.
     Ego::Physics::CollisionSystem::initialize();
@@ -434,11 +439,11 @@ void GameEngine::unsubscribe() {
 
 void GameEngine::uninitialize()
 {
-	Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "uninitializing Egoboo ", GAME_VERSION, Log::EndOfEntry);
+    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "uninitializing Egoboo ", GAME_VERSION, Log::EndOfEntry);
 
     _gameStateStack.clear();
     _currentGameState.reset();
-    _currentModule.release();
+    GameSessionContext::get().quitModule();
 
     // synchronize the config values with the various game subsystems
     config_synch(egoboo_config_t::get(), true, true);
@@ -455,11 +460,7 @@ void GameEngine::uninitialize()
     // Uninitialize the collision system.
     Ego::Physics::CollisionSystem::uninitialize();
 
-    // Uninitialize the scripting system.
-    scripting_system_end();
-
-    // Uninitialize the profile system.
-    ProfileSystem::uninitialize();
+    _contentRuntimeBootstrap.reset();
 
     // Uninitialize the console.
     Ego::Core::Console::uninitialize();
@@ -596,7 +597,7 @@ std::shared_ptr<GameState> GameEngine::getActiveGameState() const
 
 uint32_t GameEngine::getCurrentUpdateFrame() const
 {
-    return update_wld;
+    return GameSessionContext::get().worldUpdateCount();
 }
 
 uint32_t GameEngine::getNumberOfFramesRendered() const

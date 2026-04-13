@@ -33,6 +33,7 @@
 #include "egolib/game/script_implementation.h"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
@@ -64,6 +65,7 @@ AnimatedTilesState g_animatedTilesState;
 
 import_list_t g_importList;
 
+uint32_t clock_enc_stat   = 0;
 uint32_t clock_chr_stat   = 0;
 uint32_t update_wld       = 0;
 
@@ -72,9 +74,6 @@ int chr_pressure_tests = 0;
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-
-// looping - stuff called every loop - not accessible by scripts
-static void game_reset_players();
 
 // implementing wawalite data
 
@@ -939,23 +938,7 @@ void game_quit_module()
 {
     /// @author BB
     /// @details all of the de-initialization code after the module actually ends
-
-    // stop the module
-    _currentModule.reset(nullptr);
-
-    // deallocate any dynamically allocated scripting memory
-    scripting_system_end();
-
-    // re-initialize all game/module data
-    ProfileSystem::get().reset();
-    game_reset_players();
-    reset_end_text();
-
-    // finish whatever in-game song is playing
-    AudioSystem::get().fadeAllSounds();
-
-    // remove the module-dependent mount points from the vfs
-    setup_clear_module_vfs_paths();
+    GameSessionContext::get().quitModule();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -963,15 +946,7 @@ bool game_begin_module(const std::shared_ptr<ModuleProfile> &module)
 {
     /// @author BB
     /// @details all of the initialization code before the module actually starts
-
-    // start the module
-    _currentModule = std::make_unique<GameModule>(module, time(NULL));
-
-    //After loading, spawn all the data and initialize everything (spawn.txt)
-    //Due to dependency on the global _currentModule, we cannot do this in the constructor above
-    _currentModule->spawnAllObjects();
-
-    return true;
+    return GameSessionContext::get().beginModule(module);
 }
 
 //--------------------------------------------------------------------------------------------
@@ -980,24 +955,7 @@ bool game_finish_module()
     /// @author BB
     /// @details This function saves all the players to the players dir
     ///    and also copies them into the imports dir to prepare for the next module
-
-    // save the players and their inventories to their original directory
-    if ( _currentModule->isExportValid() )
-    {
-        // export the players
-        export_all_players( false );
-
-        // update the import list
-        import_list_t::from_players(g_importList);
-    }
-
-    // erase the data in the import folder
-    vfs_removeDirectoryAndContents( "import" );
-
-    // copy the import data back into the import folder
-    game_copy_imports( &g_importList );
-
-    return true;
+    return GameSessionContext::get().finishModule();
 }
 
 //--------------------------------------------------------------------------------------------

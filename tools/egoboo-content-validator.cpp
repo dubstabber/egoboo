@@ -2,6 +2,7 @@
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
+#include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/Image/ImageManager.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Logic/PerkHandler.hpp"
@@ -353,39 +354,6 @@ private:
     int stdoutCopy = -1;
     int stderrCopy = -1;
     int nullFd = -1;
-};
-
-class MinimalRuntime
-{
-public:
-    explicit MinimalRuntime(const std::string& binaryPath)
-    {
-        if (vfs_init(binaryPath.c_str(), nullptr))
-        {
-            throw std::runtime_error("unable to initialize virtual file system");
-        }
-
-        setup_init_base_vfs_paths();
-        Log::initialize("/debug/content-validator.log", Log::Level::Warning);
-
-        // Avoid null model access in lightweight profile validation.
-        egoboo_config_t::get().graphic_gouraudShading_enable.setValue(false);
-
-        Random::setSeed(0);
-        Ego::ImageManager::initialize();
-        Ego::Perks::PerkHandler::initialize();
-        ProfileSystem::initialize();
-    }
-
-    ~MinimalRuntime()
-    {
-        ProfileSystem::uninitialize();
-        Ego::Perks::PerkHandler::uninitialize();
-        Ego::ImageManager::uninitialize();
-        setup_clear_module_vfs_paths();
-        setup_clear_base_vfs_paths();
-        Log::uninitialize();
-    }
 };
 
 std::string baseName(const std::string& path)
@@ -1276,7 +1244,22 @@ int main(int argc, char** argv)
 
         {
             StreamSilencer silencer(options.jsonOutput);
-            MinimalRuntime runtime(argv[0]);
+            ContentRuntimeBootstrap::Options bootstrapOptions;
+            bootstrapOptions.initializeVirtualFileSystem = true;
+            bootstrapOptions.initializeBaseVfsPaths = true;
+            bootstrapOptions.initializeLogging = true;
+            bootstrapOptions.configureLightweightProfileLoading = true;
+            bootstrapOptions.initializeImageManager = true;
+            bootstrapOptions.initializePerkHandler = true;
+            bootstrapOptions.initializeProfileSystem = true;
+            bootstrapOptions.clearModuleVfsPathsOnShutdown = true;
+            bootstrapOptions.clearBaseVfsPathsOnShutdown = true;
+            bootstrapOptions.seedRandom = true;
+            bootstrapOptions.randomSeed = 0;
+            bootstrapOptions.binaryPath = argv[0];
+            bootstrapOptions.logPath = "/debug/content-validator.log";
+            bootstrapOptions.logLevel = Log::Level::Warning;
+            ContentRuntimeBootstrap runtime(bootstrapOptions);
 
             ProfileSystem::get().loadModuleProfiles();
 

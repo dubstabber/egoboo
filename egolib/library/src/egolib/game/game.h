@@ -188,6 +188,9 @@ extern int chr_pressure_tests;
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
+/// Reset per-player local session state after a module unload.
+void game_reset_players();
+
 /// the hook for deinitializing an old module
 void game_quit_module();
 

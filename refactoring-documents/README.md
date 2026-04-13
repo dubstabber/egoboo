@@ -61,6 +61,7 @@ Out of scope for the active architecture model:
 - `08-spawn-format-spec.md`
 - `09-data-format-spec.md`
 - `10-spawn-reconciliation-pass.md`
+- `11-runtime-context-extraction-pass.md`
 
 ## Recommended reading order
 

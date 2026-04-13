@@ -24,6 +24,7 @@
 #include "egolib/game/GameStates/MapEditorState.hpp"
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/game.h"
@@ -58,11 +59,13 @@ MapEditorState::MapEditorState(std::shared_ptr<ModuleProfile> module) :
     addModeEditButton(EditorMode::MAP_EDIT_PASSAGES, "Passages");
     addModeEditButton(EditorMode::MAP_EDIT_MESH, "Mesh");
 
+    GameModule& activeModule = GameSessionContext::get().activeModule();
+
     //Center the camera in the middle of the map
     Vector3f mapCenter;
-    mapCenter.x() = _currentModule->getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size() * 0.5f;
-    mapCenter.y() = _currentModule->getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size() * 0.5f;
-    mapCenter.z() = _currentModule->getMeshPointer()->getElevation(Vector2f(mapCenter.x(), mapCenter.y()), false);
+    mapCenter.x() = activeModule.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size() * 0.5f;
+    mapCenter.y() = activeModule.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size() * 0.5f;
+    mapCenter.z() = activeModule.getMeshPointer()->getElevation(Vector2f(mapCenter.x(), mapCenter.y()), false);
     CameraSystem::get().getMainCamera()->setPosition(mapCenter);
 }
 
@@ -84,19 +87,21 @@ void MapEditorState::addModeEditButton(EditorMode mode, const std::string &label
 
 void MapEditorState::update()
 {
+    GameModule& module = GameSessionContext::get().activeModule();
+
     // Get immediate mode state for the rest of the game
     Ego::Input::InputSystem::get().update();
 
     //Rebuild the quadtree for fast object lookup
-    _currentModule->getObjectHandler().updateQuadTree(0.0f, 0.0f, _currentModule->getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size(),
-		                                                          _currentModule->getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size());
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, module.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size(),
+		                                                         module.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size());
 
     //Always reveal all invisible monsters and objects in Map Editor mode
     local_stats.seeinvis_level = 100;
     local_stats.seeinvis_mag = std::exp(0.32f * local_stats.seeinvis_level);
 
     //Animate water
-    _currentModule->getWater().update();
+    module.getWater().update();
 
     //Update camera movement
     CameraSystem::get().getMainCamera()->updateFreeControl();
@@ -144,7 +149,7 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
     gfx_system_make_enviro();
 
     // try to start a new module
-    game_begin_module(module);
+    GameSessionContext::get().beginModule(module);
 
     // set up the cameras *after* game_begin_module() or the player devices will not be initialized
     // and camera_system_begin() will not set up the correct view

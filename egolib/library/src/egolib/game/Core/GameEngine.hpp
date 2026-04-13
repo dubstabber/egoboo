@@ -26,6 +26,7 @@ class GameState;
 class CameraSystem;
 class AudioSystem;
 class GameModule;
+class ContentRuntimeBootstrap;
 class ObjectHandler;
 class ego_mesh_t;
 struct status_list_t;
@@ -67,6 +68,8 @@ public:
     *	done by the private initialize() function which is called by start()
     **/
     GameEngine();
+
+    ~GameEngine();
 
     /**
     * @brief
@@ -270,6 +273,7 @@ private:
     uint32_t _totalFramesRendered; ///< The total number of frames drawn so far
 
     //GameEngine Submodules
+    std::unique_ptr<ContentRuntimeBootstrap> _contentRuntimeBootstrap;
     std::unique_ptr<Ego::GUI::UIManager> _uiManager;
 };
 
