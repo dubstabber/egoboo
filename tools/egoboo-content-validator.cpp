@@ -1,3 +1,4 @@
+#include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
@@ -8,14 +9,17 @@
 #include "egolib/Math/Random.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/egoboo_setup.h"
-#include "egolib/game/Module/module_spawn.h"
 #include "egolib/game/game.h"
 #include "egolib/game/script_compile.h"
+#include "egolib/file_common.h"
 #include "egolib/vfs.h"
 
 #include <SDL.h>
 
+#include <dirent.h>
+
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <exception>
 #include <fcntl.h>
@@ -37,6 +41,7 @@ struct Options
 {
     bool verbose = false;
     bool skipScripts = false;
+    bool emitReconciliation = false;
     bool jsonOutput = false;
     bool hasModuleFilter = false;
     bool hasDataDir = false;
@@ -85,6 +90,54 @@ struct ReconciliationKey
         return std::tie(module, sourcePath, spawnName, resolvedVirtualPath)
              < std::tie(other.module, other.sourcePath, other.spawnName, other.resolvedVirtualPath);
     }
+};
+
+struct ReachableObject
+{
+    std::string module;
+    std::string objectName;
+    std::string resolvedVirtualPath;
+    std::string originPath;
+    std::string sourceKind;
+};
+
+struct ReconciliationRowKey
+{
+    std::string module;
+    std::string sourcePath;
+    std::string rawLoadName;
+    std::string normalizedName;
+    std::string resolvedVirtualPath;
+    std::string canonicalKey;
+
+    bool operator<(const ReconciliationRowKey& other) const
+    {
+        return std::tie(module, sourcePath, rawLoadName, normalizedName, resolvedVirtualPath, canonicalKey)
+             < std::tie(other.module,
+                        other.sourcePath,
+                        other.rawLoadName,
+                        other.normalizedName,
+                        other.resolvedVirtualPath,
+                        other.canonicalKey);
+    }
+};
+
+struct ReconciliationRow
+{
+    std::string module;
+    std::string sourcePath;
+    std::string rawLoadName;
+    std::string normalizedName;
+    std::string resolvedVirtualPath;
+    size_t occurrenceCount = 0;
+    std::string canonicalKey;
+    std::vector<std::string> candidateNames;
+};
+
+struct ReconciliationReport
+{
+    std::vector<ReachableObject> reachableObjects;
+    std::map<ReconciliationRowKey, ReconciliationRow> rows;
 };
 
 class Reporter
@@ -346,6 +399,198 @@ std::string objectVirtualPath(const std::string& anyObjectPath)
     return "mp_objects/" + baseName(anyObjectPath);
 }
 
+std::string joinSystemPath(const std::string& left, const std::string& right)
+{
+    if (left.empty())
+    {
+        return right;
+    }
+    if (right.empty())
+    {
+        return left;
+    }
+
+    if ('/' == left.back())
+    {
+        return left + right;
+    }
+    return left + "/" + right;
+}
+
+std::string lowerCase(std::string value)
+{
+    std::transform(value.begin(),
+                   value.end(),
+                   value.begin(),
+                   [](unsigned char character)
+                   {
+                       return static_cast<char>(std::tolower(character));
+                   });
+    return value;
+}
+
+bool hasObjectDirectorySuffix(const std::string& entryName)
+{
+    const std::string lower = lowerCase(entryName);
+    return lower.size() >= 4 && 0 == lower.compare(lower.size() - 4, 4, ".obj");
+}
+
+std::vector<std::string> listObjectDirectories(const std::string& rootPath)
+{
+    std::vector<std::string> directories;
+
+    DIR* directory = opendir(rootPath.c_str());
+    if (!directory)
+    {
+        return directories;
+    }
+
+    dirent* entry = nullptr;
+    while ((entry = readdir(directory)) != nullptr)
+    {
+        const std::string name = entry->d_name;
+        if (name == "." || name == ".." || !hasObjectDirectorySuffix(name))
+        {
+            continue;
+        }
+
+        const std::string fullPath = joinSystemPath(rootPath, name);
+        if (fs_fileIsDirectory(fullPath))
+        {
+            directories.push_back(name);
+        }
+    }
+
+    closedir(directory);
+    std::sort(directories.begin(), directories.end());
+    return directories;
+}
+
+struct InventoryRoot
+{
+    std::string physicalRoot;
+    std::string sourceKind;
+};
+
+struct ReachabilityIndex
+{
+    std::map<std::string, ReachableObject> reachableByName;
+    std::map<std::string, std::vector<std::string>> candidateNamesByCanonicalKey;
+};
+
+std::vector<InventoryRoot> buildInventoryRoots(const ModuleProfile& module)
+{
+    const std::string moduleDir = baseName(module.getPath());
+    const std::string moduleObjects = "modules/" + moduleDir + "/objects";
+
+    std::vector<InventoryRoot> roots;
+    roots.push_back({joinSystemPath(fs_getDataDirectory(), moduleObjects), "module_data"});
+    roots.push_back({joinSystemPath(fs_getUserDirectory(), moduleObjects), "module_user"});
+
+    static const std::pair<const char*, const char*> globalRoots[] = {
+        {"basicdat/globalobjects/items", "global_items"},
+        {"basicdat/globalobjects/magic", "global_magic"},
+        {"basicdat/globalobjects/magic_item", "global_magic_item"},
+        {"basicdat/globalobjects/misc", "global_misc"},
+        {"basicdat/globalobjects/monsters", "global_monsters"},
+        {"basicdat/globalobjects/players", "global_players"},
+        {"basicdat/globalobjects/potions", "global_potions"},
+        {"basicdat/globalobjects/unique", "global_unique"},
+        {"basicdat/globalobjects/weapons", "global_weapons"},
+        {"basicdat/globalobjects/work_in_progress", "global_work_in_progress"},
+        {"basicdat/globalobjects/traps", "global_traps"},
+        {"basicdat/globalobjects/pets", "global_pets"},
+        {"basicdat/globalobjects/scrolls", "global_scrolls"},
+        {"basicdat/globalobjects/armor", "global_armor"},
+    };
+
+    for (const auto& root : globalRoots)
+    {
+        roots.push_back({joinSystemPath(fs_getDataDirectory(), root.first), root.second});
+    }
+
+    return roots;
+}
+
+ReachabilityIndex buildReachabilityIndex(const ModuleProfile& module,
+                                         ReconciliationReport* reconciliationReport)
+{
+    ReachabilityIndex index;
+    const std::string moduleName = module.getFolderName();
+
+    for (const auto& root : buildInventoryRoots(module))
+    {
+        for (const auto& directoryName : listObjectDirectories(root.physicalRoot))
+        {
+            const std::string objectName = lowerCase(directoryName);
+            if (index.reachableByName.find(objectName) != index.reachableByName.end())
+            {
+                continue;
+            }
+
+            ReachableObject reachable;
+            reachable.module = moduleName;
+            reachable.objectName = objectName;
+            reachable.resolvedVirtualPath = objectVirtualPath(objectName);
+            reachable.originPath = joinSystemPath(root.physicalRoot, directoryName);
+            reachable.sourceKind = root.sourceKind;
+
+            index.candidateNamesByCanonicalKey[Ego::SpawnFile::buildReconciliationKey(objectName)].push_back(objectName);
+            index.reachableByName.emplace(objectName, reachable);
+
+            if (reconciliationReport)
+            {
+                reconciliationReport->reachableObjects.push_back(reachable);
+            }
+        }
+    }
+
+    return index;
+}
+
+void appendReconciliationRow(ReconciliationReport* reconciliationReport,
+                             const std::string& moduleName,
+                             const std::string& sourcePath,
+                             const std::string& rawLoadName,
+                             const std::string& normalizedName,
+                             const std::string& resolvedVirtualPath,
+                             const ReachabilityIndex& reachabilityIndex)
+{
+    if (!reconciliationReport)
+    {
+        return;
+    }
+
+    const std::string canonicalKey = Ego::SpawnFile::buildReconciliationKey(normalizedName);
+    ReconciliationRowKey key;
+    key.module = moduleName;
+    key.sourcePath = sourcePath;
+    key.rawLoadName = rawLoadName;
+    key.normalizedName = normalizedName;
+    key.resolvedVirtualPath = resolvedVirtualPath;
+    key.canonicalKey = canonicalKey;
+
+    auto insertion = reconciliationReport->rows.emplace(key, ReconciliationRow());
+    ReconciliationRow& row = insertion.first->second;
+    if (insertion.second)
+    {
+        row.module = moduleName;
+        row.sourcePath = sourcePath;
+        row.rawLoadName = rawLoadName;
+        row.normalizedName = normalizedName;
+        row.resolvedVirtualPath = resolvedVirtualPath;
+        row.canonicalKey = canonicalKey;
+
+        const auto candidates = reachabilityIndex.candidateNamesByCanonicalKey.find(canonicalKey);
+        if (candidates != reachabilityIndex.candidateNamesByCanonicalKey.end())
+        {
+            row.candidateNames = candidates->second;
+        }
+    }
+
+    ++row.occurrenceCount;
+}
+
 void writeJsonString(std::ostream& output, const std::string& value)
 {
     output << '"';
@@ -397,7 +642,8 @@ void writeJsonCategoryCounts(std::ostream& output, const std::map<std::string, s
 
 void emitJsonReport(const Options& options,
                     const Reporter& reporter,
-                    const std::vector<ModuleResult>& results)
+                    const std::vector<ModuleResult>& results,
+                    const ReconciliationReport* reconciliationReport)
 {
     size_t passingModules = 0;
     size_t failingModules = 0;
@@ -415,7 +661,7 @@ void emitJsonReport(const Options& options,
 
     std::cout << "{";
 
-    std::cout << "\"schema_version\":1,";
+    std::cout << "\"schema_version\":" << (options.emitReconciliation ? 2 : 1) << ",";
 
     std::cout << "\"options\":{";
     std::cout << "\"verbose\":" << (options.verbose ? "true" : "false") << ",";
@@ -562,6 +808,83 @@ void emitJsonReport(const Options& options,
     }
     std::cout << "]";
 
+    if (options.emitReconciliation)
+    {
+        std::cout << ",\"reachable_objects\":[";
+        bool firstReachable = true;
+        for (const auto& reachable : reconciliationReport->reachableObjects)
+        {
+            if (!firstReachable)
+            {
+                std::cout << ",";
+            }
+            firstReachable = false;
+
+            std::cout << "{";
+            std::cout << "\"module\":";
+            writeJsonString(std::cout, reachable.module);
+            std::cout << ",";
+            std::cout << "\"object_name\":";
+            writeJsonString(std::cout, reachable.objectName);
+            std::cout << ",";
+            std::cout << "\"resolved_virtual_path\":";
+            writeJsonString(std::cout, reachable.resolvedVirtualPath);
+            std::cout << ",";
+            std::cout << "\"origin_path\":";
+            writeJsonString(std::cout, reachable.originPath);
+            std::cout << ",";
+            std::cout << "\"source_kind\":";
+            writeJsonString(std::cout, reachable.sourceKind);
+            std::cout << "}";
+        }
+        std::cout << "]";
+
+        std::cout << ",\"reconciliation_rows\":[";
+        bool firstRow = true;
+        for (const auto& entry : reconciliationReport->rows)
+        {
+            const ReconciliationRow& row = entry.second;
+            if (!firstRow)
+            {
+                std::cout << ",";
+            }
+            firstRow = false;
+
+            std::cout << "{";
+            std::cout << "\"module\":";
+            writeJsonString(std::cout, row.module);
+            std::cout << ",";
+            std::cout << "\"source_path\":";
+            writeJsonString(std::cout, row.sourcePath);
+            std::cout << ",";
+            std::cout << "\"raw_load_name\":";
+            writeJsonString(std::cout, row.rawLoadName);
+            std::cout << ",";
+            std::cout << "\"normalized_name\":";
+            writeJsonString(std::cout, row.normalizedName);
+            std::cout << ",";
+            std::cout << "\"resolved_virtual_path\":";
+            writeJsonString(std::cout, row.resolvedVirtualPath);
+            std::cout << ",";
+            std::cout << "\"occurrence_count\":" << row.occurrenceCount << ",";
+            std::cout << "\"canonical_key\":";
+            writeJsonString(std::cout, row.canonicalKey);
+            std::cout << ",";
+            std::cout << "\"candidate_names\":[";
+            for (size_t index = 0; index < row.candidateNames.size(); ++index)
+            {
+                if (index > 0)
+                {
+                    std::cout << ",";
+                }
+                writeJsonString(std::cout, row.candidateNames[index]);
+            }
+            std::cout << "]";
+            std::cout << "}";
+        }
+        std::cout << "]";
+    }
+
     std::cout << "}" << std::endl;
 }
 
@@ -572,6 +895,7 @@ void printUsage(const char* executableName)
         << "\n"
         << "Options:\n"
         << "  --data-dir <path>   Use the given Egoboo data directory.\n"
+        << "  --emit-reconciliation  Add reachable-object and reconciliation JSON arrays.\n"
         << "  --json              Emit a machine-readable JSON report.\n"
         << "  --module <name>     Validate a single module by folder name or VFS path.\n"
         << "  --skip-scripts      Skip object script compilation checks.\n"
@@ -604,6 +928,10 @@ Options parseArguments(int argc, char** argv)
         {
             options.jsonOutput = true;
         }
+        else if ("--emit-reconciliation" == argument)
+        {
+            options.emitReconciliation = true;
+        }
         else if ("--module" == argument)
         {
             if (i + 1 >= argc)
@@ -626,6 +954,11 @@ Options parseArguments(int argc, char** argv)
         {
             throw std::runtime_error("unrecognized argument `" + argument + "`");
         }
+    }
+
+    if (options.emitReconciliation && !options.jsonOutput)
+    {
+        throw std::runtime_error("--emit-reconciliation requires --json");
     }
 
     return options;
@@ -735,7 +1068,8 @@ bool shouldValidateSpawnObject(const spawn_file_info_t& entry, uint8_t importAmo
 bool validateModule(const std::shared_ptr<ModuleProfile>& module,
                     Reporter& reporter,
                     const Options& options,
-                    ModuleSummary& summary)
+                    ModuleSummary& summary,
+                    ReconciliationReport* reconciliationReport)
 {
     const std::string moduleName = module->getFolderName();
     bool success = true;
@@ -753,6 +1087,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
         return false;
     }
 
+    const ReachabilityIndex reachabilityIndex = buildReachabilityIndex(*module, reconciliationReport);
     const std::string menuPath = "mp_data/menu.txt";
     const std::string spawnPath = "mp_data/spawn.txt";
     const std::string mapPath = "mp_data/level.mpd";
@@ -870,20 +1205,27 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
                 continue;
             }
 
-            spawn_file_info_t normalized = entry;
-            convert_spawn_file_load_name(normalized, treasureTables);
+            const std::string rawLoadName = entry.spawn_comment;
+            const std::string normalizedName = Ego::SpawnFile::resolveSpawnLoadName(rawLoadName, treasureTables);
 
-            const std::string virtualPath = objectVirtualPath(normalized.spawn_comment);
+            const std::string virtualPath = objectVirtualPath(normalizedName);
             if (!vfs_exists(virtualPath))
             {
                 reporter.error(moduleName,
                                "missing_spawn_object",
                                spawnPath,
-                               "referenced object `" + normalized.spawn_comment + "` was not found on mp_objects",
+                               "referenced object `" + normalizedName + "` was not found on mp_objects",
                                &summary,
                                spawnPath,
-                               normalized.spawn_comment,
+                               normalizedName,
                                virtualPath);
+                appendReconciliationRow(reconciliationReport,
+                                        moduleName,
+                                        spawnPath,
+                                        rawLoadName,
+                                        normalizedName,
+                                        virtualPath,
+                                        reachabilityIndex);
                 success = false;
                 continue;
             }
@@ -929,6 +1271,7 @@ int main(int argc, char** argv)
 
         Reporter reporter(options.verbose, options.jsonOutput);
         std::vector<ModuleResult> results;
+        ReconciliationReport reconciliationReport;
         int exitCode = EXIT_FAILURE;
 
         {
@@ -964,7 +1307,11 @@ int main(int argc, char** argv)
             {
                 ModuleResult result;
                 result.moduleName = module->getFolderName();
-                result.ok = validateModule(module, reporter, options, result.summary);
+                result.ok = validateModule(module,
+                                           reporter,
+                                           options,
+                                           result.summary,
+                                           options.emitReconciliation ? &reconciliationReport : nullptr);
                 results.push_back(result);
 
                 if (!options.jsonOutput)
@@ -985,7 +1332,10 @@ int main(int argc, char** argv)
 
         if (options.jsonOutput)
         {
-            emitJsonReport(options, reporter, results);
+            emitJsonReport(options,
+                           reporter,
+                           results,
+                           options.emitReconciliation ? &reconciliationReport : nullptr);
         }
         else
         {

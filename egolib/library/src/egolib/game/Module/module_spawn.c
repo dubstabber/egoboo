@@ -18,6 +18,7 @@
 //********************************************************************************************
 
 #include "egolib/egolib.h"
+#include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/script_compile.h"
 #include "egolib/game/Module/Module.hpp"
@@ -66,25 +67,7 @@ void convert_spawn_file_load_name(spawn_file_info_t& psp_info, const Ego::Treasu
     /// @author ZF
     /// @details This turns a spawn comment line into an actual folder name we can use to load something with
 
-    // trim any excess spaces off the psp_info->spawn_coment
-    psp_info.spawn_comment = Ego::trim_ws(psp_info.spawn_comment);
-
-    //If it is a reference to a random treasure table then get a random object from that table
-    if ( '%' == psp_info.spawn_comment[0] )
-    {
-        std::string treasureTableName = psp_info.spawn_comment;
-        std::string treasureName = treasureTables.getRandomTreasure(treasureTableName);
-        psp_info.spawn_comment = treasureName;
-    }
-
-    // make sure it ends with a .obj extension
-    if ( !idlib::is_suffix(psp_info.spawn_comment, std::string(".obj") ) )
-    {
-        psp_info.spawn_comment += ".obj";
-    }
-
-    // no capital letters
-    idlib::to_lower_in_situ(psp_info.spawn_comment);
+    psp_info.spawn_comment = Ego::SpawnFile::resolveSpawnLoadName(psp_info.spawn_comment, treasureTables);
 }
 
 //--------------------------------------------------------------------------------------------

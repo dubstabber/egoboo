@@ -60,6 +60,7 @@ Out of scope for the active architecture model:
 - `07-historical-docs-audit.md`
 - `08-spawn-format-spec.md`
 - `09-data-format-spec.md`
+- `10-spawn-reconciliation-pass.md`
 
 ## Recommended reading order
 
