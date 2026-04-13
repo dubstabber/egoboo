@@ -69,6 +69,7 @@ xcuserdata
 *.dll
 *.exe
 backup-copy/
+.egoboo-runtime/
 
 # Doxygen.
 /doc/doxygen
@@ -82,3 +83,4 @@ build/
 # CMake.
 CMakeFiles
 CMakeCache.txt
+

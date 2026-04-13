@@ -13,6 +13,8 @@ Short version:
 cmake -S . -B build
 cmake --build build -j
 SDL_VIDEODRIVER=x11 EGOBOO_DATA_DIR="$PWD/data" ./build/products/x64/bin/egoboo
+
+Generated logs, user data, and debug output are written inside `.egoboo-runtime/` in the repository root.
 ```
 
 For refactor work, the repository also now provides a non-UI validator:

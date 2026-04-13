@@ -25,6 +25,8 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <cstring>
+#include <string>
 #include "egolib/file_common.h"
 #include "egolib/strutil.h"
 
@@ -40,11 +42,113 @@ static char _dataPath[PATH_MAX]     = EMPTY_CSTR;
 static char _userPath[PATH_MAX] = EMPTY_CSTR;
 static char _configPath[PATH_MAX]   = EMPTY_CSTR;
 
+namespace
+{
+std::string ensureTrailingSlash(std::string path)
+{
+    if (!path.empty() && path.back() != '/')
+    {
+        path.push_back('/');
+    }
+    return path;
+}
+
+std::string trimTrailingSlash(std::string path)
+{
+    while (path.size() > 1 && path.back() == '/')
+    {
+        path.pop_back();
+    }
+    return path;
+}
+
+std::string parentPath(const std::string& path)
+{
+    const std::string trimmed = trimTrailingSlash(path);
+    const std::string::size_type pos = trimmed.find_last_of('/');
+    if (pos == std::string::npos)
+    {
+        return ".";
+    }
+    if (pos == 0)
+    {
+        return "/";
+    }
+    return trimmed.substr(0, pos);
+}
+
+bool hasProjectMarkers(const std::string& root)
+{
+    const std::string normalizedRoot = trimTrailingSlash(root);
+    return fs_fileIsDirectory(normalizedRoot + "/data")
+        && fs_fileIsDirectory(normalizedRoot + "/egolib");
+}
+
+std::string findProjectRoot(const char *root_dir)
+{
+    const char *envDataDir = getenv("EGOBOO_DATA_DIR");
+    if (envDataDir && *envDataDir)
+    {
+        const std::string dataPath = trimTrailingSlash(envDataDir);
+        const std::string candidate = parentPath(dataPath);
+        if (hasProjectMarkers(candidate))
+        {
+            return candidate;
+        }
+    }
+
+    char *applicationPath = SDL_GetBasePath();
+    std::string searchRoot = applicationPath ? applicationPath : "./";
+    if (applicationPath)
+    {
+        SDL_free(applicationPath);
+    }
+    else if (root_dir && *root_dir)
+    {
+        searchRoot = root_dir;
+    }
+
+    std::string candidate = trimTrailingSlash(searchRoot);
+    for (int i = 0; i < 8; ++i)
+    {
+        if (hasProjectMarkers(candidate))
+        {
+            return candidate;
+        }
+
+        const std::string parent = parentPath(candidate);
+        if (parent == candidate)
+        {
+            break;
+        }
+        candidate = parent;
+    }
+
+    return trimTrailingSlash(searchRoot);
+}
+
+void ensureDirectoryChain(const std::string& path)
+{
+    if (path.empty() || fs_fileIsDirectory(path))
+    {
+        return;
+    }
+
+    const std::string parent = parentPath(path);
+    if (!parent.empty() && parent != path)
+    {
+        ensureDirectoryChain(parent);
+    }
+
+    if (!fs_fileIsDirectory(path))
+    {
+        fs_createDirectory(path);
+    }
+}
+}
+
 int sys_fs_init(const char *root_dir)
 {
-    // root_dir currently has no use in linux, since all of the egoboo game directories
-    // are in fixed locations
-
     printf("initializing filesystem services\n");
 
 #if defined(_NIX_PREFIX) && defined(PREFIX)
@@ -65,33 +169,34 @@ int sys_fs_init(const char *root_dir)
     strncpy(_dataPath, ".", SDL_arraysize(_dataPath));
     strncpy(_userPath, ".", SDL_arraysize(_userPath));
 #else
-    //Writeable directories
-    char* applicationPreferencePath = SDL_GetPrefPath("egoboo", "egoboo");
-    if(!applicationPreferencePath) {
-        applicationPreferencePath = (char*)SDL_malloc(128);
-        snprintf(_userPath, SDL_arraysize(_userPath), "%s/.egoboo", getenv("HOME"));        
+    std::string dataPath;
+    const char *envDataDir = getenv("EGOBOO_DATA_DIR");
+    if (envDataDir && *envDataDir)
+    {
+        dataPath = envDataDir;
     }
-    strncpy(_configPath, applicationPreferencePath, SDL_arraysize(_configPath));
-    strncpy(_userPath, applicationPreferencePath, SDL_arraysize(_userPath));
-    SDL_free(applicationPreferencePath);
+    else
+    {
+        char *applicationPath = SDL_GetBasePath();
+        dataPath = applicationPath ? applicationPath : "./";
+        if (applicationPath)
+        {
+            SDL_free(applicationPath);
+        }
+    }
+    dataPath = ensureTrailingSlash(dataPath);
 
-    // these are read-only directories
-    char* envDataDir = getenv("EGOBOO_DATA_DIR");
-    if (envDataDir) {
-        strncpy(_dataPath, envDataDir, SDL_arraysize(_dataPath));
-        // Ensure it ends with a slash
-        size_t len = strlen(_dataPath);
-        if (len > 0 && _dataPath[len-1] != '/') {
-            strncat(_dataPath, "/", SDL_arraysize(_dataPath) - len - 1);
-        }
-    } else {
-        char* applicationPath = SDL_GetBasePath();
-        if(applicationPath == nullptr) {
-            applicationPath = SDL_strdup("./");
-        }
-        strncpy(_dataPath, applicationPath, SDL_arraysize(_dataPath));
-        SDL_free(applicationPath);
-    }
+    const std::string projectRoot = findProjectRoot(root_dir);
+    const std::string runtimeRoot = trimTrailingSlash(projectRoot) + "/.egoboo-runtime";
+    const std::string userPath = runtimeRoot + "/user";
+    const std::string configPath = runtimeRoot + "/config";
+
+    strncpy(_dataPath, dataPath.c_str(), SDL_arraysize(_dataPath));
+    _dataPath[SDL_arraysize(_dataPath) - 1] = '\0';
+    strncpy(_userPath, ensureTrailingSlash(userPath).c_str(), SDL_arraysize(_userPath));
+    _userPath[SDL_arraysize(_userPath) - 1] = '\0';
+    strncpy(_configPath, ensureTrailingSlash(configPath).c_str(), SDL_arraysize(_configPath));
+    _configPath[SDL_arraysize(_configPath) - 1] = '\0';
 #endif
 
     // the log file cannot be started until there is a user data path to dump the file into
@@ -102,10 +207,8 @@ int sys_fs_init(const char *root_dir)
            "\tConfiguration: %s\n",
            _dataPath, _userPath, _configPath);
 
-    if (!fs_fileIsDirectory(_userPath))
-    {
-        fs_createDirectory(_userPath); /// @todo Error handling.
-    }
+    ensureDirectoryChain(trimTrailingSlash(_configPath));
+    ensureDirectoryChain(trimTrailingSlash(_userPath));
     return 0;
 }
 

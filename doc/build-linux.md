@@ -81,6 +81,7 @@ EGOBOO_DATA_DIR="$PWD/data" \
 Notes:
 
 - `EGOBOO_DATA_DIR="$PWD/data"` points the game at the repository data checkout instead of an installed data directory.
+- Generated user/config/debug data now stays inside the repository under `.egoboo-runtime/` instead of `~/.local/share/...`.
 - `SDL_VIDEODRIVER=x11` is useful on Wayland systems when legacy OpenGL compatibility is problematic.
 - The checked-in helper script also sets `DRI_PRIME=1`; keep or remove that depending on your GPU setup.
 
@@ -138,6 +139,6 @@ Check these first:
 2. `pkg-config --modversion sdl2 SDL2_image SDL2_mixer SDL2_ttf`
 3. `echo "$EGOBOO_DATA_DIR"`
 4. `ls build/products/x64/bin`
-5. `~/.local/share/egoboo/` or the current SDL preference path for generated logs and debug output
+5. `.egoboo-runtime/` in the repository root for generated logs and debug output
 
 If the game runs only with `./run-egoboo.sh` but not by direct invocation, your data path or SDL video driver assumptions are still incomplete.

@@ -32,7 +32,7 @@
 #include "egolib/game/link.h"
 #include "egolib/game/script_implementation.h"
 #include "egolib/game/egoboo.h"
-#include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Module/Module.hpp"
@@ -72,6 +72,39 @@ uint32_t update_wld       = 0;
 int chr_stoppedby_tests = 0;
 int chr_pressure_tests = 0;
 
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+GameModule& activeModule()
+{
+    return gameSession().activeModule();
+}
+
+uint32_t& worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+
+uint32_t& characterStatClock()
+{
+    return gameSession().characterStatClock();
+}
+
+std::shared_ptr<PlayingState> activePlayingState()
+{
+    return EngineContext::get().activePlayingState();
+}
+
+std::shared_ptr<PlayingState> tryActivePlayingState()
+{
+    return EngineContext::get().tryActivePlayingState();
+}
+}
+
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
@@ -92,18 +125,19 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
     std::string todirname;
     std::string todirfullname;
 
-    const std::shared_ptr<Object> &object = _currentModule->getObjectHandler()[character];
+    GameModule& module = activeModule();
+    const std::shared_ptr<Object> &object = module.getObjectHandler()[character];
     if(!object) {
         return rv_error;
     }
 
-    if ( !_currentModule->isExportValid() || ( object->getProfile()->isItem() && !object->getProfile()->canCarryToNextModule() ) )
+    if ( !module.isExportValid() || ( object->getProfile()->isItem() && !object->getProfile()->canCarryToNextModule() ) )
     {
         return rv_fail;
     }
 
     // TWINK_BO.OBJ
-    todirname = str_encode_path(_currentModule->getObjectHandler()[owner]->getName());
+    todirname = str_encode_path(module.getObjectHandler()[owner]->getName());
 
     // Is it a character or an item?
     if ( chr_obj_index < 0 )
@@ -188,14 +222,16 @@ egolib_rv export_all_players( bool require_local )
     egolib_rv retval;
     int number;
 
+    GameModule& module = activeModule();
+
     // Stop if export isnt valid
-    if ( !_currentModule->isExportValid() ) return rv_fail;
+    if ( !module.isExportValid() ) return rv_fail;
 
     // assume the best
     retval = rv_success;
 
     // Check each player
-    for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList()) {
         ObjectRef item;
 
         // Is it alive?
@@ -216,7 +252,7 @@ egolib_rv export_all_players( bool require_local )
 
         // Export the left hand item
         item = pchr->holdingwhich[SLOT_LEFT];
-        if ( _currentModule->getObjectHandler().exists( item ) )
+        if ( module.getObjectHandler().exists( item ) )
         {
             export_chr_rv = export_one_character( item, character, SLOT_LEFT, true );
             if ( rv_error == export_chr_rv )
@@ -227,7 +263,7 @@ egolib_rv export_all_players( bool require_local )
 
         // Export the right hand item
         item = pchr->holdingwhich[SLOT_RIGHT];
-        if ( _currentModule->getObjectHandler().exists( item ) )
+        if ( module.getObjectHandler().exists( item ) )
         {
             export_chr_rv = export_one_character( item, character, SLOT_RIGHT, true );
             if ( rv_error == export_chr_rv )
@@ -260,6 +296,7 @@ egolib_rv export_all_players( bool require_local )
 //--------------------------------------------------------------------------------------------
 void MainLoop::move_all_objects()
 {
+    GameModule& module = activeModule();
 	g_meshStats.mpdfxTests = 0;
     chr_stoppedby_tests = 0;
 
@@ -273,7 +310,7 @@ void MainLoop::move_all_objects()
     }
 
     // Move every character
-    for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &object : module.getObjectHandler().iterator())
     {
         if(object->isTerminated()) {
             continue;
@@ -285,6 +322,7 @@ void MainLoop::move_all_objects()
 
 void MainLoop::updateLocalStats()
 {
+    GameModule& module = activeModule();
     // Check for all local players being dead
     local_stats.allpladead      = false;
     local_stats.seeinvis_level  = 0.0f;
@@ -296,7 +334,7 @@ void MainLoop::updateLocalStats()
 
     int numdead = 0;
     int numalive = 0;
-    for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList())
+    for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
     {
         std::shared_ptr<Object> pchr = player->getObject();
         if(!pchr || pchr->isTerminated()) {
@@ -349,7 +387,7 @@ void MainLoop::updateLocalStats()
     }
 
     // Timers
-    clock_chr_stat++;
+    characterStatClock()++;
 
     // Reset the respawn timer
     if ( local_stats.revivetimer > 0 )
@@ -366,6 +404,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 {
     /// @author ZF
     /// @details This is the new improved targeting system for particles. Also includes distance in the Z direction.
+    GameModule& module = activeModule();
 
     const float max_dist2 = WIDE * WIDE;
 
@@ -379,12 +418,12 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
     if ( !LOADED_PIP( particletype ) ) return ObjectRef::Invalid;
     ppip = ProfileSystem::get().ParticleProfileSystem.get_ptr( particletype );
 
-    for(const std::shared_ptr<Object> &pchr : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &pchr : module.getObjectHandler().iterator())
     {
-        if ( !pchr->isAlive() || pchr->isitem || _currentModule->getObjectHandler().exists( pchr->inwhich_inventory ) ) continue;
+        if ( !pchr->isAlive() || pchr->isitem || module.getObjectHandler().exists( pchr->inwhich_inventory ) ) continue;
 
         // prefer targeting riders over the mount itself
-        if ( pchr->isMount() && ( _currentModule->getObjectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) || _currentModule->getObjectHandler().exists( pchr->holdingwhich[SLOT_RIGHT] ) ) ) continue;
+        if ( pchr->isMount() && ( module.getObjectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) || module.getObjectHandler().exists( pchr->holdingwhich[SLOT_RIGHT] ) ) ) continue;
 
         // ignore invictus
         if ( pchr->invictus ) continue;
@@ -397,7 +436,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
         // Don't retarget someone we already had or not supposed to target
         if ( pchr->getObjRef() == oldtarget || pchr->getObjRef() == donttarget ) continue;
 
-        Team &particleTeam = _currentModule->getTeamList()[team];
+        Team &particleTeam = module.getTeamList()[team];
 
         bool target_friend = ppip->onlydamagefriendly && particleTeam == pchr->getTeam();
         bool target_enemy  = !ppip->onlydamagefriendly && particleTeam.hatesTeam(pchr->getTeam() );
@@ -428,6 +467,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 //--------------------------------------------------------------------------------------------
 bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const IDSZ2 &idsz, const BIT_FIELD targeting_bits )
 {
+    GameModule& module = activeModule();
     bool retval = false;
 
     // Skip non-existing objects
@@ -464,7 +504,7 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
             return false;
         }
 
-        std::shared_ptr<Ego::Player>& player = _currentModule->getPlayer(ptst->is_which_player);
+        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst->is_which_player);
 
         // find only active quests?
         // this makes it backward-compatible with zefz's version
@@ -515,6 +555,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     /// @details This is the new improved AI targeting algorithm. Also includes distance in the Z direction.
     ///     If max_dist is 0 then it searches without a max limit.
 
+    GameModule& module = activeModule();
     line_of_sight_info_t los_info;
 
     if (!psrc || psrc->isTerminated()) return ObjectRef::Invalid;
@@ -524,7 +565,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     //Only loop through the players
     if ( HAS_SOME_BITS( targeting_bits, TARGET_PLAYERS ) || HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) )
     {
-        for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList())
+        for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
         {
             const std::shared_ptr<Object> &object = player->getObject();
             if(player) {
@@ -542,13 +583,13 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     //All objects in level
     else if(max_dist == NEAREST)
     {
-        searchList = _currentModule->getObjectHandler().getAllObjects();
+        searchList = module.getObjectHandler().getAllObjects();
     }
 
     //All objects within range
     else
     {
-        searchList = _currentModule->getObjectHandler().findObjects(psrc->getPosX(), psrc->getPosY(), max_dist, true);
+        searchList = module.getObjectHandler().findObjects(psrc->getPosX(), psrc->getPosY(), max_dist, true);
     }
 
 
@@ -580,7 +621,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
                 los_info.y1 = ptst->getPosition()[kY];
                 los_info.z1 = ptst->getPosition()[kZ] + std::max( 1.0f, ptst->bump.height );
 
-                if ( line_of_sight_info_t::blocked( los_info, _currentModule->getMeshPointer() ) ) continue;
+                if ( line_of_sight_info_t::blocked( los_info, module.getMeshPointer() ) ) continue;
             }
 
             //Set the new best target found
@@ -595,7 +636,8 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
 //--------------------------------------------------------------------------------------------
 void MainLoop::readPlayerInput()
 {
-    for(const std::shared_ptr<Ego::Player>& player : _currentModule->getPlayerList()) {
+    GameModule& module = activeModule();
+    for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
 
         //Only valid players
         const std::shared_ptr<Object> &pchr = player->getObject();
@@ -609,20 +651,20 @@ void MainLoop::readPlayerInput()
         //Press space to respawn!
         bool respawnRequested = false;
         if (Ego::Input::InputSystem::get().isKeyDown(SDLK_SPACE)
-            && (local_stats.allpladead || _currentModule->canRespawnAnyTime())
-            && _currentModule->isRespawnValid()
+            && (local_stats.allpladead || module.canRespawnAnyTime())
+            && module.isRespawnValid()
             && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
         {
             respawnRequested = true;
         }
 
         // Let players respawn
-        if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && _currentModule->isRespawnValid())
+        if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
         {
             if (!pchr->isAlive() && 0 == local_stats.revivetimer)
             {
                 pchr->respawn();
-                _currentModule->getTeamList()[pchr->team].setLeader(pchr);
+                module.getTeamList()[pchr->team].setLeader(pchr);
                 SET_BIT(pchr->ai.alert, ALERTIF_CLEANEDUP);
 
                 // cost some experience for doing this...  never lose a level
@@ -642,6 +684,7 @@ void MainLoop::check_stats()
 {
     /// @author ZZ
     /// @details This function lets the players check character stats
+    GameModule& module = activeModule();
 
     static int stat_check_timer = 0;
     static int stat_check_delay = 0;
@@ -659,8 +702,9 @@ void MainLoop::check_stats()
     // Show map cheat
     if (egoboo_config_t::get().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_m) && Ego::Input::InputSystem::get().isKeyDown(SDLK_LSHIFT))
     {
-        _gameEngine->getActivePlayingState()->getMiniMap()->setVisible(true);
-        _gameEngine->getActivePlayingState()->getMiniMap()->setShowPlayerPosition(true);
+        std::shared_ptr<PlayingState> playingState = activePlayingState();
+        playingState->getMiniMap()->setVisible(true);
+        playingState->getMiniMap()->setShowPlayerPosition(true);
         stat_check_delay = 150;
     }
 
@@ -675,9 +719,9 @@ void MainLoop::check_stats()
         else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
-        if ( docheat != INVALID_PLA_REF && docheat < _currentModule->getPlayerList().size() )
+        if ( docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size() )
         {
-            const std::shared_ptr<Object> &object = _currentModule->getPlayer(docheat)->getObject();
+            const std::shared_ptr<Object> &object = module.getPlayer(docheat)->getObject();
             if(object)
             {
                 //Give 10% of XP needed for next level
@@ -699,8 +743,8 @@ void MainLoop::check_stats()
         else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
-        if(docheat != INVALID_PLA_REF && docheat < _currentModule->getPlayerList().size()) {
-            const std::shared_ptr<Object> &object = _currentModule->getPlayer(docheat)->getObject();
+        if(docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size()) {
+            const std::shared_ptr<Object> &object = module.getPlayer(docheat)->getObject();
             if (object)
             {
                 //Heal 1 life
@@ -758,7 +802,7 @@ void show_armor( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character
 
-    const std::shared_ptr<Object> &pchr = _gameEngine->getActivePlayingState()->getStatusCharacter(statindex);
+    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
     if(!pchr) {
         return;
     }
@@ -806,7 +850,7 @@ void show_full_status( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character including magic
 
-    const std::shared_ptr<Object> &pchr = _gameEngine->getActivePlayingState()->getStatusCharacter(statindex);
+    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
     if(!pchr) {
         return;
     }
@@ -838,7 +882,7 @@ void show_magic_status( int statindex )
     /// @author ZF
     /// @details Displays special enchantment effects for the character
 
-    const std::shared_ptr<Object> &pchr = _gameEngine->getActivePlayingState()->getStatusCharacter(statindex);
+    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
     if(!pchr) {
         return;
     }
@@ -880,14 +924,15 @@ void game_load_module_profiles( const std::string& modname )
 
 //--------------------------------------------------------------------------------------------
 void disaffirm_attached_particles(ObjectRef objectRef) {
+    GameModule& module = activeModule();
     for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator()) {
         if (!particle->isTerminated() && particle->getAttachedObjectID() == objectRef) {
             particle->requestTerminate();
         }
     }
-    if (_currentModule->getObjectHandler().exists(objectRef)) {
+    if (module.getObjectHandler().exists(objectRef)) {
         // Set the alert for disaffirmation (wet torch).
-        SET_BIT( _currentModule->getObjectHandler().get(objectRef)->ai.alert, ALERTIF_DISAFFIRMED );
+        SET_BIT( module.getObjectHandler().get(objectRef)->ai.alert, ALERTIF_DISAFFIRMED );
     }
 }
 
@@ -902,7 +947,8 @@ int number_of_attached_particles(ObjectRef objectRef) {
 }
 
 int reaffirm_attached_particles(ObjectRef objectRef) {
-    const std::shared_ptr<Object>& object = _currentModule->getObjectHandler()[objectRef];
+    GameModule& module = activeModule();
+    const std::shared_ptr<Object>& object = module.getObjectHandler()[objectRef];
     if(!object) {
         return 0;
     }
@@ -963,7 +1009,8 @@ void MainLoop::let_all_characters_think()
 {
     /// @author ZZ
     /// @details This function funst the ai scripts for all eligible objects
-    for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+    GameModule& module = activeModule();
+    for(const std::shared_ptr<Object> &object : module.getObjectHandler().iterator())
     {
         if(object->isTerminated()) {
             continue;
@@ -987,13 +1034,13 @@ void MainLoop::let_all_characters_think()
             // Cleaned up characters shouldn't be alert to anything else
             if (is_cleanedup) { 
                 object->ai.alert = ALERTIF_CLEANEDUP; 
-                /*object->ai.timer = update_wld + 1;*/ 
+                /*object->ai.timer = worldUpdateCount() + 1;*/ 
             }
 
             // Crushed characters shouldn't be alert to anything else
             if (is_crushed)  { 
                 object->ai.alert = ALERTIF_CRUSHED; 
-                object->ai.timer = update_wld + 1;  //Prevents IfTimeOut from triggering
+                object->ai.timer = worldUpdateCount() + 1;  //Prevents IfTimeOut from triggering
             }
 
             scr_run_chr_script(object.get());
@@ -1032,6 +1079,7 @@ void reset_end_text()
 
 std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const script_state_t &scriptState, const std::string &text)
 {
+    GameModule& module = activeModule();
     std::stringstream result;
     bool escapeEncountered = false;
 
@@ -1059,7 +1107,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //AI target name
                 case 't':
                 {
-                    const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
                     if(target) {
                         result << target->getName();
                     }
@@ -1069,7 +1117,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Owner's name
                 case 'o':
                 {
-                    const std::shared_ptr<Object> &owner = _currentModule->getObjectHandler()[object->ai.owner];
+                    const std::shared_ptr<Object> &owner = module.getObjectHandler()[object->ai.owner];
                     if(owner) {
                         result << owner->getName(true, false, false);
                     }
@@ -1079,7 +1127,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Target class name
                 case 's':
                 {
-                    const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
                     if(target) {
                         result << target->getProfile()->getClassName();
                     }
@@ -1134,7 +1182,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 case 'g':  // Target's possessive
                 {
-                    const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
                     if(target) {
                         if (target->gender == Gender::Female) {
                             result << "her";
@@ -1161,7 +1209,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 case '8':
                 case '9':
                 {
-                    const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
                     if(target) {
                         result << target->getProfile()->getSkinInfo(c-'0').name;
                     }
@@ -1484,15 +1532,16 @@ uint8_t get_light( int light, float seedark_mag )
 //--------------------------------------------------------------------------------------------
 float get_mesh_max_vertex_1( ego_mesh_t *mesh, const Index2D& point, oct_bb_t& bump, bool waterwalk )
 {
+    GameModule& module = activeModule();
     float zdone = mesh->get_max_vertex_1( point, bump._mins[OCT_X], bump._mins[OCT_Y], bump._maxs[OCT_X], bump._maxs[OCT_Y] );
 
-    if ( waterwalk && _currentModule->getWater()._surface_level > zdone && _currentModule->getWater()._is_water )
+    if ( waterwalk && module.getWater()._surface_level > zdone && module.getWater()._is_water )
     {
         Index1D tile = mesh->getTileIndex( point );
 
         if ( 0 != mesh->test_fx( tile, MAPFX_WATER ) )
         {
-            zdone = _currentModule->getWater()._surface_level;
+            zdone = module.getWater()._surface_level;
         }
     }
 
@@ -1708,12 +1757,13 @@ void import_list_t::init(import_list_t& self)
 //--------------------------------------------------------------------------------------------
 egolib_rv import_list_t::from_players(import_list_t& self)
 {
+    GameModule& module = activeModule();
     // blank out the ImportList list
     import_list_t::init(self);
 
     // generate the ImportList list from the player info
-    for(size_t player_idx = 0; player_idx < _currentModule->getPlayerList().size(); ++player_idx) {
-        const std::shared_ptr<Ego::Player>& player = _currentModule->getPlayerList()[player_idx];
+    for(size_t player_idx = 0; player_idx < module.getPlayerList().size(); ++player_idx) {
+        const std::shared_ptr<Ego::Player>& player = module.getPlayerList()[player_idx];
 
 		std::shared_ptr<Object> pchr = player->getObject();
         if(!pchr || pchr->isTerminated()) {
@@ -1771,7 +1821,8 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
     /// @author ZZ
     /// @details This function makes the naming.txt file for the character
 
-    const std::shared_ptr<Object> &object = _currentModule->getObjectHandler()[character];
+    GameModule& module = activeModule();
+    const std::shared_ptr<Object> &object = module.getObjectHandler()[character];
     if(!object) {
         return false;
     }
@@ -1780,7 +1831,7 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
         return false;
     }
 
-    std::shared_ptr<Ego::Player>& player = _currentModule->getPlayer(object->is_which_player);
+    std::shared_ptr<Ego::Player>& player = module.getPlayer(object->is_which_player);
 
     return player->getQuestLog().exportToFile(szSaveName);
 }
@@ -1791,13 +1842,15 @@ bool export_one_character_name_vfs( const char *szSaveName, ObjectRef character 
     /// @author ZZ
     /// @details This function makes the naming.txt file for the character
 
-    if ( !_currentModule->getObjectHandler().exists( character ) ) return false;
+    GameModule& module = activeModule();
+    if ( !module.getObjectHandler().exists( character ) ) return false;
 
-    return RandomName::exportName(_currentModule->getObjectHandler()[character]->getName(), szSaveName);
+    return RandomName::exportName(module.getObjectHandler()[character]->getName(), szSaveName);
 }
 
 bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 {
+    GameModule& module = activeModule();
     bool action_valid, allowedtoattack;
 
     bool retval = false;
@@ -1810,12 +1863,12 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 
     // Which iweapon?
     auto iweapon = pchr->holdingwhich[which_slot];
-    if ( !_currentModule->getObjectHandler().exists( iweapon ) )
+    if ( !module.getObjectHandler().exists( iweapon ) )
     {
         // Unarmed means object itself is the weapon
         iweapon = iobj;
     }
-    Object *pweapon = _currentModule->getObjectHandler().get(iweapon);
+    Object *pweapon = module.getObjectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
     // No need to continue if we have an attack cooldown
@@ -1881,7 +1934,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         // Rearing mount
-        const std::shared_ptr<Object> &pmount = _currentModule->getObjectHandler()[pchr->attachedto];
+        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[pchr->attachedto];
 
         if (pmount)
         {
@@ -2020,7 +2073,8 @@ void character_swipe( ObjectRef ichr, slot_t slot )
 {
     /// @author ZZ
     /// @details This function spawns an attack particle
-    const std::shared_ptr<Object> &pchr = _currentModule->getObjectHandler()[ichr];
+    GameModule& module = activeModule();
+    const std::shared_ptr<Object> &pchr = module.getObjectHandler()[ichr];
     if(!pchr) {
         return;
     }
@@ -2030,7 +2084,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     // See if it's an unarmed attack...
     bool unarmed_attack;
     int spawn_vrt_offset;
-    if ( !_currentModule->getObjectHandler().exists(iweapon) )
+    if ( !module.getObjectHandler().exists(iweapon) )
     {
         unarmed_attack   = true;
         iweapon          = ichr;
@@ -2042,12 +2096,12 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         spawn_vrt_offset = GRIP_LAST;
     }
 
-    const std::shared_ptr<Object> &pweapon = _currentModule->getObjectHandler()[iweapon];
+    const std::shared_ptr<Object> &pweapon = module.getObjectHandler()[iweapon];
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
     // find the 1st non-item that is holding the weapon
     ObjectRef iholder = chr_get_lowest_attachment( iweapon, true );
-    const std::shared_ptr<Object> &pholder = _currentModule->getObjectHandler()[iholder];
+    const std::shared_ptr<Object> &pholder = module.getObjectHandler()[iholder];
 
     /*
         if ( iweapon != iholder && iweapon != ichr )
@@ -2072,7 +2126,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->ammo > 1 ) || ACTION_IS_TYPE( pweapon->inst.getCurrentAnimation(), F ) ) )
     {
         // Throw the weapon if it's stacked or a hurl animation
-        std::shared_ptr<Object> pthrown = _currentModule->spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->skin, pchr->ori.facing_z, pweapon->getName(), ObjectRef::Invalid);
+        std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->skin, pchr->ori.facing_z, pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
             pthrown->iskursed = false;
@@ -2281,7 +2335,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                         }
 
                         //Rally Bonus? (+10%)
-                        if(pchr->hasPerk(Ego::Perks::RALLY) && update_wld < pchr->getRallyDuration()) {
+                        if(pchr->hasPerk(Ego::Perks::RALLY) && worldUpdateCount() < pchr->getRallyDuration()) {
                             damageBonus += 0.1f;
                         }
 
@@ -2320,6 +2374,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
 //--------------------------------------------------------------------------------------------
 ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
 {
+    GameModule& module = activeModule();
     /// @author BB
     /// @details Find the lowest attachment for a given object.
     ///               This was basically taken from the script function scr_set_TargetToLowestTarget()
@@ -2327,25 +2382,25 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
     ///               You should be able to find the holder of a weapon by specifying non_item == true
     ///
     ///               To prevent possible loops in the data structures, use a counter to limit
-    ///               the depth of the search, and make sure that ichr != _currentModule->getObjectHandler().get(object)->attachedto
+    ///               the depth of the search, and make sure that ichr != module.getObjectHandler().get(object)->attachedto
 
-    if (!_currentModule->getObjectHandler().exists(ichr)) return ObjectRef::Invalid;
+    if (!module.getObjectHandler().exists(ichr)) return ObjectRef::Invalid;
 
     ObjectRef original_object, object;
     original_object = object = ichr;
     for (size_t cnt = 0; cnt < OBJECTS_MAX; cnt++)
     {
         // check for one of the ending condiitons
-        if (non_item && !_currentModule->getObjectHandler().get(object)->isitem)
+        if (non_item && !module.getObjectHandler().get(object)->isitem)
         {
             break;
         }
 
         // grab the next object in the list
-        ObjectRef object_next = _currentModule->getObjectHandler().get(object)->attachedto;
+        ObjectRef object_next = module.getObjectHandler().get(object)->attachedto;
 
         // check for an end of the list
-        if (!_currentModule->getObjectHandler().exists(object_next))
+        if (!module.getObjectHandler().exists(object_next))
         {
             break;
         }
@@ -2396,6 +2451,6 @@ int DisplayMsg_printf( const char *format, ... )
 
 void DisplayMsg_print(const std::string &text)
 {
-    auto state = _gameEngine->getActivePlayingState();
+    auto state = tryActivePlayingState();
     if (state) state->getMessageLog()->addMessage(text);
 }

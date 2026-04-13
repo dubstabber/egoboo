@@ -16,6 +16,7 @@ fi
 # Run the game with necessary environment variables
 # SDL_VIDEODRIVER=x11: Required for legacy OpenGL compatibility on Wayland
 # EGOBOO_DATA_DIR: Point to the game data
+# Runtime data now stays inside the repository under .egoboo-runtime/
 # DRI_PRIME=1: Use the discrete GPU (dGPU)
 echo "Launching Egoboo..."
 cd "$BIN_PATH" || exit 1
