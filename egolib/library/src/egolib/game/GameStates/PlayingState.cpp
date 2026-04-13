@@ -25,6 +25,7 @@
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/GameStates/VictoryScreen.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/InternalDebugWindow.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/CharacterStatus.hpp"
@@ -49,13 +50,34 @@ PlayingState::PlayingState() :
     if (egoboo_config_t::get().debug_developerMode_enable.getValue())
     {
         auto debugWindow = std::make_shared<Ego::GUI::InternalDebugWindow>("CurrentModule");
-        debugWindow->addWatchVariable("Passages", []{return std::to_string(_currentModule->getPassageCount());} );
-        debugWindow->addWatchVariable("ExportValid", []{return _currentModule->isExportValid() ? "true" : "false";} );
-        debugWindow->addWatchVariable("ModuleBeaten", []{return _currentModule->isBeaten() ? "true" : "false";} );
-        debugWindow->addWatchVariable("Players", []{return std::to_string(_currentModule->getPlayerAmount());} );
-        debugWindow->addWatchVariable("Imports", []{return std::to_string(_currentModule->getImportAmount());} );
-        debugWindow->addWatchVariable("Name", []{return _currentModule->getName();} );
-        debugWindow->addWatchVariable("Path", []{return _currentModule->getPath();} );
+        debugWindow->addWatchVariable("Passages", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module ? std::to_string(module->getPassageCount()) : std::string("0");
+        });
+        debugWindow->addWatchVariable("ExportValid", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module && module->isExportValid() ? "true" : "false";
+        });
+        debugWindow->addWatchVariable("ModuleBeaten", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module && module->isBeaten() ? "true" : "false";
+        });
+        debugWindow->addWatchVariable("Players", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module ? std::to_string(module->getPlayerAmount()) : std::string("0");
+        });
+        debugWindow->addWatchVariable("Imports", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module ? std::to_string(module->getImportAmount()) : std::string("0");
+        });
+        debugWindow->addWatchVariable("Name", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module ? module->getName() : std::string("n/a");
+        });
+        debugWindow->addWatchVariable("Path", []{
+            GameModule* module = GameSessionContext::get().tryActiveModule();
+            return module ? module->getPath() : std::string("n/a");
+        });
         addComponent(debugWindow);        
     }
 
@@ -70,7 +92,8 @@ PlayingState::PlayingState() :
     addComponent(_messageLog);
 
     //Show status display for all players
-    for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList()) {
+    GameModule& activeModule = GameSessionContext::get().activeModule();
+    for(const std::shared_ptr<Ego::Player> &player : activeModule.getPlayerList()) {
         addStatusMonitor(player->getObject());
     }
 }
@@ -78,7 +101,8 @@ PlayingState::PlayingState() :
 PlayingState::~PlayingState()
 {
     //Check for player exports
-    if ( _currentModule && _currentModule->isExportValid() )
+    if (GameModule* module = GameSessionContext::get().tryActiveModule();
+        module && module->isExportValid())
     {
         // export the players
         export_all_players(false);
@@ -127,7 +151,7 @@ void PlayingState::update()
     // Get immediate mode state for the rest of the game
     Ego::Input::InputSystem::get().update();
 
-    _currentModule->update();
+    GameSessionContext::get().activeModule().update();
 
     //Calculate position of all status bars
     updateStatusBarPosition();
@@ -153,7 +177,7 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
         case SDLK_ESCAPE:
 
             //If we have won show the Victory Screen
-            if(_currentModule->isBeaten()) {
+            if(GameSessionContext::get().activeModule().isBeaten()) {
                 _gameEngine->pushGameState(std::make_shared<VictoryScreen>(this));
             }
 
@@ -167,7 +191,8 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
         case SDLK_F9:
             if (egoboo_config_t::get().debug_developerMode_enable.getValue())
             {
-                for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+                GameModule& activeModule = GameSessionContext::get().activeModule();
+                for(const std::shared_ptr<Object> &object : activeModule.getObjectHandler().iterator())
                 {
                     if(object->isTerminated() || object->getProfile()->isInvincible()) {
                         continue;

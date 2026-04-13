@@ -22,7 +22,9 @@
 
 #include "egolib/game/GUI/CharacterStatus.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/ProgressBar.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/game/game.h" //for update_wld
@@ -46,7 +48,8 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 	///     If the object is invalid, draw the null icon instead of failing
 	///     If NOSPARKLE is specified the default item sparkle will be used (default behaviour)
 
-	Object * pitem = _currentModule->getObjectHandler().get(item);
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+	Object * pitem = activeModule ? activeModule->getObjectHandler().get(item) : nullptr;
 
 	// grab the icon reference
 	std::shared_ptr<const Texture> icon_ref = (pitem != nullptr) ? pitem->getIcon() : TextureManager::get().getTexture("mp_data/nullicon");
@@ -300,8 +303,9 @@ float CharacterStatus::draw_character_xp_bar(const ObjectRef character, float x,
 {
 	Object * pchr;
 
-	if (!_currentModule->getObjectHandler().exists(character)) return y;
-	pchr = _currentModule->getObjectHandler().get(character);
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+	if (!activeModule || !activeModule->getObjectHandler().exists(character)) return y;
+	pchr = activeModule->getObjectHandler().get(character);
 
 	//Draw the small XP progress bar
 	if (pchr->experiencelevel < MAXLEVEL - 1)
@@ -326,6 +330,12 @@ float CharacterStatus::draw_character_xp_bar(const ObjectRef character, float x,
 
 
 void CharacterStatus::draw(DrawingContext& drawingContext) {
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+    if (!activeModule) {
+        destroy();
+        return;
+    }
+
     //If object we are monitoring no longer exist, then destroy this GUI component
     const std::shared_ptr<Object> pchr = _object.lock();
     if (!pchr) {
@@ -345,7 +355,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     bool levelUp = false;
     if (pchr->isPlayer()) {
-        levelUp = _currentModule->getPlayer(pchr->is_which_player)->hasUnspentLevel();
+        levelUp = activeModule->getPlayer(pchr->is_which_player)->hasUnspentLevel();
     }
 
     // draw the character's main icon
@@ -382,7 +392,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     //Finally draw charge bar if applicable
     if (pchr->isPlayer()) {
-        const std::shared_ptr<Player> &player = _currentModule->getPlayer(pchr->is_which_player);
+        const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->is_which_player);
         if (player->getChargeBarFrame() >= update_wld) {
             _chargeBar->setVisible(true);
             _chargeBar->setMaxValue(player->getBarMaxCharge());

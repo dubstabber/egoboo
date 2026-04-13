@@ -27,6 +27,7 @@
 #include "egolib/game/GameStates/LoadingState.hpp"
 #include "egolib/game/GameStates/OptionsScreen.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/Module/Module.hpp"
@@ -40,9 +41,14 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     _slidyButtons(),
     _backgroundState(gameState)
 {
+    GameModule& activeModule = GameSessionContext::get().activeModule();
+    const bool exportValid = activeModule.isExportValid();
+    const std::shared_ptr<ModuleProfile> moduleProfile = activeModule.getModuleProfile();
+    const std::list<std::string> importPlayers = activeModule.getImportPlayers();
+
     // Add the buttons
     int yOffset = Ego::GraphicsSystem::get().window->size().y() - 80;
-    auto exitButton = std::make_shared<Ego::GUI::Button>(_currentModule->isExportValid() ? "Save and Exit" : "Abort and Exit", SDLK_q);
+    auto exitButton = std::make_shared<Ego::GUI::Button>(exportValid ? "Save and Exit" : "Abort and Exit", SDLK_q);
     exitButton->setPosition({ 20, yOffset });
     exitButton->setSize({ 200, 30 });
     exitButton->setOnClickFunction(
@@ -70,9 +76,8 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     restartModuleButton->setPosition({ 20, yOffset });
     restartModuleButton->setSize({ 200, 30 });
     restartModuleButton->setOnClickFunction(
-    [this]{
-        //Reload current module with current players
-        _gameEngine->setGameState(std::make_shared<LoadingState>(_currentModule->getModuleProfile(), _currentModule->getImportPlayers()));
+    [moduleProfile, importPlayers]{
+        _gameEngine->setGameState(std::make_shared<LoadingState>(moduleProfile, importPlayers));
     });
     addComponent(restartModuleButton);
     _slidyButtons.push_front(restartModuleButton);

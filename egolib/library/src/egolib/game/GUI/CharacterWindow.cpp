@@ -7,7 +7,9 @@
 #include "egolib/game/GUI/ScrollableList.hpp"
 #include "egolib/game/GUI/IconButton.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Layout.hpp"
 #include "egolib/game/GUI/JoinBounds.hpp"
 
@@ -113,7 +115,9 @@ CharacterWindow::CharacterWindow(const std::shared_ptr<Object> &object) : Intern
 CharacterWindow::~CharacterWindow() {
     //If the character is a local player, then we no longer consume that players input events
     if (_character->isPlayer()) {
-        _currentModule->getPlayer(_character->is_which_player)->setInventoryMode(false);
+        if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
+            module->getPlayer(_character->is_which_player)->setInventoryMode(false);
+        }
     }
 
     //If the level up window is open, close it as well
@@ -212,13 +216,19 @@ void CharacterWindow::draw(DrawingContext& drawingContext) {
 bool CharacterWindow::notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) {
     //Make level up button visible if needed
     if (_character->isPlayer()) {
-        _levelUpButton->setVisible(_levelUpWindow.expired() && _currentModule->getPlayer(_character->is_which_player)->hasUnspentLevel());
+        if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
+            _levelUpButton->setVisible(_levelUpWindow.expired() && module->getPlayer(_character->is_which_player)->hasUnspentLevel());
+        } else {
+            _levelUpButton->setVisible(false);
+        }
     }
 
     return InternalWindow::notifyMousePointerMoved(e);
 }
 
 void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
+    GameModule& activeModule = GameSessionContext::get().activeModule();
+
     int xPos, yPos = 0;
 
     // draw the character's main icon
@@ -294,7 +304,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     yPos += 5;
     std::vector<std::shared_ptr<Component>> slots;
     for (size_t i = 0; i < _character->getInventory().getMaxItems(); ++i) {
-        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character->getInventory(), i, _character->isPlayer() ? _currentModule->getPlayer(_character->is_which_player) : nullptr);
+        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character->getInventory(), i, _character->isPlayer() ? activeModule.getPlayer(_character->is_which_player) : nullptr);
         slot->setSize(Vector2f(slotSize, slotSize));
         target->addComponent(slot);
         slots.push_back(slot);
@@ -304,7 +314,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
 
     //If the character is a local player, then we consume that players input events for inventory managment
     if (_character->isPlayer()) {
-        _currentModule->getPlayer(_character->is_which_player)->setInventoryMode(true);
+        activeModule.getPlayer(_character->is_which_player)->setInventoryMode(true);
     }
 
     JoinBounds joinBounds;
@@ -329,7 +339,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
         target->addComponent(_levelUpButton);
 
         //Make level up button visible if needed
-        _levelUpButton->setVisible(_currentModule->getPlayer(_character->is_which_player)->hasUnspentLevel());
+        _levelUpButton->setVisible(activeModule.getPlayer(_character->is_which_player)->hasUnspentLevel());
     }
     float newHeight = yPos + 30 + BorderPadding;
     target->setHeight(newHeight);

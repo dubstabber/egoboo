@@ -23,6 +23,7 @@
 
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Material.hpp"
@@ -55,7 +56,8 @@ MiniMap::MiniMap() :
 }
 
 void MiniMap::draw(DrawingContext& drawingContext) {
-    if (!_minimapTexture) {
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+    if (!_minimapTexture || !activeModule) {
         return;
     }
 
@@ -65,13 +67,13 @@ void MiniMap::draw(DrawingContext& drawingContext) {
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
     if (Team::TEAM_MAX != local_stats.sense_enemies_team) {
-        for (const std::shared_ptr<Object> &pchr : _currentModule->getObjectHandler().iterator()) {
+        for (const std::shared_ptr<Object> &pchr : activeModule->getObjectHandler().iterator()) {
             if (pchr->isTerminated()) continue;
 
             const std::shared_ptr<ObjectProfile> &profile = pchr->getProfile();
 
             // Show only teams that will attack the player
-            if (pchr->getTeam().hatesTeam(_currentModule->getTeamList()[local_stats.sense_enemies_team])) {
+            if (pchr->getTeam().hatesTeam(activeModule->getTeamList()[local_stats.sense_enemies_team])) {
                 // Only if they match the required IDSZ ([NONE] always works)
                 if (local_stats.sense_enemies_idsz == IDSZ2::None ||
                     local_stats.sense_enemies_idsz == profile->getIDSZ(IDSZ_PARENT) ||
@@ -85,7 +87,7 @@ void MiniMap::draw(DrawingContext& drawingContext) {
 
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {
-        for (const std::shared_ptr<Player> &player : _currentModule->getPlayerList()) {
+        for (const std::shared_ptr<Player> &player : activeModule->getPlayerList()) {
             const std::shared_ptr<Object> &object = player->getObject();
             if (!object || object->isTerminated() || !object->isAlive()) {
                 continue;
@@ -102,8 +104,8 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     //Draw all queued blips
     for (const Blip &blip : _blips) {
         //Adjust the position values so that they fit inside the minimap
-        float x = getX() + (blip.x * getWidth() / _currentModule->getMeshPointer()->_tmem._edge_x);
-        float y = getY() + (blip.y * getHeight() / _currentModule->getMeshPointer()->_tmem._edge_y);
+        float x = getX() + (blip.x * getWidth() / activeModule->getMeshPointer()->_tmem._edge_x);
+        float y = getY() + (blip.y * getHeight() / activeModule->getMeshPointer()->_tmem._edge_y);
 
         if (blip.icon != nullptr) {
             //Center icon on blip position
@@ -124,7 +126,8 @@ void MiniMap::setShowPlayerPosition(bool show) {
 }
 
 void MiniMap::addBlip(const float x, const float y, const HUDColors color) {
-    if (!_currentModule->isInside(x, y)) {
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+    if (!activeModule || !activeModule->isInside(x, y)) {
         return;
     }
 
@@ -132,7 +135,8 @@ void MiniMap::addBlip(const float x, const float y, const HUDColors color) {
 }
 
 void MiniMap::addBlip(const float x, const float y, const std::shared_ptr<Object> &object) {
-    if (!_currentModule->isInside(x, y)) {
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+    if (!activeModule || !activeModule->isInside(x, y)) {
         return;
     }
 

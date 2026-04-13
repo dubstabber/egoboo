@@ -3,7 +3,9 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace Ego {
 namespace GUI {
@@ -219,6 +221,8 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
 LevelUpWindow::~LevelUpWindow() {}
 
 void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
+    GameModule& activeModule = GameSessionContext::get().activeModule();
+
     //Set random seed for deterministic level ups (no aborting or re-loading game for better results)
     Random::setSeed(_character->getLevelUpSeed());
 
@@ -322,7 +326,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     //Increase character level by 1
     _character->experiencelevel += 1;
     SET_BIT(_character->ai.alert, ALERTIF_LEVELUP);
-    _currentModule->getPlayer(_character->is_which_player)->setLevelUpIndicator(false);
+    activeModule.getPlayer(_character->is_which_player)->setLevelUpIndicator(false);
 
     //Generate random seed for next level increase
     _character->randomizeLevelUpSeed();
@@ -514,4 +518,4 @@ Perks::PerkID LevelUpWindow::getCurrentPerk() const {
 }
 
 } //GUI
-} //Ego 
+} //Ego
