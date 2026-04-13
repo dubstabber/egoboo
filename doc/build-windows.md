@@ -1,43 +1,30 @@
 # Build For Windows
 
-This document covers the current Windows build paths in this repository.
+This document covers the current Windows build path in this repository and the intended Windows support direction.
 
 It matches the active CMake build and the Windows dependency handling now present in this workspace.
 
-## Supported paths
+Project direction:
 
-- Native Windows build with Visual Studio
+- native Windows compilation should become a first-class target
+- Linux-hosted Windows cross-compilation should also become a first-class target
+- Linux-native, native-Windows, and Linux-hosted Windows builds should stay as close as practical in CMake flow and dependency handling
+- the maintained Windows toolchain should remain 100% open source
+- Visual Studio-specific tooling and build instructions are not part of the maintained path
+- Wine is a temporary compatibility and debugging aid, not the desired end state for Windows support
+- the current Windows runtime is still unstable and should be treated as an active portability problem, not as a finished platform port
+
+## Supported path
+
 - Fedora/Linux cross-build to Windows x64 with `mingw-w64`
 
-## Native Windows build
+Native Windows builds are still a future target. When that path is documented as first-class, it should use an open-source toolchain rather than Visual Studio-specific project generation.
 
-The maintained native Windows path is CMake with a Visual Studio generator.
+The current Linux-hosted Windows build is useful for debugging and portability work, but it is not yet a healthy runtime baseline. The checked-in `debug-output.txt` captures a recent failure sequence with:
 
-Prerequisites:
-
-- Visual Studio 2022 with the Desktop development with C++ workload
-- CMake
-- Git submodules initialized with `git submodule update --init --recursive`
-
-From a Developer PowerShell or Developer Command Prompt:
-
-```bash
-cmake -S . -B build-vs -G "Visual Studio 17 2022" -A x64
-cmake --build build-vs --config Release -j4
-```
-
-Outputs land under:
-
-```text
-build-vs/products/release/x64/bin/
-```
-
-On Windows builds, the game and content validator now stage the required SDL runtime DLLs into the executable directory automatically.
-
-Important binaries:
-
-- game: `build-vs/products/release/x64/bin/egoboo.exe`
-- validator: `build-vs/products/release/x64/bin/egoboo-content-validator.exe`
+- font atlas allocation escalating to a fatal error in `egolib/Graphics/Font.cpp`
+- fallback font activation after `mp_data/IMMORTAL.ttf` fails to load cleanly
+- a later unhandled crash under Wine while audio loading passes through `Mix_LoadWAV_RW`
 
 ## Fedora cross-build to Windows x64
 
@@ -87,7 +74,7 @@ Important binaries:
 ## Run the Windows build from Linux with Wine
 
 If you cross-built the Windows binary on Linux and want to launch that `.exe`
-directly, use the checked-in helper script:
+directly during current compatibility work, use the checked-in helper script:
 
 ```bash
 ./run-egoboo-windows.sh
@@ -96,7 +83,6 @@ directly, use the checked-in helper script:
 The script:
 
 - prefers `build-windows/products/x64/bin/egoboo.exe`
-- falls back to `build-vs/products/release/x64/bin/egoboo.exe`
 - starts the game from the repository `data/` directory so the Windows build
   can resolve `basicdat/`
 - adds the MinGW runtime DLL directory to `WINEPATH` automatically when the
@@ -158,6 +144,8 @@ Minimum expected bundle layout:
 - The Fedora cross-build path is x64-focused. If you need 32-bit Windows targets, add a separate `i686-w64-mingw32` toolchain file rather than reusing the x64 one.
 - Cross-builds disable runnable test targets by default unless `CMAKE_CROSSCOMPILING_EMULATOR` is set. This avoids CMake trying to execute Windows `.exe` test binaries on the Linux build host during `gtest_discover_tests()`.
 - Fedora cross-builds now handle MinGW-specific system link differences such as `shlwapi` and `winmm` internally; you should not need to add them manually on the command line.
+- Long-term refactoring should reduce platform-specific dependency handling so the Linux-native, native-Windows, and Linux-hosted Windows paths stay structurally similar.
+- Routine C++ warnings on supported toolchains should be treated as portability debt and reduced over time.
 
 ## If the Windows build fails
 
@@ -167,7 +155,7 @@ Check these first:
 2. `which x86_64-w64-mingw32-gcc` and `which x86_64-w64-mingw32-g++` for Fedora cross-builds
 3. `ls external/mingw/include/SDL2/SDL.h`
 4. `ls external/mingw/lib/libSDL2.a`
-5. `ls build-vs/products/release/x64/bin` or `ls build-windows/products/x64/bin`
+5. `ls build-windows/products/x64/bin`
 
 Common failure patterns:
 

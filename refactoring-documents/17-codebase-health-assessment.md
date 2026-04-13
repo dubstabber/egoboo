@@ -31,6 +31,8 @@ This document captures a quantitative and qualitative health snapshot of the Ego
 
 The codebase is almost exactly 50/50 C and C++ by line count. This is a significant maintenance concern: two idioms, two resource management models, and two error handling strategies coexist in the same library.
 
+That split also weakens portability work. Cross-platform cleanup is harder when one half of the runtime still follows older C-era patterns and the other half follows newer C++ conventions with inconsistent ownership, exception, and interface boundaries.
+
 ## 2. Hotspot Files
 
 Files over 1,000 lines are disproportionate sources of complexity and bugs.
@@ -187,6 +189,7 @@ The test suite provides almost no behavioral protection. It is effectively a com
 - Build docs are contradictory (see document 01).
 - Content format docs are fragmented across eras (see document 07).
 - The `refactoring-documents/` folder (16 documents so far) is the most current and accurate documentation.
+- The current Windows runtime failure baseline is captured in `debug-output.txt`, including a font-atlas failure and a later Wine crash during audio loading, which reinforces that cross-platform support is still incomplete.
 
 ## 8. Build System Health
 
@@ -195,6 +198,7 @@ The test suite provides almost no behavioral protection. It is effectively a com
 - CMake-based build works on Linux and Windows
 - Clean separation of `idlib`, `idlib-game-engine`, `egolib`, and `egoboo` targets
 - Content validator tool integrated into the build
+- A Linux-hosted `mingw-w64` Windows cross-build path now exists
 
 ### Weaknesses
 
@@ -202,6 +206,9 @@ The test suite provides almost no behavioral protection. It is effectively a com
 - **No internal module targets**: `egolib` is one monolithic static library with no internal modularity expressed in the build system.
 - **Cartman not in build**: The editor code exists but is disconnected from the main build graph.
 - **Stale CI**: `.travis.yml` and `appveyor-*.yml` configs exist but are likely outdated.
+- **Cross-platform parity is weak**: Linux-native, native-Windows, and Linux-hosted Windows builds still behave like different products instead of one codebase with different toolchains.
+- **Warnings still normalize technical debt**: routine C++ warnings are a sign that portability and platform-agnostic interfaces are not yet under control.
+- **Windows runtime remains unstable**: the current Wine-run Windows build is not a credible playability baseline.
 
 ## 9. Abandoned/Dead Code
 

@@ -4,6 +4,16 @@ Egoboo is an open-source 3D dungeon crawler in the spirit of NetHack.
 The current maintained build documents in this repository cover Linux and
 Windows.
 
+Current project direction:
+
+- move the remaining mixed C/C++ runtime toward C++
+- make native Windows compilation work as a first-class target instead of treating Wine as the practical fallback
+- make Linux-hosted Windows cross-compilation work as a first-class target too, not just native Windows builds
+- keep Linux builds, native Windows builds, and Linux-hosted Windows builds as similar as practical in structure and tooling
+- keep the Windows build and tooling path fully open source, which means Visual Studio-specific workflows are not part of the maintained direction
+- reduce portability debt, old dependency friction, and routine C++ warning noise as part of the refactor
+- improve the current buggy and incomplete runtime toward a stable, modular, maintainable baseline
+
 ### License
 Egoboo is made available publicly under the
 [GNU GPLv3 License](https://github.com/dubstabber/egoboo/LICENSE).
@@ -43,14 +53,7 @@ cmake --build build -j4
 ctest --test-dir build --output-on-failure
 ```
 
-Windows with Visual Studio:
-
-```bash
-cmake -S . -B build-vs -G "Visual Studio 17 2022" -A x64
-cmake --build build-vs --config Release -j4
-```
-
-Fedora cross-build to Windows:
+Windows cross-build with `mingw-w64`:
 
 ```bash
 cmake -S . -B build-windows \
@@ -65,12 +68,13 @@ Run the cross-built Windows binary through Wine from Linux:
 ```
 
 The Wine helper currently applies compatibility defaults for the Windows build:
-`EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1`.
+`EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1`. This helper is a temporary compatibility path, not the long-term Windows support goal.
+
+The current Wine-run Windows build is still not a good gameplay target. See `debug-output.txt` for a recent startup failure involving font-atlas initialization and a later crash during audio loading.
 
 Important output directories:
 
 - Linux binaries: `build/products/x64/bin/`
-- Windows Visual Studio binaries: `build-vs/products/release/x64/bin/`
 - Fedora cross-built Windows binaries: `build-windows/products/x64/bin/`
 
 ### Running From The Source Tree

@@ -9,6 +9,8 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 3. **Build system changes first.** Making structure visible in the build is cheaper and safer than rewriting code.
 4. **Decouple from globals before extracting subsystems.** Removing global state access is the prerequisite for meaningful modularization.
 5. **Prioritize by coupling reduction, not cosmetic cleanup.**
+6. **Keep platform support aligned with the long-term toolchain goals.** Windows support should move toward native compilation with fully open-source tooling; do not add new Visual Studio-only requirements.
+7. **Treat warnings as quality signals, not background noise.** Repeated C++ warnings usually indicate portability debt, interface drift, or weak type boundaries.
 
 ---
 
@@ -36,7 +38,8 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 - **Action:**
   - Delete or mark as deprecated: `README.Linux`, `README.MinGW`, `README.OSX`, `README.Windows`, `README.VisualStudio`
-  - Ensure `doc/build-linux.md` and `README.md` are the canonical references.
+  - Ensure `doc/build-linux.md`, `doc/build-windows.md`, and `README.md` are the canonical references.
+  - Remove Visual Studio-specific build guidance from maintained docs and keep the documented Windows path centered on open-source tooling.
 - **Why:** Contradictory build docs waste developer time.
 
 ### A4: Integrate cartman into the build (optional)
@@ -50,6 +53,23 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 - **Action:** Document the normal Egoboo setup as root-submodules-only (`data`, `external`, `idlib`, `idlib-game-engine`) instead of a recursive submodule checkout.
 - **Why:** The superproject already injects the top-level `idlib/` into `idlib-game-engine`, so requiring `idlib-game-engine/idlib` for standard builds adds repository noise without changing the active architecture.
 - **Risk:** Low. This is a documentation and onboarding cleanup unless `idlib-game-engine` is later changed to require its nested checkout in superproject builds.
+
+### A6: Formalize Windows build parity goals
+
+- **Action:** Document the supported long-term build matrix as:
+  - Linux native build
+  - native Windows build
+  - Linux-hosted Windows cross-build
+- **Action:** Keep these paths as close as practical in CMake structure, dependency handling, and runtime assumptions.
+- **Why:** Portability debt grows quickly when each platform evolves as a separate workflow.
+- **Risk:** Low for documentation, medium once build logic changes begin.
+
+### A7: Add compiler warning baselines and a ratchet
+
+- **Action:** Record current warning baselines for the supported C++ toolchains and start reducing them intentionally.
+- **Action:** Avoid introducing new warning classes in touched areas; where practical, make warning cleanup part of the same refactor.
+- **Why:** The current warning volume is a symptom of portability and maintainability debt, not just cosmetic noise.
+- **Risk:** Low-Medium. Some warning cleanup will expose real bugs or unclear ownership.
 
 ---
 
@@ -84,6 +104,12 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 - **Action:** Create a test source per proposed module (from document 18) that includes only that module's headers and verifies compilation.
 - **Why:** This catches hidden cross-module dependencies cheaply.
+
+### B5: Add platform-smoke coverage for Windows artifacts
+
+- **Action:** Add a narrow smoke path for the Linux-hosted Windows build that at least exercises startup, content discovery, and early subsystem initialization under the current emulator path.
+- **Action:** Keep `debug-output.txt` style failure captures as comparable artifacts until the Windows runtime reaches a stable baseline.
+- **Why:** The current Windows-on-Linux path is known to be unplayable; stabilization needs repeatable evidence, not one-off manual runs.
 
 ---
 
@@ -194,6 +220,11 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 - **Action:** Audit the 232 raw `new`/`delete` call sites. Convert to `std::unique_ptr` or `std::make_shared` where ownership is clear.
 - **Priority targets:** Files that also use `shared_ptr` (mixed patterns are worst).
+
+### E4: Standardize warning-sensitive C++ boundaries
+
+- **Action:** Prefer explicit ownership, typed enums, modern casts, and narrower interfaces in touched C++ code so warning cleanup is structural rather than cosmetic.
+- **Why:** Portability problems often surface first as warnings around conversions, ownership, and implicit platform assumptions.
 
 ---
 

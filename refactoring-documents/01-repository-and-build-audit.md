@@ -63,6 +63,7 @@ The repo already contains contradictory build stories.
 - The canonical build instructions are unclear.
 - Fresh contributors are likely to read stale instructions first.
 - Linux support currently depends on local knowledge that is not represented in one authoritative document.
+- Windows support is also split between future intent and current reality: a Linux-to-Windows cross-build exists, but the runtime and dependency story are still fragile.
 
 ## 4. Local portability patches already in the workspace
 
@@ -90,10 +91,30 @@ These are not random edits. They are evidence that:
 - The project has real portability debt on modern Linux systems.
 - The runtime still assumes filesystem and GL behavior that is no longer portable enough.
 - "It compiles on my machine" currently depends on local source drift.
+- The same class of portability debt is likely blocking cleaner Windows support and Linux-hosted Windows cross-build parity.
 
 These patches should be documented and then turned into explicit, reviewable portability decisions rather than staying as anonymous workspace edits.
 
-## 5. Submodule state and branch drift
+## 5. Current Windows cross-build reality
+
+The repository now has a documented `mingw-w64` path for building Windows binaries from Linux, but that should not be mistaken for healthy Windows support yet.
+
+Current problems:
+
+- old dependency handling still leaks into platform-specific setup
+- the monolithic `egolib` build shape makes platform assumptions hard to isolate
+- Linux-native, native-Windows, and Linux-hosted Windows builds do not yet behave like variations of one coherent build flow
+- runtime failures under Wine mean the current Windows artifact is not yet a usable gameplay target
+
+The checked-in `debug-output.txt` shows concrete evidence of that runtime state on the current Linux-hosted Windows path:
+
+- font atlas creation escalates until a fatal failure in `egolib/Graphics/Font.cpp`
+- the font manager falls back after failing to load `mp_data/IMMORTAL.ttf`
+- execution then dies with an unhandled page fault under Wine while inside `Mix_LoadWAV_RW`
+
+This is enough to treat the current Windows-on-Linux path as a debugging baseline, not as completed portability work.
+
+## 6. Submodule state and branch drift
 
 `.gitmodules` says `idlib` and `idlib-game-engine` are intended to follow `develop`, but the checked submodule statuses currently point at `master` lineage.
 
@@ -102,7 +123,7 @@ This matters because:
 - Refactors across the engine boundary can silently depend on local submodule state.
 - Reproducibility is weaker when the intended branch policy and the actual workspace state differ.
 
-## 6. Tooling health
+## 7. Tooling health
 
 ### Tests
 
@@ -134,7 +155,7 @@ What is not protected:
 - `migrator/` contains real migration intent, but several tools are only scaffolds
 - `migrator/README.md` is currently unrelated to the actual toolset, which is a sign of documentation rot
 
-## 7. Large code hotspots
+## 8. Large code hotspots
 
 The largest active translation units are a good proxy for risk concentration.
 
@@ -155,7 +176,7 @@ These are strong candidates for:
 - extraction of interfaces
 - file-splitting before behavior changes
 
-## 8. Practical conclusions for the refactor
+## 9. Practical conclusions for the refactor
 
 Before large-scale code motion:
 
@@ -164,3 +185,5 @@ Before large-scale code motion:
 3. Stop using recursive file globbing as the only expression of library structure once subsystem extraction begins.
 4. Treat local portability patches as first-class tracked work items, not invisible environment glue.
 5. Avoid starting the refactor in the largest files without first adding seams around them.
+6. Treat Linux-native, native-Windows, and Linux-hosted Windows builds as one portability problem with shared architectural causes.
+7. Use the current `debug-output.txt` failures as a baseline for Windows runtime stabilization work, not as acceptable known behavior.

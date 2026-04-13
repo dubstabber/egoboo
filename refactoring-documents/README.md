@@ -25,6 +25,9 @@ Out of scope for the active architecture model:
 - The content model is directory-shaped and convention-driven: `menu.txt`, `spawn.txt`, `data.txt`, `script.txt`, `message.txt`, `partN.txt`, `enchant.txt`, `level.mpd`, `tris.md2`, plus bitmap and audio assets.
 - There are several abandoned or partial modernization attempts already in the tree: `doc/ego2xml/`, `utilities/migrator/`, and `egolib/library/src/egolib/game/Lua/`.
 - Build documentation is inconsistent with the real build. Root docs describe CMake, `README.Linux` still describes `make all`, and the local workspace now relies on `run-egoboo.sh` plus Fedora-specific source edits.
+- Windows build direction is still inconsistent. A MinGW-based path exists, but the maintained project direction should be native Windows compilation with fully open-source tooling rather than Visual Studio-specific workflows or Wine-only validation.
+- The Linux-hosted Windows path is not healthy yet. `debug-output.txt` shows a current Wine-run startup failure involving font atlas initialization and a later crash during audio loading.
+- The current codebase still has many bugs, incomplete features, and portability warnings. The refactor goal is not just cleaner structure; it is a more usable and maintainable game.
 - Automated tests exist mainly for utility code. They do not currently protect gameplay, module loading, scripting, or content compatibility.
 
 ## Snapshot metrics
@@ -95,6 +98,9 @@ Do not start by rewriting systems wholesale. The first safe wins are:
 2. Establish source-of-truth boundaries for active code versus archive/generated/vendor content.
 3. Add non-UI validation tooling for content loading and module parsing.
 4. Introduce a runtime context abstraction around `_currentModule` and `_gameEngine` before attempting deeper subsystem extraction.
+5. Make the Windows target explicit: native compilation should be supported in the future, the toolchain should remain fully open source, and Visual Studio-specific build guidance should be retired from the maintained path.
+6. Make Linux-native, native-Windows, and Linux-hosted Windows builds converge toward one coherent cross-platform workflow.
+7. Reduce routine C++ warnings as part of the long-term maintainability and portability push rather than accepting them as normal.
 
 Items 1 and 3 now have a first implementation in this workspace:
 

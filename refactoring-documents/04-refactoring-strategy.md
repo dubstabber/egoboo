@@ -11,6 +11,14 @@ Primary goals:
 - make content semantics explicit
 - preserve shipped content while modernizing the pipeline
 - create a path toward modern scripting and better playtesting
+- move the remaining active runtime code from the current C/C++ split toward C++ as the primary implementation language
+- make native Windows compilation a real project target instead of relying on Wine-driven workflows as the practical fallback
+- make Linux-hosted Windows cross-compilation a real project target as well, not a fragile side path
+- make Linux builds, native Windows builds, and Linux-hosted Windows builds follow as similar a CMake workflow as practical
+- keep the Windows toolchain fully open source and remove Visual Studio-specific build requirements from the maintained development path
+- reduce platform-specific assumptions, old dependency friction, and portability-specific code paths so the codebase becomes genuinely cross-platform
+- treat C++ compiler warnings as portability and maintainability debt; the long-term target is warning-clean code in supported configurations
+- improve the currently buggy and incomplete runtime toward a stable baseline before claiming platform support is healthy
 
 ## 2. Rules for the refactor
 
@@ -46,10 +54,12 @@ This is especially important for:
 
 Deliverables:
 
-- canonical build/run document for Linux
+- canonical build/run documents for Linux and Windows
 - clear source-scope rules for active code versus archive/generated/vendor content
 - these audit docs
 - explicit capture of existing Fedora/Linux portability edits
+- explicit statement that Wine is a compatibility aid for current debugging, not the long-term Windows support target
+- explicit capture of current Windows cross-build and Wine-runtime failures so later fixes can be measured against a baseline
 
 Do first because:
 
@@ -250,8 +260,17 @@ Mitigation:
 
 - preserve and formalize the current Fedora/Linux fixes
 - test with explicit env vars and without them
+- keep Linux-native, native-Windows, and Linux-hosted Windows builds aligned instead of letting each platform drift into separate assumptions
 
-### Risk 5: architecture work outpacing playtesting
+### Risk 5: warning debt masking portability problems
+
+Mitigation:
+
+- record warning baselines for supported toolchains
+- remove warnings steadily instead of normalizing them
+- treat new warning classes as regressions when practical
+
+### Risk 6: architecture work outpacing playtesting
 
 Mitigation:
 
@@ -268,3 +287,6 @@ This refactor effort is succeeding when:
 - content semantics live in schemas and code, not in scattered folklore
 - scripting has a stable API boundary
 - module loading and gameplay regressions are caught by repeatable tests and playtests
+- supported Linux and Windows build paths are close enough that portability fixes are shared work rather than platform-specific rewrites
+- the Windows build is usable both natively and when cross-built from Linux
+- the supported C++ build configurations are free of routine warning noise
