@@ -41,9 +41,10 @@ Use them for narrow, parallelizable tasks. Keep ownership explicit when delegati
 
 ## Build and validation
 
+- Never run builds with more than 4 parallel jobs; higher values can destabilize this machine.
 - Configure and build with CMake:
   - `cmake -S . -B build`
-  - `cmake --build build -j`
+  - `cmake --build build -j4`
 - After changing runtime code, content loading, or module/object data, run the validator at minimum on `test.mod`:
   - `./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`
 - When touching module formats, object loading, VFS behavior, or shared content, run the full validator:

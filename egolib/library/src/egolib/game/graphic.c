@@ -23,6 +23,8 @@
 
 #include "egolib/game/graphic.h"
 
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/renderer_3d.h"
@@ -84,6 +86,39 @@ Clock<ClockPolicy::NonRecursive>  light_fans_timer("light.fans", 512);
 gfx_config_t     gfx;
 
 float            indextoenvirox[MD2Model::normalCount];
+
+namespace
+{
+GameEngine& engine()
+{
+    return EngineContext::get().engine();
+}
+
+Ego::GUI::UIManager& uiManager()
+{
+    return *engine().getUIManager();
+}
+
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+GameModule& activeModule()
+{
+    return gameSession().activeModule();
+}
+
+uint32_t renderedFrameCount()
+{
+    return engine().getNumberOfFramesRendered();
+}
+
+uint32_t& worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+}
 
 //--------------------------------------------------------------------------------------------
 
@@ -297,7 +332,7 @@ void draw_blip(float sizeFactor, uint8_t color, float x, float y)
         height = sizeFactor * (bliprect[color]._bottom - bliprect[color]._top);
 
         auto sc_rect = Ego::Rectangle2f(Ego::Point2f(x - (width / 2), y - (height / 2)), Ego::Point2f(x + (width / 2), y + (height / 2)));
-        _gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Ego::GUI::Material>(ptex, Ego::Colour4f::white(), true));
+        uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Ego::GUI::Material>(ptex, Ego::Colour4f::white(), true));
     }
 }
 
@@ -339,7 +374,7 @@ float draw_icon_texture(const std::shared_ptr<const Ego::Texture>& ptex, float x
     }
 
     auto sc_rect = Ego::Rectangle2f(Ego::Point2f(x, y), Ego::Point2f(x + width, y + height));
-    _gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<const Ego::GUI::Material>(ptex, Ego::Colour4f::white(), true));
+    uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<const Ego::GUI::Material>(ptex, Ego::Colour4f::white(), true));
 
     if (NOSPARKLE != sparkle_color)
     {
@@ -386,7 +421,7 @@ float draw_fps(float y)
 
     if (ps.get_error())
     {
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "SCRIPT ERROR ( see \"/debug/log.txt\" )", 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "SCRIPT ERROR ( see \"/debug/log.txt\" )", 0, 1.0f);
     }
 
     /// @todo Add extra options for UPS and update lag don't display UPS or update lag just because FPS are displayed.
@@ -394,10 +429,10 @@ float draw_fps(float y)
     {
         std::ostringstream os;
         os.setf(std::ios_base::fixed, std::ios_base::floatfield);
-        os << std::setw(2) << std::setprecision(2) << _gameEngine->getFPS() << " FPS, " 
-           << std::setw(2) << std::setprecision(2) << _gameEngine->getUPS() << " UPS, " 
-           << _gameEngine->getFrameSkip() << " update lag";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0.0f, 1.0f);
+        os << std::setw(2) << std::setprecision(2) << engine().getFPS() << " FPS, " 
+           << std::setw(2) << std::setprecision(2) << engine().getUPS() << " UPS, " 
+           << engine().getFrameSkip() << " update lag";
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0.0f, 1.0f);
 
         // Extra debug info
         if (egoboo_config_t::get().debug_developerMode_enable.getValue())
@@ -415,33 +450,33 @@ float draw_help(float y)
     if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F1))
     {
         // In-Game help
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!MOUSE HELP!!!");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "Default settings");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Left Click to use an item");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Left and Right Click to grab");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Middle Click to jump");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~A and S keys do stuff");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Right Drag to move camera");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!MOUSE HELP!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "Default settings");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Left Click to use an item");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Left and Right Click to grab");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Middle Click to jump");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~A and S keys do stuff");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Right Drag to move camera");
     }
     if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F2))
     {
         // In-Game help
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!JOYSTICK HELP!!!");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Hit the buttons");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~You'll figure it out");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!JOYSTICK HELP!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Hit the buttons");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~You'll figure it out");
     }
     if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F3))
     {
         // In-Game help
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!KEYBOARD HELP!!!");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "Default settings");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~TGB control left hand");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~YHN control right hand");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Keypad to move and jump");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "~~Number keys for stats");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!KEYBOARD HELP!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "Default settings");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~TGB control left hand");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~YHN control right hand");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Keypad to move and jump");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Number keys for stats");
     }
 
     return y;
@@ -458,16 +493,16 @@ float draw_debug(float y)
     if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F5))
     {
         // Debug information
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-5!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-5!!!");
         std::ostringstream os;
         os << "~~CAM"
            << " " << CameraSystem::get().getMainCamera()->getPosition()[kX]
            << " " << CameraSystem::get().getMainCamera()->getPosition()[kY]
            << " " << CameraSystem::get().getMainCamera()->getPosition()[kZ];
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
-        if (_currentModule->getPlayerList().size() > 0)
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        if (activeModule().getPlayerList().size() > 0)
         {
-            std::shared_ptr<Object> pchr = _currentModule->getPlayer(0)->getObject();
+            std::shared_ptr<Object> pchr = activeModule().getPlayer(0)->getObject();
             os << "~~PLA0DEF"
                << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_SLASH)
                << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_CRUSH)
@@ -477,21 +512,21 @@ float draw_debug(float y)
                << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_FIRE)
                << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ICE)
                << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ZAP);
-            y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
             os.str(std::string());
             os << std::setw(5) << std::setprecision(1) << (pchr->getPosX() / Info<float>::Grid::Size())
                << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
-            y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         }
 
-        if (_currentModule->getPlayerList().size() > 1)
+        if (activeModule().getPlayerList().size() > 1)
         {
-            std::shared_ptr<Object> pchr = _currentModule->getPlayer(1)->getObject();
+            std::shared_ptr<Object> pchr = activeModule().getPlayer(1)->getObject();
             std::ostringstream os;
             os << "~~PLA1"
                 << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size())
                 << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
-            y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         }
     }
 
@@ -499,19 +534,19 @@ float draw_debug(float y)
     {
         std::ostringstream os;
         // More debug information
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-6!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-6!!!");
         
         os.str(std::string()); os << "~~FREEPRT: " << ParticleHandler::get().getFreeCount();
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
-        os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - _currentModule->getObjectHandler().getObjectCount();
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - activeModule().getObjectHandler().getObjectCount();
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
-        os.str(std::string()); os << "~~EXPORT:  " << (_currentModule->isExportValid() ? "TRUE" : "FALSE");
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        os.str(std::string()); os << "~~EXPORT:  " << (activeModule().isExportValid() ? "TRUE" : "FALSE");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
-        os.str(std::string()); os << "~~PASS:    " << _currentModule->getPassageCount();
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        os.str(std::string()); os << "~~PASS:    " << activeModule().getPassageCount();
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
     if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F7))
@@ -520,44 +555,44 @@ float draw_debug(float y)
 
         std::ostringstream os;
         // White debug mode
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-7!!!");
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-7!!!");
 
         os.str(std::string()); os << "CAM <"
             << camera->getViewMatrix()(0, 0) << ", "
             << camera->getViewMatrix()(0, 1) << ", "
             << camera->getViewMatrix()(0, 2) << ", "
             << camera->getViewMatrix()(0, 3) << ">";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
         os.str(std::string()); os << "CAM <"
             << camera->getViewMatrix()(1, 0) << ", "
             << camera->getViewMatrix()(1, 1) << ", "
             << camera->getViewMatrix()(1, 2) << ", "
             << camera->getViewMatrix()(1, 3) << ">";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
         os.str(std::string()); os << "CAM <"
             << camera->getViewMatrix()(2, 0) << ", "
             << camera->getViewMatrix()(2, 1) << ", "
             << camera->getViewMatrix()(2, 2) << ", "
             << camera->getViewMatrix()(2, 3) << ">";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
         os.str(std::string()); os << "CAM <"
             << camera->getViewMatrix()(3, 0) << ", "
             << camera->getViewMatrix()(3, 1) << ", "
             << camera->getViewMatrix()(3, 2) << ", "
             << camera->getViewMatrix()(3, 3) << ">";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
         os.str(std::string()); os << "CAM center <"
             << camera->getCenter()[0] << ", "
             << camera->getCenter()[1] << ", "
             << camera->getCenter()[2] << ">";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         
         os.str(std::string()); os << "CAM turn " << static_cast<int>(camera->getTurnMode()) << " " << camera->getTurnTime();
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
     return y;
@@ -575,7 +610,7 @@ float draw_timer(float y)
         minutes = (timervalue / 3000);
         std::ostringstream os;
         os << "=" << minutes << ":" << std::setw(2) << seconds << ":" << std::setw(2) << fifties << "=";
-        y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+        y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
     return y;
@@ -587,31 +622,31 @@ float draw_game_status(float y)
 #if 0
     if ( egonet_getWaitingForClients() )
     {
-        y = _gameEngine->getUIManager()->drawBitmapFontString( 0, y, "Waiting for players... " );
+        y = uiManager().drawBitmapFontString( 0, y, "Waiting for players... " );
     }
     else if (g_serverState.player_count > 0 )
 #endif
     {
-        if (local_stats.allpladead || _currentModule->canRespawnAnyTime())
+        if (local_stats.allpladead || activeModule().canRespawnAnyTime())
         {
-            if (_currentModule->isRespawnValid() && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
+            if (activeModule().isRespawnValid() && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
             {
-                y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "PRESS SPACE TO RESPAWN");
+                y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "PRESS SPACE TO RESPAWN");
             }
             else
             {
-                y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "PRESS ESCAPE TO QUIT");
+                y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "PRESS ESCAPE TO QUIT");
             }
         }
-        else if (_currentModule->isBeaten())
+        else if (activeModule().isBeaten())
         {
-            y = _gameEngine->getUIManager()->drawBitmapFontString(Ego::Vector2f(0, y), "VICTORY!  PRESS ESCAPE");
+            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "VICTORY!  PRESS ESCAPE");
         }
     }
 #if 0
     else
     {
-        y = _gameEngine->getUIManager()->drawBitmapFontString( 0, y, "ERROR: MISSING PLAYERS" );
+        y = uiManager().drawBitmapFontString( 0, y, "ERROR: MISSING PLAYERS" );
     }
 #endif
 
@@ -624,7 +659,7 @@ void draw_hud()
     /// @author ZZ
     /// @details draw in-game heads up display
 
-    _gameEngine->getUIManager()->beginRenderUI();
+    uiManager().beginRenderUI();
     {
         int y = draw_fps(0);
         y = draw_help(y);
@@ -632,7 +667,7 @@ void draw_hud()
         y = draw_timer(y);
         y = draw_game_status(y);
     }
-    _gameEngine->getUIManager()->endRenderUI();
+    uiManager().endRenderUI();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -662,9 +697,9 @@ void draw_mouse_cursor()
         SDL_GetMouseState(&x, &y);
 
         //Draw cursor
-        _gameEngine->getUIManager()->beginRenderUI();
-        _gameEngine->getUIManager()->drawImage(Ego::Point2f(x, y), Ego::Vector2f(pcursor->getWidth(), pcursor->getHeight()), std::make_shared<Ego::GUI::Material>(pcursor, Ego::Colour4f::white(), true));
-        _gameEngine->getUIManager()->endRenderUI();
+        uiManager().beginRenderUI();
+        uiManager().drawImage(Ego::Point2f(x, y), Ego::Vector2f(pcursor->getWidth(), pcursor->getHeight()), std::make_shared<Ego::GUI::Material>(pcursor, Ego::Colour4f::white(), true));
+        uiManager().endRenderUI();
     }
 }
 
@@ -829,8 +864,8 @@ void draw_passages(Camera& cam)
     Ego::Renderer::get().setViewMatrix(cam.getViewMatrix());
     Ego::Renderer::get().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
-    for(int i = 0; i < _currentModule->getPassageCount(); ++i) {
-        const Ego::AxisAlignedBox2f& passageABB = _currentModule->getPassageByID(i)->getAxisAlignedBox2f();
+    for(int i = 0; i < activeModule().getPassageCount(); ++i) {
+        const Ego::AxisAlignedBox2f& passageABB = activeModule().getPassageByID(i)->getAxisAlignedBox2f();
 
         //AABB2f to octagonal collision box
         oct_bb_t bb;
@@ -939,7 +974,7 @@ float GridIllumination::light_corners(ego_mesh_t& mesh, ego_tile_info_t& tile, b
 	}
 
 	// has the lighting already been calculated this frame?
-	if (tile._lightingCache.isValid(_gameEngine->getNumberOfFramesRendered()))
+	if (tile._lightingCache.isValid(renderedFrameCount()))
 	{
 		return -1.0f;
 	}
@@ -999,7 +1034,7 @@ float GridIllumination::light_corners(ego_mesh_t& mesh, ego_tile_info_t& tile, b
 
 	// un-mark the lcache
 	tile._lightingCache.setNeedUpdate(false);
-	tile._lightingCache.setLastFrame(_gameEngine->getNumberOfFramesRendered());
+	tile._lightingCache.setLastFrame(renderedFrameCount());
 
 	return max_delta;
 }
@@ -1178,7 +1213,7 @@ gfx_rv GridIllumination::light_fans_throttle_update(ego_mesh_t * mesh, ego_tile_
     {
         // use a kind of checkerboard pattern
         auto i2 = Grid::map<int>(tileIndex, (int)tmem.getInfo().getTileCountX());
-        if (0 != (((i2.x() ^ i2.y()) + _gameEngine->getNumberOfFramesRendered()) & 0x03))
+        if (0 != (((i2.x() ^ i2.y()) + renderedFrameCount()) & 0x03))
         {
             retval = true;
         }
@@ -1217,7 +1252,7 @@ void GridIllumination::light_fans_update_lcache(Ego::Graphics::TileList& tl)
 
 #if defined(CLIP_ALL_LIGHT_FANS)
 	// Update all visible fans once every 4 frames.
-	if (0 != (_gameEngine->getNumberOfFramesRendered() & frame_mask)) {
+	if (0 != (renderedFrameCount() & frame_mask)) {
 		return;
 }
 #endif
@@ -1244,10 +1279,10 @@ void GridIllumination::light_fans_update_lcache(Ego::Graphics::TileList& tl)
         // - ptile->_lcache_frame is updated inside ego_mesh_light_corners()
 #if defined(CLIP_LIGHT_FANS)
         // clip the updated on each individual tile
-        is_valid = ptile._lightingCache.isValid(_gameEngine->getNumberOfFramesRendered(), frame_skip);
+        is_valid = ptile._lightingCache.isValid(renderedFrameCount(), frame_skip);
 #else
         // let the function clip all tile updates
-        is_valid = ptile._lightingCache.isValid(_gameEngine->getNumberOfFramesRendered());
+        is_valid = ptile._lightingCache.isValid(renderedFrameCount());
 #endif
 	if (is_valid)
         {
@@ -1381,7 +1416,7 @@ void GridIllumination::light_fans_update_clst(Ego::Graphics::TileList& tl)
         }
 
         // Do nothing if the update was performed in this frame.
-        if (ptile._vertexLightingCache.isValid(_gameEngine->getNumberOfFramesRendered())) {
+        if (ptile._vertexLightingCache.isValid(renderedFrameCount())) {
             continue;
         }
 
@@ -1418,7 +1453,7 @@ void GridIllumination::light_fans_update_clst(Ego::Graphics::TileList& tl)
 
         // This tile was updated this frame and does not require an update (for some time).
 		ptile._vertexLightingCache.setNeedUpdate(false);
-		ptile._vertexLightingCache._lastFrame = _gameEngine->getNumberOfFramesRendered();
+		ptile._vertexLightingCache._lastFrame = renderedFrameCount();
     }
 }
 
@@ -1520,11 +1555,11 @@ gfx_rv gfx_make_dynalist(dynalist_t& dyl, Camera& cam)
     dynalight_data_t * plight_max = NULL;
 
     // HACK: if dynalist is ahead of the game by 30 frames or more, reset and force an update
-    if ((uint32_t)(dyl.frame + 30) >= _gameEngine->getNumberOfFramesRendered())
+    if ((uint32_t)(dyl.frame + 30) >= renderedFrameCount())
         dyl.frame = -1;
 
     // do not update the dynalist more than once a frame
-    if (dyl.frame >= 0 && (uint32_t)dyl.frame >= _gameEngine->getNumberOfFramesRendered())
+    if (dyl.frame >= 0 && (uint32_t)dyl.frame >= renderedFrameCount())
     {
         return gfx_success;
     }
@@ -1596,7 +1631,7 @@ gfx_rv gfx_make_dynalist(dynalist_t& dyl, Camera& cam)
     }
 
     // the list is updated, so update the frame count
-    dyl.frame = _gameEngine->getNumberOfFramesRendered();
+    dyl.frame = renderedFrameCount();
 
     return gfx_success;
 }
@@ -1784,12 +1819,12 @@ gfx_rv GridIllumination::do_grid_lighting(Ego::Graphics::TileList& tl, dynalist_
         ego_tile_info_t& ptile = mesh->getTileInfo(fan);
 
         // do not update this more than once a frame
-        if (ptile._cache_frame >= 0 && (uint32_t)ptile._cache_frame >= _gameEngine->getNumberOfFramesRendered()) continue;
+        if (ptile._cache_frame >= 0 && (uint32_t)ptile._cache_frame >= renderedFrameCount()) continue;
         auto i2 = Grid::map<int>(fan, pinfo.getTileCountX());
         // Resist the lighting calculation?
         // This is a speedup for lighting calculations so that
         // not every light-tile calculation is done every single frame
-        resist_lighting_calculation = (0 != (((i2.x() + i2.y()) ^ _gameEngine->getNumberOfFramesRendered()) & 0x03));
+        resist_lighting_calculation = (0 != (((i2.x() + i2.y()) ^ renderedFrameCount()) & 0x03));
 
         if (resist_lighting_calculation) continue;
 
@@ -1871,7 +1906,7 @@ gfx_rv GridIllumination::do_grid_lighting(Ego::Graphics::TileList& tl, dynalist_
         // find the max intensity
         pcache_old.max_light();
 
-        ptile._cache_frame = _gameEngine->getNumberOfFramesRendered();
+        ptile._cache_frame = renderedFrameCount();
     }
 
     return gfx_success;
@@ -1884,8 +1919,8 @@ gfx_rv gfx_make_tileList(Ego::Graphics::TileList& tl, Camera& cam)
 
     // Because the main loop of the program will always flip the
     // page before rendering the 1st frame of the actual game,
-    // _gameEngine->getNumberOfFramesRendered() will always start at 1
-    if (1 != (_gameEngine->getNumberOfFramesRendered() & 3))
+    // The rendered-frame count will always start at 1.
+    if (1 != (renderedFrameCount() & 3))
     {
         return gfx_success;
     }
@@ -1900,21 +1935,21 @@ gfx_rv gfx_make_tileList(Ego::Graphics::TileList& tl, Camera& cam)
 		static const float offset = 10;
 		float centerX = cam.getTrackPosition()[kX] / Info<float>::Grid::Size();
 		float centerY = cam.getTrackPosition()[kY] / Info<float>::Grid::Size();
-		startX = Ego::Math::constrain<int>(centerX - offset, 0, _currentModule->getMeshPointer()->_info.getTileCountX());
-		startY = Ego::Math::constrain<int>(centerY - offset, 0, _currentModule->getMeshPointer()->_info.getTileCountY());
-		endX = Ego::Math::constrain<int>(centerX + offset, 0, _currentModule->getMeshPointer()->_info.getTileCountX());
-		endY = Ego::Math::constrain<int>(centerY + offset, 0, _currentModule->getMeshPointer()->_info.getTileCountY());
+		startX = Ego::Math::constrain<int>(centerX - offset, 0, activeModule().getMeshPointer()->_info.getTileCountX());
+		startY = Ego::Math::constrain<int>(centerY - offset, 0, activeModule().getMeshPointer()->_info.getTileCountY());
+		endX = Ego::Math::constrain<int>(centerX + offset, 0, activeModule().getMeshPointer()->_info.getTileCountX());
+		endY = Ego::Math::constrain<int>(centerY + offset, 0, activeModule().getMeshPointer()->_info.getTileCountY());
 	}
 	else
 	{
 		startX = 0;
 		startY = 0;
-		endX = _currentModule->getMeshPointer()->_info.getTileCountX();
-		endY = _currentModule->getMeshPointer()->_info.getTileCountY();
+		endX = activeModule().getMeshPointer()->_info.getTileCountX();
+		endY = activeModule().getMeshPointer()->_info.getTileCountY();
 	}
     for(size_t x = startX; x < endX; ++x) {
         for(size_t y = startY; y < endY; ++y) {
-            if (gfx_error == tl.add(x + y * _currentModule->getMeshPointer()->_info.getTileCountX(), cam))
+            if (gfx_error == tl.add(x + y * activeModule().getMeshPointer()->_info.getTileCountX(), cam))
             {
                 return gfx_error;
             }        
@@ -1932,7 +1967,7 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam)
 
     // collide the characters with the frustum
     std::vector<std::shared_ptr<Object>> visibleObjects = 
-        _currentModule->getObjectHandler().findObjects(
+        activeModule().getObjectHandler().findObjects(
             cam.getCenter()[kX], 
             cam.getCenter()[kY], 
 			Info<float>::Grid::Size() * 10,  //@todo: use camera view size here instead
@@ -2022,13 +2057,13 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
 
         ObjectRef iobj = el.get(i).iobj;
 
-        const std::shared_ptr<Object> &object = _currentModule->getObjectHandler()[iobj];
+        const std::shared_ptr<Object> &object = activeModule().getObjectHandler()[iobj];
         if (!object) continue;
 
         // Do flashing
         if (DONTFLASH != object->getProfile()->getFlashAND())
         {
-            if (HAS_NO_BITS(_gameEngine->getNumberOfFramesRendered(), object->getProfile()->getFlashAND()))
+            if (HAS_NO_BITS(renderedFrameCount(), object->getProfile()->getFlashAND()))
             {
 				object->inst.flash(255);
             }
@@ -2040,7 +2075,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         tmp_seekurse_level = std::min(local_stats.seekurse_level, 1.0f);
         if ((local_stats.seekurse_level > 0.0f) && object->iskursed && 1.0f != tmp_seekurse_level)
         {
-            if (HAS_NO_BITS(_gameEngine->getNumberOfFramesRendered(), SEEKURSEAND))
+            if (HAS_NO_BITS(renderedFrameCount(), SEEKURSEAND))
             {
 				object->inst.flash(255.0f *(1.0f - tmp_seekurse_level));
             }
@@ -2058,7 +2093,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
     // assume the best
     retval = gfx_success;
 
-    for (const std::shared_ptr<Object> &pchr : _currentModule->getObjectHandler().iterator())
+    for (const std::shared_ptr<Object> &pchr : activeModule().getObjectHandler().iterator())
     {
         //Dont do terminated characters
         if (pchr->isTerminated()) {
@@ -2066,7 +2101,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         }
 
         //Skip objects outside the map
-		auto mesh = _currentModule->getMeshPointer();
+		auto mesh = activeModule().getMeshPointer();
         if (!mesh->grid_is_valid(pchr->getTile())) continue;
 
         // make sure that the vertices are interpolated
@@ -2151,8 +2186,8 @@ gfx_rv GFX::update_particle_instances(Camera& camera)
 {
     // only one update per frame
     static uint32_t instance_update = std::numeric_limits<uint32_t>::max();
-    if (instance_update == update_wld) return gfx_success;
-    instance_update = update_wld;
+    if (instance_update == worldUpdateCount()) return gfx_success;
+    instance_update = worldUpdateCount();
 
     // assume the best
     gfx_rv retval = gfx_success;

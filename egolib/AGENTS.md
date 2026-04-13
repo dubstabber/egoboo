@@ -30,6 +30,7 @@ These files are large, central, and coupled to legacy global state.
 
 ## Validation expectations
 
+- Never use more than 4 parallel jobs for CMake builds on this machine.
 - Prefer targeted CMake builds for touched targets.
 - If your change can affect content loading, module loading, VFS behavior, object profiles, or scripts, run at least:
   - `./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`

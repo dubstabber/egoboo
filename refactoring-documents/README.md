@@ -64,6 +64,7 @@ Out of scope for the active architecture model:
 - `11-runtime-context-extraction-pass.md`
 - `12-ui-game-state-session-access-pass.md`
 - `13-gameplay-runtime-shell-context-pass.md`
+- `14-graphics-runtime-shell-context-pass.md`
 
 ## Recommended reading order
 
@@ -75,7 +76,7 @@ Out of scope for the active architecture model:
 6. Read `08-spawn-format-spec.md` before changing spawn-name resolution, dependency handling, or validator alias reporting.
 7. Read `09-data-format-spec.md` before changing object profile parsing, slot semantics, or save/import behavior.
 8. Read `04-refactoring-strategy.md` before starting code motion.
-9. Read `11-runtime-context-extraction-pass.md`, `12-ui-game-state-session-access-pass.md`, and `13-gameplay-runtime-shell-context-pass.md` before continuing session/global-access cleanup work.
+9. Read `11-runtime-context-extraction-pass.md`, `12-ui-game-state-session-access-pass.md`, `13-gameplay-runtime-shell-context-pass.md`, and `14-graphics-runtime-shell-context-pass.md` before continuing session/global-access cleanup work.
 10. Use `05-playtesting-and-bug-hunt-plan.md` to turn future changes into repeatable validation work.
 
 ## Immediate recommendation
