@@ -20,9 +20,18 @@
 /// @file egolib/game/CharacterMatrix.c
 
 #include "egolib/game/CharacterMatrix.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/Entities/_Include.hpp"
+
+namespace
+{
+auto& objectHandler()
+{
+    return GameSessionContext::get().activeModule().getObjectHandler();
+}
+}
 
 static int get_grip_verts( uint16_t grip_verts[], const ObjectRef imount, int vrt_offset );
 
@@ -133,8 +142,8 @@ int get_grip_verts( uint16_t grip_verts[], const ObjectRef imount, int vrt_offse
         grip_verts[i] = 0xFFFF;
     }
 
-    if ( !_currentModule->getObjectHandler().exists( imount ) ) return 0;
-    Object *pmount = _currentModule->getObjectHandler().get( imount );
+    if ( !objectHandler().exists( imount ) ) return 0;
+    Object *pmount = objectHandler().get( imount );
 
     if ( 0 == pmount->inst.getVertexCount() ) return 0;
 
@@ -183,11 +192,11 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
     mc_tmp.self_scale = Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat);
 
     // handle the overlay first of all
-    if ( !handled && pchr->is_overlay && ichr != pchr->ai.getTarget() && _currentModule->getObjectHandler().exists( pchr->ai.getTarget() ) )
+    if ( !handled && pchr->is_overlay && ichr != pchr->ai.getTarget() && objectHandler().exists( pchr->ai.getTarget() ) )
     {
         // this will pretty much fail the cmp_matrix_cache() every time...
 
-        Object * ptarget = _currentModule->getObjectHandler().get( pchr->ai.getTarget() );
+        Object * ptarget = objectHandler().get( pchr->ai.getTarget() );
 
         // make sure we have the latst info from the target
         chr_update_matrix( ptarget, true );
@@ -207,9 +216,9 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         itarget = GET_INDEX_PCHR( pchr );
 
         //---- update the MAT_WEAPON data
-        if ( _currentModule->getObjectHandler().exists( pchr->attachedto ) )
+        if ( objectHandler().exists( pchr->attachedto ) )
         {
-            Object * pmount = _currentModule->getObjectHandler().get( pchr->attachedto );
+            Object * pmount = objectHandler().get( pchr->attachedto );
 
             // make sure we have the latst info from the target
             chr_update_matrix( pmount, true );
@@ -230,9 +239,9 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         }
 
         //---- update the MAT_CHARACTER data
-        if ( _currentModule->getObjectHandler().exists( itarget ) )
+        if ( objectHandler().exists( itarget ) )
         {
-            Object * ptarget = _currentModule->getObjectHandler().get( itarget );
+            Object * ptarget = objectHandler().get( itarget );
 
             mc_tmp.valid   = true;
             SET_BIT( mc_tmp.type_bits, MAT_CHARACTER );  // add in the MAT_CHARACTER-type data for the object we are "connected to"
@@ -313,8 +322,8 @@ int convert_grip_to_global_points( const ObjectRef iholder, uint16_t grip_verts[
 
 	Ego::Vector4f  src_point[GRIP_VERTS];
 
-    if ( !_currentModule->getObjectHandler().exists( iholder ) ) return 0;
-    Object *pholder = _currentModule->getObjectHandler().get( iholder );
+    if ( !objectHandler().exists( iholder ) ) return 0;
+    Object *pholder = objectHandler().get( iholder );
 
     // find the grip points in the character's "local" or "body-fixed" coordinates
     int point_count = convert_grip_to_local_points( pholder, grip_verts, src_point );
@@ -342,7 +351,7 @@ bool apply_one_weapon_matrix( Object * pweap, matrix_cache_t& mc_tmp )
     if ( nullptr == pweap ) return false;
     matrix_cache_t& pweap_mcache = pweap->inst.matrix_cache;
 
-    if ( !_currentModule->getObjectHandler().exists( mc_tmp.grip_chr ) ) return false;
+    if ( !objectHandler().exists( mc_tmp.grip_chr ) ) return false;
 
     // make sure that the matrix is invalid incase of an error
     pweap_mcache.matrix_valid = false;
@@ -443,7 +452,7 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
 
     if ( 0 != ( MAT_WEAPON & mc_tmp.type_bits ) )
     {
-        if ( _currentModule->getObjectHandler().exists( mc_tmp.grip_chr ) )
+        if ( objectHandler().exists( mc_tmp.grip_chr ) )
         {
             applied = apply_one_weapon_matrix( pchr, mc_tmp );
         }
@@ -538,7 +547,7 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     needs_update = ( rv_success == retval );
 
     // Update the grip vertices no matter what (if they are used)
-    const std::shared_ptr<Object> &heldItem = _currentModule->getObjectHandler()[mc_tmp.grip_chr];
+    const std::shared_ptr<Object> &heldItem = objectHandler()[mc_tmp.grip_chr];
     if ( HAS_SOME_BITS(mc_tmp.type_bits, MAT_WEAPON) && heldItem)
     {
         // has that character changes its animation?
@@ -785,8 +794,8 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
 {
     uint16_t grip_verts[GRIP_VERTS];
 
-    if ( !_currentModule->getObjectHandler().exists( iitem ) ) return false;
-	Object *pitem = _currentModule->getObjectHandler().get( iitem );
+    if ( !objectHandler().exists( iitem ) ) return false;
+	Object *pitem = objectHandler().get( iitem );
 	matrix_cache_t& mcache = pitem->inst.matrix_cache;
 
     // is the item attached to this valid holder?
@@ -844,8 +853,8 @@ void make_one_character_matrix( const ObjectRef ichr )
     /// @author ZZ
     /// @details This function sets one character's matrix
 
-    if ( !_currentModule->getObjectHandler().exists( ichr ) ) return;
-    Object * pchr = _currentModule->getObjectHandler().get( ichr );
+    if ( !objectHandler().exists( ichr ) ) return;
+    Object * pchr = objectHandler().get( ichr );
 
     // invalidate this matrix
     pchr->inst.matrix_cache.matrix_valid = false;
@@ -854,9 +863,9 @@ void make_one_character_matrix( const ObjectRef ichr )
     {
         // This character is an overlay and its ai.target points to the object it is overlaying
         // Overlays are kept with their target...
-        if ( _currentModule->getObjectHandler().exists( pchr->ai.getTarget() ) )
+        if ( objectHandler().exists( pchr->ai.getTarget() ) )
         {
-            Object * ptarget = _currentModule->getObjectHandler().get( pchr->ai.getTarget() );
+            Object * ptarget = objectHandler().get( pchr->ai.getTarget() );
 
             pchr->setPosition(ptarget->getPosition());
 

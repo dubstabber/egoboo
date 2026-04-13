@@ -1,11 +1,19 @@
 #include "egolib/game/Inventory.hpp"
 #include "egolib/Entities/_Include.hpp"
 
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 
 //Class constants
 const size_t Inventory::MAXNUMINPACK;
 
+namespace
+{
+auto& objectHandler()
+{
+    return GameSessionContext::get().activeModule().getObjectHandler();
+}
+}
 
 Inventory::Inventory() :
     _items()
@@ -36,22 +44,22 @@ ObjectRef Inventory::findItem(Object *pobj, const IDSZ2& idsz, bool equippedOnly
 
 ObjectRef Inventory::findItem(ObjectRef iowner, const IDSZ2& idsz, bool equippedOnly)
 {
-    if (!_currentModule->getObjectHandler().exists(iowner))
+    if (!objectHandler().exists(iowner))
     {
         return ObjectRef::Invalid;
     }
-    return findItem(_currentModule->getObjectHandler().get(iowner), idsz, equippedOnly);
+    return findItem(objectHandler().get(iowner), idsz, equippedOnly);
 }
 
 //--------------------------------------------------------------------------------------------
 bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySlot, bool ignoreKurse )
 {
     // Are owner and item valid?
-	if (!_currentModule->getObjectHandler().exists(iowner) || !_currentModule->getObjectHandler().exists(iitem)) {
+	if (!objectHandler().exists(iowner) || !objectHandler().exists(iitem)) {
 		return false;
 	}
-	Object *powner = _currentModule->getObjectHandler().get(iowner);
-    const std::shared_ptr<Object> &pitem = _currentModule->getObjectHandler()[iitem];
+	Object *powner = objectHandler().get(iowner);
+    const std::shared_ptr<Object> &pitem = objectHandler()[iitem];
 
     // Does the owner have free slot in her inventory?
     if (inventorySlot >= powner->getInventory().getMaxItems()) {
@@ -87,10 +95,10 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 
     // Check if item can be stacked on other items.
     ObjectRef stack = Inventory::hasStack(iitem, iowner);
-    if ( _currentModule->getObjectHandler().exists( stack ) )
+    if ( objectHandler().exists( stack ) )
     {
         // We found a similar, stackable item in the inventory.
-        Object *pstack = _currentModule->getObjectHandler().get( stack );
+        Object *pstack = objectHandler().get( stack );
 
         // Reveal the name of the item or the stack.
 		if (pitem->nameknown || pstack->getProfile()->isNameKnown())
@@ -164,7 +172,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t grip_off, const bool ignorekurse )
 {
     //valid character?
-    const std::shared_ptr<Object> &pobj = _currentModule->getObjectHandler()[iobj];
+    const std::shared_ptr<Object> &pobj = objectHandler()[iobj];
     if(!pobj) {
         return false;
     }
@@ -178,7 +186,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     if (pobj->isItem() || pobj->isInsideInventory()) return false;
 
     const std::shared_ptr<Object> &inventory_item = pobj->getInventory().getItem(inventory_slot);
-    const std::shared_ptr<Object> &item           = _currentModule->getObjectHandler()[pobj->holdingwhich[grip_off]];
+    const std::shared_ptr<Object> &item           = objectHandler()[pobj->holdingwhich[grip_off]];
 
     //Nothing to do?
     if(!item && !inventory_item) {
@@ -226,7 +234,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
 
 bool Inventory::remove_item( ObjectRef iholder, const size_t inventory_slot, const bool ignorekurse )
 {
-    const std::shared_ptr<Object> &holder = _currentModule->getObjectHandler()[iholder];
+    const std::shared_ptr<Object> &holder = objectHandler()[iholder];
     if(!holder) {
         return false;
     }
@@ -239,7 +247,7 @@ ObjectRef Inventory::hasStack( const ObjectRef item, const ObjectRef character )
     bool found  = false;
     ObjectRef istack = ObjectRef::Invalid;
 
-    std::shared_ptr<Object> pitem = _currentModule->getObjectHandler()[item];
+    std::shared_ptr<Object> pitem = objectHandler()[item];
     if(!pitem) {
         return ObjectRef::Invalid;
     }
@@ -249,7 +257,7 @@ ObjectRef Inventory::hasStack( const ObjectRef item, const ObjectRef character )
         return ObjectRef::Invalid;
     }
 
-    for(const std::shared_ptr<Object> pstack : _currentModule->getObjectHandler().get(character)->getInventory().iterate())
+    for(const std::shared_ptr<Object> pstack : objectHandler().get(character)->getInventory().iterate())
     {
 
         found = pstack->getProfile()->isStackable();

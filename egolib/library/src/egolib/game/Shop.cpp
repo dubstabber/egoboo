@@ -20,10 +20,24 @@
 /// @file egolib/game/Shop.cpp
 /// @brief Shop interaction
 #include "egolib/game/Shop.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+auto& objectHandler()
+{
+    return activeModule().getObjectHandler();
+}
+}
 
 bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Object>& item)
 {
@@ -32,10 +46,10 @@ bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Ob
     bool inShop = false;
     if (item->isitem)
     {
-        ObjectRef ownerRef = _currentModule->getShopOwner(item->getPosX(), item->getPosY());
-        if (_currentModule->getObjectHandler().exists(ownerRef))
+        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        if (objectHandler().exists(ownerRef))
         {
-            Object *owner = _currentModule->getObjectHandler().get(ownerRef);
+            Object *owner = objectHandler().get(ownerRef);
 
             inShop = true;
 
@@ -66,10 +80,10 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
     bool canGrab = true;
     if (item->isitem)
     {
-        ObjectRef ownerRef = _currentModule->getShopOwner(item->getPosX(), item->getPosY());
-        if (_currentModule->getObjectHandler().exists(ownerRef))
+        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        if (objectHandler().exists(ownerRef))
         {
-            Object *owner = _currentModule->getObjectHandler().get(ownerRef);
+            Object *owner = objectHandler().get(ownerRef);
 
             //in_shop = true;
             int price = item->getPrice();
@@ -126,11 +140,11 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
     bool canSteal = true;
     if (item->isitem)
     {
-        ObjectRef ownerRef = _currentModule->getShopOwner(item->getPosX(), item->getPosY());
-        if (_currentModule->getObjectHandler().exists(ownerRef))
+        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        if (objectHandler().exists(ownerRef))
         {
             int detection = Random::getPercent();
-            Object *owner = _currentModule->getObjectHandler().get(ownerRef);
+            Object *owner = objectHandler().get(ownerRef);
 
             canSteal = true;
             if (owner->canSeeObject(thief) || detection <= 5 || (detection - thief->getAttribute(Ego::Attribute::AGILITY) + owner->getAttribute(Ego::Attribute::INTELLECT)) > 50)
@@ -152,8 +166,8 @@ bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared
     bool canGrab = true;
 
     // check if we are doing this inside a shop
-    ObjectRef iShopKeeper = _currentModule->getShopOwner(item->getPosX(), item->getPosY());
-    Object *shopKeeper = _currentModule->getObjectHandler().get(iShopKeeper);
+    ObjectRef iShopKeeper = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+    Object *shopKeeper = objectHandler().get(iShopKeeper);
     if (INGAME_PCHR(shopKeeper))
     {
         // check for a stealthy pickup
@@ -186,8 +200,8 @@ bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared
 
 bool Shop::canGrabItem(ObjectRef igrabber, ObjectRef iitem)
 {
-    auto grabber = _currentModule->getObjectHandler()[igrabber],
-         item = _currentModule->getObjectHandler()[iitem];
+    auto grabber = objectHandler()[igrabber],
+         item = objectHandler()[iitem];
     if (!grabber || !item) return false;
     return canGrabItem(grabber, item);
 }

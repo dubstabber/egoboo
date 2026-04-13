@@ -42,7 +42,12 @@ UIManager::UIManager() :
     _fonts[FONT_DEFAULT] = FontManager::get().loadFont("mp_data/Bo_Chen.ttf", 24);
     _fonts[FONT_FLOATING_TEXT] = FontManager::get().loadFont("mp_data/FrostysWinterland.ttf", 24);
     _fonts[FONT_DEBUG] = FontManager::get().loadFont("mp_data/DejaVuSansMono.ttf", 10);
+#if defined(_WIN32)
+    // Additional TTF atlas construction is currently unstable in the Windows/Wine startup path.
+    _fonts[FONT_GAME] = _fonts[FONT_DEBUG];
+#else
     _fonts[FONT_GAME] = FontManager::get().loadFont("mp_data/IMMORTAL.ttf", 14);
+#endif
 
     //Sanity check that all fonts are loaded properly
 #ifndef NDEBUG

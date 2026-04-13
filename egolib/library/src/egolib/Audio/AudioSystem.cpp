@@ -150,6 +150,11 @@ void AudioSystem::setSoundEffectVolume(int value)
 
 void AudioSystem::loadGlobalSounds()
 {
+    if (is_audio_disabled_by_environment())
+    {
+        return;
+    }
+
     // Load global sounds.
     for (size_t i = 0; i < GSND_COUNT; ++i)
     {

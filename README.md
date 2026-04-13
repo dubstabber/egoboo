@@ -52,6 +52,15 @@ cmake -S . -B build-windows \
 cmake --build build-windows -j4
 ```
 
+Run the cross-built Windows binary through Wine from Linux:
+
+```bash
+./run-egoboo-windows.sh
+```
+
+The Wine helper currently applies compatibility defaults for the Windows build:
+`EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1`.
+
 Important output directories:
 
 - Linux binaries: `build/products/x64/bin/`

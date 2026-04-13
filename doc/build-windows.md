@@ -84,6 +84,38 @@ Important binaries:
 - game: `build-windows/products/x64/bin/egoboo.exe`
 - validator: `build-windows/products/x64/bin/egoboo-content-validator.exe`
 
+## Run the Windows build from Linux with Wine
+
+If you cross-built the Windows binary on Linux and want to launch that `.exe`
+directly, use the checked-in helper script:
+
+```bash
+./run-egoboo-windows.sh
+```
+
+The script:
+
+- prefers `build-windows/products/x64/bin/egoboo.exe`
+- falls back to `build-vs/products/release/x64/bin/egoboo.exe`
+- starts the game from the repository `data/` directory so the Windows build
+  can resolve `basicdat/`
+- adds the MinGW runtime DLL directory to `WINEPATH` automatically when the
+  cross-built output is missing `libgcc_s_seh-1.dll`, `libstdc++-6.dll`, or
+  `libwinpthread-1.dll`
+- defaults `EGOBOO_DISABLE_MIPMAPS=1` for the current Wine path to avoid a
+  texture-upload crash in the Windows build
+- defaults `EGOBOO_DISABLE_AUDIO=1` for the current Wine path because startup
+  sound loading still crashes in the Windows build under Wine
+- uses `wine` by default, or `WINE_BIN=/path/to/wine` if you need a different
+  runner
+
+If you want to experiment with the unstable paths anyway, override them on the
+command line:
+
+```bash
+EGOBOO_DISABLE_MIPMAPS=0 EGOBOO_DISABLE_AUDIO=0 ./run-egoboo-windows.sh
+```
+
 ## Windows dependency bundle for MinGW
 
 The MinGW path uses a Windows-target dependency bundle for SDL instead of the Linux `pkg-config` setup.
