@@ -22,9 +22,24 @@
 /// @author Johan Jansen aka Zefz
 #include "ObjectPhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+GameEngine& engine()
+{
+    return EngineContext::get().engine();
+}
+}
 
 namespace Ego
 {
@@ -173,7 +188,7 @@ void ObjectPhysics::updateMovement()
 
 void ObjectPhysics::updateHillslide()
 {
-    const uint8_t floorTwist = _currentModule->getMeshPointer()->get_twist(_object.getTile());
+    const uint8_t floorTwist = activeModule().getMeshPointer()->get_twist(_object.getTile());
 
     //This makes it hard for characters to jump uphill
     if(_object.getVelocity().z() > 0.0f && floorIsSlippy() && !g_meshLookupTables.twist_flat[floorTwist]) {
@@ -244,7 +259,7 @@ void ObjectPhysics::updateVelocityZ()
 
         if (0 == _object.jump_timer) {
             // Reset jumping on flat areas of slippiness
-            if(!floorIsSlippy() || g_meshLookupTables.twist_flat[_currentModule->getMeshPointer()->get_twist(_object.getTile())]) {
+            if(!floorIsSlippy() || g_meshLookupTables.twist_flat[activeModule().getMeshPointer()->get_twist(_object.getTile())]) {
                 _object.jumpnumber = _object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS);                
             }
         }
@@ -258,7 +273,7 @@ void ObjectPhysics::updatePhysics()
 {
     // Keep inventory items with the carrier
     if(_object.isInsideInventory()) {
-        _object.setPosition(_currentModule->getObjectHandler()[_object.inwhich_inventory]->getPosition());
+        _object.setPosition(activeModule().getObjectHandler()[_object.inwhich_inventory]->getPosition());
         return;
     }
 
@@ -307,11 +322,11 @@ float ObjectPhysics::recalculateGroundElevation()
 
     //Walking on water?
     if(_object.isOnWaterTile() && _object.getAttribute(Ego::Attribute::WALK_ON_WATER) > 0) {
-        return _currentModule->getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), true);
+        return activeModule().getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), true);
     }
 
     //Standing on regular ground
-    return _currentModule->getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), false);
+    return activeModule().getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), false);
 }
 
 float ObjectPhysics::getMaxSpeed() const
@@ -331,7 +346,7 @@ float ObjectPhysics::getMaxSpeed() const
     }
 
     //Rally Bonus? (+10%)
-    if(_object.hasPerk(Ego::Perks::RALLY) && _gameEngine->getCurrentUpdateFrame() < _object.getRallyDuration()) {
+    if(_object.hasPerk(Ego::Perks::RALLY) && engine().getCurrentUpdateFrame() < _object.getRallyDuration()) {
         speedBonus += 0.1f;
     }    
 
@@ -342,7 +357,7 @@ float ObjectPhysics::getMaxSpeed() const
     maxspeed *= speedBonus;
 
     //Are we in water?
-    if(_object.isSubmerged() && _currentModule->getWater()._is_water) {
+    if(_object.isSubmerged() && activeModule().getWater()._is_water) {
         if(_object.hasPerk(Ego::Perks::ATHLETICS)) {
             maxspeed *= 0.25f; //With athletics perk we can have three-quarters speed
         }
@@ -425,7 +440,7 @@ void ObjectPhysics::updateFacing()
         case TURNMODE_WATCHTARGET:
             {
                 //Only proceed if we have a valid AI target that is not ourselves
-                std::shared_ptr<Object> aiTarget = _currentModule->getObjectHandler()[_object.ai.getTarget()];
+                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[_object.ai.getTarget()];
                 if (aiTarget != nullptr && aiTarget->getObjRef() != _object.getObjRef())
                 {
                     _object.ori.facing_z = idlib::canonicalize(rotate(_object.ori.facing_z, vec_to_facing(aiTarget->getPosX() - _object.getPosX(), aiTarget->getPosY() - _object.getPosY()), 8.0f));
@@ -466,7 +481,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
 
     // do the attachment
     _object.onwhichplatform_ref    = platform->getObjRef();
-    _object.onwhichplatform_update = _gameEngine->getCurrentUpdateFrame();
+    _object.onwhichplatform_update = engine().getCurrentUpdateFrame();
     _object.targetplatform_ref     = ObjectRef::Invalid;
 
     _platformOffset.x() = _object.getPosX() - platform->getPosX();
@@ -630,7 +645,7 @@ void ObjectPhysics::updateMeshCollision()
         float fnew  = (1.0f - getLerpZ()) / 8.0f;
 
         if (fnew > 0) {
-            const uint8_t floorTwist = _currentModule->getMeshPointer()->get_twist(_object.getTile());
+            const uint8_t floorTwist = activeModule().getMeshPointer()->get_twist(_object.getTile());
             _object.ori.map_twist_facing_x = idlib::canonicalize(_object.ori.map_twist_facing_x * fkeep + g_meshLookupTables.twist_facing_x[floorTwist] * fnew);
             _object.ori.map_twist_facing_y = idlib::canonicalize(_object.ori.map_twist_facing_y * fkeep + g_meshLookupTables.twist_facing_y[floorTwist] * fnew);
         }
@@ -671,7 +686,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     if ( slot >= SLOT_COUNT ) return false;
 
     // Make sure the character doesn't have something already, and that it has hands
-    if (_currentModule->getObjectHandler().exists( _object.holdingwhich[slot] ) || !_object.getProfile()->isSlotValid(slot)) {        
+    if (activeModule().getObjectHandler().exists( _object.holdingwhich[slot] ) || !_object.getProfile()->isSlotValid(slot)) {        
         return false;
     }
 
@@ -685,7 +700,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     float bestMatchDistance = std::numeric_limits<float>::max();
 
     // Go through all nearby objects to find the best match
-    std::vector<std::shared_ptr<Object>> nearbyObjects = _currentModule->getObjectHandler().findObjects(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, false);
+    std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, false);
     for(const std::shared_ptr<Object> &pchr_c : nearbyObjects)
     {
         //Skip invalid objects
@@ -782,7 +797,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     }
 
     if(bestMatch != nullptr) {
-        const std::shared_ptr<Object> &grabber = _currentModule->getObjectHandler()[_object.getObjRef()];
+        const std::shared_ptr<Object> &grabber = activeModule().getObjectHandler()[_object.getObjRef()];
         if (Shop::canGrabItem(grabber, bestMatch))
         {
             // Stick 'em together and quit
@@ -1040,10 +1055,10 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 bool ObjectPhysics::floorIsSlippy() const
 {
     //Water tiles are never slippy
-    if(_object.inwater && _currentModule->getWater()._is_water) return false;
+    if(_object.inwater && activeModule().getWater()._is_water) return false;
 
     //Check tile slippy bit
-    return 0 != _currentModule->getMeshPointer()->test_fx(_object.getTile(), MAPFX_SLIPPY);
+    return 0 != activeModule().getMeshPointer()->test_fx(_object.getTile(), MAPFX_SLIPPY);
 }
 
 bool ObjectPhysics::isTouchingGround() const

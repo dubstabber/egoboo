@@ -27,6 +27,20 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+uint32_t worldUpdateCount()
+{
+    return GameSessionContext::get().worldUpdateCount();
+}
+}
 
 //Private functions
 static int spawn_bump_particles(ObjectRef objectRef, const ParticleRef particle);
@@ -257,20 +271,20 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     bool collide_z  = false;
 
     // make sure that A is valid
-    if ( !_currentModule->getObjectHandler().exists( ichr_a ) ) return false;
-    pchr_a = _currentModule->getObjectHandler().get( ichr_a );
+    if ( !activeModule().getObjectHandler().exists( ichr_a ) ) return false;
+    pchr_a = activeModule().getObjectHandler().get( ichr_a );
 
     // make sure that B is valid
     const std::shared_ptr<Ego::Particle> &pprt_b = ParticleHandler::get()[iprt_b];
     if ( !pprt_b || pprt_b->isTerminated() ) return false;
 
     //Already attached to a platform?
-    if(!_currentModule->getObjectHandler().exists(pprt_b->onwhichplatform_ref)) {
+    if(!activeModule().getObjectHandler().exists(pprt_b->onwhichplatform_ref)) {
         return false;
     }
 
     // if you are mounted, only your mount is affected by platforms
-    if ( _currentModule->getObjectHandler().exists( pchr_a->attachedto ) || pprt_b->isAttached() ) return false;
+    if ( activeModule().getObjectHandler().exists( pchr_a->attachedto ) || pprt_b->isAttached() ) return false;
 
     // only check possible object-platform interactions
     platform_a = /* pprt_b->canuseplatforms && */ pchr_a->platform;
@@ -527,7 +541,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             if ( !using_shield )
             {
                 item = pdata.pchr->holdingwhich[SLOT_RIGHT];
-                if ( _currentModule->getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
+                if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
                 {
                     using_shield = true;
                 }
@@ -537,19 +551,19 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             if ( !using_shield )
             {
                 item = pdata.pchr->holdingwhich[SLOT_LEFT];
-                if ( _currentModule->getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
+                if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
                 {
                     using_shield = true;
                 }
             }
 
             // Now we have the block rating and know the enemy
-            if ( _currentModule->getObjectHandler().exists( pdata.pprt->owner_ref ) && using_shield )
+            if ( activeModule().getObjectHandler().exists( pdata.pprt->owner_ref ) && using_shield )
             {
                 int   total_block_rating;
 
-                Object *pshield   = _currentModule->getObjectHandler().get( item );
-                Object *pattacker = _currentModule->getObjectHandler().get( pdata.pprt->owner_ref );
+                Object *pshield   = activeModule().getObjectHandler().get( item );
+                Object *pattacker = activeModule().getObjectHandler().get( pdata.pprt->owner_ref );
 
                 // use the character block skill plus the base block rating of the shield and adjust for strength
                 total_block_rating = pshield->getProfile()->getBaseBlockRating();
@@ -585,7 +599,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
         // Tell the players that the attack was somehow deflected
         if(0 == pdata.pchr->damage_timer) 
         {
-            ParticleHandler::get().spawnDefencePing(pdata.pchr->toSharedPointer(), _currentModule->getObjectHandler()[pdata.pprt->owner_ref]);
+            ParticleHandler::get().spawnDefencePing(pdata.pchr->toSharedPointer(), activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
             if(using_shield) {
                 GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Blocked!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
             }
@@ -601,7 +615,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 //--------------------------------------------------------------------------------------------
 bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 {
-    std::shared_ptr<Object> powner = _currentModule->getObjectHandler()[pdata.pprt->owner_ref];
+    std::shared_ptr<Object> powner = activeModule().getObjectHandler()[pdata.pprt->owner_ref];
 
     //Get the Profile of the Object that spawned this particle (i.e the weapon itself, not the holder)
     const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pdata.pprt->getSpawnerProfile());
@@ -798,7 +812,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             IPair grimReaperDamage;
                             grimReaperDamage.base = FLOAT_TO_FP8(50.0f);
                             grimReaperDamage.rand = 0.0f;
-                            pdata.pchr->damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team, _currentModule->getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
+                            pdata.pchr->damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team, activeModule().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                             AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
                         }
@@ -853,7 +867,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
             // Damage the character
             pdata.actual_damage = pdata.pchr->damage(Facing(direction), modifiedDamage, pdata.pprt->damagetype, 
-                pdata.pprt->team, _currentModule->getObjectHandler()[pdata.pprt->owner_ref], pdata.ppip->hasBit(DAMFX_ARMO), !pdata.ppip->hasBit(DAMFX_TIME), false);
+                pdata.pprt->team, activeModule().getObjectHandler()[pdata.pprt->owner_ref], pdata.ppip->hasBit(DAMFX_ARMO), !pdata.ppip->hasBit(DAMFX_TIME), false);
         }
     }
 
@@ -875,7 +889,7 @@ bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
     }
 
     //Only allow one collision per particle unless that particle is eternal
-    if(!pdata.pprt->isEternal() && pdata.pprt->hasCollided(_currentModule->getObjectHandler()[pdata.pchr->getObjRef()])) {
+    if(!pdata.pprt->isEternal() && pdata.pprt->hasCollided(activeModule().getObjectHandler()[pdata.pchr->getObjRef()])) {
         return false;
     }
 
@@ -885,13 +899,13 @@ bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
     {
         // no simple owner relationship. Check for something deeper.
 		ObjectRef prt_owner = pdata.pprt->getOwner();
-        if ( _currentModule->getObjectHandler().exists( prt_owner ) )
+        if ( activeModule().getObjectHandler().exists( prt_owner ) )
         {
             ObjectRef chr_wielder = chr_get_lowest_attachment( pdata.pchr->getObjRef(), true );
 			ObjectRef prt_wielder = chr_get_lowest_attachment( prt_owner, true );
 
-            if ( !_currentModule->getObjectHandler().exists( chr_wielder ) ) chr_wielder = pdata.pchr->getObjRef();
-            if ( !_currentModule->getObjectHandler().exists( prt_wielder ) ) prt_wielder = prt_owner;
+            if ( !activeModule().getObjectHandler().exists( chr_wielder ) ) chr_wielder = pdata.pchr->getObjRef();
+            if ( !activeModule().getObjectHandler().exists( prt_wielder ) ) prt_wielder = prt_owner;
 
             prt_belongs_to_chr = (chr_wielder == prt_wielder);
         }
@@ -979,9 +993,9 @@ bool do_chr_prt_collision_init( const ObjectRef ichr, const ParticleRef iprt, ch
     pdata->pprt = ParticleHandler::get()[iprt];
 
     // make sure that it is on
-    if ( !_currentModule->getObjectHandler().exists( ichr ) ) return false;
+    if ( !activeModule().getObjectHandler().exists( ichr ) ) return false;
     pdata->ichr = ichr;
-    pdata->pchr = _currentModule->getObjectHandler().get( ichr );
+    pdata->pchr = activeModule().getObjectHandler().get( ichr );
 
     pdata->ppip = pdata->pprt->getProfile();
 
@@ -1028,7 +1042,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
     {
         //If we are actually a weapon, use the weapon holder's strength
         if(attacker->isBeingHeld()) {
-            attacker = _currentModule->getObjectHandler()[attacker->attachedto];
+            attacker = activeModule().getObjectHandler()[attacker->attachedto];
         }
 
         const float attackerMight = attacker->getAttribute(Ego::Attribute::MIGHT) - 10.0f;
@@ -1044,7 +1058,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
         }
 
         //Telekinetic Staff perk can give +500% knockback
-        const std::shared_ptr<Object>& powner = _currentModule->getObjectHandler()[pdata.pprt->owner_ref];
+        const std::shared_ptr<Object>& powner = activeModule().getObjectHandler()[pdata.pprt->owner_ref];
         if(powner != nullptr && powner->hasPerk(Ego::Perks::TELEKINETIC_STAFF) && 
             pdata.pprt->getAttachedObject()->getProfile()->getIDSZ(IDSZ_PARENT).equals('S','T','A','F')) {
 
@@ -1235,7 +1249,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
                 if ( cn_data.prt_damages_chr )
                 {
                     //Remember the collision so that this doesn't happen again
-                    cn_data.pprt->addCollision(_currentModule->getObjectHandler()[cn_data.pchr->getObjRef()]);
+                    cn_data.pprt->addCollision(activeModule().getObjectHandler()[cn_data.pchr->getObjRef()]);
                     retval = true;
                 }
             }
@@ -1249,7 +1263,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
         //Attack was dodged!
         else {
             //Cannot collide again
-            cn_data.pprt->addCollision(_currentModule->getObjectHandler()[cn_data.pchr->getObjRef()]);
+            cn_data.pprt->addCollision(activeModule().getObjectHandler()[cn_data.pchr->getObjRef()]);
 
             //Play sound effect
             AudioSystem::get().playSound(cn_data.pchr->getPosition(), AudioSystem::get().getGlobalSound(GSND_DODGE));
@@ -1294,7 +1308,7 @@ static bool attach_prt_to_platform( Ego::Particle * pprt, Object * pplat )
 
     // do the attachment
     pprt->onwhichplatform_ref    = pplat->getObjRef();
-    pprt->onwhichplatform_update = update_wld;
+    pprt->onwhichplatform_update = worldUpdateCount();
     pprt->targetplatform_ref     = ObjectRef::Invalid;
 
     // update the character's relationship to the ground
@@ -1320,8 +1334,8 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
     if (0 == ppip->bumpspawn._amount && !ppip->spawnenchant) return 0;
     int amount = ppip->bumpspawn._amount;
 
-    if (!_currentModule->getObjectHandler().exists(character)) return 0;
-    Object *pchr = _currentModule->getObjectHandler().get(character);
+    if (!activeModule().getObjectHandler().exists(character)) return 0;
+    Object *pchr = activeModule().getObjectHandler().get(character);
 
     int bs_count = 0;
 
@@ -1336,7 +1350,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
         if (ppip->spawnenchant) 
         {
             const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pprt->getSpawnerProfile());
-            pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), _currentModule->getObjectHandler()[pprt->owner_ref], Object::INVALID_OBJECT);
+            pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), activeModule().getObjectHandler()[pprt->owner_ref], Object::INVALID_OBJECT);
         }
 
         // Spawn particles - this has been modded to maximize the visual effect

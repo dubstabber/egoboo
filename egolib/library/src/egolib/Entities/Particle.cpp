@@ -25,11 +25,30 @@
 
 #include "egolib/Entities/Particle.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Physics/PhysicalConstants.hpp"
 #include "egolib/game/CharacterMatrix.h"
+
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+GameModule& activeModule()
+{
+    return gameSession().activeModule();
+}
+
+uint32_t worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+}
 
 namespace Ego
 {
@@ -157,12 +176,12 @@ void Particle::reset(ParticleRef ref)
 
 bool Particle::isAttached() const
 {
-    return _currentModule->getObjectHandler().exists(_attachedTo);
+    return activeModule().getObjectHandler().exists(_attachedTo);
 }
 
 const std::shared_ptr<Object>& Particle::getAttachedObject() const
 {
-    return _currentModule->getObjectHandler()[_attachedTo];
+    return activeModule().getObjectHandler()[_attachedTo];
 }
 
 BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure)
@@ -173,7 +192,7 @@ BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure
 	g_meshStats.mpdfxTests = 0;
 	g_meshStats.boundTests = 0;
 	g_meshStats.pressureTests = 0;
-	return _currentModule->getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure);
+	return activeModule().getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure);
 }
 
 BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure, mesh_wall_data_t& data)
@@ -184,7 +203,7 @@ BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    return _currentModule->getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure, data);
+    return activeModule().getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure, data);
 }
 
 BIT_FIELD Particle::test_wall(const Vector3f& pos)
@@ -196,7 +215,7 @@ BIT_FIELD Particle::test_wall(const Vector3f& pos)
 	g_meshStats.mpdfxTests = 0;
 	g_meshStats.boundTests = 0;
 	g_meshStats.pressureTests = 0;
-	return _currentModule->getMeshPointer()->test_wall(pos, 0.0f, stoppedby);
+	return activeModule().getMeshPointer()->test_wall(pos, 0.0f, stoppedby);
 }
 
 const std::shared_ptr<ParticleProfile>& Particle::getProfile() const
@@ -289,7 +308,7 @@ void Particle::setElevation(const float level)
 
 bool Particle::isHidden() const
 {
-    const std::shared_ptr<Object>& attachedToObject = _currentModule->getObjectHandler()[_attachedTo]; 
+    const std::shared_ptr<Object>& attachedToObject = activeModule().getObjectHandler()[_attachedTo]; 
 
     if(!attachedToObject) {
         return false;
@@ -381,9 +400,9 @@ void Particle::update()
 
 void Particle::updateWater()
 {
-    bool inwater = (getPosZ() < _currentModule->getWater()._surface_level) && isOverWater();
+    bool inwater = (getPosZ() < activeModule().getWater()._surface_level) && isOverWater();
 
-    if (inwater && _currentModule->getWater()._is_water && getProfile()->end_water)
+    if (inwater && activeModule().getWater()._is_water && getProfile()->end_water)
     {
         // Check for disaffirming character
         if (isAttached() && owner_ref == _attachedTo)
@@ -402,7 +421,7 @@ void Particle::updateWater()
     {
         bool  spawn_valid = false;
         LocalParticleProfileRef global_pip_index;
-		Vector3f vtmp = Vector3f(getPosX(), getPosY(), _currentModule->getWater()._surface_level);
+		Vector3f vtmp = Vector3f(getPosX(), getPosY(), activeModule().getWater()._surface_level);
 
         if (ObjectRef::Invalid == owner_ref && (PIP_SPLASH == getProfileID() || PIP_RIPPLE == getProfileID()))
         {
@@ -428,10 +447,10 @@ void Particle::updateWater()
                 if (SPRITE_SOLID == type && !isAttached())
                 {
                     // only spawn ripples if you are touching the water surface!
-                    if (getPosZ() + bump_real.height > _currentModule->getWater()._surface_level && getPosZ() - bump_real.height < _currentModule->getWater()._surface_level)
+                    if (getPosZ() + bump_real.height > activeModule().getWater()._surface_level && getPosZ() - bump_real.height < activeModule().getWater()._surface_level)
                     {
                         static constexpr int RIPPLEAND = 15;          ///< How often ripples spawn
-                        if (0 == ((update_wld + _particleID.get()) & (RIPPLEAND << 1)))
+                        if (0 == ((worldUpdateCount() + _particleID.get()) & (RIPPLEAND << 1)))
                         {
                             spawn_valid = true;
                             global_pip_index = LocalParticleProfileRef(PIP_RIPPLE);
@@ -613,7 +632,7 @@ void Particle::updateAttachedDamage()
     int max_damage = std::abs(damage.base) + std::abs(damage.rand);
 
     // wait until the right time
-    uint32_t update_count = update_wld + _particleID.get();
+    uint32_t update_count = worldUpdateCount() + _particleID.get();
     if (0 != (update_count & 31)) return;
 
     // we must be attached to something
@@ -694,7 +713,7 @@ void Particle::updateAttachedDamage()
 
     //---- do the damage
     int actual_damage = attachedObject->damage(ATK_BEHIND, local_damage, static_cast<DamageType>(damagetype), team,
-                                               _currentModule->getObjectHandler()[owner_ref], getProfile()->hasBit(DAMFX_ARMO),
+                                               activeModule().getObjectHandler()[owner_ref], getProfile()->hasBit(DAMFX_ARMO),
                                                !getProfile()->hasBit(DAMFX_TIME), false);
 
     // adjust any remaining particle damage
@@ -748,7 +767,7 @@ void Particle::destroy()
     //Spawn an Object on particle end? (happens through a special script function)
     if (SPAWNNOCHARACTER != endspawn_characterstate)
     {
-        std::shared_ptr<Object> child = _currentModule->spawnObject(getPosition(), _spawnerProfile, team, 0, facing, "", ObjectRef::Invalid);
+        std::shared_ptr<Object> child = activeModule().spawnObject(getPosition(), _spawnerProfile, team, 0, facing, "", ObjectRef::Invalid);
         if (child)
         {
             child->ai.state = endspawn_characterstate;
@@ -823,7 +842,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     // try to get an idea of who our owner is even if we are
     // given bogus info
     ObjectRef loc_chr_origin = spawnOrigin;
-    if (!_currentModule->getObjectHandler().exists(spawnOrigin) && ParticleHandler::get()[spawnParticleOrigin])
+    if (!activeModule().getObjectHandler().exists(spawnOrigin) && ParticleHandler::get()[spawnParticleOrigin])
     {
         loc_chr_origin = ParticleHandler::get()[spawnParticleOrigin]->getOwner();
     }
@@ -867,17 +886,17 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
         else
         {
             const float PERFECT_AIM = 45.0f;   // 45 dex is perfect aim
-            float attackerAgility = _currentModule->getObjectHandler().get(owner_ref)->getAttribute(Ego::Attribute::AGILITY);
+            float attackerAgility = activeModule().getObjectHandler().get(owner_ref)->getAttribute(Ego::Attribute::AGILITY);
 
             //Sharpshooter Perk improves aim by 25%
-            if(_currentModule->getObjectHandler().get(owner_ref)->hasPerk(Ego::Perks::SHARPSHOOTER)) {
+            if(activeModule().getObjectHandler().get(owner_ref)->hasPerk(Ego::Perks::SHARPSHOOTER)) {
                 attackerAgility = std::min(PERFECT_AIM, attackerAgility*1.25f);
             }
 
             // Find a target
             Facing targetAngle;
             _target = prt_find_target(spawnPos, idlib::canonicalize(loc_facing), _particleProfileID, spawnTeam, owner_ref, spawnTarget, &targetAngle);
-            const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[_target];
+            const std::shared_ptr<Object> &target = activeModule().getObjectHandler()[_target];
 
             if (target && !getProfile()->homing)
             {
@@ -931,7 +950,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
             }
         }
 
-        const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[_target];
+        const std::shared_ptr<Object> &target = activeModule().getObjectHandler()[_target];
 
         // Does it go away?
         if (!target && getProfile()->needtarget)
@@ -965,8 +984,8 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     tmp_pos[kY] += offset[kY];
 
     //Particles can only spawn inside the map bounds
-    tmp_pos[kX] = Ego::Math::constrain(tmp_pos[kX], 0.0f, _currentModule->getMeshPointer()->_tmem._edge_x - 2.0f);
-    tmp_pos[kY] = Ego::Math::constrain(tmp_pos[kY], 0.0f, _currentModule->getMeshPointer()->_tmem._edge_y - 2.0f);
+    tmp_pos[kX] = Ego::Math::constrain(tmp_pos[kX], 0.0f, activeModule().getMeshPointer()->_tmem._edge_x - 2.0f);
+    tmp_pos[kY] = Ego::Math::constrain(tmp_pos[kY], 0.0f, activeModule().getMeshPointer()->_tmem._edge_y - 2.0f);
 
     setPosition(tmp_pos);
     setSpawnPosition(tmp_pos);
@@ -1081,7 +1100,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     damage = range_to_pair(getProfile()->damage);
 
     //If it is a FIRE particle spawned by a Pyromaniac, increase damage by 25%
-    const std::shared_ptr<Object> &owner = _currentModule->getObjectHandler()[owner_ref];
+    const std::shared_ptr<Object> &owner = activeModule().getObjectHandler()[owner_ref];
     if(owner != nullptr && owner->hasPerk(Ego::Perks::PYROMANIAC)) {
         damage.base *= 1.25f;
         damage.rand *= 1.25f;
@@ -1167,8 +1186,8 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
         "\tobjectProfile == %d(\"%s\")\n"
         "\n",
         _particleID,
-        update_wld, static_cast<int>(lifetime_remaining),
-        loc_chr_origin, _currentModule->getObjectHandler().exists( loc_chr_origin ) ? _currentModule->getObjectHandler().get(loc_chr_origin)->Name : "INVALID",
+        worldUpdateCount(), static_cast<int>(lifetime_remaining),
+        loc_chr_origin, activeModule().getObjectHandler().exists( loc_chr_origin ) ? activeModule().getObjectHandler().get(loc_chr_origin)->Name : "INVALID",
         _particleProfileID, getProfile()->getName().c_str(), 
         getProfile()->comment,
         _spawnerProfile, ProfileSystem::get().isValidProfileID(_spawnerProfile) ? ProfileSystem::get().getProfile(_spawnerProfile)->getPathname().c_str() : "INVALID");
@@ -1188,7 +1207,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
 
 bool Particle::attach(const ObjectRef attach)
 {
-    const std::shared_ptr<Object> &pchr = _currentModule->getObjectHandler()[attach];
+    const std::shared_ptr<Object> &pchr = activeModule().getObjectHandler()[attach];
     if(!pchr) {
         return false;
     }
@@ -1273,12 +1292,12 @@ bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_o
 
 const std::shared_ptr<Object>& Particle::getTarget() const
 {
-    return _currentModule->getObjectHandler()[_target];
+    return activeModule().getObjectHandler()[_target];
 }
 
 bool Particle::isOverWater() const
 {
-	auto mesh = _currentModule->getMeshPointer();
+	auto mesh = activeModule().getMeshPointer();
     return (0 != mesh->test_fx(getTile(), MAPFX_WATER));
 }
 
@@ -1395,7 +1414,7 @@ ObjectRef Particle::getOwner(int depth)
     }
 
     ObjectRef iowner = ObjectRef::Invalid;
-    if (_currentModule->getObjectHandler().exists(owner_ref))
+    if (activeModule().getObjectHandler().exists(owner_ref))
     {
         iowner = owner_ref;
     }

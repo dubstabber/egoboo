@@ -138,7 +138,7 @@ public:
     /**
     * @return the current team this object is on. This can change in-game (mounts or pets for example)
     **/
-    Team& getTeam() const { return _currentModule->getTeamList()[team]; }
+    Team& getTeam() const;
 
     /**
     * @brief

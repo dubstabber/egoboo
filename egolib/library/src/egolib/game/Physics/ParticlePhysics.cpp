@@ -1,7 +1,16 @@
 #include "egolib/game/Physics/ParticlePhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Physics/PhysicalConstants.hpp"
 #include "egolib/game/CharacterMatrix.h"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+}
 
 namespace Ego
 {
@@ -60,7 +69,7 @@ void ParticlePhysics::updateMovement()
     //capture the position
     Vector3f tmp_pos = _particle.getPosition();
 
-    auto mesh = _currentModule->getMeshPointer();
+    auto mesh = activeModule().getMeshPointer();
 
     bool hit_a_floor = false;
     bool hit_a_wall = false;
@@ -331,10 +340,10 @@ void ParticlePhysics::updateHoming()
     Vector3f vdiff = ptarget->getPosition() - _particle.getPosition();
     vdiff.z() += ptarget->bump.height * 0.5f;
 
-    float min_length = 2 * 5 * 256 * (FLOAT_TO_FP8(_currentModule->getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
+    float min_length = 2 * 5 * 256 * (FLOAT_TO_FP8(activeModule().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
 
     // make a little incertainty about the target
-    float uncertainty = 256.0f * (1.0f - FLOAT_TO_FP8(_currentModule->getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
+    float uncertainty = 256.0f * (1.0f - FLOAT_TO_FP8(activeModule().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
 
     Vector3f vdither;
     int ival;
@@ -390,7 +399,7 @@ void ParticlePhysics::updateFloorFriction()
     Vector3f floor_acc = idlib::zero<Vector3f>();
     float temp_friction_xy = 1.0f;
 
-    const std::shared_ptr<Object> &platform = _currentModule->getObjectHandler()[_particle.onwhichplatform_ref];
+    const std::shared_ptr<Object> &platform = activeModule().getObjectHandler()[_particle.onwhichplatform_ref];
     if (platform)
     {
         temp_friction_xy = 1.0f - PLATFORM_STICKINESS;
@@ -402,7 +411,7 @@ void ParticlePhysics::updateFloorFriction()
     else
     {
         //Is the floor slippery?
-        if (_currentModule->getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
+        if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
         {
             // It's slippy all right...
             temp_friction_xy = 1.0f - Ego::Physics::g_environment.slippyfriction;
@@ -475,10 +484,10 @@ void ParticlePhysics::updateGravity()
     //Some particles can have a special gravity field that pulls or pushes
     if(_particle.getProfile()->getGravityPull() != 0.0f) {
         float pullDistance = _particle.getProfile()->bump_size * 3.0f;
-        const auto &particleTeam = _currentModule->getTeamList()[_particle.team];
+        const auto &particleTeam = activeModule().getTeamList()[_particle.team];
 
         //Pull all nearby objects
-        std::vector<std::shared_ptr<Object>> affectedObjects = _currentModule->getObjectHandler().findObjects(_particle.getPosX(), _particle.getPosY(), pullDistance, false);
+        std::vector<std::shared_ptr<Object>> affectedObjects = activeModule().getObjectHandler().findObjects(_particle.getPosX(), _particle.getPosY(), pullDistance, false);
         for(const std::shared_ptr<Object> &object : affectedObjects)
         {
             //Do not affect the object we are attached to
@@ -530,10 +539,10 @@ void ParticlePhysics::updateEnviroment()
 
     Ego::prt_environment_t *penviro = &(_particle.enviro);
 
-    const std::shared_ptr<Object>& platform = _currentModule->getObjectHandler()[_particle.onwhichplatform_ref];
+    const std::shared_ptr<Object>& platform = activeModule().getObjectHandler()[_particle.onwhichplatform_ref];
 
     //---- character "floor" level
-    penviro->floor_level = _currentModule->getMeshPointer()->getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
+    penviro->floor_level = activeModule().getMeshPointer()->getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
     penviro->level = penviro->floor_level;
 
     //---- The actual level of the characer.
@@ -559,11 +568,11 @@ void ParticlePhysics::updateEnviroment()
         itile = _particle.getTile();
     }
 
-    penviro->twist = _currentModule->getMeshPointer()->get_twist(itile);
+    penviro->twist = activeModule().getMeshPointer()->get_twist(itile);
 
     // the "watery-ness" of whatever water might be here
-    penviro->is_watery = _currentModule->getWater()._is_water && penviro->inwater;
-    penviro->is_slippy = !penviro->is_watery && (0 != _currentModule->getMeshPointer()->test_fx(_particle.getTile(), MAPFX_SLIPPY));
+    penviro->is_watery = activeModule().getWater()._is_water && penviro->inwater;
+    penviro->is_slippy = !penviro->is_watery && (0 != activeModule().getMeshPointer()->test_fx(_particle.getTile(), MAPFX_SLIPPY));
 
     //---- traction
     penviro->traction = 1.0f;
@@ -590,7 +599,7 @@ void ParticlePhysics::updateEnviroment()
             penviro->traction /= Ego::Physics::g_environment.hillslide * (1.0f - penviro->zlerp) + 1.0f * penviro->zlerp;
         }
     }
-    else if (_currentModule->getMeshPointer()->grid_is_valid(_particle.getTile()))
+    else if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()))
     {
         penviro->traction = std::abs(g_meshLookupTables.twist_nrm[penviro->twist].z()) * (1.0f - penviro->zlerp) + 0.25f * penviro->zlerp;
 
@@ -618,7 +627,7 @@ void ParticlePhysics::updateEnviroment()
     {
         // Make the characters slide
         float temp_friction_xy = Ego::Physics::g_environment.noslipfriction;
-        if (_currentModule->getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
+        if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
         {
             // It's slippy all right...
             temp_friction_xy = Ego::Physics::g_environment.slippyfriction;

@@ -36,11 +36,46 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 
 //For the minimap
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
+
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+GameModule* tryActiveModule()
+{
+    return gameSession().tryActiveModule();
+}
+
+GameModule& activeModule()
+{
+    return gameSession().activeModule();
+}
+
+uint32_t worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+
+uint32_t characterStatClock()
+{
+    return gameSession().characterStatClock();
+}
+
+std::shared_ptr<PlayingState> tryActivePlayingState()
+{
+    return EngineContext::get().tryActivePlayingState();
+}
+}
 
 //Declare class static constants
 const std::shared_ptr<Object> Object::INVALID_OBJECT = nullptr;
@@ -52,6 +87,11 @@ constexpr float Object::DROPZVEL;
 /// @brief Out-of-class definition for GCC/Clang.
 /// @todo Remove this if GCC & Clang are fixed.
 constexpr float Object::DISMOUNTZVEL;
+
+Team& Object::getTeam() const
+{
+    return activeModule().getTeamList()[team];
+}
 
 Object::Object(ObjectProfileRef proRef, ObjectRef objRef) : 
     ai(),
@@ -164,7 +204,7 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     _reallyDuration(0),
     _stealth(false),
     _stealthTimer(0),
-    _observationTimer((objRef.get() % ONESECOND) + update_wld), //spread observations so all characters don't happen at the same time
+    _observationTimer((objRef.get() % ONESECOND) + worldUpdateCount()), //spread observations so all characters don't happen at the same time
 
     //Enchants
     _activeEnchants(),
@@ -199,7 +239,7 @@ Object::~Object()
     /// @details Make character safely deleteable
 
     // Detach the character from the active game
-    if(_currentModule) {
+    if (GameModule* module = tryActiveModule()) {
         removeFromGame(this);
 
         // free the character's inventory
@@ -211,12 +251,12 @@ Object::~Object()
         // Handle the team
         if ( isAlive() && !getProfile()->isInvincible() )
         {
-            _currentModule->getTeamList()[team_base].decreaseMorale();
+            module->getTeamList()[team_base].decreaseMorale();
         }
 
-        if ( _currentModule->getTeamList()[team].getLeader().get() == this )
+        if ( module->getTeamList()[team].getLeader().get() == this )
         {
-            _currentModule->getTeamList()[team].setLeader(INVALID_OBJECT);
+            module->getTeamList()[team].setLeader(INVALID_OBJECT);
         }
 
         // remove any attached particles
@@ -263,12 +303,12 @@ bool Object::setSkin(const size_t skinNumber)
 
 bool Object::isOnWaterTile() const
 {
-    return 0 != _currentModule->getMeshPointer()->test_fx(getTile(), MAPFX_WATER);
+    return 0 != activeModule().getMeshPointer()->test_fx(getTile(), MAPFX_WATER);
 }
 
 bool Object::isSubmerged() const
 {
-    return isOnWaterTile() && getPosZ() <= _currentModule->getWater().get_level();
+    return isOnWaterTile() && getPosZ() <= activeModule().getWater().get_level();
 }
 
 void Object::movePosition(const float x, const float y, const float z)
@@ -330,7 +370,7 @@ bool Object::canMount(const std::shared_ptr<Object> mount) const
     }
 
     //Make sure they aren't mounted already
-    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || _currentModule->getObjectHandler().exists(mount->holdingwhich[SLOT_LEFT]))
+    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || activeModule().getObjectHandler().exists(mount->holdingwhich[SLOT_LEFT]))
     {
         return false;
     }
@@ -399,7 +439,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
     int actual_damage = base_damage - base_damage*getDamageReduction(damagetype, !ignoreArmour);
 
     // Increase electric damage when in water
-    if (damagetype == DAMAGE_ZAP && isSubmerged() && _currentModule->getWater()._is_water)
+    if (damagetype == DAMAGE_ZAP && isSubmerged() && activeModule().getWater()._is_water)
     {
         actual_damage *= 2.0f;     /// @note ZF> Is double damage too much?
     }
@@ -636,13 +676,13 @@ void Object::updateLastAttacker(const std::shared_ptr<Object> &attacker, bool he
         if ( attacker->attachedto == ai.getSelf() ) return;
 
         //If we are held, the holder is the real attacker... unless the holder is a mount
-        if ( attacker->isBeingHeld() && !_currentModule->getObjectHandler().get(attacker->attachedto)->isMount() )
+        if ( attacker->isBeingHeld() && !activeModule().getObjectHandler().get(attacker->attachedto)->isMount() )
         {
             actual_attacker = attacker->attachedto;
         }
 
         //If the attacker is a mount, try to blame the rider
-        else if ( attacker->isMount() && _currentModule->getObjectHandler().exists( attacker->holdingwhich[SLOT_LEFT] ) )
+        else if ( attacker->isMount() && activeModule().getObjectHandler().exists( attacker->holdingwhich[SLOT_LEFT] ) )
         {
             actual_attacker = attacker->holdingwhich[SLOT_LEFT];
         }
@@ -684,7 +724,7 @@ bool Object::isAttacking() const
 bool Object::teleport(const Ego::Vector3f& position, Facing facing_z)
 {
     //Cannot teleport outside the level
-    if(!_currentModule->isInside(position[kX], position[kY])) return false;
+    if(!activeModule().isInside(position[kX], position[kY])) return false;
 
     Ego::Vector3f newPosition = position;
 
@@ -738,7 +778,7 @@ void Object::update()
     }
 
     // the following functions should not be done the first time through the update loop
-    if (0 == update_wld) return;
+    if (0 == worldUpdateCount()) return;
 
     //Don't do items that are inside an inventory
     if (isInsideInventory()) {
@@ -752,9 +792,9 @@ void Object::update()
         if (!inwater)
         {
             // Splash
-            ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), _currentModule->getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
+            ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
 
-            if ( _currentModule->getWater()._is_water )
+            if ( activeModule().getWater()._is_water )
             {
                 SET_BIT(ai.alert, ALERTIF_INWATER);
             }
@@ -767,11 +807,11 @@ void Object::update()
             if(isAlive())
             {
                 if ( !isBeingHeld() && getProfile()->causesRipples()
-                    && getPosZ() + chr_min_cv._maxs[OCT_Z] + RIPPLETOLERANCE > _currentModule->getWater().get_level() 
-                    && getPosZ() + chr_min_cv._mins[OCT_Z] < _currentModule->getWater().get_level())
+                    && getPosZ() + chr_min_cv._maxs[OCT_Z] + RIPPLETOLERANCE > activeModule().getWater().get_level() 
+                    && getPosZ() + chr_min_cv._mins[OCT_Z] < activeModule().getWater().get_level())
                 {
                     // suppress ripples if we are far below the surface
-                    int ripple_suppression = 4 * (_currentModule->getWater().get_level() - (getPosZ() + chr_min_cv._maxs[OCT_Z]));
+                    int ripple_suppression = 4 * (activeModule().getWater().get_level() - (getPosZ() + chr_min_cv._maxs[OCT_Z]));
                     ripple_suppression = ripple_suppression / RIPPLETOLERANCE;
                     ripple_suppression = Ego::Math::constrain(ripple_suppression, 0, 4);
 
@@ -788,14 +828,14 @@ void Object::update()
                         ripand = RIPPLEAND >> ( -ripple_suppression );
                     }
 
-                    if ( 0 == ( (update_wld + getObjRef().get()) & ripand ))
+                    if ( 0 == ( (worldUpdateCount() + getObjRef().get()) & ripand ))
                     {
-                        ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), _currentModule->getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
+                        ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
                     }
                 }
             }
 
-            if (_currentModule->getWater()._is_water && HAS_NO_BITS(update_wld, 7))
+            if (activeModule().getWater()._is_water && HAS_NO_BITS(worldUpdateCount(), 7))
             {
                 jumpready = true;
                 jumpnumber = 1; //Limit to 1 jump while in water
@@ -855,7 +895,7 @@ void Object::update()
     }
 
     // Do stats once every second
-    if ( clock_chr_stat >= ONESECOND )
+    if ( characterStatClock() >= ONESECOND )
     {
         // check for a level up
         checkLevelUp();
@@ -874,12 +914,18 @@ void Object::update()
         {
             //Cartography perk reveals the minimap
             if(hasPerk(Ego::Perks::CARTOGRAPHY)) {
-                _gameEngine->getActivePlayingState()->getMiniMap()->setVisible(true);
+                if (std::shared_ptr<PlayingState> playingState = tryActivePlayingState())
+                {
+                    playingState->getMiniMap()->setVisible(true);
+                }
             }
 
             //Navigation reveals the players position on the minimap
             if(hasPerk(Ego::Perks::NAVIGATION)) {
-                _gameEngine->getActivePlayingState()->getMiniMap()->setShowPlayerPosition(true);
+                if (std::shared_ptr<PlayingState> playingState = tryActivePlayingState())
+                {
+                    playingState->getMiniMap()->setShowPlayerPosition(true);
+                }
             }
 
             //Danger Sense reveals enemies on the minimap
@@ -897,7 +943,7 @@ void Object::update()
 
         //Give Rally bonus to friends within 6 tiles
         if(hasPerk(Ego::Perks::RALLY)) {
-            std::vector<std::shared_ptr<Object>> nearbyObjects = _currentModule->getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
+            std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
             for(const std::shared_ptr<Object> &object : nearbyObjects)
             {
                 //Only valid objects that are on our team
@@ -906,16 +952,16 @@ void Object::update()
                 //Don't give bonus to ourselves!
                 if(object.get() == this) continue;
 
-                object->_reallyDuration = update_wld + GameEngine::GAME_TARGET_UPS*3;    //Apply bonus for 3 seconds
+                object->_reallyDuration = worldUpdateCount() + GameEngine::GAME_TARGET_UPS*3;    //Apply bonus for 3 seconds
             }
         }
     }
 
     //Try to detect any hidden objects every so often (unless we are scenery object) 
     if(!isScenery() && isAlive() && !isBeingHeld() && inst.getCurrentAnimation() != ACTION_MK) {  //ACTION_MK = sleeping
-        if(update_wld > _observationTimer) 
+        if(worldUpdateCount() > _observationTimer) 
         {
-            _observationTimer = update_wld + ONESECOND;
+            _observationTimer = worldUpdateCount() + ONESECOND;
 
             //Setup line of sight data
             line_of_sight_info_t lineOfSightInfo;
@@ -925,7 +971,7 @@ void Object::update()
             lineOfSightInfo.stopped_by = stoppedby;
 
             //Check for nearby enemies
-            std::vector<std::shared_ptr<Object>> nearbyObjects = _currentModule->getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
+            std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
             for(const std::shared_ptr<Object> &target : nearbyObjects) {
                 //Valid objects only
                 if(target->isTerminated() || target->isHidden()) continue;
@@ -942,7 +988,7 @@ void Object::update()
                 lineOfSightInfo.x1 = target->getPosX();
                 lineOfSightInfo.y1 = target->getPosY();
                 lineOfSightInfo.z1 = target->getPosZ() + std::max(1.0f, target->bump.height);
-                if (line_of_sight_info_t::blocked(lineOfSightInfo, _currentModule->getMeshPointer())) {
+                if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule().getMeshPointer())) {
                     continue;
                 }
 
@@ -1101,7 +1147,7 @@ std::string Object::getName(bool prefixArticle, bool prefixDefinite, bool capita
 void Object::requestTerminate() 
 {
     //Mark object as terminated
-    _currentModule->getObjectHandler().remove(getObjRef());
+    activeModule().getObjectHandler().remove(getObjRef());
 }
 
 
@@ -1116,7 +1162,7 @@ bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 {
     // Make sure the character is actually held by something first
     ObjectRef holder = attachedto;
-    const std::shared_ptr<Object> &pholder = _currentModule->getObjectHandler()[holder];
+    const std::shared_ptr<Object> &pholder = activeModule().getObjectHandler()[holder];
     if (!pholder) {
         return false;  
     } 
@@ -1255,12 +1301,12 @@ bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 
 const std::shared_ptr<Object>& Object::getLeftHandItem() const
 {
-    return _currentModule->getObjectHandler()[holdingwhich[SLOT_LEFT]];
+    return activeModule().getObjectHandler()[holdingwhich[SLOT_LEFT]];
 }
 
 const std::shared_ptr<Object>& Object::getRightHandItem() const
 {
-    return _currentModule->getObjectHandler()[holdingwhich[SLOT_RIGHT]];
+    return activeModule().getObjectHandler()[holdingwhich[SLOT_RIGHT]];
 }
 
 bool Object::canSeeObject(const std::shared_ptr<Object> &target) const
@@ -1344,7 +1390,7 @@ void Object::checkLevelUp()
         {
             // The character is ready to advance...
             if(isPlayer()) {
-                const std::shared_ptr<Ego::Player> &player = _currentModule->getPlayer(is_which_player);
+                const std::shared_ptr<Ego::Player> &player = activeModule().getPlayer(is_which_player);
                 if(!player->hasUnspentLevel()) {
                     player->setLevelUpIndicator(true);
                     DisplayMsg_printf("%s gained a level!!!", getName().c_str());
@@ -1418,9 +1464,9 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
     if (actualKiller)
     {
         //If we are a held item, try to figure out who the actual killer is
-        if ( actualKiller->isBeingHeld() && !_currentModule->getObjectHandler().get(actualKiller->attachedto)->isMount() )
+        if ( actualKiller->isBeingHeld() && !activeModule().getObjectHandler().get(actualKiller->attachedto)->isMount() )
         {
-            actualKiller = _currentModule->getObjectHandler()[actualKiller->attachedto];
+            actualKiller = activeModule().getObjectHandler()[actualKiller->attachedto];
         }
 
         //If the killer is a mount, try to award the kill to the rider
@@ -1489,7 +1535,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
     //and distribute experience to whoever needs it
     SET_BIT(ai.alert, ALERTIF_KILLED);
 
-    for(const std::shared_ptr<Object> &listener : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &listener : activeModule().getObjectHandler().iterator())
     {
         if (!listener->isAlive()) continue;
 
@@ -1523,14 +1569,14 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
 
     // Let it's AI script run one last time
     _hasBeenKilled = true;
-    ai.timer = update_wld + 1;            // Prevent IfTimeOut in scr_run_chr_script()
+    ai.timer = worldUpdateCount() + 1;            // Prevent IfTimeOut in scr_run_chr_script()
     scr_run_chr_script(this);
 }
 
 void Object::resetAlpha()
 {
     // Make sure the character is mounted
-    const std::shared_ptr<Object> &mount = _currentModule->getObjectHandler()[attachedto];
+    const std::shared_ptr<Object> &mount = activeModule().getObjectHandler()[attachedto];
     if(!mount) {
         return;
     }
@@ -1656,7 +1702,7 @@ bool Object::isInsideInventory() const
     }
 
     //Check if inventory exists and not marked for removal
-    const std::shared_ptr<Object> &holder = _currentModule->getObjectHandler()[inwhich_inventory];
+    const std::shared_ptr<Object> &holder = activeModule().getObjectHandler()[inwhich_inventory];
     if(!holder || holder->isTerminated()) {
         return false;
     }
@@ -1672,19 +1718,19 @@ void Object::removeFromGame(Object *obj)
 
 	// Remove it from the team
 	obj->team = obj->team_base;
-	_currentModule->getTeamList()[obj->team].decreaseMorale();
+	activeModule().getTeamList()[obj->team].decreaseMorale();
 
-	if (_currentModule->getTeamList()[obj->team].getLeader().get() == obj)
+	if (activeModule().getTeamList()[obj->team].getLeader().get() == obj)
 	{
 		// The team now has no leader if the character is the leader
-		_currentModule->getTeamList()[obj->team].setLeader(Object::INVALID_OBJECT);
+		activeModule().getTeamList()[obj->team].setLeader(Object::INVALID_OBJECT);
 	}
 
 	// Clear all shop passages that it owned..
-	_currentModule->removeShopOwner(objRef);
+	activeModule().removeShopOwner(objRef);
 
 	// detach from any mount
-	if (_currentModule->getObjectHandler().exists(obj->attachedto))
+	if (activeModule().getObjectHandler().exists(obj->attachedto))
 	{
 		obj->detatchFromHolder(true, false);
 	}
@@ -1722,7 +1768,7 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float *
 	g_meshStats.mpdfxTests = 0;
 	g_meshStats.boundTests = 0;
 	g_meshStats.pressureTests = 0;
-	BIT_FIELD result = _currentModule->getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure);
+	BIT_FIELD result = activeModule().getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure);
 	chr_stoppedby_tests += g_meshStats.mpdfxTests;
 	chr_pressure_tests += g_meshStats.pressureTests;
 
@@ -1746,7 +1792,7 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float *
 	g_meshStats.mpdfxTests = 0;
 	g_meshStats.boundTests = 0;
 	g_meshStats.pressureTests = 0;
-	BIT_FIELD result = _currentModule->getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure, data);
+	BIT_FIELD result = activeModule().getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure, data);
 	chr_stoppedby_tests += g_meshStats.mpdfxTests;
 	chr_pressure_tests += g_meshStats.pressureTests;
 
@@ -1780,7 +1826,7 @@ BIT_FIELD Object::test_wall(const Ego::Vector3f& pos)
 	g_meshStats.boundTests = 0;
 	g_meshStats.pressureTests = 0;
 
-	BIT_FIELD result = _currentModule->getMeshPointer()->test_wall(pos, radius, stoppedby);
+	BIT_FIELD result = activeModule().getMeshPointer()->test_wall(pos, radius, stoppedby);
 	chr_stoppedby_tests += g_meshStats.mpdfxTests;
 	chr_pressure_tests += g_meshStats.pressureTests;
 
@@ -1789,7 +1835,7 @@ BIT_FIELD Object::test_wall(const Ego::Vector3f& pos)
 
 bool Object::costMana(int amount, const ObjectRef killer)
 {
-    const std::shared_ptr<Object> &pkiller = _currentModule->getObjectHandler()[killer];
+    const std::shared_ptr<Object> &pkiller = activeModule().getObjectHandler()[killer];
 
     bool manaPaid  = false;
     int manaFinal = static_cast<int>(FLOAT_TO_FP8(getMana())) - amount;
@@ -1805,7 +1851,7 @@ bool Object::costMana(int amount, const ObjectRef killer)
 
             if (_currentLife <= 0 && egoboo_config_t::get().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
             {
-                kill(pkiller != nullptr ? pkiller : _currentModule->getObjectHandler()[this->getObjRef()], false);
+                kill(pkiller != nullptr ? pkiller : activeModule().getObjectHandler()[this->getObjRef()], false);
             }
 
             manaPaid = true;
@@ -1849,7 +1895,7 @@ void Object::respawn()
     disaffirm_attached_particles(getObjRef());
 
     //Detach any objects that is using our body as a platform
-    for(std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator()) {
+    for(std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator()) {
         if(object->getAttachedPlatform().get() == this) {
             object->getObjectPhysics().detachFromPlatform();
         }
@@ -1867,7 +1913,7 @@ void Object::respawn()
     canbecrushed = false;
     ori.map_twist_facing_y = orientation_t::MAP_TURN_OFFSET;  // These two mean on level surface
     ori.map_twist_facing_x = orientation_t::MAP_TURN_OFFSET;
-    if ( !getTeam().getLeader() )  getTeam().setLeader( _currentModule->getObjectHandler()[getObjRef()] );
+    if ( !getTeam().getLeader() )  getTeam().setLeader( activeModule().getObjectHandler()[getObjRef()] );
     if ( !isInvincible() )         getTeam().increaseMorale();
 
     // start the character out in the "dance" animation
@@ -2243,7 +2289,7 @@ std::shared_ptr<Ego::Enchantment> Object::getLastEnchantmentSpawned() const
 
 const std::shared_ptr<Object>& Object::toSharedPointer() const 
 { 
-    return _currentModule->getObjectHandler()[getObjRef()]; 
+    return activeModule().getObjectHandler()[getObjRef()]; 
 }
 
 void Object::setMana(const float value)
@@ -2553,7 +2599,7 @@ bool Object::activateStealth()
     lineOfSightInfo.z1 = getPosZ() + std::max(1.0f, bump.height);
 
     //Check if there are any nearby Objects disrupting our stealth attempt
-    std::vector<std::shared_ptr<Object>> nearbyObjects = _currentModule->getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
+    std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
     for(const std::shared_ptr<Object> &object : nearbyObjects) {
         //Valid objects only
         if(object->isTerminated() || !object->isAlive() || object->isBeingHeld()) continue;
@@ -2578,7 +2624,7 @@ bool Object::activateStealth()
         lineOfSightInfo.y0         = object->getPosY();
         lineOfSightInfo.z0         = object->getPosZ() + std::max(1.0f, object->bump.height);
         lineOfSightInfo.stopped_by = object->stoppedby;
-        if (line_of_sight_info_t::blocked(lineOfSightInfo, _currentModule->getMeshPointer())) {
+        if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule().getMeshPointer())) {
             continue;
         }
         
@@ -2656,7 +2702,7 @@ bool Object::isHidden() const
 
 const std::shared_ptr<Object>& Object::getHolder() const
 {
-    return _currentModule->getObjectHandler()[attachedto];
+    return activeModule().getObjectHandler()[attachedto];
 }
 
 void Object::setTeam(TEAM_REF team_new, bool permanent)
@@ -2705,7 +2751,7 @@ void Object::setTeam(TEAM_REF team_new, bool permanent)
 
     // we are the new leader if there isn't one already
     if (canHaveTeam && !getTeam().getLeader()) {
-        getTeam().setLeader(_currentModule->getObjectHandler()[getObjRef()]);
+        getTeam().setLeader(activeModule().getObjectHandler()[getObjRef()]);
     }
 
     if(permanent) {
@@ -2967,7 +3013,7 @@ bool Object::canCollide() const
 
 const std::shared_ptr<Object>& Object::getAttachedPlatform() const
 {
-    return _currentModule->getObjectHandler()[onwhichplatform_ref];
+    return activeModule().getObjectHandler()[onwhichplatform_ref];
 }
 
 std::shared_ptr<const Ego::Texture> Object::getIcon() const

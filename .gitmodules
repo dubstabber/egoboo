@@ -1,14 +1,14 @@
 [submodule "data"]
 	path = data
-	url = https://github.com/egoboo/egoboo-assets
+	url = git@github.com:dubstabber/egoboo-assets.git
 [submodule "external"]
 	path = external
-	url = https://github.com/egoboo/egoboo-external
+	url = git@github.com:dubstabber/egoboo-external.git
 [submodule "idlib"]
 	path = idlib
-  url = https://github.com/egoboo/idlib
-	branch = develop
+	url = git@github.com:dubstabber/idlib.git
+	branch = master
 [submodule "idlib-game-engine"]
 	path = idlib-game-engine
-	url = https://github.com/egoboo/idlib-game-engine
-	branch = develop
+	url = git@github.com:dubstabber/idlib-game-engine.git
+	branch = master

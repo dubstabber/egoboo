@@ -23,9 +23,24 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
+
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+uint32_t worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+}
 
 namespace Ego
 {
@@ -113,7 +128,7 @@ void Player::updateLatches()
     }
 
     //inventory mode
-    else if (_inventoryCooldown < update_wld)
+    else if (_inventoryCooldown < worldUpdateCount())
     {
         int new_selected = _inventorySlot;
 
@@ -131,7 +146,7 @@ void Player::updateLatches()
         //clip to a valid value
         if ( _inventorySlot != new_selected )
         {
-            _inventoryCooldown = update_wld + 5;
+            _inventoryCooldown = worldUpdateCount() + 5;
 
             //Make inventory movement wrap around
             if(new_selected < 0) {
@@ -173,26 +188,30 @@ void Player::updateLatches()
     }
 
     //enable inventory mode?
-    if ( update_wld > _inventoryCooldown && getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::INVENTORY) )
+    if ( worldUpdateCount() > _inventoryCooldown && getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::INVENTORY) )
     {
-        for(uint8_t ipla = 0; ipla < _currentModule->getPlayerList().size(); ++ipla) {
-            if(_currentModule->getPlayer(ipla).get() == this) {
-                _gameEngine->getActivePlayingState()->displayCharacterWindow(ipla);
-                _inventoryCooldown = update_wld + ( ONESECOND / 4 );
+        GameModule& module = gameSession().activeModule();
+        for(uint8_t ipla = 0; ipla < module.getPlayerList().size(); ++ipla) {
+            if(module.getPlayer(ipla).get() == this) {
+                if (std::shared_ptr<PlayingState> playingState = EngineContext::get().tryActivePlayingState())
+                {
+                    playingState->displayCharacterWindow(ipla);
+                }
+                _inventoryCooldown = worldUpdateCount() + ( ONESECOND / 4 );
                 break;
             }
         }
     }
 
     //Enter or exit stealth mode?
-    if(getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::STEALTH) && update_wld > _inventoryCooldown) {
+    if(getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::STEALTH) && worldUpdateCount() > _inventoryCooldown) {
         if(!object->isStealthed()) {
             object->activateStealth();
         }
         else {
             object->deactivateStealth();
         }
-        _inventoryCooldown = update_wld + ONESECOND;
+        _inventoryCooldown = worldUpdateCount() + ONESECOND;
     }
 }
 
@@ -201,7 +220,7 @@ void Player::setChargeBar(const uint32_t currentCharge, const uint32_t maxCharge
     _maxCharge = maxCharge;
     _currentCharge = Ego::Math::constrain<uint32_t>(currentCharge, 0, maxCharge);
     _chargeTick = chargeTick;
-    _chargeBarFrame = _gameEngine->getCurrentUpdateFrame() + 10;    
+    _chargeBarFrame = EngineContext::get().engine().getCurrentUpdateFrame() + 10;    
 }
 
 bool Player::hasUnspentLevel() const

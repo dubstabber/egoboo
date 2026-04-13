@@ -24,6 +24,15 @@
 #include "egolib/Entities/ParticleHandler.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Logic/Team.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+
+namespace
+{
+GameModule* tryActiveModule()
+{
+    return GameSessionContext::get().tryActiveModule();
+}
+}
 
 std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle
     (
@@ -89,7 +98,8 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
 
     if (!ppip)
     {
-        const std::string spawnOriginName = _currentModule->getObjectHandler().exists(spawnOrigin) ? _currentModule->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
+        GameModule* module = tryActiveModule();
+        const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
         const std::string spawnProfileName = ProfileSystem::get().isLoaded(spawnProfile) ? ProfileSystem::get().getProfile(spawnProfile)->getPathname() : "INVALID";
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
                                          ", spawn origin == ", spawnOrigin.get(), " (`", spawnOriginName, "`), spawn profile == ", spawnProfile, " (`", spawnProfileName, "`)",
@@ -118,7 +128,8 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
     }
 
     if(!particle) {
-        const std::string spawnOriginName = _currentModule->getObjectHandler().exists(spawnOrigin) ? _currentModule->getObjectHandler().get(spawnOrigin)->getName() : "INVALID";
+        GameModule* module = tryActiveModule();
+        const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler().get(spawnOrigin)->getName() : "INVALID";
         const std::string particleProfileName = LOADED_PIP(particleProfile) ? ProfileSystem::get().ParticleProfileSystem.get_ptr(particleProfile)->_name : "INVALID";
         const std::string spawnProfileName = ProfileSystem::get().isLoaded(spawnProfile) ? ProfileSystem::get().getProfile(spawnProfile)->getPathname().c_str() : "INVALID";
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
