@@ -1,3 +1,7 @@
+DEPRECATED: This file may be out of date. The canonical build guide is
+README.md (general) and doc/build-linux.md (Linux). Use CMake as described
+there. The instructions below are preserved for historical reference only.
+
 How to compile Egoboo on Mac OS X
 
 Step 1:

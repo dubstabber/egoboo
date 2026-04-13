@@ -1,1 +1,0 @@
-swig -lua ego.i

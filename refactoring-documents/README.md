@@ -29,25 +29,25 @@ Out of scope for the active architecture model:
 
 ## Snapshot metrics
 
-| Metric | Value |
-| --- | ---: |
-| Runtime source files in `egolib`/`egoboo`/`cartman` (`*.c`, `*.cpp`, `*.h`, `*.hpp`) | 591 |
-| C files | 56 |
-| C++ implementation files | 210 |
-| Header files (`.h`) | 64 |
-| Header files (`.hpp`) | 261 |
-| Largest translation unit | `egolib/library/src/egolib/game/script_functions.c` (8153 lines) |
-| `_currentModule` references | 592 |
-| `_gameEngine` references | 266 |
-| `update_wld` references | 65 |
-| `TODO`/`FIXME`/`HACK` style matches in active code | 73 |
-| Modules under `data/modules` | 42 |
-| Object directories under `data/` | 968 |
-| `data.txt` files | 946 |
-| `script.txt` files | 951 |
-| `enchant.txt` files | 206 |
-| `level.mpd` files | 43 |
-| `tris.md2` files | 953 |
+| Metric                                                                               |                                                            Value |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------: |
+| Runtime source files in `egolib`/`egoboo`/`cartman` (`*.c`, `*.cpp`, `*.h`, `*.hpp`) |                                                              591 |
+| C files                                                                              |                                                               56 |
+| C++ implementation files                                                             |                                                              210 |
+| Header files (`.h`)                                                                  |                                                               64 |
+| Header files (`.hpp`)                                                                |                                                              261 |
+| Largest translation unit                                                             | `egolib/library/src/egolib/game/script_functions.c` (8153 lines) |
+| `_currentModule` references                                                          |                                                              592 |
+| `_gameEngine` references                                                             |                                                              266 |
+| `update_wld` references                                                              |                                                               65 |
+| `TODO`/`FIXME`/`HACK` style matches in active code                                   |                                                               73 |
+| Modules under `data/modules`                                                         |                                                               42 |
+| Object directories under `data/`                                                     |                                                              968 |
+| `data.txt` files                                                                     |                                                              946 |
+| `script.txt` files                                                                   |                                                              951 |
+| `enchant.txt` files                                                                  |                                                              206 |
+| `level.mpd` files                                                                    |                                                               43 |
+| `tris.md2` files                                                                     |                                                              953 |
 
 ## Documents in this folder
 
@@ -67,6 +67,9 @@ Out of scope for the active architecture model:
 - `14-graphics-runtime-shell-context-pass.md`
 - `15-entity-physics-runtime-context-pass.md`
 - `16-scripting-runtime-shell-context-pass.md`
+- `17-codebase-health-assessment.md`
+- `18-modularization-analysis.md`
+- `19-new-refactoring-plan.md`
 
 ## Recommended reading order
 
@@ -80,6 +83,9 @@ Out of scope for the active architecture model:
 8. Read `04-refactoring-strategy.md` before starting code motion.
 9. Read `11-runtime-context-extraction-pass.md`, `12-ui-game-state-session-access-pass.md`, `13-gameplay-runtime-shell-context-pass.md`, `14-graphics-runtime-shell-context-pass.md`, `15-entity-physics-runtime-context-pass.md`, and `16-scripting-runtime-shell-context-pass.md` before continuing session/global-access cleanup work.
 10. Use `05-playtesting-and-bug-hunt-plan.md` to turn future changes into repeatable validation work.
+11. Read `17-codebase-health-assessment.md` for a quantitative quality snapshot with metrics and a scorecard.
+12. Read `18-modularization-analysis.md` to understand current module boundaries, coupling, and a target decomposition.
+13. Read `19-new-refactoring-plan.md` for the prioritized, actionable refactoring roadmap.
 
 ## Immediate recommendation
 

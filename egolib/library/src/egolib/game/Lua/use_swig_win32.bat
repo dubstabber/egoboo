@@ -1,1 +1,0 @@
-C:\SDKs\swigwin-1.3.36\swig -lua ego.i
