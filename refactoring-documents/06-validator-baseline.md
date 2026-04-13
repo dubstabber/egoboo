@@ -1,6 +1,6 @@
 # Validator Baseline
 
-This document records the first non-UI content validation pass added during the refactor audit on 2026-04-12.
+This document records the first non-UI content validation pass added during the refactor audit on 2026-04-12 and the first report-mode update added on 2026-04-13.
 
 It is not a playtest. It is a structural baseline for module/content health.
 
@@ -10,12 +10,18 @@ The repository now contains a lightweight validation tool:
 
 - target: `egoboo-content-validator`
 - source: `tools/egoboo-content-validator.cpp`
+- machine-readable report mode: `--json`
 
 It is wired into the root build through `tools/CMakeLists.txt` and the root `CMakeLists.txt`.
 
 Related Linux build/run documentation was also added in:
 
 - `doc/build-linux.md`
+
+Related compatibility specs now exist in:
+
+- `08-spawn-format-spec.md`
+- `09-data-format-spec.md`
 
 ## 2. Validator scope
 
@@ -35,6 +41,13 @@ The validator currently checks:
 - presence of `data.txt` and `tris.md2`
 - spawn-referenced object resolution against `mp_objects`
 - object script compilation or fallback to `mp_data/script.txt`
+
+When `--json` is enabled, the validator also emits:
+
+- run summary totals
+- per-module result rows
+- categorized warning and error events
+- aggregated unresolved spawn-object names per module
 
 It does not yet check:
 
@@ -80,6 +93,12 @@ The intended command is:
 ./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data"
 ```
 
+Machine-readable output:
+
+```bash
+./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --json
+```
+
 ### Sandboxed or CI-like environments
 
 In this audit environment, SDL preference paths under the real home directory were read-only.
@@ -94,15 +113,25 @@ XDG_DATA_HOME=/tmp/egoboo-xdg \
 
 This is an execution-environment note, not a gameplay bug.
 
-## 5. First full baseline results
+## 5. Latest full baseline results
 
-Full run command used for the baseline:
+Full run command used for the original console baseline:
 
 ```bash
 HOME=/tmp/egoboo-home \
 XDG_DATA_HOME=/tmp/egoboo-xdg \
 ./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data"
 ```
+
+Full run command used for the 2026-04-13 report-mode refresh:
+
+```bash
+HOME=/tmp/egoboo-home \
+XDG_DATA_HOME=/tmp/egoboo-xdg \
+./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --json
+```
+
+The JSON refresh produced the same top-level totals as the original console baseline.
 
 Summary:
 
@@ -152,6 +181,15 @@ Current warning counts:
 
 These are useful signals, but they are secondary compared to the missing spawn references.
 
+Stable report categories in the current JSON output:
+
+- errors:
+  - `missing_spawn_object`
+  - `missing_required_file`
+- warnings:
+  - `script_missing`
+  - `script_fallback`
+
 ## 8. Highest-error modules
 
 Top failing modules from the first baseline:
@@ -198,6 +236,8 @@ Interpretation:
 - some likely depend on historical aliasing or content overlays that no longer exist
 - at least a few contain malformed or empty names, e.g. `.obj`
 
+The validator now emits these counts directly through the `unresolved_spawn_references` JSON array with per-module aggregation.
+
 ## 10. Immediate refactor implications
 
 The validator results change the order of operations for the larger refactor.
@@ -216,11 +256,11 @@ The first pass strongly suggests that content integrity debt is larger than pars
 
 ## 11. Suggested next steps from this baseline
 
-1. Add a report mode to the validator so it can emit JSON or CSV instead of console text.
-2. Build an object-name reconciliation report:
+1. Use the validator JSON report as the source of truth for future baseline refreshes.
+2. Build an object-name reconciliation workflow on top of the aggregated unresolved-spawn output:
    - spawn name
    - module
-   - closest matching real object directory
+   - resolved virtual path
    - repeated occurrence count
 3. Use the validator as a gate before touching legacy formats.
 4. Start triage with the worst modules:

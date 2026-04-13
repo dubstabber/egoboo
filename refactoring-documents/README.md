@@ -58,6 +58,8 @@ Out of scope for the active architecture model:
 - `05-playtesting-and-bug-hunt-plan.md`
 - `06-validator-baseline.md`
 - `07-historical-docs-audit.md`
+- `08-spawn-format-spec.md`
+- `09-data-format-spec.md`
 
 ## Recommended reading order
 
@@ -66,8 +68,10 @@ Out of scope for the active architecture model:
 3. Read `03-data-and-content-audit.md` before touching any content format or scripting change.
 4. Read `06-validator-baseline.md` before assuming the current content set is internally consistent.
 5. Read `07-historical-docs-audit.md` before planning content-format or scripting migrations.
-6. Read `04-refactoring-strategy.md` before starting code motion.
-7. Use `05-playtesting-and-bug-hunt-plan.md` to turn future changes into repeatable validation work.
+6. Read `08-spawn-format-spec.md` before changing spawn-name resolution, dependency handling, or validator alias reporting.
+7. Read `09-data-format-spec.md` before changing object profile parsing, slot semantics, or save/import behavior.
+8. Read `04-refactoring-strategy.md` before starting code motion.
+9. Use `05-playtesting-and-bug-hunt-plan.md` to turn future changes into repeatable validation work.
 
 ## Immediate recommendation
 
@@ -83,3 +87,5 @@ Items 1 and 3 now have a first implementation in this workspace:
 - canonical Linux doc: `doc/build-linux.md`
 - content validation baseline: `06-validator-baseline.md`
 - historical legacy-doc audit: `07-historical-docs-audit.md`
+- spawn format compatibility spec: `08-spawn-format-spec.md`
+- data format compatibility spec: `09-data-format-spec.md`

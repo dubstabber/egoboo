@@ -15,14 +15,21 @@
 
 #include <SDL.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
+#include <fcntl.h>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_set>
+#include <utility>
 #include <vector>
+
+#include <unistd.h>
 
 namespace {
 
@@ -30,6 +37,7 @@ struct Options
 {
     bool verbose = false;
     bool skipScripts = false;
+    bool jsonOutput = false;
     bool hasModuleFilter = false;
     bool hasDataDir = false;
     std::string moduleFilter;
@@ -41,48 +49,257 @@ struct ModuleSummary
     size_t localObjects = 0;
     size_t uniqueObjects = 0;
     size_t spawnEntries = 0;
+    size_t warnings = 0;
+    size_t errors = 0;
+    std::map<std::string, size_t> categoryCounts;
+};
+
+struct ModuleResult
+{
+    std::string moduleName;
+    bool ok = false;
+    ModuleSummary summary;
+};
+
+struct ValidationEvent
+{
+    std::string module;
+    std::string severity;
+    std::string category;
+    std::string subject;
+    std::string message;
+    std::string sourcePath;
+    std::string spawnName;
+    std::string resolvedVirtualPath;
+};
+
+struct ReconciliationKey
+{
+    std::string module;
+    std::string sourcePath;
+    std::string spawnName;
+    std::string resolvedVirtualPath;
+
+    bool operator<(const ReconciliationKey& other) const
+    {
+        return std::tie(module, sourcePath, spawnName, resolvedVirtualPath)
+             < std::tie(other.module, other.sourcePath, other.spawnName, other.resolvedVirtualPath);
+    }
 };
 
 class Reporter
 {
 public:
-    explicit Reporter(bool verbose) :
+    Reporter(bool verbose, bool jsonOutput) :
         verbose(verbose),
-        errors(0),
-        warnings(0)
+        jsonOutput(jsonOutput)
     {}
 
     void info(const std::string& message) const
     {
-        if (verbose)
+        if (verbose && !jsonOutput)
         {
             std::cout << message << std::endl;
         }
     }
 
-    void error(const std::string& moduleName, const std::string& subject, const std::string& message)
+    void error(const std::string& moduleName,
+               const std::string& category,
+               const std::string& subject,
+               const std::string& message,
+               ModuleSummary* summary = nullptr,
+               const std::string& sourcePath = "",
+               const std::string& spawnName = "",
+               const std::string& resolvedVirtualPath = "")
     {
-        ++errors;
-        std::cerr << "error"
-                  << " [" << moduleName << "] "
-                  << subject << ": "
-                  << message << std::endl;
+        record(true, moduleName, category, subject, message, summary, sourcePath, spawnName, resolvedVirtualPath);
     }
 
-    void warning(const std::string& moduleName, const std::string& subject, const std::string& message)
+    void warning(const std::string& moduleName,
+                 const std::string& category,
+                 const std::string& subject,
+                 const std::string& message,
+                 ModuleSummary* summary = nullptr,
+                 const std::string& sourcePath = "",
+                 const std::string& spawnName = "",
+                 const std::string& resolvedVirtualPath = "")
     {
-        ++warnings;
-        std::cerr << "warning"
-                  << " [" << moduleName << "] "
-                  << subject << ": "
-                  << message << std::endl;
+        record(false, moduleName, category, subject, message, summary, sourcePath, spawnName, resolvedVirtualPath);
     }
 
-    size_t errors;
-    size_t warnings;
+    const std::vector<ValidationEvent>& getEvents() const
+    {
+        return events;
+    }
+
+    const std::map<std::string, size_t>& getCategoryCounts() const
+    {
+        return categoryCounts;
+    }
+
+    const std::map<std::string, size_t>& getErrorCategoryCounts() const
+    {
+        return errorCategoryCounts;
+    }
+
+    const std::map<std::string, size_t>& getWarningCategoryCounts() const
+    {
+        return warningCategoryCounts;
+    }
+
+    const std::map<ReconciliationKey, size_t>& getUnresolvedSpawnCounts() const
+    {
+        return unresolvedSpawnCounts;
+    }
+
+    size_t errors = 0;
+    size_t warnings = 0;
 
 private:
+    void record(bool isError,
+                const std::string& moduleName,
+                const std::string& category,
+                const std::string& subject,
+                const std::string& message,
+                ModuleSummary* summary,
+                const std::string& sourcePath,
+                const std::string& spawnName,
+                const std::string& resolvedVirtualPath)
+    {
+        if (isError)
+        {
+            ++errors;
+        }
+        else
+        {
+            ++warnings;
+        }
+
+        if (summary)
+        {
+            if (isError)
+            {
+                ++summary->errors;
+            }
+            else
+            {
+                ++summary->warnings;
+            }
+            ++summary->categoryCounts[category];
+        }
+
+        ++categoryCounts[category];
+        if (isError)
+        {
+            ++errorCategoryCounts[category];
+        }
+        else
+        {
+            ++warningCategoryCounts[category];
+        }
+
+        ValidationEvent event;
+        event.module = moduleName;
+        event.severity = isError ? "error" : "warning";
+        event.category = category;
+        event.subject = subject;
+        event.message = message;
+        event.sourcePath = sourcePath.empty() ? subject : sourcePath;
+        event.spawnName = spawnName;
+        event.resolvedVirtualPath = resolvedVirtualPath;
+        events.push_back(event);
+
+        if (category == "missing_spawn_object")
+        {
+            ReconciliationKey key;
+            key.module = moduleName;
+            key.sourcePath = event.sourcePath;
+            key.spawnName = spawnName;
+            key.resolvedVirtualPath = resolvedVirtualPath;
+            ++unresolvedSpawnCounts[key];
+        }
+
+        if (!jsonOutput)
+        {
+            std::cerr << (isError ? "error" : "warning")
+                      << " [" << moduleName << "] "
+                      << subject << ": "
+                      << message << std::endl;
+        }
+    }
+
     bool verbose;
+    bool jsonOutput;
+    std::vector<ValidationEvent> events;
+    std::map<std::string, size_t> categoryCounts;
+    std::map<std::string, size_t> errorCategoryCounts;
+    std::map<std::string, size_t> warningCategoryCounts;
+    std::map<ReconciliationKey, size_t> unresolvedSpawnCounts;
+};
+
+class StreamSilencer
+{
+public:
+    explicit StreamSilencer(bool active) :
+        active(active)
+    {
+        if (!active)
+        {
+            return;
+        }
+
+        nullFd = open("/dev/null", O_WRONLY);
+        if (nullFd == -1)
+        {
+            throw std::runtime_error("unable to open /dev/null");
+        }
+
+        stdoutCopy = dup(STDOUT_FILENO);
+        stderrCopy = dup(STDERR_FILENO);
+        if (stdoutCopy == -1 || stderrCopy == -1)
+        {
+            throw std::runtime_error("unable to duplicate process streams");
+        }
+
+        if (dup2(nullFd, STDOUT_FILENO) == -1 || dup2(nullFd, STDERR_FILENO) == -1)
+        {
+            throw std::runtime_error("unable to redirect process streams");
+        }
+    }
+
+    StreamSilencer(const StreamSilencer&) = delete;
+    StreamSilencer& operator=(const StreamSilencer&) = delete;
+
+    ~StreamSilencer()
+    {
+        if (!active)
+        {
+            return;
+        }
+
+        if (stdoutCopy != -1)
+        {
+            dup2(stdoutCopy, STDOUT_FILENO);
+            close(stdoutCopy);
+        }
+
+        if (stderrCopy != -1)
+        {
+            dup2(stderrCopy, STDERR_FILENO);
+            close(stderrCopy);
+        }
+
+        if (nullFd != -1)
+        {
+            close(nullFd);
+        }
+    }
+
+private:
+    bool active = false;
+    int stdoutCopy = -1;
+    int stderrCopy = -1;
+    int nullFd = -1;
 };
 
 class MinimalRuntime
@@ -129,6 +346,225 @@ std::string objectVirtualPath(const std::string& anyObjectPath)
     return "mp_objects/" + baseName(anyObjectPath);
 }
 
+void writeJsonString(std::ostream& output, const std::string& value)
+{
+    output << '"';
+    for (unsigned char character : value)
+    {
+        switch (character)
+        {
+            case '\\': output << "\\\\"; break;
+            case '"': output << "\\\""; break;
+            case '\b': output << "\\b"; break;
+            case '\f': output << "\\f"; break;
+            case '\n': output << "\\n"; break;
+            case '\r': output << "\\r"; break;
+            case '\t': output << "\\t"; break;
+            default:
+                if (character < 0x20)
+                {
+                    const char digits[] = "0123456789abcdef";
+                    output << "\\u00"
+                           << digits[(character >> 4) & 0x0f]
+                           << digits[character & 0x0f];
+                }
+                else
+                {
+                    output << static_cast<char>(character);
+                }
+                break;
+        }
+    }
+    output << '"';
+}
+
+void writeJsonCategoryCounts(std::ostream& output, const std::map<std::string, size_t>& counts)
+{
+    output << "{";
+    bool first = true;
+    for (const auto& entry : counts)
+    {
+        if (!first)
+        {
+            output << ",";
+        }
+        first = false;
+        writeJsonString(output, entry.first);
+        output << ":" << entry.second;
+    }
+    output << "}";
+}
+
+void emitJsonReport(const Options& options,
+                    const Reporter& reporter,
+                    const std::vector<ModuleResult>& results)
+{
+    size_t passingModules = 0;
+    size_t failingModules = 0;
+    for (const auto& result : results)
+    {
+        if (result.ok)
+        {
+            ++passingModules;
+        }
+        else
+        {
+            ++failingModules;
+        }
+    }
+
+    std::cout << "{";
+
+    std::cout << "\"schema_version\":1,";
+
+    std::cout << "\"options\":{";
+    std::cout << "\"verbose\":" << (options.verbose ? "true" : "false") << ",";
+    std::cout << "\"skip_scripts\":" << (options.skipScripts ? "true" : "false") << ",";
+    std::cout << "\"module_filter\":";
+    if (options.hasModuleFilter)
+    {
+        writeJsonString(std::cout, options.moduleFilter);
+    }
+    else
+    {
+        std::cout << "null";
+    }
+    std::cout << ",";
+    std::cout << "\"data_dir\":";
+    if (options.hasDataDir)
+    {
+        writeJsonString(std::cout, options.dataDir);
+    }
+    else
+    {
+        std::cout << "null";
+    }
+    std::cout << "},";
+
+    std::cout << "\"summary\":{";
+    std::cout << "\"validated_modules\":" << results.size() << ",";
+    std::cout << "\"passing_modules\":" << passingModules << ",";
+    std::cout << "\"failing_modules\":" << failingModules << ",";
+    std::cout << "\"warnings\":" << reporter.warnings << ",";
+    std::cout << "\"errors\":" << reporter.errors << ",";
+    std::cout << "\"category_counts\":";
+    writeJsonCategoryCounts(std::cout, reporter.getCategoryCounts());
+    std::cout << ",";
+    std::cout << "\"error_category_counts\":";
+    writeJsonCategoryCounts(std::cout, reporter.getErrorCategoryCounts());
+    std::cout << ",";
+    std::cout << "\"warning_category_counts\":";
+    writeJsonCategoryCounts(std::cout, reporter.getWarningCategoryCounts());
+    std::cout << "},";
+
+    std::cout << "\"modules\":[";
+    for (size_t index = 0; index < results.size(); ++index)
+    {
+        if (index > 0)
+        {
+            std::cout << ",";
+        }
+
+        const auto& result = results[index];
+        std::cout << "{";
+        std::cout << "\"module\":";
+        writeJsonString(std::cout, result.moduleName);
+        std::cout << ",";
+        std::cout << "\"ok\":" << (result.ok ? "true" : "false") << ",";
+        std::cout << "\"local_objects\":" << result.summary.localObjects << ",";
+        std::cout << "\"unique_objects\":" << result.summary.uniqueObjects << ",";
+        std::cout << "\"spawn_entries\":" << result.summary.spawnEntries << ",";
+        std::cout << "\"warnings\":" << result.summary.warnings << ",";
+        std::cout << "\"errors\":" << result.summary.errors << ",";
+        std::cout << "\"category_counts\":";
+        writeJsonCategoryCounts(std::cout, result.summary.categoryCounts);
+        std::cout << "}";
+    }
+    std::cout << "],";
+
+    std::cout << "\"events\":[";
+    const auto& events = reporter.getEvents();
+    for (size_t index = 0; index < events.size(); ++index)
+    {
+        if (index > 0)
+        {
+            std::cout << ",";
+        }
+
+        const auto& event = events[index];
+        std::cout << "{";
+        std::cout << "\"module\":";
+        writeJsonString(std::cout, event.module);
+        std::cout << ",";
+        std::cout << "\"severity\":";
+        writeJsonString(std::cout, event.severity);
+        std::cout << ",";
+        std::cout << "\"category\":";
+        writeJsonString(std::cout, event.category);
+        std::cout << ",";
+        std::cout << "\"subject\":";
+        writeJsonString(std::cout, event.subject);
+        std::cout << ",";
+        std::cout << "\"message\":";
+        writeJsonString(std::cout, event.message);
+        std::cout << ",";
+        std::cout << "\"source_path\":";
+        writeJsonString(std::cout, event.sourcePath);
+        std::cout << ",";
+        std::cout << "\"spawn_name\":";
+        if (event.spawnName.empty())
+        {
+            std::cout << "null";
+        }
+        else
+        {
+            writeJsonString(std::cout, event.spawnName);
+        }
+        std::cout << ",";
+        std::cout << "\"resolved_virtual_path\":";
+        if (event.resolvedVirtualPath.empty())
+        {
+            std::cout << "null";
+        }
+        else
+        {
+            writeJsonString(std::cout, event.resolvedVirtualPath);
+        }
+        std::cout << "}";
+    }
+    std::cout << "],";
+
+    std::cout << "\"unresolved_spawn_references\":[";
+    bool firstUnresolved = true;
+    for (const auto& entry : reporter.getUnresolvedSpawnCounts())
+    {
+        if (!firstUnresolved)
+        {
+            std::cout << ",";
+        }
+        firstUnresolved = false;
+
+        std::cout << "{";
+        std::cout << "\"module\":";
+        writeJsonString(std::cout, entry.first.module);
+        std::cout << ",";
+        std::cout << "\"source_path\":";
+        writeJsonString(std::cout, entry.first.sourcePath);
+        std::cout << ",";
+        std::cout << "\"spawn_name\":";
+        writeJsonString(std::cout, entry.first.spawnName);
+        std::cout << ",";
+        std::cout << "\"resolved_virtual_path\":";
+        writeJsonString(std::cout, entry.first.resolvedVirtualPath);
+        std::cout << ",";
+        std::cout << "\"occurrence_count\":" << entry.second;
+        std::cout << "}";
+    }
+    std::cout << "]";
+
+    std::cout << "}" << std::endl;
+}
+
 void printUsage(const char* executableName)
 {
     std::cout
@@ -136,6 +572,7 @@ void printUsage(const char* executableName)
         << "\n"
         << "Options:\n"
         << "  --data-dir <path>   Use the given Egoboo data directory.\n"
+        << "  --json              Emit a machine-readable JSON report.\n"
         << "  --module <name>     Validate a single module by folder name or VFS path.\n"
         << "  --skip-scripts      Skip object script compilation checks.\n"
         << "  --verbose           Print progress while validating.\n"
@@ -162,6 +599,10 @@ Options parseArguments(int argc, char** argv)
         else if ("--skip-scripts" == argument)
         {
             options.skipScripts = true;
+        }
+        else if ("--json" == argument)
+        {
+            options.jsonOutput = true;
         }
         else if ("--module" == argument)
         {
@@ -213,13 +654,13 @@ bool validateObjectProfile(const std::string& moduleName,
 
     if (!vfs_exists(dataPath))
     {
-        reporter.error(moduleName, dataPath, "missing required object data file");
+        reporter.error(moduleName, "missing_required_file", dataPath, "missing required object data file", &summary, dataPath);
         return false;
     }
 
     if (!vfs_exists(modelPath))
     {
-        reporter.error(moduleName, modelPath, "missing required object model");
+        reporter.error(moduleName, "missing_required_file", modelPath, "missing required object model", &summary, modelPath);
         success = false;
     }
 
@@ -228,7 +669,7 @@ bool validateObjectProfile(const std::string& moduleName,
         auto profile = ObjectProfile::loadFromFile(virtualObjectPath, ObjectProfileRef(1), true);
         if (!profile)
         {
-            reporter.error(moduleName, virtualObjectPath, "unable to parse object profile");
+            reporter.error(moduleName, "parse_failure", virtualObjectPath, "unable to parse object profile", &summary, virtualObjectPath);
             return false;
         }
 
@@ -236,25 +677,40 @@ bool validateObjectProfile(const std::string& moduleName,
         {
             if (!vfs_exists(scriptPath))
             {
-                reporter.warning(moduleName, scriptPath, "missing object script; runtime will fall back to mp_data/script.txt");
+                reporter.warning(moduleName,
+                                 "script_missing",
+                                 scriptPath,
+                                 "missing object script; runtime will fall back to mp_data/script.txt",
+                                 &summary,
+                                 scriptPath);
             }
 
             script_info_t script;
             parser_state_t& parser = parser_state_t::get();
             if (rv_success != load_ai_script_vfs(parser, scriptPath, profile.get(), script))
             {
-                reporter.error(moduleName, scriptPath, "unable to compile object script or fallback script");
+                reporter.error(moduleName,
+                               "script_compile_failure",
+                               scriptPath,
+                               "unable to compile object script or fallback script",
+                               &summary,
+                               scriptPath);
                 success = false;
             }
             else if (script.getName() != scriptPath)
             {
-                reporter.warning(moduleName, scriptPath, "object script failed and runtime fell back to `" + script.getName() + "`");
+                reporter.warning(moduleName,
+                                 "script_fallback",
+                                 scriptPath,
+                                 "object script failed and runtime fell back to `" + script.getName() + "`",
+                                 &summary,
+                                 scriptPath);
             }
         }
     }
     catch (const std::exception& ex)
     {
-        reporter.error(moduleName, virtualObjectPath, ex.what());
+        reporter.error(moduleName, "parse_failure", virtualObjectPath, ex.what(), &summary, virtualObjectPath);
         success = false;
     }
 
@@ -288,7 +744,12 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
 
     if (!setup_init_module_vfs_paths(module->getPath()))
     {
-        reporter.error(moduleName, module->getPath(), "unable to configure module VFS paths");
+        reporter.error(moduleName,
+                       "runtime_setup_failure",
+                       module->getPath(),
+                       "unable to configure module VFS paths",
+                       &summary,
+                       module->getPath());
         return false;
     }
 
@@ -300,25 +761,25 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
 
     if (!vfs_exists(menuPath))
     {
-        reporter.error(moduleName, menuPath, "missing required module metadata file");
+        reporter.error(moduleName, "missing_required_file", menuPath, "missing required module metadata file", &summary, menuPath);
         success = false;
     }
 
     if (!vfs_exists(spawnPath))
     {
-        reporter.error(moduleName, spawnPath, "missing required spawn file");
+        reporter.error(moduleName, "missing_required_file", spawnPath, "missing required spawn file", &summary, spawnPath);
         success = false;
     }
 
     if (!vfs_exists(mapPath))
     {
-        reporter.error(moduleName, mapPath, "missing required module mesh");
+        reporter.error(moduleName, "missing_required_file", mapPath, "missing required module mesh", &summary, mapPath);
         success = false;
     }
 
     if (!vfs_exists(environmentPath))
     {
-        reporter.error(moduleName, environmentPath, "missing required environment file");
+        reporter.error(moduleName, "missing_required_file", environmentPath, "missing required environment file", &summary, environmentPath);
         success = false;
     }
 
@@ -330,7 +791,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
     map_t map;
     if (!map.load(mapPath))
     {
-        reporter.error(moduleName, mapPath, "unable to parse module mesh");
+        reporter.error(moduleName, "parse_failure", mapPath, "unable to parse module mesh", &summary, mapPath);
         success = false;
     }
     else
@@ -343,7 +804,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
         wawalite_data_t wawalite;
         if (!wawalite_data_read(environmentPath, &wawalite))
         {
-            reporter.error(moduleName, environmentPath, "unable to parse environment data");
+            reporter.error(moduleName, "parse_failure", environmentPath, "unable to parse environment data", &summary, environmentPath);
             success = false;
         }
         else
@@ -353,7 +814,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
     }
     catch (const std::exception& ex)
     {
-        reporter.error(moduleName, environmentPath, ex.what());
+        reporter.error(moduleName, "parse_failure", environmentPath, ex.what(), &summary, environmentPath);
         success = false;
     }
 
@@ -366,7 +827,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
     }
     catch (const std::exception& ex)
     {
-        reporter.error(moduleName, spawnPath, ex.what());
+        reporter.error(moduleName, "parse_failure", spawnPath, ex.what(), &summary, spawnPath);
         success = false;
     }
 
@@ -390,7 +851,12 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
     }
     catch (const std::exception& ex)
     {
-        reporter.error(moduleName, module->getPath() + "/objects", ex.what());
+        reporter.error(moduleName,
+                       "scan_failure",
+                       module->getPath() + "/objects",
+                       ex.what(),
+                       &summary,
+                       module->getPath() + "/objects");
         success = false;
     }
 
@@ -410,7 +876,14 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
             const std::string virtualPath = objectVirtualPath(normalized.spawn_comment);
             if (!vfs_exists(virtualPath))
             {
-                reporter.error(moduleName, spawnPath, "referenced object `" + normalized.spawn_comment + "` was not found on mp_objects");
+                reporter.error(moduleName,
+                               "missing_spawn_object",
+                               spawnPath,
+                               "referenced object `" + normalized.spawn_comment + "` was not found on mp_objects",
+                               &summary,
+                               spawnPath,
+                               normalized.spawn_comment,
+                               virtualPath);
                 success = false;
                 continue;
             }
@@ -420,7 +893,7 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
     }
     catch (const std::exception& ex)
     {
-        reporter.error(moduleName, treasurePath, ex.what());
+        reporter.error(moduleName, "parse_failure", treasurePath, ex.what(), &summary, treasurePath);
         success = false;
     }
 
@@ -454,51 +927,75 @@ int main(int argc, char** argv)
             }
         }
 
-        MinimalRuntime runtime(argv[0]);
-        Reporter reporter(options.verbose);
+        Reporter reporter(options.verbose, options.jsonOutput);
+        std::vector<ModuleResult> results;
+        int exitCode = EXIT_FAILURE;
 
-        ProfileSystem::get().loadModuleProfiles();
-
-        std::vector<std::shared_ptr<ModuleProfile>> selectedModules;
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
         {
-            if (module && matchesModuleFilter(*module, options))
+            StreamSilencer silencer(options.jsonOutput);
+            MinimalRuntime runtime(argv[0]);
+
+            ProfileSystem::get().loadModuleProfiles();
+
+            std::vector<std::shared_ptr<ModuleProfile>> selectedModules;
+            for (const auto& module : ProfileSystem::get().getModuleProfiles())
             {
-                selectedModules.push_back(module);
+                if (module && matchesModuleFilter(*module, options))
+                {
+                    selectedModules.push_back(module);
+                }
             }
+
+            if (selectedModules.empty())
+            {
+                throw std::runtime_error("no modules matched the requested filter");
+            }
+
+            std::sort(selectedModules.begin(),
+                      selectedModules.end(),
+                      [](const std::shared_ptr<ModuleProfile>& left, const std::shared_ptr<ModuleProfile>& right)
+                      {
+                          return left->getFolderName() < right->getFolderName();
+                      });
+
+            results.reserve(selectedModules.size());
+
+            for (const auto& module : selectedModules)
+            {
+                ModuleResult result;
+                result.moduleName = module->getFolderName();
+                result.ok = validateModule(module, reporter, options, result.summary);
+                results.push_back(result);
+
+                if (!options.jsonOutput)
+                {
+                    std::cout << (result.ok ? "[ok]   " : "[fail] ")
+                              << result.moduleName
+                              << " local_objects=" << result.summary.localObjects
+                              << " unique_objects=" << result.summary.uniqueObjects
+                              << " spawn_entries=" << result.summary.spawnEntries
+                              << " warnings=" << result.summary.warnings
+                              << " errors=" << result.summary.errors
+                              << std::endl;
+                }
+            }
+
+            exitCode = reporter.errors == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
         }
 
-        if (selectedModules.empty())
+        if (options.jsonOutput)
         {
-            throw std::runtime_error("no modules matched the requested filter");
+            emitJsonReport(options, reporter, results);
         }
-
-        size_t validatedModules = 0;
-        for (const auto& module : selectedModules)
+        else
         {
-            const size_t errorsBefore = reporter.errors;
-            const size_t warningsBefore = reporter.warnings;
-
-            ModuleSummary summary;
-            const bool ok = validateModule(module, reporter, options, summary);
-            ++validatedModules;
-
-            std::cout << (ok ? "[ok]   " : "[fail] ")
-                      << module->getFolderName()
-                      << " local_objects=" << summary.localObjects
-                      << " unique_objects=" << summary.uniqueObjects
-                      << " spawn_entries=" << summary.spawnEntries
-                      << " warnings=" << (reporter.warnings - warningsBefore)
-                      << " errors=" << (reporter.errors - errorsBefore)
+            std::cout << "validated modules=" << results.size()
+                      << " warnings=" << reporter.warnings
+                      << " errors=" << reporter.errors
                       << std::endl;
         }
 
-        std::cout << "validated modules=" << validatedModules
-                  << " warnings=" << reporter.warnings
-                  << " errors=" << reporter.errors
-                  << std::endl;
-
-        return reporter.errors == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+        return exitCode;
     }
     catch (const std::exception& ex)
     {
