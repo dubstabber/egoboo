@@ -344,7 +344,12 @@ A (build hygiene)
   - end-to-end structural load sequence
   - Verified with 27 focused passing tests via both `egolib-tests-executable` and `ctest`
   - Full `game_begin_module()` / `game_quit_module()` lifecycle unload coverage remains pending because the live module path is still coupled to audio/graphics runtime startup
-- **B3** ❌ Validator profile field range coverage
+- **B3** 🟡 Validator semantic profile checks started (2026-04-13):
+  - validator now warns on a small set of post-load `data.txt` invariants when encountered:
+    - saved-character `SKIN` override must resolve to a valid skin or sentinel
+    - current ammo must not exceed max ammo
+    - enabled attack or attached or go-poof or blud particle hooks must resolve to valid particle profiles
+  - current full baseline totals remain unchanged, so these checks did not surface new issues in shipped content yet
 - **B4** ❌ Build-time compile test per module boundary
 
 ### Phase C: Global State Reduction — 🟡 STARTED

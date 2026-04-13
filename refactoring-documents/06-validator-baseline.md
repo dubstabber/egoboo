@@ -133,6 +133,8 @@ XDG_DATA_HOME=/tmp/egoboo-xdg \
 
 The JSON refresh produced the same top-level totals as the original console baseline.
 
+A follow-up 2026-04-13 validator pass added narrow post-load `data.txt` semantic checks for saved-character skin overrides, ammo-vs-max-ammo, and required particle-profile hooks. That pass also produced the same top-level totals as the original baseline, meaning those new warnings did not trigger on the shipped content set.
+
 Summary:
 
 | Metric | Value |
@@ -189,6 +191,8 @@ Stable report categories in the current JSON output:
 - warnings:
   - `script_missing`
   - `script_fallback`
+
+The validator can now also emit `profile_field_invalid` warnings for a small set of post-load `data.txt` invariants, but the current shipped baseline did not surface any instances.
 
 ## 8. Highest-error modules
 

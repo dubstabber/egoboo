@@ -974,6 +974,51 @@ bool validateObjectProfile(const std::string& moduleName,
             return false;
         }
 
+        const auto warnProfileField = [&](const std::string& detail)
+        {
+            reporter.warning(moduleName,
+                             "profile_field_invalid",
+                             dataPath,
+                             detail,
+                             &summary,
+                             dataPath);
+        };
+
+        const uint16_t skinOverride = profile->getSkinOverride();
+        if (skinOverride != ObjectProfile::NO_SKIN_OVERRIDE
+         && skinOverride != SKINS_PEROBJECT_MAX
+         && !profile->isValidSkin(skinOverride))
+        {
+            warnProfileField("saved-character `SKIN` override " + std::to_string(skinOverride)
+                           + " does not reference a valid skin");
+        }
+
+        if (profile->getAmmo() > profile->getMaxAmmo())
+        {
+            warnProfileField("current ammo " + std::to_string(profile->getAmmo())
+                           + " exceeds max ammo " + std::to_string(profile->getMaxAmmo()));
+        }
+
+        if (profile->hasAttachParticleToWeapon() && INVALID_PIP_REF == profile->getAttackParticleProfile())
+        {
+            warnProfileField("weapon attack particle is enabled but no valid particle profile was resolved");
+        }
+
+        if (profile->getAttachedParticleAmount() > 0 && INVALID_PIP_REF == profile->getAttachedParticleProfile())
+        {
+            warnProfileField("attached particle count is non-zero but no valid attached particle profile was resolved");
+        }
+
+        if (profile->getParticlePoofAmount() > 0 && INVALID_PIP_REF == profile->getParticlePoofProfile())
+        {
+            warnProfileField("go-poof particle count is non-zero but no valid go-poof particle profile was resolved");
+        }
+
+        if (profile->getBludType() && INVALID_PIP_REF == profile->getBludParticleProfile())
+        {
+            warnProfileField("blud effect is enabled but no valid blud particle profile was resolved");
+        }
+
         if (!options.skipScripts)
         {
             if (!vfs_exists(scriptPath))
