@@ -2,8 +2,17 @@
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Script/script.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+}
 
 int32_t load_VARTMPX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
@@ -62,7 +71,7 @@ int32_t load_VARSELFORDER(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VARSELFMORALE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return _currentModule->getTeamList()[pobject->team_base].getMorale();
+    return activeModule().getTeamList()[pobject->team_base].getMorale();
 }
 
 int32_t load_VARSELFLIFE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

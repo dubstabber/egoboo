@@ -30,6 +30,7 @@
 #include "egolib/game/script_implementation.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/game/script_variables.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -108,6 +109,24 @@ Runtime::~Runtime()
 } // namespace Script
 } // namespace Ego
 
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+auto& objectHandler()
+{
+    return activeModule().getObjectHandler();
+}
+
+uint32_t worldUpdateCount()
+{
+    return GameSessionContext::get().worldUpdateCount();
+}
+}
+
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
@@ -150,7 +169,7 @@ void scr_run_chr_script(Object *pchr)
     script_info_t& script = pchr->getProfile()->getAIScript();
 
     // Has the time for this character to die come and gone?
-    if (aiState.poof_time >= 0 && aiState.poof_time <= (int32_t)update_wld)
+    if (aiState.poof_time >= 0 && aiState.poof_time <= (int32_t)worldUpdateCount())
     {
         return;
     }
@@ -196,7 +215,7 @@ void scr_run_chr_script(Object *pchr)
         vfs_printf(scr_file, "\tstate     == %d\n", aiState.state);
         vfs_printf(scr_file, "\tcontent   == %d\n", aiState.content);
         vfs_printf(scr_file, "\ttimer     == %d\n", aiState.timer);
-        vfs_printf(scr_file, "\tupdate_wld == %d\n", update_wld);
+        vfs_printf(scr_file, "\tupdate_wld == %d\n", worldUpdateCount());
 
         // ai memory from the last event
         vfs_printf(scr_file, "\tdirectionlast  == %" PRId32 "\n", aiState.directionlast.get_value());
@@ -225,7 +244,7 @@ void scr_run_chr_script(Object *pchr)
     // Reset the target if it can't be seen.
     if (aiState.getTarget() != aiState.getSelf())
     {
-        const std::shared_ptr<Object> &target = _currentModule->getObjectHandler()[aiState.getTarget()];
+        const std::shared_ptr<Object> &target = objectHandler()[aiState.getTarget()];
         if (target && !pchr->canSeeObject(target))
         {
             aiState.setTarget(aiState.getSelf());
@@ -296,11 +315,11 @@ void scr_run_chr_script(const ObjectRef character)
     // Make sure that this module is initialized.
     scripting_system_begin();
 
-    if (!_currentModule->getObjectHandler().exists(character))
+    if (!objectHandler().exists(character))
     {
         return;
     }
-    Object *pchr = _currentModule->getObjectHandler().get(character);
+    Object *pchr = objectHandler().get(character);
     return scr_run_chr_script(pchr);
 }
 
@@ -570,19 +589,19 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
     /// @author ZZ
     /// @details This function does the scripted arithmetic in OPERATOR, OPERAND pscriptrs
 
-    if (!_currentModule->getObjectHandler().exists(aiState.getSelf())) return;
-    Object *pobject = _currentModule->getObjectHandler().get(aiState.getSelf());
+    if (!objectHandler().exists(aiState.getSelf())) return;
+    Object *pobject = objectHandler().get(aiState.getSelf());
 
     Object *ptarget = nullptr;
-    if (_currentModule->getObjectHandler().exists(aiState.getTarget()))
+    if (objectHandler().exists(aiState.getTarget()))
     {
-        ptarget = _currentModule->getObjectHandler().get(aiState.getTarget());
+        ptarget = objectHandler().get(aiState.getTarget());
     }
 
     Object *powner = nullptr;
-    if (_currentModule->getObjectHandler().exists(aiState.owner))
+    if (objectHandler().exists(aiState.owner))
     {
-        powner = _currentModule->getObjectHandler().get(aiState.owner);
+        powner = objectHandler().get(aiState.owner);
     }
 
     std::string varname;
@@ -609,7 +628,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
         // Load the variable. 
         auto variableIndex = constant.getAsInteger();
         varname = getVariableName(variableIndex);
-        auto pleader = _currentModule->getTeamList()[pobject->team].getLeader();
+        auto pleader = activeModule().getTeamList()[pobject->team].getLeader();
         iTmp = loadVariable(variableIndex, aiState, pobject, ptarget, powner, pleader.get());
     }
 
@@ -721,7 +740,7 @@ bool ai_state_t::get_wp(ai_state_t& self)
 {
     // try to load up the top waypoint
 
-    if (!_currentModule->getObjectHandler().exists(self.getSelf())) return false;
+    if (!objectHandler().exists(self.getSelf())) return false;
 
     self.wp_valid = waypoint_list_t::peek(self.wp_lst, self.wp);
 
@@ -733,7 +752,7 @@ bool ai_state_t::ensure_wp(ai_state_t& self)
 {
     // is the current waypoint is not valid, try to load up the top waypoint
 
-    if (!_currentModule->getObjectHandler().exists(self.getSelf()))
+    if (!objectHandler().exists(self.getSelf()))
     {
         return false;
     }
@@ -752,11 +771,11 @@ void set_alerts(const ObjectRef character)
     /// @details This function polls some alert conditions
 
     // invalid characters do not think
-    if (!_currentModule->getObjectHandler().exists(character))
+    if (!objectHandler().exists(character))
     {
         return;
     }
-    Object *pchr = _currentModule->getObjectHandler().get(character);
+    Object *pchr = objectHandler().get(character);
     ai_state_t& aiState = pchr->ai;
 
     if (waypoint_list_t::empty(aiState.wp_lst))
@@ -769,7 +788,7 @@ void set_alerts(const ObjectRef character)
     // waypoints around a track or something
 
     // mounts do not get alerts
-    // if ( _currentModule->getObjectHandler().exists(pchr->attachedto) ) return;
+    // if ( objectHandler().exists(pchr->attachedto) ) return;
 
     // is the current waypoint is not valid, try to load up the top waypoint
     ai_state_t::ensure_wp(aiState);
@@ -817,9 +836,9 @@ void issue_order(const ObjectRef character, uint32_t value)
     /// @details This function issues an value for help to all teammates
     int counter = 0;
 
-    const std::shared_ptr<Object> &pchr = _currentModule->getObjectHandler()[character];
+    const std::shared_ptr<Object> &pchr = objectHandler()[character];
 
-    for (const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+    for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
         if (object->isTerminated()) continue;
 
@@ -838,7 +857,7 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
     /// @details This function issues an order to all characters with the a matching special IDSZ
     int counter = 0;
 
-    for (const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+    for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
         if (object->isTerminated()) continue;
 
@@ -990,15 +1009,15 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
     /// @details bumping into a chest can initiate whole loads of update messages.
     ///     Try to throttle the rate that new "bump" messages can be passed to the ai
 
-    if (!_currentModule->getObjectHandler().exists(ichr))
+    if (!objectHandler().exists(ichr))
     {
         return false;
     }
 
     // 5 bumps per second?
-    if (self.getBumped() != ichr || update_wld > self.bumplast_time + GameEngine::GAME_TARGET_UPS / 5)
+    if (self.getBumped() != ichr || worldUpdateCount() > self.bumplast_time + GameEngine::GAME_TARGET_UPS / 5)
     {
-        self.bumplast_time = update_wld;
+        self.bumplast_time = worldUpdateCount();
         SET_BIT(self.alert, ALERTIF_BUMPED);
     }
     self.setBumped(ichr);
@@ -1008,7 +1027,7 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
 
 void ai_state_t::spawn(ai_state_t& self, const ObjectRef index, const PRO_REF iobj, uint16_t rank)
 {
-    const std::shared_ptr<Object> &pchr = _currentModule->getObjectHandler()[index];
+    const std::shared_ptr<Object> &pchr = objectHandler()[index];
     ai_state_t::reset(self);
 
     if (!pchr)

@@ -29,11 +29,30 @@
 
 #include "egolib/egolib.h"
 
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+auto& objectHandler()
+{
+    return activeModule().getObjectHandler();
+}
+
+uint32_t worldUpdateCount()
+{
+    return GameSessionContext::get().worldUpdateCount();
+}
+}
 
 //--------------------------------------------------------------------------------------------
 // wrap generic bitwise conversion macros
@@ -160,7 +179,7 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
     ObjectProfile * profile = chr_get_ppro( ichr );
     if ( nullptr != profile )
     {
-        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( _currentModule->getMeshPointer(), loc_pos.v, pchr->bump.size, pchr->stoppedby, nrm.v, &pressure, NULL ) )
+        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->bump.size, pchr->stoppedby, nrm.v, &pressure, NULL ) )
         {
 			// yes it is safe. add it.
 			returncode = true;
@@ -241,7 +260,7 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
     los_info.z1 = 0;
 
     // test for the simple case... a straight line
-    straight_line = !line_of_sight_info_t::blocked(los_info, _currentModule->getMeshPointer());
+    straight_line = !line_of_sight_info_t::blocked(los_info, activeModule().getMeshPointer());
 
     if ( !straight_line )
     {
@@ -249,7 +268,7 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
         printf( "Finding a path from %d,%d to %d,%d: \n", src_ix, src_iy, dst_ix, dst_iy );
 #endif
         //Try to find a path with the AStar algorithm
-        if ( g_astar.find_path( _currentModule->getMeshPointer(), pchr->stoppedby, src_ix, src_iy, dst_ix, dst_iy ) )
+        if ( g_astar.find_path( activeModule().getMeshPointer(), pchr->stoppedby, src_ix, src_iy, dst_ix, dst_iy ) )
         {
             returncode = g_astar.get_path( dst_x, dst_y, wplst);
         }
@@ -304,7 +323,7 @@ uint32_t UpdateTime( uint32_t time_val, int delay )
     }
     else
     {
-        new_time_val = update_wld + delay;
+        new_time_val = worldUpdateCount() + delay;
     }
 
     return new_time_val;
@@ -318,12 +337,12 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
     /// @details This function breaks the tiles of a passage if there is a character standing
     ///               on 'em.  Turns the tiles into damage terrain if it reaches last frame.
 
-	auto mesh = _currentModule->getMeshPointer();
+	auto mesh = activeModule().getMeshPointer();
 	if (!mesh) {
 		throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
 	}
 
-    const std::shared_ptr<Passage> &passage = _currentModule->getPassageByID(passageID);
+    const std::shared_ptr<Passage> &passage = activeModule().getPassageByID(passageID);
 
     if ( !passage ) return false;
 
@@ -334,7 +353,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 	uint32_t endtile = Ego::Math::constrain(loc_starttile + frames - 1, 0, 255);
 
 	bool useful = false;
-    for(const std::shared_ptr<Object> &pchr : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &pchr : objectHandler().iterator())
     {
         // nothing in packs
         if (pchr->isBeingHeld()) continue;
@@ -413,7 +432,7 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     ///    must be set first, and are set on a find.  Returns true or false
     ///    depending on if it finds one or not
 
-    const std::shared_ptr<Passage> &passage = _currentModule->getPassageByID(passageID);
+    const std::shared_ptr<Passage> &passage = activeModule().getPassageByID(passageID);
     if ( !passage ) return false;
 
     int x = std::max<int>(x0, passage->getAxisAlignedBox2f().get_min().x()) / Info<int>::Grid::Size();
@@ -426,9 +445,9 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     {
         for ( /*nothing*/; x <= right; x++ )
         {
-            Index1D fan = _currentModule->getMeshPointer()->getTileIndex(Index2D(x, y));
+            Index1D fan = activeModule().getMeshPointer()->getTileIndex(Index2D(x, y));
 
-			ego_tile_info_t& ptile = _currentModule->getMeshPointer()->getTileInfo(fan);
+			ego_tile_info_t& ptile = activeModule().getMeshPointer()->getTileInfo(fan);
             if (tiletype == ( ptile._img & TILE_LOWER_MASK ) )
             {
                 *px1 = x * Info<float>::Grid::Size() + 64;
@@ -444,9 +463,9 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     {
         for ( x = passage->getAxisAlignedBox2f().get_min().x() / Info<int>::Grid::Size(); x <= right; x++ )
         {
-            Index1D fan = _currentModule->getMeshPointer()->getTileIndex(Index2D(x, y));
+            Index1D fan = activeModule().getMeshPointer()->getTileIndex(Index2D(x, y));
 
-			ego_tile_info_t& ptile = _currentModule->getMeshPointer()->getTileInfo(fan);
+			ego_tile_info_t& ptile = activeModule().getMeshPointer()->getTileInfo(fan);
             if (tiletype == ( ptile._img & TILE_LOWER_MASK ) )
             {
                 *px1 = x * Info<float>::Grid::Size() + 64;
@@ -468,7 +487,7 @@ uint8_t _display_message( const ObjectRef ichr, const PRO_REF iprofile, const in
     const std::shared_ptr<ObjectProfile> &ppro = ProfileSystem::get().getProfile(iprofile);
     if ( !ppro->isValidMessageID(message) ) return false;
 
-    std::string text = expandEscapeCodes(_currentModule->getObjectHandler()[ichr], *pstate, ppro->getMessage(message));
+    std::string text = expandEscapeCodes(objectHandler()[ichr], *pstate, ppro->getMessage(message));
     DisplayMsg_print(text);
 
     return true;
@@ -501,10 +520,10 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
     los.z0 = pchr->getPosZ();
     los.stopped_by = pchr->stoppedby;
 
-    for(const std::shared_ptr<Object> &pweapon : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &pweapon : objectHandler().iterator())
     {
         //only do items on the ground
-        if ( _currentModule->getObjectHandler().exists( pweapon->attachedto ) || !pweapon->isitem ) continue;
+        if ( objectHandler().exists( pweapon->attachedto ) || !pweapon->isitem ) continue;
         const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
         // only target those with a the given IDSZ
@@ -532,7 +551,7 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
             los.y1 = pweapon->getPosY();
             los.z1 = pweapon->getPosZ();
 
-            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, _currentModule->getMeshPointer()) )
+            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, activeModule().getMeshPointer()) )
             {
                 //found a valid weapon!
                 best_target = pweapon->getObjRef();
@@ -543,7 +562,7 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
 
     //Did we find anything?
     retval = ObjectRef::Invalid;
-    if ( _currentModule->getObjectHandler().exists( best_target ) )
+    if ( objectHandler().exists( best_target ) )
     {
         retval = best_target;
     }
@@ -571,7 +590,7 @@ int RestockAmmo( const ObjectRef character, const IDSZ2& idsz )
     ///    either its parent or type idsz match the given idsz.  This
     ///    function returns the amount of ammo given.
 
-    const std::shared_ptr<Object> &pchr = _currentModule->getObjectHandler()[character];
+    const std::shared_ptr<Object> &pchr = objectHandler()[character];
     if(!pchr) {
         return 0;
     }
