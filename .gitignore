@@ -68,12 +68,16 @@ xcuserdata
 *.o
 *.dll
 *.exe
+backup-copy/
 
 # Doxygen.
 /doc/doxygen
 
 # Generated files.
 gen
+
+# Local build output.
+build/
 
 # CMake.
 CMakeFiles

@@ -89,6 +89,9 @@ GraphicsWindow::GraphicsWindow()
 #if !defined(ID_LINUX)
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 #endif
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
     // (2) Upload window properties.
     uint32_t windowFlags = SDL_WINDOW_OPENGL;
     if (config.graphic_fullscreen.getValue())

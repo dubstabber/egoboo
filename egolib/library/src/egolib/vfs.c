@@ -184,6 +184,7 @@ int vfs_init(const char *argv0, const char *root_dir)
     {
         return 1;
     }
+    PHYSFS_permitSymbolicLinks(1);
     // Append the data directory to the search directories.
     temp_path = std::string(fs_getDataDirectory()) + SLASH_STR;
     if (!PHYSFS_mount(temp_path.c_str(), "/", 1))
@@ -265,6 +266,13 @@ bool validate(const std::string& source, std::string& target) {
     }
 }
 
+std::string to_physfs_path(const std::string& pathname)
+{
+    return Ego::left_trim<char>(pathname, [](const char& chr) {
+        return chr == NET_SLASH_CHR || chr == WIN32_SLASH_CHR;
+    });
+}
+
 vfs_FILE *vfs_openRead(const std::string& pathname)
 {
     BAIL_IF_NOT_INIT();
@@ -273,6 +281,7 @@ vfs_FILE *vfs_openRead(const std::string& pathname)
     if (!validate(pathname,temporary)) {
         return nullptr;
     }
+    temporary = to_physfs_path(temporary);
 
     PHYSFS_File *ftmp = PHYSFS_openRead(temporary.c_str());
     if (!ftmp)
@@ -306,6 +315,7 @@ vfs_FILE *vfs_openWrite(const std::string& pathname)
     if (!validate(pathname, temporary)) {
         return nullptr;
     }
+    temporary = to_physfs_path(temporary);
 
     // Make sure that the output directory exists.
     if (!_vfs_ensure_write_directory(temporary, false))
@@ -733,7 +743,7 @@ long vfs_fileLength( vfs_FILE * pfile )
 //--------------------------------------------------------------------------------------------
 bool vfs_mkdir(const std::string& pathname) {
     BAIL_IF_NOT_INIT();
-    std::string temporary = Ego::VfsPath(pathname).string();
+    std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
     if (!PHYSFS_mkdir(temporary.c_str())) {
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_mkdir(", pathname, ") failed: ", vfs_getError());
         return false;
@@ -745,7 +755,7 @@ bool vfs_delete_file(const std::string& pathname)
 {
     BAIL_IF_NOT_INIT();
 
-    std::string temporary = Ego::VfsPath(pathname).string();
+    std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
 
     if (!PHYSFS_delete(temporary.c_str())) {
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_delete(", pathname, ") failed: ", vfs_getError(), Log::EndOfEntry);
@@ -756,13 +766,13 @@ bool vfs_delete_file(const std::string& pathname)
 
 bool vfs_exists(const std::string& pathname) {
     BAIL_IF_NOT_INIT();
-    std::string temporary = Ego::VfsPath(pathname).string();
+    std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
     return (0 != PHYSFS_exists(temporary.c_str()));
 }
 
 bool vfs_isDirectory(const std::string& pathname) {
     BAIL_IF_NOT_INIT();
-    std::string temporary = Ego::VfsPath(pathname).string();
+    std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
     return 0 != PHYSFS_isDirectory(temporary.c_str());
 }
 
@@ -1455,7 +1465,8 @@ int vfs_printf( vfs_FILE * pfile, const char *format, ... )
 
 std::vector<std::string> SearchContext::enumerateFiles(const Ego::VfsPath& pathname) {
     std::vector<std::string> result;
-    char **fileList = PHYSFS_enumerateFiles(pathname.string().c_str());
+    const auto temporary = to_physfs_path(pathname.string());
+    char **fileList = PHYSFS_enumerateFiles(temporary.c_str());
     if (!fileList) {
         throw std::runtime_error("unable to enumerate files");
     }

@@ -1,51 +1,22 @@
 = Linux
 
-This document describes the process of building and installing Egoboo under
-Linux. 
+This file used to describe an older Makefile-based workflow and is no longer the
+canonical Linux build guide.
 
-== Requirements
-Building Egoboo on Linux requires a recent version of GCC (5.1 or later) and
-GNU Make (3.81 or later). Furthermore the runtime and development version of the
-following libraries need to be installed:
+Use the current document instead:
 
-	- SDL2
-	- SDL2_mixer
-	- SDL2_image
-	- SDL2_ttf
-	- OpenGL
-	- enet
-	- PhysFS 2.0 or later
+`doc/build-linux.md`
 
-Install the runtime and development versions of those libraries from the
-package manager of your distribution.
+Short version:
 
-==  Building and Installing
-
-To build Egoboo enter
 ```
-make all
-sudo make install
-````
-which will build and install the game into the default installation prefix.
-
-=== Remarks
-To install Egoboo using a different installation prefix, enter
+cmake -S . -B build
+cmake --build build -j
+SDL_VIDEODRIVER=x11 EGOBOO_DATA_DIR="$PWD/data" ./build/products/x64/bin/egoboo
 ```
-make all PREFIX=<PREFIX>
-sudo make install PREFIX=<PREFIX>
+
+For refactor work, the repository also now provides a non-UI validator:
+
 ```
-In particular, if super-user permissions are not available, Egoboo can be
-installed to a local directory by defining a PREFIX environmental variable
-on the command-line. A common usage would be
+./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data"
 ```
-make all PREFIX=$HOME/.local
-make install PREFIX=$HOME/.local
-````
-which will build and install the game into the home folder.
-
-== Launching
-To start the game, execute `<PREFIX>/games/egoboo-2.x`.
-
-
-If you experience problems, please ask in the Egoboo Forums at
-http://egoboo.sourceforge.net/forum/. Thank you. 

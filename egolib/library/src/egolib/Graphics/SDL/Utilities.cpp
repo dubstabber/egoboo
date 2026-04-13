@@ -43,7 +43,7 @@ bool FullscreenRequirement::relax()
 {
     auto& configuration = egoboo_config_t::get();
     if (!configuration.graphic_fullscreen.getValue()) return false;
-    configuration.graphic_antialiasing.setValue(false);
+    configuration.graphic_fullscreen.setValue(false);
     return true;
 }
 

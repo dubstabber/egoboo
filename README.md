@@ -30,6 +30,8 @@ cmake <path to source directory>
 where `<path to source directory>` is replaced by the actual path to your *source directory*.
 CMake will generate the environment specific build files (e.g., Visual Studio files, Make files, etc.) in the *build directory*.
 
+For Linux-specific dependency, run, and validation notes, see `doc/build-linux.md`.
+
 #### Appveyor CI Build Status
 - [master](https://github.com/egoboo/egoboo/tree/master) branch Windows 11:
 [![Build status](https://ci.appveyor.com/api/projects/status/7sjmdgolmvmv3hc1/branch/master?svg=true)](https://ci.appveyor.com/project/michaelheilmann-com/egoboo-windows/branch/master)

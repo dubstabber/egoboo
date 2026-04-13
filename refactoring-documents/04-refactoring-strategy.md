@@ -1,0 +1,270 @@
+# Refactoring Strategy
+
+## 1. Goals
+
+This strategy is designed for a multi-month refactor where stability matters more than speed.
+
+Primary goals:
+
+- make the runtime understandable
+- reduce global coupling
+- make content semantics explicit
+- preserve shipped content while modernizing the pipeline
+- create a path toward modern scripting and better playtesting
+
+## 2. Rules for the refactor
+
+### Rule 1: no flag-day rewrite
+
+The codebase is too behavior-dense for a one-shot rewrite. The replacement cost is not just code volume. It is accumulated undocumented semantics.
+
+### Rule 2: protect behavior before changing architecture
+
+Characterization tests, content validators, and smoke tools must come before deep subsystem replacement.
+
+### Rule 3: do not mix data migration with engine decomposition in the same change set
+
+Those are separate risk classes and should be staged independently.
+
+### Rule 4: replace globals with explicit context before replacing subsystems
+
+If `_currentModule` remains globally reachable, every subsystem extraction will keep leaking.
+
+### Rule 5: keep legacy loaders alive until parity is measurable
+
+This is especially important for:
+
+- module metadata
+- object profiles
+- spawn data
+- scripts
+- mesh/environment data
+
+## 3. Recommended phase plan
+
+## Phase 0: baseline freeze
+
+Deliverables:
+
+- canonical build/run document for Linux
+- clear source-scope rules for active code versus archive/generated/vendor content
+- these audit docs
+- explicit capture of existing Fedora/Linux portability edits
+
+Do first because:
+
+- it prevents everyone from debugging a different local setup
+- it turns "tribal knowledge" into written constraints
+
+## Phase 1: observability and safety net
+
+Add tooling before architecture changes:
+
+- content load validator CLI
+- parser smoke tests for `menu.txt`, `spawn.txt`, `data.txt`, `wawalite.txt`, `level.mpd`
+- module load smoke list
+- structured log capture for startup and module load failures
+- regression harness for a few representative modules
+
+Recommended representative modules:
+
+- `test.mod` for minimal loading
+- one starter module
+- one module with heavy combat
+- one module with water/environment complexity
+- one module with imports/exports or progression complexity
+
+## Phase 2: runtime context extraction
+
+Introduce explicit context objects without changing behavior yet.
+
+Minimum targets:
+
+- `EngineContext`
+- `GameSessionContext`
+- `ModuleContentContext`
+
+Responsibilities to move behind explicit interfaces:
+
+- active module access
+- update clocks
+- configuration access
+- service access
+- message/log dispatch
+
+Success criteria:
+
+- new code does not read `_currentModule` or `_gameEngine` directly
+- existing global access is wrapped and gradually reduced
+
+## Phase 3: split engine services from gameplay services
+
+Create a real boundary between:
+
+- platform/runtime services
+- game content repositories
+- gameplay session logic
+- presentation/UI
+
+Likely extraction candidates:
+
+- VFS and filesystem wrappers
+- content repositories and loaders
+- render backend and graphics services
+- audio/input bootstrapping
+
+Do not start with rendering rewrite. Start with dependency boundaries.
+
+## Phase 4: file and subsystem decomposition
+
+Break oversized hotspots into smaller modules before behavior rewrites.
+
+Top candidates:
+
+- `game/script_functions.c`
+- `game/game.c`
+- `game/graphic.c`
+- `vfs.c`
+- `Entities/Object.cpp`
+- `Profiles/ObjectProfile.cpp`
+- `game/Module/Module.cpp`
+
+Typical split styles:
+
+- public API versus internal implementation
+- lifecycle versus behavior
+- parsing versus validation
+- content definition versus runtime instance
+
+## Phase 5: content pipeline normalization
+
+Build a content IR and migration toolchain.
+
+Recommended order:
+
+1. module metadata
+2. spawn data
+3. object definitions
+4. particle definitions
+5. environment data
+6. save/import/export formats
+
+Requirements:
+
+- importer from legacy assets
+- validator
+- diffable output
+- round-trip or at least source traceability
+
+## Phase 6: scripting replacement preparation
+
+Do not jump straight from EgoScript to Lua.
+
+First create:
+
+- a documented game scripting API surface
+- an event and command model independent of EgoScript syntax
+- a compatibility layer for current scripts
+
+Only then choose implementation:
+
+- embedded Lua
+- a custom data-driven rules layer
+- hybrid scripting plus declarative behaviors
+
+### Why Lua is still a sensible candidate
+
+- mature ecosystem
+- accessible for modders
+- easy embedding
+
+### Why Lua should not be introduced immediately
+
+- current script behavior is entangled with object state, globals, timing, and legacy helper functions
+- without API stabilization, Lua becomes a second layer of chaos
+
+## Phase 7: compatibility and cleanup
+
+Only after dual-load parity and better tests:
+
+- retire legacy parsers
+- remove old direct-global access
+- delete dead migration experiments
+- delete or quarantine stale docs
+
+## 4. First concrete refactor tasks
+
+These are high-value early tasks that do not require a full rewrite.
+
+1. Add a `docs/build-linux.md` or equivalent canonical build document.
+2. Add a content validation executable that loads module metadata and reports parse errors without launching the full game.
+3. Introduce a wrapper around `_currentModule` reads for newly touched code.
+4. Split `GameModule` loading into named phases instead of one constructor-heavy path.
+5. Split `ObjectProfile` loading into file-specific loaders and validation helpers.
+6. Convert hardcoded loader conventions into manifest-building helpers internally, even if the external content format remains legacy for now.
+7. Add golden-file tests for `spawn.txt` parsing.
+8. Add golden-file tests for `menu.txt` parsing.
+9. Capture a small representative set of module load logs as baseline artifacts.
+10. Start recording architecture decisions in versioned ADR-style markdown documents.
+
+## 5. Areas to defer
+
+These should not be early refactor targets unless required by a blocker:
+
+- renderer modernization
+- large-scale gameplay rebalance
+- asset visual upgrades
+- network ambitions
+- save format replacement
+
+They are real future work, but they are not the first maintainability win.
+
+## 6. Risks to manage explicitly
+
+### Risk 1: changing content semantics accidentally
+
+Mitigation:
+
+- dual-load
+- golden assets
+- validator tooling
+
+### Risk 2: deleting useful legacy behavior because it looks ugly
+
+Mitigation:
+
+- document first
+- attach behavior notes to loader and script migrations
+
+### Risk 3: refactoring inside giant files without adding seams
+
+Mitigation:
+
+- file splitting
+- wrapper interfaces
+- targeted tests first
+
+### Risk 4: portability regressions during cleanup
+
+Mitigation:
+
+- preserve and formalize the current Fedora/Linux fixes
+- test with explicit env vars and without them
+
+### Risk 5: architecture work outpacing playtesting
+
+Mitigation:
+
+- every phase needs a small playtest target list
+- do not merge large structural changes without smoke validation
+
+## 7. Definition of success
+
+This refactor effort is succeeding when:
+
+- a new contributor can build and launch reliably from one document
+- gameplay code can be read without chasing globals through unrelated systems
+- module and object content can be validated without starting the full game
+- content semantics live in schemas and code, not in scattered folklore
+- scripting has a stable API boundary
+- module loading and gameplay regressions are caught by repeatable tests and playtests

@@ -36,6 +36,9 @@ add_subdirectory(egolib)
 # Add Egoboo.
 add_subdirectory(egoboo)
 
+# Add repository tools.
+add_subdirectory(tools)
+
 # Define installer (for MSCV only atm)
 if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
 	set(CPACK_PACKAGE_NAME "Egoboo")

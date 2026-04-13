@@ -24,14 +24,22 @@ GraphicsContext::GraphicsContext(GraphicsWindow *window) :
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL/OpenGL context");
     }
 
-    if (GLEW_OK != glewInit())
+    Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+        "OpenGL Context Created", Log::EndOfLine,
+        "\tVersion:  ", (const char*)glGetString(GL_VERSION), Log::EndOfLine,
+        "\tVendor:   ", (const char*)glGetString(GL_VENDOR), Log::EndOfLine,
+        "\tRenderer: ", (const char*)glGetString(GL_RENDERER), Log::EndOfEntry);
+
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (GLEW_OK != err)
     {
         SDL_GL_DeleteContext(context);
         context = nullptr;
         Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
-            "unable to create SDL/OpenGL context: ",
-            SDL_GetError(), Log::EndOfEntry);
-        throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL/OpenGL context");
+            "unable to initialize GLEW: ",
+            (const char *)glewGetErrorString(err), Log::EndOfEntry);
+        throw idlib::runtime_error(__FILE__, __LINE__, "unable to initialize GLEW");
     }
     auto& config = egoboo_config_t::get();
 

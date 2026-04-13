@@ -76,12 +76,22 @@ int sys_fs_init(const char *root_dir)
     SDL_free(applicationPreferencePath);
 
     // these are read-only directories
-    char* applicationPath = SDL_GetBasePath();
-    if(applicationPath == nullptr) {
-        applicationPath = SDL_strdup("./");
+    char* envDataDir = getenv("EGOBOO_DATA_DIR");
+    if (envDataDir) {
+        strncpy(_dataPath, envDataDir, SDL_arraysize(_dataPath));
+        // Ensure it ends with a slash
+        size_t len = strlen(_dataPath);
+        if (len > 0 && _dataPath[len-1] != '/') {
+            strncat(_dataPath, "/", SDL_arraysize(_dataPath) - len - 1);
+        }
+    } else {
+        char* applicationPath = SDL_GetBasePath();
+        if(applicationPath == nullptr) {
+            applicationPath = SDL_strdup("./");
+        }
+        strncpy(_dataPath, applicationPath, SDL_arraysize(_dataPath));
+        SDL_free(applicationPath);
     }
-    strncpy(_dataPath, applicationPath, SDL_arraysize(_dataPath));
-    SDL_free(applicationPath);
 #endif
 
     // the log file cannot be started until there is a user data path to dump the file into

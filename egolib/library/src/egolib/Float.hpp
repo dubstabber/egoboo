@@ -20,6 +20,7 @@
 
 #include "idlib/numeric.hpp"
 #include <type_traits>
+#include <cstdint>
 
 /// @brief Get the raw bits of a @a float value.
 /// @param x the @a float value
