@@ -99,7 +99,7 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 - **Why:** This is the single highest-impact architectural change. It enables testing, headless validation, and future multi-session support.
 - **Risk:** High. Requires careful incremental migration.
 
-### C2: Wrap _gameEngine access behind accessor functions
+### C2: Wrap \_gameEngine access behind accessor functions
 
 - **Action:** Replace direct `_gameEngine->` calls with a small set of accessor functions (e.g., `getUIManager()`, `getActiveGameState()`, `getCurrentUpdateFrame()`).
 - **Why:** Reduces coupling surface. Later these accessors can be converted to interface methods.
@@ -234,49 +234,56 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 ## Priority Matrix
 
-| Phase | Risk | Impact | Effort | Recommended Order |
-| --- | --- | --- | --- | ---: |
-| A: Build & Hygiene | Low | Medium | Small | **1st** |
-| B: Test Infrastructure | Medium | High | Medium | **2nd** |
-| G: Content Validation | Low | High | Small-Medium | **3rd** |
-| C: Global State Reduction | High | Highest | Large | **4th** |
-| D: File Splitting | Medium | Medium | Medium | **5th** |
-| F: Namespace & Header | Low | Low-Medium | Small-Medium | **6th** |
-| E: Error Handling | Low | Medium | Medium | **7th** |
+| Phase                     | Risk   | Impact     | Effort       | Recommended Order |
+| ------------------------- | ------ | ---------- | ------------ | ----------------: |
+| A: Build & Hygiene        | Low    | Medium     | Small        |           **1st** |
+| B: Test Infrastructure    | Medium | High       | Medium       |           **2nd** |
+| G: Content Validation     | Low    | High       | Small-Medium |           **3rd** |
+| C: Global State Reduction | High   | Highest    | Large        |           **4th** |
+| D: File Splitting         | Medium | Medium     | Medium       |           **5th** |
+| F: Namespace & Header     | Low    | Low-Medium | Small-Medium |           **6th** |
+| E: Error Handling         | Low    | Medium     | Medium       |           **7th** |
 
 ---
 
 ## Definition of Done per Phase
 
 ### Phase A complete when:
+
 - `CMakeLists.txt` lists sources explicitly
 - Dead directories removed
 - Single canonical build doc exists
 
 ### Phase B complete when:
+
 - Golden-file tests exist for 5 core parsers
 - Module load smoke test passes for `test.mod`
 - Validator covers profile field ranges
 
 ### Phase C complete when:
+
 - `GameSessionContext` exists and is passed to game loop
 - No new code reads `_currentModule` or `_gameEngine` directly
 - `game.h` exports zero `extern` globals
 
 ### Phase D complete when:
+
 - No active source file exceeds 2,000 lines
 - No function exceeds 200 lines
 - All split files compile and link correctly
 
 ### Phase E complete when:
+
 - C++ code uses only exceptions for error reporting
 - Raw `new`/`delete` count reduced by 80%+
 
 ### Phase F complete when:
+
 - `egolib.h` is deleted or reduced to <10 includes
 - All game-layer free functions are namespaced
 
 ### Phase G complete when:
+
 - Validator runs in CI
 - Error count is tracked against baseline
 - Object-name reconciliation report exists
@@ -296,13 +303,58 @@ A (build hygiene)
 
 ## Estimated Timeline (single developer, part-time)
 
-| Phase | Estimated duration |
-| --- | --- |
-| A | 1–2 days |
-| B | 1–2 weeks |
-| G | 1 week |
-| C | 2–4 weeks |
-| D | 2–3 weeks |
-| E | 1–2 weeks |
-| F | 1 week |
-| **Total** | **~2–3 months** |
+| Phase     | Estimated duration |
+| --------- | ------------------ |
+| A         | 1–2 days           |
+| B         | 1–2 weeks          |
+| G         | 1 week             |
+| C         | 2–4 weeks          |
+| D         | 2–3 weeks          |
+| E         | 1–2 weeks          |
+| F         | 1 week             |
+| **Total** | **~2–3 months**    |
+
+---
+
+## Progress Log
+
+### Phase A: Build System and Hygiene — ✅ COMPLETE
+
+- **A1** ✅ Explicit per-subsystem source lists in `egolib/library/CMakeLists.txt`
+- **A2** ✅ Dead directories removed (`game/Lua/`, `Network/`)
+- **A3** ✅ Stale READMEs already carry deprecation notices pointing to `doc/build-linux.md` and `README.md`
+- **A4** ⏸ Deferred (optional cartman integration)
+
+### Phase B: Test Infrastructure — 🟡 IN PROGRESS
+
+- **B1** ✅ Golden-file characterization tests for all 5 core parsers (2026-04-13):
+  - `spawn.txt` — entry count, first-entry fields, attachment types
+  - `menu.txt` / ModuleProfile — name, imports, exporting, max players
+  - `wawalite.txt` — load success, gravity range
+  - `data.txt` / ObjectProfile — class name, gender, physical attributes, flags
+  - `level.mpd` / map_t — load success, dimensions, tile/vertex memory, engine-limit bounds
+  - Test bootstrap now forces `EGOBOO_DATA_DIR` to the repository `data/` tree so `test.mod` is discoverable under both direct runs and `ctest`
+- **B2** 🟡 Headless module load smoke tests for `test.mod` are integrated and passing (2026-04-13):
+  - required file presence
+  - mesh load
+  - `wawalite.txt` parse
+  - `spawn.txt` parse
+  - local object lightweight profile loads
+  - spawn-reference resolution against `mp_objects`
+  - end-to-end structural load sequence
+  - Verified with 27 focused passing tests via both `egolib-tests-executable` and `ctest`
+  - Full `game_begin_module()` / `game_quit_module()` lifecycle unload coverage remains pending because the live module path is still coupled to audio/graphics runtime startup
+- **B3** ❌ Validator profile field range coverage
+- **B4** ❌ Build-time compile test per module boundary
+
+### Phase C: Global State Reduction — 🟡 STARTED
+
+- Context wrapper headers and implementations exist:
+  - `GameSessionContext` wraps `_currentModule`, `update_wld`, clocks, imports
+  - `EngineContext` wraps `_gameEngine`
+- Callers not yet migrated — wrappers still delegate to globals
+
+### Phase G: Content Validation — ✅ BASELINE COMPLETE
+
+- Validator tool built and baselined (42 modules, 9 passing, 278 errors)
+- JSON report mode available

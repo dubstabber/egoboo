@@ -1,16 +1,19 @@
 /// @file ContentParsers.cpp
 /// @brief Characterization tests for legacy content parsers.
 ///
-/// These tests exercise the spawn.txt, menu.txt (ModuleProfile), and
-/// wawalite.txt parsers against the shipped test.mod data.  They verify
-/// that the parsers produce expected field values for a known-good module
-/// so that future refactoring work does not silently change parse results.
+/// These tests exercise the spawn.txt, menu.txt (ModuleProfile),
+/// wawalite.txt, data.txt (ObjectProfile), and level.mpd parsers against the
+/// shipped test.mod data.  They verify that the parsers produce expected field
+/// values for a known-good module so that future refactoring work does not
+/// silently change parse results.
 ///
 /// The tests require a VFS bootstrap and the real data/ directory, similar
 /// to the content validator tool.
 
 #include "gtest/gtest.h"
 
+#include "TestEnvironment.hpp"
+#include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/wawalite_file.h"
@@ -35,6 +38,8 @@ protected:
 
     static void SetUpTestSuite()
     {
+        Ego::Test::configureDataDirectory();
+
         ContentRuntimeBootstrap::Options opts;
         opts.initializeVirtualFileSystem   = true;
         opts.initializeBaseVfsPaths        = true;
@@ -232,4 +237,161 @@ TEST_F(WawaliteParserTest, TestModWawaliteGravity)
     // Physics gravity should be a reasonable value (not zero, not absurd).
     EXPECT_GT(data.phys.gravity, -20.0f);
     EXPECT_LT(data.phys.gravity, 0.0f);
+}
+
+// ===========================================================================
+//  data.txt / ObjectProfile parser tests
+// ===========================================================================
+
+class ObjectProfileParserTest : public ContentParserFixture {};
+
+TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoads)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    // Load follower.obj in lightweight mode (no 3D model, sounds, particles).
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), true);
+    ASSERT_NE(profile, nullptr) << "follower.obj failed to load";
+}
+
+TEST_F(ObjectProfileParserTest, TestModFollowerClassName)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), true);
+    ASSERT_NE(profile, nullptr);
+
+    // data.txt says "Healer" (first char capitalized by parser).
+    EXPECT_EQ(profile->getClassName(), "Healer");
+}
+
+TEST_F(ObjectProfileParserTest, TestModFollowerGender)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), true);
+    ASSERT_NE(profile, nullptr);
+
+    // data.txt says "FEMALE".
+    EXPECT_EQ(profile->getGender(), GenderProfile::Female);
+}
+
+TEST_F(ObjectProfileParserTest, TestModFollowerPhysicalAttributes)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), true);
+    ASSERT_NE(profile, nullptr);
+
+    // Size: 1.10
+    EXPECT_NEAR(profile->getSize(), 1.10f, 0.01f);
+    // Shadow size: 25
+    EXPECT_NEAR(profile->getShadowSize(), 25.0f, 0.5f);
+    // Bump height: 90
+    EXPECT_NEAR(profile->getBumpHeight(), 90.0f, 0.5f);
+    // Weight: 90
+    EXPECT_EQ(profile->getWeight(), 90);
+    // Jump power: 10.0
+    EXPECT_NEAR(profile->getJumpPower(), 10.0f, 0.01f);
+    // Max ammo: 0
+    EXPECT_EQ(profile->getMaxAmmo(), 0);
+}
+
+TEST_F(ObjectProfileParserTest, TestModFollowerFlags)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), true);
+    ASSERT_NE(profile, nullptr);
+
+    // data.txt flags for follower.obj:
+    EXPECT_FALSE(profile->isItem());
+    EXPECT_FALSE(profile->isMount());
+    EXPECT_FALSE(profile->isStackable());
+    EXPECT_FALSE(profile->isInvincible());
+    EXPECT_FALSE(profile->isPlatform());
+    EXPECT_TRUE(profile->isNameKnown());
+    EXPECT_TRUE(profile->canGrabMoney());
+}
+
+// ===========================================================================
+//  level.mpd parser tests
+// ===========================================================================
+
+class MapFileParserTest : public ContentParserFixture {};
+
+TEST_F(MapFileParserTest, TestModLevelMpdLoads)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    map_t map;
+    bool loaded = map.load("mp_data/level.mpd");
+    EXPECT_TRUE(loaded) << "level.mpd failed to parse";
+}
+
+TEST_F(MapFileParserTest, TestModLevelMpdDimensions)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    map_t map;
+    ASSERT_TRUE(map.load("mp_data/level.mpd"));
+
+    // The map must have non-zero tile dimensions.
+    EXPECT_GT(map._info.getTileCountX(), 0u);
+    EXPECT_GT(map._info.getTileCountY(), 0u);
+    EXPECT_GT(map._info.getVertexCount(), 0u);
+
+    // The total tile count should be tileX * tileY.
+    EXPECT_EQ(map._info.getTileCount(),
+              map._info.getTileCountX() * map._info.getTileCountY());
+}
+
+TEST_F(MapFileParserTest, TestModLevelMpdTileMemory)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    map_t map;
+    ASSERT_TRUE(map.load("mp_data/level.mpd"));
+
+    // After a successful load, tile and vertex vectors must match the info.
+    EXPECT_EQ(map._mem.tiles.size(),
+              static_cast<size_t>(map._info.getTileCount()));
+    EXPECT_EQ(map._mem.vertices.size(),
+              static_cast<size_t>(map._info.getVertexCount()));
+}
+
+TEST_F(MapFileParserTest, TestModLevelMpdSaneBounds)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    map_t map;
+    ASSERT_TRUE(map.load("mp_data/level.mpd"));
+
+    // Tile dimensions should be within engine limits.
+    EXPECT_LE(map._info.getTileCountX(), MAP_TILE_MAX_X);
+    EXPECT_LE(map._info.getTileCountY(), MAP_TILE_MAX_Y);
+    EXPECT_LE(map._info.getVertexCount(), MAP_VERTICES_MAX);
 }
