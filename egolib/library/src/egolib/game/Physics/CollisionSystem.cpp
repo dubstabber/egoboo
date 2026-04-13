@@ -18,7 +18,7 @@
 //********************************************************************************************
 #include "CollisionSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/game.h" //for update_wld
+#include "egolib/game/Core/GameSessionContext.hpp"
 
 #include "particle_collision.h"
 
@@ -29,6 +29,19 @@ namespace Physics
 //C function prototypes
 static bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, float tmax, float tmin);
 static void get_recoil_factors( float wta, float wtb, float * recoil_a, float * recoil_b );
+
+namespace
+{
+GameModule& activeModule()
+{
+    return GameSessionContext::get().activeModule();
+}
+
+uint32_t worldUpdateCount()
+{
+    return GameSessionContext::get().worldUpdateCount();
+}
+}
 
 CollisionSystem::CollisionSystem()
 {
@@ -44,7 +57,7 @@ CollisionSystem::~CollisionSystem()
 void CollisionSystem::update()
 {
     // blank the accumulators
-    for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator())
     {
         object->phys.clear();
     }
@@ -57,7 +70,7 @@ void CollisionSystem::update()
     updateParticleCollisions();
 
     // accumulate the accumulators
-    for(const std::shared_ptr<Object> &pchr : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &pchr : activeModule().getObjectHandler().iterator())
     {
         if(pchr->isTerminated()) {
             continue;
@@ -264,7 +277,7 @@ void CollisionSystem::updateObjectCollisions()
     std::unordered_set<std::shared_ptr<Object>> handledObjects;
 
     //Detect character -> character collisions
-    for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator()) {
+    for(const std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator()) {
 
         //Can we collide?
         if (!object->canCollide()) {
@@ -273,7 +286,7 @@ void CollisionSystem::updateObjectCollisions()
         handledObjects.insert(object);
 
         //First check if this object is still attached to it's Platform
-        const std::shared_ptr<Object> &platform = _currentModule->getObjectHandler()[object->onwhichplatform_ref];
+        const std::shared_ptr<Object> &platform = activeModule().getObjectHandler()[object->onwhichplatform_ref];
         if(platform)
         {
             //If we are no longer colliding in the horizontal plane, then we are disconnected
@@ -296,7 +309,7 @@ void CollisionSystem::updateObjectCollisions()
 
         // Check collisions to nearby Objects
         std::vector<std::shared_ptr<Object>> possibleCollisions;
-        _currentModule->getObjectHandler().findObjects(object->getAxisAlignedBox2D(), possibleCollisions, canCollideWithScenery);
+        activeModule().getObjectHandler().findObjects(object->getAxisAlignedBox2D(), possibleCollisions, canCollideWithScenery);
         for (const std::shared_ptr<Object> &other : possibleCollisions)
         {
             //Skip possible interactions that have already been handled earlier this iteration
@@ -328,7 +341,7 @@ void CollisionSystem::updateParticleCollisions()
         }
 
         //First check if this Particle is still attached to a platform
-        if (particle->onwhichplatform_update < update_wld && _currentModule->getObjectHandler().exists(particle->onwhichplatform_ref)) {
+        if (particle->onwhichplatform_update < worldUpdateCount() && activeModule().getObjectHandler().exists(particle->onwhichplatform_ref)) {
             particle->getParticlePhysics().detachFromPlatform();
         }
 
@@ -340,7 +353,7 @@ void CollisionSystem::updateParticleCollisions()
 
         //Detect collisions with nearby Objects
         std::vector<std::shared_ptr<Object>> possibleCollisions;
-         _currentModule->getObjectHandler().findObjects(aabb2d, possibleCollisions, true);
+         activeModule().getObjectHandler().findObjects(aabb2d, possibleCollisions, true);
         for (const std::shared_ptr<Object> &object : possibleCollisions)
         {
             //Is it a valid collision?
@@ -471,8 +484,8 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
     const auto ichr_b = objectB->getObjRef();
 
     // only check possible object-platform interactions
-    bool platform_a = objectB->canuseplatforms && !_currentModule->getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->platform;
-    bool platform_b = objectA->canuseplatforms && !_currentModule->getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->platform;
+    bool platform_a = objectB->canuseplatforms && !activeModule().getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->platform;
+    bool platform_b = objectA->canuseplatforms && !activeModule().getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->platform;
 
     //Only allow scenery objects on top of other scenery objects
     if(objectA->isScenery() != objectB->isScenery()) {

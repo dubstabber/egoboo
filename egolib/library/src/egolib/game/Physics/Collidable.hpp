@@ -87,37 +87,7 @@ public:
     * @return 
     *   true if the position of this object has changed
     **/
-    bool setPosition(const Vector3f &pos) {
-        EGO_DEBUG_VALIDATE(pos);
-
-        //Never allow positions outside the map
-        if(!_currentModule->isInside(pos.x(), pos.y())) {
-            return false;
-        }
-
-        //No change?
-        if(pos == _position) {
-            return false;
-        }
-
-        //Change our new position
-        _oldPosition = _position;
-        _position = pos;
-
-        _tile = _currentModule->getMeshPointer()->getTileIndex(Vector2f(getPosX(), getPosY()));
-
-        //Are we inside a wall now?
-        Vector2f nrm;
-        float pressure = 0.0f;
-        BIT_FIELD hit_a_wall = hit_wall(nrm, &pressure);
-        if (EMPTY_BIT_FIELD == hit_a_wall && 0.0f <= pressure)
-        {
-            //Nope, this is a safe position
-            setSafePosition(getPosition());
-        }
-
-        return true;
-    }
+    bool setPosition(const Vector3f &pos);
 
     /**
     * @brief
@@ -125,10 +95,7 @@ public:
     *   location where it will respawn when it dies or the area a monster
     *   might patrol.
     **/
-    void setSpawnPosition(const Vector3f &pos) {
-        assert(_currentModule->isInside(pos.x(), pos.y()));
-        _spawnPosition = pos;
-    }
+    void setSpawnPosition(const Vector3f &pos);
 
     /**
      * @return the position of this object along the x-axis
