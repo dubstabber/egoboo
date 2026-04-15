@@ -698,7 +698,14 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.c
     src/egolib/game/script_compile.h
-    src/egolib/game/script_functions.c
+    src/egolib/game/script_functions_action.c
+    src/egolib/game/script_functions_bitwise.c
+    src/egolib/game/script_functions_internal.h
+    src/egolib/game/script_functions_movement.c
+    src/egolib/game/script_functions_spawn.c
+    src/egolib/game/script_functions_state.c
+    src/egolib/game/script_functions_systems.c
+    src/egolib/game/script_functions_target.c
     src/egolib/game/script_functions.h
     src/egolib/game/script_implementation.c
     src/egolib/game/script_implementation.h

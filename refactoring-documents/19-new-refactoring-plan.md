@@ -398,6 +398,24 @@ A (build hygiene)
   - `EngineContext` wraps `_gameEngine`
 - Callers not yet migrated — wrappers still delegate to globals
 
+### Phase D: File Splitting — 🟡 IN PROGRESS
+
+- **D1** ✅ Split `script_functions.c` (8,183 lines → 7 files, 2026-04-15):
+  - `script_functions_internal.h` — shared infrastructure (macros, templates, accessors)
+  - `script_functions_bitwise.c` — 12 functions (216 lines)
+  - `script_functions_state.c` — 91 functions (1,551 lines)
+  - `script_functions_target.c` — 81 functions (1,777 lines)
+  - `script_functions_movement.c` — 34 functions (644 lines)
+  - `script_functions_action.c` — 46 functions (968 lines)
+  - `script_functions_spawn.c` — 44 functions (1,182 lines)
+  - `script_functions_systems.c` — 96 functions (2,128 lines)
+  - All 404 functions accounted for, zero behavior change
+  - 253 tests pass, validator baseline unchanged
+- **D2** ❌ Split `game.c`
+- **D3** ❌ Split `graphic.c`
+- **D4** ❌ Split `Object.cpp`
+- **D5** ❌ Split `ObjectProfile.cpp`
+
 ### Phase G: Content Validation — ✅ BASELINE COMPLETE
 
 - Validator tool built and baselined (42 modules, 9 passing, 278 errors)
