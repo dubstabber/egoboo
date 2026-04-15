@@ -683,6 +683,9 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/game_targeting.c
     src/egolib/game/game_wawalite.c
     src/egolib/game/graphic.c
+    src/egolib/game/graphic_hud.c
+    src/egolib/game/graphic_internal.h
+    src/egolib/game/graphic_scene.c
     src/egolib/game/graphic_fan.c
     src/egolib/game/graphic_fan.h
     src/egolib/game/graphic.h
