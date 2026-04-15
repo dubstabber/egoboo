@@ -23,10 +23,6 @@
 #include "egolib/game/game_internal.h"
 
 //--------------------------------------------------------------------------------------------
-// Globals
-import_list_t g_importList;
-
-//--------------------------------------------------------------------------------------------
 egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local )
 {
     /// @author ZZ

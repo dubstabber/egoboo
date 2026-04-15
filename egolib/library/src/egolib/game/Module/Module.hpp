@@ -325,6 +325,3 @@ private:
     bool _pitsTeleport;          ///< Do they teleport?
     Ego::Vector3f _pitsTeleportPos;   ///< If they teleport, then where to?
 };
-
-/// @todo Remove this global.
-extern std::unique_ptr<GameModule> _currentModule;

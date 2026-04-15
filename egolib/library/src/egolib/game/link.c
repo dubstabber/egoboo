@@ -24,9 +24,9 @@
 #include "egolib/game/link.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/game.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/egoboo.h"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 //--------------------------------------------------------------------------------------------
@@ -48,6 +48,14 @@ typedef struct s_link_stack_entry link_stack_entry_t;
 
 static bool link_push_module();
 //static bool link_test_module( const char * modname );
+
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+}
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -176,7 +184,7 @@ bool link_pop_module()
             hero_spawn_data_t * phero = pentry->hero + i;
 
             pchr = NULL;
-            for(const std::shared_ptr<Object> &object : _currentModule->getObjectHandler().iterator())
+            for(const std::shared_ptr<Object> &object : gameSession().objectHandler().iterator())
             {
                 if(object->isTerminated()) {
                     continue;
@@ -233,8 +241,8 @@ bool link_push_module()
 
         // Is it alive?
         ichr = PlaStack.lst[ipla].index;
-        if ( !_currentModule->getObjectHandler().exists( ichr ) ) continue;
-        pchr = _currentModule->getObjectHandler().get( ichr );
+        if ( !gameSession().objectHandler().exists( ichr ) ) continue;
+        pchr = gameSession().objectHandler().get( ichr );
 
         if ( pentry->hero_count < LINK_HEROES_MAX )
         {

@@ -25,6 +25,7 @@
 
 #include "Team.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 Team::Team(const TEAM_REF teamID) :
@@ -54,7 +55,7 @@ Team::Team(const TEAM_REF teamID) :
 
 void Team::giveTeamExperience(const int amount, const XPType xptype) const
 {
-    for(const std::shared_ptr<Object> &chr : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &chr : GameSessionContext::get().objectHandler().iterator())
     {
         if ( chr->getTeam()._teamID == _teamID )
         {
@@ -83,7 +84,7 @@ void Team::callForHelp(const std::shared_ptr<Object> &caller)
     _sissy = caller;
 
     //Notify all other characters who are friendly that this character has called for help
-    for(const std::shared_ptr<Object> &chr : _currentModule->getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &chr : GameSessionContext::get().objectHandler().iterator())
     {
         if ( chr != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
         {
@@ -125,5 +126,6 @@ bool team_hates_team(const Team& a, const Team& b) {
 }
 
 bool team_hates_team(TEAM_REF a, TEAM_REF b) {
-    return team_hates_team(_currentModule->getTeamList()[a], _currentModule->getTeamList()[b]);
+    GameModule& module = GameSessionContext::get().activeModule();
+    return team_hates_team(module.getTeamList()[a], module.getTeamList()[b]);
 }

@@ -19,6 +19,9 @@ class GameSessionContext : private idlib::non_copyable
 public:
     static GameSessionContext& get();
 
+    GameSessionContext();
+    ~GameSessionContext();
+
     bool hasActiveModule() const;
 
     GameModule* tryActiveModule();
@@ -50,5 +53,10 @@ public:
     void resetClocks();
 
 private:
-    GameSessionContext() = default;
+    std::unique_ptr<GameModule> _activeModule;
+    std::unique_ptr<import_list_t> _importList;
+    bool _overrideSlots;
+    uint32_t _worldUpdateCount;
+    uint32_t _characterStatClock;
+    uint32_t _enchantStatClock;
 };

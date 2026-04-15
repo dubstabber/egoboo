@@ -64,18 +64,19 @@ void ObjectGraphics::updateLighting()
     static constexpr uint32_t FRAME_SKIP = 1 << 2;
     static constexpr uint32_t FRAME_MASK = FRAME_SKIP - 1;
     auto mesh = GameSessionContext::get().mesh();
+    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
 
     // make sure the matrix is valid
     //chr_update_matrix(&_object, true);
 
     // has this already been calculated in the last FRAME_SKIP update frames?
-	if (_lastLightingUpdateFrame >= 0 && static_cast<uint32_t>(_lastLightingUpdateFrame) >= update_wld) {
+	if (_lastLightingUpdateFrame >= 0 && static_cast<uint32_t>(_lastLightingUpdateFrame) >= currentUpdateFrame) {
 		return;
 	}
 
     // reduce the amount of updates to one every FRAME_SKIP frames, but dither
     // the updating so that not all objects update on the same frame
-    _lastLightingUpdateFrame = update_wld + ((update_wld + _object.getObjRef().get()) & FRAME_MASK);
+    _lastLightingUpdateFrame = currentUpdateFrame + ((currentUpdateFrame + _object.getObjRef().get()) & FRAME_MASK);
 
     // interpolate the lighting for the origin of the object
 	lighting_cache_t global_light;
@@ -441,19 +442,20 @@ gfx_rv ObjectGraphics::updateVertexCache(int vmax, int vmin, bool force, bool ve
     _vertexCache.frame_nxt = _targetFrameIndex;
     _vertexCache.frame_lst = _sourceFrameIndex;
     _vertexCache.flip      = _animationProgress;
+    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
 
     // store the last time there was an update to the animation
     bool frames_updated = false;
     if ( !frames_match )
     {
-        _vertexCache.frame_wld = update_wld;
+        _vertexCache.frame_wld = currentUpdateFrame;
         frames_updated   = true;
     }
 
     // store the time of the last full update
     if ( 0 == vmin && maxvert == vmax )
     {
-        _vertexCache.vert_wld  = update_wld;
+        _vertexCache.vert_wld  = currentUpdateFrame;
     }
 
     return ( verts_updated || frames_updated ) ? gfx_success : gfx_fail;
@@ -948,7 +950,7 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_POOF ) && !_object.isPlayer() )
     {
-        _object.ai.poof_time = update_wld;
+        _object.ai.poof_time = GameSessionContext::get().worldUpdateCount();
     }
 
     //Do footfall sound effect

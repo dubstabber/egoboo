@@ -11,33 +11,36 @@
 #include <ctime>
 #include <stdexcept>
 
-namespace
-{
-std::unique_ptr<GameModule>& activeModuleStorage()
-{
-    return _currentModule;
-}
-}
-
 GameSessionContext& GameSessionContext::get()
 {
     static GameSessionContext instance;
     return instance;
 }
 
+GameSessionContext::GameSessionContext() :
+    _activeModule(),
+    _importList(std::make_unique<import_list_t>()),
+    _overrideSlots(false),
+    _worldUpdateCount(0),
+    _characterStatClock(0),
+    _enchantStatClock(0)
+{}
+
+GameSessionContext::~GameSessionContext() = default;
+
 bool GameSessionContext::hasActiveModule() const
 {
-    return static_cast<bool>(activeModuleStorage());
+    return static_cast<bool>(_activeModule);
 }
 
 GameModule* GameSessionContext::tryActiveModule()
 {
-    return activeModuleStorage().get();
+    return _activeModule.get();
 }
 
 const GameModule* GameSessionContext::tryActiveModule() const
 {
-    return activeModuleStorage().get();
+    return _activeModule.get();
 }
 
 GameModule& GameSessionContext::activeModule()
@@ -67,9 +70,9 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& module, uint32_t seed)
 {
-    activeModuleStorage() = std::make_unique<GameModule>(module, seed);
+    _activeModule = std::make_unique<GameModule>(module, seed);
 
-    // Due to legacy `_currentModule` dependencies, live spawn still happens after construction.
+    // Live spawn still happens after construction because the runtime is not fully decoupled.
     activeModule().spawnAllObjects();
 
     return true;
@@ -77,7 +80,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 void GameSessionContext::quitModule()
 {
-    activeModuleStorage().reset();
+    _activeModule.reset();
 
     scripting_system_end();
 
@@ -136,32 +139,32 @@ const std::vector<std::shared_ptr<Ego::Player>>& GameSessionContext::playerList(
 
 import_list_t& GameSessionContext::importList()
 {
-    return g_importList;
+    return *_importList;
 }
 
 const import_list_t& GameSessionContext::importList() const
 {
-    return g_importList;
+    return *_importList;
 }
 
 bool& GameSessionContext::overrideSlots()
 {
-    return overrideslots;
+    return _overrideSlots;
 }
 
 uint32_t& GameSessionContext::worldUpdateCount()
 {
-    return update_wld;
+    return _worldUpdateCount;
 }
 
 uint32_t& GameSessionContext::characterStatClock()
 {
-    return clock_chr_stat;
+    return _characterStatClock;
 }
 
 uint32_t& GameSessionContext::enchantStatClock()
 {
-    return clock_enc_stat;
+    return _enchantStatClock;
 }
 
 void GameSessionContext::resetClocks()

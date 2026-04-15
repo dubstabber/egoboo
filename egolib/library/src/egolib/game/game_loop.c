@@ -22,12 +22,6 @@
 
 #include "egolib/game/game_internal.h"
 
-//--------------------------------------------------------------------------------------------
-// Globals
-uint32_t clock_enc_stat   = 0;
-uint32_t clock_chr_stat   = 0;
-uint32_t update_wld       = 0;
-
 int chr_stoppedby_tests = 0;
 int chr_pressure_tests = 0;
 

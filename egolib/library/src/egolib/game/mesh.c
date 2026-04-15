@@ -27,8 +27,8 @@
 #include "egolib/game/Physics/PhysicalConstants.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/FileFormats/Globals.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
-#include "egolib/game/Module/Module.hpp"
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -1359,10 +1359,11 @@ void ego_mesh_t::finalize()
 float ego_mesh_t::getElevation(const Ego::Vector2f& p, bool waterwalk) const
 {
     const float floorElevation = getElevation(p);
+    water_instance_t& water = GameSessionContext::get().water();
 
-    if (waterwalk && _currentModule->getWater()._surface_level > floorElevation && _currentModule->getWater()._is_water) {
+    if (waterwalk && water._surface_level > floorElevation && water._is_water) {
         if (0 != test_fx(getTileIndex(p), MAPFX_WATER)) {
-            return _currentModule->getWater()._surface_level;
+            return water._surface_level;
         }
     }
     return floorElevation;

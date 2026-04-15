@@ -173,14 +173,6 @@ public:
 // The end module text.
 extern EndText g_endText;
 
-extern bool    overrideslots;          ///< Override existing slots?
-extern import_list_t g_importList;
-
-// various clocks and timers
-extern uint32_t        clock_enc_stat;        ///< For character stat regeneration
-extern uint32_t        clock_chr_stat;        ///< For enchant stat regeneration
-extern uint32_t        update_wld;            ///< The number of times the game has been updated
-
 // counters for debugging wall collisions
 extern int chr_stoppedby_tests;
 extern int chr_pressure_tests;

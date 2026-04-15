@@ -24,6 +24,8 @@
 #include "egolib/Entities/Enchant.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace Ego
 {
@@ -349,7 +351,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // Create an overlay character?
     if (_enchantProfile->spawn_overlay)
     {
-        std::shared_ptr<Object> overlay = _currentModule->spawnObject(target->getPosition(), _spawnerProfileID, target->team, 0, target->ori.facing_z, "", ObjectRef::Invalid );
+        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->team, 0, target->ori.facing_z, "", ObjectRef::Invalid );
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...

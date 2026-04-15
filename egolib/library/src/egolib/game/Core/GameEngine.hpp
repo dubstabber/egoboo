@@ -280,4 +280,3 @@ private:
 extern std::unique_ptr<GameEngine> _gameEngine;
 
 //TODO: remove these globals
-extern std::unique_ptr<GameModule> _currentModule;

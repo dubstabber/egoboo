@@ -28,6 +28,7 @@
 #include "egolib/Profiles/ModuleProfile.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/script_compile.h"
 
@@ -180,7 +181,7 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
             Log::get() << e;
 			throw std::runtime_error(e.getText());
         }
-        else if (required && overrideslots)
+        else if (required && GameSessionContext::get().overrideSlots())
         {
             Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
             e << "object slot " << SPELLBOOK << " is already used by " << _profilesLoaded[iobj.get()]->getPathname() << " and cannot be used by " << pathName << Log::EndOfEntry;

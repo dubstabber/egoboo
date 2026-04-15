@@ -1,7 +1,7 @@
 #include "InventorySlot.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum
-#include "egolib/game/game.h" //only for update_wld global var
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 
 namespace Ego {
@@ -33,7 +33,7 @@ void InventorySlot::draw(DrawingContext& drawingContext) {
     }
 
     //Draw the icon
-    draw_game_icon(icon_ref, getDerivedPosition().x(), getDerivedPosition().y(), selected ? COLOR_WHITE : NOSPARKLE, update_wld, getWidth());
+    draw_game_icon(icon_ref, getDerivedPosition().x(), getDerivedPosition().y(), selected ? COLOR_WHITE : NOSPARKLE, GameSessionContext::get().worldUpdateCount(), getWidth());
 
     //Draw ammo
     if (item) {

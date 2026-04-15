@@ -27,7 +27,6 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/ProgressBar.hpp"
 #include "egolib/game/GUI/Material.hpp"
-#include "egolib/game/game.h" //for update_wld
 
 namespace Ego {
 namespace GUI {
@@ -56,7 +55,7 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 
 	// draw the icon
 	if (draw_sparkle == NOSPARKLE) draw_sparkle = (NULL == pitem) ? NOSPARKLE : pitem->sparkle;
-	draw_game_icon(icon_ref, x, y, draw_sparkle, update_wld, -1);
+	draw_game_icon(icon_ref, x, y, draw_sparkle, GameSessionContext::get().worldUpdateCount(), -1);
 
 	// draw the ammo, if requested
 	if (draw_ammo && (NULL != pitem))
@@ -393,7 +392,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
     //Finally draw charge bar if applicable
     if (pchr->isPlayer()) {
         const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->is_which_player);
-        if (player->getChargeBarFrame() >= update_wld) {
+        if (player->getChargeBarFrame() >= GameSessionContext::get().worldUpdateCount()) {
             _chargeBar->setVisible(true);
             _chargeBar->setMaxValue(player->getBarMaxCharge());
             _chargeBar->setValue(player->getBarCurrentCharge());

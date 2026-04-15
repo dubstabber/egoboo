@@ -85,9 +85,6 @@ private:
 };
 } // namespace
 
-/// @todo Remove this global.
-std::unique_ptr<GameModule> _currentModule = nullptr;
-
 GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint32_t seed) :
     _moduleProfile(profile),
     _gameObjects(),
