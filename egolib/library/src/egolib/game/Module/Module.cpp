@@ -1143,9 +1143,8 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
             grip_offset_t grip_off = (ATTACH_LEFT == psp_info.attach) ? GRIP_LEFT : GRIP_RIGHT;
 
             if(pobject->getObjectPhysics().attachToObject(parent, grip_off)) {
-                // Handle the "grabbed" messages
-                //scr_run_chr_script(pobject);
-                UNSET_BIT(pobject->ai.alert, ALERTIF_GRABBED);
+                // Preserve the initial grabbed alert so startup equipment can
+                // consume IfGrabbed on its first script update.
             }
         break;
 

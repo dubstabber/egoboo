@@ -142,6 +142,9 @@ gfx_rv ObjectGraphicsRenderer::render_enviro( Camera& cam, const std::shared_ptr
                         // the default phong is bright in both the forward and back directions...
                         targetVertex->texture.t = targetVertex->texture.t * 0.5f + 0.5f;
                     }
+
+                    vertexBufferSize++;
+                    targetVertex++;
                 }
                 // Render this command.
                 Md2VertexBuffer::render(glcommand.glMode, 0, vertexBufferSize);

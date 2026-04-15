@@ -329,6 +329,15 @@ TEST_F(ObjectProfileParserTest, TestModFollowerFlags)
     EXPECT_TRUE(profile->canGrabMoney());
 }
 
+TEST_F(ObjectProfileParserTest, GlobalIronBallTransferBlendingFlag)
+{
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_data/globalobjects/misc/ironball.obj", ObjectProfileRef(51), true);
+    ASSERT_NE(profile, nullptr);
+
+    EXPECT_FALSE(profile->transferBlending());
+}
+
 // ===========================================================================
 //  level.mpd parser tests
 // ===========================================================================
