@@ -1,5 +1,5 @@
-#include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
+#include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
@@ -132,7 +132,9 @@ struct ReconciliationRow
     std::string resolvedVirtualPath;
     size_t occurrenceCount = 0;
     std::string canonicalKey;
+    bool placeholderLike = false;
     std::vector<std::string> candidateNames;
+    std::vector<Ego::SpawnFile::ReconciliationSuggestion> suggestedMatches;
 };
 
 struct ReconciliationReport
@@ -494,6 +496,7 @@ struct ReachabilityIndex
 {
     std::map<std::string, ReachableObject> reachableByName;
     std::map<std::string, std::vector<std::string>> candidateNamesByCanonicalKey;
+    std::vector<Ego::SpawnFile::ReconciliationCandidate> candidates;
 };
 
 std::vector<InventoryRoot> buildInventoryRoots(const ModuleProfile& module)
@@ -555,6 +558,10 @@ ReachabilityIndex buildReachabilityIndex(const ModuleProfile& module,
 
             index.candidateNamesByCanonicalKey[Ego::SpawnFile::buildReconciliationKey(objectName)].push_back(objectName);
             index.reachableByName.emplace(objectName, reachable);
+            index.candidates.push_back({reachable.objectName,
+                                        reachable.resolvedVirtualPath,
+                                        reachable.sourceKind,
+                                        reachable.originPath});
 
             if (reconciliationReport)
             {
@@ -598,12 +605,15 @@ void appendReconciliationRow(ReconciliationReport* reconciliationReport,
         row.normalizedName = normalizedName;
         row.resolvedVirtualPath = resolvedVirtualPath;
         row.canonicalKey = canonicalKey;
+        row.placeholderLike = Ego::SpawnFile::isPlaceholderLikeSpawnName(normalizedName);
 
         const auto candidates = reachabilityIndex.candidateNamesByCanonicalKey.find(canonicalKey);
         if (candidates != reachabilityIndex.candidateNamesByCanonicalKey.end())
         {
             row.candidateNames = candidates->second;
         }
+        row.suggestedMatches = Ego::SpawnFile::suggestSpawnReconciliationMatches(normalizedName,
+                                                                                 reachabilityIndex.candidates);
     }
 
     ++row.occurrenceCount;
@@ -679,7 +689,7 @@ void emitJsonReport(const Options& options,
 
     std::cout << "{";
 
-    std::cout << "\"schema_version\":" << (options.emitReconciliation ? 2 : 1) << ",";
+    std::cout << "\"schema_version\":" << (options.emitReconciliation ? 3 : 1) << ",";
 
     std::cout << "\"options\":{";
     std::cout << "\"verbose\":" << (options.verbose ? "true" : "false") << ",";
@@ -888,6 +898,7 @@ void emitJsonReport(const Options& options,
             std::cout << "\"canonical_key\":";
             writeJsonString(std::cout, row.canonicalKey);
             std::cout << ",";
+            std::cout << "\"placeholder_like\":" << (row.placeholderLike ? "true" : "false") << ",";
             std::cout << "\"candidate_names\":[";
             for (size_t index = 0; index < row.candidateNames.size(); ++index)
             {
@@ -896,6 +907,35 @@ void emitJsonReport(const Options& options,
                     std::cout << ",";
                 }
                 writeJsonString(std::cout, row.candidateNames[index]);
+            }
+            std::cout << "],";
+            std::cout << "\"suggested_matches\":[";
+            for (size_t index = 0; index < row.suggestedMatches.size(); ++index)
+            {
+                if (index > 0)
+                {
+                    std::cout << ",";
+                }
+
+                const auto& suggestion = row.suggestedMatches[index];
+                std::cout << "{";
+                std::cout << "\"object_name\":";
+                writeJsonString(std::cout, suggestion.objectName);
+                std::cout << ",";
+                std::cout << "\"resolved_virtual_path\":";
+                writeJsonString(std::cout, suggestion.resolvedVirtualPath);
+                std::cout << ",";
+                std::cout << "\"source_kind\":";
+                writeJsonString(std::cout, suggestion.sourceKind);
+                std::cout << ",";
+                std::cout << "\"origin_path\":";
+                writeJsonString(std::cout, suggestion.originPath);
+                std::cout << ",";
+                std::cout << "\"match_reason\":";
+                writeJsonString(std::cout, suggestion.matchReason);
+                std::cout << ",";
+                std::cout << "\"score\":" << suggestion.score;
+                std::cout << "}";
             }
             std::cout << "]";
             std::cout << "}";

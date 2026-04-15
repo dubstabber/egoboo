@@ -76,6 +76,8 @@ Out of scope for the active architecture model:
 - `18-modularization-analysis.md`
 - `19-new-refactoring-plan.md`
 - `22-module-runtime-ownership-plan.md`
+- `23-session-state-ownership-pass.md`
+- `24-spawn-reconciliation-remediation-pass.md`
 
 ## Recommended reading order
 
@@ -87,12 +89,12 @@ Out of scope for the active architecture model:
 6. Read `08-spawn-format-spec.md` before changing spawn-name resolution, dependency handling, or validator alias reporting.
 7. Read `09-data-format-spec.md` before changing object profile parsing, slot semantics, or save/import behavior.
 8. Read `04-refactoring-strategy.md` before starting code motion.
-9. Read `11-runtime-context-extraction-pass.md`, `12-ui-game-state-session-access-pass.md`, `13-gameplay-runtime-shell-context-pass.md`, `14-graphics-runtime-shell-context-pass.md`, `15-entity-physics-runtime-context-pass.md`, `16-scripting-runtime-shell-context-pass.md`, `20-inventory-and-commerce-runtime-context-pass.md`, `21-presentation-engine-context-pass.md`, and `22-module-runtime-ownership-plan.md` before continuing session/global-access cleanup work.
+9. Read `11-runtime-context-extraction-pass.md`, `12-ui-game-state-session-access-pass.md`, `13-gameplay-runtime-shell-context-pass.md`, `14-graphics-runtime-shell-context-pass.md`, `15-entity-physics-runtime-context-pass.md`, `16-scripting-runtime-shell-context-pass.md`, `20-inventory-and-commerce-runtime-context-pass.md`, `21-presentation-engine-context-pass.md`, `22-module-runtime-ownership-plan.md`, `23-session-state-ownership-pass.md`, and `24-spawn-reconciliation-remediation-pass.md` before continuing runtime-ownership or content-reconciliation work.
 10. Use `05-playtesting-and-bug-hunt-plan.md` to turn future changes into repeatable validation work.
 11. Read `17-codebase-health-assessment.md` for a quantitative quality snapshot with metrics and a scorecard.
 12. Read `18-modularization-analysis.md` to understand current module boundaries, coupling, and a target decomposition.
 13. Read `19-new-refactoring-plan.md` for the prioritized, actionable refactoring roadmap.
-14. Read `22-module-runtime-ownership-plan.md` for the current recommended next seam after the runtime-context passes and `game.c` split.
+14. Read `22-module-runtime-ownership-plan.md`, `23-session-state-ownership-pass.md`, and `24-spawn-reconciliation-remediation-pass.md` for the latest completed runtime-ownership work and the current spawn-reconciliation remediation state.
 
 ## Immediate recommendation
 

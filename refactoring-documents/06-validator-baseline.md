@@ -1,6 +1,6 @@
 # Validator Baseline
 
-This document records the first non-UI content validation pass added during the refactor audit on 2026-04-12 and the first report-mode update added on 2026-04-13.
+This document records the first non-UI content validation pass added during the refactor audit on 2026-04-12, the first report-mode update added on 2026-04-13, and the 2026-04-15 spawn-reconciliation remediation refresh.
 
 It is not a playtest. It is a structural baseline for module/content health.
 
@@ -132,9 +132,11 @@ XDG_DATA_HOME=/tmp/egoboo-xdg \
 ./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --json
 ```
 
-The JSON refresh produced the same top-level totals as the original console baseline.
+The 2026-04-13 JSON refresh produced the same top-level totals as the original console baseline.
 
 A follow-up 2026-04-13 validator pass added narrow `data.txt` semantic checks for raw `DRES`, `SKIN`, and `LEVL` tagged expansions plus loaded skin-override and ammo-vs-max-ammo invariants. That pass also produced the same top-level totals as the original baseline, meaning those new warnings did not trigger on the shipped content set.
+
+A later 2026-04-15 remediation pass extended reconciliation JSON output to schema version `3` and applied a conservative spawn-reference repair batch to `archmage.mod`, `abyss2.mod`, and `palwater.mod`. That reduced the global error count without changing parser behavior or warning totals.
 
 Summary:
 
@@ -144,7 +146,7 @@ Summary:
 | Passing modules | 9 |
 | Failing modules | 33 |
 | Validator warnings | 25 |
-| Validator errors | 278 |
+| Validator errors | 250 |
 
 Passing modules:
 
@@ -164,7 +166,7 @@ The error distribution is highly concentrated.
 
 | Error category | Count |
 | --- | ---: |
-| spawn-referenced object missing from `mp_objects` | 277 |
+| spawn-referenced object missing from `mp_objects` | 249 |
 | other hard validator errors | 1 |
 
 The one non-spawn hard error was:
@@ -197,22 +199,20 @@ The validator can now also emit `profile_field_invalid` warnings for a small set
 
 ## 8. Highest-error modules
 
-Top failing modules from the first baseline:
+Top failing modules from the latest refresh:
 
 | Module | Errors | Warnings | Spawn Entries |
 | --- | ---: | ---: | ---: |
-| `archmage.mod` | 56 | 1 | 164 |
-| `abyss2.mod` | 35 | 0 | 333 |
-| `palwater.mod` | 18 | 0 | 123 |
+| `archmage.mod` | 39 | 1 | 164 |
+| `abyss2.mod` | 33 | 0 | 333 |
 | `zippy.mod` | 16 | 1 | 164 |
 | `heist.mod` | 15 | 0 | 112 |
 | `palash.mod` | 13 | 0 | 154 |
 | `rogue.mod` | 13 | 0 | 135 |
 | `palsand.mod` | 12 | 0 | 105 |
 | `bishopiacity.mod` | 10 | 4 | 403 |
+| `palwater.mod` | 9 | 0 | 123 |
 | `advent.mod` | 9 | 2 | 92 |
-| `palshad.mod` | 9 | 0 | 133 |
-| `soldier.mod` | 9 | 0 | 110 |
 
 ## 9. Most common unresolved spawn object names
 
