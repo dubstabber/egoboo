@@ -217,6 +217,17 @@ public:
     void update();
 
 private:
+    void initializeModuleRuntime();
+    void initializeModuleTeamsAndTextures();
+    void initializeSharedModuleAssets();
+    void loadModuleEnvironment();
+    void loadModuleContent();
+    void finalizeModuleInitialization();
+
+    void updateModuleServices();
+    void updateModuleSimulation();
+    void finalizeModuleUpdate();
+
     /**
     * @brief
     *   Load all passages from file
@@ -317,4 +328,3 @@ private:
 
 /// @todo Remove this global.
 extern std::unique_ptr<GameModule> _currentModule;
-

@@ -1,5 +1,5 @@
 #include "egolib/game/Module/AnimatedTiles.hpp"
-#include "egolib/game/game.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 
 AnimatedTilesState::Layer::Layer() :
     update_and(0),
@@ -27,14 +27,16 @@ void AnimatedTilesState::upload(const wawalite_animtile_t& source)
 
 void AnimatedTilesState::Layer::update()
 {
+    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
+
     // skip it if there were no updates
-    if (frame_update_old == update_wld) return;
+    if (frame_update_old == currentUpdateFrame) return;
 
     // save the old frame_add when we update to detect changes
     frame_add_old = frame_add;
 
     // cycle through all frames since the last time
-    for (uint32_t tnc = frame_update_old + 1; tnc <= update_wld; tnc++)
+    for (uint32_t tnc = frame_update_old + 1; tnc <= currentUpdateFrame; tnc++)
     {
         if (0 == (tnc & update_and))
         {
@@ -43,7 +45,7 @@ void AnimatedTilesState::Layer::update()
     }
 
     // save the frame update
-    frame_update_old = update_wld;
+    frame_update_old = currentUpdateFrame;
 }
 
 void AnimatedTilesState::update()

@@ -28,6 +28,7 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Logic/TreasureTables.hpp"
 
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"
@@ -37,6 +38,52 @@
 
 #include "egolib/game/Physics/CollisionSystem.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
+
+namespace
+{
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
+uint32_t& worldUpdateCount()
+{
+    return gameSession().worldUpdateCount();
+}
+
+uint32_t& characterStatClock()
+{
+    return gameSession().characterStatClock();
+}
+
+import_list_t& importList()
+{
+    return gameSession().importList();
+}
+
+bool& overrideSlots()
+{
+    return gameSession().overrideSlots();
+}
+
+class OverrideSlotsScope
+{
+public:
+    explicit OverrideSlotsScope(bool& slotOverride) :
+        _slotOverride(slotOverride)
+    {
+        _slotOverride = true;
+    }
+
+    ~OverrideSlotsScope()
+    {
+        _slotOverride = false;
+    }
+
+private:
+    bool& _slotOverride;
+};
+} // namespace
 
 /// @todo Remove this global.
 std::unique_ptr<GameModule> _currentModule = nullptr;
@@ -69,66 +116,90 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
 {
     Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 
-    // set up the virtual file system for the module (Do before loading the module)
+    initializeModuleRuntime();
+    initializeModuleTeamsAndTextures();
+    initializeSharedModuleAssets();
+    loadModuleEnvironment();
+    loadModuleContent();
+    finalizeModuleInitialization();
+}
+
+void GameModule::initializeModuleRuntime()
+{
+    // Set up the virtual file system for the module before any module-local loads.
     if (!setup_init_module_vfs_paths(getPath())) {
         throw idlib::runtime_error(__FILE__, __LINE__, "Failed to setup module vfs");
     }
 
-    //Initialize random seeds
-    srand( _seed );
+    // Initialize random seeds before content loading starts.
+    srand(_seed);
     Random::setSeed(_seed);
+}
 
-    //Initialize all teams
+void GameModule::initializeModuleTeamsAndTextures()
+{
+    // Initialize all teams before module state is populated.
     for(int i = 0; i < Team::TEAM_MAX; ++i) {
         _teamList.push_back(Team(i));
     }
 
-    //Load tile textures
+    // Load tile textures up front so rendering assets are ready once the mesh loads.
     for(size_t i = 0; i < _tileTextures.size(); ++i) {
         _tileTextures[i] = Ego::DeferredTexture("mp_data/tile" + std::to_string(i));
     }
 
-    //Load water textures
+    // Load water textures used by the module environment.
     _waterTextures[0] = Ego::DeferredTexture("mp_data/waterlow");
     _waterTextures[1] = Ego::DeferredTexture("mp_data/watertop");
+}
 
-    // load a bunch of assets that are used in the module
+void GameModule::initializeSharedModuleAssets()
+{
+    // Load shared runtime assets that module content depends on.
     AudioSystem::get().loadGlobalSounds();
     ProfileSystem::get().loadGlobalParticleProfiles();
+}
 
-    //Load wavalite data
+void GameModule::loadModuleEnvironment()
+{
+    // Load environment state before module content starts referencing it.
     wawalite_data_t *wavalite = read_wawalite_vfs();
     if (wavalite != nullptr) {
         _water.upload(wavalite->water);
         _damageTile.upload(wavalite->damagetile);
     }
     else {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", profile->getPath(), "`", Log::EndOfEntry);
+        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
     }
     upload_wawalite();
+}
 
-    //Load all the profiles required by this module
+void GameModule::loadModuleContent()
+{
+    // Load the profiles and world data in the same order as the legacy constructor.
     loadProfiles();
 
-    //Load mesh
+    // Load mesh.
     MeshLoader meshLoader;
-    _mesh = meshLoader(profile->getPath());
+    _mesh = meshLoader(_moduleProfile->getPath());
 
-    //Load passage.txt
+    // Load passage.txt.
     loadAllPassages();
 
-    //Load alliance.txt
+    // Load alliance.txt.
     loadTeamAlliances();
+}
 
+void GameModule::finalizeModuleInitialization()
+{
     // log debug info for every object loaded into the module
     if (egoboo_config_t::get().debug_developerMode_enable.getValue()) {
         logSlotUsage("/debug/slotused.txt");
     }
 
-    // reset some counters
+    // Reset module-local runtime counters after load completes.
     timeron = false;
-    update_wld = 0;
-    clock_chr_stat = 0;    
+    gameSession().resetClocks();
 }
 
 GameModule::~GameModule()
@@ -145,6 +216,8 @@ GameModule::~GameModule()
 
 void GameModule::loadProfiles()
 {
+    OverrideSlotsScope moduleSlotOverride(overrideSlots());
+
     //Load the spell book profile
     ProfileSystem::get().loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
 
@@ -153,7 +226,6 @@ void GameModule::loadProfiles()
     import_data.max_slot = -1;
 
     // This overwrites existing loaded slots that are loaded globally
-    overrideslots = true;
     import_data.player = -1;
     import_data.slot   = -100;
 
@@ -182,9 +254,6 @@ void GameModule::loadProfiles()
             }
         }
     }
-
-    // return this to the normal value
-    overrideslots = false;
 
     // load all module-specific object profiels
     game_load_module_profiles(_moduleProfile->getPath());   // load the objects from the module's directory    
@@ -619,6 +688,8 @@ std::shared_ptr<const Ego::Texture> GameModule::getWaterTexture(const uint8_t la
 
 void GameModule::updateAllObjects()
 {
+   const uint32_t currentUpdateFrame = worldUpdateCount();
+
    for(const std::shared_ptr<Object> &object : getObjectHandler().iterator())
     {
         //Skip terminated objects
@@ -633,15 +704,15 @@ void GameModule::updateAllObjects()
         object->inst.updateAnimation();
 
         //Check if this object should be poofed (destroyed)
-        bool timeOut = ( object->ai.poof_time > 0 ) && ( object->ai.poof_time <= static_cast<int32_t>(update_wld) );
+        bool timeOut = ( object->ai.poof_time > 0 ) && ( object->ai.poof_time <= static_cast<int32_t>(currentUpdateFrame) );
         if (timeOut) {
             object->requestTerminate();
         }
     }
 
     // Reset the clock
-    if (clock_chr_stat >= ONESECOND) {
-        clock_chr_stat -= ONESECOND;
+    if (characterStatClock() >= ONESECOND) {
+        characterStatClock() -= ONESECOND;
     }
 }
 
@@ -771,6 +842,8 @@ void GameModule::enablePitsKill()
 
 void GameModule::updateDamageTiles()
 {
+    const uint32_t currentUpdateFrame = worldUpdateCount();
+
     // do the damage tile stuff
     for(const std::shared_ptr<Object> &pchr : _gameObjects.iterator()) {
         // if the object is not really in the game, do nothing
@@ -792,7 +865,7 @@ void GameModule::updateDamageTiles()
         {
             if (pchr->reaffirm_damagetype == _damageTile.damagetype)
             {
-                if (0 == (update_wld & TILE_REAFFIRM_AND))
+                if (0 == (currentUpdateFrame & TILE_REAFFIRM_AND))
                 {
                     reaffirm_attached_particles(pchr->getObjRef());
                 }
@@ -813,7 +886,7 @@ void GameModule::updateDamageTiles()
 
             pchr->damage_timer = DAMAGETILETIME;
 
-            if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (update_wld & _damageTile.partand)) {
+            if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
                 ParticleHandler::get().spawnGlobalParticle( pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0 );
             }
         }
@@ -1110,18 +1183,18 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
                 pobject->nameknown = true;
             }
         }
-        else if ( getPlayerList().size() < getImportAmount() && getPlayerList().size() < getPlayerAmount() && getPlayerList().size() < g_importList.count )
+        else if ( getPlayerList().size() < getImportAmount() && getPlayerList().size() < getPlayerAmount() && getPlayerList().size() < importList().count )
         {
             // A multiplayer module
 
             int local_index = -1;
-            for ( size_t tnc = 0; tnc < g_importList.count; tnc++ )
+            for ( size_t tnc = 0; tnc < importList().count; tnc++ )
             {
                 if (pobject->getProfileID().get() <= import_data.max_slot && ProfileSystem::get().isLoaded(pobject->getProfileID()))
                 {
                     int islot = pobject->getProfileID().get();
 
-                    if ( import_data.slot_lst[islot] == g_importList.lst[tnc].slot )
+                    if ( import_data.slot_lst[islot] == importList().lst[tnc].slot )
                     {
                         local_index = tnc;
                         break;
@@ -1132,7 +1205,7 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
             if ( -1 != local_index )
             {
                 // It's a local input
-                addPlayer(pobject, Ego::Input::InputDevice::DeviceList[g_importList.lst[local_index].local_player_num]);
+                addPlayer(pobject, Ego::Input::InputDevice::DeviceList[importList().lst[local_index].local_player_num]);
             }
             else
             {
@@ -1170,6 +1243,13 @@ void GameModule::tiltCharactersToTerrain()
 
 void GameModule::update()
 {
+    updateModuleServices();
+    updateModuleSimulation();
+    finalizeModuleUpdate();
+}
+
+void GameModule::updateModuleServices()
+{
     //status text for player stats
     MainLoop::check_stats();
 
@@ -1184,21 +1264,20 @@ void GameModule::update()
     _gameObjects.updateQuadTree(0.0f, 0.0f, _mesh->_info.getTileCountX()*Info<float>::Grid::Size(),
                                             _mesh->_info.getTileCountY()*Info<float>::Grid::Size());
 
-    //---- begin the code for updating misc. game stuff
-    {
-        AudioSystem::get().update();
-        GFX::get().getBillboardSystem().update();
-        g_animatedTilesState.update();
-        getWater().update();
-        updateDamageTiles();
-        updatePits();
-        g_weatherState.update();
-        checkPassageMusic();
-    }
-    //---- end the code for updating misc. game stuff
+    AudioSystem::get().update();
+    GFX::get().getBillboardSystem().update();
+    g_animatedTilesState.update();
+    getWater().update();
+    updateDamageTiles();
+    updatePits();
+    g_weatherState.update();
+    checkPassageMusic();
+}
 
-    //---- Run AI (but not on first update frame) ~10% CPU
-    if(update_wld > 0)
+void GameModule::updateModuleSimulation()
+{
+    // Run AI after the first update frame, matching the legacy gate.
+    if(worldUpdateCount() > 0)
     {
         MainLoop::let_all_characters_think();           //sets the non-player latches
         MainLoop::readPlayerInput();                    //sets latches generated by players
@@ -1208,18 +1287,17 @@ void GameModule::update()
     chr_stoppedby_tests = 0;
     chr_pressure_tests  = 0;
 
-    //---- begin the code for updating in-game objects
-    {
-        updateAllObjects();
-        ParticleHandler::get().updateAllParticles();
-        MainLoop::move_all_objects();                  //movement
-        Ego::Physics::CollisionSystem::get().update(); //collisions
-    }
-    //---- end the code for updating in-game objects
+    updateAllObjects();
+    ParticleHandler::get().updateAllParticles();
+    MainLoop::move_all_objects();                  //movement
+    Ego::Physics::CollisionSystem::get().update(); //collisions
+}
 
+void GameModule::finalizeModuleUpdate()
+{
     //Camera movement
     CameraSystem::get().updateAll(_mesh.get());
 
     //Increment update frame counter
-    update_wld++;
+    worldUpdateCount()++;
 }

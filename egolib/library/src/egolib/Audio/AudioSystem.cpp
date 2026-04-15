@@ -20,6 +20,7 @@
 
 #include "egolib/Audio/AudioSystem.hpp"
 
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Module/Module.hpp"
@@ -85,6 +86,26 @@ bool is_audio_disabled_by_environment()
         || 0 == std::strcmp(value, "TRUE")
         || 0 == std::strcmp(value, "yes")
         || 0 == std::strcmp(value, "YES");
+}
+
+ObjectHandler* tryObjectHandler()
+{
+    GameModule* module = GameSessionContext::get().tryActiveModule();
+    if (!module)
+    {
+        return nullptr;
+    }
+    return &module->getObjectHandler();
+}
+
+Object* tryOwnerObject(ObjectRef ownerRef)
+{
+    ObjectHandler* objectHandler = tryObjectHandler();
+    if (!objectHandler || !objectHandler->exists(ownerRef))
+    {
+        return nullptr;
+    }
+    return objectHandler->get(ownerRef);
 }
 
 } // namespace
@@ -418,7 +439,8 @@ void AudioSystem::updateLoopingSound(const std::shared_ptr<LoopingSound> &sound)
     int channel = sound->getChannel();
 
     //skip dead stuff
-    if (!_currentModule->getObjectHandler().exists(sound->getOwnerRef())) {
+    Object* ownerObject = tryOwnerObject(sound->getOwnerRef());
+    if (!ownerObject) {
 
         //Stop loop if we just died
         if (channel != INVALID_SOUND_CHANNEL) {
@@ -429,7 +451,7 @@ void AudioSystem::updateLoopingSound(const std::shared_ptr<LoopingSound> &sound)
         return;
     }
 
-    const Ego::Vector3f soundPosition = _currentModule->getObjectHandler().get(sound->getOwnerRef())->getPosition();
+    const Ego::Vector3f soundPosition = ownerObject->getPosition();
     const float distance = getSoundDistance(soundPosition);
 
     //Sound is close enough to be heard?
@@ -469,7 +491,7 @@ void AudioSystem::update()
 }
 
 size_t AudioSystem::stopObjectLoopingSounds(ObjectRef ownerRef, const SoundID soundID) {
-	if (!_currentModule->getObjectHandler().exists(ownerRef)) {
+	if (!tryOwnerObject(ownerRef)) {
 		return 0;
 	}
 	size_t removedLoopCount = 0;
@@ -572,7 +594,7 @@ void AudioSystem::mixAudioPosition3D(const int channel, float distance, const Eg
 void AudioSystem::playSoundLooped(const SoundID soundID, ObjectRef ownerRef)
 {
     // Avoid invalid characters
-    if (!_currentModule->getObjectHandler().exists(ownerRef)) {
+    if (!tryOwnerObject(ownerRef)) {
         return;
     }
 

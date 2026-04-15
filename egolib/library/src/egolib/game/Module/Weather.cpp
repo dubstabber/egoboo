@@ -1,4 +1,5 @@
 #include "egolib/game/Module/Weather.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -15,11 +16,17 @@ void WeatherState::update()
     {
         time = timer_reset;
 
+        GameModule* module = GameSessionContext::get().tryActiveModule();
+        if (!module)
+        {
+            return;
+        }
+
         // Find a valid player
         std::shared_ptr<Ego::Player> player = nullptr;
-        if (!_currentModule->getPlayerList().empty()) {
-            iplayer = (iplayer + 1) % _currentModule->getPlayerList().size();
-            player = _currentModule->getPlayerList()[iplayer];
+        if (!module->getPlayerList().empty()) {
+            iplayer = (iplayer + 1) % module->getPlayerList().size();
+            player = module->getPlayerList()[iplayer];
         }
 
         // Did we find one?
@@ -33,11 +40,11 @@ void WeatherState::update()
                 if (particle)
                 {
                     // Weather particles spawned at the edge of the map look ugly, so don't spawn them there
-                    if (particle->getPosX() < EDGE || particle->getPosX() > _currentModule->getMeshPointer()->_tmem._edge_x - EDGE)
+                    if (particle->getPosX() < EDGE || particle->getPosX() > module->getMeshPointer()->_tmem._edge_x - EDGE)
                     {
                         particle->requestTerminate();
                     }
-                    else if (particle->getPosY() < EDGE || particle->getPosY() > _currentModule->getMeshPointer()->_tmem._edge_y - EDGE)
+                    else if (particle->getPosY() < EDGE || particle->getPosY() > module->getMeshPointer()->_tmem._edge_y - EDGE)
                     {
                         particle->requestTerminate();
                     }
