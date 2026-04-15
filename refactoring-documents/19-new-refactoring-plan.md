@@ -169,12 +169,15 @@ This document defines concrete, prioritized refactoring tasks based on the codeb
 
 ### D2: Split game.c (2,456 lines)
 
-- **Proposed split:**
-  - `game_session.c` — module begin/end, player reset
-  - `game_export.c` — character export functions
-  - `game_combat.c` — latch attack, character swipe
-  - `game_update.c` — move_all_objects, let_all_characters_think
-- **Why:** Mixed concerns: session lifecycle, combat, export, AI ticking.
+- **Completed split (2026-04-15):**
+  - `game_internal.h` — shared includes and context accessors for split translation units
+  - `game_export.c` — character export/import and save management
+  - `game_combat.c` — latch attack, swipe execution, attachment lookup
+  - `game_targeting.c` — particle and AI target finding/validation
+  - `game_wawalite.c` — wawalite read/write/upload and environment state globals
+  - `game_loop.c` — main loop helpers, stat display, particle reaffirmation, message log bridge
+  - residual `game.c` — module lifecycle, end text, escape expansion, terrain queries, zeitgeist/menu music
+- **Why:** The original file mixed session lifecycle, combat, targeting, export, environment, and update-loop responsibilities in one translation unit.
 
 ### D3: Split graphic.c (2,257 lines)
 
@@ -411,7 +414,15 @@ A (build hygiene)
   - `script_functions_systems.c` — 96 functions (2,128 lines)
   - All 404 functions accounted for, zero behavior change
   - 253 tests pass, validator baseline unchanged
-- **D2** ❌ Split `game.c`
+- **D2** ✅ Split `game.c` (2,456 lines → 6 files + shared header, 2026-04-15):
+  - `game_internal.h` — shared split infrastructure
+  - `game_export.c` — export/import logic
+  - `game_combat.c` — combat helpers
+  - `game_targeting.c` — targeting helpers
+  - `game_wawalite.c` — environment/wawalite helpers
+  - `game_loop.c` — update-loop and UI message helpers
+  - residual `game.c` keeps the remaining lifecycle, terrain, and zeitgeist helpers
+  - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass
 - **D3** ❌ Split `graphic.c`
 - **D4** ❌ Split `Object.cpp`
 - **D5** ❌ Split `ObjectProfile.cpp`

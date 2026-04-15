@@ -675,7 +675,13 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/egoboo_doxygen.h
     src/egolib/game/egoboo.h
     src/egolib/game/game.c
+    src/egolib/game/game_combat.c
+    src/egolib/game/game_export.c
     src/egolib/game/game.h
+    src/egolib/game/game_internal.h
+    src/egolib/game/game_loop.c
+    src/egolib/game/game_targeting.c
+    src/egolib/game/game_wawalite.c
     src/egolib/game/graphic.c
     src/egolib/game/graphic_fan.c
     src/egolib/game/graphic_fan.h
