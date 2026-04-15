@@ -66,7 +66,7 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 			if ((!pitem->getProfile()->isStackable()) || pitem->ammo > 1)
 			{
 				// Show amount of ammo left
-				_gameEngine->getUIManager()->drawBitmapFontString(Vector2f(x, y - 8), std::to_string(pitem->ammo));
+				uiManager().drawBitmapFontString(Vector2f(x, y - 8), std::to_string(pitem->ammo));
 			}
 		}
 	}
@@ -129,7 +129,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
     sc_rect = Rectangle2f(Point2f(x, y),
                           Point2f(x, y) + size);
 
-	_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+	uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 	// make the new left-hand margin after the tab
 	x_left = x_stt + size.x();
@@ -149,7 +149,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
         sc_rect = Rectangle2f(Point2f(x, y),
                               Point2f(x, y) + size);
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 		y += size.y();
 		ticks -= NUMTICK;
@@ -171,7 +171,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
         sc_rect = Rectangle2f(Point2f(x, y),
                               Point2f(x, y) + size);
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 		// move to the right after drawing the full ticks
 		x += size.x();
@@ -188,7 +188,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
         sc_rect = Rectangle2f(Point2f(x, y),
                               Point2f(x, y) + size);
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 		y += size.y();
 		total_ticks -= NUMTICK;
@@ -211,7 +211,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
         sc_rect = Rectangle2f(Point2f(x, y),
                               Point2f(x, y) + size);
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 		y += size.y();
 		total_ticks -= NUMTICK;
@@ -234,7 +234,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
         sc_rect = Rectangle2f(Point2f(x, y),
                               Point2f(x, y) + size);
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(tx_ptr, Colour4f::white(), true));
 
 		y += size.y();
 	}
@@ -266,7 +266,7 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
 
     sc_rect = Rectangle2f(Point2f(x, y), Point2f(x, y) + size);
 
-	_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
+	uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
 
 	x += size.x();
 
@@ -281,7 +281,7 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
         sc_rect = Rectangle2f(Point2f(x + (cnt * size.x()),y),
                               Point2f(x + (cnt * size.x()) + size.x(), y + size.y()));
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
 	}
 
 	//---- Draw the remaining empty ones
@@ -293,7 +293,7 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
         sc_rect = Rectangle2f(Point2f(x + (cnt * size.x()), y),
                               Point2f(x + (cnt * size.x()) + size.x(), y + size.y()));
 
-		_gameEngine->getUIManager()->drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
+		uiManager().drawQuad2D(sc_rect, tx_rect, std::make_shared<Material>(texture, Colour4f::white(), true));
 	}
 
 	return y + size.y();
@@ -346,12 +346,12 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
     int yOffset = getY();
 
     // draw the name
-    yOffset = _gameEngine->getUIManager()->drawBitmapFontString(Vector2f(getX() + 8, yOffset), pchr->getName(false, false, true));
+    yOffset = uiManager().drawBitmapFontString(Vector2f(getX() + 8, yOffset), pchr->getName(false, false, true));
 
     // draw the character's money
     std::ostringstream os;
     os << '$' << std::setw(4) << pchr->getMoney();
-    yOffset = _gameEngine->getUIManager()->drawBitmapFontString(Vector2f(getX() + 8, yOffset), os.str()) + 8;
+    yOffset = uiManager().drawBitmapFontString(Vector2f(getX() + 8, yOffset), os.str()) + 8;
 
     bool levelUp = false;
     if (pchr->isPlayer()) {

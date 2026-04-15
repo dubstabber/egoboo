@@ -2,6 +2,8 @@
 
 This document records the next refactoring pass after the scripting runtime shell cleanup work.
 
+This is now a historical pass record rather than the current next-step recommendation. As of 2026-04-15, `CharacterMatrix.c` and `Inventory.cpp` already use session accessors, and the current next bounded seam is captured in `21-presentation-engine-context-pass.md`.
+
 ## Baseline for this pass
 
 As of 2026-04-13:

@@ -30,7 +30,7 @@ void Button::setText(const std::string &text) {
     if (_buttonText.empty()) {
         _buttonTextRenderer = nullptr;
     } else {
-        auto font = _gameEngine->getUIManager()->getFont(UIManager::UIFontType::FONT_DEFAULT);
+        auto font = uiManager().getFont(UIManager::UIFontType::FONT_DEFAULT);
         _buttonTextRenderer = font->layoutText(_buttonText, &_buttonTextWidth, &_buttonTextHeight);
     }
 }
@@ -63,7 +63,7 @@ void Button::draw(DrawingContext& drawingContext) {
     } else {
         renderer.setColour(DEFAULT_BUTTON_COLOUR);
     }
-    _gameEngine->getUIManager()->drawQuad2d(getDerivedBounds());
+    uiManager().drawQuad2d(getDerivedBounds());
     // Draw centered text in button
     if (_buttonTextRenderer) {
         _buttonTextRenderer->render(getDerivedPosition().x() + (getWidth() - _buttonTextWidth) / 2,

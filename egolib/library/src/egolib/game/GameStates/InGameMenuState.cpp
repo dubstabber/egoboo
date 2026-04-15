@@ -52,8 +52,8 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     exitButton->setPosition({ 20, yOffset });
     exitButton->setSize({ 200, 30 });
     exitButton->setOnClickFunction(
-    []{
-        _gameEngine->setGameState(std::make_shared<MainMenuState>());
+    [this]{
+        engine().setGameState(std::make_shared<MainMenuState>());
     });
     addComponent(exitButton);
     _slidyButtons.push_front(exitButton);
@@ -64,8 +64,8 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     optionsButton->setPosition({ 20, yOffset });
     optionsButton->setSize({ 200, 30 });
     optionsButton->setOnClickFunction(
-        []{
-            _gameEngine->pushGameState(std::make_shared<OptionsScreen>());
+        [this]{
+            engine().pushGameState(std::make_shared<OptionsScreen>());
         });
     addComponent(optionsButton);
     _slidyButtons.push_front(optionsButton);
@@ -76,8 +76,8 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     restartModuleButton->setPosition({ 20, yOffset });
     restartModuleButton->setSize({ 200, 30 });
     restartModuleButton->setOnClickFunction(
-    [moduleProfile, importPlayers]{
-        _gameEngine->setGameState(std::make_shared<LoadingState>(moduleProfile, importPlayers));
+    [this, moduleProfile, importPlayers]{
+        engine().setGameState(std::make_shared<LoadingState>(moduleProfile, importPlayers));
     });
     addComponent(restartModuleButton);
     _slidyButtons.push_front(restartModuleButton);
@@ -102,7 +102,7 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     debugButton->setSize({ 200, 30 });
     debugButton->setOnClickFunction(
     [this]{
-        _gameEngine->pushGameState(std::make_shared<DebugParticlesScreen>());
+        engine().pushGameState(std::make_shared<DebugParticlesScreen>());
     });
     addComponent(debugButton);
     _slidyButtons.push_front(debugButton);
@@ -125,7 +125,7 @@ void InGameMenuState::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 
     //Sliding buttons effect
     float offset = 0;

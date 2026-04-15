@@ -53,12 +53,12 @@ void Container::drawAll(DrawingContext& drawingContext) {
     drawContainer(drawingContext);
 
     // Draw reach GUI component.
-    _gameEngine->getUIManager()->beginRenderUI();
+    uiManager().beginRenderUI();
     for (const std::shared_ptr<Component> component : iterator()) {
         if (!component->isVisible()) continue;  // Ignore hidden/destroyed components.
         component->draw(drawingContext);
     }
-    _gameEngine->getUIManager()->endRenderUI();
+    uiManager().endRenderUI();
 }
 
 bool Container::notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) {

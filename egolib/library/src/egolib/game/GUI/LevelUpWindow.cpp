@@ -40,12 +40,12 @@ public:
 
         // Draw backdrop
         material->apply();
-        _gameEngine->getUIManager()->drawQuad2d(Rectangle2f(Point2f(shakeEffectX, shakeEffectY),
+        uiManager().drawQuad2d(Rectangle2f(Point2f(shakeEffectX, shakeEffectY),
                                                             Point2f(shakeEffectX + getWidth(), shakeEffectY + getHeight())));
 
         //Icon
         material = std::make_shared<Material>(_perk.getIcon().get_ptr(), Colour4f(Colour3f::black(), 0.75f), true);
-        _gameEngine->getUIManager()->drawImage(Point2f(shakeEffectX, shakeEffectY), Vector2f(getWidth(), getHeight()), material);
+        uiManager().drawImage(Point2f(shakeEffectX, shakeEffectY), Vector2f(getWidth(), getHeight()), material);
     }
 
     bool notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) override {
@@ -119,7 +119,7 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     static const float margin = 5.0f;
 
     //Place us in the center of the screen
-    setCenterPosition(Point2f(_gameEngine->getUIManager()->getScreenWidth() / 2, _gameEngine->getUIManager()->getScreenHeight() / 2));
+    setCenterPosition(Point2f(uiManager().getScreenWidth() / 2, uiManager().getScreenHeight() / 2));
 
     // draw the character's main icon
     std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->skin));
@@ -161,13 +161,13 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     buffer << _character->getProfile()->getClassName() << '!';
 
     std::shared_ptr<Label> classLevelLabel = std::make_shared<Label>(buffer.str());
-    classLevelLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    classLevelLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     classLevelLabel->setPosition(characterIcon->getPosition() + Vector2f(characterIcon->getWidth() + 5, 0));
     addComponent(classLevelLabel);
 
     //Perk stuff
     std::shared_ptr<Label> selectPerkLabel = std::make_shared<Label>("Select your Perk:");
-    selectPerkLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_DEFAULT));
+    selectPerkLabel->setFont(uiManager().getFont(UIManager::FONT_DEFAULT));
     selectPerkLabel->setPosition(Point2f(getWidth() / 2 - selectPerkLabel->getWidth() / 2, classLevelLabel->getY() + classLevelLabel->getHeight()));
     addComponent(selectPerkLabel);
 
@@ -178,9 +178,9 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
         perkPool.push_back(Perks::TOUGHNESS);
     }
 
-    _descriptionLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    _descriptionLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     addComponent(_descriptionLabel);
-    _perkIncreaseLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    _perkIncreaseLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     addComponent(_perkIncreaseLabel);
 
     //No perk by default
@@ -206,9 +206,9 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
         perkPool.erase(perkPool.begin() + randomIndex);
     }
 
-    _descriptionLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    _descriptionLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     addComponent(_descriptionLabel);
-    _perkIncreaseLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    _perkIncreaseLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     addComponent(_perkIncreaseLabel);
 
     //No perk by default
@@ -357,21 +357,21 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     _animationSpeed = (DESIRED_ICON_POS - _animationPos) * (1.0f / GameEngine::GAME_TARGET_FPS);
 
     std::shared_ptr<Label> newPerkLabel = std::make_shared<Label>("NEW PERK: " + selectedPerk->getPerk().getName());
-    newPerkLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    newPerkLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     newPerkLabel->setPosition(Point2f(20, getHeight() - PERK_THUMBNAIL_SIZE - 40));
     newPerkLabel->setColour(Colour4f::yellow());
     addComponent(newPerkLabel);
     _fadeInLabels.push_back(newPerkLabel);
 
     std::shared_ptr<Label> perkDescription = std::make_shared<Label>(selectedPerk->getPerk().getDescription());
-    perkDescription->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    perkDescription->setFont(uiManager().getFont(UIManager::FONT_GAME));
     perkDescription->setPosition(Point2f(PERK_THUMBNAIL_SIZE + 60, DESIRED_ICON_POS[1]));
     addComponent(perkDescription);
     _fadeInLabels.push_back(perkDescription);
 
     //Attribute Header Label
     std::shared_ptr<Label> attributeIncrease = std::make_shared<Label>("ATTRIBUTE INCREASE:");
-    attributeIncrease->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    attributeIncrease->setFont(uiManager().getFont(UIManager::FONT_GAME));
     attributeIncrease->setPosition(Point2f(20, 40));
     addComponent(attributeIncrease);
     _fadeInLabels.push_back(attributeIncrease);
@@ -380,7 +380,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     int attributeWidthSpacing = 0;
     for (uint8_t i = 0; i < Attribute::NR_OF_PRIMARY_ATTRIBUTES; ++i) {
         int width;
-        _gameEngine->getUIManager()->getFont(UIManager::FONT_GAME)->getTextSize(Attribute::toString(static_cast<Attribute::AttributeType>(i)), &width, nullptr);
+        uiManager().getFont(UIManager::FONT_GAME)->getTextSize(Attribute::toString(static_cast<Attribute::AttributeType>(i)), &width, nullptr);
         attributeWidthSpacing = std::max(attributeWidthSpacing, width + 10);
     }
 
@@ -390,7 +390,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
 
         //Name
         std::shared_ptr<Label> attributeLabel = std::make_shared<Label>(Attribute::toString(type));
-        attributeLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+        attributeLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
 
         float x, y;
         if (i < Attribute::NR_OF_PRIMARY_ATTRIBUTES / 2) {
@@ -414,7 +414,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         } else {
             value->setText(std::to_string(std::lround(_character->getAttribute(type))));
         }
-        value->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+        value->setFont(uiManager().getFont(UIManager::FONT_GAME));
         value->setPosition(Point2f(x + attributeWidthSpacing, y));
         value->setAlpha(0.0f);
         _attributeValues[type] = value;
@@ -427,7 +427,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
             std::stringstream valueString;
             valueString << (increase[i] > 0 ? "+" : "") << std::setprecision(2) << std::fixed << increase[i];
             _attributeIncrease[type]->setText(valueString.str());
-            _attributeIncrease[type]->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+            _attributeIncrease[type]->setFont(uiManager().getFont(UIManager::FONT_GAME));
             _attributeIncrease[type]->setPosition(Point2f(x + attributeWidthSpacing + 50, y));
             _attributeIncrease[type]->setColour(increase[i] > 0 ? Colour4f::yellow() : Colour4f::red());
             _attributeIncrease[type]->setVisible(false);

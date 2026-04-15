@@ -45,8 +45,8 @@ SelectModuleState::SelectModuleState(const std::list<std::string> &playersToLoad
 	_moduleFilter(FILTER_OFF),
 	_selectedPlayerList(playersToLoad)
 {
-	const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-	const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+	const int SCREEN_WIDTH = uiManager().getScreenWidth();
+	const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
 	//Set default filter
 	if(_onlyStarterModules)
@@ -68,7 +68,7 @@ SelectModuleState::SelectModuleState(const std::list<std::string> &playersToLoad
 	[this]{
 		if(_moduleSelector->getSelectedModule())
 		{
-			_gameEngine->setGameState(std::make_shared<LoadingState>(_moduleSelector->getSelectedModule(), _selectedPlayerList));
+			engine().setGameState(std::make_shared<LoadingState>(_moduleSelector->getSelectedModule(), _selectedPlayerList));
 		}
 	}));
 	addComponent(_chooseModule);
@@ -188,7 +188,7 @@ void SelectModuleState::setModuleFilter(const ModuleFilter filter)
 
 	//Place background in bottom right corner
     _background->setSize({ _background->getTextureWidth(), _background->getTextureHeight() });
-    _background->setPosition({ (_gameEngine->getUIManager()->getScreenWidth() / 2) - (_background->getWidth() / 2), _gameEngine->getUIManager()->getScreenHeight() - _background->getHeight() });
+    _background->setPosition({ (uiManager().getScreenWidth() / 2) - (_background->getWidth() / 2), uiManager().getScreenHeight() - _background->getHeight() });
 }
 
 void SelectModuleState::update()

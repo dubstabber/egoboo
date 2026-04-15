@@ -49,8 +49,8 @@ LoadingState::LoadingState(std::shared_ptr<ModuleProfile> module, const std::lis
     _localGameTips(),
     _progressBar(std::make_shared<Ego::GUI::ProgressBar>())
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     // Load background
     auto background = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_logo");
@@ -96,7 +96,7 @@ void LoadingState::setProgressText(const std::string &loadingText, const uint8_t
 {
     //Always make loading text centered
     _loadingLabel->setText(loadingText);
-    _loadingLabel->setPosition({ _gameEngine->getUIManager()->getScreenWidth() / 2 - _loadingLabel->getWidth() / 2, 40 });
+    _loadingLabel->setPosition({ uiManager().getScreenWidth() / 2 - _loadingLabel->getWidth() / 2, 40 });
 
     _progressBar->setValue(progress);
 }
@@ -165,8 +165,8 @@ void LoadingState::loadModuleData()
     //This method is run in a background loading thread
     //Catch any module parsing exceptions here so that the thread does not terminate badly
     try {
-        const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-        const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+        const int SCREEN_WIDTH = uiManager().getScreenWidth();
+        const int SCREEN_HEIGHT = uiManager().getScreenHeight();
         
         setProgressText("Tidying some space...", 0);
 
@@ -236,14 +236,14 @@ void LoadingState::loadModuleData()
         startButton->setSize({ 400, 30 });
         startButton->setPosition({ SCREEN_WIDTH / 2 - startButton->getWidth() / 2, SCREEN_HEIGHT - 50 });
         _connections.push_back(startButton->Clicked.subscribe(
-            []{
+            [this]{
 
                 //Have to do this function in the OpenGL context thread or else it will fail
                 Ego::Graphics::TextureAtlasManager::get().loadTileSet();
 
                 //Hush gong
                 AudioSystem::get().fadeAllSounds();
-                _gameEngine->setGameState(std::make_shared<PlayingState>());
+                engine().setGameState(std::make_shared<PlayingState>());
             }));
         addComponent(startButton);
 

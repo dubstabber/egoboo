@@ -83,11 +83,11 @@ PlayingState::PlayingState() :
 
     //Add minimap to the list of GUI components to render
     _miniMap->setSize({ Ego::GUI::MiniMap::MAPSIZE, Ego::GUI::MiniMap::MAPSIZE });
-    _miniMap->setPosition({ 0, _gameEngine->getUIManager()->getScreenHeight() - _miniMap->getHeight() });
+    _miniMap->setPosition({ 0, uiManager().getScreenHeight() - _miniMap->getHeight() });
     addComponent(_miniMap);
 
     //Add the message log
-    _messageLog->setSize({ _gameEngine->getUIManager()->getScreenWidth() - WRAP_TOLERANCE, _gameEngine->getUIManager()->getScreenHeight() / 3 });
+    _messageLog->setSize({ uiManager().getScreenWidth() - WRAP_TOLERANCE, uiManager().getScreenHeight() / 3 });
     _messageLog->setPosition({ 0, fontyspacing });
     addComponent(_messageLog);
 
@@ -178,12 +178,12 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
 
             //If we have won show the Victory Screen
             if(GameSessionContext::get().activeModule().isBeaten()) {
-                _gameEngine->pushGameState(std::make_shared<VictoryScreen>(this));
+                engine().pushGameState(std::make_shared<VictoryScreen>(this));
             }
 
             //Else do the ingame menu
             else {
-                _gameEngine->pushGameState(std::make_shared<InGameMenuState>(*this));                
+                engine().pushGameState(std::make_shared<InGameMenuState>(*this));                
             }
         return true;
 

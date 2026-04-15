@@ -33,7 +33,7 @@ namespace GUI {
 InternalWindow::TitleBar::TitleBar(const std::string &title) :
     _titleBarTexture("mp_data/titlebar"),
     _titleSkullTexture("mp_data/gui-skull"),
-    _font(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME)),
+    _font(uiManager().getFont(UIManager::FONT_GAME)),
     _title(title),
     _textWidth(0),
     _textHeight(0) {
@@ -54,7 +54,7 @@ void InternalWindow::TitleBar::draw(DrawingContext& drawingContext) {
     position = getDerivedPosition();
     position -= Vector2f(BORDER_PIXELS * 2, 0.0f);
     material = std::make_shared<const Material>(_titleBarTexture.get(), Colour4f::white(), true);
-    _gameEngine->getUIManager()->drawImage(position, Vector2f(getWidth() + BORDER_PIXELS * 4, getHeight()), material);
+    uiManager().drawImage(position, Vector2f(getWidth() + BORDER_PIXELS * 4, getHeight()), material);
 
     // Title string (centered on title bar)
     position = getDerivedPosition();
@@ -67,7 +67,7 @@ void InternalWindow::TitleBar::draw(DrawingContext& drawingContext) {
     material = std::make_shared<const Material>(_titleSkullTexture.get(), Colour4f::white(), true);
     position = getDerivedPosition();
     position += Vector2f(getWidth() / 2.0f - skullWidth / 2.0f, -skullHeight / 2.0f);
-    _gameEngine->getUIManager()->drawImage(position, Vector2f(skullWidth, skullHeight), material);
+    uiManager().drawImage(position, Vector2f(skullWidth, skullHeight), material);
 }
 
 InternalWindow::InternalWindow(const std::string &title) :
@@ -96,7 +96,7 @@ void InternalWindow::drawContainer(DrawingContext& drawingContext) {
     std::shared_ptr<const Material> material;
     //Draw background first
     material = std::make_shared<const Material>(_background.get(), Colour4f(Colour3f::white(), 0.9f), true);
-    _gameEngine->getUIManager()->drawImage(Point2f(getDerivedPosition().x(), getDerivedPosition().y()),
+    uiManager().drawImage(Point2f(getDerivedPosition().x(), getDerivedPosition().y()),
                                            Vector2f(getWidth(), getHeight()), material);
 
     //Draw window title
@@ -110,9 +110,9 @@ bool InternalWindow::notifyMousePointerMoved(const Events::MousePointerMovedEven
     auto newe = Events::MousePointerMovedEvent(e.get_position() - idlib::semantic_cast<Vector2f>(getPosition()));
     if (_isDragging) {
         setPosition(Point2f(Math::constrain<int>(e.get_position().x() + _mouseDragOffset[0], 0,
-                                                 _gameEngine->getUIManager()->getScreenWidth() - getWidth()),
+                                                 uiManager().getScreenWidth() - getWidth()),
                             Math::constrain<int>(e.get_position().y() + _mouseDragOffset[1], _titleBar->getHeight() / 2,
-                                                 _gameEngine->getUIManager()->getScreenHeight() - getHeight())));
+                                                 uiManager().getScreenHeight() - getHeight())));
         return true;
     } else {
         _mouseOver = InternalWindow::contains(newe.get_position())

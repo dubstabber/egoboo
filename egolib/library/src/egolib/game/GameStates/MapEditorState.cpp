@@ -47,7 +47,7 @@ MapEditorState::MapEditorState(std::shared_ptr<ModuleProfile> module) :
 {
     //Add minimap to the list of GUI components to render
     _miniMap->setSize(Vector2f(Ego::GUI::MiniMap::MAPSIZE, Ego::GUI::MiniMap::MAPSIZE));
-    _miniMap->setPosition(Point2f(0, _gameEngine->getUIManager()->getScreenHeight()-_miniMap->getHeight()));
+    _miniMap->setPosition(Point2f(0, uiManager().getScreenHeight()-_miniMap->getHeight()));
     _miniMap->setVisible(true);
     addComponent(_miniMap);
 
@@ -130,7 +130,7 @@ bool MapEditorState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPres
     switch(e.get_key())
     {
         case SDLK_ESCAPE:
-            _gameEngine->pushGameState(std::make_shared<InGameMenuState>(*this));
+            engine().pushGameState(std::make_shared<InGameMenuState>(*this));
         return true;
     }
 

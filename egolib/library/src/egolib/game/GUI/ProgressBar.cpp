@@ -16,8 +16,8 @@ void ProgressBar::draw(DrawingContext& drawingContext) {
     };
 
     auto &renderer = Renderer::get();
-    const auto &vd = _gameEngine->getUIManager()->_vertexDescriptor;
-    const auto &vb = _gameEngine->getUIManager()->_vertexBuffer;
+    const auto &vd = uiManager()._vertexDescriptor;
+    const auto &vb = uiManager()._vertexBuffer;
     renderer.getTextureUnit().setActivated(nullptr);
 
     // Draw the bar background

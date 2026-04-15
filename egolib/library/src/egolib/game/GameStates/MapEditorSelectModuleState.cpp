@@ -17,8 +17,8 @@ MapEditorSelectModuleState::MapEditorSelectModuleState() :
 	_moduleName(std::make_shared<Ego::GUI::Label>()),
 	_moduleDescription(nullptr)
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     //Name of selected module
     _moduleName->setPosition(Point2f(SCREEN_WIDTH/2 + 20, 20));
@@ -58,7 +58,7 @@ MapEditorSelectModuleState::MapEditorSelectModuleState() :
     editModuleButton->setSize(Vector2f(150, 40));
     editModuleButton->setPosition(Point2f(SCREEN_WIDTH - editModuleButton->getWidth() - 5, SCREEN_HEIGHT - editModuleButton->getHeight() - 5));
     editModuleButton->setOnClickFunction([this]{
-    	_gameEngine->setGameState(std::make_shared<MapEditorState>(_selectedModule));
+    	engine().setGameState(std::make_shared<MapEditorState>(_selectedModule));
     });
     addComponent(editModuleButton);
 
@@ -112,22 +112,22 @@ void MapEditorSelectModuleState::setSelectedModule(const std::shared_ptr<ModuleP
         buffer << line << '\n';;
     }
 
-    const std::shared_ptr<Ego::Font> &font = _gameEngine->getUIManager()->getFont(Ego::GUI::UIManager::FONT_DEBUG);
-    _moduleDescription = font->layoutTextBox(buffer.str(), _gameEngine->getUIManager()->getScreenWidth() / 2 - 20, 0, font->getLineSpacing(), nullptr, nullptr);
+    const std::shared_ptr<Ego::Font> &font = uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG);
+    _moduleDescription = font->layoutTextBox(buffer.str(), uiManager().getScreenWidth() / 2 - 20, 0, font->getLineSpacing(), nullptr, nullptr);
 }
 
 void MapEditorSelectModuleState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 {
-	auto& UI = _gameEngine->getUIManager();
+	auto& UI = uiManager();
 
-    UI->beginRenderUI();
+    UI.beginRenderUI();
 
     int yPos = _moduleName->getY() + _moduleName->getHeight();
 
     // Now difficulty
     if (_selectedModule->getRank() > 0)
     {
-        UI->getFont(Ego::GUI::UIManager::FONT_DEBUG)->drawTextBox("DIFFICULITY: ", _moduleName->getX(), yPos, 200, 50, 25);
+        UI.getFont(Ego::GUI::UIManager::FONT_DEBUG)->drawTextBox("DIFFICULITY: ", _moduleName->getX(), yPos, 200, 50, 25);
         yPos += 20;
 
         // Draw one skull per rated difficulty
@@ -144,9 +144,9 @@ void MapEditorSelectModuleState::drawContainer(Ego::GUI::DrawingContext& drawing
 
     //Module image
     auto material = std::make_shared<const Ego::GUI::Material>(_selectedModule->getIcon().get(), Ego::Colour4f::white(), true);
-	UI->drawImage(Point2f(_moduleName->getX() + UI->getScreenWidth()/4 - 64, yPos + 200), Vector2f(128, 128), material);    
+	UI.drawImage(Point2f(_moduleName->getX() + UI.getScreenWidth()/4 - 64, yPos + 200), Vector2f(128, 128), material);    
 
-    UI->endRenderUI();
+    UI.endRenderUI();
 }
 
 } //GameStates

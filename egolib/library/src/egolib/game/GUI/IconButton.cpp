@@ -50,12 +50,12 @@ void IconButton::draw(DrawingContext& drawingContext) {
         material = std::make_shared<const Material>(nullptr, DEFAULT_BUTTON_COLOUR, true);
     }
     material->apply();
-    _gameEngine->getUIManager()->drawQuad2d(getDerivedBounds());
+    uiManager().drawQuad2d(getDerivedBounds());
 
     // Draw icon
     int iconSize = getHeight() - 4;
     material = std::make_shared<const Material>(_icon.get_ptr(), _iconTint, true);
-    _gameEngine->getUIManager()->drawImage(Point2f(getDerivedPosition().x() + getWidth() - getHeight() - 2,
+    uiManager().drawImage(Point2f(getDerivedPosition().x() + getWidth() - getHeight() - 2,
                                                    getDerivedPosition().y() + 2), Vector2f(iconSize, iconSize), material);
 
     // Draw text on left side in button

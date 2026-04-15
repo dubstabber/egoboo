@@ -31,8 +31,8 @@ AudioOptionsScreen::AudioOptionsScreen()
 {
     auto background = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_sound");
 
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     // calculate the centered position of the background
     background->setSize({ background->getTextureWidth() * 0.75f, background->getTextureHeight() * 0.75f });
@@ -156,5 +156,5 @@ void AudioOptionsScreen::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 }

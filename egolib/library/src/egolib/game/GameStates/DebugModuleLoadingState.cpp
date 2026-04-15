@@ -50,7 +50,7 @@ struct DebugModuleLoadingState::ModuleGUIContainer : public Container
         addComponent(_moduleName);
         addComponent(_loadingText);
         
-        const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
+        const int SCREEN_WIDTH = uiManager().getScreenWidth();
         setSize({ SCREEN_WIDTH - 50, 30 });
     }
     
@@ -94,8 +94,8 @@ DebugModuleLoadingState::DebugModuleLoadingState() :
     const auto &playerList = ProfileSystem::get().getSavedPlayers();
     if (!playerList.empty()) _playersToLoad.emplace_back(playerList[0]->getProfile()->getPathname());
     
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
     
     _scrollableList = std::make_shared<Ego::GUI::ScrollableList>();
     _scrollableList->setPosition({ 8, 8 });

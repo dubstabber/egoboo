@@ -6,6 +6,7 @@
 
 class GameEngine;
 class PlayingState;
+namespace Ego { namespace GUI { class UIManager; } }
 
 class EngineContext : private idlib::non_copyable
 {
@@ -17,6 +18,12 @@ public:
 
     GameEngine& engine();
     const GameEngine& engine() const;
+
+    Ego::GUI::UIManager* tryUIManager();
+    const Ego::GUI::UIManager* tryUIManager() const;
+
+    Ego::GUI::UIManager& uiManager();
+    const Ego::GUI::UIManager& uiManager() const;
 
     std::shared_ptr<PlayingState> tryActivePlayingState() const;
     std::shared_ptr<PlayingState> activePlayingState() const;

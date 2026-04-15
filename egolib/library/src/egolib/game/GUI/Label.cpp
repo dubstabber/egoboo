@@ -8,7 +8,7 @@ Label::Label() : Label(std::string()) {
 
 Label::Label(const std::string &text, const UIManager::UIFontType font) :
     _text(text),
-    _font(_gameEngine->getUIManager()->getFont(font)),
+    _font(uiManager().getFont(font)),
     _textRenderer(),
     _colour(Colour4f::white()) {
     if (!text.empty()) {

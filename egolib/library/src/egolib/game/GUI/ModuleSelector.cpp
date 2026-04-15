@@ -34,9 +34,9 @@ ModuleSelector::ModuleSelector(const std::vector<std::shared_ptr<ModuleProfile>>
     _nextModuleButton(std::make_shared<Button>("->", SDLK_RIGHT)),
     _previousModuleButton(std::make_shared<Button>("<-", SDLK_LEFT)),
     _selectedModule(nullptr) {
-    const Vector2f SCREEN_SIZE = Vector2f(_gameEngine->getUIManager()->getScreenWidth(),
-        _gameEngine->getUIManager()->getScreenHeight());
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
+    const Vector2f SCREEN_SIZE = Vector2f(uiManager().getScreenWidth(),
+        uiManager().getScreenHeight());
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
 
     const Vector2f NAVIGATION_BUTTON_SIZE = Vector2f(30.0f, 30.0f);
     const int MODULE_BUTTON_SIZE = Math::constrain((SCREEN_WIDTH) / 6, 138, 256);
@@ -112,21 +112,21 @@ void ModuleSelector::drawContainer(DrawingContext& drawingContext) {
 
     material = std::make_shared<Material>(nullptr, backDrop, true);
     material->apply();
-    _gameEngine->getUIManager()->drawQuad2d(getBounds());
+    uiManager().drawQuad2d(getBounds());
 
     // Module description
     if (_selectedModule != nullptr) {
 
         // Draw module Name first
         renderer.setColour(Colour4f::white());
-        _gameEngine->getUIManager()->getDefaultFont()->drawTextBox(_selectedModule->getName(), getX() + 5, getY() + 5, getWidth() - 10, 26, 25);
+        uiManager().getDefaultFont()->drawTextBox(_selectedModule->getName(), getX() + 5, getY() + 5, getWidth() - 10, 26, 25);
 
 
         // Now difficulty
         if (_selectedModule->getRank() > 0) {
             int textWidth, textHeight;
-            _gameEngine->getUIManager()->getDefaultFont()->getTextSize("Difficulty: ", &textWidth, &textHeight);
-            _gameEngine->getUIManager()->getDefaultFont()->drawTextBox("Difficulty: ", getX() + 5, getY() + 30, getWidth() - 10, textHeight, 25);
+            uiManager().getDefaultFont()->getTextSize("Difficulty: ", &textWidth, &textHeight);
+            uiManager().getDefaultFont()->drawTextBox("Difficulty: ", getX() + 5, getY() + 30, getWidth() - 10, textHeight, 25);
 
             // Draw one skull per rated difficulty
             const std::shared_ptr<Texture> &skullTexture = TextureManager::get().getTexture("mp_data/skull");
@@ -153,7 +153,7 @@ void ModuleSelector::drawContainer(DrawingContext& drawingContext) {
             buffer << line << '\n';;
         }
 
-        _gameEngine->getUIManager()->getDefaultFont()->drawTextBox(buffer.str(), getX() + 5, getY() + 55, getWidth() - 10, getHeight() - 60, 25);
+        uiManager().getDefaultFont()->drawTextBox(buffer.str(), getX() + 5, getY() + 55, getWidth() - 10, getHeight() - 60, 25);
     }
 }
 
@@ -188,11 +188,11 @@ void ModuleSelector::ModuleButton::draw(DrawingContext& drawingContext) {
         material = std::make_shared<Material>(nullptr, DEFAULT_BUTTON_COLOUR, true);
     }
     material->apply();
-    _gameEngine->getUIManager()->drawQuad2d(getDerivedBounds());
+    uiManager().drawQuad2d(getDerivedBounds());
 
     //Draw module title image
     material = std::make_shared<Material>(_moduleSelector->_modules[_moduleSelector->_startIndex + _offset]->getIcon().get(), Colour4f::white(), true);
-    _gameEngine->getUIManager()->drawImage(getDerivedPosition() + Vector2f(5,5), getSize() - Vector2f(10,10), material);
+    uiManager().drawImage(getDerivedPosition() + Vector2f(5,5), getSize() - Vector2f(10,10), material);
 }
 
 bool ModuleSelector::notifyMouseWheelTurned(const Events::MouseWheelTurnedEvent& e) {

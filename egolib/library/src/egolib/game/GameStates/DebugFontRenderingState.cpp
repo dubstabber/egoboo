@@ -32,7 +32,7 @@ class DebugFontRenderingState::DebugLabel : public Ego::GUI::Component
 public:
     DebugLabel(const std::string &text) :
     _text(text),
-    _font(_gameEngine->getUIManager()->getFont(Ego::GUI::UIManager::FONT_DEFAULT)),
+    _font(uiManager().getFont(Ego::GUI::UIManager::FONT_DEFAULT)),
     _textRenderer(),
     _maxColor(0, 0, .7, 1),
     _textColor(0, 1, 0, .4),
@@ -46,8 +46,8 @@ public:
     
     void draw(Ego::GUI::DrawingContext& drawingContext) override {
         auto min = Ego::Point2f(getX(), getY());
-        _gameEngine->getUIManager()->fillRectangle(Ego::Rectangle2f(min, min + Ego::Vector2f(_maxWidth, _maxHeight)), true, _maxColor);
-        _gameEngine->getUIManager()->fillRectangle(Ego::Rectangle2f(min, min + Ego::Vector2f(_textWidth, _textHeight)), true, _textColor);
+        uiManager().fillRectangle(Ego::Rectangle2f(min, min + Ego::Vector2f(_maxWidth, _maxHeight)), true, _maxColor);
+        uiManager().fillRectangle(Ego::Rectangle2f(min, min + Ego::Vector2f(_textWidth, _textHeight)), true, _textColor);
         
         _textRenderer->render(getX(), getY());
     }
@@ -90,8 +90,8 @@ private:
 
 DebugFontRenderingState::DebugFontRenderingState()
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
     
     int x = 125;
     int width = (SCREEN_WIDTH - 110) / 4 - 20;
@@ -232,17 +232,17 @@ DebugFontRenderingState::DebugFontRenderingState()
 }
 
 void DebugFontRenderingState::setFont(Ego::GUI::UIManager::UIFontType font) {
-    _textLabel->setFont(_gameEngine->getUIManager()->getFont(font));
+    _textLabel->setFont(uiManager().getFont(font));
 }
 
 void DebugFontRenderingState::setMaxHeight(int maxHeight) {
-    _maxHeight = Ego::Math::constrain(maxHeight, 0, _gameEngine->getUIManager()->getScreenHeight() - _missingSpace);
+    _maxHeight = Ego::Math::constrain(maxHeight, 0, uiManager().getScreenHeight() - _missingSpace);
     _textLabel->setMaxHeight(_maxHeight);
     _heightButton->setText(std::to_string(_maxHeight));
 }
 
 void DebugFontRenderingState::setMaxWidth(int maxWidth) {
-    _maxWidth = Ego::Math::constrain(maxWidth, 0, _gameEngine->getUIManager()->getScreenWidth() - 10);
+    _maxWidth = Ego::Math::constrain(maxWidth, 0, uiManager().getScreenWidth() - 10);
     _textLabel->setMaxWidth(_maxWidth);
     _widthButton->setText(std::to_string(_maxWidth));
 }

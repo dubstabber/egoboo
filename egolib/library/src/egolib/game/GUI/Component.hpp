@@ -1,6 +1,7 @@
 #pragma once
 
 #include "egolib/game/GUI/DrawingContext.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/InputListener.hpp"
@@ -93,6 +94,23 @@ public:
     *   components inside this container. It will also be notified of any input events first.
     **/
     void bringToFront();
+
+protected:
+    GameEngine& engine() {
+        return EngineContext::get().engine();
+    }
+
+    const GameEngine& engine() const {
+        return EngineContext::get().engine();
+    }
+
+    UIManager& uiManager() {
+        return EngineContext::get().uiManager();
+    }
+
+    const UIManager& uiManager() const {
+        return EngineContext::get().uiManager();
+    }
 
 private:
     bool _destroyed;

@@ -35,8 +35,8 @@ OptionsScreen::OptionsScreen() :
 {
 	auto background = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_gnome");
 
-	const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-	const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+	const int SCREEN_WIDTH = uiManager().getScreenWidth();
+	const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
 	// calculate the centered position of the background
     background->setSize({ background->getTextureWidth(), background->getTextureHeight() });
@@ -70,7 +70,7 @@ OptionsScreen::OptionsScreen() :
     videoOptions->setSize({ 200, 30 });
 	videoOptions->setOnClickFunction(
 	[this]{
-		_gameEngine->pushGameState(std::make_shared<VideoOptionsScreen>());
+		engine().pushGameState(std::make_shared<VideoOptionsScreen>());
 	});
 	addComponent(videoOptions);
 	_slidyButtons.push_front(videoOptions);
@@ -82,7 +82,7 @@ OptionsScreen::OptionsScreen() :
     audioOptions->setSize({ 200, 30 });
 	audioOptions->setOnClickFunction(
 	[this]{
-		_gameEngine->pushGameState(std::make_shared<AudioOptionsScreen>());
+		engine().pushGameState(std::make_shared<AudioOptionsScreen>());
 	});
 	addComponent(audioOptions);
 	_slidyButtons.push_front(audioOptions);
@@ -94,7 +94,7 @@ OptionsScreen::OptionsScreen() :
     inputOptions->setSize({ 200, 30 });
 	inputOptions->setOnClickFunction(
 	[this]{
-		_gameEngine->pushGameState(std::make_shared<Ego::GameStates::InputOptionsScreen>());
+		engine().pushGameState(std::make_shared<Ego::GameStates::InputOptionsScreen>());
 	});
 	addComponent(inputOptions);
 	_slidyButtons.push_front(inputOptions);
@@ -121,7 +121,7 @@ void OptionsScreen::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 
     float offset = 0;
     for(const auto& button : _slidyButtons)

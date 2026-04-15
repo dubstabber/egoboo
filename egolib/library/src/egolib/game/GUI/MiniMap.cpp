@@ -63,7 +63,7 @@ void MiniMap::draw(DrawingContext& drawingContext) {
 
     //Draw the map image
     auto material = std::make_shared<Material>(_minimapTexture->get(), Colour4f(1.0f, 1.0f, 1.0f, 0.9f), true);
-    _gameEngine->getUIManager()->drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
+    uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
     if (Team::TEAM_MAX != local_stats.sense_enemies_team) {
@@ -145,8 +145,8 @@ void MiniMap::addBlip(const float x, const float y, const std::shared_ptr<Object
 
 bool MiniMap::notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) {
     if (_isDragging) {
-        int x = Math::constrain<int>(e.get_position().x() + _mouseDragOffset[0], 0, _gameEngine->getUIManager()->getScreenWidth() - getWidth()),
-            y = Math::constrain<int>(e.get_position().y() + _mouseDragOffset[1], 0, _gameEngine->getUIManager()->getScreenHeight() - getHeight());
+        int x = Math::constrain<int>(e.get_position().x() + _mouseDragOffset[0], 0, uiManager().getScreenWidth() - getWidth()),
+            y = Math::constrain<int>(e.get_position().y() + _mouseDragOffset[1], 0, uiManager().getScreenHeight() - getHeight());
         setPosition(Point2f(x, y));
     } else {
         _mouseOver = contains(e.get_position());
@@ -178,8 +178,8 @@ bool MiniMap::notifyKeyboardKeyPressed(const Events::KeyboardKeyPressedEvent& e)
     // Enlarge minimap
     if (e.get_key() == SDLK_m) {
         if (isVisible()) {
-            const float HALF_SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth() / 2;
-            const float HALF_SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight() / 2;
+            const float HALF_SCREEN_WIDTH = uiManager().getScreenWidth() / 2;
+            const float HALF_SCREEN_HEIGHT = uiManager().getScreenHeight() / 2;
 
             if (getWidth() > MiniMap::MAPSIZE) {
                 float offsetX = (getX() >= HALF_SCREEN_WIDTH) ? (getWidth() - MiniMap::MAPSIZE) : 0;
@@ -193,8 +193,8 @@ bool MiniMap::notifyKeyboardKeyPressed(const Events::KeyboardKeyPressedEvent& e)
             }
 
             // Keep minimap inside the screen
-            int xPos = Math::constrain<int>(getX(), 0, _gameEngine->getUIManager()->getScreenWidth() - getWidth());
-            int yPos = Math::constrain<int>(getY(), 0, _gameEngine->getUIManager()->getScreenHeight() - getHeight());
+            int xPos = Math::constrain<int>(getX(), 0, uiManager().getScreenWidth() - getWidth());
+            int yPos = Math::constrain<int>(getY(), 0, uiManager().getScreenHeight() - getHeight());
             setPosition(Point2f(xPos, yPos));
         }
 

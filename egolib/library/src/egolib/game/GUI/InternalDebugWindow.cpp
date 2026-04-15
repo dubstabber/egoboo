@@ -54,8 +54,8 @@ void VariablesDebugPanel::update() {
             label = std::make_shared<Label>();
             addComponent(label);
             _labels[variable.first] = label;
-            //_gameEngine->getUIManager()->getDefaultFont()
-            label->setFont(_gameEngine->getUIManager()->getDefaultFont());
+            //uiManager().getDefaultFont()
+            label->setFont(uiManager().getDefaultFont());
         } else {
             label = it->second;
         }

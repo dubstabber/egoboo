@@ -60,8 +60,8 @@ MainMenuState::MainMenuState() :
 	    gameLogo = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_logo");
 	}
 
-	const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-	const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+	const int SCREEN_WIDTH = uiManager().getScreenWidth();
+	const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
 	// calculate the centered position of the background
     background->setSize({ background->getTextureWidth(), background->getTextureHeight() });
@@ -79,8 +79,8 @@ MainMenuState::MainMenuState() :
     exitButton->setPosition({ 20, yOffset });
     exitButton->setSize({ 200, 30 });
 	_onExitButtonClicked = exitButton->Clicked.subscribe(
-	[]{
-		_gameEngine->shutdown();
+	[this]{
+		engine().shutdown();
 	});
 	addComponent(exitButton);
 	_slidyButtons.push_front(exitButton);
@@ -91,8 +91,8 @@ MainMenuState::MainMenuState() :
     optionsButton->setPosition({ 20, yOffset });
     optionsButton->setSize({ 200, 30 });
 	_onOptionsButtonClicked = optionsButton->Clicked.subscribe(
-	[]{
-		_gameEngine->pushGameState(std::make_shared<OptionsScreen>());
+	[this]{
+		engine().pushGameState(std::make_shared<OptionsScreen>());
 	});
 	addComponent(optionsButton);
 	_slidyButtons.push_front(optionsButton);
@@ -103,8 +103,8 @@ MainMenuState::MainMenuState() :
     loadGameButton->setPosition({ 20, yOffset });
     loadGameButton->setSize({ 200, 30 });
 	_onLoadGameButtonClicked = loadGameButton->Clicked.subscribe(
-	[]{
-		_gameEngine->pushGameState(std::make_shared<SelectPlayersState>());
+	[this]{
+		engine().pushGameState(std::make_shared<SelectPlayersState>());
 	});
 	addComponent(loadGameButton);
 	_slidyButtons.push_front(loadGameButton);
@@ -115,8 +115,8 @@ MainMenuState::MainMenuState() :
     newGameButton->setPosition({ 20, yOffset });
     newGameButton->setSize({ 200, 30 });
 	_onNewGameButtonClicked = newGameButton->Clicked.subscribe(
-	[]{
-		_gameEngine->pushGameState(std::make_shared<SelectModuleState>());
+	[this]{
+		engine().pushGameState(std::make_shared<SelectModuleState>());
 	});
 	addComponent(newGameButton);
 	_slidyButtons.push_front(newGameButton);
@@ -129,8 +129,8 @@ MainMenuState::MainMenuState() :
         debugButton->setPosition({ 20, yOffset });
         debugButton->setSize({ 200, 30 });
         _onDebugButtonClicked = debugButton->Clicked.subscribe(
-        []{
-            _gameEngine->pushGameState(std::make_shared<DebugMainMenuState>());
+        [this]{
+            engine().pushGameState(std::make_shared<DebugMainMenuState>());
         });
         addComponent(debugButton);
         _slidyButtons.push_front(debugButton);
@@ -141,8 +141,8 @@ MainMenuState::MainMenuState() :
         mapEditorButton->setPosition({ 20, yOffset });
         mapEditorButton->setSize({ 200, 30 });
         _onMapEditorButtonClicked = mapEditorButton->Clicked.subscribe(
-        []{
-            _gameEngine->pushGameState(std::make_shared<Ego::GameStates::MapEditorSelectModuleState>());
+        [this]{
+            engine().pushGameState(std::make_shared<Ego::GameStates::MapEditorSelectModuleState>());
         });
         addComponent(mapEditorButton);
         _slidyButtons.push_front(mapEditorButton);
@@ -179,7 +179,7 @@ void MainMenuState::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 
     //Play the Egoboo theme music
     playMainMenuSong();

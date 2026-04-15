@@ -131,7 +131,7 @@ int CharacterWindow::addAttributeLabel(std::shared_ptr<Tab> target, const Point2
     //Label
     std::shared_ptr<Label> label = std::make_shared<Label>(Attribute::toString(type) + ":");
     label->setPosition(position);
-    label->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    label->setFont(uiManager().getFont(UIManager::FONT_GAME));
     target->addComponent(label);
 
     //Value
@@ -147,7 +147,7 @@ int CharacterWindow::addAttributeLabel(std::shared_ptr<Tab> target, const Point2
     }
 
     value->setPosition(Point2f(target->getWidth() / 2 - 20, label->getY()));
-    value->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    value->setFont(uiManager().getFont(UIManager::FONT_GAME));
     target->addComponent(value);
 
     return label->getHeight() - LINE_SPACING_OFFSET;
@@ -171,21 +171,21 @@ int CharacterWindow::addResistanceLabel(std::shared_ptr<Tab> target, const Point
     //Label
     std::shared_ptr<Label> label = std::make_shared<Label>(damageName + ":");
     label->setPosition(position);
-    label->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    label->setFont(uiManager().getFont(UIManager::FONT_GAME));
     label->setColour(Colour4f(DamageType_getColour(type), 1.0f));
     target->addComponent(label);
 
     //Value
     std::shared_ptr<Label> value = std::make_shared<Label>(std::to_string(std::lround(_character->getRawDamageResistance(type))));
     value->setPosition(label->getPosition() + Vector2f(50, 0));
-    value->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    value->setFont(uiManager().getFont(UIManager::FONT_GAME));
     value->setColour(Colour4f(DamageType_getColour(type), 1.0f));
     target->addComponent(value);
 
     //Percent
     std::shared_ptr<Label> percent = std::make_shared<Label>("(" + std::to_string(std::lround(_character->getDamageReduction(type) * 100)) + "%)");
     percent->setPosition(label->getPosition() + Vector2f(75, 0));
-    percent->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    percent->setFont(uiManager().getFont(UIManager::FONT_GAME));
     percent->setColour(Colour4f(DamageType_getColour(type), 1.0f));
     target->addComponent(percent);
 
@@ -201,12 +201,12 @@ void CharacterWindow::drawAll(DrawingContext& drawingContext) {
     drawContainer(drawingContext);
 
     // Draw reach GUI component.
-    _gameEngine->getUIManager()->beginRenderUI();
+    uiManager().beginRenderUI();
     for (const std::shared_ptr<Component> component : iterator()) {
         if (!component->isVisible()) continue;  // Ignore hidden/destroyed components.
         component->draw(drawingContext);
     }
-    _gameEngine->getUIManager()->endRenderUI();
+    uiManager().endRenderUI();
 }
 
 void CharacterWindow::draw(DrawingContext& drawingContext) {
@@ -272,14 +272,14 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     buffer << _character->getProfile()->getClassName();
 
     std::shared_ptr<Label> classLevelLabel = std::make_shared<Label>(buffer.str());
-    classLevelLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    classLevelLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     classLevelLabel->setPosition(characterIcon->getPosition() + Vector2f(characterIcon->getWidth() + 5, 0));
     target->addComponent(classLevelLabel);
 
     //Attributes
     std::shared_ptr<Label> attributeLabel = std::make_shared<Label>("ATTRIBUTES");
     attributeLabel->setPosition(characterIcon->getPosition() + Vector2f(0, characterIcon->getHeight() + 5));
-    attributeLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    attributeLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     target->addComponent(attributeLabel);
 
     yPos = attributeLabel->getY() + attributeLabel->getHeight() - LINE_SPACING_OFFSET;
@@ -290,7 +290,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     //Defences
     std::shared_ptr<Label> defenceLabel = std::make_shared<Label>("DEFENCES");
     defenceLabel->setPosition(Point2f(target->getWidth() / 2 + 20, attributeLabel->getY()));
-    defenceLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    defenceLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     target->addComponent(defenceLabel);
 
     yPos = defenceLabel->getY() + defenceLabel->getHeight() - LINE_SPACING_OFFSET;
@@ -361,14 +361,14 @@ void CharacterWindow::buildKnownPerksTab(std::shared_ptr<Tab> target) {
 
     //Perk Name
     std::shared_ptr<Label> newPerkLabel = std::make_shared<Label>("No Perk Selected");
-    newPerkLabel->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    newPerkLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
     newPerkLabel->setPosition(Point2f(20, getHeight() - perkIcon->getHeight() - 40));
     newPerkLabel->setColour(Colour4f::yellow());
     target->addComponent(newPerkLabel);
 
     //Perk description
     std::shared_ptr<Label> perkDescription = std::make_shared<Label>("Select a perk to view details...");
-    perkDescription->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    perkDescription->setFont(uiManager().getFont(UIManager::FONT_GAME));
     perkDescription->setPosition(Point2f(perkIcon->getX() + perkIcon->getWidth(), newPerkLabel->getY() + newPerkLabel->getHeight()));
     target->addComponent(perkDescription);
 
@@ -408,7 +408,7 @@ void CharacterWindow::buildActiveEnchantsTab(std::shared_ptr<Tab> target) {
 
     //Enchant Name
     std::shared_ptr<Label> enchantName = std::make_shared<Label>("No Enchant Selected");
-    enchantName->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+    enchantName->setFont(uiManager().getFont(UIManager::FONT_GAME));
     enchantName->setPosition(Point2f(activeEnchants->getX() + activeEnchants->getWidth() + 5, activeEnchants->getY()));
     enchantName->setColour(Colour4f::yellow());
     target->addComponent(enchantName);
@@ -470,7 +470,7 @@ void CharacterWindow::describeEnchantEffects(const std::vector<std::shared_ptr<E
             out << Attribute::toString(element.first) << std::setprecision(2) << ": " << element.second;
 
             std::shared_ptr<Label> label = std::make_shared<Label>(out.str());
-            label->setFont(_gameEngine->getUIManager()->getFont(UIManager::FONT_GAME));
+            label->setFont(uiManager().getFont(UIManager::FONT_GAME));
             label->setColour(element.second > 0 ? Colour4f::green() : Colour4f::red());
             list->addComponent(label);
         } catch (idlib::unhandled_switch_case_error &ex) {

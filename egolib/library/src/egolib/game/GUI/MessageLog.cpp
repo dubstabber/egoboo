@@ -36,7 +36,7 @@ void MessageLog::draw(DrawingContext& drawingContext) {
     _messages.remove_if([this, &yOffset](Message& message) {
         const int millisRemaining = static_cast<int64_t>(message.lifeTime) - Core::System::get().getSystemService().getTicks();
         if (millisRemaining <= 0) return true;
-        yOffset = _gameEngine->getUIManager()->drawBitmapFontString(Vector2f(getX(), yOffset), message.text, 0, millisRemaining > MESSAGE_FADE_TIME_MS ? 1.0f : millisRemaining / static_cast<float>(MESSAGE_FADE_TIME_MS));
+        yOffset = uiManager().drawBitmapFontString(Vector2f(getX(), yOffset), message.text, 0, millisRemaining > MESSAGE_FADE_TIME_MS ? 1.0f : millisRemaining / static_cast<float>(MESSAGE_FADE_TIME_MS));
         return Core::System::get().getSystemService().getTicks() > message.lifeTime;
     });
 }

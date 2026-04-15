@@ -30,8 +30,8 @@
 
 DebugParticlesScreen::DebugParticlesScreen()
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     // Add the buttons.
     auto backButton = std::make_shared<Ego::GUI::Button>("Back", SDLK_ESCAPE);
@@ -90,7 +90,7 @@ DebugParticlesScreen::DebugParticlesScreen()
         labelString << particleProfile->getName();
 
         auto label = std::make_shared<Ego::GUI::Label>(labelString.str());
-        label->setFont(_gameEngine->getUIManager()->getFont(Ego::GUI::UIManager::FONT_DEBUG));
+        label->setFont(uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG));
         scrollableList->addComponent(label);
     }
 
@@ -103,7 +103,7 @@ DebugParticlesScreen::DebugParticlesScreen()
         labelString << particleProfile->getName();
 
         auto label = std::make_shared<Ego::GUI::Label>(labelString.str());
-        label->setFont(_gameEngine->getUIManager()->getFont(Ego::GUI::UIManager::FONT_DEBUG));
+        label->setFont(uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG));
         label->setColour(Ego::Colour4f::red());
         scrollableList->addComponent(label);
     }
@@ -121,5 +121,5 @@ void DebugParticlesScreen::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 }

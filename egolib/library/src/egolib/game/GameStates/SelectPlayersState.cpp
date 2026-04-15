@@ -35,8 +35,8 @@ SelectPlayersState::SelectPlayersState()
     : _playerButtons(),
       _continueButton(std::make_shared<Ego::GUI::Button>("Select Module", SDLK_RETURN))
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     //Load background
     auto background = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_selectplayers");
@@ -71,7 +71,7 @@ SelectPlayersState::SelectPlayersState()
         }
 
         //Do the select module screen next
-        _gameEngine->pushGameState(std::make_shared<SelectModuleState>(selectedPlayersResult));
+        engine().pushGameState(std::make_shared<SelectModuleState>(selectedPlayersResult));
     });
     addComponent(_continueButton);
     _continueButton->setEnabled(false);
@@ -101,7 +101,7 @@ SelectPlayersState::SelectPlayersState()
         playerButton->setPosition({ SCREEN_WIDTH / 3, yOffset - 10 });
         playerButton->setOnClickFunction(
             [this, i]{
-            _gameEngine->pushGameState(std::make_shared<SelectCharacterState>(_selectedPlayers[i]));
+            engine().pushGameState(std::make_shared<SelectCharacterState>(_selectedPlayers[i]));
         }
         );
         addComponent(playerButton);

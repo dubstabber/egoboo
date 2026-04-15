@@ -48,12 +48,12 @@ void Slider::draw(DrawingContext& drawingContext) {
     std::shared_ptr<const Material> material;
     //Draw the bar
     material = std::make_shared<const Material>(_sliderBarTexture.get_ptr(), isEnabled() ? Colour4f::white() : Colour4f::grey(), true);
-    _gameEngine->getUIManager()->drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
+    uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     //Draw the moveable slider on top
     const int SLIDER_WIDTH = getWidth() / 10;
     material = std::make_shared<const Material>(_sliderTexture.get_ptr(), isEnabled() ? Colour4f::white() : Colour4f::grey(), true);
-    _gameEngine->getUIManager()->drawImage(Point2f(getX() + SLIDER_WIDTH + (getWidth() - SLIDER_WIDTH * 2)*_sliderPosition - SLIDER_WIDTH / 2, getY()), Vector2f(SLIDER_WIDTH, getHeight()), material);
+    uiManager().drawImage(Point2f(getX() + SLIDER_WIDTH + (getWidth() - SLIDER_WIDTH * 2)*_sliderPosition - SLIDER_WIDTH / 2, getY()), Vector2f(SLIDER_WIDTH, getHeight()), material);
 }
 
 void Slider::setValue(const int value) {

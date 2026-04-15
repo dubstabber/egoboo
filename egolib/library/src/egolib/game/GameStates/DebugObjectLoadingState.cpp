@@ -47,7 +47,7 @@ class DebugObjectLoadingState::GrowableLabel : public Ego::GUI::Component
 public:
     GrowableLabel(const std::string &text) :
     _text(text),
-    _font(_gameEngine->getUIManager()->getFont(Ego::GUI::UIManager::FONT_DEBUG)),
+    _font(uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG)),
     _textRenderer()
     {
         redraw();
@@ -96,7 +96,7 @@ struct DebugObjectLoadingState::ObjectGUIContainer : public Container
         addComponent(_objectName);
         addComponent(_loadingText);
         
-        const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
+        const int SCREEN_WIDTH = uiManager().getScreenWidth();
         setSize({ SCREEN_WIDTH - 50, 30 });
         _loadingText->setWidth(SCREEN_WIDTH - 50 - 265);
         relayout();
@@ -208,8 +208,8 @@ _moduleList(),
 _toLoad(),
 _currentLoader()
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
     
     _scrollableList = std::make_shared<Ego::GUI::ScrollableList>();
     _scrollableList->setPosition({ 8, 8 });

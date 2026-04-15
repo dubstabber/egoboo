@@ -16,8 +16,8 @@ InputOptionsScreen::InputOptionsScreen() :
     _activeButton(nullptr),
     _activeBinding(Ego::Input::InputDevice::InputButton::COUNT)
 {
-    //const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    //const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
     //Main label
     auto mainLabel = std::make_shared<Ego::GUI::Label>("Input Settings");
@@ -130,9 +130,9 @@ void InputOptionsScreen::addInputOption(const std::string &label, const Ego::Inp
 
     //Move down to next position and wrap around if out of screen space
     _bindingButtonPosY += name->getHeight();
-    if(_bindingButtonPosY >= _gameEngine->getUIManager()->getScreenHeight()) {
+    if(_bindingButtonPosY >= uiManager().getScreenHeight()) {
         _bindingButtonPosY = 50;
-        _bindingButtonPosX += _gameEngine->getUIManager()->getScreenWidth() / 2;
+        _bindingButtonPosX += uiManager().getScreenWidth() / 2;
     }
 }
 

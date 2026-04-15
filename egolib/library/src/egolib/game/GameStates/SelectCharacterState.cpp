@@ -33,8 +33,8 @@
 
 SelectCharacterState::SelectCharacterState(std::shared_ptr<LoadPlayerElement> &selectedCharacter)
 {
-    const int SCREEN_WIDTH = _gameEngine->getUIManager()->getScreenWidth();
-    const int SCREEN_HEIGHT = _gameEngine->getUIManager()->getScreenHeight();
+    const int SCREEN_WIDTH = uiManager().getScreenWidth();
+    const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 
 	//Load background
 	auto background = std::make_shared<Ego::GUI::Image>("mp_data/menu/menu_selectplayers");
@@ -84,7 +84,7 @@ SelectCharacterState::SelectCharacterState(std::shared_ptr<LoadPlayerElement> &s
 	addComponent(playersLabel);
 
 	auto scrollableList = std::make_shared<Ego::GUI::ScrollableList>();
-    scrollableList->setSize({ 300, _gameEngine->getUIManager()->getScreenHeight() - playersLabel->getY() - 150 });
+    scrollableList->setSize({ 300, uiManager().getScreenHeight() - playersLabel->getY() - 150 });
 	scrollableList->setPosition(playersLabel->getPosition() + Ego::Vector2f(20, playersLabel->getHeight() + 20));
 
 	//Make a button for each loadable character

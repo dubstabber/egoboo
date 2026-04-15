@@ -43,8 +43,8 @@ VictoryScreen::VictoryScreen(PlayingState *playingState, const bool forceExit) :
     exitButton->setSize({ 200, 30 });
     exitButton->setPosition({ 20, yOffset });
 	exitButton->setOnClickFunction(
-	[]{
-		_gameEngine->setGameState(std::make_shared<SelectPlayersState>());
+	[this]{
+		engine().setGameState(std::make_shared<SelectPlayersState>());
 	});
 	addComponent(exitButton);
 
@@ -81,5 +81,5 @@ void VictoryScreen::beginState()
 {
     // menu settings
     Ego::GraphicsSystem::get().window->grab_enabled(false);
-    _gameEngine->enableMouseCursor();
+    engine().enableMouseCursor();
 }

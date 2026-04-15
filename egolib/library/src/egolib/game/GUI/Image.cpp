@@ -33,10 +33,10 @@ Image::Image(const DeferredTexture &image) :
 void Image::draw(DrawingContext& drawingContext) {
     if (_image) {
         auto material = std::make_shared<const Material>(_image, _tint, true);
-        _gameEngine->getUIManager()->drawImage(getDerivedPosition(), getSize(), material);
+        uiManager().drawImage(getDerivedPosition(), getSize(), material);
     } else if (_texture) {
         auto material = std::make_shared<const Material>(_texture.get_ptr(), _tint, true);
-        _gameEngine->getUIManager()->drawImage(getDerivedPosition(), getSize(), material);
+        uiManager().drawImage(getDerivedPosition(), getSize(), material);
     }
 }
 
