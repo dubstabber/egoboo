@@ -1,6 +1,7 @@
 #include "egolib/game/Graphics/EntityList.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_prt.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 namespace Ego {
@@ -15,7 +16,7 @@ void EntityList::clear() {
     }
 
     set.clear();
-    auto& objectHandler = _currentModule->getObjectHandler();
+    auto& objectHandler = GameSessionContext::get().objectHandler();
     auto& particleHandler = ParticleHandler::get();
     for (auto& entry : list) {
         if (ParticleRef::Invalid == entry.iprt && ObjectRef::Invalid != entry.iobj) {
@@ -46,12 +47,13 @@ size_t EntityList::add(::Camera& camera, Object& object) {
     count++;
 
     // Add any weapons it is holding.
+    auto& objectHandler = GameSessionContext::get().objectHandler();
     Object *holding;
-    holding = _currentModule->getObjectHandler().get(object.holdingwhich[SLOT_LEFT]);
+    holding = objectHandler.get(object.holdingwhich[SLOT_LEFT]);
     if (holding) {
         count += add(camera, *holding);
     }
-    holding = _currentModule->getObjectHandler().get(object.holdingwhich[SLOT_RIGHT]);
+    holding = objectHandler.get(object.holdingwhich[SLOT_RIGHT]);
     if (holding) {
         count += add(camera, *holding);
     }
@@ -86,6 +88,7 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
     size_t count = 0;
     for (size_t i = 0; i < list.size(); ++i) {
         Vector3f vtmp;
+        auto& objectHandler = GameSessionContext::get().objectHandler();
 
         if (ParticleRef::Invalid == list[i].iprt && ObjectRef::Invalid != list[i].iobj) {
             Vector3f pos_tmp;
@@ -93,9 +96,9 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
             ObjectRef iobj = list[i].iobj;
 
             if (do_reflect) {
-                pos_tmp = mat_getTranslate(_currentModule->getObjectHandler().get(iobj)->inst.getReflectionMatrix());
+                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->inst.getReflectionMatrix());
             } else {
-                pos_tmp = mat_getTranslate(_currentModule->getObjectHandler().get(iobj)->inst.getMatrix());
+                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->inst.getMatrix());
             }
 
             vtmp = pos_tmp - cam.getPosition();
@@ -142,7 +145,7 @@ bool EntityList::test(::Camera& camera, const Object& object) {
         return false;
     }
     // The object is not a candidate if it is in another object's inventory. 
-    if (_currentModule->getObjectHandler().exists(object.inwhich_inventory)) {
+    if (GameSessionContext::get().objectHandler().exists(object.inwhich_inventory)) {
         return false;
     }
     // The object is not a candidate if it is already in this entity list.

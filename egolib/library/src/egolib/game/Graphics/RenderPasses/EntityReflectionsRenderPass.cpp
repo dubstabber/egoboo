@@ -1,5 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/graphic_fan.h"
@@ -25,6 +25,8 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
         return;
     }
 
+    auto& objectHandler = GameSessionContext::get().objectHandler();
+
     OpenGL::Utilities::isError();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_CURRENT_BIT);
     {
@@ -43,7 +45,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
             size_t i = j - 1;
             if (ParticleRef::Invalid == el.get(i).iprt && ObjectRef::Invalid != el.get(i).iobj)
             {
-                const std::shared_ptr<Object> &object = _currentModule->getObjectHandler()[el.get(i).iobj];
+                const std::shared_ptr<Object> &object = objectHandler[el.get(i).iobj];
                 if (!object || object->isTerminated())
                 {
                     continue;

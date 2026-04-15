@@ -1,5 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/Entities/_Include.hpp"
@@ -13,6 +13,7 @@ OpaqueEntitiesRenderPass::OpaqueEntitiesRenderPass() :
 
 void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
+    auto& objectHandler = GameSessionContext::get().objectHandler();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
         // scan for solid objects
@@ -31,7 +32,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
 
             if (ParticleRef::Invalid == el.get(i).iprt && ObjectRef::Invalid != el.get(i).iobj)
             {
-                ObjectGraphicsRenderer::render_solid(camera, _currentModule->getObjectHandler()[el.get(i).iobj]);
+                ObjectGraphicsRenderer::render_solid(camera, objectHandler[el.get(i).iobj]);
             }
             else if (ObjectRef::Invalid == el.get(i).iobj && ParticleHandler::get()[el.get(i).iprt] != nullptr)
             {

@@ -19,11 +19,12 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
 #include "egolib/Graphics/Viewport.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/game.h"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
 
 #include "egolib/Entities/_Include.hpp"
 
@@ -47,6 +48,8 @@ CameraSystem::~CameraSystem()
 
 void CameraSystem::setNumberOfCameras(const size_t numberOfCameras)
 {
+    auto& session = GameSessionContext::get();
+
     //Clear cameras
     _cameraList.clear();
 	//Add cameras
@@ -69,7 +72,7 @@ void CameraSystem::setNumberOfCameras(const size_t numberOfCameras)
     autoSetTargets();
 
     // make sure the cameras are centered on something or there will be a graphics error
-    resetAllTargets(_currentModule->getMeshPointer().get());
+    resetAllTargets(session.mesh().get());
 }
 
 void CameraSystem::updateAll( const ego_mesh_t * mesh )
@@ -98,6 +101,7 @@ egolib_rv CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, st
 
     //Store main camera to restore
     auto storeMainCam = _mainCamera;
+    const uint32_t renderedFrameCount = EngineContext::get().renderedFrameCount();
 
     for(const auto &camera : _cameraList) 
     {
@@ -105,7 +109,7 @@ egolib_rv CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, st
         _mainCamera = camera;
 
 	    // has this camera already rendered this frame?
-        if ( camera->getLastFrame() >= 0 && static_cast<uint32_t>(camera->getLastFrame()) >= _gameEngine->getNumberOfFramesRendered()) {
+        if ( camera->getLastFrame() >= 0 && static_cast<uint32_t>(camera->getLastFrame()) >= renderedFrameCount) {
             continue;
         }
 
@@ -119,7 +123,7 @@ egolib_rv CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, st
         endCameraMode();
 
         //Set last update frame
-        camera->setLastFrame(_gameEngine->getNumberOfFramesRendered());
+        camera->setLastFrame(renderedFrameCount);
     }
 
     // reset the "global" camera pointer to whatever it was
@@ -283,7 +287,7 @@ void CameraSystem::autoSetTargets()
     size_t cameraIndex = 0;
    
     // put all the valid players into camera 0
-    for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : GameSessionContext::get().playerList()) {
 
         // wrap around if there are less cameras than players
         if(cameraIndex >= _cameraList.size()) {

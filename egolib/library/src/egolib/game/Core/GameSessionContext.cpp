@@ -104,6 +104,36 @@ bool GameSessionContext::finishModule()
     return true;
 }
 
+ObjectHandler& GameSessionContext::objectHandler()
+{
+    return activeModule().getObjectHandler();
+}
+
+std::shared_ptr<ego_mesh_t> GameSessionContext::mesh()
+{
+    return activeModule().getMeshPointer();
+}
+
+std::shared_ptr<const Ego::Texture> GameSessionContext::tileTexture(size_t index)
+{
+    return activeModule().getTileTexture(index);
+}
+
+std::shared_ptr<const Ego::Texture> GameSessionContext::waterTexture(uint8_t layer)
+{
+    return activeModule().getWaterTexture(layer);
+}
+
+water_instance_t& GameSessionContext::water()
+{
+    return activeModule().getWater();
+}
+
+const std::vector<std::shared_ptr<Ego::Player>>& GameSessionContext::playerList() const
+{
+    return activeModule().getPlayerList();
+}
+
 import_list_t& GameSessionContext::importList()
 {
     return g_importList;

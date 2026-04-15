@@ -2,6 +2,7 @@
 
 #include "idlib/non_copyable.hpp"
 
+#include <cstdint>
 #include <memory>
 
 class GameEngine;
@@ -24,6 +25,8 @@ public:
 
     Ego::GUI::UIManager& uiManager();
     const Ego::GUI::UIManager& uiManager() const;
+
+    uint32_t renderedFrameCount() const;
 
     std::shared_ptr<PlayingState> tryActivePlayingState() const;
     std::shared_ptr<PlayingState> activePlayingState() const;

@@ -1,5 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -32,6 +32,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
 
     // Keep track of the number of rendered shadows.
     size_t count = 0;
+    auto& objectHandler = GameSessionContext::get().objectHandler();
 
     if (gfx.shadows_highQuality_enable)
     {
@@ -40,7 +41,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
         {
             ObjectRef ichr = el.get(i).iobj;
             if (ObjectRef::Invalid == ichr) continue;
-            if (0 == _currentModule->getObjectHandler().get(ichr)->shadow_size) continue;
+            if (0 == objectHandler.get(ichr)->shadow_size) continue;
             doHighQualityShadow(ichr);
             count++;
         }
@@ -52,7 +53,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
         {
             ObjectRef ichr = el.get(i).iobj;
             if (ObjectRef::Invalid == ichr) continue;
-            if (0 == _currentModule->getObjectHandler().get(ichr)->shadow_size) continue;
+            if (0 == objectHandler.get(ichr)->shadow_size) continue;
             doLowQualityShadow(ichr);
             count++;
         }
@@ -61,7 +62,8 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
 
 void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 {
-    Object *pchr = _currentModule->getObjectHandler().get(character);
+    auto& session = GameSessionContext::get();
+    Object *pchr = session.objectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
     // If the object is hidden it is not drawn at all, so it has no shadow.
@@ -79,7 +81,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     if (pchr->inst.light <= INVISIBLE || pchr->inst.alpha <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
-    auto mesh = _currentModule->getMeshPointer();
+    auto mesh = session.mesh();
     if (0 != mesh->test_fx(pchr->getTile(), MAPFX_REFLECTIVE))
     {
         alpha *= 0.1f;
@@ -146,8 +148,8 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 
 void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
 {
-
-    Object *pchr = _currentModule->getObjectHandler().get(character);
+    auto& session = GameSessionContext::get();
+    Object *pchr = session.objectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
     // if the character is hidden, not drawn at all, so no shadow
@@ -161,7 +163,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     if (pchr->inst.light <= INVISIBLE || pchr->inst.alpha <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
-    auto mesh = _currentModule->getMeshPointer();
+    auto mesh = session.mesh();
     if (0 != mesh->test_fx(pchr->getTile(), MAPFX_REFLECTIVE))
     {
         alpha *= 0.1f;

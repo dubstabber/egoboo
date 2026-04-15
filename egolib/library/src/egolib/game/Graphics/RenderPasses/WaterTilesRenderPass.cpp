@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/FileFormats/Globals.hpp"
@@ -14,6 +15,9 @@ WaterTilesRenderPass::WaterTilesRenderPass() :
 
 void WaterTilesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
+    auto& session = GameSessionContext::get();
+    auto& water = session.water();
+
     if (!tl.getMesh())
     {
         throw idlib::runtime_error(__FILE__, __LINE__, "tile list not bound to a mesh");
@@ -34,13 +38,13 @@ void WaterTilesRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     TileRenderer::invalidate();
 
     // Bottom layer first.
-    if (gfx.draw_water_1 && _currentModule->getWater()._layer_count > 1)
+    if (gfx.draw_water_1 && water._layer_count > 1)
     {
         render_water(mesh, tl._water, 1);
     }
 
     // Top layer second.
-    if (gfx.draw_water_0 && _currentModule->getWater()._layer_count > 0)
+    if (gfx.draw_water_0 && water._layer_count > 0)
     {
         render_water(mesh, tl._water, 0);
     }
@@ -59,6 +63,8 @@ void WaterTilesRenderPass::render_water(ego_mesh_t& mesh, const std::vector<Clip
 
 gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& tileIndex, const Uint8 layer)
 {
+    auto& session = GameSessionContext::get();
+    auto& water = session.water();
 
     static const int ix_off[4] = {1, 1, 0, 0}, iy_off[4] = {0, 1, 1, 0};
 
@@ -72,7 +78,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     const ego_tile_info_t& ptile = mesh.getTileInfo(tileIndex);
 
     float falpha;
-    falpha = FF_TO_FLOAT(_currentModule->getWater()._layers[layer]._alpha);
+    falpha = FF_TO_FLOAT(water._layers[layer]._alpha);
     falpha = Math::constrain(falpha, 0.0f, 1.0f);
 
     /// @note BB@> the water info is for TILES, not for vertices, so ignore all vertex info and just draw the water
@@ -89,11 +95,11 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
         Log::get() << e;
         return gfx_error;
     }
-    float offu = _currentModule->getWater()._layers[layer]._tx[XX];               // Texture offsets
-    float offv = _currentModule->getWater()._layers[layer]._tx[YY];
-    uint16_t frame = _currentModule->getWater()._layers[layer]._frame;                // Frame
+    float offu = water._layers[layer]._tx[XX];               // Texture offsets
+    float offv = water._layers[layer]._tx[YY];
+    uint16_t frame = water._layers[layer]._frame;                // Frame
 
-    std::shared_ptr<const Texture> ptex = _currentModule->getWaterTexture(layer);
+    std::shared_ptr<const Texture> ptex = session.waterTexture(layer);
 
     float x1 = (float)ptex->getWidth() / (float)ptex->getSourceWidth();
     float y1 = (float)ptex->getHeight() / (float)ptex->getSourceHeight();
@@ -137,7 +143,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     {
         GLXvector3f nrm = {0, 0, 1};
 
-        float alight = get_ambient_level() + _currentModule->getWater()._layers->_light_add;
+        float alight = get_ambient_level() + water._layers->_light_add;
         alight = Math::constrain(alight / 255.0f, 0.0f, 1.0f);
 
         for (size_t cnt = 0; cnt < 4; cnt++)
@@ -151,7 +157,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
 
             v0.x = jx * Info<float>::Grid::Size();
             v0.y = jy * Info<float>::Grid::Size();
-            v0.z = _currentModule->getWater()._layer_z_add[layer][frame][tnc] + _currentModule->getWater()._layers[layer]._z;
+            v0.z = water._layer_z_add[layer][frame][tnc] + water._layers[layer]._z;
 
             v0.s = fx_off[cnt] + offu;
             v0.t = fy_off[cnt] + offv;
@@ -175,7 +181,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
             v0.b = Math::constrain(dlight * idlib::fraction<float, 1, 255>() + alight, 0.0f, 1.0f);
 
             // the application of alpha to the tile depends on the blending mode
-            if (_currentModule->getWater()._light)
+            if (water._light)
             {
                 // blend using light
                 v0.r *= falpha;
@@ -205,7 +211,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
 
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
     {
-        bool use_depth_mask = (!_currentModule->getWater()._light && (1.0f == falpha));
+        bool use_depth_mask = (!water._light && (1.0f == falpha));
 
         // do not draw hidden surfaces
         renderer.setDepthTestEnabled(true);
@@ -221,7 +227,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
 
         // set the blending mode
         renderer.setBlendingEnabled(true);
-        if (_currentModule->getWater()._light)
+        if (water._light)
         {
             renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one_minus_source0_color);
         }

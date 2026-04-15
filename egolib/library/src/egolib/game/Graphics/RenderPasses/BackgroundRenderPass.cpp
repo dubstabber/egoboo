@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/BackgroundRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
 
@@ -14,20 +15,23 @@ BackgroundRenderPass::BackgroundRenderPass() :
 
 void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
+    auto& session = GameSessionContext::get();
+    auto mesh = session.mesh();
+    auto& water = session.water();
     auto& renderer = Renderer::get();
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
     renderer.setViewMatrix(camera.getViewMatrix());
 
-    if (!gfx.draw_background || !_currentModule->getWater()._background_req)
+    if (!gfx.draw_background || !water._background_req)
     {
         return;
     }
 
-    tile_mem_t& tmem = _currentModule->getMeshPointer()->_tmem;
+    tile_mem_t& tmem = mesh->_tmem;
 
     // which layer
-    water_instance_layer_t *ilayer = _currentModule->getWater()._layers + 0;
+    water_instance_layer_t *ilayer = water._layers + 0;
 
     // the "official" camera height
     float z0 = 1500;
@@ -40,12 +44,12 @@ void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     float ymag, Cy_0, Cy_1;
 
     // determine the constants for the x-coordinate
-    xmag = _currentModule->getWater()._backgroundrepeat / 4 / (1.0f + z0 * ilayer->_dist[XX]) / Info<float>::Grid::Size();
+    xmag = water._backgroundrepeat / 4 / (1.0f + z0 * ilayer->_dist[XX]) / Info<float>::Grid::Size();
     Cx_0 = xmag * (1.0f + camera.getPosition()[kZ] * ilayer->_dist[XX]);
     Cx_1 = -xmag * (1.0f + (camera.getPosition()[kZ] - z0) * ilayer->_dist[XX]);
 
     // determine the constants for the y-coordinate
-    ymag = _currentModule->getWater()._backgroundrepeat / 4 / (1.0f + z0 * ilayer->_dist[YY]) / Info<float>::Grid::Size();
+    ymag = water._backgroundrepeat / 4 / (1.0f + z0 * ilayer->_dist[YY]) / Info<float>::Grid::Size();
     Cy_0 = ymag * (1.0f + camera.getPosition()[kZ] * ilayer->_dist[YY]);
     Cy_1 = -ymag * (1.0f + (camera.getPosition()[kZ] - z0) * ilayer->_dist[YY]);
 
@@ -88,7 +92,7 @@ void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         vertices[3].t = Cy_0 * Qy + Cy_1 * camera.getPosition()[kY] + ilayer->_tx[YY];
     }
 
-    float light = _currentModule->getWater()._light ? 1.0f : 0.0f;
+    float light = water._light ? 1.0f : 0.0f;
     float alpha = ilayer->_alpha * idlib::fraction<float, 1, 255>();
 
     float intens = 1.0f;
@@ -106,7 +110,7 @@ void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         intens = Math::constrain(intens, 0.0f, 1.0f);
     }
 
-    renderer.getTextureUnit().setActivated(_currentModule->getWaterTexture(0).get());
+    renderer.getTextureUnit().setActivated(session.waterTexture(0).get());
 
     {
         OpenGL::PushAttrib pa(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);

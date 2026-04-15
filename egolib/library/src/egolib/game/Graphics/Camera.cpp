@@ -24,6 +24,7 @@
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"
 #include "egolib/Graphics/Viewport.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 
 #include "egolib/game/game.h" // TODO: remove only needed for mesh
 
@@ -337,7 +338,9 @@ void Camera::updateFreeControl()
     _pitch = Ego::Math::constrain(_pitch, 0.05f, idlib::pi<float>() - 0.05f);
 
     //Prevent the camera target from being below the mesh
-    _center.z() = std::max(_center.z(), _currentModule->getMeshPointer()->getElevation({ _center.x(), _center.y() }));
+    auto& session = GameSessionContext::get();
+    auto mesh = session.mesh();
+    _center.z() = std::max(_center.z(), mesh->getElevation({ _center.x(), _center.y() }));
 
     //Calculate camera position from desired zoom and rotation
     m_position.x() = _center.x() + _zoom * std::sin(_turnZ_radians);
@@ -345,7 +348,7 @@ void Camera::updateFreeControl()
     m_position.z() = _center.z() + _zoom * _pitch;
 
     //Prevent the camera from being below the mesh
-    m_position.z() = std::max(m_position.z(), 180.0f + _currentModule->getMeshPointer()->getElevation(Ego::Vector2f(m_position.x(), m_position.y())));
+    m_position.z() = std::max(m_position.z(), 180.0f + mesh->getElevation(Ego::Vector2f(m_position.x(), m_position.y())));
 
     updateZoom();
     makeMatrix();
@@ -357,6 +360,7 @@ void Camera::updateTrack()
 {
     // The default camera motion is to do nothing.
     Ego::Vector3f new_track = _trackPos;
+    auto& session = GameSessionContext::get();
 
     switch(_moveMode)
     {
@@ -370,7 +374,7 @@ void Camera::updateTrack()
 
             for(ObjectRef objectRef : _trackList)
             {
-                const std::shared_ptr<Object>& object = _currentModule->getObjectHandler()[objectRef];
+                const std::shared_ptr<Object>& object = session.objectHandler()[objectRef];
                 if (!object || object->isTerminated() || !object->isAlive()) continue;
 
                 sum_pos += object->getPosition() + Ego::Vector3f(0.0f, 0.0f, object->chr_min_cv._maxs[OCT_Z] * 0.9f);
@@ -398,7 +402,7 @@ void Camera::updateTrack()
             // Count the number of local players, first.
             for(ObjectRef objectRef : _trackList)
             {
-                const std::shared_ptr<Object> &object = _currentModule->getObjectHandler()[objectRef];
+                const std::shared_ptr<Object> &object = session.objectHandler()[objectRef];
                 if (!object || object->isTerminated() || !object->isAlive()) continue;
 
                 trackedPlayers.push_back(object);
@@ -480,7 +484,7 @@ void Camera::update(const ego_mesh_t *mesh)
     }
 
     // Camera controls.
-    for(const std::shared_ptr<Ego::Player> &player : _currentModule->getPlayerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : GameSessionContext::get().playerList()) {
         readInput(player->getInputDevice());
     }
 
@@ -766,7 +770,7 @@ void Camera::setScreen( float xmin, float ymin, float xmax, float ymax )
 void Camera::addTrackTarget(ObjectRef targetRef)
 {
     //Make sure the target is valid
-    const std::shared_ptr<Object>& object = _currentModule->getObjectHandler()[targetRef];
+    const std::shared_ptr<Object>& object = GameSessionContext::get().objectHandler()[targetRef];
     if(!object) {
         return;
     }

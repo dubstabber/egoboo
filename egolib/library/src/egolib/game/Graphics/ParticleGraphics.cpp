@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/_Include.hpp"
@@ -363,7 +364,7 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
     uint32_t alpha = trans;
 
     // interpolate the lighting for the origin of the object
-    auto mesh = _currentModule->getMeshPointer();
+    auto mesh = GameSessionContext::get().mesh();
     if (!mesh)
     {
         throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
@@ -378,7 +379,7 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
 
     // determine the normal dependent amount of light
     float amb, dir;
-    lighting_cache_t::lighting_evaluate_cache(loc_light, pinst.nrm, pinst.pos[kZ], _currentModule->getMeshPointer()->_tmem._bbox, &amb, &dir);
+    lighting_cache_t::lighting_evaluate_cache(loc_light, pinst.nrm, pinst.pos[kZ], mesh->_tmem._bbox, &amb, &dir);
 
     // LIGHT-blended sprites automatically glow. ALPHA-blended and SOLID
     // sprites need to convert the light channel into additional alpha

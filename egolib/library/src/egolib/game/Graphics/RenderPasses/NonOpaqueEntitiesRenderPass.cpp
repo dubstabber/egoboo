@@ -1,5 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/NonOpaqueEntitiesRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/Entities/_Include.hpp"
@@ -13,6 +13,7 @@ NonOpaqueEntitiesRenderPass::NonOpaqueEntitiesRenderPass() :
 
 void NonOpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
+    auto& objectHandler = GameSessionContext::get().objectHandler();
     auto& renderer = Renderer::get();
     // Set projection matrix.
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
@@ -39,7 +40,7 @@ void NonOpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, co
             // A character.
             if (ParticleRef::Invalid == el.get(j).iprt && ObjectRef::Invalid != el.get(j).iobj)
             {
-                ObjectGraphicsRenderer::render_trans(camera, _currentModule->getObjectHandler()[el.get(j).iobj]);
+                ObjectGraphicsRenderer::render_trans(camera, objectHandler[el.get(j).iobj]);
             }
             // A particle.
             else if (ObjectRef::Invalid == el.get(j).iobj && ParticleRef::Invalid != el.get(j).iprt)

@@ -1,6 +1,7 @@
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/graphic.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h" //only for character_swipe()
 
 namespace Ego
@@ -62,6 +63,7 @@ void ObjectGraphics::updateLighting()
 {
     static constexpr uint32_t FRAME_SKIP = 1 << 2;
     static constexpr uint32_t FRAME_MASK = FRAME_SKIP - 1;
+    auto mesh = GameSessionContext::get().mesh();
 
     // make sure the matrix is valid
     //chr_update_matrix(&_object, true);
@@ -77,7 +79,7 @@ void ObjectGraphics::updateLighting()
 
     // interpolate the lighting for the origin of the object
 	lighting_cache_t global_light;
-    GridIllumination::grid_lighting_interpolate(*_currentModule->getMeshPointer(), global_light, Vector2f(_object.getPosX(), _object.getPosY()));
+    GridIllumination::grid_lighting_interpolate(*mesh, global_light, Vector2f(_object.getPosX(), _object.getPosY()));
 
     // rotate the lighting data to body_centered coordinates
 	lighting_cache_t loc_light;
@@ -101,15 +103,15 @@ void ObjectGraphics::updateLighting()
         if (pvert->nrm[0] == 0.0f && pvert->nrm[1] == 0.0f && pvert->nrm[2] == 0.0f)
         {
             // this is the "ambient only" index, but it really means to sum up all the light
-            lite  = lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(+1.0f,+1.0f,+1.0f), hgt, _currentModule->getMeshPointer()->_tmem._bbox, nullptr, nullptr);
-            lite += lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(-1.0f,-1.0f,-1.0f), hgt, _currentModule->getMeshPointer()->_tmem._bbox, nullptr, nullptr);
+            lite  = lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(+1.0f,+1.0f,+1.0f), hgt, mesh->_tmem._bbox, nullptr, nullptr);
+            lite += lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(-1.0f,-1.0f,-1.0f), hgt, mesh->_tmem._bbox, nullptr, nullptr);
 
             // average all the directions
             lite /= 6.0f;
         }
         else
         {
-            lite = lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(pvert->nrm[0],pvert->nrm[1],pvert->nrm[2]), hgt, _currentModule->getMeshPointer()->_tmem._bbox, nullptr, nullptr);
+            lite = lighting_cache_t::lighting_evaluate_cache(loc_light, Vector3f(pvert->nrm[0],pvert->nrm[1],pvert->nrm[2]), hgt, mesh->_tmem._bbox, nullptr, nullptr);
         }
 
         pvert->color_dir = lite;

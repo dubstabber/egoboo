@@ -81,6 +81,11 @@ const Ego::GUI::UIManager& EngineContext::uiManager() const
     return *currentUIManager;
 }
 
+uint32_t EngineContext::renderedFrameCount() const
+{
+    return engine().getNumberOfFramesRendered();
+}
+
 std::shared_ptr<PlayingState> EngineContext::tryActivePlayingState() const
 {
     const GameEngine* currentEngine = tryEngine();

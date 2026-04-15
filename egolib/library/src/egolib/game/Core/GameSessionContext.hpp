@@ -4,10 +4,15 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
+class ObjectHandler;
 class GameModule;
 class ModuleProfile;
+class ego_mesh_t;
 struct import_list_t;
+struct water_instance_t;
+namespace Ego { class Player; class Texture; }
 
 class GameSessionContext : private idlib::non_copyable
 {
@@ -26,6 +31,13 @@ public:
     bool beginModule(const std::shared_ptr<ModuleProfile>& module, uint32_t seed);
     void quitModule();
     bool finishModule();
+
+    ObjectHandler& objectHandler();
+    std::shared_ptr<ego_mesh_t> mesh();
+    std::shared_ptr<const Ego::Texture> tileTexture(size_t index);
+    std::shared_ptr<const Ego::Texture> waterTexture(uint8_t layer);
+    water_instance_t& water();
+    const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
 
     import_list_t& importList();
     const import_list_t& importList() const;

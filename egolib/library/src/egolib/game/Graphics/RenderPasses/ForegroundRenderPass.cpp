@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
 
@@ -14,7 +15,10 @@ ForegroundRenderPass::ForegroundRenderPass() :
 
 void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    if (!gfx.draw_overlay || !_currentModule->getWater()._background_req)
+    auto& session = GameSessionContext::get();
+    auto& water = session.water();
+
+    if (!gfx.draw_overlay || !water._background_req)
     {
         return;
     }
@@ -24,7 +28,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
     renderer.setViewMatrix(camera.getViewMatrix());
 
-    water_instance_layer_t *ilayer = _currentModule->getWater()._layers + 1;
+    water_instance_layer_t *ilayer = water._layers + 1;
 
     Vector3f vforw_wind(ilayer->_tx_add[XX], ilayer->_tx_add[YY], 0.0f);
     vforw_wind = normalize(vforw_wind).get_vector();
@@ -50,7 +54,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         float sinsize = std::sin(default_turn) * size;
         float cossize = std::cos(default_turn) * size;
         // TODO: Shouldn't this be std::min(x / windowSize.width(), y / windowSize.height())?
-        float loc_foregroundrepeat = _currentModule->getWater()._foregroundrepeat *
+        float loc_foregroundrepeat = water._foregroundrepeat *
             std::min(x / windowSize.x(), y / windowSize.y());
 
         {
@@ -82,7 +86,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
             vertices[3].t = ilayer->_tx[TT] + loc_foregroundrepeat;
         }
 
-        renderer.getTextureUnit().setActivated(_currentModule->getWaterTexture(1).get());
+        renderer.getTextureUnit().setActivated(session.waterTexture(1).get());
 
         {
             OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT | GL_HINT_BIT);
@@ -112,7 +116,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_color);
 
-                renderer.getTextureUnit().setActivated(_currentModule->getWaterTexture(1).get());
+                renderer.getTextureUnit().setActivated(session.waterTexture(1).get());
 
                 renderer.setColour(Colour4f(1.0f, 1.0f, 1.0f, 1.0f - std::abs(alpha)));
                 renderer.render(*_vertexBuffer, _vertexDescriptor, idlib::primitive_type::triangle_fan, 0, 4);
