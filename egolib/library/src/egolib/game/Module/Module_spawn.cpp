@@ -21,6 +21,7 @@
 /// @brief GameModule spawn, player-join, and spawn-file realization helpers.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Module/Module_player_startup.hpp"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/Module_spawn_realization.hpp"
 
@@ -315,25 +316,14 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
 
 bool GameModule::addPlayer(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device)
 {
-    if (!object || object->isTerminated()) {
-        return false;
-    }
+    return addPlayer(object, device, false);
+}
 
-    std::shared_ptr<Ego::Player> player = std::make_shared<Ego::Player>(object, device);
-    _playerList.push_back(player);
-
-    // set the reference to the player
-    object->is_which_player = _playerList.size() - 1;
-
-    // download the quest info
-    player->getQuestLog().loadFromFile(object->getProfile()->getPathname());
-
-    //Local player added
-    local_stats.noplayers = false;
-    object->islocalplayer = true;
-    local_stats.player_count++;
-
-    return true;
+bool GameModule::addPlayer(const std::shared_ptr<Object>& object,
+                           const Ego::Input::InputDevice& device,
+                           const bool identifySpawnOnSuccess)
+{
+    return module_player_startup::addPlayer(_playerList, object, device, identifySpawnOnSuccess);
 }
 
 void GameModule::spawnAllObjects()
@@ -426,9 +416,10 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     {
         return static_cast<size_t>(local_stats.player_count);
     };
-    ops.addPlayer = [this](const std::shared_ptr<Object>& object, size_t deviceIndex)
+    ops.addPlayer = [this](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
     {
-        return addPlayer(object, Ego::Input::InputDevice::DeviceList[deviceIndex]);
+        return addPlayer(object, Ego::Input::InputDevice::DeviceList[request.deviceIndex],
+                         request.identifySpawnOnSuccess);
     };
 
     return module_spawn_realization::realizeSpawnEntry(psp_info, parent, state, ops);

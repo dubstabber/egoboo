@@ -228,6 +228,9 @@ private:
     void initializeSharedModuleAssets();
     void loadModuleEnvironment();
     void loadModuleContent();
+    bool addPlayer(const std::shared_ptr<Object>& object,
+                   const Ego::Input::InputDevice& device,
+                   bool identifySpawnOnSuccess);
     void finalizeModuleInitialization();
 
     void updateModuleServices();

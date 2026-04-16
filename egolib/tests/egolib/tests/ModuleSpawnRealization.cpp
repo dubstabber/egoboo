@@ -405,7 +405,7 @@ TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 1u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;
@@ -427,7 +427,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
 
     size_t playerCount = 0;
     size_t localPlayerCount = 2;
-    std::vector<size_t> deviceIndexes;
+    std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
 
     module_spawn_realization::SpawnRealizationOps ops;
     ops.spawnObject = [&](const spawn_file_info_t& entry)
@@ -439,13 +439,17 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
     ops.currentLocalPlayerCount = [&]() { return localPlayerCount; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>& object, size_t deviceIndex)
+    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
     {
         ++playerCount;
         ++localPlayerCount;
-        deviceIndexes.push_back(deviceIndex);
+        bindingRequests.push_back(request);
         object->islocalplayer = true;
-        object->is_which_player = static_cast<PLA_REF>(deviceIndex);
+        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
+        if (request.identifySpawnOnSuccess)
+        {
+            object->nameknown = true;
+        }
         return true;
     };
 
@@ -454,8 +458,9 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
 
     ASSERT_NE(result, nullptr);
-    ASSERT_EQ(deviceIndexes.size(), 1u);
-    EXPECT_EQ(deviceIndexes.front(), 2u);
+    ASSERT_EQ(bindingRequests.size(), 1u);
+    EXPECT_EQ(bindingRequests.front().deviceIndex, 2u);
+    EXPECT_TRUE(bindingRequests.front().identifySpawnOnSuccess);
     EXPECT_TRUE(result->nameknown);
     EXPECT_TRUE(result->isPlayer());
 }
@@ -478,7 +483,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 2u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return false;
@@ -507,7 +512,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
     _importData.slot_lst[5] = 123;
 
     size_t playerCount = 0;
-    std::vector<size_t> deviceIndexes;
+    std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
 
     module_spawn_realization::SpawnRealizationOps ops;
     ops.spawnObject = [&](const spawn_file_info_t& entry)
@@ -517,12 +522,12 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>& object, size_t deviceIndex)
+    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
     {
         ++playerCount;
-        deviceIndexes.push_back(deviceIndex);
+        bindingRequests.push_back(request);
         object->islocalplayer = true;
-        object->is_which_player = static_cast<PLA_REF>(deviceIndex);
+        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
         return true;
     };
 
@@ -531,8 +536,9 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
     auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
 
     ASSERT_NE(result, nullptr);
-    ASSERT_EQ(deviceIndexes.size(), 1u);
-    EXPECT_EQ(deviceIndexes.front(), 3u);
+    ASSERT_EQ(bindingRequests.size(), 1u);
+    EXPECT_EQ(bindingRequests.front().deviceIndex, 3u);
+    EXPECT_FALSE(bindingRequests.front().identifySpawnOnSuccess);
     EXPECT_TRUE(result->isPlayer());
 }
 
@@ -560,7 +566,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithNoImportMatchSkipsPlayerBindi
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;
@@ -598,7 +604,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportProfileOutsideLoadedRan
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;

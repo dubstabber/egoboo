@@ -40,8 +40,7 @@ enum class PlayerBindingPolicy
 struct PlayerBindingDecision
 {
     PlayerBindingPolicy policy = PlayerBindingPolicy::None;
-    size_t deviceIndex = 0;
-    bool identifySpawnOnSuccess = false;
+    PlayerBindingRequest request;
 };
 
 size_t currentPlayerCount(const SpawnRealizationOps& ops)
@@ -114,7 +113,11 @@ PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
     const size_t playerCount = currentPlayerCount(ops);
     if (0 == state.importAmount && playerCount < state.playerAmount)
     {
-        return { PlayerBindingPolicy::LocalDeviceSlot, currentLocalPlayerCount(ops), true };
+        PlayerBindingDecision decision;
+        decision.policy = PlayerBindingPolicy::LocalDeviceSlot;
+        decision.request.deviceIndex = currentLocalPlayerCount(ops);
+        decision.request.identifySpawnOnSuccess = true;
+        return decision;
     }
 
     if (playerCount >= state.importAmount || playerCount >= state.playerAmount || !state.importList || playerCount >= state.importList->count)
@@ -125,11 +128,10 @@ PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
     const int localIndex = findImportMatchIndex(profileID, state);
     if (-1 != localIndex)
     {
-        return {
-            PlayerBindingPolicy::ImportedLocalPlayer,
-            static_cast<size_t>(state.importList->lst[localIndex].local_player_num),
-            false
-        };
+        PlayerBindingDecision decision;
+        decision.policy = PlayerBindingPolicy::ImportedLocalPlayer;
+        decision.request.deviceIndex = static_cast<size_t>(state.importList->lst[localIndex].local_player_num);
+        return decision;
     }
 
     // The old remote-input branch was already a no-op here. Keep it that way
@@ -154,17 +156,11 @@ void bindSpawnedPlayer(const spawn_file_info_t& spawnInfo,
         break;
 
         case PlayerBindingPolicy::LocalDeviceSlot:
-        {
-            const bool playerAdded = ops.addPlayer(object, decision.deviceIndex);
-            if (decision.identifySpawnOnSuccess && playerAdded)
-            {
-                object->nameknown = true;
-            }
-        }
+            ops.addPlayer(object, decision.request);
         break;
 
         case PlayerBindingPolicy::ImportedLocalPlayer:
-            ops.addPlayer(object, decision.deviceIndex);
+            ops.addPlayer(object, decision.request);
         break;
     }
 }

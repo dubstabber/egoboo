@@ -89,6 +89,7 @@ Out of scope for the active architecture model:
 - `33-maintainability-improvement-plan.md`
 - `34-module-player-binding-policy-pass.md`
 - `35-module-startup-equipment-hook-pass.md`
+- `36-module-player-startup-boundary-pass.md`
 
 ## Recommended reading order
 
@@ -117,6 +118,7 @@ Out of scope for the active architecture model:
 23. Read `33-maintainability-improvement-plan.md` for the tiered improvement plan that maps design-quality findings into actionable work items with dependency ordering.
 24. Read `34-module-player-binding-policy-pass.md` for the narrowed spawn player-binding policy seam and the next recommendation around startup-equipment side effects.
 25. Read `35-module-startup-equipment-hook-pass.md` for the isolated startup-equipment identification hook and the remaining player-startup side-effect follow-on.
+26. Read `36-module-player-startup-boundary-pass.md` for the extracted module-side player-startup helper boundary and the remaining quest-log hydration follow-on.
 
 ## Immediate recommendation
 

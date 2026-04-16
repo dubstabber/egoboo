@@ -15,6 +15,12 @@ namespace module_spawn_realization
 
 using ProfileLoadedPredicate = std::function<bool(ObjectProfileRef)>;
 
+struct PlayerBindingRequest
+{
+    size_t deviceIndex = 0;
+    bool identifySpawnOnSuccess = false;
+};
+
 struct SpawnRealizationState
 {
     bool importValid = false;
@@ -34,7 +40,7 @@ struct SpawnRealizationOps
     std::function<bool(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t)> attachToGrip;
     std::function<size_t()> currentPlayerCount;
     std::function<size_t()> currentLocalPlayerCount;
-    std::function<bool(const std::shared_ptr<Object>&, size_t)> addPlayer;
+    std::function<bool(const std::shared_ptr<Object>&, const PlayerBindingRequest&)> addPlayer;
 };
 
 std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
