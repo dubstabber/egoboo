@@ -23,6 +23,7 @@
 
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Logic/PlayerQuestLog.hpp"
 
 LoadPlayerElement::LoadPlayerElement(std::shared_ptr<ObjectProfile> profile) :
     _name("*NONE*"),
@@ -33,7 +34,7 @@ LoadPlayerElement::LoadPlayerElement(std::shared_ptr<ObjectProfile> profile) :
     _isSelected(false)
 {
     // load the quest info from "quest.txt" so we can determine the valid modules
-    _questLog.loadFromFile(profile->getPathname());
+    Ego::loadPlayerQuestLog(_questLog, profile->getPathname());
 
     // load the chop data from "naming.txt" to generate the character name (kinda silly how it's done currently)
     RandomName randomName;

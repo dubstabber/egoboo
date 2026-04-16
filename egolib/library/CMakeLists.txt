@@ -643,6 +643,8 @@ set(EGOLIB_GAME_GUI_SOURCES
 set(EGOLIB_GAME_LOGIC_SOURCES
     src/egolib/game/Logic/Player.cpp
     src/egolib/game/Logic/Player.hpp
+    src/egolib/game/Logic/PlayerQuestLog.cpp
+    src/egolib/game/Logic/PlayerQuestLog.hpp
     src/egolib/game/Logic/QuestLog.cpp
     src/egolib/game/Logic/QuestLog.hpp
 )

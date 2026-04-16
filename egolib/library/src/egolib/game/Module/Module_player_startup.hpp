@@ -3,6 +3,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Logic/PlayerQuestLog.hpp"
 #include "egolib/game/game.h"
 
 #include <memory>
@@ -27,8 +28,7 @@ inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
                                        const std::shared_ptr<Ego::Player>& player,
                                        bool identifySpawnOnSuccess)
 {
-    // Preserve the current best-effort quest hydration behavior.
-    player->getQuestLog().loadFromFile(object->getProfile()->getPathname());
+    Ego::loadPlayerQuestLog(player->getQuestLog(), object->getProfile()->getPathname());
 
     local_stats.noplayers = false;
     object->islocalplayer = true;

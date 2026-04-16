@@ -8,6 +8,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Module/Module_player_startup.hpp"
+#include "egolib/IDSZ.hpp"
 #include "egolib/game/game.h"
 #include "egolib/vfs.h"
 
@@ -16,6 +17,8 @@
 
 namespace
 {
+
+constexpr char kQuestTestRoot[] = "quest-tests";
 
 class ModulePlayerStartupFixture : public ::testing::Test
 {
@@ -57,6 +60,7 @@ protected:
     void SetUp() override
     {
         game_reset_players();
+        vfs_removeDirectoryAndContents(kQuestTestRoot);
         ProfileSystem::get().reset();
         ProfileSystem::get().loadModuleProfiles();
     }
@@ -64,6 +68,7 @@ protected:
     void TearDown() override
     {
         game_reset_players();
+        vfs_removeDirectoryAndContents(kQuestTestRoot);
         setup_clear_module_vfs_paths();
     }
 
@@ -78,6 +83,27 @@ protected:
         }
 
         return objectHandler.insert(profile);
+    }
+
+    ObjectProfileRef makeIsolatedFollowerProfile(const std::string& profilePath, int slot) const
+    {
+        setup_init_module_vfs_paths("mp_modules/test.mod");
+
+        vfs_removeDirectoryAndContents(profilePath.c_str());
+        EXPECT_TRUE(vfs_copyDirectory("mp_objects/follower.obj", profilePath.c_str()));
+        EXPECT_TRUE(vfs_exists((profilePath + "/data.txt").c_str()));
+        EXPECT_TRUE(vfs_exists((profilePath + "/naming.txt").c_str()));
+        EXPECT_TRUE(vfs_exists((profilePath + "/tris.md2").c_str()));
+
+        return ProfileSystem::get().loadOneProfile(profilePath, slot);
+    }
+
+    void writeQuestFile(const std::string& profilePath, const IDSZ2& idsz, int progress) const
+    {
+        vfs_FILE* questFile = vfs_openWrite(profilePath + "/quest.txt");
+        ASSERT_NE(questFile, nullptr);
+        vfs_printf(questFile, ":[%4s] %d\n", idsz.toString().c_str(), progress);
+        vfs_close(questFile);
     }
 };
 
@@ -118,6 +144,26 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     EXPECT_EQ(local_stats.player_count, 1);
     EXPECT_FALSE(local_stats.noplayers);
     EXPECT_EQ(player->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], Ego::QuestLog::QUEST_NONE);
+}
+
+TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    const std::string profilePath = std::string(kQuestTestRoot) + "/module-player-startup-present.obj";
+
+    const ObjectProfileRef profile = makeIsolatedFollowerProfile(profilePath, 122);
+    ASSERT_NE(profile, ObjectProfileRef::Invalid);
+
+    writeQuestFile(profilePath, IDSZ2('T', 'E', 'S', 'T'), 4);
+
+    auto object = objectHandler.insert(profile);
+    ASSERT_NE(object, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_EQ(playerList.size(), 1u);
+    ASSERT_NE(playerList.front(), nullptr);
+    EXPECT_EQ(playerList.front()->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], 4);
 }
 
 } // namespace
