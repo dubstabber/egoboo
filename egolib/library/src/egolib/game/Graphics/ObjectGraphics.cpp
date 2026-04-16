@@ -684,10 +684,11 @@ void ObjectGraphics::getTint(GLXvector4f tint, const bool reflection, const int 
 	}
 
 	// modify these values based on local character abilities
-    if(local_stats.seeinvis_level > 0.0f) {
+    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
+    if(localPlayerPerception.seeInvisibleLevel > 0.0f) {
         local_alpha = std::max(local_alpha, SEEINVISIBLE);
     }
-	local_light = get_light(local_light, local_stats.seedark_mag);
+	local_light = get_light(local_light, localPlayerPerception.seeDarkMagnitude);
 
 	// clear out the tint
     tint[RR] = 1.0f / (1 << local_colorshift.red);

@@ -26,6 +26,7 @@
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/FileFormats/Globals.hpp"
@@ -559,15 +560,16 @@ float get_ambient_level()
     }
 
     // determine the minimum ambient, based on darkvision
+    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
     min_amb = INVISIBLE / 4;
-    if (local_stats.seedark_mag > 0.0f)
+    if (localPlayerPerception.seeDarkMagnitude > 0.0f)
     {
         // give a iny boost in the case of no light
         // start with the global light
         min_amb = std::max(glob_amb, min_amb) + 1.0f;
 
         // light_a can be quite dark, so we need a large magnification
-        min_amb *= std::pow(local_stats.seedark_mag, 5);
+        min_amb *= std::pow(localPlayerPerception.seeDarkMagnitude, 5);
     }
 
     return std::max(glob_amb, min_amb);

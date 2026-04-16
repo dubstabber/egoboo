@@ -23,6 +23,7 @@
 #include "egolib/game/graphic_internal.h"
 
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Graphics/EntityList.hpp"
@@ -410,6 +411,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         return gfx_error;
     }
 
+    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
     retval = gfx_success;
     for (size_t i = 0, n = el.getSize(); i < n; ++i)
     {
@@ -428,8 +430,8 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
             }
         }
 
-        tmp_seekurse_level = std::min(local_stats.seekurse_level, 1.0f);
-        if ((local_stats.seekurse_level > 0.0f) && object->iskursed && 1.0f != tmp_seekurse_level)
+        tmp_seekurse_level = std::min(localPlayerPerception.seeKurseLevel, 1.0f);
+        if ((localPlayerPerception.seeKurseLevel > 0.0f) && object->iskursed && 1.0f != tmp_seekurse_level)
         {
             if (HAS_NO_BITS(renderedFrameCount(), SEEKURSEAND))
             {

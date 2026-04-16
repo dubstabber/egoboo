@@ -690,6 +690,7 @@ void Camera::resetTarget(const ego_mesh_t *mesh)
 void Camera::updateEffects()
 {
     float local_swingamp = _swingAmp;
+    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
 
     _motionBlurOld = _motionBlur;
 
@@ -701,13 +702,13 @@ void Camera::updateEffects()
     }
 
     // Swing the camera if players are groggy
-    if ( local_stats.grog_level > 0 )
+    if ( localPlayerPerception.grogLevel > 0 )
     {
         float zoom_add;
         _swing = (_swing + 120) & 0x3FFF;
         local_swingamp = std::max(local_swingamp, 0.175f);
 
-        zoom_add = ( 0 == ((( int )local_stats.grog_level ) % 2 ) ? 1 : - 1 ) * DEFAULT_TURN_KEY * local_stats.grog_level * 0.35f;
+        zoom_add = ( 0 == ((( int )localPlayerPerception.grogLevel ) % 2 ) ? 1 : - 1 ) * DEFAULT_TURN_KEY * localPlayerPerception.grogLevel * 0.35f;
 
         _zaddGoto   = _zaddGoto + zoom_add;
 
@@ -715,14 +716,14 @@ void Camera::updateEffects()
     }
 
     //Rotate camera if they are dazed
-    if ( local_stats.daze_level > 0 )
+    if ( localPlayerPerception.dazeLevel > 0 )
     {
-        _turnZAdd = local_stats.daze_level * DEFAULT_TURN_KEY * 0.5f;
+        _turnZAdd = localPlayerPerception.dazeLevel * DEFAULT_TURN_KEY * 0.5f;
     }
     
     // Apply motion blur
-    if ( local_stats.daze_level > 0 || local_stats.grog_level > 0 ) {
-        _motionBlur = std::min(0.95f, 0.5f + 0.03f * std::max(local_stats.daze_level, local_stats.grog_level));
+    if ( localPlayerPerception.dazeLevel > 0 || localPlayerPerception.grogLevel > 0 ) {
+        _motionBlur = std::min(0.95f, 0.5f + 0.03f * std::max(localPlayerPerception.dazeLevel, localPlayerPerception.grogLevel));
     }
 
     //Apply camera swinging

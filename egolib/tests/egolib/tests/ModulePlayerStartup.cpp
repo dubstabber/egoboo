@@ -16,6 +16,7 @@
 #include "egolib/vfs.h"
 
 #include <cstdlib>
+#include <cmath>
 #include <memory>
 
 namespace
@@ -375,6 +376,126 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusSkipsNullAndTerminatedObject
     EXPECT_EQ(status.aliveCount, 1u);
     EXPECT_EQ(status.deadCount, 0u);
     EXPECT_FALSE(status.allPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerPerceptionAveragesAlivePlayersAndComputesMagnitudes)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto firstObject = makeFollower(objectHandler, 133);
+    auto secondObject = makeFollower(objectHandler, 134);
+    auto deadObject = makeFollower(objectHandler, 135);
+    auto terminatedObject = makeFollower(objectHandler, 136);
+    ASSERT_NE(firstObject, nullptr);
+    ASSERT_NE(secondObject, nullptr);
+    ASSERT_NE(deadObject, nullptr);
+    ASSERT_NE(terminatedObject, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, firstObject, Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, secondObject, Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, deadObject, Ego::Input::InputDevice::DeviceList[2], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, terminatedObject, Ego::Input::InputDevice::DeviceList[3], false));
+
+    firstObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 2.0f);
+    firstObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 6.0f);
+    firstObject->setBaseAttribute(Ego::Attribute::DARKVISION, 4.0f);
+    firstObject->grog_timer = 8;
+    firstObject->daze_timer = 10;
+    firstObject->addPerk(Ego::Perks::SENSE_INVISIBLE);
+
+    secondObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 4.0f);
+    secondObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 0.0f);
+    secondObject->setBaseAttribute(Ego::Attribute::DARKVISION, 2.0f);
+    secondObject->grog_timer = 6;
+    secondObject->daze_timer = 2;
+
+    deadObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 50.0f);
+    deadObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 50.0f);
+    deadObject->setBaseAttribute(Ego::Attribute::DARKVISION, 50.0f);
+    deadObject->grog_timer = 50;
+    deadObject->daze_timer = 50;
+    deadObject->_isAlive = false;
+
+    terminatedObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 75.0f);
+    terminatedObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 75.0f);
+    terminatedObject->setBaseAttribute(Ego::Attribute::DARKVISION, 75.0f);
+    terminatedObject->grog_timer = 75;
+    terminatedObject->daze_timer = 75;
+    terminatedObject->_terminateRequested = true;
+
+    const LocalPlayerPerceptionState perception = collectLocalPlayerPerception(playerList);
+
+    EXPECT_FLOAT_EQ(perception.seeInvisibleLevel, 3.5f);
+    EXPECT_FLOAT_EQ(perception.seeKurseLevel, 3.0f);
+    EXPECT_FLOAT_EQ(perception.seeDarkLevel, 3.0f);
+    EXPECT_FLOAT_EQ(perception.grogLevel, 7.0f);
+    EXPECT_FLOAT_EQ(perception.dazeLevel, 6.0f);
+    EXPECT_FLOAT_EQ(perception.seeInvisibleMagnitude, std::exp(0.32f * 3.5f));
+    EXPECT_FLOAT_EQ(perception.seeDarkMagnitude, std::exp(0.32f * 3.0f));
+}
+
+TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsTrackPublishedSessionState)
+{
+    auto& session = GameSessionContext::get();
+    const LocalPlayerPerceptionState published{
+        6.0f,
+        4.0f,
+        3.0f,
+        std::exp(0.32f * 3.0f),
+        2.0f,
+        std::exp(0.32f * 2.0f),
+        1.5f
+    };
+
+    session.publishLocalPlayerPerception(published);
+
+    const LocalPlayerPerceptionState& perception = session.localPlayerPerception();
+    EXPECT_FLOAT_EQ(perception.grogLevel, 6.0f);
+    EXPECT_FLOAT_EQ(perception.dazeLevel, 4.0f);
+    EXPECT_FLOAT_EQ(perception.seeInvisibleLevel, 3.0f);
+    EXPECT_FLOAT_EQ(perception.seeInvisibleMagnitude, std::exp(0.32f * 3.0f));
+    EXPECT_FLOAT_EQ(perception.seeDarkLevel, 2.0f);
+    EXPECT_FLOAT_EQ(perception.seeDarkMagnitude, std::exp(0.32f * 2.0f));
+    EXPECT_FLOAT_EQ(perception.seeKurseLevel, 1.5f);
+    EXPECT_FLOAT_EQ(local_stats.grog_level, 6.0f);
+    EXPECT_FLOAT_EQ(local_stats.daze_level, 4.0f);
+    EXPECT_FLOAT_EQ(local_stats.seeinvis_level, 3.0f);
+    EXPECT_FLOAT_EQ(local_stats.seeinvis_mag, std::exp(0.32f * 3.0f));
+    EXPECT_FLOAT_EQ(local_stats.seedark_level, 2.0f);
+    EXPECT_FLOAT_EQ(local_stats.seedark_mag, std::exp(0.32f * 2.0f));
+    EXPECT_FLOAT_EQ(local_stats.seekurse_level, 1.5f);
+}
+
+TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsResetWithSessionState)
+{
+    auto& session = GameSessionContext::get();
+    session.publishLocalPlayerPerception(LocalPlayerPerceptionState{
+        8.0f,
+        7.0f,
+        6.0f,
+        std::exp(0.32f * 6.0f),
+        5.0f,
+        std::exp(0.32f * 5.0f),
+        4.0f
+    });
+
+    game_reset_players();
+
+    const LocalPlayerPerceptionState& perception = session.localPlayerPerception();
+    EXPECT_FLOAT_EQ(perception.grogLevel, 0.0f);
+    EXPECT_FLOAT_EQ(perception.dazeLevel, 0.0f);
+    EXPECT_FLOAT_EQ(perception.seeInvisibleLevel, 0.0f);
+    EXPECT_FLOAT_EQ(perception.seeInvisibleMagnitude, 1.0f);
+    EXPECT_FLOAT_EQ(perception.seeDarkLevel, 0.0f);
+    EXPECT_FLOAT_EQ(perception.seeDarkMagnitude, 1.0f);
+    EXPECT_FLOAT_EQ(perception.seeKurseLevel, 0.0f);
+    EXPECT_FLOAT_EQ(local_stats.grog_level, 0.0f);
+    EXPECT_FLOAT_EQ(local_stats.daze_level, 0.0f);
+    EXPECT_FLOAT_EQ(local_stats.seeinvis_level, 0.0f);
+    EXPECT_FLOAT_EQ(local_stats.seeinvis_mag, 1.0f);
+    EXPECT_FLOAT_EQ(local_stats.seedark_level, 0.0f);
+    EXPECT_FLOAT_EQ(local_stats.seedark_mag, 1.0f);
+    EXPECT_FLOAT_EQ(local_stats.seekurse_level, 0.0f);
 }
 
 } // namespace

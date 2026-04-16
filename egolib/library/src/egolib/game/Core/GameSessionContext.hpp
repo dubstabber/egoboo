@@ -30,7 +30,19 @@ struct LocalPlayerStatus
     }
 };
 
+struct LocalPlayerPerceptionState
+{
+    float grogLevel = 0.0f;
+    float dazeLevel = 0.0f;
+    float seeInvisibleLevel = 0.0f;
+    float seeInvisibleMagnitude = 1.0f;
+    float seeDarkLevel = 0.0f;
+    float seeDarkMagnitude = 1.0f;
+    float seeKurseLevel = 0.0f;
+};
+
 LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players);
+LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::shared_ptr<Ego::Player>>& players);
 
 class GameSessionContext : private idlib::non_copyable
 {
@@ -65,12 +77,15 @@ public:
     const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
     size_t localPlayerCount() const;
     const LocalPlayerStatus& localPlayerStatus() const;
+    const LocalPlayerPerceptionState& localPlayerPerception() const;
     bool hasLocalPlayers() const;
     bool allLocalPlayersDead() const;
 
     void publishLocalPlayerCount(size_t count);
     void publishLocalPlayerStatus(const LocalPlayerStatus& status);
+    void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state);
     void resetLocalPlayerState();
+    void resetLocalPlayerPerception();
 
     import_list_t& importList();
     const import_list_t& importList() const;
@@ -91,5 +106,6 @@ private:
     uint32_t _enchantStatClock;
     size_t _preModuleLocalPlayerCount;
     LocalPlayerStatus _localPlayerStatus;
+    LocalPlayerPerceptionState _localPlayerPerception;
     bool _hasPublishedLocalPlayerStatus;
 };

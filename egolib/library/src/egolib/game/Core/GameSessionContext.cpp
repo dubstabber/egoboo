@@ -10,6 +10,7 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 
+#include <cmath>
 #include <ctime>
 #include <stdexcept>
 
@@ -21,6 +22,18 @@ void publishLegacyLocalPlayerStatusCompatibilityMirrors(const GameSessionContext
     local_stats.player_count = static_cast<int>(session.localPlayerCount());
     local_stats.noplayers = !session.hasLocalPlayers();
     local_stats.allpladead = session.allLocalPlayersDead();
+}
+
+void publishLegacyLocalPlayerPerceptionCompatibilityMirrors(const GameSessionContext& session)
+{
+    const LocalPlayerPerceptionState& perception = session.localPlayerPerception();
+    local_stats.grog_level = perception.grogLevel;
+    local_stats.daze_level = perception.dazeLevel;
+    local_stats.seeinvis_level = perception.seeInvisibleLevel;
+    local_stats.seeinvis_mag = perception.seeInvisibleMagnitude;
+    local_stats.seedark_level = perception.seeDarkLevel;
+    local_stats.seedark_mag = perception.seeDarkMagnitude;
+    local_stats.seekurse_level = perception.seeKurseLevel;
 }
 }
 
@@ -61,6 +74,53 @@ LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego
     return status;
 }
 
+LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::shared_ptr<Ego::Player>>& players)
+{
+    LocalPlayerPerceptionState perception;
+    size_t alivePlayerCount = 0;
+
+    for (const auto& player : players)
+    {
+        if (!player)
+        {
+            continue;
+        }
+
+        const std::shared_ptr<Object> object = player->getObject();
+        if (!object || object->isTerminated() || !object->isAlive())
+        {
+            continue;
+        }
+
+        perception.seeInvisibleLevel += object->getAttribute(Ego::Attribute::SEE_INVISIBLE);
+        perception.seeKurseLevel += object->getAttribute(Ego::Attribute::SENSE_KURSES);
+        perception.seeDarkLevel += object->getAttribute(Ego::Attribute::DARKVISION);
+        perception.grogLevel += object->grog_timer;
+        perception.dazeLevel += object->daze_timer;
+
+        if (object->hasPerk(Ego::Perks::SENSE_INVISIBLE))
+        {
+            perception.seeInvisibleLevel += 1.0f;
+        }
+
+        ++alivePlayerCount;
+    }
+
+    if (alivePlayerCount > 0)
+    {
+        const float alivePlayerCountFloat = static_cast<float>(alivePlayerCount);
+        perception.seeInvisibleLevel /= alivePlayerCountFloat;
+        perception.seeKurseLevel /= alivePlayerCountFloat;
+        perception.seeDarkLevel /= alivePlayerCountFloat;
+        perception.grogLevel /= alivePlayerCountFloat;
+        perception.dazeLevel /= alivePlayerCountFloat;
+    }
+
+    perception.seeInvisibleMagnitude = std::exp(0.32f * perception.seeInvisibleLevel);
+    perception.seeDarkMagnitude = std::exp(0.32f * perception.seeDarkLevel);
+    return perception;
+}
+
 GameSessionContext::GameSessionContext() :
     _activeModule(),
     _importList(std::make_unique<import_list_t>()),
@@ -70,6 +130,7 @@ GameSessionContext::GameSessionContext() :
     _enchantStatClock(0),
     _preModuleLocalPlayerCount(0),
     _localPlayerStatus(),
+    _localPlayerPerception(),
     _hasPublishedLocalPlayerStatus(false)
 {}
 
@@ -118,6 +179,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& module, uint32_t seed)
 {
     resetLocalPlayerState();
+    resetLocalPlayerPerception();
 
     _activeModule = std::make_unique<GameModule>(module, seed);
 
@@ -232,6 +294,11 @@ const LocalPlayerStatus& GameSessionContext::localPlayerStatus() const
     return _localPlayerStatus;
 }
 
+const LocalPlayerPerceptionState& GameSessionContext::localPlayerPerception() const
+{
+    return _localPlayerPerception;
+}
+
 bool GameSessionContext::hasLocalPlayers() const
 {
     return localPlayerCount() > 0;
@@ -255,12 +322,24 @@ void GameSessionContext::publishLocalPlayerStatus(const LocalPlayerStatus& statu
     publishLegacyLocalPlayerStatusCompatibilityMirrors(*this);
 }
 
+void GameSessionContext::publishLocalPlayerPerception(const LocalPlayerPerceptionState& state)
+{
+    _localPlayerPerception = state;
+    publishLegacyLocalPlayerPerceptionCompatibilityMirrors(*this);
+}
+
 void GameSessionContext::resetLocalPlayerState()
 {
     _preModuleLocalPlayerCount = 0;
     _localPlayerStatus = LocalPlayerStatus{};
     _hasPublishedLocalPlayerStatus = false;
     publishLegacyLocalPlayerStatusCompatibilityMirrors(*this);
+}
+
+void GameSessionContext::resetLocalPlayerPerception()
+{
+    _localPlayerPerception = LocalPlayerPerceptionState{};
+    publishLegacyLocalPlayerPerceptionCompatibilityMirrors(*this);
 }
 
 import_list_t& GameSessionContext::importList()

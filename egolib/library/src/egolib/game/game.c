@@ -316,14 +316,9 @@ void game_reset_players()
     /// @details This function clears the player list data
 
     // Reset the local data stuff
-    GameSessionContext::get().resetLocalPlayerState();
-
-    local_stats.seeinvis_level = 0.0f;
-    local_stats.seeinvis_level = 0.0f;
-    local_stats.seekurse_level = 0.0f;
-    local_stats.seedark_level  = 0.0f;
-    local_stats.grog_level     = 0.0f;
-    local_stats.daze_level     = 0.0f;
+    GameSessionContext& session = GameSessionContext::get();
+    session.resetLocalPlayerState();
+    session.resetLocalPlayerPerception();
 
     // Disable ESP by default
     local_stats.sense_enemies_idsz = IDSZ2::None;

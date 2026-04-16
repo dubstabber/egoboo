@@ -57,12 +57,7 @@ void MainLoop::updateLocalStats()
     GameModule& module = activeModule();
     GameSessionContext& session = GameSessionContext::get();
     const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
-
-    local_stats.seeinvis_level  = 0.0f;
-    local_stats.seekurse_level  = 0.0f;
-    local_stats.seedark_level   = 0.0f;
-    local_stats.grog_level      = 0.0f;
-    local_stats.daze_level      = 0.0f;
+    const LocalPlayerPerceptionState localPlayerPerception = collectLocalPlayerPerception(module.getPlayerList());
     AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
 
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
@@ -77,38 +72,14 @@ void MainLoop::updateLocalStats()
             continue;
         }
 
-        local_stats.seeinvis_level += pchr->getAttribute(Ego::Attribute::SEE_INVISIBLE);
-        local_stats.seekurse_level += pchr->getAttribute(Ego::Attribute::SENSE_KURSES);
-        local_stats.seedark_level  += pchr->getAttribute(Ego::Attribute::DARKVISION);
-        local_stats.grog_level     += pchr->grog_timer;
-        local_stats.daze_level     += pchr->daze_timer;
-
-        //See invisble through perk
-        if (pchr->hasPerk(Ego::Perks::SENSE_INVISIBLE)) {
-            local_stats.seeinvis_level += 1;
-        }
-
         //Do they have the listening perk? (+100% hearing distance)
         if (pchr->hasPerk(Ego::Perks::PERCEPTIVE)) {
             AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE*2);
         }
     }
 
-    if ( localPlayerStatus.aliveCount > 0 )
-    {
-        const float alivePlayerCount = static_cast<float>(localPlayerStatus.aliveCount);
-        local_stats.seeinvis_level /= alivePlayerCount;
-        local_stats.seekurse_level /= alivePlayerCount;
-        local_stats.seedark_level  /= alivePlayerCount;
-        local_stats.grog_level     /= alivePlayerCount;
-        local_stats.daze_level     /= alivePlayerCount;
-    }
-
-    // this allows for kurses, which might make negative values to do something reasonable
-    local_stats.seeinvis_mag = exp( 0.32f * local_stats.seeinvis_level );
-    local_stats.seedark_mag  = exp( 0.32f * local_stats.seedark_level );
-
     session.publishLocalPlayerStatus(localPlayerStatus);
+    session.publishLocalPlayerPerception(localPlayerPerception);
 
     // Timers
     characterStatClock()++;

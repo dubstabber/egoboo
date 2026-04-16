@@ -87,7 +87,8 @@ void MapEditorState::addModeEditButton(EditorMode mode, const std::string &label
 
 void MapEditorState::update()
 {
-    GameModule& module = GameSessionContext::get().activeModule();
+    GameSessionContext& session = GameSessionContext::get();
+    GameModule& module = session.activeModule();
 
     // Get immediate mode state for the rest of the game
     Ego::Input::InputSystem::get().update();
@@ -97,8 +98,10 @@ void MapEditorState::update()
 		                                                         module.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size());
 
     //Always reveal all invisible monsters and objects in Map Editor mode
-    local_stats.seeinvis_level = 100;
-    local_stats.seeinvis_mag = std::exp(0.32f * local_stats.seeinvis_level);
+    LocalPlayerPerceptionState localPlayerPerception = session.localPlayerPerception();
+    localPlayerPerception.seeInvisibleLevel = 100.0f;
+    localPlayerPerception.seeInvisibleMagnitude = std::exp(0.32f * localPlayerPerception.seeInvisibleLevel);
+    session.publishLocalPlayerPerception(localPlayerPerception);
 
     //Animate water
     module.getWater().update();
