@@ -4,7 +4,9 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/egoboo_setup.h"
+#include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 
@@ -15,6 +17,37 @@ GameSessionContext& GameSessionContext::get()
 {
     static GameSessionContext instance;
     return instance;
+}
+
+LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players)
+{
+    LocalPlayerStatus status;
+    status.registeredCount = players.size();
+
+    for (const auto& player : players)
+    {
+        if (!player)
+        {
+            continue;
+        }
+
+        const std::shared_ptr<Object> object = player->getObject();
+        if (!object || object->isTerminated())
+        {
+            continue;
+        }
+
+        if (object->isAlive())
+        {
+            ++status.aliveCount;
+        }
+        else
+        {
+            ++status.deadCount;
+        }
+    }
+
+    return status;
 }
 
 GameSessionContext::GameSessionContext() :

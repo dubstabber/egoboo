@@ -93,6 +93,8 @@ Out of scope for the active architecture model:
 - `37-module-player-quest-hydration-pass.md`
 - `38-module-local-player-bookkeeping-pass.md`
 - `39-session-local-player-count-access-pass.md`
+- `40-module-spawn-local-player-count-access-pass.md`
+- `41-game-loop-local-player-status-pass.md`
 
 ## Recommended reading order
 
@@ -125,6 +127,8 @@ Out of scope for the active architecture model:
 27. Read `37-module-player-quest-hydration-pass.md` for the shared quest-hydration helper extraction and the remaining local-player bookkeeping follow-on.
 28. Read `38-module-local-player-bookkeeping-pass.md` for the isolated local-player bookkeeping helper and the next recommendation around `local_stats.player_count` consumer migration.
 29. Read `39-session-local-player-count-access-pass.md` for the first read-side migration away from raw `local_stats.player_count` reads and the next follow-on recommendation.
+30. Read `40-module-spawn-local-player-count-access-pass.md` for the spawn-time local-player-count accessor cleanup and the narrowed follow-on recommendation around `game_loop.c`.
+31. Read `41-game-loop-local-player-status-pass.md` for the extracted local-player-status helper in `game_loop.c` and the next follow-on recommendation after the last gameplay-loop `local_stats.player_count` read is removed.
 
 ## Immediate recommendation
 

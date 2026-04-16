@@ -2,6 +2,7 @@
 
 #include "idlib/non_copyable.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -16,6 +17,20 @@ struct import_list_t;
 struct water_instance_t;
 struct WeatherState;
 namespace Ego { class Player; class Texture; }
+
+struct LocalPlayerStatus
+{
+    size_t registeredCount = 0;
+    size_t aliveCount = 0;
+    size_t deadCount = 0;
+
+    bool allPlayersDead() const
+    {
+        return deadCount >= registeredCount;
+    }
+};
+
+LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players);
 
 class GameSessionContext : private idlib::non_copyable
 {

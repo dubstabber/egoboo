@@ -2,7 +2,9 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#define private public
 #include "egolib/Entities/_Include.hpp"
+#undef private
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -116,6 +118,7 @@ protected:
         vfs_printf(questFile, ":[%4s] %d\n", idsz.toString().c_str(), progress);
         vfs_close(questFile);
     }
+
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ModulePlayerStartupFixture::s_runtime;
@@ -233,6 +236,96 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerCountFallsBackToLegacyCounterWitho
 
     EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(local_stats.player_count));
     EXPECT_EQ(session.localPlayerCount(), 1u);
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusTreatsEmptyRegistrationAsAllPlayersDead)
+{
+    const std::vector<std::shared_ptr<Ego::Player>> playerList;
+
+    const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
+
+    EXPECT_EQ(status.registeredCount, 0u);
+    EXPECT_EQ(status.aliveCount, 0u);
+    EXPECT_EQ(status.deadCount, 0u);
+    EXPECT_TRUE(status.allPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusCountsAliveRegisteredPlayers)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto object = makeFollower(objectHandler, 127);
+    ASSERT_NE(object, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[0], false));
+
+    const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
+
+    EXPECT_EQ(status.registeredCount, 1u);
+    EXPECT_EQ(status.aliveCount, 1u);
+    EXPECT_EQ(status.deadCount, 0u);
+    EXPECT_FALSE(status.allPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusCountsDeadRegisteredPlayers)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto object = makeFollower(objectHandler, 128);
+    ASSERT_NE(object, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[0], false));
+    object->_isAlive = false;
+
+    const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
+
+    EXPECT_EQ(status.registeredCount, 1u);
+    EXPECT_EQ(status.aliveCount, 0u);
+    EXPECT_EQ(status.deadCount, 1u);
+    EXPECT_TRUE(status.allPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusDistinguishesMixedAliveAndDeadPlayers)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto firstObject = makeFollower(objectHandler, 129);
+    auto secondObject = makeFollower(objectHandler, 130);
+    ASSERT_NE(firstObject, nullptr);
+    ASSERT_NE(secondObject, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, firstObject, Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, secondObject, Ego::Input::InputDevice::DeviceList[1], false));
+    firstObject->_isAlive = false;
+
+    const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
+
+    EXPECT_EQ(status.registeredCount, 2u);
+    EXPECT_EQ(status.aliveCount, 1u);
+    EXPECT_EQ(status.deadCount, 1u);
+    EXPECT_FALSE(status.allPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusSkipsNullAndTerminatedObjectsButKeepsRegistrationCount)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto aliveObject = makeFollower(objectHandler, 131);
+    auto terminatedObject = makeFollower(objectHandler, 132);
+    ASSERT_NE(aliveObject, nullptr);
+    ASSERT_NE(terminatedObject, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, aliveObject, Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, terminatedObject, Ego::Input::InputDevice::DeviceList[1], false));
+    terminatedObject->_terminateRequested = true;
+    playerList.push_back(std::make_shared<Ego::Player>(std::shared_ptr<Object>(), Ego::Input::InputDevice::DeviceList[2]));
+
+    const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
+
+    EXPECT_EQ(status.registeredCount, 3u);
+    EXPECT_EQ(status.aliveCount, 1u);
+    EXPECT_EQ(status.deadCount, 0u);
+    EXPECT_FALSE(status.allPlayersDead());
 }
 
 } // namespace

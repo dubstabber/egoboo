@@ -55,6 +55,8 @@ void MainLoop::move_all_objects()
 void MainLoop::updateLocalStats()
 {
     GameModule& module = activeModule();
+    const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
+
     // Check for all local players being dead
     local_stats.allpladead      = false;
     local_stats.seeinvis_level  = 0.0f;
@@ -64,8 +66,6 @@ void MainLoop::updateLocalStats()
     local_stats.daze_level      = 0.0f;
     AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
 
-    int numdead = 0;
-    int numalive = 0;
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
     {
         std::shared_ptr<Object> pchr = player->getObject();
@@ -73,39 +73,36 @@ void MainLoop::updateLocalStats()
             continue;
         }
 
-        if ( pchr->isAlive() )
+        if ( !pchr->isAlive() )
         {
-            numalive++;
-
-            local_stats.seeinvis_level += pchr->getAttribute(Ego::Attribute::SEE_INVISIBLE);
-            local_stats.seekurse_level += pchr->getAttribute(Ego::Attribute::SENSE_KURSES);
-            local_stats.seedark_level  += pchr->getAttribute(Ego::Attribute::DARKVISION);
-            local_stats.grog_level     += pchr->grog_timer;
-            local_stats.daze_level     += pchr->daze_timer;
-
-            //See invisble through perk
-            if (pchr->hasPerk(Ego::Perks::SENSE_INVISIBLE)) {
-                local_stats.seeinvis_level += 1;
-            }
-
-            //Do they have the listening perk? (+100% hearing distance)
-            if (pchr->hasPerk(Ego::Perks::PERCEPTIVE)) {
-                AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE*2);
-            }
+            continue;
         }
-        else
-        {
-            numdead++;
+
+        local_stats.seeinvis_level += pchr->getAttribute(Ego::Attribute::SEE_INVISIBLE);
+        local_stats.seekurse_level += pchr->getAttribute(Ego::Attribute::SENSE_KURSES);
+        local_stats.seedark_level  += pchr->getAttribute(Ego::Attribute::DARKVISION);
+        local_stats.grog_level     += pchr->grog_timer;
+        local_stats.daze_level     += pchr->daze_timer;
+
+        //See invisble through perk
+        if (pchr->hasPerk(Ego::Perks::SENSE_INVISIBLE)) {
+            local_stats.seeinvis_level += 1;
+        }
+
+        //Do they have the listening perk? (+100% hearing distance)
+        if (pchr->hasPerk(Ego::Perks::PERCEPTIVE)) {
+            AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE*2);
         }
     }
 
-    if ( numalive > 0 )
+    if ( localPlayerStatus.aliveCount > 0 )
     {
-        local_stats.seeinvis_level /= ( float )numalive;
-        local_stats.seekurse_level /= ( float )numalive;
-        local_stats.seedark_level  /= ( float )numalive;
-        local_stats.grog_level     /= ( float )numalive;
-        local_stats.daze_level     /= ( float )numalive;
+        const float alivePlayerCount = static_cast<float>(localPlayerStatus.aliveCount);
+        local_stats.seeinvis_level /= alivePlayerCount;
+        local_stats.seekurse_level /= alivePlayerCount;
+        local_stats.seedark_level  /= alivePlayerCount;
+        local_stats.grog_level     /= alivePlayerCount;
+        local_stats.daze_level     /= alivePlayerCount;
     }
 
     // this allows for kurses, which might make negative values to do something reasonable
@@ -113,7 +110,7 @@ void MainLoop::updateLocalStats()
     local_stats.seedark_mag  = exp( 0.32f * local_stats.seedark_level );
 
     // Did everyone die?
-    if ( numdead >= local_stats.player_count )
+    if ( localPlayerStatus.allPlayersDead() )
     {
         local_stats.allpladead = true;
     }
