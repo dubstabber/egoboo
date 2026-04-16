@@ -423,7 +423,13 @@ A (build hygiene)
   - `game_loop.c` — update-loop and UI message helpers
   - residual `game.c` keeps the remaining lifecycle, terrain, and zeitgeist helpers
   - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass
-- **D3** ❌ Split `graphic.c`
+- **D3** ✅ Split `graphic.c` (2,257 lines → focused split files, completed 2026-04-16):
+  - `graphic_internal.h` — shared engine/session accessors and timing utilities for split translation units
+  - `graphic_scene.c` — scene list assembly, dynamic light selection, and per-frame scene preparation
+  - `graphic_hud.c` — HUD rendering and overlay helpers
+  - `graphic_lighting.c` — grid illumination, tile-light cache updates, and dynamic-light accumulation
+  - residual `graphic.c` keeps renderer bootstrap/configuration, page flips, and instance-update orchestration
+  - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass with 258 tests passing and `test.mod` at 0 warnings / 0 errors
 - **D4** ✅ Split `Object.cpp` (3,201 lines → 6 files + shared header, 2026-04-16):
   - `Object_internal.h` — shared entity/profile includes and runtime accessors
   - `Object_lifecycle.cpp` — construction, teardown, respawn, termination, trivial getters

@@ -31,7 +31,7 @@ This document defines the next refactoring pass: splitting the three largest rem
 
 ## Context
 
-The global state reduction work is complete (`_currentModule` eliminated, `_gameEngine` confined to its wrapper). The project has successfully split three large files using a consistent pattern (script_functions.c, game.c, graphic.c). The three largest remaining files are all in the entity/profile layer:
+The global state reduction work is complete (`_currentModule` eliminated, `_gameEngine` confined to its wrapper). The project had already established the split pattern in `script_functions.c` and `game.c`, and later applied the same approach to the remaining `graphic.c` lighting slice. The three largest remaining files for this plan were all in the entity/profile layer:
 
 | File | Lines | Status |
 |------|------:|--------|
