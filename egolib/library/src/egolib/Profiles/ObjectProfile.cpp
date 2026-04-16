@@ -249,6 +249,17 @@ void ObjectProfile::loadTextures(const std::string &folderPath)
         if(ego_texture_exists_vfs(skinPath))
         {
             _texturesLoaded[cnt] = Ego::DeferredTexture(skinPath);
+
+            // palshad's Golden Key uses a tiny legacy skin that collapses into a
+            // flat-looking blob under the modern global mip/filter settings when
+            // viewed at slight camera angles. Keep its original crisp sampling local
+            // to this object instead of globally lowering texture quality.
+            if (0 == cnt && std::string::npos != folderPath.find("palshad.mod/objects/keya.obj"))
+            {
+                _texturesLoaded[cnt].setFiltering(idlib::texture_filter_method::nearest,
+                                                  idlib::texture_filter_method::nearest,
+                                                  idlib::texture_filter_method::none);
+            }
         }
 
         // do the icon

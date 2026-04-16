@@ -22,6 +22,10 @@ public:
 
     void setTextureSource(const std::string &filePath);
 
+    void setFiltering(idlib::texture_filter_method minFilter,
+                      idlib::texture_filter_method magFilter,
+                      idlib::texture_filter_method mipMapFilter);
+
     /**
      * @return
      *   Get the filepath this deferred texture is pointing to
@@ -33,10 +37,16 @@ public:
     }
 
 private:
+    void applyFilteringOverride(const std::shared_ptr<Texture>& texture) const;
+
     mutable std::shared_ptr<Texture> _texture;
     mutable std::shared_ptr<Texture> _textureHD;
     mutable bool _loaded;
     mutable bool _loadedHD;
+    bool _hasFilteringOverride;
+    idlib::texture_filter_method _minFilterOverride;
+    idlib::texture_filter_method _magFilterOverride;
+    idlib::texture_filter_method _mipMapFilterOverride;
     std::string _filePath;
 };
 

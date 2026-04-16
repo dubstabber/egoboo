@@ -9,6 +9,10 @@ DeferredTexture::DeferredTexture() :
     _textureHD(nullptr),
     _loaded(false),
     _loadedHD(false),
+    _hasFilteringOverride(false),
+    _minFilterOverride(idlib::texture_filter_method::none),
+    _magFilterOverride(idlib::texture_filter_method::none),
+    _mipMapFilterOverride(idlib::texture_filter_method::none),
     _filePath() {
     //default ctor invalid texture
 }
@@ -19,6 +23,10 @@ DeferredTexture::DeferredTexture(const std::string &filePath) :
     _textureHD(nullptr),
     _loaded(false),
     _loadedHD(false),
+    _hasFilteringOverride(false),
+    _minFilterOverride(idlib::texture_filter_method::none),
+    _magFilterOverride(idlib::texture_filter_method::none),
+    _mipMapFilterOverride(idlib::texture_filter_method::none),
     _filePath(filePath) {
     //Do not load texture until its needed
 }
@@ -30,6 +38,7 @@ std::shared_ptr<const Texture> DeferredTexture::get() const {
         }
 
         _texture = TextureManager::get().getTexture(_filePath);
+        applyFilteringOverride(_texture);
         _loaded = true;
     }
 
@@ -39,6 +48,7 @@ std::shared_ptr<const Texture> DeferredTexture::get() const {
         if(!_loadedHD) {
             if(ego_texture_exists_vfs(_filePath + "_HD")) {
                 _textureHD = TextureManager::get().getTexture(_filePath + "_HD");
+                applyFilteringOverride(_textureHD);
             } 
 
             _loadedHD = true;            
@@ -64,6 +74,26 @@ void DeferredTexture::setTextureSource(const std::string &filePath) {
     release();
 
     _filePath = filePath;
+}
+
+void DeferredTexture::setFiltering(idlib::texture_filter_method minFilter,
+                                   idlib::texture_filter_method magFilter,
+                                   idlib::texture_filter_method mipMapFilter) {
+    _hasFilteringOverride = true;
+    _minFilterOverride = minFilter;
+    _magFilterOverride = magFilter;
+    _mipMapFilterOverride = mipMapFilter;
+    applyFilteringOverride(_texture);
+    applyFilteringOverride(_textureHD);
+}
+
+void DeferredTexture::applyFilteringOverride(const std::shared_ptr<Texture>& texture) const {
+    if (!_hasFilteringOverride || !texture) {
+        return;
+    }
+    texture->setMinFilter(_minFilterOverride);
+    texture->setMagFilter(_magFilterOverride);
+    texture->setMipMapFilter(_mipMapFilterOverride);
 }
 
 const std::string& DeferredTexture::getFilePath() const {

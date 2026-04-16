@@ -316,6 +316,13 @@ std::shared_ptr<MD2Model> MD2Model::loadFromFile(const std::string &fileName)
                 cmdData.index = Endian_FileToHost( cmdData.index );
                 cmdData.s     = Endian_FileToHost( cmdData.s );
                 cmdData.t     = Endian_FileToHost( cmdData.t );
+
+                // Preserve the legacy Egoboo MD2 UV bias used by 2.6.x.
+                // Some small low-resolution skins, such as palshad's Golden Key,
+                // visibly sample the wrong texels without this compatibility
+                // adjustment on the packed GL command coordinates.
+                cmdData.s -= (0.5f / 64.0f);
+                cmdData.t -= (0.5f / 64.0f);
             }
 
             // attach it to the command list
