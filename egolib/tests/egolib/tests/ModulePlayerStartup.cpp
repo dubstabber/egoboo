@@ -134,9 +134,6 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRejectsNullObjectsWithoutChangingMod
     EXPECT_EQ(session.localPlayerCount(), 0u);
     EXPECT_FALSE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
-    EXPECT_EQ(local_stats.player_count, 0);
-    EXPECT_TRUE(local_stats.noplayers);
-    EXPECT_FALSE(local_stats.allpladead);
 }
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQuestLoadSilent)
@@ -164,9 +161,6 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     EXPECT_EQ(session.localPlayerCount(), 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
-    EXPECT_EQ(local_stats.player_count, 1);
-    EXPECT_FALSE(local_stats.noplayers);
-    EXPECT_FALSE(local_stats.allpladead);
     EXPECT_EQ(player->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], Ego::QuestLog::QUEST_NONE);
 }
 
@@ -191,12 +185,11 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIn
     EXPECT_EQ(playerList[1]->getObject(), secondObject);
     EXPECT_EQ(session.localPlayerCount(), 2u);
     EXPECT_TRUE(session.hasLocalPlayers());
-    EXPECT_EQ(local_stats.player_count, 2);
-    EXPECT_FALSE(local_stats.noplayers);
 }
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerCanIdentifySpawnOnSuccessfulBinding)
 {
+    auto& session = GameSessionContext::get();
     std::vector<std::shared_ptr<Ego::Player>> playerList;
     ObjectHandler objectHandler;
 
@@ -209,7 +202,8 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerCanIdentifySpawnOnSuccessfulBinding)
 
     EXPECT_TRUE(object->isPlayer());
     EXPECT_TRUE(object->nameknown);
-    EXPECT_EQ(local_stats.player_count, 1);
+    EXPECT_EQ(session.localPlayerCount(), 1u);
+    EXPECT_TRUE(session.hasLocalPlayers());
 }
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
@@ -232,7 +226,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
     EXPECT_EQ(playerList.front()->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], 4);
 }
 
-TEST_F(ModulePlayerStartupFixture, LocalPlayerCountFallsBackToLegacyCounterWithoutActiveModule)
+TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerCountMirrorTracksPreModuleFallback)
 {
     auto& session = GameSessionContext::get();
     ASSERT_FALSE(session.hasActiveModule());
@@ -251,9 +245,10 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerCountFallsBackToLegacyCounterWitho
     EXPECT_EQ(session.localPlayerCount(), 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
+    EXPECT_FALSE(local_stats.noplayers);
 }
 
-TEST_F(ModulePlayerStartupFixture, ResetLocalPlayerStateClearsSessionAndLegacyMirrors)
+TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerMirrorsResetWithSessionState)
 {
     auto& session = GameSessionContext::get();
 
@@ -272,7 +267,7 @@ TEST_F(ModulePlayerStartupFixture, ResetLocalPlayerStateClearsSessionAndLegacyMi
     EXPECT_FALSE(local_stats.allpladead);
 }
 
-TEST_F(ModulePlayerStartupFixture, PublishedLocalPlayerStatusDrivesCachedAllPlayersDeadState)
+TEST_F(ModulePlayerStartupFixture, LegacyAllPlayersDeadMirrorTracksPublishedSessionStatus)
 {
     auto& session = GameSessionContext::get();
 

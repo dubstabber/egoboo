@@ -62,6 +62,7 @@ extern uint32_t timervalue; ///< Timer time ( 50ths of a second )
 
 struct local_stats_t
 {
+    // Legacy compatibility mirrors owned and synchronized by GameSessionContext.
     bool noplayers;          ///< Are there any local players?
     int player_count;
 

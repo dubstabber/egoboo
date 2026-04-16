@@ -13,6 +13,17 @@
 #include <ctime>
 #include <stdexcept>
 
+namespace
+{
+void publishLegacyLocalPlayerStatusCompatibilityMirrors(const GameSessionContext& session)
+{
+    // Preserve the exported local_stats ABI while GameSessionContext owns the state.
+    local_stats.player_count = static_cast<int>(session.localPlayerCount());
+    local_stats.noplayers = !session.hasLocalPlayers();
+    local_stats.allpladead = session.allLocalPlayersDead();
+}
+}
+
 GameSessionContext& GameSessionContext::get()
 {
     static GameSessionContext instance;
@@ -234,14 +245,14 @@ bool GameSessionContext::allLocalPlayersDead() const
 void GameSessionContext::publishLocalPlayerCount(size_t count)
 {
     _preModuleLocalPlayerCount = count;
-    syncLegacyLocalPlayerState();
+    publishLegacyLocalPlayerStatusCompatibilityMirrors(*this);
 }
 
 void GameSessionContext::publishLocalPlayerStatus(const LocalPlayerStatus& status)
 {
     _localPlayerStatus = status;
     _hasPublishedLocalPlayerStatus = true;
-    syncLegacyLocalPlayerState();
+    publishLegacyLocalPlayerStatusCompatibilityMirrors(*this);
 }
 
 void GameSessionContext::resetLocalPlayerState()
@@ -249,7 +260,7 @@ void GameSessionContext::resetLocalPlayerState()
     _preModuleLocalPlayerCount = 0;
     _localPlayerStatus = LocalPlayerStatus{};
     _hasPublishedLocalPlayerStatus = false;
-    syncLegacyLocalPlayerState();
+    publishLegacyLocalPlayerStatusCompatibilityMirrors(*this);
 }
 
 import_list_t& GameSessionContext::importList()
@@ -287,11 +298,4 @@ void GameSessionContext::resetClocks()
     worldUpdateCount() = 0;
     characterStatClock() = 0;
     enchantStatClock() = 0;
-}
-
-void GameSessionContext::syncLegacyLocalPlayerState()
-{
-    local_stats.player_count = static_cast<int>(localPlayerCount());
-    local_stats.noplayers = !hasLocalPlayers();
-    local_stats.allpladead = allLocalPlayersDead();
 }

@@ -92,6 +92,4 @@ private:
     size_t _preModuleLocalPlayerCount;
     LocalPlayerStatus _localPlayerStatus;
     bool _hasPublishedLocalPlayerStatus;
-
-    void syncLegacyLocalPlayerState();
 };

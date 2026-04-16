@@ -95,6 +95,8 @@ Out of scope for the active architecture model:
 - `39-session-local-player-count-access-pass.md`
 - `40-module-spawn-local-player-count-access-pass.md`
 - `41-game-loop-local-player-status-pass.md`
+- `42-session-local-player-status-ownership-pass.md`
+- `43-local-player-status-compatibility-quarantine-pass.md`
 
 ## Recommended reading order
 
@@ -130,6 +132,7 @@ Out of scope for the active architecture model:
 30. Read `40-module-spawn-local-player-count-access-pass.md` for the spawn-time local-player-count accessor cleanup and the narrowed follow-on recommendation around `game_loop.c`.
 31. Read `41-game-loop-local-player-status-pass.md` for the extracted local-player-status helper in `game_loop.c` and the next follow-on recommendation after the last gameplay-loop `local_stats.player_count` read is removed.
 32. Read `42-session-local-player-status-ownership-pass.md` for the session-owned local-player status surface, the preserved legacy mirrors, and the next compatibility-cleanup recommendation.
+33. Read `43-local-player-status-compatibility-quarantine-pass.md` for the final quarantine of the local-player status mirrors and the next recommendation around broader legacy-global cleanup.
 
 ## Immediate recommendation
 
