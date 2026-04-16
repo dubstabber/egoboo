@@ -24,12 +24,9 @@ inline std::shared_ptr<Ego::Player> registerPlayerBinding(std::vector<std::share
     return player;
 }
 
-inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
-                                       const std::shared_ptr<Ego::Player>& player,
-                                       bool identifySpawnOnSuccess)
+inline void applySuccessfulLocalPlayerBookkeeping(const std::shared_ptr<Object>& object,
+                                                  bool identifySpawnOnSuccess)
 {
-    Ego::loadPlayerQuestLog(player->getQuestLog(), object->getProfile()->getPathname());
-
     local_stats.noplayers = false;
     object->islocalplayer = true;
     local_stats.player_count++;
@@ -38,6 +35,14 @@ inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
     {
         object->nameknown = true;
     }
+}
+
+inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
+                                       const std::shared_ptr<Ego::Player>& player,
+                                       bool identifySpawnOnSuccess)
+{
+    Ego::loadPlayerQuestLog(player->getQuestLog(), object->getProfile()->getPathname());
+    applySuccessfulLocalPlayerBookkeeping(object, identifySpawnOnSuccess);
 }
 
 inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,

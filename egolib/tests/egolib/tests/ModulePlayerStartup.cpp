@@ -146,13 +146,52 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     EXPECT_EQ(player->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], Ego::QuestLog::QUEST_NONE);
 }
 
+TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIndices)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+
+    auto firstObject = makeFollower(objectHandler, 122);
+    auto secondObject = makeFollower(objectHandler, 123);
+    ASSERT_NE(firstObject, nullptr);
+    ASSERT_NE(secondObject, nullptr);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, firstObject, Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, secondObject, Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_EQ(playerList.size(), 2u);
+
+    EXPECT_EQ(firstObject->is_which_player, 0);
+    EXPECT_EQ(secondObject->is_which_player, 1);
+    EXPECT_EQ(playerList[0]->getObject(), firstObject);
+    EXPECT_EQ(playerList[1]->getObject(), secondObject);
+    EXPECT_EQ(local_stats.player_count, 2);
+    EXPECT_FALSE(local_stats.noplayers);
+}
+
+TEST_F(ModulePlayerStartupFixture, AddPlayerCanIdentifySpawnOnSuccessfulBinding)
+{
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+
+    auto object = makeFollower(objectHandler, 124);
+    ASSERT_NE(object, nullptr);
+    object->nameknown = false;
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[1], true));
+    ASSERT_EQ(playerList.size(), 1u);
+
+    EXPECT_TRUE(object->isPlayer());
+    EXPECT_TRUE(object->nameknown);
+    EXPECT_EQ(local_stats.player_count, 1);
+}
+
 TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
 {
     std::vector<std::shared_ptr<Ego::Player>> playerList;
     ObjectHandler objectHandler;
     const std::string profilePath = std::string(kQuestTestRoot) + "/module-player-startup-present.obj";
 
-    const ObjectProfileRef profile = makeIsolatedFollowerProfile(profilePath, 122);
+    const ObjectProfileRef profile = makeIsolatedFollowerProfile(profilePath, 125);
     ASSERT_NE(profile, ObjectProfileRef::Invalid);
 
     writeQuestFile(profilePath, IDSZ2('T', 'E', 'S', 'T'), 4);
