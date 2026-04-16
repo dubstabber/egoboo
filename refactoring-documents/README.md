@@ -90,6 +90,9 @@ Out of scope for the active architecture model:
 - `34-module-player-binding-policy-pass.md`
 - `35-module-startup-equipment-hook-pass.md`
 - `36-module-player-startup-boundary-pass.md`
+- `37-module-player-quest-hydration-pass.md`
+- `38-module-local-player-bookkeeping-pass.md`
+- `39-session-local-player-count-access-pass.md`
 
 ## Recommended reading order
 
@@ -119,6 +122,9 @@ Out of scope for the active architecture model:
 24. Read `34-module-player-binding-policy-pass.md` for the narrowed spawn player-binding policy seam and the next recommendation around startup-equipment side effects.
 25. Read `35-module-startup-equipment-hook-pass.md` for the isolated startup-equipment identification hook and the remaining player-startup side-effect follow-on.
 26. Read `36-module-player-startup-boundary-pass.md` for the extracted module-side player-startup helper boundary and the remaining quest-log hydration follow-on.
+27. Read `37-module-player-quest-hydration-pass.md` for the shared quest-hydration helper extraction and the remaining local-player bookkeeping follow-on.
+28. Read `38-module-local-player-bookkeeping-pass.md` for the isolated local-player bookkeeping helper and the next recommendation around `local_stats.player_count` consumer migration.
+29. Read `39-session-local-player-count-access-pass.md` for the first read-side migration away from raw `local_stats.player_count` reads and the next follow-on recommendation.
 
 ## Immediate recommendation
 

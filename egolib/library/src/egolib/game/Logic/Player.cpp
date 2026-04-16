@@ -95,7 +95,7 @@ void Player::updateLatches()
     }
 
     // fast camera turn if it is enabled and there is only 1 local player
-    bool fast_camera_turn = ( 1 == local_stats.player_count ) && ( CameraTurnMode::Good == pcam->getTurnMode() );
+    bool fast_camera_turn = (1 == gameSession().localPlayerCount()) && (CameraTurnMode::Good == pcam->getTurnMode());
 
     // Clear the player's latch buffers
     Vector2f movementInput = idlib::zero<Vector2f>();

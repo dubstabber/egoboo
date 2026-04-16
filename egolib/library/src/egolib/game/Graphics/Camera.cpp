@@ -512,7 +512,7 @@ void Camera::readInput(const Ego::Input::InputDevice &device)
 
     auto& inputSystem = Ego::Input::InputSystem::get();
     // Autoturn camera only works in single player and when it is enabled.
-    bool autoturn_camera = (CameraTurnMode::Good == _turnMode) && (1 == local_stats.player_count);
+    bool autoturn_camera = (CameraTurnMode::Good == _turnMode) && (1 == GameSessionContext::get().localPlayerCount());
 
     switch(device.getDeviceType())
     {

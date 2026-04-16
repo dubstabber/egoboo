@@ -48,6 +48,7 @@ public:
     fog_instance_t& fog();
     AnimatedTilesState& animatedTilesState();
     const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
+    size_t localPlayerCount() const;
 
     import_list_t& importList();
     const import_list_t& importList() const;

@@ -5,6 +5,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Module/Module_player_startup.hpp"
@@ -59,6 +60,11 @@ protected:
 
     void SetUp() override
     {
+        auto& session = GameSessionContext::get();
+        if (session.hasActiveModule())
+        {
+            session.quitModule();
+        }
         game_reset_players();
         vfs_removeDirectoryAndContents(kQuestTestRoot);
         ProfileSystem::get().reset();
@@ -67,6 +73,11 @@ protected:
 
     void TearDown() override
     {
+        auto& session = GameSessionContext::get();
+        if (session.hasActiveModule())
+        {
+            session.quitModule();
+        }
         game_reset_players();
         vfs_removeDirectoryAndContents(kQuestTestRoot);
         setup_clear_module_vfs_paths();
@@ -203,6 +214,25 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
     ASSERT_EQ(playerList.size(), 1u);
     ASSERT_NE(playerList.front(), nullptr);
     EXPECT_EQ(playerList.front()->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], 4);
+}
+
+TEST_F(ModulePlayerStartupFixture, LocalPlayerCountFallsBackToLegacyCounterWithoutActiveModule)
+{
+    auto& session = GameSessionContext::get();
+    ASSERT_FALSE(session.hasActiveModule());
+
+    std::vector<std::shared_ptr<Ego::Player>> playerList;
+    ObjectHandler objectHandler;
+    auto object = makeFollower(objectHandler, 126);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_EQ(session.localPlayerCount(), 0u);
+
+    ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_EQ(playerList.size(), 1u);
+
+    EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(local_stats.player_count));
+    EXPECT_EQ(session.localPlayerCount(), 1u);
 }
 
 } // namespace

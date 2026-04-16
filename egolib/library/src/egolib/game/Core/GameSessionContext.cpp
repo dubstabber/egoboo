@@ -167,6 +167,17 @@ const std::vector<std::shared_ptr<Ego::Player>>& GameSessionContext::playerList(
     return activeModule().getPlayerList();
 }
 
+size_t GameSessionContext::localPlayerCount() const
+{
+    const GameModule* module = tryActiveModule();
+    if (!module)
+    {
+        return static_cast<size_t>(local_stats.player_count);
+    }
+
+    return module->getPlayerList().size();
+}
+
 import_list_t& GameSessionContext::importList()
 {
     return *_importList;
