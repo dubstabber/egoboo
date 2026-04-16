@@ -499,6 +499,59 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
     EXPECT_FALSE(result->isPlayer());
 }
 
+TEST_F(ModuleSpawnRealizationFixture, SequentialZeroImportSpawnsUseIncrementingLocalDeviceSlots)
+{
+    auto state = makeState();
+    state.importAmount = 0;
+    state.playerAmount = 4;
+
+    size_t playerCount = 0;
+    size_t localPlayerCount = 0;
+    std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        return object;
+    };
+    ops.currentPlayerCount = [&]() { return playerCount; };
+    ops.currentLocalPlayerCount = [&]() { return localPlayerCount; };
+    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
+    {
+        ++playerCount;
+        ++localPlayerCount;
+        bindingRequests.push_back(request);
+        object->islocalplayer = true;
+        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
+        if (request.identifySpawnOnSuccess)
+        {
+            object->nameknown = true;
+        }
+        return true;
+    };
+
+    auto firstEntry = makeEntry(84, ATTACH_NONE);
+    firstEntry.stat = true;
+    auto secondEntry = makeEntry(85, ATTACH_NONE);
+    secondEntry.stat = true;
+
+    auto firstResult = module_spawn_realization::realizeSpawnEntry(firstEntry, nullptr, state, ops);
+    auto secondResult = module_spawn_realization::realizeSpawnEntry(secondEntry, nullptr, state, ops);
+
+    ASSERT_NE(firstResult, nullptr);
+    ASSERT_NE(secondResult, nullptr);
+    ASSERT_EQ(bindingRequests.size(), 2u);
+    EXPECT_EQ(bindingRequests[0].deviceIndex, 0u);
+    EXPECT_EQ(bindingRequests[1].deviceIndex, 1u);
+    EXPECT_TRUE(bindingRequests[0].identifySpawnOnSuccess);
+    EXPECT_TRUE(bindingRequests[1].identifySpawnOnSuccess);
+    EXPECT_TRUE(firstResult->isPlayer());
+    EXPECT_TRUE(secondResult->isPlayer());
+}
+
 TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumberFromImportSlot)
 {
     auto state = makeState();

@@ -414,7 +414,7 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     };
     ops.currentLocalPlayerCount = []()
     {
-        return static_cast<size_t>(local_stats.player_count);
+        return GameSessionContext::get().localPlayerCount();
     };
     ops.addPlayer = [this](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
     {
