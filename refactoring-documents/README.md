@@ -82,6 +82,7 @@ Out of scope for the active architecture model:
 - `26-audio-session-leaf-cleanup-pass.md`
 - `27-environment-state-ownership-pass.md`
 - `28-module-translation-unit-split-pass.md`
+- `29-module-boundary-coverage-pass.md`
 
 ## Recommended reading order
 
@@ -103,6 +104,7 @@ Out of scope for the active architecture model:
 16. Read `26-audio-session-leaf-cleanup-pass.md` for the small deferred audio/session leaf cleanup that followed the session-state pass.
 17. Read `27-environment-state-ownership-pass.md` for the completed weather/fog/animated-tile ownership cleanup and the next recommendation after that module-runtime seam.
 18. Read `28-module-translation-unit-split-pass.md` for the completed `GameModule` file split and the next recommendation after the module-runtime decomposition.
+19. Read `29-module-boundary-coverage-pass.md` for the added smoke coverage around the split module bootstrap/loading seams and the next recommended extraction target.
 
 ## Immediate recommendation
 

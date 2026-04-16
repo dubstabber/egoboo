@@ -12,10 +12,11 @@
 ///   6. Local object profile loading (lightweight)
 ///   7. Spawn-referenced object resolution
 ///
-/// A full GameModule construction test is not feasible here because it
-/// depends on AudioSystem, OpenGL textures, and the input system.  That
-/// coupling is a known architectural issue tracked in Phase C of the
-/// refactoring plan (document 19).
+/// Full interactive GameModule coverage is still not feasible here because it
+/// depends on AudioSystem, OpenGL textures, camera state, and the input
+/// system. These tests stay at the non-interactive bootstrap/load boundary.
+/// That deeper coupling is still a known architectural issue tracked in
+/// Phase C of the refactoring plan (document 19).
 
 #include "gtest/gtest.h"
 
@@ -34,7 +35,9 @@
 #include "egolib/egoboo_setup.h"
 #include "egolib/vfs.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -242,6 +245,137 @@ TEST_F(ModuleLoadSmokeFixture, SpawnReferencedObjectsResolveAgainstMpObjects)
     // references should resolve.  Allow zero failures.
     EXPECT_EQ(resolvable, nonImportEntries)
         << "some spawn-referenced objects could not be found under mp_objects";
+}
+
+TEST_F(ModuleLoadSmokeFixture, SpawnEntriesReserveImportSlotsBeforeConcreteProfiles)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    SpawnFileReaderImpl reader;
+    auto entries = reader.read("mp_data/spawn.txt");
+
+    const int importSlotLimit = static_cast<int>(mod->getImportAmount()) * MAX_IMPORT_PER_PLAYER;
+    size_t importEntries = 0;
+    size_t concreteEntries = 0;
+    int maxImportSlot = -1;
+    int minConcreteSlot = std::numeric_limits<int>::max();
+
+    for (const auto& entry : entries)
+    {
+        if (entry.slot >= 0 && entry.slot < importSlotLimit)
+        {
+            ++importEntries;
+            maxImportSlot = std::max(maxImportSlot, entry.slot);
+            continue;
+        }
+
+        if (entry.slot > importSlotLimit)
+        {
+            ++concreteEntries;
+            minConcreteSlot = std::min(minConcreteSlot, entry.slot);
+        }
+    }
+
+    auto firstConcrete = std::find_if(entries.begin(), entries.end(),
+        [importSlotLimit](const auto& entry)
+        {
+            return entry.slot > importSlotLimit;
+        });
+
+    ASSERT_NE(firstConcrete, entries.end());
+    EXPECT_EQ(importEntries, static_cast<size_t>(importSlotLimit));
+    EXPECT_EQ(maxImportSlot, importSlotLimit - 1);
+    EXPECT_GT(concreteEntries, 0u);
+    EXPECT_EQ(minConcreteSlot, importSlotLimit + 1);
+    EXPECT_EQ(firstConcrete->slot, importSlotLimit + 1);
+    EXPECT_EQ(firstConcrete->spawn_comment, "Follower");
+}
+
+TEST_F(ModuleLoadSmokeFixture, SpawnResolutionProducesExpectedUniqueConcreteObjects)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    SpawnFileReaderImpl reader;
+    auto entries = reader.read("mp_data/spawn.txt");
+    Ego::TreasureTables treasureTables("mp_data/randomtreasure.txt");
+
+    const int importSlotLimit = static_cast<int>(mod->getImportAmount()) * MAX_IMPORT_PER_PLAYER;
+    std::unordered_set<std::string> resolvedObjects;
+
+    for (auto& entry : entries)
+    {
+        if (entry.slot >= 0 && entry.slot <= importSlotLimit)
+        {
+            continue;
+        }
+
+        convert_spawn_file_load_name(entry, treasureTables);
+        if (!entry.spawn_comment.empty())
+        {
+            resolvedObjects.insert(entry.spawn_comment);
+        }
+    }
+
+    const std::unordered_set<std::string> expectedObjects = {
+        "bullwolf.obj",
+        "bumper.obj",
+        "choco.obj",
+        "follower.obj",
+        "hellrover.obj",
+        "hotdog.obj",
+        "mouse.obj",
+        "strider.obj",
+        "tinker_plane.obj",
+    };
+
+    EXPECT_EQ(resolvedObjects, expectedObjects);
+}
+
+TEST_F(ModuleLoadSmokeFixture, EnvironmentUploadsMatchParsedWawaliteState)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    wawalite_data_t expected;
+    ASSERT_NE(wawalite_data_read("mp_data/wawalite.txt", &expected), nullptr);
+    ASSERT_TRUE(wawalite_finalize(&expected));
+
+    water_instance_t water;
+    WeatherState weather;
+    fog_instance_t fog;
+    AnimatedTilesState animatedTiles;
+
+    water.upload(expected.water);
+    weather.upload(expected.weather);
+    fog.upload(expected.fog);
+    animatedTiles.upload(expected.animtile);
+
+    EXPECT_EQ(water._layer_count, expected.water.layer_count);
+    EXPECT_FLOAT_EQ(water._surface_level, expected.water.surface_level);
+    EXPECT_FLOAT_EQ(water._douse_level, expected.water.douse_level);
+    EXPECT_EQ(water._layers[0]._frame_add, expected.water.layer[0].frame_add);
+    EXPECT_EQ(water._layers[1]._frame_add, expected.water.layer[1].frame_add);
+
+    EXPECT_EQ(weather.timer_reset, expected.weather.timer_reset);
+    EXPECT_EQ(weather.time, expected.weather.timer_reset);
+    EXPECT_EQ(weather.over_water, expected.weather.over_water);
+    EXPECT_EQ(weather.part_gpip, expected.weather.part_gpip);
+
+    EXPECT_FLOAT_EQ(fog._top, expected.fog.top);
+    EXPECT_FLOAT_EQ(fog._bottom, expected.fog.bottom);
+    EXPECT_EQ(fog._red, expected.fog.red);
+    EXPECT_EQ(fog._grn, expected.fog.grn);
+    EXPECT_EQ(fog._blu, expected.fog.blu);
+
+    EXPECT_EQ(animatedTiles.elements[0].update_and, static_cast<int>(expected.animtile.update_and));
+    EXPECT_EQ(animatedTiles.elements[0].frame_and, expected.animtile.frame_and);
+    EXPECT_EQ(animatedTiles.elements[1].frame_and,
+              static_cast<uint16_t>((expected.animtile.frame_and << 1) | 1));
 }
 
 TEST_F(ModuleLoadSmokeFixture, EndToEndLoadSequenceSucceeds)
