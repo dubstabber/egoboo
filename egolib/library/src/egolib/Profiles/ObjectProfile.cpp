@@ -512,7 +512,11 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
     _shadowSize = vfs_get_next_int(ctxt);
     _bumpSize = vfs_get_next_int(ctxt);
     _bumpHeight = vfs_get_next_int(ctxt);
-    _bumpDampen = std::max(idlib::fraction<float, 1, 255>(), vfs_get_next_float(ctxt));    //0 == bumpdampenmeans infinite mass, and causes some problems
+    {
+        const float rawBumpDampen = vfs_get_next_float(ctxt);
+        // Preserve legacy "0.0 means infinite mass" content semantics used by immovable scenery.
+        _bumpDampen = rawBumpDampen < 0.0f ? idlib::fraction<float, 1, 255>() : rawBumpDampen;
+    }
     _weight = vfs_get_next_int(ctxt);
     _jumpPower = vfs_get_next_float(ctxt);
     _jumpNumber = vfs_get_next_int(ctxt);

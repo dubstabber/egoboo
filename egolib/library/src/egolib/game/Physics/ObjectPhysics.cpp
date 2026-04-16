@@ -659,17 +659,21 @@ const Vector2f& ObjectPhysics::getDesiredVelocity() const
 
 float ObjectPhysics::getMass() const
 {
-    if ( Ego::Physics::CHR_INFINITE_WEIGHT == _object.phys.weight )
-    {
-        return -static_cast<float>(Ego::Physics::CHR_INFINITE_WEIGHT);
-    }
-    else if ( 0.0f == _object.phys.bumpdampen )
+    if ( 0.0f == _object.phys.bumpdampen )
     {
         return -static_cast<float>(Ego::Physics::CHR_INFINITE_WEIGHT);
     }
     else
     {
-        return _object.phys.weight / _object.phys.bumpdampen;
+        // Legacy content uses weight 255 as a maximum carry weight, not as an
+        // infinitely immovable collision mass. Preserve true immovability via
+        // bump dampening instead, and otherwise fall back to the profile-space
+        // weight when runtime storage has promoted 255 to CHR_INFINITE_WEIGHT.
+        const float collisionWeight =
+            (Ego::Physics::CHR_INFINITE_WEIGHT == _object.phys.weight)
+                ? static_cast<float>(_object.getProfile()->getWeight())
+                : static_cast<float>(_object.phys.weight);
+        return collisionWeight / _object.phys.bumpdampen;
     }    
 }
 
