@@ -2,6 +2,33 @@
 
 This document defines the next refactoring pass: splitting the three largest remaining files in the entity/profile layer into focused translation units.
 
+## Implementation Status
+
+- Phase 1 (`Object.cpp`) is complete in the current workspace.
+- Phase 2 (`ObjectProfile.cpp`) completed on 2026-04-16 with:
+  - `ObjectProfile_internal.h` (35 lines)
+  - `ObjectProfile_core.cpp` (440 lines)
+  - `ObjectProfile_load.cpp` (704 lines)
+  - `ObjectProfile_export.cpp` (375 lines)
+- Verification after the Phase 2 split:
+  - `cmake --build build -j4`
+  - `ctest --test-dir build --output-on-failure -j4`
+  - `HOME=/tmp/egoboo-home XDG_DATA_HOME=/tmp/egoboo-xdg ./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`
+- Observed deviation from the draft plan:
+  - `vfs_get_next_object_profile_ref(...)` stayed as a file-local helper in `ObjectProfile_load.cpp` instead of moving into the export unit because its only caller is the `data.txt` parser.
+- Phase 3 (`Particle.cpp`) completed on 2026-04-16 with:
+  - `Particle_internal.h` (54 lines)
+  - `Particle_core.cpp` (404 lines)
+  - `Particle_update.cpp` (320 lines)
+  - `Particle_combat.cpp` (181 lines)
+  - `Particle_spawn.cpp` (595 lines)
+- Verification after the Phase 3 split:
+  - `cmake --build build -j4`
+  - `ctest --test-dir build --output-on-failure -j4`
+  - `HOME=/tmp/egoboo-home XDG_DATA_HOME=/tmp/egoboo-xdg ./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`
+- Observed deviation from the draft plan:
+  - `prt_environment_t` constructor/reset and `Particle::Particle()` moved into `Particle_core.cpp` instead of the internal header so the split keeps those non-inline definitions in a single translation unit.
+
 ## Context
 
 The global state reduction work is complete (`_currentModule` eliminated, `_gameEngine` confined to its wrapper). The project has successfully split three large files using a consistent pattern (script_functions.c, game.c, graphic.c). The three largest remaining files are all in the entity/profile layer:

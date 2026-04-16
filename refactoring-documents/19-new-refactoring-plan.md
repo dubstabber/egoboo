@@ -424,8 +424,30 @@ A (build hygiene)
   - residual `game.c` keeps the remaining lifecycle, terrain, and zeitgeist helpers
   - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass
 - **D3** ❌ Split `graphic.c`
-- **D4** ❌ Split `Object.cpp`
-- **D5** ❌ Split `ObjectProfile.cpp`
+- **D4** ✅ Split `Object.cpp` (3,201 lines → 6 files + shared header, 2026-04-16):
+  - `Object_internal.h` — shared entity/profile includes and runtime accessors
+  - `Object_lifecycle.cpp` — construction, teardown, respawn, termination, trivial getters
+  - `Object_combat.cpp` — damage, healing, death, resistance, experience, invictus handling
+  - `Object_update.cpp` — per-frame update and resize handling
+  - `Object_interaction.cpp` — holder, inventory, drop, money, and input-latch behavior
+  - `Object_attributes.cpp` — attributes, perks, enchantments, stealth, team, polymorph
+  - `Object_appearance.cpp` — skin, visibility, collision/physics wrappers, identity queries
+  - residual `Object.cpp` now holds only the static definitions shared by the split translation units
+- **D5** ✅ Split `ObjectProfile.cpp` (1,483 lines → 3 files + shared header, 2026-04-16):
+  - `ObjectProfile_internal.h` — shared includes and `INVALID_SKIN`
+  - `ObjectProfile_core.cpp` — constructor/destructor, accessors, random-name/message helpers, XP/perk utilities
+  - `ObjectProfile_load.cpp` — texture/message loading, `data.txt` parsing, and profile load orchestration
+  - `ObjectProfile_export.cpp` — character/profile serialization to legacy `data.txt`
+  - deviation from the draft plan: `vfs_get_next_object_profile_ref(...)` stayed local to `ObjectProfile_load.cpp` because it is only used by parsing
+  - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass with 258 tests passing and `test.mod` at 0 warnings / 0 errors
+- Additional entity split completed outside the original D1-D5 list, 2026-04-16:
+  - `Particle.cpp` (1,447 lines → 4 files + shared header)
+  - `Particle_internal.h` — shared entity includes and session/module accessors
+  - `Particle_spawn.cpp` — reset, initialize, attach, and vertex-placement logic
+  - `Particle_update.cpp` — per-frame update, water interaction, animation, dynamic lighting, continuous spawning
+  - `Particle_combat.cpp` — attached damage and destroy/end-spawn behavior
+  - `Particle_core.cpp` — environment struct, queries, collision wrappers, sound, ownership helpers
+  - verification: `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, and validator `test.mod` all pass with 258 tests passing and `test.mod` at 0 warnings / 0 errors
 
 ### Phase G: Content Validation — ✅ BASELINE COMPLETE
 

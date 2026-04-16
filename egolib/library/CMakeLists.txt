@@ -78,9 +78,13 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/Object_lifecycle.cpp
     src/egolib/Entities/Object_update.cpp
     src/egolib/Entities/Object.hpp
-    src/egolib/Entities/Particle.cpp
+    src/egolib/Entities/Particle_combat.cpp
+    src/egolib/Entities/Particle_core.cpp
     src/egolib/Entities/ParticleHandler.cpp
     src/egolib/Entities/ParticleHandler.hpp
+    src/egolib/Entities/Particle_internal.h
+    src/egolib/Entities/Particle_spawn.cpp
+    src/egolib/Entities/Particle_update.cpp
     src/egolib/Entities/Particle.hpp
 )
 
@@ -309,8 +313,11 @@ set(EGOLIB_PROFILES_SOURCES
     src/egolib/Profiles/LocalParticleProfileRef.hpp
     src/egolib/Profiles/ModuleProfile.cpp
     src/egolib/Profiles/ModuleProfile.hpp
-    src/egolib/Profiles/ObjectProfile.cpp
+    src/egolib/Profiles/ObjectProfile_core.cpp
+    src/egolib/Profiles/ObjectProfile_export.cpp
     src/egolib/Profiles/ObjectProfile.hpp
+    src/egolib/Profiles/ObjectProfile_internal.h
+    src/egolib/Profiles/ObjectProfile_load.cpp
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfile.hpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
