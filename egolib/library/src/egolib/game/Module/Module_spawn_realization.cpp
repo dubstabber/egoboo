@@ -25,12 +25,24 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Log/_Include.hpp"
 
-#include <stdexcept>
-
 namespace module_spawn_realization
 {
 namespace
 {
+
+enum class PlayerBindingPolicy
+{
+    None,
+    LocalDeviceSlot,
+    ImportedLocalPlayer,
+};
+
+struct PlayerBindingDecision
+{
+    PlayerBindingPolicy policy = PlayerBindingPolicy::None;
+    size_t deviceIndex = 0;
+    bool identifySpawnOnSuccess = false;
+};
 
 size_t currentPlayerCount(const SpawnRealizationOps& ops)
 {
@@ -52,14 +64,13 @@ bool isObjectTerminated(const std::shared_ptr<Object>& object, const SpawnRealiz
     return object ? object->isTerminated() : true;
 }
 
-int findImportMatchIndex(const std::shared_ptr<Object>& object, const SpawnRealizationState& state)
+int findImportMatchIndex(const ObjectProfileRef profileID, const SpawnRealizationState& state)
 {
-    if (!object || !state.importList || !state.importData || !state.isProfileLoaded)
+    if (!state.importList || !state.importData || !state.isProfileLoaded)
     {
         return -1;
     }
 
-    const ObjectProfileRef profileID = object->getProfileID();
     if (profileID.get() > state.importData->max_slot || !state.isProfileLoaded(profileID))
     {
         return -1;
@@ -77,40 +88,71 @@ int findImportMatchIndex(const std::shared_ptr<Object>& object, const SpawnReali
     return -1;
 }
 
-void bindSpawnedPlayer(const spawn_file_info_t& spawnInfo,
-                       const std::shared_ptr<Object>& object,
-                       const SpawnRealizationState& state,
-                       const SpawnRealizationOps& ops)
+PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
+                                          const ObjectProfileRef profileID,
+                                          const SpawnRealizationState& state,
+                                          const SpawnRealizationOps& ops)
 {
     if (!spawnInfo.stat || !ops.addPlayer)
     {
-        return;
+        return {};
     }
 
     const size_t playerCount = currentPlayerCount(ops);
     if (0 == state.importAmount && playerCount < state.playerAmount)
     {
-        const bool playerAdded = ops.addPlayer(object, currentLocalPlayerCount(ops));
-        if (0 == state.importAmount && playerAdded)
-        {
-            object->nameknown = true;
-        }
-        return;
+        return { PlayerBindingPolicy::LocalDeviceSlot, currentLocalPlayerCount(ops), true };
     }
 
     if (playerCount >= state.importAmount || playerCount >= state.playerAmount || !state.importList || playerCount >= state.importList->count)
     {
+        return {};
+    }
+
+    const int localIndex = findImportMatchIndex(profileID, state);
+    if (-1 != localIndex)
+    {
+        return {
+            PlayerBindingPolicy::ImportedLocalPlayer,
+            static_cast<size_t>(state.importList->lst[localIndex].local_player_num),
+            false
+        };
+    }
+
+    // The old remote-input branch was already a no-op here. Keep it that way
+    // until player-binding responsibilities are redesigned more broadly.
+    return {};
+}
+
+void bindSpawnedPlayer(const spawn_file_info_t& spawnInfo,
+                       const std::shared_ptr<Object>& object,
+                       const SpawnRealizationState& state,
+                       const SpawnRealizationOps& ops)
+{
+    if (!object)
+    {
         return;
     }
 
-    const int localIndex = findImportMatchIndex(object, state);
-    if (-1 != localIndex)
+    const PlayerBindingDecision decision = decidePlayerBinding(spawnInfo, object->getProfileID(), state, ops);
+    switch (decision.policy)
     {
-        ops.addPlayer(object, state.importList->lst[localIndex].local_player_num);
-    }
-    else
-    {
-        std::logic_error("Remote input control no longer supported");
+        case PlayerBindingPolicy::None:
+        break;
+
+        case PlayerBindingPolicy::LocalDeviceSlot:
+        {
+            const bool playerAdded = ops.addPlayer(object, decision.deviceIndex);
+            if (decision.identifySpawnOnSuccess && playerAdded)
+            {
+                object->nameknown = true;
+            }
+        }
+        break;
+
+        case PlayerBindingPolicy::ImportedLocalPlayer:
+            ops.addPlayer(object, decision.deviceIndex);
+        break;
     }
 }
 

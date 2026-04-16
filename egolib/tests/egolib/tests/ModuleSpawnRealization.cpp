@@ -305,6 +305,38 @@ TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEqui
     EXPECT_FALSE(result->iskursed);
 }
 
+TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
+{
+    auto state = makeState();
+    state.importAmount = 0;
+    state.playerAmount = 4;
+
+    size_t addPlayerCalls = 0;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        return object;
+    };
+    ops.currentPlayerCount = []() { return 0u; };
+    ops.currentLocalPlayerCount = []() { return 1u; };
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    {
+        ++addPlayerCalls;
+        return true;
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(82, ATTACH_NONE), nullptr, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(addPlayerCalls, 0u);
+    EXPECT_FALSE(result->nameknown);
+    EXPECT_FALSE(result->isPlayer());
+}
+
 TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayerAndIdentifiesSpawn)
 {
     auto state = makeState();
@@ -344,6 +376,40 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     EXPECT_EQ(deviceIndexes.front(), 2u);
     EXPECT_TRUE(result->nameknown);
     EXPECT_TRUE(result->isPlayer());
+}
+
+TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWhenAddPlayerFails)
+{
+    auto state = makeState();
+    state.importAmount = 0;
+    state.playerAmount = 4;
+
+    size_t addPlayerCalls = 0;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        return object;
+    };
+    ops.currentPlayerCount = []() { return 0u; };
+    ops.currentLocalPlayerCount = []() { return 2u; };
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    {
+        ++addPlayerCalls;
+        return false;
+    };
+
+    auto entry = makeEntry(83, ATTACH_NONE);
+    entry.stat = true;
+    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(addPlayerCalls, 1u);
+    EXPECT_FALSE(result->nameknown);
+    EXPECT_FALSE(result->isPlayer());
 }
 
 TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumberFromImportSlot)
@@ -419,6 +485,44 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithNoImportMatchSkipsPlayerBindi
     };
 
     auto entry = makeEntry(6, ATTACH_NONE);
+    entry.stat = true;
+    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(addPlayerCalls, 0u);
+    EXPECT_FALSE(result->isPlayer());
+}
+
+TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportProfileOutsideLoadedRangeSkipsPlayerBinding)
+{
+    auto state = makeState();
+    state.importAmount = 2;
+    state.playerAmount = 4;
+
+    _importList.count = 1;
+    _importList.lst[0].slot = 123;
+    _importList.lst[0].local_player_num = 2;
+    _importData.max_slot = 4;
+
+    size_t addPlayerCalls = 0;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->islocalplayer = false;
+        return object;
+    };
+    ops.currentPlayerCount = []() { return 0u; };
+    ops.currentLocalPlayerCount = []() { return 0u; };
+    ops.addPlayer = [&](const std::shared_ptr<Object>&, size_t)
+    {
+        ++addPlayerCalls;
+        return true;
+    };
+
+    auto entry = makeEntry(7, ATTACH_NONE);
     entry.stat = true;
     auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
 
