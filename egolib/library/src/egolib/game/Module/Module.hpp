@@ -24,7 +24,10 @@
 
 #include "egolib/game/egoboo.h"
 #include "egolib/game/mesh.h"
+#include "egolib/game/Module/AnimatedTiles.hpp"
+#include "egolib/game/Module/Fog.hpp"
 #include "egolib/game/Module/Water.hpp"
+#include "egolib/game/Module/Weather.hpp"
 #include "egolib/game/Module/module_spawn.h"
 #include "egolib/game/Module/damagetile_instance.h"
 
@@ -182,7 +185,10 @@ public:
      std::shared_ptr<const Ego::Texture> getTileTexture(const size_t index);
      std::shared_ptr<const Ego::Texture> getWaterTexture(const uint8_t layer);
 
-    water_instance_t& getWater();
+     water_instance_t& getWater();
+     WeatherState& getWeatherState() { return _weatherState; }
+     fog_instance_t& getFog() { return _fog; }
+     AnimatedTilesState& getAnimatedTilesState() { return _animatedTilesState; }
 
     std::shared_ptr<Ego::Player>& getPlayer(size_t index);
 
@@ -312,6 +318,9 @@ private:
     // special terrain and wawalite-related data structs
     water_instance_t _water;
     damagetile_instance_t _damageTile;
+    WeatherState _weatherState;
+    fog_instance_t _fog;
+    AnimatedTilesState _animatedTilesState;
 
 	/// @brief The mesh of the module.
 	std::shared_ptr<ego_mesh_t> _mesh;

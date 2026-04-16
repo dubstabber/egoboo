@@ -22,14 +22,6 @@
 
 #include "egolib/game/game_internal.h"
 
-//--------------------------------------------------------------------------------------------
-// Globals
-WeatherState g_weatherState;
-fog_instance_t fog;
-AnimatedTilesState g_animatedTilesState;
-
-//--------------------------------------------------------------------------------------------
-
 void Upload::upload_light_data(const wawalite_data_t& data)
 {
     // Upload the lighting data.
@@ -93,7 +85,7 @@ void Upload::upload_camera_data( const wawalite_camera_t& data )
 }
 
 //--------------------------------------------------------------------------------------------
-void upload_wawalite()
+void upload_wawalite(fog_instance_t& fog, WeatherState& weatherState, AnimatedTilesState& animatedTilesState)
 {
     /// @author ZZ
     /// @details This function sets up water and lighting for the module
@@ -102,8 +94,8 @@ void upload_wawalite()
     Upload::upload_light_data( wawalite_data);                         // this statement depends on data from upload_graphics_data()
     Upload::upload_camera_data( wawalite_data.camera );
     fog.upload( wawalite_data.fog );
-    g_weatherState.upload( wawalite_data.weather );
-    g_animatedTilesState.upload(wawalite_data.animtile);
+    weatherState.upload( wawalite_data.weather );
+    animatedTilesState.upload(wawalite_data.animtile);
 }
 
 

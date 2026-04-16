@@ -1059,6 +1059,7 @@ uint8_t scr_SetFogLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    fog_instance_t& fog = GameSessionContext::get().fog();
     fTmp = ( Ego::Script::Interpreter::safeCast<float>(state.argument) / 10.0f ) - fog._top;
     fog._top += fTmp;
     fog._distance += fTmp;
@@ -1079,7 +1080,7 @@ uint8_t scr_GetFogLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = fog._top * 10;
+    state.argument = GameSessionContext::get().fog()._top * 10;
 
     SCRIPT_FUNCTION_END();
 }
@@ -1096,6 +1097,7 @@ uint8_t scr_SetFogTAD( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    fog_instance_t& fog = GameSessionContext::get().fog();
 	fog._red = Ego::Math::constrain(state.turn, 0, 0xFF);
 	fog._grn = Ego::Math::constrain(state.argument, 0, 0xFF);
 	fog._blu = Ego::Math::constrain(state.distance, 0, 0xFF);
@@ -1117,6 +1119,7 @@ uint8_t scr_SetFogBottomLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    fog_instance_t& fog = GameSessionContext::get().fog();
 	fTmp = (state.argument / 10.0f) - fog._bottom;
     fog._bottom += fTmp;
     fog._distance -= fTmp;
@@ -1138,7 +1141,7 @@ uint8_t scr_GetFogBottomLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = fog._bottom * 10;
+    state.argument = GameSessionContext::get().fog()._bottom * 10;
 
     SCRIPT_FUNCTION_END();
 }
@@ -2125,4 +2128,3 @@ uint8_t scr_GiveSkillToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_END();
 }
-

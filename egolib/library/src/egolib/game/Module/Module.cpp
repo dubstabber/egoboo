@@ -100,6 +100,9 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
 
     _water(),
     _damageTile(),
+    _weatherState(),
+    _fog(),
+    _animatedTilesState(),
 
     _passages(),
     _mesh(std::make_shared<ego_mesh_t>()),
@@ -168,7 +171,7 @@ void GameModule::loadModuleEnvironment()
     else {
         Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
     }
-    upload_wawalite();
+    upload_wawalite(_fog, _weatherState, _animatedTilesState);
 }
 
 void GameModule::loadModuleContent()
@@ -1262,11 +1265,11 @@ void GameModule::updateModuleServices()
 
     AudioSystem::get().update();
     GFX::get().getBillboardSystem().update();
-    g_animatedTilesState.update();
+    _animatedTilesState.update();
     getWater().update();
     updateDamageTiles();
     updatePits();
-    g_weatherState.update();
+    _weatherState.update();
     checkPassageMusic();
 }
 

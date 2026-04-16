@@ -10,8 +10,11 @@ class ObjectHandler;
 class GameModule;
 class ModuleProfile;
 class ego_mesh_t;
+struct AnimatedTilesState;
+struct fog_instance_t;
 struct import_list_t;
 struct water_instance_t;
+struct WeatherState;
 namespace Ego { class Player; class Texture; }
 
 class GameSessionContext : private idlib::non_copyable
@@ -35,11 +38,15 @@ public:
     void quitModule();
     bool finishModule();
 
+    ObjectHandler* tryObjectHandler();
     ObjectHandler& objectHandler();
     std::shared_ptr<ego_mesh_t> mesh();
     std::shared_ptr<const Ego::Texture> tileTexture(size_t index);
     std::shared_ptr<const Ego::Texture> waterTexture(uint8_t layer);
     water_instance_t& water();
+    WeatherState& weatherState();
+    fog_instance_t& fog();
+    AnimatedTilesState& animatedTilesState();
     const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
 
     import_list_t& importList();

@@ -23,7 +23,6 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 #include <cstdlib>
@@ -90,12 +89,7 @@ bool is_audio_disabled_by_environment()
 
 ObjectHandler* tryObjectHandler()
 {
-    GameModule* module = GameSessionContext::get().tryActiveModule();
-    if (!module)
-    {
-        return nullptr;
-    }
-    return &module->getObjectHandler();
+    return GameSessionContext::get().tryObjectHandler();
 }
 
 Object* tryOwnerObject(ObjectRef ownerRef)

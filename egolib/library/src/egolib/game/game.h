@@ -149,11 +149,6 @@ struct import_list_t
 
 //--------------------------------------------------------------------------------------------
 
-// special terrain and wawalite-related data structs (TODO: move into Module class)
-extern WeatherState g_weatherState;
-extern fog_instance_t fog;
-extern AnimatedTilesState g_animatedTilesState;
-
 struct EndText {
 private:
     std::string _text;
@@ -258,7 +253,7 @@ bool CheckTime(Time time);
 struct wawalite_data_t * read_wawalite_vfs();
 bool write_wawalite_vfs( const wawalite_data_t * pdata );
 bool wawalite_finalize( wawalite_data_t * pdata );
-void upload_wawalite();
+void upload_wawalite(fog_instance_t& fog, WeatherState& weatherState, AnimatedTilesState& animatedTilesState);
 
 // Mesh query.
 float get_chr_level(ego_mesh_t *mesh, Object *object);

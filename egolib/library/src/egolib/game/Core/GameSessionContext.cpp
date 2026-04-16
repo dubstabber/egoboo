@@ -107,9 +107,24 @@ bool GameSessionContext::finishModule()
     return true;
 }
 
+ObjectHandler* GameSessionContext::tryObjectHandler()
+{
+    GameModule* module = tryActiveModule();
+    if (!module)
+    {
+        return nullptr;
+    }
+    return &module->getObjectHandler();
+}
+
 ObjectHandler& GameSessionContext::objectHandler()
 {
-    return activeModule().getObjectHandler();
+    ObjectHandler* handler = tryObjectHandler();
+    if (!handler)
+    {
+        throw std::logic_error("no active game module");
+    }
+    return *handler;
 }
 
 std::shared_ptr<ego_mesh_t> GameSessionContext::mesh()
@@ -130,6 +145,21 @@ std::shared_ptr<const Ego::Texture> GameSessionContext::waterTexture(uint8_t lay
 water_instance_t& GameSessionContext::water()
 {
     return activeModule().getWater();
+}
+
+WeatherState& GameSessionContext::weatherState()
+{
+    return activeModule().getWeatherState();
+}
+
+fog_instance_t& GameSessionContext::fog()
+{
+    return activeModule().getFog();
+}
+
+AnimatedTilesState& GameSessionContext::animatedTilesState()
+{
+    return activeModule().getAnimatedTilesState();
 }
 
 const std::vector<std::shared_ptr<Ego::Player>>& GameSessionContext::playerList() const

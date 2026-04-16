@@ -307,8 +307,9 @@ uint8_t scr_SetWeatherTime( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // Set the weather timer
-    g_weatherState.timer_reset = state.argument;
-    g_weatherState.time = state.argument;
+    WeatherState& weatherState = GameSessionContext::get().weatherState();
+    weatherState.timer_reset = state.argument;
+    weatherState.time = state.argument;
 
     SCRIPT_FUNCTION_END();
 }
@@ -1548,4 +1549,3 @@ uint8_t scr_IfStealthed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_END();
 }
-

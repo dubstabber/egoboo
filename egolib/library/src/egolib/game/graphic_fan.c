@@ -25,6 +25,7 @@
 
 #include "egolib/game/graphic.h"
 #include "egolib/game/game.h"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/Module.hpp"
@@ -32,8 +33,9 @@
 
 void animate_all_tiles( ego_mesh_t& mesh )
 {
-    bool small_tile_update = (g_animatedTilesState.elements[0].frame_add_old != g_animatedTilesState.elements[0].frame_add);
-    bool big_tile_update = (g_animatedTilesState.elements[1].frame_add_old != g_animatedTilesState.elements[1].frame_add);
+    AnimatedTilesState& animatedTilesState = GameSessionContext::get().animatedTilesState();
+    bool small_tile_update = (animatedTilesState.elements[0].frame_add_old != animatedTilesState.elements[0].frame_add);
+    bool big_tile_update = (animatedTilesState.elements[1].frame_add_old != animatedTilesState.elements[1].frame_add);
     // If there are no updates, do nothing.
     if (!small_tile_update && !big_tile_update) return;
     size_t numberOfTiles = mesh._tmem.getInfo().getTileCount();
@@ -52,6 +54,8 @@ bool animate_tile( ego_mesh_t& mesh, const Index1D& index )
     /// @author BB
     /// @details animate a given tile
 
+    AnimatedTilesState& animatedTilesState = GameSessionContext::get().animatedTilesState();
+
 	// do nothing if the tile is not animated
     if ( 0 == mesh.test_fx( index, MAPFX_ANIM ) )
     {
@@ -69,14 +73,14 @@ bool animate_tile( ego_mesh_t& mesh, const Index1D& index )
     if ( type >= tile_dict.offset )
     {
         // Big tiles
-        base_and  = g_animatedTilesState.elements[1].base_and;     // Animation set
-        frame_add = g_animatedTilesState.elements[1].frame_add;    // Animated image
+        base_and  = animatedTilesState.elements[1].base_and;     // Animation set
+        frame_add = animatedTilesState.elements[1].frame_add;    // Animated image
     }
     else
     {
         // Small tiles
-        base_and  = g_animatedTilesState.elements[0].base_and;          // Animation set
-        frame_add = g_animatedTilesState.elements[0].frame_add;         // Animated image
+        base_and  = animatedTilesState.elements[0].base_and;          // Animation set
+        frame_add = animatedTilesState.elements[0].frame_add;         // Animated image
     }
 
     uint16_t basetile = image & base_and;

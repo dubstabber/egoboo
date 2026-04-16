@@ -79,6 +79,8 @@ Out of scope for the active architecture model:
 - `23-session-state-ownership-pass.md`
 - `24-spawn-reconciliation-remediation-pass.md`
 - `25-entity-layer-decomposition-plan.md`
+- `26-audio-session-leaf-cleanup-pass.md`
+- `27-environment-state-ownership-pass.md`
 
 ## Recommended reading order
 
@@ -96,7 +98,9 @@ Out of scope for the active architecture model:
 12. Read `18-modularization-analysis.md` to understand current module boundaries, coupling, and a target decomposition.
 13. Read `19-new-refactoring-plan.md` for the prioritized, actionable refactoring roadmap.
 14. Read `22-module-runtime-ownership-plan.md`, `23-session-state-ownership-pass.md`, and `24-spawn-reconciliation-remediation-pass.md` for the latest completed runtime-ownership work and the current spawn-reconciliation remediation state.
-15. Read `25-entity-layer-decomposition-plan.md` for the next file-splitting pass targeting Object.cpp, ObjectProfile.cpp, and Particle.cpp.
+15. Read `25-entity-layer-decomposition-plan.md` for the completed entity/profile decomposition pass covering Object.cpp, ObjectProfile.cpp, and Particle.cpp.
+16. Read `26-audio-session-leaf-cleanup-pass.md` for the small deferred audio/session leaf cleanup that followed the session-state pass.
+17. Read `27-environment-state-ownership-pass.md` for the completed weather/fog/animated-tile ownership cleanup and the next recommendation after that module-runtime seam.
 
 ## Immediate recommendation
 
