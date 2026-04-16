@@ -305,6 +305,88 @@ TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEqui
     EXPECT_FALSE(result->iskursed);
 }
 
+TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnForLocalPlayerParentIdentifiesStartupEquipment)
+{
+    auto parent = makeObject("follower.obj", 84);
+    ASSERT_NE(parent, nullptr);
+    parent->islocalplayer = true;
+
+    auto state = makeState();
+    state.importValid = false;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        object->iskursed = true;
+        return object;
+    };
+    ops.attachToGrip = [&](const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t)
+    {
+        return true;
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(85, ATTACH_LEFT), parent, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_TRUE(result->nameknown);
+    EXPECT_FALSE(result->iskursed);
+}
+
+TEST_F(ModuleSpawnRealizationFixture, ImportBackedPlayerParentSkipsStartupEquipmentIdentification)
+{
+    auto parent = makeObject("follower.obj", 86);
+    ASSERT_NE(parent, nullptr);
+    parent->islocalplayer = true;
+
+    auto state = makeState();
+    state.importValid = true;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        object->iskursed = true;
+        return object;
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(87, ATTACH_NONE), parent, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_FALSE(result->nameknown);
+    EXPECT_TRUE(result->iskursed);
+}
+
+TEST_F(ModuleSpawnRealizationFixture, NonPlayerParentSkipsStartupEquipmentIdentification)
+{
+    auto parent = makeObject("follower.obj", 88);
+    ASSERT_NE(parent, nullptr);
+    parent->islocalplayer = false;
+
+    auto state = makeState();
+    state.importValid = false;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        object->nameknown = false;
+        object->iskursed = true;
+        return object;
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(89, ATTACH_NONE), parent, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_FALSE(result->nameknown);
+    EXPECT_TRUE(result->iskursed);
+}
+
 TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
 {
     auto state = makeState();

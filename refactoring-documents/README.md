@@ -88,6 +88,7 @@ Out of scope for the active architecture model:
 - `32-project-health-and-solid-assessment.md`
 - `33-maintainability-improvement-plan.md`
 - `34-module-player-binding-policy-pass.md`
+- `35-module-startup-equipment-hook-pass.md`
 
 ## Recommended reading order
 
@@ -115,6 +116,7 @@ Out of scope for the active architecture model:
 22. Read `32-project-health-and-solid-assessment.md` for the comprehensive design-quality assessment covering SOLID principles, design patterns, code cleanliness, and C++ modernization state.
 23. Read `33-maintainability-improvement-plan.md` for the tiered improvement plan that maps design-quality findings into actionable work items with dependency ordering.
 24. Read `34-module-player-binding-policy-pass.md` for the narrowed spawn player-binding policy seam and the next recommendation around startup-equipment side effects.
+25. Read `35-module-startup-equipment-hook-pass.md` for the isolated startup-equipment identification hook and the remaining player-startup side-effect follow-on.
 
 ## Immediate recommendation
 

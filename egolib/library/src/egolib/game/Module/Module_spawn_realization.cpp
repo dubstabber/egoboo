@@ -88,6 +88,19 @@ int findImportMatchIndex(const ObjectProfileRef profileID, const SpawnRealizatio
     return -1;
 }
 
+void applyStartupEquipmentHook(const std::shared_ptr<Object>& object,
+                               const std::shared_ptr<Object>& parent,
+                               const SpawnRealizationState& state)
+{
+    if (!object || state.importValid || !parent || !parent->isPlayer())
+    {
+        return;
+    }
+
+    object->nameknown = true;
+    object->iskursed = false;
+}
+
 PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
                                           const ObjectProfileRef profileID,
                                           const SpawnRealizationState& state,
@@ -232,12 +245,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
         object->experience = object->getProfile()->getXPNeededForLevel(spawnInfo.level);
     }
 
-    if (!state.importValid && nullptr != parent && parent->isPlayer())
-    {
-        object->nameknown = true;
-        object->iskursed = false;
-    }
-
+    applyStartupEquipmentHook(object, parent, state);
     bindSpawnedPlayer(spawnInfo, object, state, ops);
     return object;
 }
