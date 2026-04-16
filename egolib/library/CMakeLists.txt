@@ -655,6 +655,11 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Fog.cpp
     src/egolib/game/Module/Fog.hpp
     src/egolib/game/Module/Module.cpp
+    src/egolib/game/Module/Module_bootstrap.cpp
+    src/egolib/game/Module/Module_internal.h
+    src/egolib/game/Module/Module_loading.cpp
+    src/egolib/game/Module/Module_spawn.cpp
+    src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
     src/egolib/game/Module/module_spawn.c
     src/egolib/game/Module/module_spawn.h
