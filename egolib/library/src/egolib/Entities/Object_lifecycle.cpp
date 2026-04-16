@@ -352,8 +352,3 @@ void Object::resetBoredTimer()
 {
     bore_timer = Random::next<uint16_t>(250, 800);
 }
-
-const std::shared_ptr<const Ego::Texture> Object::getSkinTexture() const
-{
-    return getProfile()->getSkin(this->skin).get_ptr();
-}
