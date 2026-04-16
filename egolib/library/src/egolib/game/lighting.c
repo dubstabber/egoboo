@@ -508,23 +508,11 @@ bool sum_dyna_lighting( const dynalight_data_t * pdyna, LightingVector& lighting
     float level = 255.0f * dyna_lighting_intensity( pdyna, nrm );
     if ( 0.0f == level ) return true;
 
-    // allow negative lighting, or blind spots will not work properly
-	float rad_sqr = idlib::squared_euclidean_norm(nrm);
-
-    // make a local copy of the normal so we do not normalize the data in the calling function
-	Ego::Vector3f local_nrm = nrm;
-
-    // do the normalization
-    if ( 1.0f != rad_sqr && 0.0f != rad_sqr )
-    {
-        float rad = std::sqrt( rad_sqr );
-        local_nrm.x() /= rad;
-        local_nrm.y() /= rad;
-        local_nrm.z() /= rad;
-    }
-
-    // sum the lighting
-    lighting_vector_sum(lighting, local_nrm, level, 0.0f);
+    // In 2.6.x particle dynalights were applied as scalar brightness over nearby
+    // tiles instead of as purely directional light. Restoring that ambient
+    // contribution keeps handheld torches usable in zero-ambient modules such as
+    // palshad.mod while still reusing the modern falloff evaluation above.
+    lighting_vector_sum(lighting, idlib::zero<Ego::Vector3f>(), 0.0f, level);
 
     return true;
 }
