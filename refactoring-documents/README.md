@@ -83,6 +83,7 @@ Out of scope for the active architecture model:
 - `27-environment-state-ownership-pass.md`
 - `28-module-translation-unit-split-pass.md`
 - `29-module-boundary-coverage-pass.md`
+- `30-module-spawn-planning-pass.md`
 
 ## Recommended reading order
 
@@ -105,6 +106,7 @@ Out of scope for the active architecture model:
 17. Read `27-environment-state-ownership-pass.md` for the completed weather/fog/animated-tile ownership cleanup and the next recommendation after that module-runtime seam.
 18. Read `28-module-translation-unit-split-pass.md` for the completed `GameModule` file split and the next recommendation after the module-runtime decomposition.
 19. Read `29-module-boundary-coverage-pass.md` for the added smoke coverage around the split module bootstrap/loading seams and the next recommended extraction target.
+20. Read `30-module-spawn-planning-pass.md` for the extracted `spawn.txt` planning seam and the next follow-on recommendation around live spawn realization.
 
 ## Immediate recommendation
 

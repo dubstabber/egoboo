@@ -21,6 +21,7 @@
 /// @brief GameModule spawn, player-join, and spawn-file realization helpers.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Module/Module_spawn_plan.hpp"
 
 ObjectRef GameModule::getShopOwner(const float x, const float y)
 {
@@ -336,129 +337,44 @@ bool GameModule::addPlayer(const std::shared_ptr<Object>& object, const Ego::Inp
 
 void GameModule::spawnAllObjects()
 {
-    std::unordered_map<int, std::string> reservedSlots;
-    std::unordered_set<std::string> dynamicObjectList;
-    std::vector<spawn_file_info_t> objectsToSpawn;
-
     //First load treasure tables
     Ego::TreasureTables treasureTables("mp_data/randomtreasure.txt");
-
-    // Turn some back on
-    auto entries = (SpawnFileReader()).read("mp_data/spawn.txt");
-    {
-        std::shared_ptr<Object> parent = nullptr;
-
-        for (auto& entry : entries)
+    auto spawnPlan = module_spawn_plan::buildSpawnPlan(
+        SpawnFileReader().read("mp_data/spawn.txt"),
+        treasureTables,
+        [](ObjectProfileRef profileSlot)
         {
-            //Spit out a warning if they break the limit
-            if (objectsToSpawn.size() >= OBJECTS_MAX)
-            {
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many objects in file ", "`",
-                                                 "mp_data/spawn,txt", "`", ". Maximum number of objects is ", OBJECTS_MAX,
-                                                 Log::EndOfEntry);
-                break;
-            }
+            return ProfileSystem::get().isLoaded(profileSlot);
+        });
 
-            // check to see if the slot is valid
-            if (entry.slot >= INVALID_PRO_REF)
+    std::shared_ptr<Object> parent = nullptr;
+    for (auto& spawnInfo : spawnPlan.entries)
+    {
+        // If nothing is already in that slot, try to load it.
+        if (!ProfileSystem::get().isLoaded(spawnInfo.slot))
+        {
+            bool import_object = spawnInfo.slot > (getImportAmount() * MAX_IMPORT_PER_PLAYER);
+
+            if (!activate_spawn_file_load_object(spawnInfo))
             {
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid slot ", entry.slot,
-                                                 " for ", "`", entry.spawn_comment, "`", " in file ", "`", "mp_data/spawn,txt", "`",
-                                                 Log::EndOfEntry);
+                // no, give a warning if it is useful
+                if (import_object)
+                {
+                    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                     "the object ", "`", spawnInfo.spawn_comment, "`", " in slot ",
+                                                     spawnInfo.slot, " in file ", "`", "mp_data/spawn,txt", "`",
+                                                     "does not exist on this machine", Log::EndOfEntry);
+                }
                 continue;
             }
-
-            //convert the spawn name into a format we like
-            convert_spawn_file_load_name(entry, treasureTables);
-
-            // If it is a dynamic slot, remember to dynamically allocate it for later
-            if (entry.slot <= -1)
-            {
-                dynamicObjectList.insert(entry.spawn_comment);
-            }
-
-            //its a static slot number, mark it as reserved if it isnt already
-            else if (reservedSlots[entry.slot].empty())
-            {
-                reservedSlots[entry.slot] = entry.spawn_comment;
-            }
-
-            //Finished with this object for now
-            objectsToSpawn.push_back(entry);
         }
 
-        //Next we dynamically find slot numbers for each of the objects in the dynamic list
-        for (const std::string &spawnName : dynamicObjectList)
-        {
-            ObjectProfileRef profileSlot;
+        // we only reach this if everything was loaded properly
+        std::shared_ptr<Object> spawnedObject = spawnObjectFromFileEntry(spawnInfo, parent);
 
-            //Find first free slot that is not the spellbook slot
-            for (profileSlot = ObjectProfileRef(1 + MAX_IMPORT_PER_PLAYER * MAX_PLAYER); profileSlot < ObjectProfileRef::Invalid; ++profileSlot)
-            {
-                //don't try to grab loaded profiles
-                if (ProfileSystem::get().isLoaded(profileSlot)) continue;
-
-                //the slot already dynamically loaded by a different spawn object of the same type that we are, no need to reload in a new slot
-                if (reservedSlots[profileSlot.get()] == spawnName) {
-                    break;
-                }
-
-                //found a completely free slot
-                if (reservedSlots[profileSlot.get()].empty())
-                {
-                    //Reserve this one for us
-                    reservedSlots[profileSlot.get()] = spawnName;
-                    break;
-                }
-            }
-
-            //If all slots are reserved, spit out a warning (very unlikely unless there is a bug somewhere)
-            if (profileSlot == ObjectProfileRef::Invalid) {
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to acquire free dynamic slot for object ", spawnName, ". All slots in use?", Log::EndOfEntry);
-            }
-        }
-
-        //Now spawn each object in order
-        for (spawn_file_info_t &spawnInfo : objectsToSpawn)
-        {
-            //Dynamic slot number? Then figure out what slot number is assigned to us
-            if (spawnInfo.slot <= -1) {
-                for (const auto &element : reservedSlots)
-                {
-                    if (element.second == spawnInfo.spawn_comment)
-                    {
-                        spawnInfo.slot = element.first;
-                        break;
-                    }
-                }
-            }
-
-            // If nothing is already in that slot, try to load it.
-            if (!ProfileSystem::get().isLoaded(spawnInfo.slot))
-            {
-                bool import_object = spawnInfo.slot > (getImportAmount() * MAX_IMPORT_PER_PLAYER);
-
-                if (!activate_spawn_file_load_object(spawnInfo))
-                {
-                    // no, give a warning if it is useful
-                    if (import_object)
-                    {
-                        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
-                                                         "the object ", "`", spawnInfo.spawn_comment, "`", " in slot ",
-                                                         spawnInfo.slot, " in file ", "`", "mp_data/spawn,txt", "`",
-                                                         "does not exist on this machine", Log::EndOfEntry);
-                    }
-                    continue;
-                }
-            }
-
-            // we only reach this if everything was loaded properly
-            std::shared_ptr<Object> spawnedObject = spawnObjectFromFileEntry(spawnInfo, parent);
-
-            //We might become the new parent
-            if (spawnedObject != nullptr && spawnInfo.attach == ATTACH_NONE) {
-                parent = spawnedObject;
-            }
+        //We might become the new parent
+        if (spawnedObject != nullptr && spawnInfo.attach == ATTACH_NONE) {
+            parent = spawnedObject;
         }
     }
 
