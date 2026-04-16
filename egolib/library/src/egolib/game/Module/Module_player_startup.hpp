@@ -2,6 +2,7 @@
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/PlayerQuestLog.hpp"
 #include "egolib/game/game.h"
@@ -25,11 +26,11 @@ inline std::shared_ptr<Ego::Player> registerPlayerBinding(std::vector<std::share
 }
 
 inline void applySuccessfulLocalPlayerBookkeeping(const std::shared_ptr<Object>& object,
+                                                  size_t registeredPlayerCount,
                                                   bool identifySpawnOnSuccess)
 {
-    local_stats.noplayers = false;
     object->islocalplayer = true;
-    local_stats.player_count++;
+    GameSessionContext::get().publishLocalPlayerCount(registeredPlayerCount);
 
     if (identifySpawnOnSuccess)
     {
@@ -39,10 +40,11 @@ inline void applySuccessfulLocalPlayerBookkeeping(const std::shared_ptr<Object>&
 
 inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
                                        const std::shared_ptr<Ego::Player>& player,
+                                       size_t registeredPlayerCount,
                                        bool identifySpawnOnSuccess)
 {
     Ego::loadPlayerQuestLog(player->getQuestLog(), object->getProfile()->getPathname());
-    applySuccessfulLocalPlayerBookkeeping(object, identifySpawnOnSuccess);
+    applySuccessfulLocalPlayerBookkeeping(object, registeredPlayerCount, identifySpawnOnSuccess);
 }
 
 inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
@@ -56,7 +58,7 @@ inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
     }
 
     const std::shared_ptr<Ego::Player> player = registerPlayerBinding(playerList, object, device);
-    finalizeLocalPlayerStartup(object, player, identifySpawnOnSuccess);
+    finalizeLocalPlayerStartup(object, player, playerList.size(), identifySpawnOnSuccess);
     return true;
 }
 

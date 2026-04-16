@@ -125,17 +125,23 @@ std::unique_ptr<ContentRuntimeBootstrap> ModulePlayerStartupFixture::s_runtime;
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerRejectsNullObjectsWithoutChangingModuleState)
 {
+    auto& session = GameSessionContext::get();
     std::vector<std::shared_ptr<Ego::Player>> playerList;
     const std::shared_ptr<Object> object;
 
     EXPECT_FALSE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[0], false));
     EXPECT_TRUE(playerList.empty());
+    EXPECT_EQ(session.localPlayerCount(), 0u);
+    EXPECT_FALSE(session.hasLocalPlayers());
+    EXPECT_FALSE(session.allLocalPlayersDead());
     EXPECT_EQ(local_stats.player_count, 0);
     EXPECT_TRUE(local_stats.noplayers);
+    EXPECT_FALSE(local_stats.allpladead);
 }
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQuestLoadSilent)
 {
+    auto& session = GameSessionContext::get();
     std::vector<std::shared_ptr<Ego::Player>> playerList;
     ObjectHandler objectHandler;
 
@@ -155,13 +161,18 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     EXPECT_EQ(object->is_which_player, 0);
     EXPECT_TRUE(object->isPlayer());
     EXPECT_FALSE(object->nameknown);
+    EXPECT_EQ(session.localPlayerCount(), 1u);
+    EXPECT_TRUE(session.hasLocalPlayers());
+    EXPECT_FALSE(session.allLocalPlayersDead());
     EXPECT_EQ(local_stats.player_count, 1);
     EXPECT_FALSE(local_stats.noplayers);
+    EXPECT_FALSE(local_stats.allpladead);
     EXPECT_EQ(player->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], Ego::QuestLog::QUEST_NONE);
 }
 
 TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIndices)
 {
+    auto& session = GameSessionContext::get();
     std::vector<std::shared_ptr<Ego::Player>> playerList;
     ObjectHandler objectHandler;
 
@@ -178,6 +189,8 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIn
     EXPECT_EQ(secondObject->is_which_player, 1);
     EXPECT_EQ(playerList[0]->getObject(), firstObject);
     EXPECT_EQ(playerList[1]->getObject(), secondObject);
+    EXPECT_EQ(session.localPlayerCount(), 2u);
+    EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_EQ(local_stats.player_count, 2);
     EXPECT_FALSE(local_stats.noplayers);
 }
@@ -236,6 +249,47 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerCountFallsBackToLegacyCounterWitho
 
     EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(local_stats.player_count));
     EXPECT_EQ(session.localPlayerCount(), 1u);
+    EXPECT_TRUE(session.hasLocalPlayers());
+    EXPECT_FALSE(session.allLocalPlayersDead());
+}
+
+TEST_F(ModulePlayerStartupFixture, ResetLocalPlayerStateClearsSessionAndLegacyMirrors)
+{
+    auto& session = GameSessionContext::get();
+
+    session.publishLocalPlayerCount(2);
+    session.publishLocalPlayerStatus(LocalPlayerStatus{2, 0, 2});
+    ASSERT_EQ(session.localPlayerCount(), 2u);
+    ASSERT_TRUE(session.allLocalPlayersDead());
+
+    game_reset_players();
+
+    EXPECT_EQ(session.localPlayerCount(), 0u);
+    EXPECT_FALSE(session.hasLocalPlayers());
+    EXPECT_FALSE(session.allLocalPlayersDead());
+    EXPECT_EQ(local_stats.player_count, 0);
+    EXPECT_TRUE(local_stats.noplayers);
+    EXPECT_FALSE(local_stats.allpladead);
+}
+
+TEST_F(ModulePlayerStartupFixture, PublishedLocalPlayerStatusDrivesCachedAllPlayersDeadState)
+{
+    auto& session = GameSessionContext::get();
+
+    session.publishLocalPlayerCount(2);
+    session.publishLocalPlayerStatus(LocalPlayerStatus{2, 1, 1});
+
+    EXPECT_EQ(session.localPlayerStatus().registeredCount, 2u);
+    EXPECT_EQ(session.localPlayerStatus().aliveCount, 1u);
+    EXPECT_EQ(session.localPlayerStatus().deadCount, 1u);
+    EXPECT_TRUE(session.hasLocalPlayers());
+    EXPECT_FALSE(session.allLocalPlayersDead());
+    EXPECT_FALSE(local_stats.allpladead);
+
+    session.publishLocalPlayerStatus(LocalPlayerStatus{2, 0, 2});
+
+    EXPECT_TRUE(session.allLocalPlayersDead());
+    EXPECT_TRUE(local_stats.allpladead);
 }
 
 TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusTreatsEmptyRegistrationAsAllPlayersDead)

@@ -55,10 +55,9 @@ void MainLoop::move_all_objects()
 void MainLoop::updateLocalStats()
 {
     GameModule& module = activeModule();
+    GameSessionContext& session = GameSessionContext::get();
     const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
 
-    // Check for all local players being dead
-    local_stats.allpladead      = false;
     local_stats.seeinvis_level  = 0.0f;
     local_stats.seekurse_level  = 0.0f;
     local_stats.seedark_level   = 0.0f;
@@ -109,11 +108,7 @@ void MainLoop::updateLocalStats()
     local_stats.seeinvis_mag = exp( 0.32f * local_stats.seeinvis_level );
     local_stats.seedark_mag  = exp( 0.32f * local_stats.seedark_level );
 
-    // Did everyone die?
-    if ( localPlayerStatus.allPlayersDead() )
-    {
-        local_stats.allpladead = true;
-    }
+    session.publishLocalPlayerStatus(localPlayerStatus);
 
     // Timers
     characterStatClock()++;
@@ -129,6 +124,7 @@ void MainLoop::updateLocalStats()
 void MainLoop::readPlayerInput()
 {
     GameModule& module = activeModule();
+    GameSessionContext& session = GameSessionContext::get();
     for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
 
         //Only valid players
@@ -143,7 +139,7 @@ void MainLoop::readPlayerInput()
         //Press space to respawn!
         bool respawnRequested = false;
         if (Ego::Input::InputSystem::get().isKeyDown(SDLK_SPACE)
-            && (local_stats.allpladead || module.canRespawnAnyTime())
+            && (session.allLocalPlayersDead() || module.canRespawnAnyTime())
             && module.isRespawnValid()
             && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
         {

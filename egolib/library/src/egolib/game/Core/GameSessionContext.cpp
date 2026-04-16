@@ -56,7 +56,10 @@ GameSessionContext::GameSessionContext() :
     _overrideSlots(false),
     _worldUpdateCount(0),
     _characterStatClock(0),
-    _enchantStatClock(0)
+    _enchantStatClock(0),
+    _preModuleLocalPlayerCount(0),
+    _localPlayerStatus(),
+    _hasPublishedLocalPlayerStatus(false)
 {}
 
 GameSessionContext::~GameSessionContext() = default;
@@ -103,6 +106,8 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& module, uint32_t seed)
 {
+    resetLocalPlayerState();
+
     _activeModule = std::make_unique<GameModule>(module, seed);
 
     // Live spawn still happens after construction because the runtime is not fully decoupled.
@@ -205,10 +210,46 @@ size_t GameSessionContext::localPlayerCount() const
     const GameModule* module = tryActiveModule();
     if (!module)
     {
-        return static_cast<size_t>(local_stats.player_count);
+        return _preModuleLocalPlayerCount;
     }
 
     return module->getPlayerList().size();
+}
+
+const LocalPlayerStatus& GameSessionContext::localPlayerStatus() const
+{
+    return _localPlayerStatus;
+}
+
+bool GameSessionContext::hasLocalPlayers() const
+{
+    return localPlayerCount() > 0;
+}
+
+bool GameSessionContext::allLocalPlayersDead() const
+{
+    return _hasPublishedLocalPlayerStatus && _localPlayerStatus.allPlayersDead();
+}
+
+void GameSessionContext::publishLocalPlayerCount(size_t count)
+{
+    _preModuleLocalPlayerCount = count;
+    syncLegacyLocalPlayerState();
+}
+
+void GameSessionContext::publishLocalPlayerStatus(const LocalPlayerStatus& status)
+{
+    _localPlayerStatus = status;
+    _hasPublishedLocalPlayerStatus = true;
+    syncLegacyLocalPlayerState();
+}
+
+void GameSessionContext::resetLocalPlayerState()
+{
+    _preModuleLocalPlayerCount = 0;
+    _localPlayerStatus = LocalPlayerStatus{};
+    _hasPublishedLocalPlayerStatus = false;
+    syncLegacyLocalPlayerState();
 }
 
 import_list_t& GameSessionContext::importList()
@@ -246,4 +287,11 @@ void GameSessionContext::resetClocks()
     worldUpdateCount() = 0;
     characterStatClock() = 0;
     enchantStatClock() = 0;
+}
+
+void GameSessionContext::syncLegacyLocalPlayerState()
+{
+    local_stats.player_count = static_cast<int>(localPlayerCount());
+    local_stats.noplayers = !hasLocalPlayers();
+    local_stats.allpladead = allLocalPlayersDead();
 }

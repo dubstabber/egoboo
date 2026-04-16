@@ -129,6 +129,7 @@ Out of scope for the active architecture model:
 29. Read `39-session-local-player-count-access-pass.md` for the first read-side migration away from raw `local_stats.player_count` reads and the next follow-on recommendation.
 30. Read `40-module-spawn-local-player-count-access-pass.md` for the spawn-time local-player-count accessor cleanup and the narrowed follow-on recommendation around `game_loop.c`.
 31. Read `41-game-loop-local-player-status-pass.md` for the extracted local-player-status helper in `game_loop.c` and the next follow-on recommendation after the last gameplay-loop `local_stats.player_count` read is removed.
+32. Read `42-session-local-player-status-ownership-pass.md` for the session-owned local-player status surface, the preserved legacy mirrors, and the next compatibility-cleanup recommendation.
 
 ## Immediate recommendation
 

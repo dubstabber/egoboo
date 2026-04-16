@@ -316,9 +316,7 @@ void game_reset_players()
     /// @details This function clears the player list data
 
     // Reset the local data stuff
-    local_stats.allpladead = false;
-    local_stats.player_count = 0;
-    local_stats.noplayers = true;
+    GameSessionContext::get().resetLocalPlayerState();
 
     local_stats.seeinvis_level = 0.0f;
     local_stats.seeinvis_level = 0.0f;

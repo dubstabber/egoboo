@@ -242,7 +242,7 @@ float draw_game_status(float y)
     else if (g_serverState.player_count > 0 )
 #endif
     {
-        if (local_stats.allpladead || activeModule().canRespawnAnyTime())
+        if (GameSessionContext::get().allLocalPlayersDead() || activeModule().canRespawnAnyTime())
         {
             if (activeModule().isRespawnValid() && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
             {

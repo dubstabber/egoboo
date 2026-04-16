@@ -64,6 +64,13 @@ public:
     AnimatedTilesState& animatedTilesState();
     const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
     size_t localPlayerCount() const;
+    const LocalPlayerStatus& localPlayerStatus() const;
+    bool hasLocalPlayers() const;
+    bool allLocalPlayersDead() const;
+
+    void publishLocalPlayerCount(size_t count);
+    void publishLocalPlayerStatus(const LocalPlayerStatus& status);
+    void resetLocalPlayerState();
 
     import_list_t& importList();
     const import_list_t& importList() const;
@@ -82,4 +89,9 @@ private:
     uint32_t _worldUpdateCount;
     uint32_t _characterStatClock;
     uint32_t _enchantStatClock;
+    size_t _preModuleLocalPlayerCount;
+    LocalPlayerStatus _localPlayerStatus;
+    bool _hasPublishedLocalPlayerStatus;
+
+    void syncLegacyLocalPlayerState();
 };
