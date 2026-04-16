@@ -35,6 +35,13 @@ void publishLegacyLocalPlayerPerceptionCompatibilityMirrors(const GameSessionCon
     local_stats.seedark_mag = perception.seeDarkMagnitude;
     local_stats.seekurse_level = perception.seeKurseLevel;
 }
+
+void publishLegacyEnemySenseCompatibilityMirrors(const GameSessionContext& session)
+{
+    const EnemySenseState& enemySense = session.enemySense();
+    local_stats.sense_enemies_team = enemySense.team;
+    local_stats.sense_enemies_idsz = enemySense.idsz;
+}
 }
 
 GameSessionContext& GameSessionContext::get()
@@ -121,6 +128,16 @@ LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::s
     return perception;
 }
 
+EnemySenseState::EnemySenseState() :
+    team(static_cast<TEAM_REF>(Team::TEAM_MAX)),
+    idsz(IDSZ2::None)
+{}
+
+EnemySenseState::EnemySenseState(TEAM_REF team, const IDSZ2& idsz) :
+    team(team),
+    idsz(idsz)
+{}
+
 GameSessionContext::GameSessionContext() :
     _activeModule(),
     _importList(std::make_unique<import_list_t>()),
@@ -131,6 +148,7 @@ GameSessionContext::GameSessionContext() :
     _preModuleLocalPlayerCount(0),
     _localPlayerStatus(),
     _localPlayerPerception(),
+    _enemySense(),
     _hasPublishedLocalPlayerStatus(false)
 {}
 
@@ -180,6 +198,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 {
     resetLocalPlayerState();
     resetLocalPlayerPerception();
+    resetEnemySense();
 
     _activeModule = std::make_unique<GameModule>(module, seed);
 
@@ -299,6 +318,11 @@ const LocalPlayerPerceptionState& GameSessionContext::localPlayerPerception() co
     return _localPlayerPerception;
 }
 
+const EnemySenseState& GameSessionContext::enemySense() const
+{
+    return _enemySense;
+}
+
 bool GameSessionContext::hasLocalPlayers() const
 {
     return localPlayerCount() > 0;
@@ -328,6 +352,12 @@ void GameSessionContext::publishLocalPlayerPerception(const LocalPlayerPerceptio
     publishLegacyLocalPlayerPerceptionCompatibilityMirrors(*this);
 }
 
+void GameSessionContext::publishEnemySense(const EnemySenseState& state)
+{
+    _enemySense = state;
+    publishLegacyEnemySenseCompatibilityMirrors(*this);
+}
+
 void GameSessionContext::resetLocalPlayerState()
 {
     _preModuleLocalPlayerCount = 0;
@@ -340,6 +370,12 @@ void GameSessionContext::resetLocalPlayerPerception()
 {
     _localPlayerPerception = LocalPlayerPerceptionState{};
     publishLegacyLocalPlayerPerceptionCompatibilityMirrors(*this);
+}
+
+void GameSessionContext::resetEnemySense()
+{
+    _enemySense = EnemySenseState{};
+    publishLegacyEnemySenseCompatibilityMirrors(*this);
 }
 
 import_list_t& GameSessionContext::importList()

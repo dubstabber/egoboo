@@ -1,5 +1,7 @@
 #pragma once
 
+#include "egolib/IDSZ.hpp"
+#include "egolib/typedef.h"
 #include "idlib/non_copyable.hpp"
 
 #include <cstddef>
@@ -41,6 +43,15 @@ struct LocalPlayerPerceptionState
     float seeKurseLevel = 0.0f;
 };
 
+struct EnemySenseState
+{
+    EnemySenseState();
+    EnemySenseState(TEAM_REF team, const IDSZ2& idsz);
+
+    TEAM_REF team;
+    IDSZ2 idsz;
+};
+
 LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players);
 LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::shared_ptr<Ego::Player>>& players);
 
@@ -78,14 +89,17 @@ public:
     size_t localPlayerCount() const;
     const LocalPlayerStatus& localPlayerStatus() const;
     const LocalPlayerPerceptionState& localPlayerPerception() const;
+    const EnemySenseState& enemySense() const;
     bool hasLocalPlayers() const;
     bool allLocalPlayersDead() const;
 
     void publishLocalPlayerCount(size_t count);
     void publishLocalPlayerStatus(const LocalPlayerStatus& status);
     void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state);
+    void publishEnemySense(const EnemySenseState& state);
     void resetLocalPlayerState();
     void resetLocalPlayerPerception();
+    void resetEnemySense();
 
     import_list_t& importList();
     const import_list_t& importList() const;
@@ -107,5 +121,6 @@ private:
     size_t _preModuleLocalPlayerCount;
     LocalPlayerStatus _localPlayerStatus;
     LocalPlayerPerceptionState _localPlayerPerception;
+    EnemySenseState _enemySense;
     bool _hasPublishedLocalPlayerStatus;
 };

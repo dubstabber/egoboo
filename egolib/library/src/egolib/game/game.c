@@ -319,10 +319,7 @@ void game_reset_players()
     GameSessionContext& session = GameSessionContext::get();
     session.resetLocalPlayerState();
     session.resetLocalPlayerPerception();
-
-    // Disable ESP by default
-    local_stats.sense_enemies_idsz = IDSZ2::None;
-    local_stats.sense_enemies_team = static_cast<TEAM_REF>(Team::TEAM_MAX);
+    session.resetEnemySense();
 }
 
 //--------------------------------------------------------------------------------------------

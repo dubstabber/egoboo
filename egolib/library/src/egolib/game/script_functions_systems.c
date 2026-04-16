@@ -1908,13 +1908,11 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
 
     if ( objectHandler().exists( self.getTarget() ) )
     {
-        local_stats.sense_enemies_team = objectHandler()[self.getTarget()]->getTeam().toRef();
-        local_stats.sense_enemies_idsz = state.argument;
+        GameSessionContext::get().publishEnemySense(EnemySenseState(objectHandler()[self.getTarget()]->getTeam().toRef(), state.argument));
     }
     else
     {
-        local_stats.sense_enemies_team = ( TEAM_REF )Team::TEAM_MAX;
-        local_stats.sense_enemies_idsz = IDSZ2::None;
+        GameSessionContext::get().resetEnemySense();
     }
 
     SCRIPT_FUNCTION_END();

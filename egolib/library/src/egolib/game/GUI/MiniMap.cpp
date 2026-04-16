@@ -56,7 +56,8 @@ MiniMap::MiniMap() :
 }
 
 void MiniMap::draw(DrawingContext& drawingContext) {
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
+    GameSessionContext& session = GameSessionContext::get();
+    GameModule* activeModule = session.tryActiveModule();
     if (!_minimapTexture || !activeModule) {
         return;
     }
@@ -66,18 +67,19 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
-    if (Team::TEAM_MAX != local_stats.sense_enemies_team) {
+    const EnemySenseState& enemySense = session.enemySense();
+    if (static_cast<TEAM_REF>(Team::TEAM_MAX) != enemySense.team) {
         for (const std::shared_ptr<Object> &pchr : activeModule->getObjectHandler().iterator()) {
             if (pchr->isTerminated()) continue;
 
             const std::shared_ptr<ObjectProfile> &profile = pchr->getProfile();
 
             // Show only teams that will attack the player
-            if (pchr->getTeam().hatesTeam(activeModule->getTeamList()[local_stats.sense_enemies_team])) {
+            if (pchr->getTeam().hatesTeam(activeModule->getTeamList()[enemySense.team])) {
                 // Only if they match the required IDSZ ([NONE] always works)
-                if (local_stats.sense_enemies_idsz == IDSZ2::None ||
-                    local_stats.sense_enemies_idsz == profile->getIDSZ(IDSZ_PARENT) ||
-                    local_stats.sense_enemies_idsz == profile->getIDSZ(IDSZ_TYPE)) {
+                if (enemySense.idsz == IDSZ2::None ||
+                    enemySense.idsz == profile->getIDSZ(IDSZ_PARENT) ||
+                    enemySense.idsz == profile->getIDSZ(IDSZ_TYPE)) {
                     // Red blips
                     addBlip(pchr->getPosX(), pchr->getPosY(), COLOR_RED);
                 }

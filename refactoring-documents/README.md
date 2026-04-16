@@ -98,6 +98,7 @@ Out of scope for the active architecture model:
 - `42-session-local-player-status-ownership-pass.md`
 - `43-local-player-status-compatibility-quarantine-pass.md`
 - `44-local-player-perception-ownership-pass.md`
+- `45-local-player-enemy-sense-ownership-pass.md`
 
 ## Recommended reading order
 
@@ -135,6 +136,7 @@ Out of scope for the active architecture model:
 32. Read `42-session-local-player-status-ownership-pass.md` for the session-owned local-player status surface, the preserved legacy mirrors, and the next compatibility-cleanup recommendation.
 33. Read `43-local-player-status-compatibility-quarantine-pass.md` for the final quarantine of the local-player status mirrors and the next recommendation around broader legacy-global cleanup.
 34. Read `44-local-player-perception-ownership-pass.md` for the session-owned local-player perception surface, preserved legacy mirrors, and the remaining legacy-global follow-on seams.
+35. Read `45-local-player-enemy-sense-ownership-pass.md` for the session-owned minimap enemy-sense surface, preserved legacy mirrors, and the remaining respawn-timing follow-on seam.
 
 ## Immediate recommendation
 

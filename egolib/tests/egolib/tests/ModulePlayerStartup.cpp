@@ -498,4 +498,32 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsResetWithSe
     EXPECT_FLOAT_EQ(local_stats.seekurse_level, 0.0f);
 }
 
+TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsTrackPublishedSessionState)
+{
+    auto& session = GameSessionContext::get();
+    const EnemySenseState published(static_cast<TEAM_REF>(Team::TEAM_GOOD), IDSZ2('U', 'N', 'D', 'E'));
+
+    session.publishEnemySense(published);
+
+    const EnemySenseState& enemySense = session.enemySense();
+    EXPECT_EQ(enemySense.team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(enemySense.idsz, IDSZ2('U', 'N', 'D', 'E'));
+    EXPECT_EQ(local_stats.sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(local_stats.sense_enemies_idsz, IDSZ2('U', 'N', 'D', 'E'));
+}
+
+TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsResetWithSessionState)
+{
+    auto& session = GameSessionContext::get();
+    session.publishEnemySense(EnemySenseState(static_cast<TEAM_REF>(Team::TEAM_EVIL), IDSZ2('D', 'E', 'M', 'N')));
+
+    game_reset_players();
+
+    const EnemySenseState& enemySense = session.enemySense();
+    EXPECT_EQ(enemySense.team, static_cast<TEAM_REF>(Team::TEAM_MAX));
+    EXPECT_EQ(enemySense.idsz, IDSZ2::None);
+    EXPECT_EQ(local_stats.sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_MAX));
+    EXPECT_EQ(local_stats.sense_enemies_idsz, IDSZ2::None);
+}
+
 } // namespace
