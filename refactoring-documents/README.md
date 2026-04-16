@@ -78,6 +78,7 @@ Out of scope for the active architecture model:
 - `22-module-runtime-ownership-plan.md`
 - `23-session-state-ownership-pass.md`
 - `24-spawn-reconciliation-remediation-pass.md`
+- `25-entity-layer-decomposition-plan.md`
 
 ## Recommended reading order
 
@@ -95,6 +96,7 @@ Out of scope for the active architecture model:
 12. Read `18-modularization-analysis.md` to understand current module boundaries, coupling, and a target decomposition.
 13. Read `19-new-refactoring-plan.md` for the prioritized, actionable refactoring roadmap.
 14. Read `22-module-runtime-ownership-plan.md`, `23-session-state-ownership-pass.md`, and `24-spawn-reconciliation-remediation-pass.md` for the latest completed runtime-ownership work and the current spawn-reconciliation remediation state.
+15. Read `25-entity-layer-decomposition-plan.md` for the next file-splitting pass targeting Object.cpp, ObjectProfile.cpp, and Particle.cpp.
 
 ## Immediate recommendation
 

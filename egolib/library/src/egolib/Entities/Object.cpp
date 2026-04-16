@@ -21,61 +21,7 @@
 /// @details An object representing instances of in-game egoboo objects (Object)
 /// @author Johan Jansen
 
-#define GAME_ENTITIES_PRIVATE 1
-#include "egolib/Entities/Object.hpp"
-#include "egolib/Profiles/_Include.hpp"
-#include "egolib/Entities/Object.hpp"
-#include "egolib/Entities/ObjectHandler.hpp"
-#include "egolib/Entities/ParticleHandler.hpp"
-#include "egolib/Entities/Enchant.hpp"
-#include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/game.h"
-#include "egolib/Graphics/ModelDescriptor.hpp"
-#include "egolib/game/script_implementation.h" //for stealth
-#include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Graphics/CameraSystem.hpp"
-#include "egolib/game/Graphics/TileList.hpp"
-#include "egolib/game/Graphics/Billboard.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-
-//For the minimap
-#include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/GameStates/PlayingState.hpp"
-#include "egolib/game/GUI/MiniMap.hpp"
-
-namespace
-{
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
-GameModule* tryActiveModule()
-{
-    return gameSession().tryActiveModule();
-}
-
-GameModule& activeModule()
-{
-    return gameSession().activeModule();
-}
-
-uint32_t worldUpdateCount()
-{
-    return gameSession().worldUpdateCount();
-}
-
-uint32_t characterStatClock()
-{
-    return gameSession().characterStatClock();
-}
-
-std::shared_ptr<PlayingState> tryActivePlayingState()
-{
-    return EngineContext::get().tryActivePlayingState();
-}
-}
+#include "egolib/Entities/Object_internal.h"
 
 //Declare class static constants
 const std::shared_ptr<Object> Object::INVALID_OBJECT = nullptr;
@@ -91,177 +37,6 @@ constexpr float Object::DISMOUNTZVEL;
 Team& Object::getTeam() const
 {
     return activeModule().getTeamList()[team];
-}
-
-Object::Object(ObjectProfileRef proRef, ObjectRef objRef) : 
-    ai(),
-    gender(Gender::Male),
-    experience(0),
-    experiencelevel(0),
-    ammomax(0),
-    ammo(0),
-    holdingwhich(),
-    equipment(),
-    team(Team::TEAM_NULL),
-    team_base(Team::TEAM_NULL),
-    fat_stt(0.0f),
-    fat(0.0f),
-    fat_goto(0.0f),
-    fat_goto_time(0),
-
-    jump_timer(JUMPDELAY),
-    jumpnumber(0),
-    jumpready(false),
-
-    attachedto(),
-    inwhich_slot(SLOT_LEFT),
-    inwhich_inventory(),
-    platform(false),
-    canuseplatforms(false),
-    holdingweight(0),
-    damagetarget_damagetype(DamageType::DAMAGE_SLASH),
-    reaffirm_damagetype(DamageType::DAMAGE_SLASH),
-    damage_threshold(0),
-    is_which_player(INVALID_PLA_REF),
-    islocalplayer(false),
-    invictus(false),
-    iskursed(false),
-    nameknown(false),
-    ammoknown(false),
-    hitready(true),
-    isequipped(false),
-    isitem(false),
-    isshopitem(false),
-    canbecrushed(false),
-    
-    //Misc timers
-    grog_timer(0),
-    daze_timer(0),
-    bore_timer(0),
-    careful_timer(CAREFULTIME),
-    reload_timer(0),
-    damage_timer(0),
-
-    draw_icon(false),
-    sparkle(NOSPARKLE),
-    shadow_size_stt(0.0f),
-    shadow_size(0),
-    shadow_size_save(0),
-    is_overlay(false),
-    skin(0),
-	skin_stt(0),
-    basemodel_ref(proRef),
-
-    bump_stt(),
-    bump(),
-    bump_save(),
-    bump_1(),      
-    chr_max_cv(),  
-    chr_min_cv(),  
-    slot_cv(),
-
-    stoppedby(0),
-
-    ori(),
-    ori_old(),
-    bumplist_next(),
-
-    turnmode(TURNMODE_VELOCITY),
-
-    inwater(false),
-    dismount_timer(0),  /// @note ZF@> If this is != 0 then scorpion claws and riders are dropped at spawn (non-item objects)
-    dismount_object(),
-    
-    _terminateRequested(false),
-    _objRef(objRef),
-    _profileID(proRef),
-    _profile(ProfileSystem::get().getProfile(_profileID)),
-    _showStatus(false),
-    _isAlive(true),
-    _name("*NONE*"),
-
-    _currentLife(0.0f),
-    _currentMana(0.0f),
-    _baseAttribute(),
-    _tempAttribute(),
-
-    _inventory(),
-    _money(0),
-    _perks(),
-    _levelUpSeed(Random::next(std::numeric_limits<uint32_t>::max())),
-
-    //Graphics
-    inst(*this),
-
-    //Physics
-    _objectPhysics(*this),
-
-    //Input commands
-    _inputLatchesPressed(),
-
-    //Non-persistent variables
-    _hasBeenKilled(false),
-    _reallyDuration(0),
-    _stealth(false),
-    _stealthTimer(0),
-    _observationTimer((objRef.get() % ONESECOND) + worldUpdateCount()), //spread observations so all characters don't happen at the same time
-
-    //Enchants
-    _activeEnchants(),
-    _lastEnchantSpawned()
-{
-    // Grip info
-    holdingwhich.fill(ObjectRef::Invalid);
-
-    //Clear initial base attributes
-    _baseAttribute.fill(0.0f);
-
-    // pack/inventory info
-    equipment.fill(ObjectRef::Invalid);
-
-    // Set up position
-    ori.map_twist_facing_y = orientation_t::MAP_TURN_OFFSET;  // These two mean on level surface
-    ori.map_twist_facing_x = orientation_t::MAP_TURN_OFFSET;
-
-    //Initialize primary attributes
-    for(size_t i = 0; i < Ego::Attribute::NR_OF_PRIMARY_ATTRIBUTES; ++i) {
-        const idlib::interval<float>& baseRange = _profile->getAttributeBase(static_cast<Ego::Attribute::AttributeType>(i));
-        _baseAttribute[i] = Random::next(baseRange);
-    }
-
-    //Initialize timer to a random value
-    resetBoredTimer();
-}
-
-Object::~Object()
-{
-    /// @author ZZ
-    /// @details Make character safely deleteable
-
-    // Detach the character from the active game
-    if (GameModule* module = tryActiveModule()) {
-        removeFromGame(this);
-
-        // free the character's inventory
-        for(const std::shared_ptr<Object> pitem : _inventory.iterate())
-        {
-            pitem->requestTerminate();
-        }
-
-        // Handle the team
-        if ( isAlive() && !getProfile()->isInvincible() )
-        {
-            module->getTeamList()[team_base].decreaseMorale();
-        }
-
-        if ( module->getTeamList()[team].getLeader().get() == this )
-        {
-            module->getTeamList()[team].setLeader(INVALID_OBJECT);
-        }
-
-        // remove any attached particles
-        disaffirm_attached_particles(getObjRef());    
-    }
 }
 
 bool Object::setSkin(const size_t skinNumber)
@@ -1144,13 +919,6 @@ std::string Object::getName(bool prefixArticle, bool prefixDefinite, bool capita
     return result;
 }
 
-void Object::requestTerminate() 
-{
-    //Mark object as terminated
-    activeModule().getObjectHandler().remove(getObjRef());
-}
-
-
  bool Object::isFacingLocation(const float x, const float y) const
  {
     auto facing = idlib::canonicalize(vec_to_facing(x - getPosX(), y - getPosY()));
@@ -1710,47 +1478,6 @@ bool Object::isInsideInventory() const
     return true;
 }
 
-void Object::removeFromGame(Object *obj)
-{
-	auto objRef = obj->getObjRef();
-
-	obj->sparkle = NOSPARKLE;
-
-	// Remove it from the team
-	obj->team = obj->team_base;
-	activeModule().getTeamList()[obj->team].decreaseMorale();
-
-	if (activeModule().getTeamList()[obj->team].getLeader().get() == obj)
-	{
-		// The team now has no leader if the character is the leader
-		activeModule().getTeamList()[obj->team].setLeader(Object::INVALID_OBJECT);
-	}
-
-	// Clear all shop passages that it owned..
-	activeModule().removeShopOwner(objRef);
-
-	// detach from any mount
-	if (activeModule().getObjectHandler().exists(obj->attachedto))
-	{
-		obj->detatchFromHolder(true, false);
-	}
-
-	// drop your left item
-	const std::shared_ptr<Object> &leftItem = obj->getLeftHandItem();
-	if (leftItem && leftItem->isItem()) {
-		leftItem->detatchFromHolder(true, false);
-	}
-
-	// drop your right item
-	const std::shared_ptr<Object> &rightItem = obj->getRightHandItem();
-	if (rightItem && rightItem->isItem()) {
-		rightItem->detatchFromHolder(true, false);
-	}
-
-	// Stop all sound loops for this object
-	AudioSystem::get().stopObjectLoopingSounds(objRef);
-}
-
 BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float *pressure)
 {
 	if (Ego::Physics::CHR_INFINITE_WEIGHT == phys.weight)
@@ -1880,91 +1607,6 @@ bool Object::costMana(int amount, const ObjectRef killer)
     }
 
     return manaPaid;
-}
-
-void Object::respawn()
-{
-    //already alive?
-    if(isAlive()) {
-        return;
-    }
-
-    const std::shared_ptr<ObjectProfile> &profile = getProfile();
-
-    ParticleHandler::get().spawnPoof(this->toSharedPointer());
-    disaffirm_attached_particles(getObjRef());
-
-    //Detach any objects that is using our body as a platform
-    for(std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator()) {
-        if(object->getAttachedPlatform().get() == this) {
-            object->getObjectPhysics().detachFromPlatform();
-        }
-    }
-
-    _isAlive = true;
-    resetBoredTimer();
-    resetInputCommands();
-    careful_timer = CAREFULTIME;
-    _currentLife = getAttribute(Ego::Attribute::MAX_LIFE);
-    _currentMana = getAttribute(Ego::Attribute::MAX_MANA);
-    setPosition(getSpawnPosition());
-    setVelocity(idlib::zero<Ego::Vector3f>());
-    team = team_base;
-    canbecrushed = false;
-    ori.map_twist_facing_y = orientation_t::MAP_TURN_OFFSET;  // These two mean on level surface
-    ori.map_twist_facing_x = orientation_t::MAP_TURN_OFFSET;
-    if ( !getTeam().getLeader() )  getTeam().setLeader( activeModule().getObjectHandler()[getObjRef()] );
-    if ( !isInvincible() )         getTeam().increaseMorale();
-
-    // start the character out in the "dance" animation
-    inst.startAnimation(ACTION_DA, true, true);
-
-    // reset all of the bump size information
-    {
-        fat_stt           = profile->getSize();
-        shadow_size_stt   = profile->getShadowSize();
-        bump_stt.size     = profile->getBumpSize();
-        bump_stt.size_big = profile->getBumpSizeBig();
-        bump_stt.height   = profile->getBumpHeight();
-
-        shadow_size_save   = shadow_size_stt;
-        bump_save.size     = bump_stt.size;
-        bump_save.size_big = bump_stt.size_big;
-        bump_save.height   = bump_stt.height;
-
-        recalculateCollisionSize();
-    }
-
-    platform        = profile->isPlatform();
-    canuseplatforms = profile->canUsePlatforms();
-    _baseAttribute[Ego::Attribute::FLY_TO_HEIGHT] = profile->getFlyHeight();
-    phys.bumpdampen = profile->getBumpDampen();
-
-    ai.alert = ALERTIF_CLEANEDUP;
-    ai.setTarget(getObjRef());
-    ai.timer  = 0;
-
-    grog_timer = 0;
-    daze_timer = 0;
-
-    // Let worn items come back
-    for(const std::shared_ptr<Object> pitem : _inventory.iterate())
-    {
-        if ( pitem->isequipped )
-        {
-            pitem->isequipped = false;
-            SET_BIT( ai.alert, ALERTIF_PUTAWAY ); // same as ALERTIF_ATLASTWAYPOINT
-        }
-    }
-
-    // re-initialize the instance
-    inst.setObjectProfile(getProfile());
-    chr_update_matrix( this, true );
-
-    if ( !isHidden() )
-    {
-        reaffirm_attached_particles(getObjRef());
-    }
 }
 
 float Object::getRawDamageResistance(const DamageType type, const bool includeArmor) const
@@ -2155,11 +1797,6 @@ void Object::increaseBaseAttribute(const Ego::Attribute::AttributeType type, flo
     }
 }
 
-Inventory& Object::getInventory()
-{
-    return _inventory;
-}
-
 bool Object::hasPerk(Ego::Perks::PerkID perk) const
 {
     if(perk == Ego::Perks::NR_OF_PERKS) return true;
@@ -2287,11 +1924,6 @@ std::shared_ptr<Ego::Enchantment> Object::getLastEnchantmentSpawned() const
 }
 
 
-const std::shared_ptr<Object>& Object::toSharedPointer() const 
-{ 
-    return activeModule().getObjectHandler()[getObjRef()]; 
-}
-
 void Object::setMana(const float value)
 {
     _currentMana = Ego::Math::constrain(_currentMana+value, 0.00f, getAttribute(Ego::Attribute::MAX_MANA));
@@ -2300,22 +1932,6 @@ void Object::setMana(const float value)
 void Object::setLife(const float value)
 {
     _currentLife = Ego::Math::constrain(_currentLife+value, 0.01f, getAttribute(Ego::Attribute::MAX_LIFE));
-}
-
-void Object::setName(const std::string &name)
-{
-    _name = name;
-}
-
-const std::shared_ptr<ObjectProfile>& Object::getProfile() const 
-{
-    return _profile;
-}
-
-void Object::resetInputCommands()
-{
-    _objectPhysics.setDesiredVelocity(idlib::zero<Ego::Vector2f>());
-    _inputLatchesPressed.reset();    
 }
 
 void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
@@ -2986,36 +2602,6 @@ void Object::dropAllItems()
     }
 }
 
-bool Object::canCollide() const
-{
-    //Removed from game?
-    if(isTerminated()) {
-        return false;
-    }
-
-    //Hidden state
-    if(isHidden()) {
-        return false;
-    }
-
-    //Inside inventory or being held?
-    if(isBeingHeld()) {
-        return false;
-    }
-
-    //No collision box?
-    if (oct_bb_t::empty(chr_max_cv)) {
-        return false;
-    }
-
-    return true;
-}
-
-const std::shared_ptr<Object>& Object::getAttachedPlatform() const
-{
-    return activeModule().getObjectHandler()[onwhichplatform_ref];
-}
-
 std::shared_ptr<const Ego::Texture> Object::getIcon() const
 {
     //Is it a spellbook?
@@ -3032,22 +2618,6 @@ std::shared_ptr<const Ego::Texture> Object::getIcon() const
 void Object::giveMoney(int amount)
 {
     _money = Ego::Math::constrain<int>(static_cast<int>(_money) + amount, 0, MAXMONEY);
-}
-
-uint16_t Object::getMoney() const
-{
-    return _money;
-}
-
-void Object::resetBoredTimer()
-{
-    //5-8 seconds
-    bore_timer = Random::next<uint16_t>(250, 800);
-}
-
-const std::shared_ptr<const Ego::Texture> Object::getSkinTexture() const
-{
-    return getProfile()->getSkin(this->skin).get_ptr();
 }
 
 void Object::setLatchButton(const LatchButton latchButton, const bool pressed)
