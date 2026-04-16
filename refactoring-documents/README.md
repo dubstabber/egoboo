@@ -84,6 +84,7 @@ Out of scope for the active architecture model:
 - `28-module-translation-unit-split-pass.md`
 - `29-module-boundary-coverage-pass.md`
 - `30-module-spawn-planning-pass.md`
+- `31-module-spawn-realization-pass.md`
 
 ## Recommended reading order
 
@@ -107,6 +108,7 @@ Out of scope for the active architecture model:
 18. Read `28-module-translation-unit-split-pass.md` for the completed `GameModule` file split and the next recommendation after the module-runtime decomposition.
 19. Read `29-module-boundary-coverage-pass.md` for the added smoke coverage around the split module bootstrap/loading seams and the next recommended extraction target.
 20. Read `30-module-spawn-planning-pass.md` for the extracted `spawn.txt` planning seam and the next follow-on recommendation around live spawn realization.
+21. Read `31-module-spawn-realization-pass.md` for the extracted live spawn helper, its characterization coverage, and the remaining player-binding follow-on seam.
 
 ## Immediate recommendation
 

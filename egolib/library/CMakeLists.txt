@@ -661,6 +661,8 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module_spawn.cpp
     src/egolib/game/Module/Module_spawn_plan.cpp
     src/egolib/game/Module/Module_spawn_plan.hpp
+    src/egolib/game/Module/Module_spawn_realization.cpp
+    src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
     src/egolib/game/Module/module_spawn.c

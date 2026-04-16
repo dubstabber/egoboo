@@ -22,6 +22,7 @@
 
 #include "egolib/game/Module/Module_internal.h"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
+#include "egolib/game/Module/Module_spawn_realization.hpp"
 
 ObjectRef GameModule::getShopOwner(const float x, const float y)
 {
@@ -387,126 +388,50 @@ void GameModule::spawnAllObjects()
 
 std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, const std::shared_ptr<Object> &parent)
 {
-    if (!psp_info.do_spawn || psp_info.slot < 0) {
-        return nullptr;
-    }
-
-    auto iprofile = ObjectProfileRef(static_cast<PRO_REF>(psp_info.slot));
-
-    //Require a valid parent?
-    if (psp_info.attach != ATTACH_NONE && !parent) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to spawn ", "`", psp_info.spawn_name, "`", " due to missing parent", Log::EndOfEntry);
-        return nullptr;
-    }
-
-    // Spawn the character
-    std::shared_ptr<Object> pobject = spawnObject(psp_info.pos, iprofile, psp_info.team, psp_info.skin, psp_info.facing, psp_info.spawn_name == "NONE" ? "" : psp_info.spawn_name, ObjectRef::Invalid);
-
-    //Failed to spawn?
-    if (!pobject) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn ", "`", psp_info.spawn_name, "`", Log::EndOfEntry);
-        return nullptr;
-    }
-
-    //Add money
-    pobject->giveMoney(psp_info.money);
-
-    //Set AI stuff
-    pobject->ai.content = psp_info.content;
-    pobject->ai.passage = psp_info.passage;
-
-    // determine the attachment
-    switch (psp_info.attach)
+    module_spawn_realization::SpawnRealizationState state;
+    state.importValid = isImportValid();
+    state.importAmount = getImportAmount();
+    state.playerAmount = getPlayerAmount();
+    state.importList = &importList();
+    state.importData = &import_data;
+    state.isProfileLoaded = [](ObjectProfileRef profile)
     {
-        case ATTACH_NONE:
-            make_one_character_matrix(pobject->getObjRef());
-        break;
+        return ProfileSystem::get().isLoaded(profile);
+    };
 
-        case ATTACH_INVENTORY:
-            // Inventory character
-            Inventory::add_item(parent->getObjRef(), pobject->getObjRef(), parent->getInventory().getFirstFreeSlotNumber(), true);
-
-            //If the character got merged into a stack, then it will be marked as terminated
-            if (pobject->isTerminated()) {
-                return nullptr;
-            }
-
-            // Make spellbooks change
-            SET_BIT(pobject->ai.alert, ALERTIF_GRABBED);
-        break;
-
-        case ATTACH_LEFT:
-        case ATTACH_RIGHT:
-            // Wielded character
-            grip_offset_t grip_off = (ATTACH_LEFT == psp_info.attach) ? GRIP_LEFT : GRIP_RIGHT;
-
-            if (pobject->getObjectPhysics().attachToObject(parent, grip_off)) {
-                // Preserve the initial grabbed alert so startup equipment can
-                // consume IfGrabbed on its first script update.
-            }
-        break;
-    }
-
-    // Set the starting pinfo->level
-    if (psp_info.level > 0) {
-        if (pobject->experiencelevel < psp_info.level) {
-            pobject->experience = pobject->getProfile()->getXPNeededForLevel(psp_info.level);
-        }
-    }
-
-    // automatically identify and unkurse all player starting equipment? I think yes.
-    if (!isImportValid() && nullptr != parent && parent->isPlayer()) {
-        pobject->nameknown = true;
-        pobject->iskursed = false;
-    }
-
-    // Turn on input devices
-    if (psp_info.stat)
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [this](const spawn_file_info_t& spawnInfo)
     {
-        // what we do depends on what kind of module we're loading
-        if (0 == getImportAmount() && getPlayerList().size() < getPlayerAmount())
-        {
-            // a single player module
-            bool player_added = addPlayer(pobject, Ego::Input::InputDevice::DeviceList[local_stats.player_count]);
+        const auto profile = ObjectProfileRef(static_cast<PRO_REF>(spawnInfo.slot));
+        return spawnObject(spawnInfo.pos, profile, spawnInfo.team, spawnInfo.skin, spawnInfo.facing,
+                           spawnInfo.spawn_name == "NONE" ? "" : spawnInfo.spawn_name, ObjectRef::Invalid);
+    };
+    ops.makeCharacterMatrix = [](const std::shared_ptr<Object>& object)
+    {
+        make_one_character_matrix(object->getObjRef());
+    };
+    ops.attachInventoryItem = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object)
+    {
+        Inventory::add_item(parentObject->getObjRef(), object->getObjRef(), parentObject->getInventory().getFirstFreeSlotNumber(), true);
+    };
+    ops.attachToGrip = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object, grip_offset_t grip)
+    {
+        return object->getObjectPhysics().attachToObject(parentObject, grip);
+    };
+    ops.currentPlayerCount = [this]()
+    {
+        return getPlayerList().size();
+    };
+    ops.currentLocalPlayerCount = []()
+    {
+        return static_cast<size_t>(local_stats.player_count);
+    };
+    ops.addPlayer = [this](const std::shared_ptr<Object>& object, size_t deviceIndex)
+    {
+        return addPlayer(object, Ego::Input::InputDevice::DeviceList[deviceIndex]);
+    };
 
-            if (getImportAmount() == 0 && player_added)
-            {
-                // !!!! make sure the player is identified !!!!
-                pobject->nameknown = true;
-            }
-        }
-        else if (getPlayerList().size() < getImportAmount() && getPlayerList().size() < getPlayerAmount() && getPlayerList().size() < importList().count)
-        {
-            // A multiplayer module
-            int local_index = -1;
-            for (size_t tnc = 0; tnc < importList().count; tnc++)
-            {
-                if (pobject->getProfileID().get() <= import_data.max_slot && ProfileSystem::get().isLoaded(pobject->getProfileID()))
-                {
-                    int islot = pobject->getProfileID().get();
-
-                    if (import_data.slot_lst[islot] == importList().lst[tnc].slot)
-                    {
-                        local_index = tnc;
-                        break;
-                    }
-                }
-            }
-
-            if (-1 != local_index)
-            {
-                // It's a local input
-                addPlayer(pobject, Ego::Input::InputDevice::DeviceList[importList().lst[local_index].local_player_num]);
-            }
-            else
-            {
-                // It's a remote input
-                std::logic_error("Remote input control no longer supported");
-            }
-        }
-    }
-
-    return pobject;
+    return module_spawn_realization::realizeSpawnEntry(psp_info, parent, state, ops);
 }
 
 void GameModule::tiltCharactersToTerrain()
