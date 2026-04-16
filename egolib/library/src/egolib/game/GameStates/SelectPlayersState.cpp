@@ -35,6 +35,10 @@ SelectPlayersState::SelectPlayersState()
     : _playerButtons(),
       _continueButton(std::make_shared<Ego::GUI::Button>("Select Module", SDLK_RETURN))
 {
+    // Module loading clears the lightweight saved-player cache, so rebuild it
+    // whenever we enter the load-game flow from the menus.
+    ProfileSystem::get().loadAllSavedCharacters("mp_players");
+
     const int SCREEN_WIDTH = uiManager().getScreenWidth();
     const int SCREEN_HEIGHT = uiManager().getScreenHeight();
 

@@ -18,7 +18,9 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     auto& session = GameSessionContext::get();
     auto& water = session.water();
 
-    if (!gfx.draw_overlay || !water._background_req)
+    // This pass renders the second water/background layer as a screen-space overlay.
+    // Legacy modules can request a background while providing fewer than two layers.
+    if (!gfx.draw_overlay || !water._background_req || water._layer_count < 2)
     {
         return;
     }
@@ -30,16 +32,21 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
 
     water_instance_layer_t *ilayer = water._layers + 1;
 
+    float alpha = ilayer->_alpha * idlib::fraction<float, 1, 255>();
+
     Vector3f vforw_wind(ilayer->_tx_add[XX], ilayer->_tx_add[YY], 0.0f);
-    vforw_wind = normalize(vforw_wind).get_vector();
-
     Vector3f vforw_cam = mat_getCamForward(camera.getViewMatrix());
-    vforw_cam = normalize(vforw_cam).get_vector();
 
-    // make the texture begin to disappear if you are not looking straight down
-    float ftmp = dot(vforw_wind, vforw_cam);
+    // A stationary legacy layer has no meaningful wind direction; keep its base alpha.
+    if (idlib::euclidean_norm(vforw_wind) > 0.0f && idlib::euclidean_norm(vforw_cam) > 0.0f)
+    {
+        vforw_wind = normalize(vforw_wind).get_vector();
+        vforw_cam = normalize(vforw_cam).get_vector();
 
-    float alpha = (1.0f - ftmp * ftmp) * (ilayer->_alpha * idlib::fraction<float, 1, 255>());
+        // Make the texture begin to disappear if you are not looking straight down.
+        float ftmp = dot(vforw_wind, vforw_cam);
+        alpha *= (1.0f - ftmp * ftmp);
+    }
 
     if (alpha != 0.0f)
     {
