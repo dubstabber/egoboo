@@ -67,6 +67,8 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/Enchant.cpp
     src/egolib/Entities/Enchant.hpp
     src/egolib/Entities/_Include.hpp
+    src/egolib/Entities/Object_attributes.cpp
+    src/egolib/Entities/Object_combat.cpp
     src/egolib/Entities/Object.cpp
     src/egolib/Entities/Object_appearance.cpp
     src/egolib/Entities/Object_internal.h
@@ -74,6 +76,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/ObjectHandler.hpp
     src/egolib/Entities/Object_interaction.cpp
     src/egolib/Entities/Object_lifecycle.cpp
+    src/egolib/Entities/Object_update.cpp
     src/egolib/Entities/Object.hpp
     src/egolib/Entities/Particle.cpp
     src/egolib/Entities/ParticleHandler.cpp
