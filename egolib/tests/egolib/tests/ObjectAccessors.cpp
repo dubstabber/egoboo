@@ -12,6 +12,7 @@
 
 #include <cstdlib>
 #include <memory>
+#include <stdexcept>
 
 namespace
 {
@@ -47,16 +48,23 @@ protected:
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         AudioSystem::initialize();
+        ParticleHandler::initialize();
     }
 
     static void TearDownTestSuite()
     {
+        ParticleHandler::uninitialize();
         AudioSystem::uninitialize();
         s_runtime.reset();
     }
 
     void SetUp() override
     {
+        if (GameSessionContext::get().hasActiveModule())
+        {
+            GameSessionContext::get().quitModule();
+        }
+
         ProfileSystem::get().reset();
         ProfileSystem::get().loadModuleProfiles();
         setup_init_module_vfs_paths("mp_modules/test.mod");
@@ -65,19 +73,78 @@ protected:
 
     void TearDown() override
     {
+        if (GameSessionContext::get().hasActiveModule())
+        {
+            GameSessionContext::get().quitModule();
+        }
+
         setup_clear_module_vfs_paths();
     }
 
-    std::shared_ptr<Object> makeFollower(int slot)
+    std::shared_ptr<ModuleProfile> findTestModule() const
     {
-        const ObjectProfileRef profile = ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", slot);
+        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        {
+            if (module && module->getFolderName() == "test.mod")
+            {
+                return module;
+            }
+        }
+
+        return nullptr;
+    }
+
+    ObjectProfileRef loadFollowerProfile(int slot) const
+    {
+        return ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", slot);
+    }
+
+    ObjectProfileRef loadProfile(const std::string& profilePath, int slot) const
+    {
+        return ProfileSystem::get().loadOneProfile(profilePath, slot);
+    }
+
+    std::shared_ptr<Object> makeFollower(ObjectHandler& objectHandler, int slot) const
+    {
+        const ObjectProfileRef profile = loadFollowerProfile(slot);
         EXPECT_NE(profile, ObjectProfileRef::Invalid);
         if (profile == ObjectProfileRef::Invalid)
         {
             return nullptr;
         }
 
-        return _objectHandler.insert(profile);
+        return objectHandler.insert(profile);
+    }
+
+    std::shared_ptr<Object> makeObject(ObjectHandler& objectHandler, const std::string& profilePath, int slot) const
+    {
+        const ObjectProfileRef profile = loadProfile(profilePath, slot);
+        EXPECT_NE(profile, ObjectProfileRef::Invalid);
+        if (profile == ObjectProfileRef::Invalid)
+        {
+            return nullptr;
+        }
+
+        return objectHandler.insert(profile);
+    }
+
+    std::shared_ptr<Object> makeFollower(int slot)
+    {
+        return makeFollower(_objectHandler, slot);
+    }
+
+    ObjectHandler& beginActiveTestModule()
+    {
+        auto module = findTestModule();
+        EXPECT_NE(module, nullptr);
+        if (module == nullptr)
+        {
+            throw std::runtime_error("test.mod profile not found");
+        }
+
+        const bool began = GameSessionContext::get().beginModule(module, 17);
+        EXPECT_TRUE(began);
+        return GameSessionContext::get().objectHandler();
     }
 };
 
@@ -577,9 +644,142 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimati
     EXPECT_TRUE(object->inst._freezeAtLastFrame);
 }
 
+TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedSceneryAnimationPolicyStopsAnimationRate)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 317);
+    auto rider = makeFollower(objectHandler, 318);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(rider, nullptr);
+
+    holder->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_NULL));
+    holder->setBaseAttribute(Ego::Attribute::ACCELERATION, 0.0f);
+    rider->setHolderRef(holder->getObjRef());
+    rider->inst._currentAnimation = ACTION_MI;
+    rider->inst._canBeInterrupted = true;
+    rider->inst._freezeAtLastFrame = false;
+    rider->inst._animationRate = 1.0f;
+
+    rider->inst.updateAnimationRate();
+
+    EXPECT_TRUE(holder->isScenery());
+    EXPECT_FLOAT_EQ(rider->getAnimationSpeed(), 0.1f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedAnimationPolicyCopiesHolderAnimationRate)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 319);
+    auto rider = makeFollower(objectHandler, 320);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(rider, nullptr);
+
+    holder->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    holder->setBaseAttribute(Ego::Attribute::ACCELERATION, 1.0f);
+    holder->setAnimationSpeed(2.5f);
+    rider->setHolderRef(holder->getObjRef());
+    rider->inst._currentAnimation = ACTION_MH;
+    rider->inst._canBeInterrupted = true;
+    rider->inst._freezeAtLastFrame = false;
+    rider->inst._animationRate = 1.0f;
+
+    rider->inst.updateAnimationRate();
+
+    EXPECT_FALSE(holder->isScenery());
+    EXPECT_FLOAT_EQ(rider->getAnimationSpeed(), holder->getAnimationSpeed());
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsTimer)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 321);
+    ASSERT_NE(object, nullptr);
+
+    object->ai.alert = 0;
+    object->setBoredTimer(0);
+    object->_stealth = false;
+    object->inst._currentAnimation = ACTION_DA;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->getObjectPhysics().setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+
+    object->inst.updateAnimationRate();
+
+    EXPECT_TRUE(HAS_SOME_BITS(object->ai.alert, ALERTIF_BORED));
+    EXPECT_GT(object->getBoredTimer(), 0);
+    EXPECT_TRUE(ACTION_IS_TYPE(object->getCurrentAnimation(), D));
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyReturnsWalkingAnimationToIdle)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 322);
+    ASSERT_NE(object, nullptr);
+
+    object->setBoredTimer(12);
+    object->inst._currentAnimation = ACTION_WC;
+    object->inst._nextAnimation = ACTION_WC;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->getObjectPhysics().setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+
+    object->inst.updateAnimationRate();
+
+    EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnimation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 323);
+    ASSERT_NE(object, nullptr);
+    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WA));
+
+    object->_stealth = true;
+    object->inst._currentAnimation = ACTION_DA;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
+    object->getObjectPhysics().setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+
+    object->inst.updateAnimationRate();
+
+    EXPECT_EQ(object->getCurrentAnimation(), ACTION_WA);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyRemapsFlyingIdleToFlapAnimation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 324);
+    ASSERT_NE(object, nullptr);
+    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WC));
+
+    object->setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, 1.0f);
+    object->setVelocity(idlib::zero<Ego::Vector3f>());
+    object->inst._currentAnimation = ACTION_DA;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+
+    object->inst.updateAnimationRate();
+
+    EXPECT_EQ(object->getCurrentAnimation(), ACTION_WC);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WC);
+    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+}
+
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
 {
-    auto object = makeFollower(317);
+    auto object = makeFollower(325);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

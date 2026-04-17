@@ -79,6 +79,11 @@ void Upload::upload_graphics_data( const wawalite_graphics_t& data )
 
 void Upload::upload_camera_data( const wawalite_camera_t& data )
 {
+    if (!CameraSystem::is_initialized())
+    {
+        return;
+    }
+
     CameraSystem::get().getCameraOptions().swing     = data.swing;
     CameraSystem::get().getCameraOptions().swingRate = data.swing_rate;
     CameraSystem::get().getCameraOptions().swingAmp  = data.swing_amp;

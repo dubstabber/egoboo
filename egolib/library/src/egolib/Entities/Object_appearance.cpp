@@ -219,7 +219,8 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     }
 
     float radius = 0.0f;
-    if (CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
+    if (CameraSystem::is_initialized() &&
+        CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
         radius = bump_1.size;
     }
 
@@ -240,7 +241,8 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     }
 
     float radius = 0.0f;
-    if (CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
+    if (CameraSystem::is_initialized() &&
+        CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
         radius = bump_1.size;
     }
 

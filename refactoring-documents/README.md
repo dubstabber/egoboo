@@ -124,6 +124,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `62-object-graphics-escape-hatch-retirement-pass.md`
 - `63-object-graphics-tint-reflection-policy-pass.md`
 - `64-object-graphics-profile-animation-reset-pass.md`
+- `65-object-graphics-animation-control-policy-pass.md`
 
 ## Recommended reading order
 
@@ -181,6 +182,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 52. Read `62-object-graphics-escape-hatch-retirement-pass.md` for the retirement of the public `Object::graphics()` escape hatch, the new stable render-facing `Object` helpers, and the narrowed follow-on recommendation inside `ObjectGraphics`.
 53. Read `63-object-graphics-tint-reflection-policy-pass.md` for the extracted tint/reflection render-policy seam inside `ObjectGraphics`, the preserved public `Object` render-facing surface, and the narrowed follow-on recommendation around model-reset and animation-reset responsibilities.
 54. Read `64-object-graphics-profile-animation-reset-pass.md` for the split between profile/model reset and initial animation policy inside `ObjectGraphics`, the preserved `Object` caller contract, and the narrowed follow-on recommendation around broader animation/control policy cleanup.
+55. Read `65-object-graphics-animation-control-policy-pass.md` for the bounded extraction of `updateAnimationRate()` policy, the preserved caller contract inside `ObjectGraphics`, and the narrowed follow-on recommendation around end-of-animation transition cleanup.
 
 ## Immediate recommendation
 

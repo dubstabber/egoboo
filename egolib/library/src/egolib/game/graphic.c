@@ -139,8 +139,15 @@ void gfx_system_init_all_graphics()
 //--------------------------------------------------------------------------------------------
 void gfx_system_release_all_graphics()
 {
-    GFX::get().getBillboardSystem().reset();
-    Ego::TextureManager::get().release_all();
+    if (GFX::is_initialized())
+    {
+        GFX::get().getBillboardSystem().reset();
+    }
+
+    if (Ego::TextureManager::is_initialized())
+    {
+        Ego::TextureManager::get().release_all();
+    }
 }
 
 //--------------------------------------------------------------------------------------------

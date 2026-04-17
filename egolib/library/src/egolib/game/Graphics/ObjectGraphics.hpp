@@ -347,6 +347,14 @@ private:
     ///          added automatic calculation of variable animation rates for movement animations
     void updateAnimationRate();
 
+    bool shouldSkipAnimationRateUpdate();
+
+    bool applyMountedAnimationRatePolicy();
+
+    void applyIdleAnimationPolicy();
+
+    void applyMovementAnimationPolicy(ModelAction action, int lip);
+
 private:
     // position info
     matrix_cache_t matrix_cache;     ///< Did we make one yet?

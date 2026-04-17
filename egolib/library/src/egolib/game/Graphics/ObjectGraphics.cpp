@@ -23,6 +23,92 @@ struct TintRenderState
     colorshift_t colorShift;
 };
 
+struct LocomotionAnimationDecision
+{
+    bool shouldApply = false;
+    float animationRate = 1.0f;
+    ModelAction action = ACTION_DA;
+    int lip = 0;
+};
+
+bool isWalkTypeAnimation(ModelAction action)
+{
+    return action < ACTION_DD || ACTION_IS_TYPE(action, W);
+}
+
+LocomotionAnimationDecision makeLocomotionAnimationDecision(Object& object,
+                                                            const ModelDescriptor& modelDescriptor,
+                                                            ModelAction currentAnimation)
+{
+    LocomotionAnimationDecision decision;
+    if (!isWalkTypeAnimation(currentAnimation))
+    {
+        return decision;
+    }
+
+    if (!object.getObjectPhysics().isTouchingGround() && !object.isFlying())
+    {
+        return decision;
+    }
+
+    decision.shouldApply = true;
+
+    float speed = 0.0f;
+    if (object.isFlying())
+    {
+        speed = idlib::euclidean_norm(object.getVelocity());
+    }
+    else
+    {
+        speed = std::max(idlib::euclidean_norm(xy(object.getVelocity())),
+                         idlib::euclidean_norm(object.getObjectPhysics().getDesiredVelocity()));
+        if (object.getObjectPhysics().floorIsSlippy())
+        {
+            decision.animationRate = 2.0f;
+            speed *= 2.0f;
+        }
+    }
+
+    if (object.getFat() > 0.0f)
+    {
+        speed /= object.getFat();
+    }
+
+    if (speed <= 1.0f)
+    {
+        decision.action = ACTION_DA;
+    }
+    else if (object.isStealthed() && modelDescriptor.isActionValid(ACTION_WA))
+    {
+        decision.action = ACTION_WA;
+        decision.lip = LIPWA;
+    }
+    else if (speed <= 4.0f && modelDescriptor.isActionValid(ACTION_WB))
+    {
+        decision.action = ACTION_WB;
+        decision.lip = LIPWB;
+    }
+    else
+    {
+        decision.action = ACTION_WC;
+        decision.lip = LIPWC;
+    }
+
+    if (object.isFlying())
+    {
+        switch (decision.action)
+        {
+            case ACTION_DA: decision.action = ACTION_WC; break;
+            case ACTION_WA: decision.action = ACTION_WB; break;
+            case ACTION_WB: decision.action = ACTION_WA; break;
+            case ACTION_WC: decision.action = ACTION_DA; break;
+            default: break;
+        }
+    }
+
+    return decision;
+}
+
 uint8_t computeReflectionAlpha(const Object& object, uint8_t alpha)
 {
     const float altitudeAboveGround = std::max(0.0f, object.getPosZ() - object.getFloorElevation());
@@ -1109,25 +1195,92 @@ bool ObjectGraphics::incrementAction()
     return startAnimation(action, action_ready, true);
 }
 
-void ObjectGraphics::updateAnimationRate()
+bool ObjectGraphics::shouldSkipAnimationRateUpdate()
 {
-    // dont change the rate if it is an attack animation
-    if ( _object.isAttacking() ) {  
-        return;
+    if (_object.isAttacking()) {
+        return true;
     }
 
-    // if the action is set to keep then do nothing
     if (_freezeAtLastFrame) {
-        return;
+        return true;
     }
 
-    // if the action cannot be changed on the at this time, there's nothing to do.
-    // keep the same animation rate
-    if ( !canBeInterrupted() )
+    if (!canBeInterrupted())
     {
-        if (0.0f == _animationRate) { 
+        if (0.0f == _animationRate) {
             _animationRate = 1.0f;
         }
+        return true;
+    }
+
+    return false;
+}
+
+bool ObjectGraphics::applyMountedAnimationRatePolicy()
+{
+    if (!_object.isBeingHeld() || ((ACTION_MI != _currentAnimation) && (ACTION_MH != _currentAnimation)))
+    {
+        return false;
+    }
+
+    if (_object.getHolder()->isScenery()) {
+        //This is a special case to make animation while in the Pot (which is actually a "mount") look better
+        _animationRate = 0.0f;
+    }
+    else {
+        // just copy the rate from the mount
+        _animationRate = _object.getHolder()->getAnimationSpeed();
+    }
+
+    return true;
+}
+
+void ObjectGraphics::applyIdleAnimationPolicy()
+{
+    _object.setBoredTimer(_object.getBoredTimer() - 1);
+    if (_object.getBoredTimer() < 0)
+    {
+        _object.resetBoredTimer();
+
+        //Don't yell "im bored!" while stealthed!
+        if(!_object.isStealthed())
+        {
+            SET_BIT(_object.ai.alert, ALERTIF_BORED);
+
+            // set the action to "bored", which is ACTION_DB, ACTION_DC, or ACTION_DD
+            const int rand_val = Random::next(std::numeric_limits<uint16_t>::max());
+            const ModelAction boredAction = getModelDescriptor()->getAction(ACTION_DB + (rand_val % 3));
+            startAnimation(boredAction, true, true);
+        }
+    }
+    else if (_currentAnimation > ACTION_DD)
+    {
+        const ModelAction idleAction = getModelDescriptor()->getAction(ACTION_DA);
+        startAnimation(idleAction, true, true);
+    }
+}
+
+void ObjectGraphics::applyMovementAnimationPolicy(ModelAction action, int lip)
+{
+    const ModelAction resolvedAction = getModelDescriptor()->getAction(action);
+    if (ACTION_COUNT == resolvedAction)
+    {
+        return;
+    }
+
+    if (_currentAnimation != resolvedAction)
+    {
+        setAction(resolvedAction, true, true);
+        setFrame(getModelDescriptor()->getFrameLipToWalkFrame(lip, getNextFrame().framelip));
+        startAnimation(resolvedAction, true, true);
+    }
+
+    _nextAnimation = resolvedAction;
+}
+
+void ObjectGraphics::updateAnimationRate()
+{
+    if (shouldSkipAnimationRateUpdate()) {
         return;
     }
 
@@ -1135,148 +1288,23 @@ void ObjectGraphics::updateAnimationRate()
     // "variable speed frame"
     _animationRate = 1.0f;
 
-    // if the character is mounted or sitting, base the rate off of the mounr
-    if ( _object.isBeingHeld() && (( ACTION_MI == _currentAnimation ) || ( ACTION_MH == _currentAnimation ) ) )
+    // if the character is mounted or sitting, base the rate off of the mount
+    if (!applyMountedAnimationRatePolicy())
     {
-        if(_object.getHolder()->isScenery()) {
-            //This is a special case to make animation while in the Pot (which is actually a "mount") look better
-            _animationRate = 0.0f;
-        }
-        else {
-            // just copy the rate from the mount
-            _animationRate = _object.getHolder()->getAnimationSpeed();
+        const auto decision = makeLocomotionAnimationDecision(_object, *getModelDescriptor(), _currentAnimation);
+        if (!decision.shouldApply) {
+            return;
         }
 
-        return;
-    }
+        _animationRate = decision.animationRate;
 
-    // if the animation is not a walking-type animation, ignore the variable animation rates
-    // and the automatic determination of the walk animation
-    // "dance" is walking with zero speed
-    bool is_walk_type = (_currentAnimation < ACTION_DD) || ACTION_IS_TYPE( _currentAnimation, W );
-    if ( !is_walk_type ) {
-        return;
-    }
-
-    // for non-flying objects, you have to be touching the ground
-    if (!_object.getObjectPhysics().isTouchingGround() && !_object.isFlying()) {
-        return;
-    }
-
-    // set the character speed to zero
-    float speed = 0.0f;
-
-    // estimate our speed
-    if ( _object.isFlying() )
-    {
-        // for flying objects, the speed is the actual speed
-        speed = idlib::euclidean_norm(_object.getVelocity());
-    }
-    else
-    {
-        // For non-flying objects, we use the intended speed.
-        speed = std::max(idlib::euclidean_norm(xy(_object.getVelocity())), idlib::euclidean_norm(_object.getObjectPhysics().getDesiredVelocity()));
-        if (_object.getObjectPhysics().floorIsSlippy())
+        if (ACTION_DA == decision.action)
         {
-            // The character is slipping as on ice.
-            // Make his little legs move based on his intended speed, for comic effect! :)
-            _animationRate = 2.0f;
-            speed *= 2.0f;
-        }
-
-    }
-
-    //Make bigger Objects have slower animations
-    if ( _object.getFat() > 0.0f ) {
-        speed /= _object.getFat();  
-    }
-
-    //Find out which animation to use depending on movement speed
-    ModelAction action = ACTION_DA;
-    int lip = 0;
-    if (speed <= 1.0f) {
-        action = ACTION_DA;     //Stand still
-    }
-    else {
-        if(_object.isStealthed() && getModelDescriptor()->isActionValid(ACTION_WA)) {
-            action = ACTION_WA; //Sneak animation
-            lip = LIPWA;
-        }
-        else {
-            if(speed <= 4.0f && getModelDescriptor()->isActionValid(ACTION_WB)) {
-                action = ACTION_WB; //Walk
-                lip = LIPWB;
-            }
-            else {
-                action = ACTION_WC; //Run
-                lip = LIPWC;
-            }
-
-        }
-    }
-
-    // for flying characters, you have to flap like crazy to stand still and
-    // do nothing to move quickly
-    if ( _object.isFlying() )
-    {
-        switch(action)
-        {
-            case ACTION_DA: action = ACTION_WC; break;
-            case ACTION_WA: action = ACTION_WB; break;
-            case ACTION_WB: action = ACTION_WA; break;
-            case ACTION_WC: action = ACTION_DA; break;
-            default: /*don't modify action*/    break;
-        }
-    }
-
-    if ( ACTION_DA == action )
-    {
-        // Do standstill
-
-        // handle boredom
-        _object.setBoredTimer(_object.getBoredTimer() - 1);
-        if ( _object.getBoredTimer() < 0 )
-        {
-            _object.resetBoredTimer();
-
-            //Don't yell "im bored!" while stealthed!
-            if(!_object.isStealthed())
-            {
-                SET_BIT( _object.ai.alert, ALERTIF_BORED );
-
-                // set the action to "bored", which is ACTION_DB, ACTION_DC, or ACTION_DD
-                int rand_val   = Random::next(std::numeric_limits<uint16_t>::max());
-                ModelAction tmp_action = getModelDescriptor()->getAction(ACTION_DB + ( rand_val % 3 ));
-                startAnimation(tmp_action, true, true);
-            }
+            applyIdleAnimationPolicy();
         }
         else
         {
-            // if the current action is not ACTION_D* switch to ACTION_DA
-            if (_currentAnimation > ACTION_DD)
-            {
-                // get an appropriate version of the idle action
-                ModelAction tmp_action = getModelDescriptor()->getAction(ACTION_DA);
-
-                // start the animation
-                startAnimation(tmp_action, true, true );
-            }
-        }
-    }
-    else
-    {
-        ModelAction tmp_action = getModelDescriptor()->getAction(action);
-        if ( ACTION_COUNT != tmp_action )
-        {
-            if ( _currentAnimation != tmp_action )
-            {
-                setAction(tmp_action, true, true);
-                setFrame(getModelDescriptor()->getFrameLipToWalkFrame(lip, getNextFrame().framelip));
-                startAnimation(tmp_action, true, true);
-            }
-
-            // "loop" the action
-            _nextAnimation = tmp_action;
+            applyMovementAnimationPolicy(decision.action, decision.lip);
         }
     }
 
