@@ -661,10 +661,8 @@ uint8_t ObjectGraphics::getReflectionAlpha() const
     return computeReflectionAlpha(_object, alpha);
 }
 
-void ObjectGraphics::setObjectProfile(const std::shared_ptr<ObjectProfile> &profile)
+void ObjectGraphics::resetProfileApplicationState()
 {
-    //Reset data
-    // Remember any previous color shifts in case of lasting enchantments
     _matrix = idlib::identity<Matrix4f4f>();
     _reflectionMatrix = idlib::identity<Matrix4f4f>();
     uoffset = 0;
@@ -689,16 +687,19 @@ void ObjectGraphics::setObjectProfile(const std::shared_ptr<ObjectProfile> &prof
     _loopAnimation = false;
     _currentAnimation = ACTION_DA;
     _nextAnimation = ACTION_DA;
+}
 
-    // lighting parameters
-	this->alpha = profile->getAlpha();
-	this->light = profile->getLight();
-	this->sheen = profile->getSheen();
+void ObjectGraphics::applyProfileRenderDefaults(const ObjectProfile& profile)
+{
+    alpha = profile.getAlpha();
+    light = profile.getLight();
+    sheen = profile.getSheen();
 
-    // model parameters
-    setModel(profile->getModel());
+    setModel(profile.getModel());
+}
 
-    // set the initial action, all actions override it
+void ObjectGraphics::initializeProfileAnimation(const ObjectProfile& profile)
+{
     setActionReady(false);
     setActionLooped(false);
     if (_object.isAlive()) {
@@ -706,9 +707,16 @@ void ObjectGraphics::setObjectProfile(const std::shared_ptr<ObjectProfile> &prof
         setActionKeep(false);
     }
     else {
-        playAction(profile->getModel()->randomizeAction(ACTION_KA), false);
+        playAction(profile.getModel()->randomizeAction(ACTION_KA), false);
         setActionKeep(true);
     }
+}
+
+void ObjectGraphics::setObjectProfile(const std::shared_ptr<ObjectProfile> &profile)
+{
+    resetProfileApplicationState();
+    applyProfileRenderDefaults(*profile);
+    initializeProfileAnimation(*profile);
 }
 
 BIT_FIELD ObjectGraphics::getFrameFX() const

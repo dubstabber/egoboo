@@ -2,7 +2,9 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#define private public
 #include "egolib/Entities/_Include.hpp"
+#undef private
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
@@ -499,9 +501,85 @@ TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
     EXPECT_FALSE(object->getMatrixCache().isValid());
 }
 
-TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
+TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAndInvalidatesMatrixCache)
 {
     auto object = makeFollower(314);
+    ASSERT_NE(object, nullptr);
+
+    object->setAlpha(12);
+    object->setLight(34);
+    object->setSheen(56);
+    object->setUOffset(321);
+    object->setVOffset(654);
+
+    matrix_cache_t staleCache;
+    staleCache.valid = true;
+    staleCache.matrix_valid = true;
+    staleCache.type_bits = MAT_WEAPON;
+    staleCache.grip_chr = ObjectRef(77);
+    staleCache.grip_slot = SLOT_RIGHT;
+    object->setMatrixCache(staleCache);
+
+    ASSERT_TRUE(object->hasValidMatrixCache());
+    ASSERT_TRUE(object->hasValidMatrixValue());
+
+    object->inst.setObjectProfile(object->getProfile());
+
+    EXPECT_EQ(object->getAlpha(), object->getProfile()->getAlpha());
+    EXPECT_EQ(object->getLight(), object->getProfile()->getLight());
+    EXPECT_EQ(object->getSheen(), object->getProfile()->getSheen());
+    EXPECT_EQ(object->getUOffset(), 0);
+    EXPECT_EQ(object->getVOffset(), 0);
+    EXPECT_TRUE(object->hasModelDescriptor());
+    EXPECT_FALSE(object->hasValidMatrixCache());
+    EXPECT_FALSE(object->hasValidMatrixValue());
+    EXPECT_EQ(object->getMatrixCache().type_bits, MAT_UNKNOWN);
+    EXPECT_EQ(object->getMatrixCache().grip_chr, ObjectRef::Invalid);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresLiveIdleAnimationPolicy)
+{
+    auto object = makeFollower(315);
+    ASSERT_NE(object, nullptr);
+
+    object->inst._currentAnimation = ACTION_KA;
+    object->inst._nextAnimation = ACTION_KA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = true;
+    object->inst._animationRate = 3.0f;
+
+    object->inst.setObjectProfile(object->getProfile());
+
+    EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
+    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FALSE(object->inst._freezeAtLastFrame);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimationPolicy)
+{
+    auto object = makeFollower(316);
+    ASSERT_NE(object, nullptr);
+
+    object->_isAlive = false;
+    object->inst._currentAnimation = ACTION_DA;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+    object->inst._animationRate = 2.0f;
+
+    object->inst.setObjectProfile(object->getProfile());
+
+    EXPECT_TRUE(ACTION_IS_TYPE(object->getCurrentAnimation(), K));
+    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_TRUE(object->hasModelDescriptor());
+    EXPECT_TRUE(object->inst._freezeAtLastFrame);
+}
+
+TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(317);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

@@ -279,6 +279,11 @@ public:
     oct_bb_t getBoundingBox() const;
 
 private:
+    void resetProfileApplicationState();
+
+    void applyProfileRenderDefaults(const ObjectProfile& profile);
+
+    void initializeProfileAnimation(const ObjectProfile& profile);
 
     /// Set the model descriptor.
     /// @param modelDescriptor the model descriptor
