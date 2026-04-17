@@ -58,25 +58,29 @@ void Object::movePosition(const float x, const float y, const float z)
 
 void Object::setAlpha(const int alpha)
 {
-    inst.alpha = Ego::Math::constrain(alpha, 0, 0xFF);
+    uint8_t clampedAlpha = Ego::Math::constrain(alpha, 0, 0xFF);
 
     if (isPlayer()) {
-        inst.alpha = std::max<uint8_t>(SEEINVISIBLE, inst.alpha);
+        clampedAlpha = std::max<uint8_t>(SEEINVISIBLE, clampedAlpha);
     }
+
+    inst.setAlpha(clampedAlpha);
 }
 
 void Object::setLight(const int light)
 {
-    inst.light = Ego::Math::constrain(light, 0, 0xFF);
+    uint8_t clampedLight = Ego::Math::constrain(light, 0, 0xFF);
 
     if (isPlayer()) {
-        inst.light = std::max<uint8_t>(SEEINVISIBLE, inst.light);
+        clampedLight = std::max<uint8_t>(SEEINVISIBLE, clampedLight);
     }
+
+    inst.setLight(clampedLight);
 }
 
 void Object::setSheen(const int sheen)
 {
-    inst.sheen = Ego::Math::constrain(sheen, 0, 0xFF);
+    inst.setSheen(Ego::Math::constrain(sheen, 0, 0xFF));
 }
 
 bool Object::teleport(const Ego::Vector3f& position, Facing facing_z)
@@ -153,8 +157,8 @@ bool Object::canSeeObject(const std::shared_ptr<Object>& target) const
         return true;
     }
 
-    int enviro_light = (target->inst.alpha * target->inst.getMaxLight()) * idlib::fraction<float, 1, 255>();
-    int self_light = (target->inst.light == 255) ? 0 : target->inst.light;
+    int enviro_light = (target->getAlpha() * target->getMaxLight()) * idlib::fraction<float, 1, 255>();
+    int self_light = (target->getLight() == 255) ? 0 : target->getLight();
     int light = std::max(enviro_light, self_light);
     light *= expf(0.32f * getAttribute(Ego::Attribute::DARKVISION));
     if (light < INVISIBLE) {
@@ -165,7 +169,7 @@ bool Object::canSeeObject(const std::shared_ptr<Object>& target) const
         return false;
     }
 
-    if (!canSeeInvisible() && target->inst.alpha < INVISIBLE) {
+    if (!canSeeInvisible() && target->getAlpha() < INVISIBLE) {
         return false;
     }
 

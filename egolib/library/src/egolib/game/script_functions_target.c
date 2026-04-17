@@ -901,7 +901,7 @@ uint8_t scr_IfTargetIsDefending( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    returncode = ACTION_IS_TYPE( pself_target->inst.getCurrentAnimation(), P );
+    returncode = ACTION_IS_TYPE( pself_target->getCurrentAnimation(), P );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1262,7 +1262,7 @@ uint8_t scr_IfTargetIsSneaking( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    returncode = ( pself_target->inst.getCurrentAnimation() == ACTION_DA || pself_target->inst.getCurrentAnimation() == ACTION_WA );
+    returncode = ( pself_target->getCurrentAnimation() == ACTION_DA || pself_target->getCurrentAnimation() == ACTION_WA );
 
     SCRIPT_FUNCTION_END();
 }

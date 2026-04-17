@@ -124,7 +124,7 @@ bool chr_matrix_valid(const Object *pobj) {
     /// @details Determine whether the character has a valid matrix
 
     if (!pobj) return false;
-    return pobj->inst.matrix_cache.isValid();
+    return pobj->getMatrixCache().isValid();
 }
 
 
@@ -145,10 +145,10 @@ int get_grip_verts( uint16_t grip_verts[], const ObjectRef imount, int vrt_offse
     if ( !objectHandler().exists( imount ) ) return 0;
     Object *pmount = objectHandler().get( imount );
 
-    if ( 0 == pmount->inst.getVertexCount() ) return 0;
+    if ( 0 == pmount->getVertexCount() ) return 0;
 
     //---- set the proper weapongrip vertices
-    int tnc = ( int )pmount->inst.getVertexCount() - ( int )vrt_offset;
+    int tnc = ( int )pmount->getVertexCount() - ( int )vrt_offset;
 
     // if the starting vertex is less than 0, just take the first vertex
     if ( tnc < 0 )
@@ -160,7 +160,7 @@ int get_grip_verts( uint16_t grip_verts[], const ObjectRef imount, int vrt_offse
     int vrt_count = 0;
     for (size_t i = 0; i < GRIP_VERTS; i++ )
     {
-        if ( tnc + i < pmount->inst.getVertexCount() )
+        if ( tnc + i < pmount->getVertexCount() )
         {
             grip_verts[i] = tnc + i;
             vrt_count++;
@@ -202,7 +202,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         chr_update_matrix( ptarget, true );
 
         // grab the matrix cache into from the character we are overlaying
-        mc_tmp = ptarget->inst.matrix_cache;
+        mc_tmp = ptarget->getMatrixCache();
 
         // just in case the overlay's matrix cannot be corrected
         // then treat it as if it is not an overlay
@@ -225,7 +225,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
 
             // just in case the mounts's matrix cannot be corrected
             // then treat it as if it is not mounted... yuck
-            if ( pmount->inst.matrix_cache.matrix_valid )
+            if ( pmount->hasValidMatrixValue() )
             {
                 mc_tmp.valid     = true;
                 SET_BIT( mc_tmp.type_bits, MAT_WEAPON );        // add in the weapon data
@@ -295,7 +295,7 @@ int convert_grip_to_local_points( Object * pholder, uint16_t grip_verts[], Ego::
     else
     {
         // update the grip vertices
-        pholder->inst.updateGripVertices(grip_verts, GRIP_VERTS );
+        pholder->updateGripVertices(grip_verts, GRIP_VERTS);
 
         // copy the vertices into dst_point[]
         for ( point_count = 0, cnt = 0; cnt < GRIP_VERTS; cnt++, point_count++ )
@@ -304,9 +304,9 @@ int convert_grip_to_local_points( Object * pholder, uint16_t grip_verts[], Ego::
 
             if ( 0xFFFF == vertex ) continue;
 
-            dst_point[point_count][kX] = pholder->inst.getVertex(vertex).pos[XX];
-            dst_point[point_count][kY] = pholder->inst.getVertex(vertex).pos[YY];
-            dst_point[point_count][kZ] = pholder->inst.getVertex(vertex).pos[ZZ];
+            dst_point[point_count][kX] = pholder->getVertex(vertex).pos[XX];
+            dst_point[point_count][kY] = pholder->getVertex(vertex).pos[YY];
+            dst_point[point_count][kZ] = pholder->getVertex(vertex).pos[ZZ];
             dst_point[point_count][kW] = 1.0f;
         }
     }
@@ -331,7 +331,7 @@ int convert_grip_to_global_points( const ObjectRef iholder, uint16_t grip_verts[
     if ( 0 == point_count ) return 0;
 
     // use the math function instead of rolling out own
-	Utilities::transform(pholder->inst.getMatrix(), src_point, dst_point, point_count);
+	Utilities::transform(pholder->getMatrix(), src_point, dst_point, point_count);
 
     return point_count;
 }
@@ -349,12 +349,13 @@ bool apply_one_weapon_matrix( Object * pweap, matrix_cache_t& mc_tmp )
     if ( !mc_tmp.valid || 0 == ( MAT_WEAPON & mc_tmp.type_bits ) ) return false;
 
     if ( nullptr == pweap ) return false;
-    matrix_cache_t& pweap_mcache = pweap->inst.matrix_cache;
+    matrix_cache_t pweap_mcache = pweap->getMatrixCache();
 
     if ( !objectHandler().exists( mc_tmp.grip_chr ) ) return false;
 
     // make sure that the matrix is invalid incase of an error
     pweap_mcache.matrix_valid = false;
+    pweap->setMatrixCache(pweap_mcache);
 
     // grab the grip points in world coordinates
     iweap_points = convert_grip_to_global_points( mc_tmp.grip_chr, mc_tmp.grip_verts.data(), nupoint );
@@ -363,17 +364,16 @@ bool apply_one_weapon_matrix( Object * pweap, matrix_cache_t& mc_tmp )
     {
         // Calculate weapon's matrix based on positions of grip points
         // chrscale is recomputed at time of attachment
-        pweap->inst.setMatrix(Utilities::fromFourPoints(Ego::Vector3f(nupoint[0][kX], nupoint[0][kY], nupoint[0][kZ]),
-                                                        Ego::Vector3f(nupoint[1][kX], nupoint[1][kY], nupoint[1][kZ]),
-                                                        Ego::Vector3f(nupoint[2][kX], nupoint[2][kY], nupoint[2][kZ]),
-                                                        Ego::Vector3f(nupoint[3][kX], nupoint[3][kY], nupoint[3][kZ]), 
-                                                        mc_tmp.self_scale[kZ]));
+        pweap->setMatrix(Utilities::fromFourPoints(Ego::Vector3f(nupoint[0][kX], nupoint[0][kY], nupoint[0][kZ]),
+                                                   Ego::Vector3f(nupoint[1][kX], nupoint[1][kY], nupoint[1][kZ]),
+                                                   Ego::Vector3f(nupoint[2][kX], nupoint[2][kY], nupoint[2][kZ]),
+                                                   Ego::Vector3f(nupoint[3][kX], nupoint[3][kY], nupoint[3][kZ]),
+                                                   mc_tmp.self_scale[kZ]));
 
         // update the weapon position
         pweap->setPosition(Ego::Vector3f(nupoint[3][kX],nupoint[3][kY],nupoint[3][kZ]));
-        pweap->inst.matrix_cache = mc_tmp;
-
-        pweap_mcache.matrix_valid = true;
+        pweap->setMatrixCache(mc_tmp);
+        pweap->setMatrixValueValid(true);
     }
     else if ( iweap_points > 0 )
     {
@@ -394,7 +394,7 @@ bool apply_one_weapon_matrix( Object * pweap, matrix_cache_t& mc_tmp )
         apply_one_character_matrix( pweap, mc_tmp );
     }
 
-    return pweap_mcache.matrix_valid;
+    return pweap->hasValidMatrixValue();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -409,11 +409,11 @@ bool apply_one_character_matrix( Object * pchr, matrix_cache_t& mc_tmp )
 
     if ( nullptr == pchr ) return false;
 
-    pchr->inst.matrix_cache.matrix_valid = false;
+    pchr->setMatrixValueValid(false);
 
     if ( pchr->getProfile()->hasStickyButt() )
     {
-        pchr->inst.setMatrix(
+        pchr->setMatrix(
         mat_ScaleXYZ_RotateXYZ_TranslateXYZ_SpaceFixed(
             mc_tmp.self_scale,
             mc_tmp.rotate[kZ],
@@ -423,7 +423,7 @@ bool apply_one_character_matrix( Object * pchr, matrix_cache_t& mc_tmp )
     }
     else
     {
-        pchr->inst.setMatrix(
+        pchr->setMatrix(
         mat_ScaleXYZ_RotateXYZ_TranslateXYZ_BodyFixed(
             mc_tmp.self_scale,
             mc_tmp.rotate[kZ],
@@ -432,8 +432,8 @@ bool apply_one_character_matrix( Object * pchr, matrix_cache_t& mc_tmp )
             mc_tmp.pos));
     }
 
-    pchr->inst.matrix_cache = mc_tmp;
-    pchr->inst.matrix_cache.matrix_valid = true;
+    pchr->setMatrixCache(mc_tmp);
+    pchr->setMatrixValueValid(true);
 
     return true;
 }
@@ -458,12 +458,11 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         }
         else
         {
-            matrix_cache_t& mcache = pchr->inst.matrix_cache;
-
             // !!!the mc_tmp was mis-labeled as a MAT_WEAPON!!!
             make_one_character_matrix(pchr->getObjRef());
 
             // recover the matrix_cache values from the character
+            matrix_cache_t mcache = pchr->getMatrixCache();
             SET_BIT( mcache.type_bits, MAT_CHARACTER );
             if ( mcache.matrix_valid )
             {
@@ -480,6 +479,7 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
 
                 mcache.pos = pchr->getPosition();
 
+                pchr->setMatrixCache(mcache);
                 applied = true;
             }
         }
@@ -504,7 +504,7 @@ egolib_rv matrix_cache_needs_update( Object * pchr, matrix_cache_t& pmc )
     chr_get_matrix_cache( pchr, pmc );
 
     // compare that data to the actual data used to make the matrix
-    return !(pmc == pchr->inst.matrix_cache) ? rv_success : rv_fail;
+    return !(pmc == pchr->getMatrixCache()) ? rv_success : rv_fail;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -529,14 +529,14 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
         if ( rv_error == attached_update )
         {
             // there is an error so this matrix is not defined and no readon to go farther
-            pchr->inst.matrix_cache.matrix_valid = false;
+            pchr->setMatrixValueValid(false);
             return attached_update;
         }
         else if ( rv_success == attached_update )
         {
             // the holder/mount matrix has changed.
             // this matrix is no longer valid.
-            pchr->inst.matrix_cache.matrix_valid = false;
+            pchr->setMatrixValueValid(false);
         }
     }
 
@@ -551,7 +551,7 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     if ( HAS_SOME_BITS(mc_tmp.type_bits, MAT_WEAPON) && heldItem)
     {
         // has that character changes its animation?
-        if(heldItem->inst.updateGripVertices(mc_tmp.grip_verts.data(), GRIP_VERTS)) {
+        if(heldItem->updateGripVertices(mc_tmp.grip_verts.data(), GRIP_VERTS)) {
             needs_update = true;
         }
     }
@@ -560,7 +560,7 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     if (needs_update)
     {
         // we know the matrix is not valid
-        pchr->inst.matrix_cache.matrix_valid = false;
+        pchr->setMatrixValueValid(false);
 
         if(apply_matrix_cache(pchr, mc_tmp)) {
             if(update_size) {
@@ -588,7 +588,7 @@ bool chr_getMatUp(Object *object_ptr, Ego::Vector3f& up)
 
 	if (chr_matrix_valid(object_ptr))
 	{
-        up = mat_getChrUp(object_ptr->inst.getMatrix());
+        up = mat_getChrUp(object_ptr->getMatrix());
 	}
     else
 	{
@@ -611,7 +611,7 @@ bool chr_getMatRight(Object *object_ptr, Ego::Vector3f& right)
 
 	if (chr_matrix_valid(object_ptr))
 	{
-        right = mat_getChrRight(object_ptr->inst.getMatrix());
+        right = mat_getChrRight(object_ptr->getMatrix());
 	}
     else
 	{
@@ -634,7 +634,7 @@ bool chr_getMatForward(Object *object_ptr, Ego::Vector3f& forward)
 
 	if (chr_matrix_valid(object_ptr))
 	{
-        forward = mat_getChrForward(object_ptr->inst.getMatrix());
+        forward = mat_getChrForward(object_ptr->getMatrix());
 	}
     else
 	{
@@ -657,7 +657,7 @@ bool chr_getMatTranslate(Object *object_ptr, Ego::Vector3f& translate)
 
 	if (chr_matrix_valid(object_ptr))
 	{
-        translate = mat_getTranslate(object_ptr->inst.getMatrix());
+        translate = mat_getTranslate(object_ptr->getMatrix());
 	}
     else
 	{
@@ -705,10 +705,10 @@ bool chr_calc_grip_cv( Object * pmount, int grip_offset, oct_bb_t * grip_cv_ptr,
     // get appropriate vertices for this model's grip
     {
         // do the automatic vertex update
-		int vert_stt = static_cast<int>(pmount->inst.getVertexCount()) - static_cast<int>(grip_offset);
+		int vert_stt = static_cast<int>(pmount->getVertexCount()) - static_cast<int>(grip_offset);
         if ( vert_stt < 0 ) return false;
 
-		if (gfx_error == pmount->inst.updateVertices(vert_stt, vert_stt + grip_offset, false))
+		if (gfx_error == pmount->updateVertices(vert_stt, vert_stt + grip_offset, false))
         {
             grip_count = 0;
             for ( cnt = 0; cnt < GRIP_VERTS; cnt++ )
@@ -719,7 +719,7 @@ bool chr_calc_grip_cv( Object * pmount, int grip_offset, oct_bb_t * grip_cv_ptr,
         else
         {
             // calculate the grip vertices
-			for (grip_count = 0, cnt = 0; cnt < GRIP_VERTS && (size_t)(vert_stt + cnt) < pmount->inst.getVertexCount(); grip_count++, cnt++)
+			for (grip_count = 0, cnt = 0; cnt < GRIP_VERTS && (size_t)(vert_stt + cnt) < pmount->getVertexCount(); grip_count++, cnt++)
             {
                 grip_verts[cnt] = vert_stt + cnt;
             }
@@ -778,7 +778,7 @@ bool chr_calc_grip_cv( Object * pmount, int grip_offset, oct_bb_t * grip_cv_ptr,
 
     // transform the vertices to calculate the grip_vecs[]
     // we only need one vertex
-	Utilities::transform(pmount->inst.getMatrix(),grip_points, grip_nupoints, 1);
+	Utilities::transform(pmount->getMatrix(),grip_points, grip_nupoints, 1);
 
     // add in the "origin" of the grip, if necessary
     if ( NULL != grip_cv_ptr )
@@ -796,7 +796,7 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
 
     if ( !objectHandler().exists( iitem ) ) return false;
 	Object *pitem = objectHandler().get( iitem );
-	matrix_cache_t& mcache = pitem->inst.matrix_cache;
+	matrix_cache_t mcache = pitem->getMatrixCache();
 
     // is the item attached to this valid holder?
     if ( pitem->getHolderRef() != iholder ) return false;
@@ -844,6 +844,11 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
         }
     }
 
+    if (needs_update)
+    {
+        pitem->setMatrixCache(mcache);
+    }
+
     return true;
 }
 
@@ -857,7 +862,7 @@ void make_one_character_matrix( const ObjectRef ichr )
     Object * pchr = objectHandler().get( ichr );
 
     // invalidate this matrix
-    pchr->inst.matrix_cache.matrix_valid = false;
+    pchr->setMatrixValueValid(false);
 
     if ( pchr->isOverlay() )
     {
@@ -870,17 +875,17 @@ void make_one_character_matrix( const ObjectRef ichr )
             pchr->setPosition(ptarget->getPosition());
 
             // copy the matrix
-            pchr->inst.setMatrix(ptarget->inst.getMatrix());
+            pchr->setMatrix(ptarget->getMatrix());
 
             // copy the matrix data
-            pchr->inst.matrix_cache = ptarget->inst.matrix_cache;
+            pchr->setMatrixCache(ptarget->getMatrixCache());
         }
     }
     else
     {
         if ( pchr->getProfile()->hasStickyButt() )
         {
-            pchr->inst.setMatrix(
+            pchr->setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_SpaceFixed(
     				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
                     pchr->getFacingZ(),
@@ -891,7 +896,7 @@ void make_one_character_matrix( const ObjectRef ichr )
         }
         else
         {
-            pchr->inst.setMatrix(
+            pchr->setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_BodyFixed(
     				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
                     pchr->getFacingZ(),
@@ -901,16 +906,15 @@ void make_one_character_matrix( const ObjectRef ichr )
             );
         }
 
-        pchr->inst.matrix_cache.valid        = true;
-        pchr->inst.matrix_cache.matrix_valid = true;
-        pchr->inst.matrix_cache.type_bits    = MAT_CHARACTER;
-
-        pchr->inst.matrix_cache.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
-
-        pchr->inst.matrix_cache.rotate[kX] = pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
-        pchr->inst.matrix_cache.rotate[kY] = pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
-        pchr->inst.matrix_cache.rotate[kZ] = pchr->getFacingZ();
-
-        pchr->inst.matrix_cache.pos = pchr->getPosition();
+        matrix_cache_t cache = pchr->getMatrixCache();
+        cache.valid        = true;
+        cache.matrix_valid = true;
+        cache.type_bits    = MAT_CHARACTER;
+        cache.self_scale   = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
+        cache.rotate[kX]   = pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
+        cache.rotate[kY]   = pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
+        cache.rotate[kZ]   = pchr->getFacingZ();
+        cache.pos          = pchr->getPosition();
+        pchr->setMatrixCache(cache);
     }
 }

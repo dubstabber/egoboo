@@ -483,7 +483,7 @@ void ParticleGraphicsRenderer::prt_draw_attached_point(const std::shared_ptr<Ego
         return;
     }
 
-    draw_one_attachment_point(particle->getAttachedObject()->inst, particle->attachedto_vrt_off);
+    draw_one_attachment_point(particle->getAttachedObject()->graphics(), particle->attachedto_vrt_off);
 }
 
 void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Particle>& particle)

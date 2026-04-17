@@ -802,10 +802,10 @@ void ObjectGraphics::setMatrix(const Matrix4f4f& matrix)
 static void chr_invalidate_child_instances(Object &object)
 {
     if(object.getLeftHandItem()) {
-        object.getLeftHandItem()->inst.matrix_cache.valid = false;
+        object.getLeftHandItem()->setMatrixCacheValid(false);
     }
     if(object.getRightHandItem()) {
-        object.getRightHandItem()->inst.matrix_cache.valid = false;
+        object.getRightHandItem()->setMatrixCacheValid(false);
     }
 }
 
@@ -900,7 +900,7 @@ float ObjectGraphics::getRemainingFlip() const
 
 bool ObjectGraphics::handleAnimationFX() const
 {
-    uint32_t framefx = _object.inst.getFrameFX();
+    uint32_t framefx = getFrameFX();
 
     if ( 0 == framefx ) return true;
 
@@ -1025,7 +1025,7 @@ void ObjectGraphics::incrementFrame()
     _targetFrameIndex = frame_nxt;
 
     // if the instance is invalid, invalidate everything that depends on this object
-    if (!_object.inst.isVertexCacheValid()) {
+    if (!isVertexCacheValid()) {
         chr_invalidate_child_instances(_object);
     }
 }
@@ -1041,7 +1041,7 @@ bool ObjectGraphics::startAnimation(const ModelAction action, const bool action_
     }
 
     // if the instance is invalid, invalidate everything that depends on this object
-    if (!_object.inst.isVertexCacheValid()) {
+    if (!isVertexCacheValid()) {
         chr_invalidate_child_instances(_object);
     }
 
@@ -1079,8 +1079,6 @@ bool ObjectGraphics::incrementAction()
 
 void ObjectGraphics::updateAnimationRate()
 {
-    ObjectGraphics& pinst = _object.inst;
-
     // dont change the rate if it is an attack animation
     if ( _object.isAttacking() ) {  
         return;
@@ -1114,7 +1112,7 @@ void ObjectGraphics::updateAnimationRate()
         }
         else {
             // just copy the rate from the mount
-            _animationRate = _object.getHolder()->inst._animationRate;
+            _animationRate = _object.getHolder()->getAnimationSpeed();
         }
 
         return;
@@ -1217,7 +1215,7 @@ void ObjectGraphics::updateAnimationRate()
                 // set the action to "bored", which is ACTION_DB, ACTION_DC, or ACTION_DD
                 int rand_val   = Random::next(std::numeric_limits<uint16_t>::max());
                 ModelAction tmp_action = getModelDescriptor()->getAction(ACTION_DB + ( rand_val % 3 ));
-                _object.inst.startAnimation(tmp_action, true, true );
+                startAnimation(tmp_action, true, true);
             }
         }
         else
@@ -1241,7 +1239,7 @@ void ObjectGraphics::updateAnimationRate()
             if ( _currentAnimation != tmp_action )
             {
                 setAction(tmp_action, true, true);
-                setFrame(getModelDescriptor()->getFrameLipToWalkFrame(lip, pinst.getNextFrame().framelip));
+                setFrame(getModelDescriptor()->getFrameLipToWalkFrame(lip, getNextFrame().framelip));
                 startAnimation(tmp_action, true, true);
             }
 
@@ -1332,16 +1330,16 @@ oct_bb_t ObjectGraphics::getBoundingBox() const
 {
     //Beginning of a frame animation
     if (_targetFrameIndex == _sourceFrameIndex || _animationProgress == 0.0f) {
-        return _object.inst.getLastFrame().bb;
+        return getLastFrame().bb;
     } 
 
     //Finished frame animation
     if (_animationProgress == 1.0f) {
-        return _object.inst.getNextFrame().bb;
+        return getNextFrame().bb;
     } 
 
     //We are middle between two animation frames
-    return oct_bb_t::interpolate(_object.inst.getLastFrame().bb, _object.inst.getNextFrame().bb, _animationProgress);
+    return oct_bb_t::interpolate(getLastFrame().bb, getNextFrame().bb, _animationProgress);
 }
 
 } //namespace Graphics

@@ -49,7 +49,7 @@ struct Md2VertexBuffer {
 
 gfx_rv ObjectGraphicsRenderer::render_enviro( Camera& cam, const std::shared_ptr<Object>& pchr, GLXvector4f tint, const BIT_FIELD bits )
 {
-    if (!pchr->inst.getModelDescriptor())
+    if (!pchr->graphics().getModelDescriptor())
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `"<< pchr->getObjRef() << "`" << Log::EndOfEntry;
@@ -77,15 +77,15 @@ gfx_rv ObjectGraphicsRenderer::render_enviro( Camera& cam, const std::shared_ptr
 		ptex = pchr->getSkinTexture();
 	}
 
-    float uoffset = pchr->inst.uoffset - float(cam.getTurnZ_turns());
+    float uoffset = pchr->getUOffset() - float(cam.getTurnZ_turns());
 
 	if (HAS_SOME_BITS(bits, CHR_REFLECT))
 	{
-        renderer.setWorldMatrix(pchr->inst.getReflectionMatrix());
+        renderer.setWorldMatrix(pchr->getReflectionMatrix());
 	}
 	else
 	{
-		renderer.setWorldMatrix(pchr->inst.getMatrix());
+		renderer.setWorldMatrix(pchr->getMatrix());
 	}
 
     // Choose texture and matrix
@@ -105,8 +105,8 @@ gfx_rv ObjectGraphicsRenderer::render_enviro( Camera& cam, const std::shared_ptr
                 auto *targetVertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
                 for (const id_glcmd_packed_t& cmd : glcommand.data) {
                     uint16_t vertexIndex = cmd.index;
-                    if (vertexIndex >= pchr->inst.getVertexCount()) continue;
-                    const GLvertex& pvrt = pchr->inst.getVertex(vertexIndex);
+                    if (vertexIndex >= pchr->getVertexCount()) continue;
+                    const GLvertex& pvrt = pchr->getVertex(vertexIndex);
                     targetVertex->position.x = pvrt.pos[XX];
                     targetVertex->position.y = pvrt.pos[YY];
                     targetVertex->position.z = pvrt.pos[ZZ];
@@ -200,7 +200,7 @@ else
 
 gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<Object>& pchr, GLXvector4f tint, const BIT_FIELD bits)
 {
-    if (!pchr->inst.getModelDescriptor())
+    if (!pchr->graphics().getModelDescriptor())
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `" << pchr->getObjRef() << "`" << Log::EndOfEntry;
@@ -215,15 +215,15 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<
     // To make life easier
     std::shared_ptr<const Ego::Texture> ptex = pchr->getSkinTexture();
 
-    float uoffset = pchr->inst.uoffset * idlib::fraction<float, 1, 65535>();
-    float voffset = pchr->inst.voffset * idlib::fraction<float, 1, 65535>();
+    float uoffset = pchr->getUOffset() * idlib::fraction<float, 1, 65535>();
+    float voffset = pchr->getVOffset() * idlib::fraction<float, 1, 65535>();
 
     float base_amb = 0.0f;
     if (0 == (bits & CHR_LIGHT))
     {
         // Convert the "light" parameter to self-lighting for
         // every object that is not being rendered using CHR_LIGHT.
-        base_amb = (0xFF == pchr->inst.light) ? 0 : (pchr->inst.light * idlib::fraction<float, 1, 255>());
+        base_amb = (0xFF == pchr->getLight()) ? 0 : (pchr->getLight() * idlib::fraction<float, 1, 255>());
     }
 
     // Get the maximum number of vertices per command.
@@ -233,11 +233,11 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<
 
     if (0 != (bits & CHR_REFLECT))
     {
-        renderer.setWorldMatrix(pchr->inst.getReflectionMatrix());
+        renderer.setWorldMatrix(pchr->getReflectionMatrix());
     }
     else
     {
-        renderer.setWorldMatrix(pchr->inst.getMatrix());
+        renderer.setWorldMatrix(pchr->getMatrix());
     }
 
     // Choose texture.
@@ -253,10 +253,10 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<
                 auto* targetVertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
                 for (const id_glcmd_packed_t &cmd : glcommand.data) {
                     uint16_t vertexIndex = cmd.index;
-                    if (vertexIndex >= pchr->inst.getVertexCount()) {
+                    if (vertexIndex >= pchr->getVertexCount()) {
                         continue;
                     }
-                    const GLvertex& pvrt = pchr->inst.getVertex(vertexIndex);
+                    const GLvertex& pvrt = pchr->getVertex(vertexIndex);
                     targetVertex->position.x = pvrt.pos[XX];
                     targetVertex->position.y = pvrt.pos[YY];
                     targetVertex->position.z = pvrt.pos[ZZ];
@@ -283,7 +283,7 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<
                             // Convert the "light" parameter to self-lighting for
                             // every object that is not being rendered using CHR_LIGHT.
 
-                            float acol = base_amb + pchr->inst.getAmbientColour() * idlib::fraction<float, 1, 255>();
+                            float acol = base_amb + pchr->getAmbientColour() * idlib::fraction<float, 1, 255>();
 
                             targetVertex->colour.r += acol;
                             targetVertex->colour.g += acol;
@@ -415,12 +415,12 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
             Ego::OpenGL::Utilities::isError();
 
             //Transparent
-            if (pchr->inst.getReflectionAlpha() != 0xFF && pchr->inst.light == 0xFF) {
+            if (pchr->graphics().getReflectionAlpha() != 0xFF && pchr->getLight() == 0xFF) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, true, CHR_ALPHA);
+                pchr->graphics().getTint(tint, true, CHR_ALPHA);
 
                 if (gfx_error == render(cam, pchr, tint, CHR_ALPHA | CHR_REFLECT)) {
                     retval = gfx_error;
@@ -428,12 +428,12 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
             }
 
             //Glowing
-            if (pchr->inst.light != 0xFF) {
+            if (pchr->getLight() != 0xFF) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, true, CHR_LIGHT);
+                pchr->graphics().getTint(tint, true, CHR_LIGHT);
 
                 if (gfx_error == ObjectGraphicsRenderer::render(cam, pchr, tint, CHR_LIGHT)) {
                     retval = gfx_error;
@@ -442,12 +442,12 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
             }
 
             //Render shining effect on top of model
-            if (pchr->inst.getReflectionAlpha() == 0xFF && gfx.phongon && pchr->inst.sheen > 0) {
+            if (pchr->graphics().getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, true, CHR_PHONG);
+                pchr->graphics().getTint(tint, true, CHR_PHONG);
 
                 if (gfx_error == ObjectGraphicsRenderer::render(cam, pchr, tint, CHR_PHONG)) {
                     retval = gfx_error;
@@ -472,7 +472,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
         {
             auto& renderer = Ego::Renderer::get();
 
-            if (pchr->inst.alpha < 0xFF) {
+            if (pchr->getAlpha() < 0xFF) {
                 // most alpha effects will be messed up by
                 // skipping backface culling, so don't
 
@@ -489,14 +489,14 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, false, CHR_ALPHA);
+                pchr->graphics().getTint(tint, false, CHR_ALPHA);
 
                 if (render(cam, pchr, tint, CHR_ALPHA)) {
                     rendered = true;
                 }
             }
 
-            else if (pchr->inst.light < 0xFF) {
+            else if (pchr->getLight() < 0xFF) {
                 // light effects should show through transparent objects
                 renderer.setCullingMode(idlib::culling_mode::none);
 
@@ -507,7 +507,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, false, CHR_LIGHT);
+                pchr->graphics().getTint(tint, false, CHR_LIGHT);
 
                 if (render(cam, pchr, tint, CHR_LIGHT)) {
                     rendered = true;
@@ -515,12 +515,12 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
             }
 
             // Render shining effect on top of model
-            if (pchr->inst.getReflectionAlpha() == 0xFF && gfx.phongon && pchr->inst.sheen > 0) {
+            if (pchr->graphics().getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->inst.getTint(tint, false, CHR_PHONG);
+                pchr->graphics().getTint(tint, false, CHR_PHONG);
 
                 if (render(cam, pchr, tint, CHR_PHONG)) {
                     rendered = true;
@@ -537,7 +537,7 @@ gfx_rv ObjectGraphicsRenderer::render_solid( Camera& cam, const std::shared_ptr<
     if ( pchr->isHidden() ) return gfx_fail;
 
     //Only proceed if we are truly fully solid
-    if (0xFF != pchr->inst.alpha || 0xFF != pchr->inst.light) {
+    if (0xFF != pchr->getAlpha() || 0xFF != pchr->getLight()) {
         return gfx_success;
     }
 
@@ -574,7 +574,7 @@ gfx_rv ObjectGraphicsRenderer::render_solid( Camera& cam, const std::shared_ptr<
             }
 
             GLXvector4f tint;
-            pchr->inst.getTint(tint, false, CHR_SOLID);
+            pchr->graphics().getTint(tint, false, CHR_SOLID);
 
             if (gfx_error == render(cam, pchr, tint, CHR_SOLID)) {
                 retval = gfx_error;
@@ -621,7 +621,7 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
 
         // Draw all the vertices of an object
         GL_DEBUG(glPointSize(5));
-        draw_chr_verts(pchr, 0, pchr->inst.getVertexCount());
+        draw_chr_verts(pchr, 0, pchr->getVertexCount());
     }
 }
 #endif
@@ -638,19 +638,19 @@ void ObjectGraphicsRenderer::draw_chr_verts(const std::shared_ptr<Object>& pchr,
     vmin = vrt_offset;
     vmax = vmin + verts;
 
-    if ( vmin < 0 || ( size_t )vmin > pchr->inst.getVertexCount() ) return;
-    if ( vmax < 0 || ( size_t )vmax > pchr->inst.getVertexCount() ) return;
+    if ( vmin < 0 || ( size_t )vmin > pchr->getVertexCount() ) return;
+    if ( vmax < 0 || ( size_t )vmax > pchr->getVertexCount() ) return;
 
     // disable the texturing so all the points will be white,
     // not the texture color of the last vertex we drawn
     Ego::Renderer::get().getTextureUnit().setActivated(nullptr);
 
-	Ego::Renderer::get().setWorldMatrix(pchr->inst.getMatrix());
+	Ego::Renderer::get().setWorldMatrix(pchr->getMatrix());
     GL_DEBUG( glBegin( GL_POINTS ) );
     {
         for ( cnt = vmin; cnt < vmax; cnt++ )
         {
-            GL_DEBUG( glVertex3fv )( pchr->inst.getVertex(cnt).pos );
+            GL_DEBUG( glVertex3fv )( pchr->getVertex(cnt).pos );
         }
     }
     GL_DEBUG_END();
@@ -724,7 +724,7 @@ void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object
     const auto& pholder = pchr->getHolder();
     if (!pholder || pholder->isTerminated()) return;
 
-    draw_one_grip( &( pholder->inst ), pchr->getAttachmentSlot() );
+    draw_one_grip(&(pholder->graphics()), pchr->getAttachmentSlot());
 }
 #endif
 

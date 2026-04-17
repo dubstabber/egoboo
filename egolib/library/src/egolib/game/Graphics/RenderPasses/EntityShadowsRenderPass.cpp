@@ -74,11 +74,12 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     }
 
     // No shadow if completely transparent or completely glowing.
-    float alpha = (255 == pchr->inst.light) ? pchr->inst.alpha  * idlib::fraction<float, 1, 255>() : (pchr->inst.alpha - pchr->inst.light) * idlib::fraction<float, 1, 255>();
+    float alpha = (255 == pchr->getLight()) ? pchr->getAlpha() * idlib::fraction<float, 1, 255>()
+                                            : (pchr->getAlpha() - pchr->getLight()) * idlib::fraction<float, 1, 255>();
 
     /// @test ZF@> previous test didn't work, but this one does
     //if ( alpha * 255 < 1 ) return;
-    if (pchr->inst.light <= INVISIBLE || pchr->inst.alpha <= INVISIBLE) return;
+    if (pchr->getLight() <= INVISIBLE || pchr->getAlpha() <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
     auto mesh = session.mesh();
@@ -90,7 +91,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 
     // Original points
     float level = pchr->getObjectPhysics().getGroundElevation() + SHADOWRAISE;
-    float height = pchr->inst.getMatrix()(2, 3) - level;
+    float height = pchr->getMatrix()(2, 3) - level;
     float height_factor = 1.0f - height / (pchr->getShadowSize() * 5.0f);
     if (height_factor <= 0.0f) return;
 
@@ -98,8 +99,8 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     alpha *= height_factor * 0.5f + 0.25f;
     if (alpha < idlib::fraction<float, 1, 255>()) return;
 
-    float x = pchr->inst.getMatrix()(0, 3); ///< @todo MH: This should be the x/y position of the model.
-    float y = pchr->inst.getMatrix()(1, 3); ///<           Use a more self-descriptive method to describe this.
+    float x = pchr->getMatrix()(0, 3); ///< @todo MH: This should be the x/y position of the model.
+    float y = pchr->getMatrix()(1, 3); ///<           Use a more self-descriptive method to describe this.
 
     std::shared_ptr<const Texture> texture = ParticleHandler::get().getLightParticleTexture();
 
@@ -156,11 +157,12 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     if (pchr->isHidden() || 0 == pchr->getShadowSize()) return;
 
     // no shadow if completely transparent
-    float alpha = (255 == pchr->inst.light) ? pchr->inst.alpha  * idlib::fraction<float, 1, 255>() : (pchr->inst.alpha - pchr->inst.light) * idlib::fraction<float, 1, 255>();
+    float alpha = (255 == pchr->getLight()) ? pchr->getAlpha() * idlib::fraction<float, 1, 255>()
+                                            : (pchr->getAlpha() - pchr->getLight()) * idlib::fraction<float, 1, 255>();
 
     /// @test ZF@> The previous test didn't work, but this one does
     //if ( alpha * 255 < 1 ) return;
-    if (pchr->inst.light <= INVISIBLE || pchr->inst.alpha <= INVISIBLE) return;
+    if (pchr->getLight() <= INVISIBLE || pchr->getAlpha() <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
     auto mesh = session.mesh();
@@ -172,7 +174,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
 
     // Original points
     float level = pchr->getObjectPhysics().getGroundElevation() + SHADOWRAISE;
-    float height = pchr->inst.getMatrix()(2, 3) - level;
+    float height = pchr->getMatrix()(2, 3) - level;
     if (height < 0) height = 0;
 
     float size_umbra = 1.5f * (pchr->getCurrentBump().size - height / 30.0f);
@@ -199,8 +201,8 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
         alpha_penumbra = Math::constrain(alpha_penumbra, 0.0f, 1.0f);
     }
 
-    float x = pchr->inst.getMatrix()(0, 3);
-    float y = pchr->inst.getMatrix()(1, 3);
+    float x = pchr->getMatrix()(0, 3);
+    float y = pchr->getMatrix()(1, 3);
 
     // Choose texture and matrix
     Renderer::get().getTextureUnit().setActivated(texture.get());

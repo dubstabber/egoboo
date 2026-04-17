@@ -422,7 +422,7 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     // set the spellbook animations
     // Do dropped animation
-    if (rv_success == pchr->inst.startAnimation(pchr->getProfile()->getModel()->getAction(ACTION_JB), false, true))
+    if (rv_success == pchr->startAnimation(pchr->getProfile()->getModel()->getAction(ACTION_JB), false, true))
     {
         returncode = true;
     }

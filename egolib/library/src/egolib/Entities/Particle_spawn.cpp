@@ -554,32 +554,32 @@ bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_o
         if ( vertex_offset == GRIP_ORIGIN )
         {
             Vector3f tmp_pos;
-            tmp_pos[kX] = object->inst.getMatrix()(0, 3);
-            tmp_pos[kY] = object->inst.getMatrix()(1, 3);
-            tmp_pos[kZ] = object->inst.getMatrix()(2, 3);
+            tmp_pos[kX] = object->getMatrix()(0, 3);
+            tmp_pos[kY] = object->getMatrix()(1, 3);
+            tmp_pos[kZ] = object->getMatrix()(2, 3);
 
             setPosition(tmp_pos);
 
             return true;
         }
 
-        if(vertex_offset > object->inst.getVertexCount()) {
+        if(vertex_offset > object->getVertexCount()) {
             throw std::invalid_argument("Particle::placeAtVertex() =  vertex_offset > object->inst.getVertexCount()");
         }
 
-        vertex = object->inst.getVertexCount() - vertex_offset;
+        vertex = object->getVertexCount() - vertex_offset;
 
         // do the automatic update
-        object->inst.updateVertices(vertex, vertex, false );
+        object->updateVertices(vertex, vertex, false);
 
         // Calculate vertex_offset point locations with linear interpolation and other silly things
-        point[0][kX] = object->inst.getVertex(vertex).pos[XX];
-        point[0][kY] = object->inst.getVertex(vertex).pos[YY];
-        point[0][kZ] = object->inst.getVertex(vertex).pos[ZZ];
+        point[0][kX] = object->getVertex(vertex).pos[XX];
+        point[0][kY] = object->getVertex(vertex).pos[YY];
+        point[0][kZ] = object->getVertex(vertex).pos[ZZ];
         point[0][kW] = 1.0f;
 
         // Do the transform
-        Utilities::transform(object->inst.getMatrix(), point, nupoint, 1);
+        Utilities::transform(object->getMatrix(), point, nupoint, 1);
 
         setPosition(Vector3f(nupoint[0][kX],nupoint[0][kY],nupoint[0][kZ]));
     }

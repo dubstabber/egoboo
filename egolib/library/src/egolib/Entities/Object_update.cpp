@@ -146,13 +146,13 @@ void Object::update()
     if(_stealthTimer > 0) _stealthTimer--;
 
     // Texture movement
-    inst.uoffset += getProfile()->getTextureMovementRateX();
-    inst.voffset += getProfile()->getTextureMovementRateY();
+    inst.setUOffset(inst.getUOffset() + getProfile()->getTextureMovementRateX());
+    inst.setVOffset(inst.getVOffset() + getProfile()->getTextureMovementRateY());
 
     // Texture tint
-    inst.colorshift = colorshift_t(Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::RED_SHIFT), 0, 6),
-                                   Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::GREEN_SHIFT), 0, 6),
-                                   Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::BLUE_SHIFT), 0, 6));
+    inst.setColorShift(colorshift_t(Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::RED_SHIFT), 0, 6),
+                                    Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::GREEN_SHIFT), 0, 6),
+                                    Ego::Math::constrain<int>(1 + getAttribute(Ego::Attribute::BLUE_SHIFT), 0, 6)));
 
     // do the mana and life regeneration for "living" characters
     if (isAlive()) {

@@ -499,10 +499,10 @@ uint8_t scr_SetFrame( script_state_t& state, ai_state_t& self )
     const ModelAction action = pchr->getProfile()->getModel()->getAction(ACTION_DA);
 
     // set the action
-    if(pchr->inst.setAction(action, true, true)) {
+    if (pchr->setAction(action, true, true)) {
         
         // the action is set. now set the frame info.
-        returncode = pchr->inst.setFrameFull(frame_along, ilip);
+        returncode = pchr->setFrameFull(frame_along, ilip);
     }
     else {
         returncode = false;

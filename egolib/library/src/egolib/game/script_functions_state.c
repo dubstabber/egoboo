@@ -526,7 +526,7 @@ uint8_t scr_IfInvisible( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->inst.alpha <= INVISIBLE;
+    returncode = pchr->getAlpha() <= INVISIBLE;
 
     SCRIPT_FUNCTION_END();
 }
@@ -1246,7 +1246,7 @@ uint8_t scr_FlashVariableHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->inst.flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
+    pchr->flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
 
     SCRIPT_FUNCTION_END();
 }

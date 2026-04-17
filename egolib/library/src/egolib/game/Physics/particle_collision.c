@@ -533,7 +533,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
         bool using_shield = false;
 
         // If the attack was blocked by a shield, then check if the block caused a knockback
-        if ( chr_is_invictus && ACTION_IS_TYPE(pdata.pchr->inst.getCurrentAnimation(), P) )
+        if ( chr_is_invictus && ACTION_IS_TYPE(pdata.pchr->getCurrentAnimation(), P) )
         {
             // Figure out if we are really using a shield or if it is just a invictus frame
             ObjectRef item = ObjectRef::Invalid;
@@ -1380,7 +1380,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
             int grip_verts = 0 == slot_count ? 1 : GRIP_VERTS * slot_count;
             // Compute the number of vertices.
             // Ensure that the number of vertices is non-negative.
-            int vertices = (int)pchr->inst.getVertexCount() - (int)grip_verts;
+            int vertices = (int)pchr->getVertexCount() - (int)grip_verts;
             vertices = std::max(0, vertices);
 
             if (vertices != 0)
@@ -1404,9 +1404,9 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                 // prepare the array values
                 for (int cnt = 0; cnt < vertices; cnt++)
                 {
-                    dist = std::abs(x - pchr->inst.getVertex(vertices - cnt - 1).pos[XX])
-                         + std::abs(y - pchr->inst.getVertex(vertices - cnt - 1).pos[YY])
-                         + std::abs(z - pchr->inst.getVertex(vertices - cnt - 1).pos[ZZ]);
+                    dist = std::abs(x - pchr->getVertex(vertices - cnt - 1).pos[XX])
+                         + std::abs(y - pchr->getVertex(vertices - cnt - 1).pos[YY])
+                         + std::abs(z - pchr->getVertex(vertices - cnt - 1).pos[ZZ]);
 
                     vertex_distance[cnt] = dist;
                     vertex_occupied[cnt] = ParticleRef::Invalid;

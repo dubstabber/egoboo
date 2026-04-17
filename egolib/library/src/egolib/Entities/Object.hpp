@@ -284,6 +284,103 @@ public:
     */
     void setLight(const int light);
 
+    uint8_t getAlpha() const { return inst.getAlpha(); }
+
+    uint8_t getLight() const { return inst.getLight(); }
+
+    uint8_t getSheen() const { return inst.getSheen(); }
+
+    const colorshift_t& getColorShift() const { return inst.getColorShift(); }
+
+    void setColorShift(const colorshift_t& colorShift) { inst.setColorShift(colorShift); }
+
+    SFP8_T getUOffset() const { return inst.getUOffset(); }
+
+    void setUOffset(SFP8_T value) { inst.setUOffset(value); }
+
+    SFP8_T getVOffset() const { return inst.getVOffset(); }
+
+    void setVOffset(SFP8_T value) { inst.setVOffset(value); }
+
+    Ego::Graphics::ObjectGraphics& graphics() { return inst; }
+
+    const Ego::Graphics::ObjectGraphics& graphics() const { return inst; }
+
+    bool playAction(ModelAction action, bool actionReady) { return inst.playAction(action, actionReady); }
+
+    bool startAnimation(ModelAction action, bool actionReady, bool overrideAction)
+    {
+        return inst.startAnimation(action, actionReady, overrideAction);
+    }
+
+    bool setAction(ModelAction action, bool actionReady, bool overrideAction)
+    {
+        return inst.setAction(action, actionReady, overrideAction);
+    }
+
+    bool setFrameFull(int frameAlong, int ilip) { return inst.setFrameFull(frameAlong, ilip); }
+
+    bool canBeInterrupted() const { return inst.canBeInterrupted(); }
+
+    void setActionKeep(bool val) { inst.setActionKeep(val); }
+
+    void setActionLooped(bool val) { inst.setActionLooped(val); }
+
+    ModelAction getCurrentAnimation() const { return inst.getCurrentAnimation(); }
+
+    void setAnimationSpeed(float rate) { inst.setAnimationSpeed(rate); }
+
+    float getAnimationSpeed() const { return inst.getAnimationSpeed(); }
+
+    void removeInterpolation() { inst.removeInterpolation(); }
+
+    void updateAnimation() { inst.updateAnimation(); }
+
+    const Ego::Matrix4f4f& getMatrix() const { return inst.getMatrix(); }
+
+    const Ego::Matrix4f4f& getReflectionMatrix() const { return inst.getReflectionMatrix(); }
+
+    void setMatrix(const Ego::Matrix4f4f& matrix) { inst.setMatrix(matrix); }
+
+    const GLvertex& getVertex(size_t index) const { return inst.getVertex(index); }
+
+    size_t getVertexCount() const { return inst.getVertexCount(); }
+
+    gfx_rv updateVertices(int vmin, int vmax, bool force) { return inst.updateVertices(vmin, vmax, force); }
+
+    bool updateGripVertices(const uint16_t vrt_lst[], size_t vrt_count) { return inst.updateGripVertices(vrt_lst, vrt_count); }
+
+    BIT_FIELD getFrameFX() const { return inst.getFrameFX(); }
+
+    void updateLighting() { inst.updateLighting(); }
+
+    void flash(uint8_t value) { inst.flash(value); }
+
+    void flashVariableHeight(uint8_t valueLow, int16_t low, uint8_t valueHigh, int16_t high)
+    {
+        inst.flashVariableHeight(valueLow, low, valueHigh, high);
+    }
+
+    int getMaxLight() const { return inst.getMaxLight(); }
+
+    int getAmbientColour() const { return inst.getAmbientColour(); }
+
+    oct_bb_t getBoundingBox() const { return inst.getBoundingBox(); }
+
+    matrix_cache_t getMatrixCache() const { return inst.getMatrixCache(); }
+
+    void setMatrixCache(const matrix_cache_t& cache) { inst.setMatrixCache(cache); }
+
+    bool hasValidMatrixCache() const { return inst.hasValidMatrixCache(); }
+
+    void setMatrixCacheValid(bool valid) { inst.setMatrixCacheValid(valid); }
+
+    bool hasValidMatrixValue() const { return inst.hasValidMatrixValue(); }
+
+    void setMatrixValueValid(bool valid) { inst.setMatrixValueValid(valid); }
+
+    void invalidateMatrixCache() { inst.invalidateMatrixCache(); }
+
     /**
      * @brief Checks if this Object is able to mount (ride) another Object
      * @param mount Which Object we are trying to mount
@@ -1260,11 +1357,10 @@ private:
     //Input commands
     std::bitset<LATCHBUTTON_COUNT> _inputLatchesPressed;
 
-public: //TODO: Hack make private
-    //Graphics
-    Ego::Graphics::ObjectGraphics inst;                          ///< the render data
-
 private:
+    // Graphics
+    Ego::Graphics::ObjectGraphics inst;                   ///< the render data
+
     //Physics
     Ego::Physics::ObjectPhysics _objectPhysics;
 

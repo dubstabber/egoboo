@@ -363,7 +363,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
             ModelAction action = overlay->getProfile()->getModel()->getAction(ACTION_MJ);
             if (action >= ACTION_DD)
             {
-                overlay->inst.startAnimation(action, false, true);
+                overlay->startAnimation(action, false, true);
             }
 
             // Assume it's transparent...

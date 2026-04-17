@@ -307,7 +307,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         if (!mesh->grid_is_valid(pchr->getTile())) continue;
 
         // make sure that the vertices are interpolated
-        if(pchr->inst.updateVertices(-1, -1, true) == gfx_error) {
+        if(pchr->updateVertices(-1, -1, true) == gfx_error) {
             retval = gfx_error;
         }
 
@@ -317,7 +317,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         }
 
         // do the basic lighting
-        pchr->inst.updateLighting();
+        pchr->updateLighting();
     }
 
     return retval;

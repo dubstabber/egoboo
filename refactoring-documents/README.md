@@ -120,6 +120,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `58-object-stats-ammo-gender-encapsulation-pass.md`
 - `59-object-orientation-encapsulation-pass.md`
 - `60-object-bumper-collision-volume-encapsulation-pass.md`
+- `61-object-inst-transitional-boundary-pass.md`
 
 ## Recommended reading order
 
@@ -173,6 +174,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 48. Read `58-object-stats-ammo-gender-encapsulation-pass.md` for the bounded encapsulation of the remaining stats/ammo/gender scalar surface and the branching recommendation between orientation and `inst`.
 49. Read `59-object-orientation-encapsulation-pass.md` for the bounded encapsulation of `ori` / `ori_old`, the reason that seam landed before `inst`, and the next follow-on recommendation around bumper/CV or render-facing cleanup.
 50. Read `60-object-bumper-collision-volume-encapsulation-pass.md` for the bounded encapsulation of `Object` bumper/collision-volume state, the grouped collision publish path in `ObjectPhysics`, and the narrowed follow-on recommendation around `inst`.
+51. Read `61-object-inst-transitional-boundary-pass.md` for the transitional `Object::inst` boundary, the temporary `graphics()` escape hatch for render/matrix code, and the remaining follow-on recommendation after object/render callers stop depending on a public graphics instance.
 
 ## Immediate recommendation
 

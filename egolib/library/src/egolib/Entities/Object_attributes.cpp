@@ -494,7 +494,7 @@ bool Object::activateStealth()
         }
 
         //Ignore objects that are doing the sleep animation
-        if(object->inst.getCurrentAnimation() == ACTION_MK) {
+        if(object->getCurrentAnimation() == ACTION_MK) {
             continue;
         }
 

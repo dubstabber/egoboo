@@ -96,9 +96,9 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
             ObjectRef iobj = list[i].iobj;
 
             if (do_reflect) {
-                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->inst.getReflectionMatrix());
+                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->getReflectionMatrix());
             } else {
-                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->inst.getMatrix());
+                pos_tmp = mat_getTranslate(objectHandler.get(iobj)->getMatrix());
             }
 
             vtmp = pos_tmp - cam.getPosition();

@@ -65,7 +65,7 @@ void ObjectPhysics::keepItemsWithHolder()
         // Keep in hand weapons with iattached
         if ( chr_matrix_valid(&_object) )
         {
-            _object.setPosition(mat_getTranslate(_object.inst.getMatrix()));
+            _object.setPosition(mat_getTranslate(_object.getMatrix()));
         }
         else
         {
@@ -79,7 +79,7 @@ void ObjectPhysics::keepItemsWithHolder()
         {
 
             // Items become partially invisible in hands of players
-            if (holder->isPlayer() && 255 != holder->inst.alpha)
+            if (holder->isPlayer() && 255 != holder->getAlpha())
             {
                 _object.setAlpha(SEEINVISIBLE);
             }
@@ -88,7 +88,7 @@ void ObjectPhysics::keepItemsWithHolder()
                 // Only if not naturally transparent
                 if (255 == _object.getProfile()->getAlpha())
                 {
-                    _object.setAlpha(holder->inst.alpha);
+                    _object.setAlpha(holder->getAlpha());
                 }
                 else
                 {
@@ -97,7 +97,7 @@ void ObjectPhysics::keepItemsWithHolder()
             }
 
             // Do light too
-            if (holder->isPlayer() && 255 != holder->inst.light)
+            if (holder->isPlayer() && 255 != holder->getLight())
             {
                 _object.setLight(SEEINVISIBLE);
             }
@@ -106,7 +106,7 @@ void ObjectPhysics::keepItemsWithHolder()
                 // Only if not naturally transparent
                 if (255 == _object.getProfile()->getLight())
                 {
-                    _object.setLight(holder->inst.light);
+                    _object.setLight(holder->getLight());
                 }
                 else
                 {
@@ -367,10 +367,10 @@ float ObjectPhysics::getMaxSpeed() const
     }
 
     //Check animation frame freeze movement
-    if ( _object.inst.getFrameFX() & MADFX_STOP )
+    if ( _object.getFrameFX() & MADFX_STOP )
     {
         //Allow 50% movement while using Shield and have the Mobile Defence perk
-        if(_object.hasPerk(Ego::Perks::MOBILE_DEFENCE) && ACTION_IS_TYPE(_object.inst.getCurrentAnimation(), P))
+        if(_object.hasPerk(Ego::Perks::MOBILE_DEFENCE) && ACTION_IS_TYPE(_object.getCurrentAnimation(), P))
         {
             maxspeed *= 0.5f;
         }
@@ -811,7 +811,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
                 if (grab_people)
                 {
                     // Start the slam animation...  ( Be sure to drop!!! )
-                    _object.inst.playAction(static_cast<ModelAction>(ACTION_MC + slot), false);
+                    _object.playAction(static_cast<ModelAction>(ACTION_MC + slot), false);
                 }
             }
             return true;
@@ -884,7 +884,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
     chr_update_matrix(&_object, true);
 
-    _object.setPosition(mat_getTranslate(_object.inst.getMatrix()));
+    _object.setPosition(mat_getTranslate(_object.getMatrix()));
 
     _object.setInWater(false);
     _object.setJumpTimer(Object::JUMPDELAY * 4);
@@ -897,20 +897,20 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
         {
             // if the character is holding anything, make the animation
             // ACTION_MH == "sitting" so that it does not look so silly
-            _object.inst.playAction(ACTION_MH, true);
+            _object.playAction(ACTION_MH, true);
         }
         else
         {
             // if it is not holding anything, go for the riding animation
-            _object.inst.playAction(ACTION_MI, true);
+            _object.playAction(ACTION_MI, true);
         }
 
         // set this action to loop
-        _object.inst.setActionLooped(true);
+        _object.setActionLooped(true);
     }
     else if (_object.isAlive())
     {
-        _object.inst.playAction(static_cast<ModelAction>(ACTION_MM + slot), false );
+        _object.playAction(static_cast<ModelAction>(ACTION_MM + slot), false);
         
         /// @note ZF@> hmm, here is the torch holding bug. Removing
         /// the interpolation seems to fix it...
@@ -919,7 +919,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
         // set the action to keep for items
         if (_object.isItem()) {
-            _object.inst.setActionKeep(true);
+            _object.setActionKeep(true);
         }
     }
 
@@ -975,7 +975,7 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 
     // convert the point cloud in the GLvertex array (_object.inst._vertexList) to
     // a level 1 bounding box. Subtract off the position of the character
-    oct_bb_t bsrc = _object.inst.getBoundingBox();
+    oct_bb_t bsrc = _object.getBoundingBox();
 
     Vector4f  src[16];  // for the upper and lower octagon points
     Vector4f  dst[16];  // for the upper and lower octagon points
@@ -985,7 +985,7 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
     int vcount = oct_bb_t::to_points(bsrc, src, 16);
 
     // transform the new point cloud
-    Utilities::transform(_object.inst.getMatrix(), src, dst, vcount);
+    Utilities::transform(_object.getMatrix(), src, dst, vcount);
 
     // convert the new point cloud into a level 1 bounding box
     oct_bb_t bdst;

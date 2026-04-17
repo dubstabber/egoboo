@@ -353,9 +353,82 @@ TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedStat
     EXPECT_EQ(object->getSkin(), validSkin);
 }
 
-TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
+TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(310);
+    ASSERT_NE(object, nullptr);
+
+    object->setAlpha(123);
+    object->setLight(87);
+    object->setSheen(45);
+    object->setColorShift(colorshift_t(1, 2, 3));
+    object->setUOffset(321);
+    object->setVOffset(654);
+
+    EXPECT_EQ(object->getAlpha(), 123);
+    EXPECT_EQ(object->getLight(), 87);
+    EXPECT_EQ(object->getSheen(), 45);
+    EXPECT_EQ(object->getColorShift().red, 1);
+    EXPECT_EQ(object->getColorShift().green, 2);
+    EXPECT_EQ(object->getColorShift().blue, 3);
+    EXPECT_EQ(object->getUOffset(), 321);
+    EXPECT_EQ(object->getVOffset(), 654);
+}
+
+TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
+{
+    auto object = makeFollower(311);
+    ASSERT_NE(object, nullptr);
+
+    matrix_cache_t cache;
+    cache.valid = true;
+    cache.matrix_valid = false;
+    cache.type_bits = MAT_WEAPON;
+    cache.rotate[kX] = Facing(101);
+    cache.rotate[kY] = Facing(202);
+    cache.rotate[kZ] = Facing(303);
+    cache.pos = Ego::Vector3f(4.0f, 5.0f, 6.0f);
+    cache.grip_chr = ObjectRef(77);
+    cache.grip_slot = SLOT_RIGHT;
+    cache.grip_verts[0] = 8;
+    cache.self_scale = Ego::Vector3f(1.5f, 2.5f, 3.5f);
+
+    object->setMatrixCache(cache);
+
+    const matrix_cache_t roundTrip = object->getMatrixCache();
+    EXPECT_TRUE(object->hasValidMatrixCache());
+    EXPECT_FALSE(object->hasValidMatrixValue());
+    EXPECT_FALSE(roundTrip.isValid());
+    EXPECT_EQ(roundTrip.type_bits, MAT_WEAPON);
+    EXPECT_EQ(roundTrip.rotate[kX], Facing(101));
+    EXPECT_EQ(roundTrip.rotate[kY], Facing(202));
+    EXPECT_EQ(roundTrip.rotate[kZ], Facing(303));
+    EXPECT_FLOAT_EQ(roundTrip.pos[kX], 4.0f);
+    EXPECT_FLOAT_EQ(roundTrip.pos[kY], 5.0f);
+    EXPECT_FLOAT_EQ(roundTrip.pos[kZ], 6.0f);
+    EXPECT_EQ(roundTrip.grip_chr, ObjectRef(77));
+    EXPECT_EQ(roundTrip.grip_slot, SLOT_RIGHT);
+    EXPECT_EQ(roundTrip.grip_verts[0], 8);
+    EXPECT_FLOAT_EQ(roundTrip.self_scale[kX], 1.5f);
+    EXPECT_FLOAT_EQ(roundTrip.self_scale[kY], 2.5f);
+    EXPECT_FLOAT_EQ(roundTrip.self_scale[kZ], 3.5f);
+
+    object->setMatrixValueValid(true);
+
+    EXPECT_TRUE(object->hasValidMatrixCache());
+    EXPECT_TRUE(object->hasValidMatrixValue());
+    EXPECT_TRUE(object->getMatrixCache().isValid());
+
+    object->invalidateMatrixCache();
+
+    EXPECT_FALSE(object->hasValidMatrixCache());
+    EXPECT_FALSE(object->hasValidMatrixValue());
+    EXPECT_FALSE(object->getMatrixCache().isValid());
+}
+
+TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(312);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

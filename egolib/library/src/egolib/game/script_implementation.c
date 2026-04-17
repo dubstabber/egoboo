@@ -578,7 +578,7 @@ bool FlashObject( Object * pchr, uint8_t value )
 	if (!pchr || pchr->isTerminated()) {
 		return false;
 	}
-	pchr->inst.flash(value);
+	pchr->flash(value);
 	return true;
 }
 

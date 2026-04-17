@@ -426,7 +426,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         {
             if (HAS_NO_BITS(renderedFrameCount(), object->getProfile()->getFlashAND()))
             {
-                object->inst.flash(255);
+                object->flash(255);
             }
         }
 
@@ -435,7 +435,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         {
             if (HAS_NO_BITS(renderedFrameCount(), SEEKURSEAND))
             {
-                object->inst.flash(255.0f * (1.0f - tmp_seekurse_level));
+                object->flash(255.0f * (1.0f - tmp_seekurse_level));
             }
         }
     }

@@ -105,22 +105,6 @@ namespace Graphics
 class ObjectGraphics : private idlib::non_copyable
 {
 public:
-    // position info
-    matrix_cache_t matrix_cache;     ///< Did we make one yet?
-
-    // render mode info
-    uint8_t          alpha;                 ///< 255 = Solid, 0 = Invisible
-    uint8_t          light;                 ///< 1 = Light, 0 = Normal
-    uint8_t          sheen;                 ///< 0-15, how shiny it is
-
-    // color channel shifting
-    colorshift_t     colorshift;
-
-    // texture info
-    SFP8_T uoffset;                               ///< For moving textures (8.8 fixed point)
-    SFP8_T voffset;                               ///< For moving textures (8.8 fixed point)
-
-public:
 	ObjectGraphics(Object& object);
     ~ObjectGraphics();
 
@@ -184,6 +168,32 @@ public:
 
     void setMatrix(const Matrix4f4f& matrix);
 
+    uint8_t getAlpha() const { return alpha; }
+
+    void setAlpha(uint8_t value) { alpha = value; }
+
+    uint8_t getLight() const { return light; }
+
+    void setLight(uint8_t value) { light = value; }
+
+    uint8_t getSheen() const { return sheen; }
+
+    void setSheen(uint8_t value) { sheen = value; }
+
+    const colorshift_t& getColorShift() const { return colorshift; }
+
+    void setColorShift(const colorshift_t& value) { colorshift = value; }
+
+    SFP8_T getUOffset() const { return uoffset; }
+
+    void setUOffset(SFP8_T value) { uoffset = value; }
+
+    SFP8_T getVOffset() const { return voffset; }
+
+    void setVOffset(SFP8_T value) { voffset = value; }
+
+    float getAnimationSpeed() const { return _animationRate; }
+
     int getMaxLight() const;
 
     int getAmbientColour() const;
@@ -240,6 +250,24 @@ public:
     ModelAction getCurrentAnimation() const;
 
     void setAnimationSpeed(const float rate);
+
+    matrix_cache_t getMatrixCache() const { return matrix_cache; }
+
+    void setMatrixCache(const matrix_cache_t& cache) { matrix_cache = cache; }
+
+    bool hasValidMatrixCache() const { return matrix_cache.valid; }
+
+    void setMatrixCacheValid(bool valid) { matrix_cache.valid = valid; }
+
+    bool hasValidMatrixValue() const { return matrix_cache.matrix_valid; }
+
+    void setMatrixValueValid(bool valid) { matrix_cache.matrix_valid = valid; }
+
+    void invalidateMatrixCache()
+    {
+        matrix_cache.valid = false;
+        matrix_cache.matrix_valid = false;
+    }
     
     void removeInterpolation();
 
@@ -315,6 +343,21 @@ private:
     void updateAnimationRate();
 
 private:
+    // position info
+    matrix_cache_t matrix_cache;     ///< Did we make one yet?
+
+    // render mode info
+    uint8_t alpha;                   ///< 255 = Solid, 0 = Invisible
+    uint8_t light;                   ///< 1 = Light, 0 = Normal
+    uint8_t sheen;                   ///< 0-15, how shiny it is
+
+    // color channel shifting
+    colorshift_t colorshift;
+
+    // texture info
+    SFP8_T uoffset;                  ///< For moving textures (8.8 fixed point)
+    SFP8_T voffset;                  ///< For moving textures (8.8 fixed point)
+
     Object& _object;
     std::vector<GLvertex> _vertexList;
     Matrix4f4f _matrix;                     ///< Character's matrix

@@ -18,7 +18,7 @@ uint8_t scr_DoAction( script_state_t& state, ai_state_t& self )
     ModelAction action = pchr->getProfile()->getModel()->getAction( state.argument );
 
     returncode = false;
-    if ( rv_success == pchr->inst.startAnimation(action, false, false) )
+    if ( rv_success == pchr->startAnimation(action, false, false) )
     {
         returncode = true;
     }
@@ -37,7 +37,7 @@ uint8_t scr_KeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->inst.setActionKeep(true);
+    pchr->setActionKeep(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -63,7 +63,7 @@ uint8_t scr_TargetDoAction( script_state_t& state, ai_state_t& self )
         {
             ModelAction action = pself_target->getProfile()->getModel()->getAction( state.argument );
 
-            if ( rv_success == pself_target->inst.startAnimation(action, false, false) )
+            if ( rv_success == pself_target->startAnimation(action, false, false) )
             {
                 returncode = true;
             }
@@ -87,7 +87,7 @@ uint8_t scr_DoActionOverride( script_state_t& state, ai_state_t& self )
     ModelAction action = pchr->getProfile()->getModel()->getAction(state.argument);
 
     returncode = false;
-    if ( rv_success == pchr->inst.startAnimation(action, false, true) )
+    if ( rv_success == pchr->startAnimation(action, false, true) )
     {
         returncode = true;
     }
@@ -136,7 +136,7 @@ uint8_t scr_UnkeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->inst.setActionKeep(false);
+    pchr->setActionKeep(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -422,7 +422,7 @@ uint8_t scr_ChildDoActionOverride( script_state_t& state, ai_state_t& self )
 
         ModelAction action = pchild->getProfile()->getModel()->getAction(state.argument);
 
-        if ( rv_success == pchild->inst.startAnimation(action, false, true) )
+        if ( rv_success == pchild->startAnimation(action, false, true) )
         {
             returncode = true;
         }
@@ -609,10 +609,10 @@ uint8_t scr_TargetDoActionSetFrame( script_state_t& state, ai_state_t& self )
 
         ModelAction action = pself_target->getProfile()->getModel()->getAction(state.argument );
 
-        if ( rv_success == pself_target->inst.startAnimation(action, false, true) )
+        if ( rv_success == pself_target->startAnimation(action, false, true) )
         {
             // remove the interpolation
-            pself_target->inst.removeInterpolation();
+            pself_target->removeInterpolation();
 
             returncode = true;
         }

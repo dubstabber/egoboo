@@ -169,7 +169,7 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     }
     else if (pprt->isAttached())
     {
-        auto& cinst = pprt->getAttachedObject()->inst;
+        auto& cinst = pprt->getAttachedObject()->graphics();
 
         if (chr_matrix_valid(pprt->getAttachedObject().get()))
         {
