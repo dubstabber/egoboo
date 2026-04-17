@@ -138,8 +138,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // Flags
     pchr->setDamageTargetType(ppro->getDamageTargetType());
     pchr->setBaseAttribute(Ego::Attribute::WALK_ON_WATER, ppro->canWalkOnWater() ? 1.0f : 0.0f);
-    pchr->platform        = ppro->isPlatform();
-    pchr->canuseplatforms = ppro->canUsePlatforms();
+    pchr->setPlatform(ppro->isPlatform());
+    pchr->setCanUsePlatforms(ppro->canUsePlatforms());
     pchr->setItem(ppro->isItem());
     pchr->setInvincible(ppro->isInvincible());
 

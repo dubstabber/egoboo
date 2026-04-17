@@ -117,7 +117,7 @@ void ObjectPhysics::keepItemsWithHolder()
     }
     else
     {
-        _object.attachedto = ObjectRef::Invalid;
+        _object.setHolderRef(ObjectRef::Invalid);
     }
 }
 
@@ -273,7 +273,7 @@ void ObjectPhysics::updatePhysics()
 {
     // Keep inventory items with the carrier
     if(_object.isInsideInventory()) {
-        _object.setPosition(activeModule().getObjectHandler()[_object.inwhich_inventory]->getPosition());
+        _object.setPosition(activeModule().getObjectHandler()[_object.getInventoryHolderRef()]->getPosition());
         return;
     }
 
@@ -461,7 +461,7 @@ void ObjectPhysics::detachFromPlatform()
 {
     // adjust the platform weight, if necessary
     if(_object.getAttachedPlatform()) {
-        _object.getAttachedPlatform()->holdingweight -= _object.phys.weight;
+        _object.getAttachedPlatform()->adjustHoldingWeight(-static_cast<int>(_object.phys.weight));
     }
 
     // undo the attachment
@@ -475,7 +475,7 @@ void ObjectPhysics::detachFromPlatform()
 bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
 {
     // check if they can be connected
-    if(!_object.canuseplatforms || _object.isFlying() || !platform->platform || platform.get() == &_object) {
+    if(!_object.canUsePlatforms() || _object.isFlying() || !platform->isPlatform() || platform.get() == &_object) {
         return false;
     }
 
@@ -494,7 +494,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
     }
 
     // add the weight to the platform
-    platform->holdingweight += _object.phys.weight;
+    platform->adjustHoldingWeight(static_cast<int>(_object.phys.weight));
 
     // update the character jumping
     _object.setJumpReady(true);
@@ -874,8 +874,8 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     detachFromPlatform();
 
     // Put 'em together
-    _object.inwhich_slot       = slot;
-    _object.attachedto         = holder->getObjRef();
+    _object.setAttachmentSlot(slot);
+    _object.setHolderRef(holder->getObjRef());
     holder->setHeldObject(slot, _object.getObjRef());
 
     // set the grip vertices for the irider

@@ -164,7 +164,7 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
         pchr->detatchFromHolder(true, true);
     }
@@ -213,9 +213,9 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
 	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     //If we are a mount, our rider is the owner of this particle
@@ -330,9 +330,9 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     {
@@ -452,9 +452,9 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
     ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), 
@@ -485,9 +485,9 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
 	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), Facing(Ego::Math::clipBits<16>( state.turn )),
@@ -510,9 +510,9 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
     SCRIPT_FUNCTION_BEGIN();
 
     ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
@@ -614,9 +614,9 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     {
@@ -797,9 +797,9 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
 	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     {
@@ -954,10 +954,10 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
             if ( Inventory::add_item( self.getTarget(), pchild->getObjRef(), pchr->getInventory().getFirstFreeSlotNumber(), true ) )
             {
                 SET_BIT( pchild->ai.alert, ALERTIF_GRABBED );  // Make spellbooks change
-                pchild->attachedto = self.getTarget();  // Make grab work
+                pchild->setHolderRef(self.getTarget());  // Make grab work
                 scr_run_chr_script( pchild->getObjRef() );  // Empty the grabbed messages
 
-                pchild->attachedto = ObjectRef::Invalid;  // Fix grab
+                pchild->setHolderRef(ObjectRef::Invalid);  // Fix grab
 
                 //Set some AI values
                 self.child = pchild->getObjRef();

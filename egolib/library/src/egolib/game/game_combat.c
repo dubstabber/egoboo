@@ -113,7 +113,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         // Rearing mount
-        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[pchr->attachedto];
+        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[pchr->getHolderRef()];
 
         if (pmount)
         {
@@ -577,7 +577,7 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
         }
 
         // grab the next object in the list
-        ObjectRef object_next = module.getObjectHandler().get(object)->attachedto;
+        ObjectRef object_next = module.getObjectHandler().get(object)->getHolderRef();
 
         // check for an end of the list
         if (!module.getObjectHandler().exists(object_next))

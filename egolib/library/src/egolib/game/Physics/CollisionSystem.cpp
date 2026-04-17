@@ -305,7 +305,7 @@ void CollisionSystem::updateObjectCollisions()
 
         //Do not collide scenery with other scenery objects - unless they can use platforms,
         //for example boxes stacked on top of other boxes
-        bool canCollideWithScenery = !object->isScenery() || object->canuseplatforms;
+        bool canCollideWithScenery = !object->isScenery() || object->canUsePlatforms();
 
         // Check collisions to nearby Objects
         std::vector<std::shared_ptr<Object>> possibleCollisions;
@@ -382,7 +382,7 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Ego::Particle> &part
 
     //Detect collisions with platforms?
     BIT_FIELD testPlatform = EMPTY_BIT_FIELD;
-    if ( object->platform /*&& ( SPRITE_SOLID == particle->type )*/ ) {
+    if ( object->isPlatform() /*&& ( SPRITE_SOLID == particle->type )*/ ) {
         SET_BIT(testPlatform, PHYS_PLATFORM_OBJ1);
     }
 
@@ -397,8 +397,8 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Ego::Particle> &part
 bool CollisionSystem::detectCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, float *tmin, float *tmax) const
 {
     // "non-interacting" objects interact with platforms
-    if ((0 == objectA->bump.size && !objectB->platform ) ||
-        (0 == objectB->bump.size && !objectA->platform )) {
+    if ((0 == objectA->bump.size && !objectB->isPlatform() ) ||
+        (0 == objectB->bump.size && !objectA->isPlatform() )) {
         return false;
     }
 
@@ -412,10 +412,10 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Object> &objectA, co
 
     //Is it a platform collision?
     BIT_FIELD testPlatform = EMPTY_BIT_FIELD;
-    if (objectA->platform && objectB->canuseplatforms) {
+    if (objectA->isPlatform() && objectB->canUsePlatforms()) {
         SET_BIT(testPlatform, PHYS_PLATFORM_OBJ1);
     }
-    if (objectB->platform && objectA->canuseplatforms) {
+    if (objectB->isPlatform() && objectA->canUsePlatforms()) {
         SET_BIT(testPlatform, PHYS_PLATFORM_OBJ2);
     }
 
@@ -484,8 +484,8 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
     const auto ichr_b = objectB->getObjRef();
 
     // only check possible object-platform interactions
-    bool platform_a = objectB->canuseplatforms && !activeModule().getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->platform;
-    bool platform_b = objectA->canuseplatforms && !activeModule().getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->platform;
+    bool platform_a = objectB->canUsePlatforms() && !activeModule().getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->isPlatform();
+    bool platform_b = objectA->canUsePlatforms() && !activeModule().getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->isPlatform();
 
     //Only allow scenery objects on top of other scenery objects
     if(objectA->isScenery() != objectB->isScenery()) {
@@ -645,12 +645,12 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     }
 
     // items can interact with platforms but not with other characters/objects
-    if ( (objectA->isItem() && !objectA->platform) || (objectB->isItem() && !objectB->platform) ) {
+    if ( (objectA->isItem() && !objectA->isPlatform()) || (objectB->isItem() && !objectB->isPlatform()) ) {
         return false;
     }
 
     // don't interact with your mount, or your held items
-    if (ichr_a == objectB->attachedto || ichr_b == objectA->attachedto) {
+    if (ichr_a == objectB->getHolderRef() || ichr_b == objectA->getHolderRef()) {
         return false;
     }
 
@@ -692,7 +692,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     // reduce the interaction strength with platforms
     // that are overlapping with the platform you are actually on
-    if ( objectB->canuseplatforms && objectA->platform && ObjectRef::Invalid != objectB->onwhichplatform_ref && ichr_a != objectB->onwhichplatform_ref )
+    if ( objectB->canUsePlatforms() && objectA->isPlatform() && ObjectRef::Invalid != objectB->onwhichplatform_ref && ichr_a != objectB->onwhichplatform_ref )
     {
         float lerp_z = ( objectB->getPosZ() - ( objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain(lerp_z, -1.0f, 1.0f);
@@ -707,7 +707,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
         }
     }
 
-    if ( objectA->canuseplatforms && objectB->platform && ObjectRef::Invalid != objectA->onwhichplatform_ref && ichr_b != objectA->onwhichplatform_ref )
+    if ( objectA->canUsePlatforms() && objectB->isPlatform() && ObjectRef::Invalid != objectA->onwhichplatform_ref && ichr_b != objectA->onwhichplatform_ref )
     {
         float lerp_z = ( objectA->getPosZ() - ( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain( lerp_z, -1.0f, +1.0f );
@@ -731,8 +731,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     // make the object more like a table if there is a platform-like interaction
     float exponent = 1.0f;
-    if ( objectA->canuseplatforms && objectB->platform ) exponent += 2;
-    if ( objectB->canuseplatforms && objectA->platform ) exponent += 2;
+    if ( objectA->canUsePlatforms() && objectB->isPlatform() ) exponent += 2;
+    if ( objectB->canUsePlatforms() && objectA->isPlatform() ) exponent += 2;
 
 	float recoil_a, recoil_b;
 
@@ -782,7 +782,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     float wtb = objectB->getObjectPhysics().getMass();
 
     // make a special exception for interaction between "Mario platforms"
-    if (( wta < 0.0f && objectA->platform ) && ( wtb < 0.0f && objectA->platform ) )
+    if (( wta < 0.0f && objectA->isPlatform() ) && ( wtb < 0.0f && objectA->isPlatform() ) )
     {
         return false;
     }

@@ -46,7 +46,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 
     for(const std::shared_ptr<Object> &pchr : module.getObjectHandler().iterator())
     {
-        if ( !pchr->isAlive() || pchr->isItem() || module.getObjectHandler().exists( pchr->inwhich_inventory ) ) continue;
+        if ( !pchr->isAlive() || pchr->isItem() || module.getObjectHandler().exists( pchr->getInventoryHolderRef() ) ) continue;
 
         // prefer targeting riders over the mount itself
         if ( pchr->isMount() && ( module.getObjectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) || module.getObjectHandler().exists( pchr->getHeldObject(SLOT_RIGHT) ) ) ) continue;
@@ -112,7 +112,7 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
     if ( psrc == ptst.get() && HAS_NO_BITS( targeting_bits, TARGET_SELF ) ) return false;
 
     // Don't target our holder if we are an item and being held
-    if ( psrc->isItem() && psrc->attachedto == ptst->getObjRef() ) return false;
+    if ( psrc->isItem() && psrc->getHolderRef() == ptst->getObjRef() ) return false;
 
     // Allow to target dead stuff?
     if ( ptst->isAlive() == HAS_SOME_BITS( targeting_bits, TARGET_DEAD ) ) return false;

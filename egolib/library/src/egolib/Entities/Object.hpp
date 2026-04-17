@@ -213,6 +213,32 @@ public:
     **/
     bool isInsideInventory() const;
 
+    ObjectRef getHolderRef() const { return attachedto; }
+
+    void setHolderRef(ObjectRef holderRef) { attachedto = holderRef; }
+
+    slot_t getAttachmentSlot() const { return inwhich_slot; }
+
+    void setAttachmentSlot(slot_t slot) { inwhich_slot = slot; }
+
+    ObjectRef getInventoryHolderRef() const { return inwhich_inventory; }
+
+    void setInventoryHolderRef(ObjectRef holderRef) { inwhich_inventory = holderRef; }
+
+    bool isPlatform() const { return platform; }
+
+    void setPlatform(bool platformState) { platform = platformState; }
+
+    bool canUsePlatforms() const { return canuseplatforms; }
+
+    void setCanUsePlatforms(bool enabled) { canuseplatforms = enabled; }
+
+    int getHoldingWeight() const { return holdingweight; }
+
+    void setHoldingWeight(int weight) { holdingweight = weight; }
+
+    void adjustHoldingWeight(int delta) { holdingweight += delta; }
+
     /**
     * @return
     *   true if this Object has been terminated and will be removed from the game.
@@ -953,7 +979,7 @@ private:
     uint8_t          jumpnumber;                    ///< Number of jumps remaining
     bool             jumpready;                     ///< For standing on a platform character
 
-public:
+private:
     // attachments
     ObjectRef      attachedto;                    ///< != ObjectRef::Invalid if character is a held weapon
     slot_t         inwhich_slot;                  ///< SLOT_LEFT or SLOT_RIGHT

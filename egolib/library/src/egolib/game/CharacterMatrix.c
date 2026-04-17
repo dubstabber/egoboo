@@ -216,9 +216,9 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         itarget = GET_INDEX_PCHR( pchr );
 
         //---- update the MAT_WEAPON data
-        if ( objectHandler().exists( pchr->attachedto ) )
+        if ( objectHandler().exists( pchr->getHolderRef() ) )
         {
-            Object * pmount = objectHandler().get( pchr->attachedto );
+            Object * pmount = objectHandler().get( pchr->getHolderRef() );
 
             // make sure we have the latst info from the target
             chr_update_matrix( pmount, true );
@@ -230,11 +230,11 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
                 mc_tmp.valid     = true;
                 SET_BIT( mc_tmp.type_bits, MAT_WEAPON );        // add in the weapon data
 
-                mc_tmp.grip_chr  = pchr->attachedto;
-                mc_tmp.grip_slot = pchr->inwhich_slot;
-                get_grip_verts( mc_tmp.grip_verts.data(), pchr->attachedto, slot_to_grip_offset( pchr->inwhich_slot ) );
+                mc_tmp.grip_chr  = pchr->getHolderRef();
+                mc_tmp.grip_slot = pchr->getAttachmentSlot();
+                get_grip_verts( mc_tmp.grip_verts.data(), pchr->getHolderRef(), slot_to_grip_offset( pchr->getAttachmentSlot() ) );
 
-                itarget = pchr->attachedto;
+                itarget = pchr->getHolderRef();
             }
         }
 
@@ -799,7 +799,7 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
 	matrix_cache_t& mcache = pitem->inst.matrix_cache;
 
     // is the item attached to this valid holder?
-    if ( pitem->attachedto != iholder ) return false;
+    if ( pitem->getHolderRef() != iholder ) return false;
 
     bool needs_update  = true;
 
@@ -809,12 +809,12 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
 
         needs_update  = false;
 
-        if ( iholder != mcache.grip_chr || pitem->attachedto != iholder )
+        if ( iholder != mcache.grip_chr || pitem->getHolderRef() != iholder )
         {
             needs_update  = true;
         }
 
-        if ( pitem->inwhich_slot != mcache.grip_slot )
+        if ( pitem->getAttachmentSlot() != mcache.grip_slot )
         {
             needs_update  = true;
         }
@@ -836,7 +836,7 @@ bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vr
         mcache.matrix_valid = false;
 
         mcache.grip_chr  = iholder;
-        mcache.grip_slot = pitem->inwhich_slot;
+        mcache.grip_slot = pitem->getAttachmentSlot();
 
         for (size_t i = 0; i < GRIP_VERTS; i++ )
         {

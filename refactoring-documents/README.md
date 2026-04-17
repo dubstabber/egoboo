@@ -111,6 +111,9 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `49-local-stats-accessor-shim-pass.md`
 - `50-local-stats-export-retirement-pass.md`
 - `51-engine-context-ownership-pass.md`
+- `52-object-field-encapsulation-pass.md`
+- `53-object-flag-encapsulation-pass.md`
+- `54-object-attachment-platform-encapsulation-pass.md`
 
 ## Recommended reading order
 
@@ -155,6 +158,9 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 39. Read `49-local-stats-accessor-shim-pass.md` for the explicit accessor-based quarantine around the exported `local_stats` global and the remaining decision point around external consumers.
 40. Read `50-local-stats-export-retirement-pass.md` for the retirement of the raw `local_stats` export, the accessor-only legacy mirror boundary, and the return to the final in-repo engine ownership cleanup seam.
 41. Read `51-engine-context-ownership-pass.md` for the retirement of the raw `_gameEngine` export, the `EngineContext` ownership seam, and the clarification that remaining `update_wld` mentions are terminology residue rather than an active global-state boundary.
+42. Read `52-object-field-encapsulation-pass.md` for the first bounded `Object` field-accessor cleanup covering team, held/equipment, jump, size-transition, and damage-type state.
+43. Read `53-object-flag-encapsulation-pass.md` for the follow-on encapsulation of player-binding, mutable flag, and sparkle state plus the recommendation to tackle attachment/platform coupling next.
+44. Read `54-object-attachment-platform-encapsulation-pass.md` for the completed attachment, inventory-placement, and platform-capability accessor cleanup and the follow-on recommendation after the highest-traffic `Object` state is sealed behind accessors.
 
 ## Immediate recommendation
 

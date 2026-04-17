@@ -668,9 +668,9 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 	ObjectRef ichr = self.getSelf();
 
     //Weapons don't kill people, people kill people...
-    if ( objectHandler().exists( pchr->attachedto ) && !objectHandler().get(pchr->attachedto)->isMount() )
+    if ( objectHandler().exists( pchr->getHolderRef() ) && !objectHandler().get(pchr->getHolderRef())->isMount() )
     {
-        ichr = pchr->attachedto;
+        ichr = pchr->getHolderRef();
     }
 
     const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];

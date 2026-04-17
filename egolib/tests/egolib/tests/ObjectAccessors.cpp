@@ -168,4 +168,32 @@ TEST_F(ObjectAccessorFixture, FlagAndPlayerAccessorsRoundTripSelectedState)
     EXPECT_EQ(object->getSparkle(), 7);
 }
 
+TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(304);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_EQ(object->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAttachmentSlot(), SLOT_LEFT);
+    EXPECT_EQ(object->getInventoryHolderRef(), ObjectRef::Invalid);
+    EXPECT_FALSE(object->isPlatform());
+    EXPECT_FALSE(object->canUsePlatforms());
+    EXPECT_EQ(object->getHoldingWeight(), 0);
+
+    object->setHolderRef(ObjectRef(41));
+    object->setAttachmentSlot(SLOT_RIGHT);
+    object->setInventoryHolderRef(ObjectRef(42));
+    object->setPlatform(true);
+    object->setCanUsePlatforms(true);
+    object->setHoldingWeight(7);
+    object->adjustHoldingWeight(5);
+
+    EXPECT_EQ(object->getHolderRef(), ObjectRef(41));
+    EXPECT_EQ(object->getAttachmentSlot(), SLOT_RIGHT);
+    EXPECT_EQ(object->getInventoryHolderRef(), ObjectRef(42));
+    EXPECT_TRUE(object->isPlatform());
+    EXPECT_TRUE(object->canUsePlatforms());
+    EXPECT_EQ(object->getHoldingWeight(), 12);
+}
+
 } // namespace

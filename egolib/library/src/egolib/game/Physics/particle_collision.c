@@ -284,10 +284,10 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     }
 
     // if you are mounted, only your mount is affected by platforms
-    if ( activeModule().getObjectHandler().exists( pchr_a->attachedto ) || pprt_b->isAttached() ) return false;
+    if ( activeModule().getObjectHandler().exists( pchr_a->getHolderRef() ) || pprt_b->isAttached() ) return false;
 
     // only check possible object-platform interactions
-    platform_a = /* pprt_b->canuseplatforms && */ pchr_a->platform;
+    platform_a = /* pprt_b->canuseplatforms && */ pchr_a->isPlatform();
     if ( !platform_a ) return false;
 
     odepth[OCT_Z]  = std::min( pprt_b->prt_max_cv._maxs[OCT_Z] + pprt_b->getPosZ(), pchr_a->chr_min_cv._maxs[OCT_Z] + pchr_a->getPosZ() ) -
@@ -351,7 +351,7 @@ bool do_chr_prt_collision_get_details(chr_prt_collision_data_t& pdata, const flo
 
     // make the object more like a table if there is a platform-like interaction
     float exponent = 1;
-    if ( SPRITE_SOLID == pdata.pprt->type && pdata.pchr->platform ) exponent += 2;
+    if ( SPRITE_SOLID == pdata.pprt->type && pdata.pchr->isPlatform() ) exponent += 2;
 
     // assume the simplest interaction normal
     pdata.nrm = Ego::Vector3f(0.0f, 0.0f, 1.0f);
@@ -1042,7 +1042,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
     {
         //If we are actually a weapon, use the weapon holder's strength
         if(attacker->isBeingHeld()) {
-            attacker = activeModule().getObjectHandler()[attacker->attachedto];
+            attacker = activeModule().getObjectHandler()[attacker->getHolderRef()];
         }
 
         const float attackerMight = attacker->getAttribute(Ego::Attribute::MIGHT) - 10.0f;
@@ -1304,7 +1304,7 @@ static bool attach_prt_to_platform( Ego::Particle * pprt, Object * pplat )
     if (!pplat || pplat->isTerminated()) return false;
 
     // check if they can be connected
-    if ( !pplat->platform ) return false;
+    if ( !pplat->isPlatform() ) return false;
 
     // do the attachment
     pprt->onwhichplatform_ref    = pplat->getObjRef();

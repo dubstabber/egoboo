@@ -24,7 +24,7 @@
 
 bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 {
-    ObjectRef holder = attachedto;
+    ObjectRef holder = getHolderRef();
     const std::shared_ptr<Object>& pholder = activeModule().getObjectHandler()[holder];
     if (!pholder) {
         return false;
@@ -38,9 +38,9 @@ bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
     dismount_timer = PHYS_DISMOUNT_TIME;
     dismount_object = holder;
 
-    uint16_t hand = inwhich_slot;
+    uint16_t hand = getAttachmentSlot();
 
-    attachedto = ObjectRef::Invalid;
+    setHolderRef(ObjectRef::Invalid);
     if (pholder->holdingwhich[SLOT_LEFT] == getObjRef()) {
         pholder->holdingwhich[SLOT_LEFT] = ObjectRef::Invalid;
     }
@@ -137,7 +137,7 @@ const std::shared_ptr<Object>& Object::getRightHandItem() const
 
 void Object::resetAlpha()
 {
-    const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[attachedto];
+    const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[getHolderRef()];
     if (!mount) {
         return;
     }
@@ -198,11 +198,11 @@ bool Object::isBeingHeld() const
 
 bool Object::isInsideInventory() const
 {
-    if (inwhich_inventory == ObjectRef::Invalid) {
+    if (getInventoryHolderRef() == ObjectRef::Invalid) {
         return false;
     }
 
-    const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[inwhich_inventory];
+    const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[getInventoryHolderRef()];
     if (!holder || holder->isTerminated()) {
         return false;
     }
@@ -231,7 +231,7 @@ const std::shared_ptr<Object>& Object::isWieldingItemIDSZ(const IDSZ2& idsz) con
 
 const std::shared_ptr<Object>& Object::getHolder() const
 {
-    return activeModule().getObjectHandler()[attachedto];
+    return activeModule().getObjectHandler()[getHolderRef()];
 }
 
 void Object::dropMoney(int amount)

@@ -517,9 +517,9 @@ uint8_t scr_CorrectActionForHand( script_state_t& state, ai_state_t& self )
     /// USAGE:  wizards casting spells
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        if ( pchr->inwhich_slot == SLOT_LEFT )
+        if ( pchr->getAttachmentSlot() == SLOT_LEFT )
         {
             // A or B
             state.argument += Random::next(1);
@@ -943,7 +943,7 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     //We ourselves must be a player or our holder must be one
     std::shared_ptr<Object> object = objectHandler()[pchr->getObjRef()];
     if(!object->isPlayer() && object->isBeingHeld()) {
-        object = objectHandler()[pchr->attachedto];
+        object = objectHandler()[pchr->getHolderRef()];
     }
 
     //Only do this for players

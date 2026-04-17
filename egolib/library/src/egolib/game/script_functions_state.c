@@ -372,7 +372,7 @@ uint8_t scr_IfSitting( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().exists( pchr->attachedto );
+    returncode = objectHandler().exists( pchr->getHolderRef() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1179,7 +1179,7 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    const std::shared_ptr<Object> holder = objectHandler()[pchr->attachedto];
+    const std::shared_ptr<Object> holder = objectHandler()[pchr->getHolderRef()];
     if (holder)
     {
         returncode = holder->getHeldObject(SLOT_LEFT) == pchr->getObjRef();
@@ -1361,7 +1361,7 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef iattached = pchr->attachedto;
+    ObjectRef iattached = pchr->getHolderRef();
 
     if ( objectHandler().exists( iattached ) )
     {

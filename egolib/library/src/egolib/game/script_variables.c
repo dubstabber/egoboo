@@ -219,7 +219,7 @@ int32_t load_VARPASSAGE(script_state_t& scriptState, ai_state_t& aiState, Object
 
 int32_t load_VARWEIGHT(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->holdingweight;
+    return pobject->getHoldingWeight();
 }
 
 int32_t load_VARSELFALTITUDE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

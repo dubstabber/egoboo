@@ -145,7 +145,7 @@ bool EntityList::test(::Camera& camera, const Object& object) {
         return false;
     }
     // The object is not a candidate if it is in another object's inventory. 
-    if (GameSessionContext::get().objectHandler().exists(object.inwhich_inventory)) {
+    if (GameSessionContext::get().objectHandler().exists(object.getInventoryHolderRef())) {
         return false;
     }
     // The object is not a candidate if it is already in this entity list.

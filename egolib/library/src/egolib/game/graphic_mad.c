@@ -724,7 +724,7 @@ void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object
     const auto& pholder = pchr->getHolder();
     if (!pholder || pholder->isTerminated()) return;
 
-    draw_one_grip( &( pholder->inst ), pchr->inwhich_slot );
+    draw_one_grip( &( pholder->inst ), pchr->getAttachmentSlot() );
 }
 #endif
 

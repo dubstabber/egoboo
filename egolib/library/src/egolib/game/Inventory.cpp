@@ -153,8 +153,8 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         pitem->dismount_timer = 0;
 
         //now put the item into the inventory
-        pitem->attachedto = ObjectRef::Invalid;
-        pitem->inwhich_inventory = iowner;
+        pitem->setHolderRef(ObjectRef::Invalid);
+        pitem->setInventoryHolderRef(iowner);
         powner->getInventory()._items[inventorySlot] = pitem;
 
         // fix the flags
@@ -366,7 +366,7 @@ bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignor
             }
 
             //Remove it from the inventory!
-            item->inwhich_inventory = ObjectRef::Invalid;
+            item->setInventoryHolderRef(ObjectRef::Invalid);
             inventoryItem.reset();
             return true;
         }

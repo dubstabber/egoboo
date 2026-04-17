@@ -523,7 +523,7 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
     for(const std::shared_ptr<Object> &pweapon : objectHandler().iterator())
     {
         //only do items on the ground
-        if ( objectHandler().exists( pweapon->attachedto ) || !pweapon->isItem() ) continue;
+        if ( objectHandler().exists( pweapon->getHolderRef() ) || !pweapon->isItem() ) continue;
         const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
         // only target those with a the given IDSZ

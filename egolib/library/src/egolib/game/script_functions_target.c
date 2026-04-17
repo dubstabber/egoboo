@@ -359,9 +359,9 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->attachedto ) )
+    if ( objectHandler().exists( pchr->getHolderRef() ) )
     {
-        self.setTarget(pchr->attachedto);
+        self.setTarget(pchr->getHolderRef());
     }
     else
     {
@@ -1144,7 +1144,7 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
 
     returncode = false;
 
-    ObjectRef ichr = pself_target->attachedto;
+    ObjectRef ichr = pself_target->getHolderRef();
     if ( objectHandler().exists( ichr ) )
     {
         returncode = objectHandler().get(ichr)->isMount();
@@ -1475,7 +1475,7 @@ uint8_t scr_IfTargetIsAPlatform( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    returncode = pself_target->platform;
+    returncode = pself_target->isPlatform();
 
     SCRIPT_FUNCTION_END();
 }
