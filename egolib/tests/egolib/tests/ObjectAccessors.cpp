@@ -196,4 +196,65 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getHoldingWeight(), 12);
 }
 
+TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(305);
+    ASSERT_NE(object, nullptr);
+
+    const int16_t initialBoredTimer = object->getBoredTimer();
+    const uint8_t initialCarefulTimer = object->getCarefulTimer();
+
+    EXPECT_EQ(object->getGrogTimer(), 0);
+    EXPECT_EQ(object->getDazeTimer(), 0);
+    EXPECT_GE(initialBoredTimer, 250);
+    EXPECT_LE(initialBoredTimer, 800);
+    EXPECT_EQ(initialCarefulTimer, 50);
+    EXPECT_EQ(object->getReloadTimer(), 0);
+    EXPECT_EQ(object->getDamageTimer(), 0);
+    EXPECT_FALSE(object->shouldDrawIcon());
+    EXPECT_FALSE(object->isInWater());
+    EXPECT_EQ(object->getDismountTimer(), 0);
+    EXPECT_EQ(object->getDismountObject(), ObjectRef::Invalid);
+
+    object->setGrogTimer(8);
+    object->setDazeTimer(10);
+    object->setBoredTimer(12);
+    object->setCarefulTimer(14);
+    object->setReloadTimer(16);
+    object->setDamageTimer(18);
+    object->setDrawIcon(true);
+    object->setInWater(true);
+    object->setDismountTimer(20);
+    object->setDismountObject(ObjectRef(21));
+
+    EXPECT_EQ(object->getGrogTimer(), 8);
+    EXPECT_EQ(object->getDazeTimer(), 10);
+    EXPECT_EQ(object->getBoredTimer(), 12);
+    EXPECT_EQ(object->getCarefulTimer(), 14);
+    EXPECT_EQ(object->getReloadTimer(), 16);
+    EXPECT_EQ(object->getDamageTimer(), 18);
+    EXPECT_TRUE(object->shouldDrawIcon());
+    EXPECT_TRUE(object->isInWater());
+    EXPECT_EQ(object->getDismountTimer(), 20);
+    EXPECT_EQ(object->getDismountObject(), ObjectRef(21));
+}
+
+TEST_F(ObjectAccessorFixture, MovementAndCollisionMaskAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(306);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_EQ(object->getStoppedByMask(), 0);
+    EXPECT_EQ(object->getBumpListNext(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getTurnMode(), TURNMODE_VELOCITY);
+
+    object->setStoppedByMask(23);
+    object->setBumpListNext(ObjectRef(24));
+    object->setTurnMode(TURNMODE_SPIN);
+
+    EXPECT_EQ(object->getStoppedByMask(), 23);
+    EXPECT_EQ(object->getBumpListNext(), ObjectRef(24));
+    EXPECT_EQ(object->getTurnMode(), TURNMODE_SPIN);
+}
+
 } // namespace

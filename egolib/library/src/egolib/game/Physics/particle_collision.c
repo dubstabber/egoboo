@@ -471,7 +471,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
     bool chr_is_invictus = !pdata.ppip->hasBit(DAMFX_NBLOC) && pdata.pchr->isInvictusDirection(direction);
 
     // try to deflect the particle
-    bool chr_can_deflect = (0 != pdata.pchr->damage_timer) && (pdata.max_damage > 0);
+    bool chr_can_deflect = (0 != pdata.pchr->getDamageTimer()) && (pdata.max_damage > 0);
     prt_deflected = false;
     pdata.mana_paid = false;
     if(chr_can_deflect)
@@ -584,20 +584,20 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
                 {
                     // Defender won, the block holds
                     // Add a small stun to the attacker = 40/50 (0.8 seconds)
-                    pattacker->reload_timer += 40;
+                    pattacker->setReloadTimer(pattacker->getReloadTimer() + 40);
                 }
                 else
                 {
                     // Attacker broke the block and batters away the shield
                     // Time to raise shield again = 40/50 (0.8 seconds)
-                    pdata.pchr->reload_timer += 40;
+                    pdata.pchr->setReloadTimer(pdata.pchr->getReloadTimer() + 40);
                     AudioSystem::get().playSound(pdata.pchr->getPosition(), AudioSystem::get().getGlobalSound(GSND_SHIELDBLOCK));
                 }
             }
         }
 
         // Tell the players that the attack was somehow deflected
-        if(0 == pdata.pchr->damage_timer) 
+        if(0 == pdata.pchr->getDamageTimer()) 
         {
             ParticleHandler::get().spawnDefencePing(pdata.pchr->toSharedPointer(), activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
             if(using_shield) {
@@ -675,7 +675,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     if (pdata.ppip->grogTime > 0 && pdata.pchr->getProfile()->canBeGrogged())
     {
         SET_BIT( pdata.pchr->ai.alert, ALERTIF_CONFUSED );
-        pdata.pchr->grog_timer = std::max(static_cast<unsigned>(pdata.pchr->grog_timer), pdata.ppip->grogTime );
+        pdata.pchr->setGrogTimer(std::max(static_cast<unsigned>(pdata.pchr->getGrogTimer()), pdata.ppip->grogTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Groggy!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
     }
@@ -684,7 +684,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     if (pdata.ppip->dazeTime > 0 && pdata.pchr->getProfile()->canBeDazed())
     {
         SET_BIT( pdata.pchr->ai.alert, ALERTIF_CONFUSED );
-        pdata.pchr->daze_timer = std::max(static_cast<unsigned>(pdata.pchr->daze_timer), pdata.ppip->dazeTime );
+        pdata.pchr->setDazeTimer(std::max(static_cast<unsigned>(pdata.pchr->getDazeTimer()), pdata.ppip->dazeTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Dazed!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
     }
@@ -718,7 +718,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                         //Is the particle spawned by a gun?
                         if(spawnerProfile->isRangedWeapon() && spawnerProfile->getIDSZ(IDSZ_SKILL).equals('T','E','C','H')) {
                             SET_BIT( pdata.pchr->ai.alert, ALERTIF_CONFUSED );
-                            pdata.pchr->daze_timer += 3;
+                            pdata.pchr->setDazeTimer(pdata.pchr->getDazeTimer() + 3);
 
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Crackshot!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                         }
@@ -727,7 +727,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     //Brutal Strike has chance to inflict 2 second Grog with melee CRUSH attacks
                     if(pdata.pchr->getProfile()->canBeGrogged() && powner->hasPerk(Ego::Perks::BRUTAL_STRIKE) && spawnerProfile->isMeleeWeapon() && pdata.pprt->damagetype == DAMAGE_CRUSH) {
                         SET_BIT( pdata.pchr->ai.alert, ALERTIF_CONFUSED );
-                        pdata.pchr->grog_timer += 2;
+                        pdata.pchr->setGrogTimer(pdata.pchr->getGrogTimer() + 2);
 
                         GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                         AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
@@ -963,7 +963,7 @@ bool do_chr_prt_collision_handle_bump( chr_prt_collision_data_t& pdata )
                 }
             }
 
-            if ( pcollector->getProfile()->canGrabMoney() && pcollector->isAlive() && 0 == pcollector->damage_timer && pcollector->getMoney() < Object::MAXMONEY)
+            if ( pcollector->getProfile()->canGrabMoney() && pcollector->isAlive() && 0 == pcollector->getDamageTimer() && pcollector->getMoney() < Object::MAXMONEY)
             {
                 pcollector->giveMoney(pdata.pprt->getProfile()->bump_money);
 
@@ -1202,7 +1202,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
 
     // Torches and such are marked as invulnerable, so the particle is always deflected.
     // make a special case for reaffirmation
-    if (0 == cn_data.pchr->damage_timer )
+    if (0 == cn_data.pchr->getDamageTimer() )
     {
         // Check reaffirmation of particles
         if ( cn_data.pchr->getReaffirmDamageType() == cn_data.pprt->damagetype )
@@ -1219,7 +1219,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
     }
 
     //Do they hit each other?
-    if(prt_can_hit_chr && 0 == cn_data.pchr->damage_timer)
+    if(prt_can_hit_chr && 0 == cn_data.pchr->getDamageTimer())
     {
         bool dodged = false;
 

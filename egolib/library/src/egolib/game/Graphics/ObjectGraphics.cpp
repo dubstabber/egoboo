@@ -1204,8 +1204,8 @@ void ObjectGraphics::updateAnimationRate()
         // Do standstill
 
         // handle boredom
-        _object.bore_timer--;
-        if ( _object.bore_timer < 0 )
+        _object.setBoredTimer(_object.getBoredTimer() - 1);
+        if ( _object.getBoredTimer() < 0 )
         {
             _object.resetBoredTimer();
 

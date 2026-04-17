@@ -57,7 +57,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
         // we are going to give the player a break and not target things that
         // can't be damaged, unless the particle is homing. If it homes in,
         // the he damage_timer could drop off en route.
-        if ( !ppip->homing && ( 0 != pchr->damage_timer ) ) continue;
+        if ( !ppip->homing && ( 0 != pchr->getDamageTimer() ) ) continue;
 
         // Don't retarget someone we already had or not supposed to target
         if ( pchr->getObjRef() == oldtarget || pchr->getObjRef() == donttarget ) continue;
@@ -223,7 +223,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     los_info.x0         = psrc->getPosX();
     los_info.y0         = psrc->getPosY();
     los_info.z0         = psrc->getPosZ() + psrc->bump.height;
-    los_info.stopped_by = psrc->stoppedby;
+    los_info.stopped_by = psrc->getStoppedByMask();
 
     ObjectRef best_target = ObjectRef::Invalid;
     float best_dist2  = (max_dist == NEAREST) ? std::numeric_limits<float>::max() : max_dist*max_dist + 1.0f;

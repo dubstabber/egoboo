@@ -51,7 +51,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
     // No need to continue if we have an attack cooldown
-    if ( 0 != pweapon->reload_timer ) return false;
+    if ( 0 != pweapon->getReloadTimer() ) return false;
 
     // grab the iweapon's action
     ModelAction base_action = static_cast<ModelAction>(weaponProfile->getWeaponAction());
@@ -91,7 +91,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( !allowedtoattack )
     {
         // This character can't use this iweapon
-        pweapon->reload_timer = ONESECOND;
+        pweapon->setReloadTimer(ONESECOND);
         if (pchr->getShowStatus() || egoboo_config_t::get().debug_developerMode_enable.getValue())
         {
             // Tell the player that they can't use this iweapon
@@ -103,7 +103,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( ACTION_DA == action )
     {
         allowedtoattack = false;
-        if ( 0 == pweapon->reload_timer )
+        if ( 0 == pweapon->getReloadTimer() )
         {
             SET_BIT( pweapon->ai.alert, ALERTIF_USED );
         }
@@ -219,7 +219,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                         else if ( ACTION_IS_TYPE( action, F ) ) base_reload_time += 60;     //Flinged  (Unused)
 
                         //it is possible to have so high dex to eliminate all reload time
-                        if ( base_reload_time > 0 ) pweapon->reload_timer += base_reload_time;
+                        if ( base_reload_time > 0 ) pweapon->setReloadTimer(pweapon->getReloadTimer() + base_reload_time);
                     }
                 }
 

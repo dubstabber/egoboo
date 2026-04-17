@@ -1708,8 +1708,8 @@ uint8_t scr_GrogTarget( script_state_t& state, ai_state_t& self )
     returncode = false;
     if ( pself_target->getProfile()->canBeGrogged() )
     {
-        int timer_val = pself_target->grog_timer + state.argument;
-        pself_target->grog_timer = std::max( 0, timer_val );
+        int timer_val = pself_target->getGrogTimer() + state.argument;
+        pself_target->setGrogTimer(std::max(0, timer_val));
         returncode = true;
     }
 
@@ -1734,8 +1734,8 @@ uint8_t scr_DazeTarget( script_state_t& state, ai_state_t& self )
     returncode = false;
     if ( pself_target->getProfile()->canBeDazed() || self.getSelf() == self.getTarget() )
     {
-        int timer_val = pself_target->daze_timer + state.argument;
-        pself_target->daze_timer = std::max( 0, timer_val );
+        int timer_val = pself_target->getDazeTimer() + state.argument;
+        pself_target->setDazeTimer(std::max(0, timer_val));
 
         returncode = true;
     }

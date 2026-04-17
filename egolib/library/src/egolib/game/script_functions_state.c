@@ -495,7 +495,7 @@ uint8_t scr_IfGrogged( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().get(self.getSelf())->grog_timer > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    returncode = objectHandler().get(self.getSelf())->getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }
@@ -511,7 +511,7 @@ uint8_t scr_IfDazed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().get(self.getSelf())->daze_timer > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    returncode = objectHandler().get(self.getSelf())->getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }

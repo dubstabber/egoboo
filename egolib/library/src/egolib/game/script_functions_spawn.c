@@ -128,8 +128,8 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
             pchild->ai.passage = self.passage;
             pchild->ai.owner   = self.owner;
 
-            pchild->dismount_timer  = Object::PHYS_DISMOUNT_TIME;
-            pchild->dismount_object = self.getSelf();
+            pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
+            pchild->setDismountObject(self.getSelf());
         }
     }
 
@@ -549,8 +549,8 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
         pchild->ai.passage = self.passage;
         pchild->ai.owner   = self.owner;
 
-        pchild->dismount_timer  = Object::PHYS_DISMOUNT_TIME;
-        pchild->dismount_object = self.getSelf();
+        pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
+        pchild->setDismountObject(self.getSelf());
         returncode = true;
     }
 
@@ -592,8 +592,8 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
         pchild->ai.passage = self.passage;
         pchild->ai.owner   = self.owner;
 
-        pchild->dismount_timer  = Object::PHYS_DISMOUNT_TIME;
-        pchild->dismount_object = self.getSelf();
+        pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
+        pchild->setDismountObject(self.getSelf());
         returncode = true;
     }
 
@@ -776,7 +776,7 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->damage_timer = Ego::Math::constrain( state.argument, 0, 0xFFFF );
+    pchr->setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
 
     SCRIPT_FUNCTION_END();
 }

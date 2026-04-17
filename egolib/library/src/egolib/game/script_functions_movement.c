@@ -144,7 +144,7 @@ uint8_t scr_SetTurnModeToVelocity( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->turnmode = TURNMODE_VELOCITY;
+    pchr->setTurnMode(TURNMODE_VELOCITY);
 
     SCRIPT_FUNCTION_END();
 }
@@ -160,7 +160,7 @@ uint8_t scr_SetTurnModeToWatch( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->turnmode = TURNMODE_WATCH;
+    pchr->setTurnMode(TURNMODE_WATCH);
 
     SCRIPT_FUNCTION_END();
 }
@@ -176,7 +176,7 @@ uint8_t scr_SetTurnModeToSpin( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->turnmode = TURNMODE_SPIN;
+    pchr->setTurnMode(TURNMODE_SPIN);
 
     SCRIPT_FUNCTION_END();
 }
@@ -379,7 +379,7 @@ uint8_t scr_SetTurnModeToWatchTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->turnmode = TURNMODE_WATCHTARGET;
+    pchr->setTurnMode(TURNMODE_WATCHTARGET);
 
     SCRIPT_FUNCTION_END();
 }
@@ -522,7 +522,7 @@ uint8_t scr_SetReloadTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->reload_timer = std::max( 0, state.argument );
+    pchr->setReloadTimer(static_cast<uint16_t>(std::max(0, state.argument)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -580,11 +580,11 @@ uint8_t scr_SetTargetReloadTime( script_state_t& state, ai_state_t& self )
 
     if ( state.argument > 0 )
     {
-        pself_target->reload_timer = Ego::Math::constrain( state.argument, 0, 0xFFFF );
+        pself_target->setReloadTimer(static_cast<uint16_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
     }
     else
     {
-        pself_target->reload_timer = 0;
+        pself_target->setReloadTimer(0);
     }
 
     SCRIPT_FUNCTION_END();

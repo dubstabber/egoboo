@@ -890,6 +890,46 @@ public:
     **/
     void dropMoney(int amount);
 
+    int16_t getGrogTimer() const { return grog_timer; }
+
+    void setGrogTimer(int16_t timer) { grog_timer = timer; }
+
+    int16_t getDazeTimer() const { return daze_timer; }
+
+    void setDazeTimer(int16_t timer) { daze_timer = timer; }
+
+    int16_t getBoredTimer() const { return bore_timer; }
+
+    void setBoredTimer(int16_t timer) { bore_timer = timer; }
+
+    uint8_t getCarefulTimer() const { return careful_timer; }
+
+    void setCarefulTimer(uint8_t timer) { careful_timer = timer; }
+
+    uint16_t getReloadTimer() const { return reload_timer; }
+
+    void setReloadTimer(uint16_t timer) { reload_timer = timer; }
+
+    uint8_t getDamageTimer() const { return damage_timer; }
+
+    void setDamageTimer(uint8_t timer) { damage_timer = timer; }
+
+    bool shouldDrawIcon() const { return draw_icon; }
+
+    void setDrawIcon(bool drawIcon) { draw_icon = drawIcon; }
+
+    bool isInWater() const { return inwater; }
+
+    void setInWater(bool inWater) { inwater = inWater; }
+
+    int getDismountTimer() const { return dismount_timer; }
+
+    void setDismountTimer(int timer) { dismount_timer = timer; }
+
+    ObjectRef getDismountObject() const { return dismount_object; }
+
+    void setDismountObject(ObjectRef objectRef) { dismount_object = objectRef; }
+
     /**
     * @brief
     *   Re-initialized the bored timer to a random value
@@ -922,6 +962,18 @@ public:
     bool isJumpReady() const { return jumpready; }
 
     void setJumpReady(bool ready) { jumpready = ready; }
+
+    uint8_t getStoppedByMask() const { return stoppedby; }
+
+    void setStoppedByMask(uint8_t mask) { stoppedby = mask; }
+
+    ObjectRef getBumpListNext() const { return bumplist_next; }
+
+    void setBumpListNext(ObjectRef objectRef) { bumplist_next = objectRef; }
+
+    turn_mode_t getTurnMode() const { return turnmode; }
+
+    void setTurnMode(turn_mode_t mode) { turnmode = mode; }
 
 private:
 
@@ -1012,7 +1064,9 @@ private:
     bool         isshopitem;                    ///< Spawned in a shop?
     bool         canbecrushed;                  ///< Crush in a door?
 
-public:
+private:
+    uint8_t          sparkle;         ///< Sparkle color or 0 for off
+
     // misc timers
     int16_t         grog_timer;                    ///< Grog timer
     int16_t         daze_timer;                    ///< Daze timer
@@ -1023,9 +1077,6 @@ public:
 
     // graphical info
     bool         draw_icon;       ///< Show the icon?
-
-private:
-    uint8_t          sparkle;         ///< Sparkle color or 0 for off
 
 public:
     float          shadow_size_stt;  ///< Initial shadow size
@@ -1056,18 +1107,18 @@ public:
 
     std::array<oct_bb_t, SLOT_COUNT> slot_cv;     ///< the cv's for the object's slots
 
-    uint8_t stoppedby;                            ///< Collision mask
-
     orientation_t  ori;                           ///< Character's orientation
     orientation_t  ori_old;                       ///< Character's last orientation
 
+private:
+    // data for doing the physics in bump_all_objects()|
+
+    uint8_t stoppedby;                            ///< Collision mask
 
     ObjectRef bumplist_next;                      ///< Next character on fanblock
 
     // movement properties
-    turn_mode_t  turnmode;                        ///< Turning mode
-
-    // data for doing the physics in bump_all_objects()|
+    turn_mode_t turnmode;                         ///< Turning mode
 
     bool inwater;
 

@@ -70,13 +70,13 @@ bool InventorySlot::notifyMouseButtonPressed(const Events::MouseButtonPressedEve
     }
 
     const std::shared_ptr<Object> &pchr = _player->getObject();
-    if (pchr->isAlive() && pchr->inst.canBeInterrupted() && 0 == pchr->reload_timer) {
+    if (pchr->isAlive() && pchr->inst.canBeInterrupted() && 0 == pchr->getReloadTimer()) {
         //put it away and swap with any existing item
         Inventory::swap_item(pchr->getObjRef(), _slotNumber, e.get_button() == SDL_BUTTON_LEFT ? SLOT_LEFT : SLOT_RIGHT, false);
 
         // Make it take a little time
         pchr->inst.playAction(ACTION_MG, false);
-        pchr->reload_timer = Inventory::PACKDELAY;
+        pchr->setReloadTimer(Inventory::PACKDELAY);
         return true;
     }
 

@@ -114,6 +114,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `52-object-field-encapsulation-pass.md`
 - `53-object-flag-encapsulation-pass.md`
 - `54-object-attachment-platform-encapsulation-pass.md`
+- `55-object-runtime-timer-status-encapsulation-pass.md`
+- `56-object-movement-collision-mask-encapsulation-pass.md`
 
 ## Recommended reading order
 
@@ -161,6 +163,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 42. Read `52-object-field-encapsulation-pass.md` for the first bounded `Object` field-accessor cleanup covering team, held/equipment, jump, size-transition, and damage-type state.
 43. Read `53-object-flag-encapsulation-pass.md` for the follow-on encapsulation of player-binding, mutable flag, and sparkle state plus the recommendation to tackle attachment/platform coupling next.
 44. Read `54-object-attachment-platform-encapsulation-pass.md` for the completed attachment, inventory-placement, and platform-capability accessor cleanup and the follow-on recommendation after the highest-traffic `Object` state is sealed behind accessors.
+45. Read `55-object-runtime-timer-status-encapsulation-pass.md` for the follow-on encapsulation of cooldown timers, confusion state, dismount bookkeeping, water-state, and icon-display state plus the narrowed recommendation before any role-interface extraction.
+46. Read `56-object-movement-collision-mask-encapsulation-pass.md` for the next bounded encapsulation of `stoppedby`, `turnmode`, and bump-list linkage before moving into either the appearance cluster or stats/ammo scalar cleanup.
 
 ## Immediate recommendation
 

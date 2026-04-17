@@ -235,7 +235,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_float(fileTemp, fileWrite, 0); //unused
     template_put_float(fileTemp, fileWrite, profile->_useManaCost);
     template_put_float(fileTemp, fileWrite, character->getBaseAttribute(Ego::Attribute::LIFE_REGEN) * 256.0f);   //Note: overridden by chr
-    template_put_int( fileTemp, fileWrite, character->stoppedby );   //Note: overridden by chr
+    template_put_int( fileTemp, fileWrite, character->getStoppedByMask() );   //Note: overridden by chr
     template_put_string_under( fileTemp, fileWrite, profile->getSkinInfo(0).name.c_str() );
     template_put_string_under( fileTemp, fileWrite, profile->getSkinInfo(1).name.c_str() );
     template_put_string_under( fileTemp, fileWrite, profile->getSkinInfo(2).name.c_str() );
@@ -294,7 +294,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
         vfs_put_expansion( fileWrite, "", IDSZ2( 'S', 'Q', 'U', 'A' ), 1 );
 
     if ( profile->_drawIcon != profile->_usageIsKnown )
-        vfs_put_expansion( fileWrite, "", IDSZ2( 'I', 'C', 'O', 'N' ), character->draw_icon ); //note: overridden by chr
+        vfs_put_expansion( fileWrite, "", IDSZ2( 'I', 'C', 'O', 'N' ), character->shouldDrawIcon() ); //note: overridden by chr
 
     if ( profile->_forceShadow )
         vfs_put_expansion( fileWrite, "", IDSZ2( 'S', 'H', 'A', 'D' ), 1 );

@@ -313,11 +313,11 @@ void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
 
 void ParticleHandler::spawnDefencePing(const std::shared_ptr<Object> &object, const std::shared_ptr<Object> &attacker)
 {
-    if (0 != object->damage_timer) return;
+    if (0 != object->getDamageTimer()) return;
 
     spawnGlobalParticle(object->getPosition(), object->ori.facing_z, LocalParticleProfileRef(PIP_DEFEND), 0);
 
-    object->damage_timer = DEFENDTIME;
+    object->setDamageTimer(DEFENDTIME);
     SET_BIT(object->ai.alert, ALERTIF_BLOCKED);
 
     // For the ones attacking a shield

@@ -286,8 +286,8 @@ void Object::dropKeys()
 
         getInventory().removeItem(pkey, true);
 
-        pkey->dismount_timer = PHYS_DISMOUNT_TIME;
-        pkey->dismount_object = getObjRef();
+        pkey->setDismountTimer(PHYS_DISMOUNT_TIME);
+        pkey->setDismountObject(getObjRef());
         pkey->onwhichplatform_ref = onwhichplatform_ref;
         pkey->onwhichplatform_update = onwhichplatform_update;
 
@@ -329,8 +329,8 @@ void Object::dropAllItems()
         getInventory().removeItem(pitem, true);
         pitem->detatchFromHolder(true, false);
 
-        pitem->dismount_timer = PHYS_DISMOUNT_TIME;
-        pitem->dismount_object = getObjRef();
+        pitem->setDismountTimer(PHYS_DISMOUNT_TIME);
+        pitem->setDismountObject(getObjRef());
         pitem->onwhichplatform_ref = onwhichplatform_ref;
         pitem->onwhichplatform_update = onwhichplatform_update;
 

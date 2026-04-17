@@ -407,28 +407,28 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerPerceptionAveragesAlivePlayersAndC
     firstObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 2.0f);
     firstObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 6.0f);
     firstObject->setBaseAttribute(Ego::Attribute::DARKVISION, 4.0f);
-    firstObject->grog_timer = 8;
-    firstObject->daze_timer = 10;
+    firstObject->setGrogTimer(8);
+    firstObject->setDazeTimer(10);
     firstObject->addPerk(Ego::Perks::SENSE_INVISIBLE);
 
     secondObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 4.0f);
     secondObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 0.0f);
     secondObject->setBaseAttribute(Ego::Attribute::DARKVISION, 2.0f);
-    secondObject->grog_timer = 6;
-    secondObject->daze_timer = 2;
+    secondObject->setGrogTimer(6);
+    secondObject->setDazeTimer(2);
 
     deadObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 50.0f);
     deadObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 50.0f);
     deadObject->setBaseAttribute(Ego::Attribute::DARKVISION, 50.0f);
-    deadObject->grog_timer = 50;
-    deadObject->daze_timer = 50;
+    deadObject->setGrogTimer(50);
+    deadObject->setDazeTimer(50);
     deadObject->_isAlive = false;
 
     terminatedObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 75.0f);
     terminatedObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 75.0f);
     terminatedObject->setBaseAttribute(Ego::Attribute::DARKVISION, 75.0f);
-    terminatedObject->grog_timer = 75;
-    terminatedObject->daze_timer = 75;
+    terminatedObject->setGrogTimer(75);
+    terminatedObject->setDazeTimer(75);
     terminatedObject->_terminateRequested = true;
 
     const LocalPlayerPerceptionState perception = collectLocalPlayerPerception(playerList);

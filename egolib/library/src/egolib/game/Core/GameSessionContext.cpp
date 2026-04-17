@@ -112,8 +112,8 @@ LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::s
         perception.seeInvisibleLevel += object->getAttribute(Ego::Attribute::SEE_INVISIBLE);
         perception.seeKurseLevel += object->getAttribute(Ego::Attribute::SENSE_KURSES);
         perception.seeDarkLevel += object->getAttribute(Ego::Attribute::DARKVISION);
-        perception.grogLevel += object->grog_timer;
-        perception.dazeLevel += object->daze_timer;
+        perception.grogLevel += object->getGrogTimer();
+        perception.dazeLevel += object->getDazeTimer();
 
         if (object->hasPerk(Ego::Perks::SENSE_INVISIBLE))
         {

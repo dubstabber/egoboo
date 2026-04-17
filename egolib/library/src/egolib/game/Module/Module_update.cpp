@@ -196,13 +196,13 @@ void GameModule::updateDamageTiles()
         // don't do direct damage to invulnerable objects
         if (pchr->isInvincible()) continue;
 
-        if (0 == pchr->damage_timer)
+        if (0 == pchr->getDamageTimer())
         {
             int actual_damage = pchr->damage(ATK_BEHIND, _damageTile.amount,
                                              static_cast<DamageType>(_damageTile.damagetype),
                                              Team::TEAM_DAMAGE, nullptr, true, false, false);
 
-            pchr->damage_timer = DAMAGETILETIME;
+            pchr->setDamageTimer(DAMAGETILETIME);
 
             if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
                 ParticleHandler::get().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);

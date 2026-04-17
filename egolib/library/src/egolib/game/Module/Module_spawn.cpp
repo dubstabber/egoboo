@@ -92,10 +92,10 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
 
     // download all the values from the character spawn_ptr->profile
     // Set up model stuff
-    pchr->stoppedby = ppro->getStoppedByMask();
+    pchr->setStoppedByMask(ppro->getStoppedByMask());
     pchr->setNameKnown(ppro->isNameKnown());
     pchr->setAmmoKnown(ppro->isNameKnown());
-    pchr->draw_icon = ppro->isDrawIcon();
+    pchr->setDrawIcon(ppro->isDrawIcon());
 
     // Starting Perks
     for (size_t i = 0; i < Ego::Perks::NR_OF_PERKS; ++i) {

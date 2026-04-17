@@ -137,13 +137,13 @@ void ObjectPhysics::updateMovement()
     if (_object.isAlive() && _object.getAttribute(Ego::Attribute::ACCELERATION) > 0.0f)  {
  
         // Reverse movements for daze
-        if (_object.daze_timer > 0) {
+        if (_object.getDazeTimer() > 0) {
             _desiredVelocity.x() = -_desiredVelocity.x();
             _desiredVelocity.y() = -_desiredVelocity.y();
         }
 
         // Switch x and y for grog
-        if (_object.grog_timer > 0) {
+        if (_object.getGrogTimer() > 0) {
             std::swap(_desiredVelocity.x(), _desiredVelocity.y());
         }
 
@@ -411,7 +411,7 @@ float ObjectPhysics::getMaxSpeed() const
 void ObjectPhysics::updateFacing()
 {
     //Figure out how to turn around
-    switch ( _object.turnmode )
+    switch ( _object.getTurnMode() )
     {
         // Get direction from ACTUAL change in velocity
         default:
@@ -858,7 +858,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
     // make a reasonable time for the character to remount something
     // for characters jumping out of pots, etc
-    if (holder->getObjRef() == _object.dismount_object && _object.dismount_timer > 0) {
+    if (holder->getObjRef() == _object.getDismountObject() && _object.getDismountTimer() > 0) {
         return false;
     }
 
@@ -885,7 +885,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
     _object.setPosition(mat_getTranslate(_object.inst.getMatrix()));
 
-    _object.inwater  = false;
+    _object.setInWater(false);
     _object.setJumpTimer(Object::JUMPDELAY * 4);
 
     // Run the held animation
@@ -1059,7 +1059,7 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 bool ObjectPhysics::floorIsSlippy() const
 {
     //Water tiles are never slippy
-    if(_object.inwater && activeModule().getWater()._is_water) return false;
+    if(_object.isInWater() && activeModule().getWater()._is_water) return false;
 
     //Check tile slippy bit
     return 0 != activeModule().getMeshPointer()->test_fx(_object.getTile(), MAPFX_SLIPPY);

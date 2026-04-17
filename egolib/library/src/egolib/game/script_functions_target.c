@@ -815,7 +815,7 @@ uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    state.argument = pself_target->grog_timer;
+    state.argument = pself_target->getGrogTimer();
 
     returncode = ( 0 != state.argument );
 
@@ -837,7 +837,7 @@ uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    state.argument = pself_target->daze_timer;
+    state.argument = pself_target->getDazeTimer();
 
     returncode = ( 0 != state.argument );
 

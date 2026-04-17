@@ -179,7 +179,7 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
     ObjectProfile * profile = chr_get_ppro( ichr );
     if ( nullptr != profile )
     {
-        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->bump.size, pchr->stoppedby, nrm.v, &pressure, NULL ) )
+        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->bump.size, pchr->getStoppedByMask(), nrm.v, &pressure, NULL ) )
         {
 			// yes it is safe. add it.
 			returncode = true;
@@ -249,7 +249,7 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
     returncode = false;
 
     //setup line of sight data for source
-    los_info.stopped_by = pchr->stoppedby;
+    los_info.stopped_by = pchr->getStoppedByMask();
     los_info.x0 = pchr->getPosX();
     los_info.y0 = pchr->getPosY();
     los_info.z0 = 0;
@@ -268,7 +268,7 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
         printf( "Finding a path from %d,%d to %d,%d: \n", src_ix, src_iy, dst_ix, dst_iy );
 #endif
         //Try to find a path with the AStar algorithm
-        if ( g_astar.find_path( activeModule().getMeshPointer(), pchr->stoppedby, src_ix, src_iy, dst_ix, dst_iy ) )
+        if ( g_astar.find_path( activeModule().getMeshPointer(), pchr->getStoppedByMask(), src_ix, src_iy, dst_ix, dst_iy ) )
         {
             returncode = g_astar.get_path( dst_x, dst_y, wplst);
         }
@@ -518,7 +518,7 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
     los.x0 = pchr->getPosX();
     los.y0 = pchr->getPosY();
     los.z0 = pchr->getPosZ();
-    los.stopped_by = pchr->stoppedby;
+    los.stopped_by = pchr->getStoppedByMask();
 
     for(const std::shared_ptr<Object> &pweapon : objectHandler().iterator())
     {

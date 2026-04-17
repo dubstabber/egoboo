@@ -149,8 +149,8 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         UNSET_BIT( pitem->ai.alert, ALERTIF_DROPPED );
 
         //Do not trigger dismount logic on putting items into inventory
-        pitem->dismount_object = ObjectRef::Invalid;
-        pitem->dismount_timer = 0;
+        pitem->setDismountObject(ObjectRef::Invalid);
+        pitem->setDismountTimer(0);
 
         //now put the item into the inventory
         pitem->setHolderRef(ObjectRef::Invalid);

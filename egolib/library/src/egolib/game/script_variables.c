@@ -461,7 +461,7 @@ int32_t load_VARSELFLEVEL(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VARTARGETRELOADTIME(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->reload_timer;
+    return (nullptr == ptarget) ? 0 : ptarget->getReloadTimer();
 }
 
 int32_t load_VARSPAWNDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
