@@ -351,7 +351,7 @@ int32_t load_VARSELFATTACHED(script_state_t& scriptState, ai_state_t& aiState, O
 
 int32_t load_VARTARGETLEVEL(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->experiencelevel;
+    return (nullptr == ptarget) ? 0 : ptarget->getExperienceLevelIndex();
 }
 
 int32_t load_VARTARGETZ(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -423,17 +423,17 @@ int32_t load_VARSELFACCEL(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VARTARGETEXP(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->experience;
+    return (nullptr == ptarget) ? 0 : ptarget->getExperience();
 }
 
 int32_t load_VARSELFAMMO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->ammo;
+    return pobject->getAmmo();
 }
 
 int32_t load_VARTARGETAMMO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->ammo;
+    return (nullptr == ptarget) ? 0 : ptarget->getAmmo();
 }
 
 int32_t load_VARTARGETMONEY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -456,7 +456,7 @@ int32_t load_VARTARGETTURNAWAY(script_state_t& scriptState, ai_state_t& aiState,
 
 int32_t load_VARSELFLEVEL(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->experiencelevel;
+    return pobject->getExperienceLevelIndex();
 }
 
 int32_t load_VARTARGETRELOADTIME(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

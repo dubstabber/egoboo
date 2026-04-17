@@ -115,11 +115,11 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 		}
 
         // Add the item ammo to the stack.
-        int newammo = pitem->ammo + pstack->ammo;
-		if (newammo <= pstack->ammomax)
+        int newammo = pitem->getAmmo() + pstack->getAmmo();
+		if (newammo <= pstack->getAmmoMax())
 		{
 			// All transfered, so kill the in hand item
-			pstack->ammo = newammo;
+			pstack->setAmmo(newammo);
 
 			pitem->requestTerminate();
 			return true;
@@ -127,8 +127,8 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         else
         {
             // Only some were transfered,
-            pitem->ammo     = pitem->ammo + pstack->ammo - pstack->ammomax;
-            pstack->ammo    = pstack->ammomax;
+            pitem->setAmmo(pitem->getAmmo() + pstack->getAmmo() - pstack->getAmmoMax());
+            pstack->setAmmo(pstack->getAmmoMax());
             SET_BIT( powner->ai.alert, ALERTIF_TOOMUCHBAGGAGE );
         }
     }
@@ -262,7 +262,7 @@ ObjectRef Inventory::hasStack( const ObjectRef item, const ObjectRef character )
 
         found = pstack->getProfile()->isStackable();
 
-        if ( pstack->ammo >= pstack->ammomax )
+        if ( pstack->getAmmo() >= pstack->getAmmoMax() )
         {
             found = false;
         }

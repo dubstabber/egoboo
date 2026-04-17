@@ -183,10 +183,10 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 //Character's possessive
                 case 'p':
-                    if (object->gender == Gender::Female) {
+                    if (object->getGender() == Gender::Female) {
                         result << "her";
                     }
-                    else if (object->gender == Gender::Male) {
+                    else if (object->getGender() == Gender::Male) {
                         result << "his";
                     }
                     else {
@@ -196,10 +196,10 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 //Character's gender
                 case 'm':
-                    if (object->gender == Gender::Female) {
+                    if (object->getGender() == Gender::Female) {
                         result << "female ";
                     }
-                    else if (object->gender == Gender::Male) {
+                    else if (object->getGender() == Gender::Male) {
                         result << "male ";
                     }
                     else {
@@ -211,10 +211,10 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 {
                     const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
                     if(target) {
-                        if (target->gender == Gender::Female) {
+                        if (target->getGender() == Gender::Female) {
                             result << "her";
                         }
-                        else if (target->gender == Gender::Male) {
+                        else if (target->getGender() == Gender::Male) {
                             result << "his";
                         }
                         else {

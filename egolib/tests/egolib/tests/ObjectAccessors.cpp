@@ -285,4 +285,23 @@ TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedStat
     EXPECT_EQ(object->getSkin(), validSkin);
 }
 
+TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(308);
+    ASSERT_NE(object, nullptr);
+
+    object->setGender(Gender::Neuter);
+    object->setExperience(345u);
+    object->setExperienceLevelIndex(4);
+    object->setAmmoMax(27);
+    object->setAmmo(19);
+
+    EXPECT_EQ(object->getGender(), Gender::Neuter);
+    EXPECT_EQ(object->getExperience(), 345u);
+    EXPECT_EQ(object->getExperienceLevelIndex(), 4);
+    EXPECT_EQ(object->getExperienceLevel(), 5);
+    EXPECT_EQ(object->getAmmoMax(), 27);
+    EXPECT_EQ(object->getAmmo(), 19);
+}
+
 } // namespace

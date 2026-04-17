@@ -106,27 +106,27 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     }
 
     // Ammo
-    pchr->ammomax = ppro->getMaxAmmo();
-    pchr->ammo = ppro->getAmmo();
+    pchr->setAmmoMax(ppro->getMaxAmmo());
+    pchr->setAmmo(ppro->getAmmo());
 
     // Gender
     switch (ppro->getGender()) {
         case GenderProfile::Male:
-            pchr->gender = Gender::Male;
+            pchr->setGender(Gender::Male);
             break;
         case GenderProfile::Female:
-            pchr->gender = Gender::Female;
+            pchr->setGender(Gender::Female);
             break;
         case GenderProfile::Neuter:
-            pchr->gender = Gender::Neuter;
+            pchr->setGender(Gender::Neuter);
             break;
         case GenderProfile::Random:
             /// 50% male or female.
             /// @todo And what about Neuter?
             if (Random::nextBool()) {
-                pchr->gender = Gender::Female;
+                pchr->setGender(Gender::Female);
             } else {
-                pchr->gender = Gender::Male;
+                pchr->setGender(Gender::Male);
             }
             break;
     }
@@ -166,8 +166,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     pchr->giveMoney(ppro->getStartingMoney());
 
     // Experience
-    pchr->experience = Random::next(ppro->getStartingExperience());
-    pchr->experiencelevel = ppro->getStartingLevel();
+    pchr->setExperience(Random::next(ppro->getStartingExperience()));
+    pchr->setExperienceLevelIndex(ppro->getStartingLevel());
 
     // Particle attachments
     pchr->setReaffirmDamageType(ppro->getReaffirmDamageType());

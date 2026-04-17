@@ -921,7 +921,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
 
     if (rightHandItem)
     {
-        if ( rightHandItem->getProfile()->isRangedWeapon() && (0 == rightHandItem->ammomax || (0 != rightHandItem->ammo)))
+        if ( rightHandItem->getProfile()->isRangedWeapon() && (0 == rightHandItem->getAmmoMax() || (0 != rightHandItem->getAmmo())))
         {
             state.argument = LATCHBUTTON_RIGHT;
             returncode = true;
@@ -935,7 +935,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
         const std::shared_ptr<Object> &leftHandItem = objectHandler()[pchr->getHeldObject(SLOT_LEFT)];
         if (leftHandItem)
         {
-            if ( leftHandItem->getProfile()->isRangedWeapon() && (0 == leftHandItem->ammomax || (0 != leftHandItem->ammo)))
+            if ( leftHandItem->getProfile()->isRangedWeapon() && (0 == leftHandItem->getAmmoMax() || (0 != leftHandItem->getAmmo())))
             {
                 state.argument = LATCHBUTTON_LEFT;
                 returncode = true;
@@ -1146,7 +1146,7 @@ uint8_t scr_IfAmmoOut( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( 0 == pchr->ammo );
+    returncode = ( 0 == pchr->getAmmo() );
 
     SCRIPT_FUNCTION_END();
 }

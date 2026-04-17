@@ -60,12 +60,12 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 	// draw the ammo, if requested
 	if (draw_ammo && (NULL != pitem))
 	{
-		if (0 != pitem->ammomax && pitem->isAmmoKnown())
+		if (0 != pitem->getAmmoMax() && pitem->isAmmoKnown())
 		{
-			if ((!pitem->getProfile()->isStackable()) || pitem->ammo > 1)
+			if ((!pitem->getProfile()->isStackable()) || pitem->getAmmo() > 1)
 			{
 				// Show amount of ammo left
-				uiManager().drawBitmapFontString(Vector2f(x, y - 8), std::to_string(pitem->ammo));
+				uiManager().drawBitmapFontString(Vector2f(x, y - 8), std::to_string(pitem->getAmmo()));
 			}
 		}
 	}
@@ -307,18 +307,18 @@ float CharacterStatus::draw_character_xp_bar(const ObjectRef character, float x,
 	pchr = activeModule->getObjectHandler().get(character);
 
 	//Draw the small XP progress bar
-	if (pchr->experiencelevel < MAXLEVEL - 1)
+	if (pchr->getExperienceLevelIndex() < MAXLEVEL - 1)
 	{
-		uint8_t  curlevel = pchr->experiencelevel + 1;
+		uint8_t  curlevel = pchr->getExperienceLevelIndex() + 1;
 		uint32_t xplastlevel = pchr->getProfile()->getXPNeededForLevel(curlevel - 1);
 		uint32_t xpneed = pchr->getProfile()->getXPNeededForLevel(curlevel);
 
-		while (pchr->experience < xplastlevel && curlevel > 1) {
+		while (pchr->getExperience() < xplastlevel && curlevel > 1) {
 			curlevel--;
 			xplastlevel = pchr->getProfile()->getXPNeededForLevel(curlevel - 1);
 		}
 
-		float fraction = ((float)(pchr->experience - xplastlevel)) / (float)std::max<uint32_t>(xpneed - xplastlevel, 1);
+		float fraction = ((float)(pchr->getExperience() - xplastlevel)) / (float)std::max<uint32_t>(xpneed - xplastlevel, 1);
 		int   numticks = fraction * NUMTICK;
 
 		y = draw_one_xp_bar(x, y, Math::constrain(numticks, 0, NUMTICK));

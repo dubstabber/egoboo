@@ -704,7 +704,7 @@ uint8_t scr_SetChildAmmo( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    objectHandler().get(self.child)->ammo = Ego::Math::constrain( state.argument, 0, 0xFFFF );
+    objectHandler().get(self.child)->setAmmo(Ego::Math::constrain( state.argument, 0, 0xFFFF ));
 
     SCRIPT_FUNCTION_END();
 }
@@ -722,7 +722,7 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
 
     returncode = false;
 	ObjectRef ichr = self.getTarget();
-    if ( objectHandler().get(ichr)->ammomax != 0 )  objectHandler().get(ichr)->setAmmoKnown(true);
+    if ( objectHandler().get(ichr)->getAmmoMax() != 0 )  objectHandler().get(ichr)->setAmmoKnown(true);
 
 
     returncode = !objectHandler().get(ichr)->isNameKnown();

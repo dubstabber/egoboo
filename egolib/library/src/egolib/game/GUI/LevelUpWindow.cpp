@@ -324,7 +324,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     }
 
     //Increase character level by 1
-    _character->experiencelevel += 1;
+    _character->setExperienceLevelIndex(_character->getExperienceLevelIndex() + 1);
     SET_BIT(_character->ai.alert, ALERTIF_LEVELUP);
     activeModule.getPlayer(_character->getPlayerNumber())->setLevelUpIndicator(false);
 

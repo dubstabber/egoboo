@@ -303,14 +303,14 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     */
 
     // What kind of attack are we going to do?
-    if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->ammo > 1 ) || ACTION_IS_TYPE( pweapon->inst.getCurrentAnimation(), F ) ) )
+    if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->getAmmo() > 1 ) || ACTION_IS_TYPE( pweapon->inst.getCurrentAnimation(), F ) ) )
     {
         // Throw the weapon if it's stacked or a hurl animation
         std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->getSkin(), pchr->ori.facing_z, pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
             pthrown->setKursed(false);
-            pthrown->ammo = 1;
+            pthrown->setAmmo(1);
             SET_BIT( pthrown->ai.alert, ALERTIF_THROWN );
 
             // deterimine the throw velocity
@@ -331,22 +331,22 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                                   Object::DROPZVEL});
 
             //Was that the last one?
-            if ( pweapon->ammo <= 1 ) {
+            if ( pweapon->getAmmo() <= 1 ) {
                 // Poof the item
                 pweapon->requestTerminate();
                 return;
             }
             else {
-                pweapon->ammo--;
+                pweapon->setAmmo(pweapon->getAmmo() - 1);
             }
         }
     }
     else
     {
         // A generic attack. Spawn the damage particle.
-        if ( 0 == pweapon->ammomax || 0 != pweapon->ammo )
+        if ( 0 == pweapon->getAmmoMax() || 0 != pweapon->getAmmo() )
         {
-            if ( pweapon->ammo > 0 && !weaponProfile->isStackable() )
+            if ( pweapon->getAmmo() > 0 && !weaponProfile->isStackable() )
             {
                 //Is it a wand? (Wand Mastery perk has chance to not use charge)
                 if(pweapon->getProfile()->getIDSZ(IDSZ_SKILL).equals('W','A','N','D')
@@ -357,11 +357,11 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                         GFX::get().getBillboardSystem().makeBillboard(pchr->getObjRef(), "Wand Mastery!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
                     else {
-                        pweapon->ammo--;  // Ammo usage
+                        pweapon->setAmmo(pweapon->getAmmo() - 1);  // Ammo usage
                     }
                 }
                 else {
-                    pweapon->ammo--;  // Ammo usage
+                    pweapon->setAmmo(pweapon->getAmmo() - 1);  // Ammo usage
                 }
             }
 
@@ -372,12 +372,12 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             if(pchr->hasPerk(Ego::Perks::DOUBLE_SHOT) && weaponProfile->getIDSZ(IDSZ_PARENT).equals('L','B','O','W'))
             {
                 //1% chance per Agility
-                if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::AGILITY) && pweapon->ammo > 0) {
+                if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::AGILITY) && pweapon->getAmmo() > 0) {
                     NR_OF_ATTACK_PARTICLES = 2;
                     GFX::get().getBillboardSystem().makeBillboard(pchr->getObjRef(), "Double Shot!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
 
                     //Spend one extra ammo
-                    pweapon->ammo--;
+                    pweapon->setAmmo(pweapon->getAmmo() - 1);
                 }
             }
 

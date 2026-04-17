@@ -598,10 +598,10 @@ int RestockAmmo( const ObjectRef character, const IDSZ2& idsz )
     int amount = 0;
     if (pchr->getProfile()->hasTypeIDSZ(idsz))
     {
-        if (pchr->ammo < pchr->ammomax)
+        if (pchr->getAmmo() < pchr->getAmmoMax())
         {
-            amount = pchr->ammomax - pchr->ammo;
-            pchr->ammo = pchr->ammomax;
+            amount = pchr->getAmmoMax() - pchr->getAmmo();
+            pchr->setAmmo(pchr->getAmmoMax());
         }
     }
 

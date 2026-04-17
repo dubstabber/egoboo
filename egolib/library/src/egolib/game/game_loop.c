@@ -124,7 +124,7 @@ void MainLoop::readPlayerInput()
                 SET_BIT(pchr->ai.alert, ALERTIF_CLEANEDUP);
 
                 // cost some experience for doing this...  never lose a level
-                pchr->experience *= EXPKEEP;
+                pchr->setExperience(pchr->getExperience() * EXPKEEP);
 
                 //Also lose some gold in non-easy modes
                 if (egoboo_config_t::get().game_difficulty.getValue() > Ego::GameDifficulty::Easy) {
@@ -181,7 +181,8 @@ void MainLoop::check_stats()
             if(object)
             {
                 //Give 10% of XP needed for next level
-                uint32_t xpgain = 0.1f * ( object->getProfile()->getXPNeededForLevel( std::min( object->experiencelevel+1, MAXLEVEL) ) - object->getProfile()->getXPNeededForLevel(object->experiencelevel));
+                const uint8_t currentLevelIndex = object->getExperienceLevelIndex();
+                uint32_t xpgain = 0.1f * ( object->getProfile()->getXPNeededForLevel( std::min(currentLevelIndex + 1, MAXLEVEL) ) - object->getProfile()->getXPNeededForLevel(currentLevelIndex));
                 object->giveExperience(xpgain, XP_DIRECT, true);
                 stat_check_delay = 1;
             }

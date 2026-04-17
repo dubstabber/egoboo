@@ -165,9 +165,9 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
         returncode = true;
 
         // Cost one ammo
-        if ( pitem->ammo > 1 )
+        if ( pitem->getAmmo() > 1 )
         {
-            pitem->ammo--;
+            pitem->setAmmo(pitem->getAmmo() - 1);
         }
 
         // Poof the item
@@ -535,9 +535,9 @@ uint8_t scr_IncreaseAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function increases the character's ammo by 1
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( pchr->ammo < pchr->ammomax )
+    if ( pchr->getAmmo() < pchr->getAmmoMax() )
     {
-        pchr->ammo++;
+        pchr->setAmmo(pchr->getAmmo() + 1);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1037,9 +1037,9 @@ uint8_t scr_CostAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function costs the character 1 point of ammo
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( pchr->ammo > 0 )
+    if ( pchr->getAmmo() > 0 )
     {
-        pchr->ammo--;
+        pchr->setAmmo(pchr->getAmmo() - 1);
     }
 
     SCRIPT_FUNCTION_END();
@@ -2065,7 +2065,7 @@ uint8_t scr_SetTargetAmmo( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    pself_target->ammo = std::min( state.argument, (int)pself_target->ammomax );
+    pself_target->setAmmo(std::min( state.argument, (int)pself_target->getAmmoMax() ));
 
     SCRIPT_FUNCTION_END();
 }

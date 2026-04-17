@@ -279,6 +279,29 @@ TEST_F(ModuleSpawnRealizationFixture, AttachRightUsesRightGrip)
     EXPECT_EQ(grips.front(), GRIP_RIGHT);
 }
 
+TEST_F(ModuleSpawnRealizationFixture, SpawnLevelAssignmentUsesObjectAccessors)
+{
+    auto state = makeState();
+    spawn_file_info_t entry = makeEntry(83);
+    entry.level = 3;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& spawnEntry)
+    {
+        loadProfile("follower.obj", spawnEntry.slot);
+        auto object = _objectHandler.insert(ObjectProfileRef(spawnEntry.slot));
+        object->setExperienceLevelIndex(1);
+        object->setExperience(5u);
+        return object;
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->getExperienceLevelIndex(), 1);
+    EXPECT_EQ(result->getExperience(), result->getProfile()->getXPNeededForLevel(entry.level));
+}
+
 TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEquipment)
 {
     auto parent = makeObject("follower.obj", 80);

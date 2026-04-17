@@ -236,9 +236,9 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
         break;
     }
 
-    if (spawnInfo.level > 0 && object->experiencelevel < spawnInfo.level)
+    if (spawnInfo.level > 0 && object->getExperienceLevelIndex() < spawnInfo.level)
     {
-        object->experience = object->getProfile()->getXPNeededForLevel(spawnInfo.level);
+        object->setExperience(object->getProfile()->getXPNeededForLevel(spawnInfo.level));
     }
 
     applyStartupEquipmentHook(object, parent, state);

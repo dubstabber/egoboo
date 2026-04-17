@@ -619,11 +619,21 @@ public:
     **/
     uint8_t getExperienceLevel() const { return experiencelevel + 1; }
 
+    uint8_t getExperienceLevelIndex() const { return experiencelevel; }
+
+    void setExperienceLevelIndex(uint8_t levelIndex) { experiencelevel = levelIndex; }
+
     /**
     * @return
     *   The gender of this Object (if applicable)
     **/
     Gender getGender() const { return gender; }
+
+    void setGender(Gender objectGender) { gender = objectGender; }
+
+    uint32_t getExperience() const { return experience; }
+
+    void setExperience(uint32_t value) { experience = value; }
 
     /**
     * @brief
@@ -678,7 +688,13 @@ public:
     **/
     Inventory& getInventory();
 
+    uint16_t getAmmoMax() const { return ammomax; }
+
+    void setAmmoMax(uint16_t maxAmmo) { ammomax = maxAmmo; }
+
     uint16_t getAmmo() const { return ammo; }
+
+    void setAmmo(uint16_t ammoCount) { ammo = ammoCount; }
 
     /**
     * @return
@@ -1029,6 +1045,7 @@ public:
     // character state
     ai_state_t     ai;              ///< ai data
 
+private:
     // character stats
     Gender  gender;          ///< Gender
 

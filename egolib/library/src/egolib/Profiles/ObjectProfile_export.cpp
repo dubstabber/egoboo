@@ -50,9 +50,9 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_int( fileTemp, fileWrite, -1 );     // -1 signals a flexible load thing
     template_put_string_under( fileTemp, fileWrite, profile->_className.c_str() );
     template_put_bool( fileTemp, fileWrite, profile->_uniformLit );
-    template_put_int( fileTemp, fileWrite, character->ammomax );     //Note: overridden by chr
-    template_put_int( fileTemp, fileWrite, character->ammo );        //Note: overridden by chr
-    template_put_gender( fileTemp, fileWrite, character->gender );   //Note: overridden by chr
+    template_put_int( fileTemp, fileWrite, character->getAmmoMax() );     //Note: overridden by chr
+    template_put_int( fileTemp, fileWrite, character->getAmmo() );        //Note: overridden by chr
+    template_put_gender( fileTemp, fileWrite, character->getGender() );   //Note: overridden by chr
 
      //Attributes (TODO: can be easily converted into a for loop if order does not matter)
     template_put_int( fileTemp, fileWrite, character->getBaseAttribute(Ego::Attribute::LIFE_BARCOLOR) );              //Note: overriden by chr
@@ -174,7 +174,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_int( fileTemp, fileWrite, profile->_experienceForLevel[3] );
     template_put_int( fileTemp, fileWrite, profile->_experienceForLevel[4] );
     template_put_int( fileTemp, fileWrite, profile->_experienceForLevel[5] );
-    template_put_float( fileTemp, fileWrite, character->experience );    //Note overriden by chr
+    template_put_float( fileTemp, fileWrite, character->getExperience() );    //Note overriden by chr
     template_put_int( fileTemp, fileWrite, profile->_experienceWorth );
     template_put_float( fileTemp, fileWrite, profile->_experienceExchange );
     for(size_t i = 0; i < profile->_experienceRate.size(); ++i) {
@@ -341,7 +341,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     vfs_put_expansion(fileWrite, "", IDSZ2('S', 'K', 'I', 'N'), character->getSkin());
     vfs_put_expansion(fileWrite, "", IDSZ2('C', 'O', 'N', 'T'), character->ai.content);
     vfs_put_expansion(fileWrite, "", IDSZ2('S', 'T', 'A', 'T'), character->ai.state);
-    vfs_put_expansion(fileWrite, "", IDSZ2('L', 'E', 'V', 'L'), character->experiencelevel);
+    vfs_put_expansion(fileWrite, "", IDSZ2('L', 'E', 'V', 'L'), character->getExperienceLevelIndex());
     vfs_put_expansion(fileWrite, "", IDSZ2('S', 'E', 'E', 'D'), character->getLevelUpSeed());
     vfs_put_expansion_float(fileWrite, "", IDSZ2('L', 'I', 'F', 'E'), character->getLife());
     vfs_put_expansion_float(fileWrite, "", IDSZ2('M', 'A', 'N', 'A'), character->getMana());
