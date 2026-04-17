@@ -122,6 +122,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `60-object-bumper-collision-volume-encapsulation-pass.md`
 - `61-object-inst-transitional-boundary-pass.md`
 - `62-object-graphics-escape-hatch-retirement-pass.md`
+- `63-object-graphics-tint-reflection-policy-pass.md`
 
 ## Recommended reading order
 
@@ -177,6 +178,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 50. Read `60-object-bumper-collision-volume-encapsulation-pass.md` for the bounded encapsulation of `Object` bumper/collision-volume state, the grouped collision publish path in `ObjectPhysics`, and the narrowed follow-on recommendation around `inst`.
 51. Read `61-object-inst-transitional-boundary-pass.md` for the transitional `Object::inst` boundary, the temporary `graphics()` escape hatch for render/matrix code, and the remaining follow-on recommendation after object/render callers stop depending on a public graphics instance.
 52. Read `62-object-graphics-escape-hatch-retirement-pass.md` for the retirement of the public `Object::graphics()` escape hatch, the new stable render-facing `Object` helpers, and the narrowed follow-on recommendation inside `ObjectGraphics`.
+53. Read `63-object-graphics-tint-reflection-policy-pass.md` for the extracted tint/reflection render-policy seam inside `ObjectGraphics`, the preserved public `Object` render-facing surface, and the narrowed follow-on recommendation around model-reset and animation-reset responsibilities.
 
 ## Immediate recommendation
 

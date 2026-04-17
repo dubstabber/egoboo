@@ -58,6 +58,7 @@ protected:
         ProfileSystem::get().reset();
         ProfileSystem::get().loadModuleProfiles();
         setup_init_module_vfs_paths("mp_modules/test.mod");
+        GameSessionContext::get().publishLocalPlayerPerception(LocalPlayerPerceptionState{});
     }
 
     void TearDown() override
@@ -393,9 +394,63 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
     EXPECT_EQ(object->getReflectionAlpha(), 0);
 }
 
-TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
+TEST_F(ObjectAccessorFixture, RenderStateAccessorsApplyReflectionPolicy)
 {
     auto object = makeFollower(311);
+    ASSERT_NE(object, nullptr);
+
+    object->setAlpha(200);
+    object->setLight(60);
+    object->setSheen(10);
+    object->setColorShift(colorshift_t(1, 2, 3));
+
+    const float altitudeAboveGround = std::max(0.0f, object->getPosZ() - object->getFloorElevation());
+    float alphaFade = (255.0f - altitudeAboveGround) * 0.5f;
+    alphaFade = Ego::Math::constrain(alphaFade, 0.0f, 255.0f);
+
+    const uint8_t reflectedAlpha = 200 * alphaFade * idlib::fraction<float, 1, 255>();
+    EXPECT_EQ(object->getReflectionAlpha(), reflectedAlpha);
+
+    GLXvector4f tint;
+    object->getTint(tint, true, CHR_ALPHA);
+
+    const int reflectedLight = 60 * reflectedAlpha * idlib::fraction<float, 1, 255>();
+    const float reflectedAlphaScale = reflectedAlpha * idlib::fraction<float, 1, 255>();
+    const float reflectedLightScale = reflectedLight * idlib::fraction<float, 1, 255>();
+    EXPECT_NEAR(tint[RR], reflectedLightScale / 4.0f, 0.0001f);
+    EXPECT_NEAR(tint[GG], reflectedLightScale / 8.0f, 0.0001f);
+    EXPECT_NEAR(tint[BB], reflectedLightScale / 16.0f, 0.0001f);
+    EXPECT_NEAR(tint[AA], reflectedAlphaScale, 0.0001f);
+}
+
+TEST_F(ObjectAccessorFixture, RenderStateAccessorsApplyLocalPlayerPerceptionOverrides)
+{
+    auto object = makeFollower(312);
+    ASSERT_NE(object, nullptr);
+
+    object->setAlpha(30);
+    object->setLight(40);
+    object->setColorShift(colorshift_t(0, 0, 0));
+
+    LocalPlayerPerceptionState perception;
+    perception.seeInvisibleLevel = 1.0f;
+    perception.seeDarkMagnitude = 2.0f;
+    GameSessionContext::get().publishLocalPlayerPerception(perception);
+
+    GLXvector4f tint;
+    object->getTint(tint, false, CHR_ALPHA);
+
+    constexpr float perceivedAlphaScale = SEEINVISIBLE / 255.0f;
+    constexpr float perceivedLightScale = 80.0f / 255.0f;
+    EXPECT_NEAR(tint[RR], perceivedLightScale, 0.0001f);
+    EXPECT_NEAR(tint[GG], perceivedLightScale, 0.0001f);
+    EXPECT_NEAR(tint[BB], perceivedLightScale, 0.0001f);
+    EXPECT_NEAR(tint[AA], perceivedAlphaScale, 0.0001f);
+}
+
+TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
+{
+    auto object = makeFollower(313);
     ASSERT_NE(object, nullptr);
 
     matrix_cache_t cache;
@@ -446,7 +501,7 @@ TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
 
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
 {
-    auto object = makeFollower(312);
+    auto object = makeFollower(314);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

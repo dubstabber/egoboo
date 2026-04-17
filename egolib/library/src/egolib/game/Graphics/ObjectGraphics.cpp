@@ -12,6 +12,104 @@ namespace Graphics
 // the flip tolerance is the default flip increment / 2
 static constexpr float FLIP_TOLERANCE = 0.25f * 0.5f;
 
+namespace
+{
+
+struct TintRenderState
+{
+    int alpha;
+    int light;
+    int sheen;
+    colorshift_t colorShift;
+};
+
+uint8_t computeReflectionAlpha(const Object& object, uint8_t alpha)
+{
+    const float altitudeAboveGround = std::max(0.0f, object.getPosZ() - object.getFloorElevation());
+    float alphaFade = (255.0f - altitudeAboveGround) * 0.5f;
+    alphaFade = Ego::Math::constrain(alphaFade, 0.0f, 255.0f);
+
+    return alpha * alphaFade * idlib::fraction<float, 1, 255>();
+}
+
+TintRenderState makeTintRenderState(const Object& object,
+                                    uint8_t alpha,
+                                    uint8_t light,
+                                    uint8_t sheen,
+                                    const colorshift_t& colorShift,
+                                    bool reflection)
+{
+    if (!reflection)
+    {
+        return TintRenderState{alpha, light, sheen, colorShift};
+    }
+
+    const uint8_t reflectionAlpha = computeReflectionAlpha(object, alpha);
+    const int reflectionLight = (light == 0xFF)
+                              ? 0xFF
+                              : light * reflectionAlpha * idlib::fraction<float, 1, 255>();
+
+    return TintRenderState{
+        reflectionAlpha,
+        reflectionLight,
+        sheen / 2,
+        colorshift_t(static_cast<uint8_t>(colorShift.red + 1),
+                     static_cast<uint8_t>(colorShift.green + 1),
+                     static_cast<uint8_t>(colorShift.blue + 1))
+    };
+}
+
+void applyLocalPlayerPerception(TintRenderState& state, const LocalPlayerPerceptionState& localPlayerPerception)
+{
+    if (localPlayerPerception.seeInvisibleLevel > 0.0f)
+    {
+        state.alpha = std::max(state.alpha, static_cast<int>(SEEINVISIBLE));
+    }
+
+    state.light = get_light(state.light, localPlayerPerception.seeDarkMagnitude);
+}
+
+void encodeTint(GLXvector4f tint, const TintRenderState& state, int type)
+{
+    tint[RR] = 1.0f / (1 << state.colorShift.red);
+    tint[GG] = 1.0f / (1 << state.colorShift.green);
+    tint[BB] = 1.0f / (1 << state.colorShift.blue);
+    tint[AA] = 1.0f;
+
+    switch (type)
+    {
+        case CHR_LIGHT:
+        case CHR_ALPHA:
+            tint[AA] = state.alpha * idlib::fraction<float, 1, 255>();
+            tint[RR] = state.light * idlib::fraction<float, 1, 255>() / (1 << state.colorShift.red);
+            tint[GG] = state.light * idlib::fraction<float, 1, 255>() / (1 << state.colorShift.green);
+            tint[BB] = state.light * idlib::fraction<float, 1, 255>() / (1 << state.colorShift.blue);
+            break;
+
+        case CHR_PHONG:
+        {
+            const float amount = (Ego::Math::constrain(state.sheen, 0, 15) << 4) / 240.0f;
+
+            tint[RR] += tint[RR] * 0.5f + amount;
+            tint[GG] += tint[GG] * 0.5f + amount;
+            tint[BB] += tint[BB] * 0.5f + amount;
+
+            tint[RR] /= 2.0f;
+            tint[GG] /= 2.0f;
+            tint[BB] /= 2.0f;
+            break;
+        }
+
+        case CHR_SOLID:
+        case CHR_REFLECT:
+        case CHR_UNKNOWN:
+        default:
+            break;
+    }
+}
+
+} // namespace
+
 ObjectGraphics::ObjectGraphics(Object &object) :
     matrix_cache(),
 
@@ -560,12 +658,7 @@ const Matrix4f4f& ObjectGraphics::getReflectionMatrix() const
 
 uint8_t ObjectGraphics::getReflectionAlpha() const
 {
-    // determine the reflection alpha based on altitude above the mesh
-    const float altitudeAboveGround = std::max(0.0f, _object.getPosZ() - _object.getFloorElevation());
-    float alphaFade = (255.0f - altitudeAboveGround)*0.5f;
-    alphaFade = Ego::Math::constrain(alphaFade, 0.0f, 255.0f);
-
-    return this->alpha * alphaFade * idlib::fraction<float, 1, 255>();
+    return computeReflectionAlpha(_object, alpha);
 }
 
 void ObjectGraphics::setObjectProfile(const std::shared_ptr<ObjectProfile> &profile)
@@ -654,78 +747,9 @@ bool ObjectGraphics::isVertexCacheValid() const
 
 void ObjectGraphics::getTint(GLXvector4f tint, const bool reflection, const int type) const
 {
-	int local_alpha;
-	int local_light;
-	int local_sheen;
-    colorshift_t local_colorshift;
-
-	if (reflection)
-	{
-		// this is a reflection, use the reflected parameters
-		local_alpha = getReflectionAlpha();
-
-        if(this->light == 0xFF) {
-            local_light = 0xFF;
-        }
-        else {
-            local_light = this->light * local_alpha * idlib::fraction<float, 1, 255>();
-        }
-
-		local_sheen = this->sheen / 2; //half of normal sheen
-        local_colorshift = colorshift_t(this->colorshift.red + 1, this->colorshift.green + 1, this->colorshift.blue + 1);
-	}
-	else
-	{
-		// this is NOT a reflection, use the normal parameters
-		local_alpha = this->alpha;
-		local_light = this->light;
-		local_sheen = this->sheen;
-        local_colorshift = this->colorshift;
-	}
-
-	// modify these values based on local character abilities
-    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
-    if(localPlayerPerception.seeInvisibleLevel > 0.0f) {
-        local_alpha = std::max(local_alpha, SEEINVISIBLE);
-    }
-	local_light = get_light(local_light, localPlayerPerception.seeDarkMagnitude);
-
-	// clear out the tint
-    tint[RR] = 1.0f / (1 << local_colorshift.red);
-    tint[GG] = 1.0f / (1 << local_colorshift.green);
-    tint[BB] = 1.0f / (1 << local_colorshift.blue);
-    tint[AA] = 1.0f;
-
-    switch(type)
-    {
-        case CHR_LIGHT:
-        case CHR_ALPHA:
-            // alpha characters are blended onto the canvas using the alpha channel
-            tint[AA] = local_alpha * idlib::fraction<float, 1, 255>();
-
-            // alpha characters are blended onto the canvas by adding their color
-            // the more black the colors, the less visible the character
-            // the alpha channel is not important
-            tint[RR] = local_light * idlib::fraction<float, 1, 255>() / (1 << local_colorshift.red);
-            tint[GG] = local_light * idlib::fraction<float, 1, 255>() / (1 << local_colorshift.green);
-            tint[BB] = local_light * idlib::fraction<float, 1, 255>() / (1 << local_colorshift.blue);
-        break;
-
-        case CHR_PHONG:
-            // phong is essentially the same as light, but it is the
-            // sheen that sets the effect
-            float amount = (Ego::Math::constrain(local_sheen, 0, 15) << 4) / 240.0f;
-
-            tint[RR] += tint[RR] * 0.5f + amount;
-            tint[GG] += tint[GG] * 0.5f + amount;
-            tint[BB] += tint[BB] * 0.5f + amount;
-
-            tint[RR] /= 2.0f;
-            tint[GG] /= 2.0f;
-            tint[BB] /= 2.0f;
-        break;
-    }
-
+    TintRenderState tintState = makeTintRenderState(_object, alpha, light, sheen, colorshift, reflection);
+    applyLocalPlayerPerception(tintState, GameSessionContext::get().localPlayerPerception());
+    encodeTint(tint, tintState, type);
 }
 
 void ObjectGraphics::flash(uint8_t value)
