@@ -88,7 +88,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     }
 
     // just set the spawn info
-    pchr->skin_stt  = skin;
+    pchr->setBaseSkin(skin);
 
     // download all the values from the character spawn_ptr->profile
     // Set up model stuff
@@ -174,14 +174,14 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
 
     // Character size and bumping
     pchr->setBaseFat(ppro->getSize());
-    pchr->shadow_size_stt   = ppro->getShadowSize();
+    pchr->setBaseShadowSize(ppro->getShadowSize());
     pchr->bump_stt.size     = ppro->getBumpSize();
     pchr->bump_stt.size_big = ppro->getBumpSizeBig();
     pchr->bump_stt.height   = ppro->getBumpHeight();
 
     //Initialize size and collision box
     pchr->setFatRaw(pchr->getBaseFat());
-    pchr->shadow_size_save   = pchr->shadow_size_stt;
+    pchr->setSavedShadowSize(pchr->getBaseShadowSize());
     pchr->bump_save.size     = pchr->bump_stt.size;
     pchr->bump_save.size_big = pchr->bump_stt.size_big;
     pchr->bump_save.height   = pchr->bump_stt.height;
@@ -230,11 +230,11 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // for the "random skin marker" even if that function is called
     if (ppro->getSkinOverride() != ObjectProfile::NO_SKIN_OVERRIDE)
     {
-        pchr->skin_stt = ppro->getSkinOverride();
+        pchr->setBaseSkin(ppro->getSkinOverride());
     }
 
     //Negative skin number means random skin
-    if (pchr->skin_stt < 0 || !ppro->isValidSkin(pchr->skin_stt))
+    if (pchr->getBaseSkin() < 0 || !ppro->isValidSkin(pchr->getBaseSkin()))
     {
         // This is a "random" skin.
         // Force it to some specific value so it will go back to the same skin every respawn
@@ -242,11 +242,11 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
         // is no need to count the skin graphics loaded into the profile.
         // Limiting the available skins to ones that had unique graphics may have been a mistake since
         // the skin-dependent properties in data.txt may exist even if there are no unique graphics.
-        pchr->skin_stt = ppro->getRandomSkinID();
+        pchr->setBaseSkin(ppro->getRandomSkinID());
     }
 
     // actually set the character skin
-    pchr->setSkin(pchr->skin_stt);
+    pchr->setSkin(pchr->getBaseSkin());
 
     // override the default behavior for an "easy" game
     if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Normal)

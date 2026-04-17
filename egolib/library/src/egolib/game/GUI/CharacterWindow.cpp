@@ -232,7 +232,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     int xPos, yPos = 0;
 
     // draw the character's main icon
-    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->skin));
+    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->getSkin()));
     characterIcon->setPosition(Point2f(0, 0));
     characterIcon->setSize(Vector2f(32, 32));
     target->addComponent(characterIcon);

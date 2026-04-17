@@ -167,7 +167,7 @@ Enchantment::~Enchantment()
         {
             if(modifier._type == Ego::Attribute::MORPH) {
                 //change back into original form
-                target->polymorphObject(target->basemodel_ref, modifier._value);
+                target->polymorphObject(target->getBaseModelRef(), modifier._value);
             }
             else if(Ego::Attribute::isOverrideSetAttribute(modifier._type)) {
                 //remove effect completely
@@ -356,7 +356,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         {
             _overlay = overlay;                             //Kill this character on end...
             overlay->ai.setTarget(target->getObjRef());
-            overlay->is_overlay  = true;
+            overlay->setOverlay(true);
             overlay->ai.state = _enchantProfile->spawn_overlay; // ??? WHY DO THIS ???
 
             // Start out with ActionMJ...  Object activated
@@ -438,7 +438,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         //Morph is special and handled differently than others
         if(modifier._type == Ego::Attribute::MORPH) {
             //Store target's original armor
-            target->getTempAttributes()[Ego::Attribute::MORPH] = target->skin;
+            target->getTempAttributes()[Ego::Attribute::MORPH] = target->getSkin();
 
             //Transform the object
             target->polymorphObject(ObjectProfileRef(_spawnerProfileID), 0);

@@ -755,7 +755,33 @@ public:
     * @return
     *   true if the skin could be changed into the specified number or false if it fails
     **/
+    SKIN_T getSkin() const { return skin; }
+
     bool setSkin(const size_t skinNumber);
+
+    SKIN_T getBaseSkin() const { return skin_stt; }
+
+    void setBaseSkin(SKIN_T skinNumber) { skin_stt = skinNumber; }
+
+    ObjectProfileRef getBaseModelRef() const { return basemodel_ref; }
+
+    void setBaseModelRef(ObjectProfileRef profileRef) { basemodel_ref = profileRef; }
+
+    bool isOverlay() const { return is_overlay; }
+
+    void setOverlay(bool overlayState) { is_overlay = overlayState; }
+
+    float getBaseShadowSize() const { return shadow_size_stt; }
+
+    void setBaseShadowSize(float shadowSize) { shadow_size_stt = shadowSize; }
+
+    uint32_t getShadowSize() const { return shadow_size; }
+
+    void setShadowSize(uint32_t shadowSize) { shadow_size = shadowSize; }
+
+    uint32_t getSavedShadowSize() const { return shadow_size_save; }
+
+    void setSavedShadowSize(uint32_t shadowSize) { shadow_size_save = shadowSize; }
 
     std::unordered_map<Ego::Attribute::AttributeType, float, std::hash<uint8_t>>& getTempAttributes();
 
@@ -1078,7 +1104,7 @@ private:
     // graphical info
     bool         draw_icon;       ///< Show the icon?
 
-public:
+private:
     float          shadow_size_stt;  ///< Initial shadow size
     uint32_t         shadow_size;      ///< Size of shadow
     uint32_t         shadow_size_save; ///< Without size modifiers
@@ -1089,6 +1115,7 @@ public:
 	SKIN_T         skin_stt;                      ///< Character's initial skin
     ObjectProfileRef        basemodel_ref;                     ///< The true form
 
+public:
     // collision info
 
     /// @note - to make it easier for things to "hit" one another (like a damage particle from

@@ -257,4 +257,32 @@ TEST_F(ObjectAccessorFixture, MovementAndCollisionMaskAccessorsRoundTripSelected
     EXPECT_EQ(object->getTurnMode(), TURNMODE_SPIN);
 }
 
+TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(307);
+    ASSERT_NE(object, nullptr);
+
+    const SKIN_T validSkin = object->getProfile()->isValidSkin(1) ? 1 : 0;
+    ASSERT_TRUE(object->getProfile()->isValidSkin(validSkin));
+
+    EXPECT_FALSE(object->isOverlay());
+
+    object->setBaseSkin(3);
+    object->setBaseModelRef(ObjectProfileRef(44));
+    object->setOverlay(true);
+    object->setBaseShadowSize(9.5f);
+    object->setSavedShadowSize(12);
+    object->setShadowSize(15);
+
+    EXPECT_EQ(object->getBaseSkin(), 3);
+    EXPECT_EQ(object->getBaseModelRef(), ObjectProfileRef(44));
+    EXPECT_TRUE(object->isOverlay());
+    EXPECT_FLOAT_EQ(object->getBaseShadowSize(), 9.5f);
+    EXPECT_EQ(object->getSavedShadowSize(), 12u);
+    EXPECT_EQ(object->getShadowSize(), 15u);
+
+    EXPECT_TRUE(object->setSkin(validSkin));
+    EXPECT_EQ(object->getSkin(), validSkin);
+}
+
 } // namespace

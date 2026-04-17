@@ -192,7 +192,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
     mc_tmp.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
 
     // handle the overlay first of all
-    if ( !handled && pchr->is_overlay && ichr != pchr->ai.getTarget() && objectHandler().exists( pchr->ai.getTarget() ) )
+    if ( !handled && pchr->isOverlay() && ichr != pchr->ai.getTarget() && objectHandler().exists( pchr->ai.getTarget() ) )
     {
         // this will pretty much fail the cmp_matrix_cache() every time...
 
@@ -859,7 +859,7 @@ void make_one_character_matrix( const ObjectRef ichr )
     // invalidate this matrix
     pchr->inst.matrix_cache.matrix_valid = false;
 
-    if ( pchr->is_overlay )
+    if ( pchr->isOverlay() )
     {
         // This character is an overlay and its ai.target points to the object it is overlaying
         // Overlays are kept with their target...

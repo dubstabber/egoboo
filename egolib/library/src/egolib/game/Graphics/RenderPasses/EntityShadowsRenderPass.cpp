@@ -41,7 +41,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
         {
             ObjectRef ichr = el.get(i).iobj;
             if (ObjectRef::Invalid == ichr) continue;
-            if (0 == objectHandler.get(ichr)->shadow_size) continue;
+            if (0 == objectHandler.get(ichr)->getShadowSize()) continue;
             doHighQualityShadow(ichr);
             count++;
         }
@@ -53,7 +53,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
         {
             ObjectRef ichr = el.get(i).iobj;
             if (ObjectRef::Invalid == ichr) continue;
-            if (0 == objectHandler.get(ichr)->shadow_size) continue;
+            if (0 == objectHandler.get(ichr)->getShadowSize()) continue;
             doLowQualityShadow(ichr);
             count++;
         }
@@ -68,7 +68,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 
     // If the object is hidden it is not drawn at all, so it has no shadow.
     // If the object's shadow size is qa 0, then it has no shadow.
-    if (pchr->isHidden() || 0 == pchr->shadow_size)
+    if (pchr->isHidden() || 0 == pchr->getShadowSize())
     {
         return;
     }
@@ -91,7 +91,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     // Original points
     float level = pchr->getObjectPhysics().getGroundElevation() + SHADOWRAISE;
     float height = pchr->inst.getMatrix()(2, 3) - level;
-    float height_factor = 1.0f - height / (pchr->shadow_size * 5.0f);
+    float height_factor = 1.0f - height / (pchr->getShadowSize() * 5.0f);
     if (height_factor <= 0.0f) return;
 
     // how much transparency from height
@@ -103,7 +103,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 
     std::shared_ptr<const Texture> texture = ParticleHandler::get().getLightParticleTexture();
 
-    float size = pchr->shadow_size * height_factor;
+    float size = pchr->getShadowSize() * height_factor;
 
     {
         idlib::buffer_scoped_lock lock(*_vertexBuffer);
@@ -153,7 +153,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     if (pchr->isBeingHeld()) return;
 
     // if the character is hidden, not drawn at all, so no shadow
-    if (pchr->isHidden() || 0 == pchr->shadow_size) return;
+    if (pchr->isHidden() || 0 == pchr->getShadowSize()) return;
 
     // no shadow if completely transparent
     float alpha = (255 == pchr->inst.light) ? pchr->inst.alpha  * idlib::fraction<float, 1, 255>() : (pchr->inst.alpha - pchr->inst.light) * idlib::fraction<float, 1, 255>();

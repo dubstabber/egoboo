@@ -122,7 +122,7 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     setCenterPosition(Point2f(uiManager().getScreenWidth() / 2, uiManager().getScreenHeight() / 2));
 
     // draw the character's main icon
-    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->skin));
+    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->getSkin()));
     characterIcon->setPosition(Point2f(borderSize, _titleBar->getHeight() + margin));
     characterIcon->setSize(Vector2f(32, 32));
     addComponent(characterIcon);

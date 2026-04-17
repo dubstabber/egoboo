@@ -1066,7 +1066,7 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
 
     if ( !objectHandler().exists( self.getTarget() ) ) return false;
 
-    pchr->polymorphObject(pself_target->basemodel_ref, pself_target->skin);
+    pchr->polymorphObject(pself_target->getBaseModelRef(), pself_target->getSkin());
 
     // let the resizing take some time
     pchr->setTargetFat(pself_target->getFat());

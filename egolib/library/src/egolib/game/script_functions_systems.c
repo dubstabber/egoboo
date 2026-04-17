@@ -286,7 +286,7 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    iTmp = pself_target->skin;
+    iTmp = pself_target->getSkin();
     state.x = pself_target->setSkin(state.argument);
 
     state.argument = iTmp;  // The character's old armor
@@ -809,9 +809,9 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     state.x = state.argument;
-    iTmp = pchr->skin;
+    iTmp = pchr->getSkin();
     pchr->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
-    state.x = pchr->skin;
+    state.x = pchr->getSkin();
     state.argument = iTmp;  // The character's old armor
 
     SCRIPT_FUNCTION_END();
@@ -1200,8 +1200,8 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( pchr->basemodel_ref == ObjectProfileRef(SPELLBOOK) ||
-                   pchr->basemodel_ref == pchr->getProfileID() );
+    returncode = ( pchr->getBaseModelRef() == ObjectProfileRef(SPELLBOOK) ||
+                   pchr->getBaseModelRef() == pchr->getProfileID() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1254,7 +1254,7 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
         pchr->polymorphObject(ObjectProfileRef(profileID), 0);
 
         // set the base model to the new model, too
-        pchr->basemodel_ref = profileID;
+        pchr->setBaseModelRef(profileID);
 
         returncode = true;
     }
@@ -1591,7 +1591,7 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
     iTmp = pself_target->getProfile()->getSkinInfo(state.argument).cost;
     state.y = iTmp;                                       // Cost of new skin
 
-    iTmp -= pself_target->getProfile()->getSkinInfo(pself_target->skin).cost;     // Refund for old skin
+    iTmp -= pself_target->getProfile()->getSkinInfo(pself_target->getSkin()).cost;     // Refund for old skin
 
     if ( iTmp > pself_target->getMoney() )
     {

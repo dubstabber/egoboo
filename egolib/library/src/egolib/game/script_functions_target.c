@@ -954,7 +954,7 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ppro->getSkinInfo(pchr->skin).dressy;
+    returncode = ppro->getSkinInfo(pchr->getSkin()).dressy;
 
     SCRIPT_FUNCTION_END();
 }

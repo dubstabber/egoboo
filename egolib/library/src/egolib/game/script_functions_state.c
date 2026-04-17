@@ -543,7 +543,7 @@ uint8_t scr_IfArmorIs( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    tTmp = pchr->skin;
+    tTmp = pchr->getSkin();
     returncode = ( tTmp == state.argument );
 
     SCRIPT_FUNCTION_END();

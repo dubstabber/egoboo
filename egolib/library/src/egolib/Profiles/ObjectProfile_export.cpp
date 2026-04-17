@@ -338,7 +338,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     // Basic stuff that is always written
     vfs_put_expansion(fileWrite, "", IDSZ2('G', 'O', 'L', 'D'), character->getMoney());
     vfs_put_expansion(fileWrite, "", IDSZ2('P', 'L', 'A', 'T'), character->canUsePlatforms());
-    vfs_put_expansion(fileWrite, "", IDSZ2('S', 'K', 'I', 'N'), character->skin);
+    vfs_put_expansion(fileWrite, "", IDSZ2('S', 'K', 'I', 'N'), character->getSkin());
     vfs_put_expansion(fileWrite, "", IDSZ2('C', 'O', 'N', 'T'), character->ai.content);
     vfs_put_expansion(fileWrite, "", IDSZ2('S', 'T', 'A', 'T'), character->ai.state);
     vfs_put_expansion(fileWrite, "", IDSZ2('L', 'E', 'V', 'L'), character->experiencelevel);

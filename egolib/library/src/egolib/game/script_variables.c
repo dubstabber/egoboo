@@ -482,7 +482,7 @@ int32_t load_VARTARGETTEAM(script_state_t& scriptState, ai_state_t& aiState, Obj
 
 int32_t load_VARTARGETARMOR(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->skin;
+    return (nullptr == ptarget) ? 0 : ptarget->getSkin();
 }
 
 int32_t load_VARDIFFICULTY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

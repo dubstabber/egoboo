@@ -263,7 +263,7 @@ void show_armor( int statindex )
         return;
     }
 
-    SKIN_T skinlevel = pchr->skin;
+    SKIN_T skinlevel = pchr->getSkin();
 
     const std::shared_ptr<ObjectProfile> &profile = pchr->getProfile();
     const SkinInfo &skinInfo = profile->getSkinInfo(skinlevel);
@@ -311,7 +311,7 @@ void show_full_status( int statindex )
         return;
     }
 
-    SKIN_T skinlevel = pchr->skin;
+    SKIN_T skinlevel = pchr->getSkin();
 
     // Enchanted?
     DisplayMsg_printf("=%s is %s=", pchr->getName().c_str(), !pchr->getActiveEnchants().empty() ? "enchanted" : "unenchanted" );

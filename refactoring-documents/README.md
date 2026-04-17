@@ -116,6 +116,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `54-object-attachment-platform-encapsulation-pass.md`
 - `55-object-runtime-timer-status-encapsulation-pass.md`
 - `56-object-movement-collision-mask-encapsulation-pass.md`
+- `57-object-appearance-profile-encapsulation-pass.md`
 
 ## Recommended reading order
 
@@ -165,6 +166,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 44. Read `54-object-attachment-platform-encapsulation-pass.md` for the completed attachment, inventory-placement, and platform-capability accessor cleanup and the follow-on recommendation after the highest-traffic `Object` state is sealed behind accessors.
 45. Read `55-object-runtime-timer-status-encapsulation-pass.md` for the follow-on encapsulation of cooldown timers, confusion state, dismount bookkeeping, water-state, and icon-display state plus the narrowed recommendation before any role-interface extraction.
 46. Read `56-object-movement-collision-mask-encapsulation-pass.md` for the next bounded encapsulation of `stoppedby`, `turnmode`, and bump-list linkage before moving into either the appearance cluster or stats/ammo scalar cleanup.
+47. Read `57-object-appearance-profile-encapsulation-pass.md` for the bounded encapsulation of skin/base-model/overlay/shadow scalar state and the recommendation to finish the remaining stats/ammo/gender scalar cleanup before broader interface work.
 
 ## Immediate recommendation
 
