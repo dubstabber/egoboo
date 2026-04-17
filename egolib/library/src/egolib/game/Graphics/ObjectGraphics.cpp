@@ -1157,8 +1157,8 @@ void ObjectGraphics::updateAnimationRate()
     }
 
     //Make bigger Objects have slower animations
-    if ( _object.fat > 0.0f ) {
-        speed /= _object.fat;  
+    if ( _object.getFat() > 0.0f ) {
+        speed /= _object.getFat();  
     }
 
     //Find out which animation to use depending on movement speed

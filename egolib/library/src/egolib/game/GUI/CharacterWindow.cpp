@@ -116,7 +116,7 @@ CharacterWindow::~CharacterWindow() {
     //If the character is a local player, then we no longer consume that players input events
     if (_character->isPlayer()) {
         if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
-            module->getPlayer(_character->is_which_player)->setInventoryMode(false);
+            module->getPlayer(_character->getPlayerNumber())->setInventoryMode(false);
         }
     }
 
@@ -217,7 +217,7 @@ bool CharacterWindow::notifyMousePointerMoved(const Events::MousePointerMovedEve
     //Make level up button visible if needed
     if (_character->isPlayer()) {
         if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
-            _levelUpButton->setVisible(_levelUpWindow.expired() && module->getPlayer(_character->is_which_player)->hasUnspentLevel());
+            _levelUpButton->setVisible(_levelUpWindow.expired() && module->getPlayer(_character->getPlayerNumber())->hasUnspentLevel());
         } else {
             _levelUpButton->setVisible(false);
         }
@@ -304,7 +304,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     yPos += 5;
     std::vector<std::shared_ptr<Component>> slots;
     for (size_t i = 0; i < _character->getInventory().getMaxItems(); ++i) {
-        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character->getInventory(), i, _character->isPlayer() ? activeModule.getPlayer(_character->is_which_player) : nullptr);
+        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character->getInventory(), i, _character->isPlayer() ? activeModule.getPlayer(_character->getPlayerNumber()) : nullptr);
         slot->setSize(Vector2f(slotSize, slotSize));
         target->addComponent(slot);
         slots.push_back(slot);
@@ -314,7 +314,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
 
     //If the character is a local player, then we consume that players input events for inventory managment
     if (_character->isPlayer()) {
-        activeModule.getPlayer(_character->is_which_player)->setInventoryMode(true);
+        activeModule.getPlayer(_character->getPlayerNumber())->setInventoryMode(true);
     }
 
     JoinBounds joinBounds;
@@ -339,7 +339,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
         target->addComponent(_levelUpButton);
 
         //Make level up button visible if needed
-        _levelUpButton->setVisible(activeModule.getPlayer(_character->is_which_player)->hasUnspentLevel());
+        _levelUpButton->setVisible(activeModule.getPlayer(_character->getPlayerNumber())->hasUnspentLevel());
     }
     float newHeight = yPos + 30 + BorderPadding;
     target->setHeight(newHeight);

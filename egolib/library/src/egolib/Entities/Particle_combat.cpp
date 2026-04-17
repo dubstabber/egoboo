@@ -56,7 +56,7 @@ void Particle::updateAttachedDamage()
                        attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == ProfileSystem::get().getProfile(_spawnerProfile)->getIDSZ(IDSZ_PARENT));
 
     // 3) the character is "lit on fire" by the particle damage type
-    bool is_immolated_by = (damagetype < DAMAGE_COUNT && attachedObject->reaffirm_damagetype == damagetype);
+    bool is_immolated_by = (damagetype < DAMAGE_COUNT && attachedObject->getReaffirmDamageType() == damagetype);
 
     // 4) the character has no protection to the particle
     bool no_protection_from = (0 != max_damage) && (damagetype < DAMAGE_COUNT) && (0.0f <= attachedObject->getDamageReduction(damagetype));

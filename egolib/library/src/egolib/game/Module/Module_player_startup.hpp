@@ -21,7 +21,7 @@ inline std::shared_ptr<Ego::Player> registerPlayerBinding(std::vector<std::share
     playerList.push_back(player);
 
     // Set the reference before any startup side effects can observe the player.
-    object->is_which_player = playerList.size() - 1;
+    object->setPlayerNumber(playerList.size() - 1);
     return player;
 }
 
@@ -29,12 +29,12 @@ inline void applySuccessfulLocalPlayerBookkeeping(const std::shared_ptr<Object>&
                                                   size_t registeredPlayerCount,
                                                   bool identifySpawnOnSuccess)
 {
-    object->islocalplayer = true;
+    object->setLocalPlayer(true);
     GameSessionContext::get().publishLocalPlayerCount(registeredPlayerCount);
 
     if (identifySpawnOnSuccess)
     {
-        object->nameknown = true;
+        object->setNameKnown(true);
     }
 }
 

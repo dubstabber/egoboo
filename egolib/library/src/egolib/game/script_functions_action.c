@@ -321,7 +321,7 @@ uint8_t scr_MakeNameKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->nameknown = true;
+    pchr->setNameKnown(true);
     //           pchr->icon = true;
 
     SCRIPT_FUNCTION_END();
@@ -353,7 +353,7 @@ uint8_t scr_MakeAmmoKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->ammoknown = true;
+    pchr->setAmmoKnown(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -499,7 +499,7 @@ uint8_t scr_MakeSimilarNamesKnown( script_state_t& state, ai_state_t& self )
 
         if ( sTmp )
         {
-            object->nameknown = true;
+            object->setNameKnown(true);
         }
     }
 
@@ -547,11 +547,11 @@ uint8_t scr_SparkleIcon( script_state_t& state, ai_state_t& self )
     {
         if ( state.argument < -1 )
         {
-            pchr->sparkle = NOSPARKLE;
+            pchr->setSparkle(NOSPARKLE);
         }
         else
         {
-            pchr->sparkle = state.argument % COLOR_MAX;
+            pchr->setSparkle(state.argument % COLOR_MAX);
         }
     }
 
@@ -568,7 +568,7 @@ uint8_t scr_UnsparkleIcon( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->sparkle = NOSPARKLE;
+    pchr->setSparkle(NOSPARKLE);
 
     SCRIPT_FUNCTION_END();
 }
@@ -746,7 +746,7 @@ uint8_t scr_MakeNameUnknown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->nameknown = false;
+    pchr->setNameKnown(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -960,7 +960,7 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     else {        
         returncode = true;
 
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(object->is_which_player);
+        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(object->getPlayerNumber());
         player->setChargeBar(state.argument, state.distance, state.turn);
     }
 

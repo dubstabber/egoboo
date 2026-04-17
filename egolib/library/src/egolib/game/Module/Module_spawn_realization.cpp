@@ -96,8 +96,8 @@ void applyStartupEquipmentHook(const std::shared_ptr<Object>& object,
         return;
     }
 
-    object->nameknown = true;
-    object->iskursed = false;
+    object->setNameKnown(true);
+    object->setKursed(false);
 }
 
 PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,

@@ -41,7 +41,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if (which_slot >= SLOT_COUNT) return false;
 
     // Which iweapon?
-    auto iweapon = pchr->holdingwhich[which_slot];
+    auto iweapon = pchr->getHeldObject(which_slot);
     if ( !module.getObjectHandler().exists( iweapon ) )
     {
         // Unarmed means object itself is the weapon
@@ -85,7 +85,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack && ACTION_IS_TYPE( action, L ) )
     {
         const std::shared_ptr<Object> &offhandItem = which_slot == SLOT_LEFT ? pchr->getLeftHandItem() : pchr->getRightHandItem();
-        if(offhandItem && offhandItem->iskursed) allowedtoattack = false;
+        if(offhandItem && offhandItem->isKursed()) allowedtoattack = false;
     }
 
     if ( !allowedtoattack )
@@ -259,7 +259,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         return;
     }
 
-    ObjectRef iweapon = pchr->holdingwhich[slot];
+    ObjectRef iweapon = pchr->getHeldObject(slot);
 
     // See if it's an unarmed attack...
     bool unarmed_attack;
@@ -309,7 +309,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->skin, pchr->ori.facing_z, pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
-            pthrown->iskursed = false;
+            pthrown->setKursed(false);
             pthrown->ammo = 1;
             SET_BIT( pthrown->ai.alert, ALERTIF_THROWN );
 
@@ -546,7 +546,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         }
         else
         {
-            pweapon->ammoknown = true;
+            pweapon->setAmmoKnown(true);
         }
     }
 }
@@ -571,7 +571,7 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
     for (size_t cnt = 0; cnt < OBJECTS_MAX; cnt++)
     {
         // check for one of the ending condiitons
-        if (non_item && !module.getObjectHandler().get(object)->isitem)
+        if (non_item && !module.getObjectHandler().get(object)->isItem())
         {
             break;
         }

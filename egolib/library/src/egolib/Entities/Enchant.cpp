@@ -336,7 +336,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
 
     // Check if target has the required damage type we need
     if (_enchantProfile->require_damagetarget_damagetype < DAMAGE_COUNT) {
-        if (target->damagetarget_damagetype != _enchantProfile->require_damagetarget_damagetype) {
+        if (target->getDamageTargetType() != _enchantProfile->require_damagetarget_damagetype) {
 			Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enchant: target has wrong damage type", Log::EndOfEntry);
             requestTerminate();
             return;
@@ -351,7 +351,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // Create an overlay character?
     if (_enchantProfile->spawn_overlay)
     {
-        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->team, 0, target->ori.facing_z, "", ObjectRef::Invalid );
+        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->ori.facing_z, "", ObjectRef::Invalid );
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...

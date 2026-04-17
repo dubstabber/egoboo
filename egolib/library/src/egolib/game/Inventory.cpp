@@ -30,7 +30,7 @@ ObjectRef Inventory::findItem(Object *pobj, const IDSZ2& idsz, bool equippedOnly
 
     for(const std::shared_ptr<Object> pitem : pobj->getInventory().iterate())
     {
-        bool matches_equipped = (!equippedOnly || pitem->isequipped);
+        bool matches_equipped = (!equippedOnly || pitem->isEquipped());
 
         if (pitem->getProfile()->hasTypeIDSZ(idsz) && matches_equipped)
         {
@@ -77,7 +77,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 	}
 
     // Kursed?
-	if (pitem->iskursed && !ignoreKurse)
+	if (pitem->isKursed() && !ignoreKurse)
 	{
 		// Flag the item as not put away.
 		SET_BIT(pitem->ai.alert, ALERTIF_NOTPUTAWAY);
@@ -101,10 +101,10 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         Object *pstack = objectHandler().get( stack );
 
         // Reveal the name of the item or the stack.
-		if (pitem->nameknown || pstack->getProfile()->isNameKnown())
+		if (pitem->isNameKnown() || pstack->getProfile()->isNameKnown())
 		{
-			pitem->nameknown = true;
-			pstack->nameknown = true;
+			pitem->setNameKnown(true);
+			pstack->setNameKnown(true);
 		}
 
         // Reveal the usage of the item or the stack.
@@ -186,7 +186,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     if (pobj->isItem() || pobj->isInsideInventory()) return false;
 
     const std::shared_ptr<Object> &inventory_item = pobj->getInventory().getItem(inventory_slot);
-    const std::shared_ptr<Object> &item           = objectHandler()[pobj->holdingwhich[grip_off]];
+    const std::shared_ptr<Object> &item           = objectHandler()[pobj->getHeldObject(static_cast<slot_t>(grip_off))];
 
     //Nothing to do?
     if(!item && !inventory_item) {
@@ -196,7 +196,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     //Check if either item is kursed first
     if(!ignorekurse) 
     {
-        if(item && item->iskursed) {
+        if(item && item->isKursed()) {
             // Flag the last found_item as not put away
             SET_BIT( item->ai.alert, ALERTIF_NOTPUTAWAY );  // Same as ALERTIF_NOTTAKENOUT
             if ( pobj->isPlayer() ) DisplayMsg_printf("%s is sticky...", item->getName().c_str());
@@ -204,7 +204,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
 
         }
 
-        if(inventory_item && inventory_item->iskursed) {
+        if(inventory_item && inventory_item->isKursed()) {
             // Flag the last found_item as not removed
             SET_BIT( inventory_item->ai.alert, ALERTIF_NOTTAKENOUT );  // Same as ALERTIF_NOTPUTAWAY
             if ( pobj->isPlayer() ) DisplayMsg_printf( "%s won't go out!", inventory_item->getName().c_str() );
@@ -357,7 +357,7 @@ bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignor
         if(inventoryItem.lock() == item)
         {
             //is it kursed?
-            if (item->iskursed && !ignorekurse)
+            if (item->isKursed() && !ignorekurse)
             {
                 //Flag the item as not removed
                 SET_BIT( item->ai.alert, ALERTIF_NOTTAKENOUT );  // Same as ALERTIF_NOTPUTAWAY

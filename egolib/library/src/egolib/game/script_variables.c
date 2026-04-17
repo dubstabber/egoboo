@@ -71,7 +71,7 @@ int32_t load_VARSELFORDER(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VARSELFMORALE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return activeModule().getTeamList()[pobject->team_base].getMorale();
+    return activeModule().getTeamList()[pobject->getBaseTeamRef()].getMorale();
 }
 
 int32_t load_VARSELFLIFE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -477,7 +477,7 @@ int32_t load_VARTARGETMAXLIFE(script_state_t& scriptState, ai_state_t& aiState, 
 
 int32_t load_VARTARGETTEAM(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->team;
+    return (nullptr == ptarget) ? 0 : ptarget->getTeamRef();
 }
 
 int32_t load_VARTARGETARMOR(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

@@ -239,7 +239,7 @@ void ObjectPhysics::updateVelocityZ()
         _object.setVelocity(_object.getVelocity() +
                             Vector3f(0.0f, 0.0f, 
                                      (flyLevel + _object.getAttribute(Ego::Attribute::FLY_TO_HEIGHT) - _object.getPosZ()) * FLYDAMPEN));
-        _object.jumpready = false;
+        _object.setJumpReady(false);
         return;
     }
 
@@ -250,22 +250,22 @@ void ObjectPhysics::updateVelocityZ()
 
     // Do ground hits
     if(isTouchingGround()) {
-        _object.jumpready = true;
+        _object.setJumpReady(true);
 
-        if (_object.getVelocity().z() < -Ego::Physics::STOP_BOUNCING && _object.hitready) {
+        if (_object.getVelocity().z() < -Ego::Physics::STOP_BOUNCING && _object.isHitReady()) {
             SET_BIT(_object.ai.alert, ALERTIF_HITGROUND);
-            _object.hitready = false;
+            _object.setHitReady(false);
         }
 
-        if (0 == _object.jump_timer) {
+        if (0 == _object.getJumpTimer()) {
             // Reset jumping on flat areas of slippiness
             if(!floorIsSlippy() || g_meshLookupTables.twist_flat[activeModule().getMeshPointer()->get_twist(_object.getTile())]) {
-                _object.jumpnumber = _object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS);                
+                _object.setJumpNumber(_object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS));
             }
         }
     }
     else {
-        _object.jumpready = false;
+        _object.setJumpReady(false);
     }
 }
 
@@ -497,8 +497,8 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
     platform->holdingweight += _object.phys.weight;
 
     // update the character jumping
-    _object.jumpready = true;
-    _object.jumpnumber = _object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS);
+    _object.setJumpReady(true);
+    _object.setJumpNumber(_object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS));
 
     // tell the platform that we bumped into it
     // this is necessary for key buttons to work properly, for instance
@@ -690,7 +690,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     if ( slot >= SLOT_COUNT ) return false;
 
     // Make sure the character doesn't have something already, and that it has hands
-    if (activeModule().getObjectHandler().exists( _object.holdingwhich[slot] ) || !_object.getProfile()->isSlotValid(slot)) {        
+    if (activeModule().getObjectHandler().exists( _object.getHeldObject(slot) ) || !_object.getProfile()->isSlotValid(slot)) {
         return false;
     }
 
@@ -722,8 +722,8 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
         if (pchr_c->isBeingHeld()) continue;
 
         // do not pick up your mount
-        if ( pchr_c->holdingwhich[SLOT_LEFT] == _object.getObjRef() ||
-             pchr_c->holdingwhich[SLOT_RIGHT] == _object.getObjRef() ) continue;
+        if ( pchr_c->getHeldObject(SLOT_LEFT) == _object.getObjRef() ||
+             pchr_c->getHeldObject(SLOT_RIGHT) == _object.getObjRef() ) continue;
 
         // do not notice completely broken items?
         if (pchr_c->isItem() && !pchr_c->isAlive()) continue;
@@ -821,7 +821,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
             bestMatch->setVelocity({bestMatch->getVelocity().x(),
                                     bestMatch->getVelocity().y(),
                                     Object::DROPZVEL});
-            bestMatch->hitready = true;
+            bestMatch->setHitReady(true);
             SET_BIT(bestMatch->ai.alert, ALERTIF_DROPPED);
         }
     }
@@ -876,7 +876,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     // Put 'em together
     _object.inwhich_slot       = slot;
     _object.attachedto         = holder->getObjRef();
-    holder->holdingwhich[slot] = _object.getObjRef();
+    holder->setHeldObject(slot, _object.getObjRef());
 
     // set the grip vertices for the irider
     set_weapongrip(_object.getObjRef(), holder->getObjRef(), grip_off);
@@ -886,7 +886,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     _object.setPosition(mat_getTranslate(_object.inst.getMatrix()));
 
     _object.inwater  = false;
-    _object.jump_timer = Object::JUMPDELAY * 4;
+    _object.setJumpTimer(Object::JUMPDELAY * 4);
 
     // Run the held animation
     if (holder->isMount() && (GRIP_ONLY == grip_off))
@@ -925,7 +925,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     // Set the team
     if (_object.isItem())
     {
-        _object.team = holder->team;
+        _object.setTeamRef(holder->getTeamRef());
 
         // Set the alert
         if (_object.isAlive()) {
@@ -935,14 +935,14 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
         // Lore Master perk identifies everything
         if (holder->hasPerk(Ego::Perks::LORE_MASTER)) {
             _object.getProfile()->makeUsageKnown();
-            _object.nameknown = true;
-            _object.ammoknown = true;
+            _object.setNameKnown(true);
+            _object.setAmmoKnown(true);
         }
     }
 
     if (holder->isMount())
     {
-        holder->team = _object.team;
+        holder->setTeamRef(_object.getTeamRef());
 
         // Set the alert
         if (!holder->isItem() && holder->isAlive())
@@ -952,7 +952,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     }
 
     // It's not gonna hit the floor
-    _object.hitready = false;
+    _object.setHitReady(false);
 
     return rv_success;
 }

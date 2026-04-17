@@ -163,7 +163,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 //Character's ammo
                 case 'a':
-                    if(object->ammoknown) {
+                    if(object->isAmmoKnown()) {
                         result << object->getAmmo();
                     }
                     else {
@@ -173,7 +173,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 // Kurse state
                 case 'k':
-                    if (object->iskursed) {
+                    if (object->isKursed()) {
                         result << "kursed";
                     }
                     else {

@@ -189,7 +189,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
     mc_tmp.valid     = false;
     mc_tmp.type_bits = MAT_UNKNOWN;
 
-    mc_tmp.self_scale = Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat);
+    mc_tmp.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
 
     // handle the overlay first of all
     if ( !handled && pchr->is_overlay && ichr != pchr->ai.getTarget() && objectHandler().exists( pchr->ai.getTarget() ) )
@@ -252,7 +252,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
 
             mc_tmp.pos = ptarget->getPosition();
 
-            mc_tmp.grip_scale = Ego::Vector3f(ptarget->fat, ptarget->fat, ptarget->fat);
+            mc_tmp.grip_scale = Ego::Vector3f(ptarget->getFat(), ptarget->getFat(), ptarget->getFat());
         }
     }
 
@@ -470,7 +470,7 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
                 mcache.valid     = true;
                 mcache.type_bits = MAT_CHARACTER;
 
-                mcache.self_scale = Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat);
+                mcache.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
 
                 mcache.grip_scale = mcache.self_scale;
 
@@ -692,8 +692,8 @@ bool chr_calc_grip_cv( Object * pmount, int grip_offset, oct_bb_t * grip_cv_ptr,
 	}
 
     // tune the grip radius
-    bmp.size     = default_chr_radius * pmount->fat * 0.75f;
-    bmp.height   = default_chr_height * pmount->fat * 2.00f;
+    bmp.size     = default_chr_radius * pmount->getFat() * 0.75f;
+    bmp.height   = default_chr_height * pmount->getFat() * 2.00f;
     bmp.size_big = bmp.size * idlib::sqrt_two<float>();
 
     tmp_cv.assign(bmp);
@@ -882,7 +882,7 @@ void make_one_character_matrix( const ObjectRef ichr )
         {
             pchr->inst.setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_SpaceFixed(
-    				Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat),
+    				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
                     pchr->ori.facing_z,
                     pchr->ori.map_twist_facing_x - orientation_t::MAP_TURN_OFFSET,
                     pchr->ori.map_twist_facing_y - orientation_t::MAP_TURN_OFFSET,
@@ -893,7 +893,7 @@ void make_one_character_matrix( const ObjectRef ichr )
         {
             pchr->inst.setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_BodyFixed(
-    				Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat),
+    				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
                     pchr->ori.facing_z,
                     pchr->ori.map_twist_facing_x - orientation_t::MAP_TURN_OFFSET,
                     pchr->ori.map_twist_facing_y - orientation_t::MAP_TURN_OFFSET,
@@ -905,7 +905,7 @@ void make_one_character_matrix( const ObjectRef ichr )
         pchr->inst.matrix_cache.matrix_valid = true;
         pchr->inst.matrix_cache.type_bits    = MAT_CHARACTER;
 
-        pchr->inst.matrix_cache.self_scale = Ego::Vector3f(pchr->fat, pchr->fat, pchr->fat);
+        pchr->inst.matrix_cache.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
 
         pchr->inst.matrix_cache.rotate[kX] = pchr->ori.map_twist_facing_x - orientation_t::MAP_TURN_OFFSET;
         pchr->inst.matrix_cache.rotate[kY] = pchr->ori.map_twist_facing_y - orientation_t::MAP_TURN_OFFSET;

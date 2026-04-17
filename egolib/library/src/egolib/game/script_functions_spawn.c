@@ -24,7 +24,7 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
             leftItem->setVelocity({leftItem->getVelocity().x(),
                                 leftItem->getVelocity().y(),
                                 Object::DISMOUNTZVEL});
-            leftItem->jump_timer = Object::JUMPDELAY;
+            leftItem->setJumpTimer(Object::JUMPDELAY);
             leftItem->movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
         }
     }
@@ -38,7 +38,7 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
             rightItem->setVelocity({rightItem->getVelocity().x(),
                                  rightItem->getVelocity().y(),
                                  Object::DISMOUNTZVEL});
-            rightItem->jump_timer = Object::JUMPDELAY;
+            rightItem->setJumpTimer(Object::JUMPDELAY);
             rightItem->movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
         }
     }
@@ -100,7 +100,7 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(static_cast<float>(state.x), static_cast<float>(state.y), pchr->getPosZ());
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, pchr->getProfileID(), pchr->team, 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid);
+    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, pchr->getProfileID(), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid);
     returncode = pchild != nullptr;
 
     if ( !returncode )
@@ -124,7 +124,7 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
                                               std::sin(turn) * state.distance,
                                               0.0f));
 
-            pchild->iskursed = pchr->iskursed;  /// @note BB@> inherit this from your spawner
+            pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
             pchild->ai.passage = self.passage;
             pchild->ai.owner   = self.owner;
 
@@ -219,16 +219,16 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     }
 
     //If we are a mount, our rider is the owner of this particle
-    if ( pchr->isMount() && objectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) )
+    if ( pchr->isMount() && objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) )
     {
-        ichr = pchr->holdingwhich[SLOT_LEFT];
+        ichr = pchr->getHeldObject(SLOT_LEFT);
     }
 
     std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), 
                                                    Facing(uint16_t(pchr->ori.facing_z)), 
                                                    ObjectProfileRef(pchr->getProfileID()),
                                                    LocalParticleProfileRef(state.argument), self.getSelf(),
-                                                   state.distance, pchr->team, ichr, ParticleRef::Invalid, 0,
+                                                   state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid, 0,
                                                    ObjectRef::Invalid );
 
     returncode = (particle != nullptr);
@@ -314,7 +314,7 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
 
     returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), self.getSelf(),
-                                                                      state.distance, pchr->team, iself, ParticleRef::Invalid, 0,
+                                                                      state.distance, pchr->getTeamRef(), iself, ParticleRef::Invalid, 0,
                                                                       ObjectRef::Invalid);
     SCRIPT_FUNCTION_END();
 }
@@ -346,7 +346,7 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
 
         returncode = nullptr != ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
                                                                           LocalParticleProfileRef(state.argument),
-                                                                          ObjectRef::Invalid, 0, pchr->team, ichr,
+                                                                          ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr,
                                                                           ParticleRef::Invalid, 0, ObjectRef::Invalid);
     }
 
@@ -364,7 +364,7 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->canbecrushed = true;
+    pchr->setCanBeCrushed(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -459,7 +459,7 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
 
     std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), 
                                                                                         ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument), self.getSelf(),
-                                                                                        state.distance, pchr->team, ichr, ParticleRef::Invalid, 0,
+                                                                                        state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid, 0,
                                                                                         ObjectRef::Invalid);
 
     returncode = (particle != nullptr);
@@ -492,7 +492,7 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
 
     returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), Facing(Ego::Math::clipBits<16>( state.turn )),
                                                                       ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument),
-                                                                      self.getSelf(), state.distance, pchr->team, ichr, ParticleRef::Invalid,
+                                                                      self.getSelf(), state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                                       0, ObjectRef::Invalid);
 
     SCRIPT_FUNCTION_END();
@@ -517,7 +517,7 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
 
     returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), ichr,
-                                                                      state.distance, pchr->team, ichr, ParticleRef::Invalid, 0,
+                                                                      state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid, 0,
                                                                       ObjectRef::Invalid);
 
     SCRIPT_FUNCTION_END();
@@ -535,7 +535,7 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(float(state.x), float(state.y), float(state.distance));
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject( pos, pchr->getProfileID(), pchr->team, 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid );
+    std::shared_ptr<Object> pchild = activeModule().spawnObject( pos, pchr->getProfileID(), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid );
     if (pchild == nullptr)
     {
 		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry );
@@ -545,7 +545,7 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     {
         self.child = pchild->getObjRef();
 
-        pchild->iskursed   = pchr->iskursed;  /// @note BB@> inherit this from your spawner
+        pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
         pchild->ai.passage = self.passage;
         pchild->ai.owner   = self.owner;
 
@@ -578,7 +578,7 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
             Ego::Script::Interpreter::safeCast<float>(state.distance)
         );
 
-    const std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef(static_cast<PRO_REF>(state.argument)), pchr->team, 0, Facing(Ego::Math::clipBits<16>(state.turn)), "", ObjectRef::Invalid);
+    const std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef(static_cast<PRO_REF>(state.argument)), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>(state.turn)), "", ObjectRef::Invalid);
 
     if ( !pchild )
     {
@@ -588,7 +588,7 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     {
         self.child = pchild->getObjRef();
 
-        pchild->iskursed   = pchr->iskursed;  /// @note BB@> inherit this from your spawner
+        pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
         pchild->ai.passage = self.passage;
         pchild->ai.owner   = self.owner;
 
@@ -630,7 +630,7 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
 
         particle = ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
                                                              LocalParticleProfileRef(state.argument),
-                                                             ObjectRef::Invalid, 0, pchr->team, ichr, ParticleRef::Invalid,
+                                                             ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                              0, ObjectRef::Invalid);
     }
 
@@ -689,7 +689,7 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->isitem = false;
+    pchr->setItem(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -722,11 +722,11 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
 
     returncode = false;
 	ObjectRef ichr = self.getTarget();
-    if ( objectHandler().get(ichr)->ammomax != 0 )  objectHandler().get(ichr)->ammoknown = true;
+    if ( objectHandler().get(ichr)->ammomax != 0 )  objectHandler().get(ichr)->setAmmoKnown(true);
 
 
-    returncode = !objectHandler().get(ichr)->nameknown;
-    objectHandler().get(ichr)->nameknown = true;
+    returncode = !objectHandler().get(ichr)->isNameKnown();
+    objectHandler().get(ichr)->setNameKnown(true);
     ppro->makeUsageKnown();
 
     SCRIPT_FUNCTION_END();
@@ -761,7 +761,7 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->canbecrushed = false;
+    pchr->setCanBeCrushed(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -813,7 +813,7 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 
         particle = ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pchr->getProfileID()),
                                                              LocalParticleProfileRef(state.argument),
-                                                             ObjectRef::Invalid, 0, pchr->team, ichr, ParticleRef::Invalid,
+                                                             ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                              0, ObjectRef::Invalid);
     }
 
@@ -857,7 +857,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         for (int cnt = 0; cnt < pchr->getProfile()->getParticlePoofAmount(); cnt++)
         {
             auto poofParticle = ParticleHandler::get().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
-                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->team, pchr->ai.owner, ParticleRef::Invalid, cnt);
+                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), pchr->ai.owner, ParticleRef::Invalid, cnt);
 
             // set some values
             if(poofParticle) {
@@ -936,7 +936,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(float(state.x), float(state.y), float(state.distance));
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef((PRO_REF)state.argument), pchr->team, 0, FACE_NORTH, "", ObjectRef::Invalid);
+    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef((PRO_REF)state.argument), pchr->getTeamRef(), 0, FACE_NORTH, "", ObjectRef::Invalid);
     returncode = pchild != nullptr;
 
     if ( !returncode )
@@ -973,7 +973,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         }
         else if ( grip == ATTACH_LEFT || grip == ATTACH_RIGHT )
         {
-            if ( !objectHandler().exists( pself_target->holdingwhich[grip] ) )
+            if ( !objectHandler().exists( pself_target->getHeldObject(static_cast<slot_t>(grip)) ) )
             {
                 // Wielded character
                 grip_offset_t grip_off = ( ATTACH_LEFT == grip ) ? GRIP_LEFT : GRIP_RIGHT;
@@ -1044,7 +1044,7 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     int v = (int)state.argument;
-    if ( v > 0 ) pchr->damage_threshold = v;
+    if ( v > 0 ) pchr->setDamageThreshold(v);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1069,8 +1069,8 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     pchr->polymorphObject(pself_target->basemodel_ref, pself_target->skin);
 
     // let the resizing take some time
-    pchr->fat_goto      = pself_target->fat;
-    pchr->fat_goto_time = Object::SIZETIME;
+    pchr->setTargetFat(pself_target->getFat());
+    pchr->setResizeTimeRemaining(Object::SIZETIME);
 
     // change back to our original AI (keep our old AI script)
 //    pself->type      = ProList.lst[pchr->basemodel_ref].iai;      //TODO: this no longer works (is it even needed?)
@@ -1104,7 +1104,7 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->invictus = true;
+    pchr->setInvincible(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1119,7 +1119,7 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->invictus = false;
+    pchr->setInvincible(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1138,8 +1138,8 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    pself_target->fat_goto *= state.argument / 100.0f;
-    pself_target->fat_goto_time += Object::SIZETIME;
+    pself_target->setTargetFat(pself_target->getTargetFat() * state.argument / 100.0f);
+    pself_target->setResizeTimeRemaining(pself_target->getResizeTimeRemaining() + Object::SIZETIME);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1179,4 +1179,3 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_END();
 }
-

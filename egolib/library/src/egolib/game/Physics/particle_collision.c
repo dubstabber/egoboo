@@ -521,7 +521,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
                 pdata.pprt->phys.avel -= pdata.vdiff * 2.0f;
 
                 // Change the owner of the missile
-                pdata.pprt->team       = pdata.pchr->team;
+                pdata.pprt->team       = pdata.pchr->getTeamRef();
                 pdata.pprt->owner_ref  = pdata.pchr->getObjRef();
             }
         }
@@ -540,7 +540,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             // Check right hand for a shield
             if ( !using_shield )
             {
-                item = pdata.pchr->holdingwhich[SLOT_RIGHT];
+                item = pdata.pchr->getHeldObject(SLOT_RIGHT);
                 if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
                 {
                     using_shield = true;
@@ -550,7 +550,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             // Check left hand for a shield
             if ( !using_shield )
             {
-                item = pdata.pchr->holdingwhich[SLOT_LEFT];
+                item = pdata.pchr->getHeldObject(SLOT_LEFT);
                 if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->ai.lastitemused == item )
                 {
                     using_shield = true;
@@ -880,9 +880,9 @@ bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
     const float maxDamage = std::abs(pdata.pprt->damage.base) + std::abs(pdata.pprt->damage.rand);
 
     // always allow valid reaffirmation
-    if (( pdata.pchr->reaffirm_damagetype < DAMAGE_COUNT ) &&
+    if (( pdata.pchr->getReaffirmDamageType() < DAMAGE_COUNT ) &&
         ( pdata.pprt->damagetype < DAMAGE_COUNT ) &&
-        ( pdata.pchr->reaffirm_damagetype == pdata.pprt->damagetype ) &&
+        ( pdata.pchr->getReaffirmDamageType() == pdata.pprt->damagetype ) &&
         ( maxDamage > 0) )
     {
         return true;
@@ -912,19 +912,19 @@ bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
     }
 
     // does the particle team hate the character's team
-    bool prt_hates_chr = team_hates_team( pdata.pprt->team, pdata.pchr->team );
+    bool prt_hates_chr = team_hates_team( pdata.pprt->team, pdata.pchr->getTeamRef() );
 
     // Only bump into hated characters?
     bool valid_onlydamagehate = prt_hates_chr && pdata.pprt->getProfile()->hateonly;
 
     // allow neutral particles to attack anything
     bool prt_attacks_chr = false;
-    if(prt_hates_chr || ((Team::TEAM_NULL != pdata.pchr->team) && (Team::TEAM_NULL == pdata.pprt->team)) ) {
+    if(prt_hates_chr || ((Team::TEAM_NULL != pdata.pchr->getTeamRef()) && (Team::TEAM_NULL == pdata.pprt->team)) ) {
         prt_attacks_chr = (maxDamage > 0);
     }
 
     // this is the onlydamagefriendly condition from the particle search code
-    bool valid_onlydamagefriendly = (pdata.ppip->onlydamagefriendly && pdata.pprt->team == pdata.pchr->team)
+    bool valid_onlydamagefriendly = (pdata.ppip->onlydamagefriendly && pdata.pprt->team == pdata.pchr->getTeamRef())
 		                         || (!pdata.ppip->onlydamagefriendly && prt_attacks_chr);
 
     // I guess "friendly fire" does not mean "self fire", which is a bit unfortunate.
@@ -1205,10 +1205,10 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
     if (0 == cn_data.pchr->damage_timer )
     {
         // Check reaffirmation of particles
-        if ( cn_data.pchr->reaffirm_damagetype == cn_data.pprt->damagetype )
+        if ( cn_data.pchr->getReaffirmDamageType() == cn_data.pprt->damagetype )
         {
             // This prevents items in shops from being burned
-            if ( !cn_data.pchr->isshopitem )
+            if ( !cn_data.pchr->isShopItem() )
             {
                 if ( 0 != reaffirm_attached_particles( cn_data.ichr ) )
                 {
@@ -1367,7 +1367,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
             if (Random::nextFloat() <= pchr->getDamageReduction(pprt->damagetype)) amount--;
         }
 
-        if (amount > 0 && !pchr->getProfile()->hasResistBumpSpawn() && !pchr->invictus)
+        if (amount > 0 && !pchr->getProfile()->hasResistBumpSpawn() && !pchr->isInvincible())
         {          
             int slot_count = 0;
 

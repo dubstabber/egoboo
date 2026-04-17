@@ -37,7 +37,7 @@ void InventorySlot::draw(DrawingContext& drawingContext) {
 
     //Draw ammo
     if (item) {
-        if (0 != item->ammomax && item->ammoknown) {
+        if (0 != item->ammomax && item->isAmmoKnown()) {
             if (!item->getProfile()->isStackable() || item->getAmmo() > 1) {
                 // Show amount of ammo left
                 uiManager().getFont(UIManager::FONT_GAME)->drawTextBox(std::to_string(item->getAmmo()), getDerivedPosition().x(), getDerivedPosition().y(), getWidth(), getHeight(), 0);

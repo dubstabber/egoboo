@@ -93,8 +93,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // download all the values from the character spawn_ptr->profile
     // Set up model stuff
     pchr->stoppedby = ppro->getStoppedByMask();
-    pchr->nameknown = ppro->isNameKnown();
-    pchr->ammoknown = ppro->isNameKnown();
+    pchr->setNameKnown(ppro->isNameKnown());
+    pchr->setAmmoKnown(ppro->isNameKnown());
     pchr->draw_icon = ppro->isDrawIcon();
 
     // Starting Perks
@@ -136,12 +136,12 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     pchr->setBaseAttribute(Ego::Attribute::MANA_BARCOLOR, ppro->getManaColor());
 
     // Flags
-    pchr->damagetarget_damagetype = ppro->getDamageTargetType();
+    pchr->setDamageTargetType(ppro->getDamageTargetType());
     pchr->setBaseAttribute(Ego::Attribute::WALK_ON_WATER, ppro->canWalkOnWater() ? 1.0f : 0.0f);
     pchr->platform        = ppro->isPlatform();
     pchr->canuseplatforms = ppro->canUsePlatforms();
-    pchr->isitem          = ppro->isItem();
-    pchr->invictus        = ppro->isInvincible();
+    pchr->setItem(ppro->isItem());
+    pchr->setInvincible(ppro->isInvincible());
 
     // Jumping
     pchr->setBaseAttribute(Ego::Attribute::JUMP_POWER, ppro->getJumpPower());
@@ -170,17 +170,17 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     pchr->experiencelevel = ppro->getStartingLevel();
 
     // Particle attachments
-    pchr->reaffirm_damagetype = ppro->getReaffirmDamageType();
+    pchr->setReaffirmDamageType(ppro->getReaffirmDamageType());
 
     // Character size and bumping
-    pchr->fat_stt           = ppro->getSize();
+    pchr->setBaseFat(ppro->getSize());
     pchr->shadow_size_stt   = ppro->getShadowSize();
     pchr->bump_stt.size     = ppro->getBumpSize();
     pchr->bump_stt.size_big = ppro->getBumpSizeBig();
     pchr->bump_stt.height   = ppro->getBumpHeight();
 
     //Initialize size and collision box
-    pchr->fat                = pchr->fat_stt;
+    pchr->setFatRaw(pchr->getBaseFat());
     pchr->shadow_size_save   = pchr->shadow_size_stt;
     pchr->bump_save.size     = pchr->bump_stt.size;
     pchr->bump_save.size_big = pchr->bump_stt.size_big;
@@ -188,8 +188,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     pchr->recalculateCollisionSize();
 
     // Character size and bumping
-    pchr->fat_goto      = pchr->fat;
-    pchr->fat_goto_time = 0;
+    pchr->setTargetFat(pchr->getFat());
+    pchr->setResizeTimeRemaining(0);
 
     // Kurse state
     if (ppro->isItem())
@@ -203,7 +203,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
         {
             kursechance *= 0.5f;  // Easy mode halves chance for Kurses
         }
-        pchr->iskursed = Random::getPercent() <= kursechance;
+        pchr->setKursed(Random::getPercent() <= kursechance);
     }
 
     //Set our position
@@ -214,8 +214,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     ai_state_t::spawn(pchr->ai, pchr->getObjRef(), pchr->getProfileID().get(), getTeamList()[team].getMorale());
 
     // Team stuff
-    pchr->team     = team;
-    pchr->team_base = team;
+    pchr->setTeamRef(team);
+    pchr->setBaseTeamRef(team);
     if (!pchr->isInvincible()) {
         getTeamList()[team].increaseMorale();
     }
@@ -279,7 +279,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     for (uint8_t tnc = 0; tnc < ppro->getAttachedParticleAmount(); tnc++)
     {
         ParticleHandler::get().spawnParticle(pchr->getPosition(), pchr->ori.facing_z, ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
-                                             pchr->getObjRef(), GRIP_LAST + tnc, pchr->team, pchr->getObjRef(), ParticleRef::Invalid, tnc);
+                                             pchr->getObjRef(), GRIP_LAST + tnc, pchr->getTeamRef(), pchr->getObjRef(), ParticleRef::Invalid, tnc);
     }
 
     // is the object part of a shop's inventory?
@@ -289,13 +289,13 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
 
         ObjectRef shopOwner = getShopOwner(pchr->getPosX(), pchr->getPosY());
         if (shopOwner != Passage::SHOP_NOOWNER) {
-            pchr->isshopitem = true;               // Full value
-            pchr->iskursed   = false;              // Shop items are never kursed
-            pchr->nameknown  = true;               // identified
-            pchr->ammoknown  = true;
+            pchr->setShopItem(true);               // Full value
+            pchr->setKursed(false);                // Shop items are never kursed
+            pchr->setNameKnown(true);              // identified
+            pchr->setAmmoKnown(true);
         }
         else {
-            pchr->isshopitem = false;
+            pchr->setShopItem(false);
         }
     }
 

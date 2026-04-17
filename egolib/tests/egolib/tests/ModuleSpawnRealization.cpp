@@ -283,7 +283,7 @@ TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEqui
 {
     auto parent = makeObject("follower.obj", 80);
     ASSERT_NE(parent, nullptr);
-    parent->islocalplayer = true;
+    parent->setLocalPlayer(true);
 
     auto state = makeState();
     state.importValid = false;
@@ -293,23 +293,23 @@ TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEqui
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
-        object->iskursed = true;
+        object->setNameKnown(false);
+        object->setKursed(true);
         return object;
     };
 
     auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(81, ATTACH_NONE), parent, state, ops);
 
     ASSERT_NE(result, nullptr);
-    EXPECT_TRUE(result->nameknown);
-    EXPECT_FALSE(result->iskursed);
+    EXPECT_TRUE(result->isNameKnown());
+    EXPECT_FALSE(result->isKursed());
 }
 
 TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnForLocalPlayerParentIdentifiesStartupEquipment)
 {
     auto parent = makeObject("follower.obj", 84);
     ASSERT_NE(parent, nullptr);
-    parent->islocalplayer = true;
+    parent->setLocalPlayer(true);
 
     auto state = makeState();
     state.importValid = false;
@@ -319,8 +319,8 @@ TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnForLocalPlayerParentIdentifie
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
-        object->iskursed = true;
+        object->setNameKnown(false);
+        object->setKursed(true);
         return object;
     };
     ops.attachToGrip = [&](const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t)
@@ -331,15 +331,15 @@ TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnForLocalPlayerParentIdentifie
     auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(85, ATTACH_LEFT), parent, state, ops);
 
     ASSERT_NE(result, nullptr);
-    EXPECT_TRUE(result->nameknown);
-    EXPECT_FALSE(result->iskursed);
+    EXPECT_TRUE(result->isNameKnown());
+    EXPECT_FALSE(result->isKursed());
 }
 
 TEST_F(ModuleSpawnRealizationFixture, ImportBackedPlayerParentSkipsStartupEquipmentIdentification)
 {
     auto parent = makeObject("follower.obj", 86);
     ASSERT_NE(parent, nullptr);
-    parent->islocalplayer = true;
+    parent->setLocalPlayer(true);
 
     auto state = makeState();
     state.importValid = true;
@@ -349,23 +349,23 @@ TEST_F(ModuleSpawnRealizationFixture, ImportBackedPlayerParentSkipsStartupEquipm
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
-        object->iskursed = true;
+        object->setNameKnown(false);
+        object->setKursed(true);
         return object;
     };
 
     auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(87, ATTACH_NONE), parent, state, ops);
 
     ASSERT_NE(result, nullptr);
-    EXPECT_FALSE(result->nameknown);
-    EXPECT_TRUE(result->iskursed);
+    EXPECT_FALSE(result->isNameKnown());
+    EXPECT_TRUE(result->isKursed());
 }
 
 TEST_F(ModuleSpawnRealizationFixture, NonPlayerParentSkipsStartupEquipmentIdentification)
 {
     auto parent = makeObject("follower.obj", 88);
     ASSERT_NE(parent, nullptr);
-    parent->islocalplayer = false;
+    parent->setLocalPlayer(false);
 
     auto state = makeState();
     state.importValid = false;
@@ -375,16 +375,16 @@ TEST_F(ModuleSpawnRealizationFixture, NonPlayerParentSkipsStartupEquipmentIdenti
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
-        object->iskursed = true;
+        object->setNameKnown(false);
+        object->setKursed(true);
         return object;
     };
 
     auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(89, ATTACH_NONE), parent, state, ops);
 
     ASSERT_NE(result, nullptr);
-    EXPECT_FALSE(result->nameknown);
-    EXPECT_TRUE(result->iskursed);
+    EXPECT_FALSE(result->isNameKnown());
+    EXPECT_TRUE(result->isKursed());
 }
 
 TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
@@ -400,7 +400,7 @@ TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
+        object->setNameKnown(false);
         return object;
     };
     ops.currentPlayerCount = []() { return 0u; };
@@ -415,7 +415,7 @@ TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 0u);
-    EXPECT_FALSE(result->nameknown);
+    EXPECT_FALSE(result->isNameKnown());
     EXPECT_FALSE(result->isPlayer());
 }
 
@@ -434,7 +434,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
+        object->setNameKnown(false);
         return object;
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
@@ -444,11 +444,11 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
         ++playerCount;
         ++localPlayerCount;
         bindingRequests.push_back(request);
-        object->islocalplayer = true;
-        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
+        object->setLocalPlayer(true);
+        object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         if (request.identifySpawnOnSuccess)
         {
-            object->nameknown = true;
+            object->setNameKnown(true);
         }
         return true;
     };
@@ -461,7 +461,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     ASSERT_EQ(bindingRequests.size(), 1u);
     EXPECT_EQ(bindingRequests.front().deviceIndex, 2u);
     EXPECT_TRUE(bindingRequests.front().identifySpawnOnSuccess);
-    EXPECT_TRUE(result->nameknown);
+    EXPECT_TRUE(result->isNameKnown());
     EXPECT_TRUE(result->isPlayer());
 }
 
@@ -478,7 +478,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
+        object->setNameKnown(false);
         return object;
     };
     ops.currentPlayerCount = []() { return 0u; };
@@ -495,7 +495,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 1u);
-    EXPECT_FALSE(result->nameknown);
+    EXPECT_FALSE(result->isNameKnown());
     EXPECT_FALSE(result->isPlayer());
 }
 
@@ -514,7 +514,7 @@ TEST_F(ModuleSpawnRealizationFixture, SequentialZeroImportSpawnsUseIncrementingL
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->nameknown = false;
+        object->setNameKnown(false);
         return object;
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
@@ -524,11 +524,11 @@ TEST_F(ModuleSpawnRealizationFixture, SequentialZeroImportSpawnsUseIncrementingL
         ++playerCount;
         ++localPlayerCount;
         bindingRequests.push_back(request);
-        object->islocalplayer = true;
-        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
+        object->setLocalPlayer(true);
+        object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         if (request.identifySpawnOnSuccess)
         {
-            object->nameknown = true;
+            object->setNameKnown(true);
         }
         return true;
     };
@@ -579,8 +579,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
     {
         ++playerCount;
         bindingRequests.push_back(request);
-        object->islocalplayer = true;
-        object->is_which_player = static_cast<PLA_REF>(request.deviceIndex);
+        object->setLocalPlayer(true);
+        object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         return true;
     };
 
@@ -614,7 +614,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithNoImportMatchSkipsPlayerBindi
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->islocalplayer = false;
+        object->setLocalPlayer(false);
         return object;
     };
     ops.currentPlayerCount = []() { return 0u; };
@@ -652,7 +652,7 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportProfileOutsideLoadedRan
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->islocalplayer = false;
+        object->setLocalPlayer(false);
         return object;
     };
     ops.currentPlayerCount = []() { return 0u; };

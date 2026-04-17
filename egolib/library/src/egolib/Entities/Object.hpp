@@ -140,6 +140,14 @@ public:
     **/
     Team& getTeam() const;
 
+    TEAM_REF getTeamRef() const { return team; }
+
+    void setTeamRef(TEAM_REF teamRef) { team = teamRef; }
+
+    TEAM_REF getBaseTeamRef() const { return team_base; }
+
+    void setBaseTeamRef(TEAM_REF teamRef) { team_base = teamRef; }
+
     /**
     * @brief
     *   True if this Object is a item that can be grabbed
@@ -319,6 +327,14 @@ public:
     **/
     bool isPlayer() const {return islocalplayer;}
 
+    PLA_REF getPlayerNumber() const { return is_which_player; }
+
+    void setPlayerNumber(PLA_REF playerNumber) { is_which_player = playerNumber; }
+
+    bool isLocalPlayer() const { return islocalplayer; }
+
+    void setLocalPlayer(bool localPlayer) { islocalplayer = localPlayer; }
+
     /**
     * @brief
     *   Returns true if this Object has not been killed by anything
@@ -335,7 +351,41 @@ public:
 
     bool isNameKnown() const {return nameknown;}
 
+    void setNameKnown(bool known) { nameknown = known; }
+
+    bool isAmmoKnown() const { return ammoknown; }
+
+    void setAmmoKnown(bool known) { ammoknown = known; }
+
     bool isInvincible() const {return invictus;}
+
+    void setInvincible(bool invincible) { invictus = invincible; }
+
+    bool isKursed() const { return iskursed; }
+
+    void setKursed(bool kursed) { iskursed = kursed; }
+
+    bool isHitReady() const { return hitready; }
+
+    void setHitReady(bool ready) { hitready = ready; }
+
+    bool isEquipped() const { return isequipped; }
+
+    void setEquipped(bool equipped) { isequipped = equipped; }
+
+    void setItem(bool item) { isitem = item; }
+
+    bool isShopItem() const { return isshopitem; }
+
+    void setShopItem(bool shopItem) { isshopitem = shopItem; }
+
+    bool canBeCrushed() const { return canbecrushed; }
+
+    void setCanBeCrushed(bool crushable) { canbecrushed = crushable; }
+
+    uint8_t getSparkle() const { return sparkle; }
+
+    void setSparkle(uint8_t sparkleValue) { sparkle = sparkleValue; }
 
     /**
     * @brief
@@ -385,6 +435,14 @@ public:
     **/
     const std::shared_ptr<Object>& getRightHandItem() const;
 
+    ObjectRef getHeldObject(slot_t slot) const { return holdingwhich[slot]; }
+
+    void setHeldObject(slot_t slot, ObjectRef objectRef) { holdingwhich[slot] = objectRef; }
+
+    ObjectRef getEquipment(inventory_t slot) const { return equipment[slot]; }
+
+    void setEquipment(inventory_t slot, ObjectRef objectRef) { equipment[slot] = objectRef; }
+
     /**
     * @return
     *   true if this Object has line of sight and can see the specified Object
@@ -398,6 +456,22 @@ public:
     * @remark The fat value influences the character size.
     **/
     void setFat(const float fat);
+
+    float getBaseFat() const { return fat_stt; }
+
+    void setBaseFat(float fat) { fat_stt = fat; }
+
+    float getFat() const { return fat; }
+
+    void setFatRaw(float currentFat) { fat = currentFat; }
+
+    float getTargetFat() const { return fat_goto; }
+
+    void setTargetFat(float fat) { fat_goto = fat; }
+
+    int16_t getResizeTimeRemaining() const { return fat_goto_time; }
+
+    void setResizeTimeRemaining(int16_t remaining) { fat_goto_time = remaining; }
 
     /**
     * @brief Set the (base) height of a character.
@@ -683,6 +757,18 @@ public:
     **/
     bool isInvictusDirection(Facing direction) const;
 
+    DamageType getDamageTargetType() const { return damagetarget_damagetype; }
+
+    void setDamageTargetType(DamageType damageType) { damagetarget_damagetype = damageType; }
+
+    DamageType getReaffirmDamageType() const { return reaffirm_damagetype; }
+
+    void setReaffirmDamageType(DamageType damageType) { reaffirm_damagetype = damageType; }
+
+    SFP8_T getDamageThreshold() const { return damage_threshold; }
+
+    void setDamageThreshold(SFP8_T threshold) { damage_threshold = threshold; }
+
     /**
     * @return 
     *   true if this Object is actively trying to hide from others
@@ -799,6 +885,18 @@ public:
 
     inline bool isAnyLatchButtonPressed() { return _inputLatchesPressed.any(); }
 
+    uint8_t getJumpTimer() const { return jump_timer; }
+
+    void setJumpTimer(uint8_t timer) { jump_timer = timer; }
+
+    uint8_t getJumpNumber() const { return jumpnumber; }
+
+    void setJumpNumber(uint8_t count) { jumpnumber = count; }
+
+    bool isJumpReady() const { return jumpready; }
+
+    void setJumpReady(bool ready) { jumpready = ready; }
+
 private:
 
     /**
@@ -836,6 +934,7 @@ public:
     uint16_t       ammomax;          ///< Ammo stuff
     uint16_t       ammo;
 
+private:
     // equipment and inventory
     std::array<ObjectRef, SLOT_COUNT> holdingwhich; ///< != ObjectRef::Invalid if character is holding something
     std::array<ObjectRef, INVEN_COUNT> equipment;   ///< != ObjectRef::Invalid if character has equipped something
@@ -854,6 +953,7 @@ public:
     uint8_t          jumpnumber;                    ///< Number of jumps remaining
     bool             jumpready;                     ///< For standing on a platform character
 
+public:
     // attachments
     ObjectRef      attachedto;                    ///< != ObjectRef::Invalid if character is a held weapon
     slot_t         inwhich_slot;                  ///< SLOT_LEFT or SLOT_RIGHT
@@ -864,11 +964,13 @@ public:
     bool         canuseplatforms;               ///< Can use platforms?
     int            holdingweight;                 ///< For weighted buttons
 
+private:
     // combat stuff
     DamageType          damagetarget_damagetype;       ///< Type of damage for AI DamageTarget
     DamageType          reaffirm_damagetype;           ///< For relighting torches
     SFP8_T         damage_threshold;              ///< Damage below this number is ignored (8.8 fixed point)
 
+private:
     // "variable" properties
     PLA_REF      is_which_player;               ///< true = player
     bool         islocalplayer;                 ///< true = local player
@@ -884,6 +986,7 @@ public:
     bool         isshopitem;                    ///< Spawned in a shop?
     bool         canbecrushed;                  ///< Crush in a door?
 
+public:
     // misc timers
     int16_t         grog_timer;                    ///< Grog timer
     int16_t         daze_timer;                    ///< Daze timer
@@ -894,7 +997,11 @@ public:
 
     // graphical info
     bool         draw_icon;       ///< Show the icon?
+
+private:
     uint8_t          sparkle;         ///< Sparkle color or 0 for off
+
+public:
     float          shadow_size_stt;  ///< Initial shadow size
     uint32_t         shadow_size;      ///< Size of shadow
     uint32_t         shadow_size_save; ///< Without size modifiers

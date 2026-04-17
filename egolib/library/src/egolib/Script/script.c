@@ -628,7 +628,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
         // Load the variable. 
         auto variableIndex = constant.getAsInteger();
         varname = getVariableName(variableIndex);
-        auto pleader = activeModule().getTeamList()[pobject->team].getLeader();
+        auto pleader = activeModule().getTeamList()[pobject->getTeamRef()].getLeader();
         iTmp = loadVariable(variableIndex, aiState, pobject, ptarget, powner, pleader.get());
     }
 

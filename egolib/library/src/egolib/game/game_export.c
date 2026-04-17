@@ -160,7 +160,7 @@ egolib_rv export_all_players( bool require_local )
         }
 
         // Export the left hand item
-        item = pchr->holdingwhich[SLOT_LEFT];
+        item = pchr->getHeldObject(SLOT_LEFT);
         if ( module.getObjectHandler().exists( item ) )
         {
             export_chr_rv = export_one_character( item, character, SLOT_LEFT, true );
@@ -171,7 +171,7 @@ egolib_rv export_all_players( bool require_local )
         }
 
         // Export the right hand item
-        item = pchr->holdingwhich[SLOT_RIGHT];
+        item = pchr->getHeldObject(SLOT_RIGHT);
         if ( module.getObjectHandler().exists( item ) )
         {
             export_chr_rv = export_one_character( item, character, SLOT_RIGHT, true );
@@ -218,7 +218,7 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
         return false;
     }
 
-    std::shared_ptr<Ego::Player>& player = module.getPlayer(object->is_which_player);
+    std::shared_ptr<Ego::Player>& player = module.getPlayer(object->getPlayerNumber());
 
     return player->getQuestLog().exportToFile(szSaveName);
 }

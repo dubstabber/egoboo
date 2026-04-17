@@ -36,7 +36,7 @@ constexpr float Object::DISMOUNTZVEL;
 
 Team& Object::getTeam() const
 {
-    return activeModule().getTeamList()[team];
+    return activeModule().getTeamList()[getTeamRef()];
 }
 
 bool Object::canMount(const std::shared_ptr<Object> mount) const
@@ -66,7 +66,7 @@ bool Object::canMount(const std::shared_ptr<Object> mount) const
     }
 
     //Make sure they aren't mounted already
-    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || activeModule().getObjectHandler().exists(mount->holdingwhich[SLOT_LEFT]))
+    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || activeModule().getObjectHandler().exists(mount->getHeldObject(SLOT_LEFT)))
     {
         return false;
     }

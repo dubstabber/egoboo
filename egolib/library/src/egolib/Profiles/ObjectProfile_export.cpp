@@ -75,7 +75,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_range( fileTemp, fileWrite, profile->getAttributeGain(Ego::Attribute::AGILITY));
 
     // More physical attributes
-    template_put_float( fileTemp, fileWrite, character->fat_goto );                   //Note: overriden by chr
+    template_put_float( fileTemp, fileWrite, character->getTargetFat() );                   //Note: overriden by chr
     template_put_float( fileTemp, fileWrite, profile->_sizeGainPerLevel );
     template_put_int( fileTemp, fileWrite, profile->_shadowSize );
     template_put_int( fileTemp, fileWrite, profile->_bumpSize );
@@ -83,13 +83,13 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_float( fileTemp, fileWrite, character->phys.bumpdampen );           //Note: overriden by chr
 
     //Weight
-    if (Ego::Physics::CHR_INFINITE_WEIGHT == character->phys.weight || 0.0f == character->fat)
+    if (Ego::Physics::CHR_INFINITE_WEIGHT == character->phys.weight || 0.0f == character->getFat())
     {
         template_put_int( fileTemp, fileWrite, CAP_INFINITE_WEIGHT );           //Note: overriden by chr
     }
     else
     {
-        uint32_t weight = character->phys.weight / character->fat / character->fat / character->fat;
+        uint32_t weight = character->phys.weight / character->getFat() / character->getFat() / character->getFat();
         template_put_int( fileTemp, fileWrite, std::min(weight, static_cast<uint32_t>(CAP_MAX_WEIGHT)) );   //Note: overriden by chr
     }
 
@@ -110,7 +110,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_bool(fileTemp, fileWrite, profile->_stickyButt);
 
     // Invulnerability data
-    template_put_bool( fileTemp, fileWrite, character->invictus );
+    template_put_bool( fileTemp, fileWrite, character->isInvincible() );
     template_put_int( fileTemp, fileWrite, profile->nframefacing );
     template_put_int( fileTemp, fileWrite, profile->nframeangle );
     template_put_int( fileTemp, fileWrite, profile->iframefacing );
@@ -190,10 +190,10 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_idsz( fileTemp, fileWrite, profile->_idsz[IDSZ_VULNERABILITY] );
 
     // Item and damage flags
-    template_put_bool( fileTemp, fileWrite, character->isitem);  //Note overriden by chr
+    template_put_bool( fileTemp, fileWrite, character->isItem());  //Note overriden by chr
     template_put_bool( fileTemp, fileWrite, profile->_isMount );
     template_put_bool( fileTemp, fileWrite, profile->_isStackable );
-    template_put_bool( fileTemp, fileWrite, character->nameknown || character->ammoknown); // make sure that identified items are saved as identified );
+    template_put_bool( fileTemp, fileWrite, character->isNameKnown() || character->isAmmoKnown()); // make sure that identified items are saved as identified );
     template_put_bool( fileTemp, fileWrite, profile->_usageIsKnown );
     template_put_bool( fileTemp, fileWrite, profile->_canCarryToNextModule );
     template_put_bool( fileTemp, fileWrite, profile->_needSkillIDToUse );
@@ -202,12 +202,12 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_bool(fileTemp, fileWrite, profile->_canOpenStuff);
 
     // Other item and damage stuff
-    template_put_damage_type( fileTemp, fileWrite, character->damagetarget_damagetype ); //Note overriden by chr
+    template_put_damage_type( fileTemp, fileWrite, character->getDamageTargetType() ); //Note overriden by chr
     template_put_action( fileTemp, fileWrite, profile->_weaponAction );
 
     // Particle attachments
     template_put_int( fileTemp, fileWrite, profile->_attachedParticleAmount );
-    template_put_damage_type(fileTemp, fileWrite, character->reaffirm_damagetype);
+    template_put_damage_type(fileTemp, fileWrite, character->getReaffirmDamageType());
     template_put_local_particle_profile_ref( fileTemp, fileWrite, profile->_attachedParticle );
 
     // Character hands
@@ -253,7 +253,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
     template_put_int( fileTemp, fileWrite, 0 );
     template_put_int( fileTemp, fileWrite, 0 );
     template_put_bool( fileTemp, fileWrite, character->getBaseAttribute(Ego::Attribute::SEE_INVISIBLE) > 0 ); //Note: Overridden by chr
-    template_put_int( fileTemp, fileWrite, character->iskursed ? 100 : 0 );  //Note: overridden by chr
+    template_put_int( fileTemp, fileWrite, character->isKursed() ? 100 : 0 );  //Note: overridden by chr
     template_put_int( fileTemp, fileWrite, profile->_footFallSound);
     template_put_int( fileTemp, fileWrite, profile->_jumpSound);
 

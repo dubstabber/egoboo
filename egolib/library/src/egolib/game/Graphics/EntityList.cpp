@@ -49,11 +49,11 @@ size_t EntityList::add(::Camera& camera, Object& object) {
     // Add any weapons it is holding.
     auto& objectHandler = GameSessionContext::get().objectHandler();
     Object *holding;
-    holding = objectHandler.get(object.holdingwhich[SLOT_LEFT]);
+    holding = objectHandler.get(object.getHeldObject(SLOT_LEFT));
     if (holding) {
         count += add(camera, *holding);
     }
-    holding = objectHandler.get(object.holdingwhich[SLOT_RIGHT]);
+    holding = objectHandler.get(object.getHeldObject(SLOT_RIGHT));
     if (holding) {
         count += add(camera, *holding);
     }

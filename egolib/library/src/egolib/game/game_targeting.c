@@ -46,13 +46,13 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 
     for(const std::shared_ptr<Object> &pchr : module.getObjectHandler().iterator())
     {
-        if ( !pchr->isAlive() || pchr->isitem || module.getObjectHandler().exists( pchr->inwhich_inventory ) ) continue;
+        if ( !pchr->isAlive() || pchr->isItem() || module.getObjectHandler().exists( pchr->inwhich_inventory ) ) continue;
 
         // prefer targeting riders over the mount itself
-        if ( pchr->isMount() && ( module.getObjectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) || module.getObjectHandler().exists( pchr->holdingwhich[SLOT_RIGHT] ) ) ) continue;
+        if ( pchr->isMount() && ( module.getObjectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) || module.getObjectHandler().exists( pchr->getHeldObject(SLOT_RIGHT) ) ) ) continue;
 
         // ignore invictus
-        if ( pchr->invictus ) continue;
+        if ( pchr->isInvincible() ) continue;
 
         // we are going to give the player a break and not target things that
         // can't be damaged, unless the particle is homing. If it homes in,
@@ -130,7 +130,7 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
             return false;
         }
 
-        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst->is_which_player);
+        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst->getPlayerNumber());
 
         // find only active quests?
         // this makes it backward-compatible with zefz's version

@@ -181,7 +181,7 @@ void GameModule::updateDamageTiles()
         // but make the tolerance closer so that books won't burn so easily
         if (!pchr->isBeingHeld() || pchr->getPosZ() < pchr->getObjectPhysics().getGroundElevation() + DAMAGERAISE)
         {
-            if (pchr->reaffirm_damagetype == _damageTile.damagetype)
+            if (pchr->getReaffirmDamageType() == _damageTile.damagetype)
             {
                 if (0 == (currentUpdateFrame & TILE_REAFFIRM_AND))
                 {

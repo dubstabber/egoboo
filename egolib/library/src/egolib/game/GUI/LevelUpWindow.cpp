@@ -326,15 +326,15 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     //Increase character level by 1
     _character->experiencelevel += 1;
     SET_BIT(_character->ai.alert, ALERTIF_LEVELUP);
-    activeModule.getPlayer(_character->is_which_player)->setLevelUpIndicator(false);
+    activeModule.getPlayer(_character->getPlayerNumber())->setLevelUpIndicator(false);
 
     //Generate random seed for next level increase
     _character->randomizeLevelUpSeed();
 
     //Might slightly increases character size
     if (increase[Attribute::MIGHT] != 0) {
-        _character->fat_goto += _character->getProfile()->getSizeGainPerMight() * 0.1f * increase[Attribute::MIGHT];
-        _character->fat_goto_time += Object::SIZETIME;
+        _character->setTargetFat(_character->getTargetFat() + _character->getProfile()->getSizeGainPerMight() * 0.1f * increase[Attribute::MIGHT]);
+        _character->setResizeTimeRemaining(_character->getResizeTimeRemaining() + Object::SIZETIME);
     }
 
     //Clear away all GUI components

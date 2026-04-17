@@ -559,7 +559,7 @@ uint8_t scr_IfUnarmed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( !objectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) && !objectHandler().exists( pchr->holdingwhich[SLOT_RIGHT] ) );
+    returncode = ( !objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) && !objectHandler().exists( pchr->getHeldObject(SLOT_RIGHT) ) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -866,7 +866,7 @@ uint8_t scr_IfNameIsKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->nameknown;
+    returncode = pchr->isNameKnown();
 
     SCRIPT_FUNCTION_END();
 }
@@ -917,7 +917,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
     state.argument = 0;
 
     // Check right hand
-    const std::shared_ptr<Object> &rightHandItem = objectHandler()[pchr->holdingwhich[SLOT_RIGHT]];
+    const std::shared_ptr<Object> &rightHandItem = objectHandler()[pchr->getHeldObject(SLOT_RIGHT)];
 
     if (rightHandItem)
     {
@@ -932,7 +932,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
     if ( !returncode || Random::nextBool() )
     {
         // Check left hand
-        const std::shared_ptr<Object> &leftHandItem = objectHandler()[pchr->holdingwhich[SLOT_LEFT]];
+        const std::shared_ptr<Object> &leftHandItem = objectHandler()[pchr->getHeldObject(SLOT_LEFT)];
         if (leftHandItem)
         {
             if ( leftHandItem->getProfile()->isRangedWeapon() && (0 == leftHandItem->ammomax || (0 != leftHandItem->ammo)))
@@ -1050,7 +1050,7 @@ uint8_t scr_IfKursed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->iskursed;
+    returncode = pchr->isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1182,7 +1182,7 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> holder = objectHandler()[pchr->attachedto];
     if (holder)
     {
-        returncode = holder->holdingwhich[SLOT_LEFT] == pchr->getObjRef();
+        returncode = holder->getHeldObject(SLOT_LEFT) == pchr->getObjRef();
     }
 
     SCRIPT_FUNCTION_END();
@@ -1213,7 +1213,7 @@ uint8_t scr_IfEquipped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isequipped;
+    returncode = pchr->isEquipped();
 
     SCRIPT_FUNCTION_END();
 }

@@ -64,7 +64,7 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    auto ichr = pself_target->holdingwhich[SLOT_LEFT];
+    auto ichr = pself_target->getHeldObject(SLOT_LEFT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
@@ -90,7 +90,7 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    auto ichr = pself_target->holdingwhich[SLOT_RIGHT];
+    auto ichr = pself_target->getHeldObject(SLOT_RIGHT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
@@ -155,7 +155,7 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( VALID_TEAM_RANGE( pchr->team ) )
+    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
         std::shared_ptr<Object> sissy = pchr->getTeam().getSissy();
 
@@ -420,9 +420,9 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( VALID_TEAM_RANGE( pchr->team ) )
+    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
-        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->team].getLeader();
+        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->getTeamRef()].getLeader();
 
         if ( leader )
         {
@@ -477,9 +477,9 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if ( VALID_TEAM_RANGE( pchr->team ) )
+    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
-        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->team].getLeader();
+        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->getTeamRef()].getLeader();
         if ( leader )
         {
             self.setTarget(leader->getObjRef());
@@ -660,9 +660,9 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->holdingwhich[SLOT_LEFT] ) )
+    if ( objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) )
     {
-        self.setTarget(pchr->holdingwhich[SLOT_LEFT]);
+        self.setTarget(pchr->getHeldObject(SLOT_LEFT));
     }
     else
     {
@@ -939,7 +939,7 @@ uint8_t scr_IfTargetIsKursed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    returncode = pself_target->iskursed;
+    returncode = pself_target->isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1635,7 +1635,7 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     if(pself_target->isPlayer()) {
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(pself_target->is_which_player);
+        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(pself_target->getPlayerNumber());
 
         // only find active quests
         if(player->getQuestLog().hasActiveQuest(idsz)) {
@@ -1774,4 +1774,3 @@ uint8_t scr_SetTargetToDistantFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_END();
 }
-

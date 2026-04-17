@@ -52,7 +52,7 @@ uint8_t scr_JoinTargetTeam( script_state_t& state, ai_state_t& self )
     returncode = false;
     if ( objectHandler().exists( self.getTarget() ) )
     {
-        pchr->setTeam(pself_target->team);
+        pchr->setTeam(pself_target->getTeamRef());
         returncode = true;
     }
 
@@ -233,8 +233,8 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    target->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->damagetarget_damagetype), 
-                   pchr->team, objectHandler()[self.getSelf()], false, false, true);
+    target->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()), 
+                   pchr->getTeamRef(), objectHandler()[self.getSelf()], false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -264,7 +264,7 @@ uint8_t scr_BecomeLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().getTeamList()[pchr->team].setLeader(objectHandler()[self.getSelf()]);
+    activeModule().getTeamList()[pchr->getTeamRef()].setLeader(objectHandler()[self.getSelf()]);
 
     SCRIPT_FUNCTION_END();
 }
@@ -334,7 +334,7 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( activeModule().getTeamList()[pchr->team].getLeader() != nullptr );
+    returncode = ( activeModule().getTeamList()[pchr->getTeamRef()].getLeader() != nullptr );
 
     SCRIPT_FUNCTION_END();
 }
@@ -440,7 +440,7 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->damagetarget_damagetype = static_cast<DamageType>(state.argument % DAMAGE_COUNT);
+    pchr->setDamageTargetType(static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 
     SCRIPT_FUNCTION_END();
 }
@@ -557,7 +557,7 @@ uint8_t scr_UnkurseTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    pself_target->iskursed = false;
+    pself_target->setKursed(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -597,10 +597,10 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     int iTmp = 0;  // Amount of ammo given
 
 	ObjectRef ichr;
-    ichr = pself_target->holdingwhich[SLOT_LEFT];
+    ichr = pself_target->getHeldObject(SLOT_LEFT);
     iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
 
-    ichr = pself_target->holdingwhich[SLOT_RIGHT];
+    ichr = pself_target->getHeldObject(SLOT_RIGHT);
     iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
 
     for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
@@ -631,12 +631,12 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
 
     int iTmp = 0;  // Amount of ammo given
     
-    ObjectRef ichr = pself_target->holdingwhich[SLOT_LEFT];
+    ObjectRef ichr = pself_target->getHeldObject(SLOT_LEFT);
     iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
     
     if (iTmp == 0)
     {
-        ichr = pself_target->holdingwhich[SLOT_RIGHT];
+        ichr = pself_target->getHeldObject(SLOT_RIGHT);
         iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
     }
 
@@ -771,7 +771,7 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->isequipped = true;
+    pchr->setEquipped(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1280,21 +1280,21 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
     SCRIPT_REQUIRE_TARGET( pself_target );
 
 	ObjectRef ichr;
-    ichr = pself_target->holdingwhich[SLOT_LEFT];
+    ichr = pself_target->getHeldObject(SLOT_LEFT);
     if ( objectHandler().exists( ichr ) )
     {
-        objectHandler().get(ichr)->iskursed = false;
+        objectHandler().get(ichr)->setKursed(false);
     }
 
-    ichr = pself_target->holdingwhich[SLOT_RIGHT];
+    ichr = pself_target->getHeldObject(SLOT_RIGHT);
     if ( objectHandler().exists( ichr ) )
     {
-        objectHandler().get(ichr)->iskursed = false;
+        objectHandler().get(ichr)->setKursed(false);
     }
 
     for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
     {
-        pitem->iskursed = false;
+        pitem->setKursed(false);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1801,7 +1801,7 @@ uint8_t scr_AddQuest( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     if(pself_target->isPlayer()) {
-        auto& questLog = activeModule().getPlayer(pself_target->is_which_player)->getQuestLog();
+        auto& questLog = activeModule().getPlayer(pself_target->getPlayerNumber())->getQuestLog();
         if(!questLog.hasActiveQuest(idsz) && !questLog.isBeaten(idsz)) {
             questLog.setQuestProgress(idsz, std::max(state.distance, 0));
             returncode = true;
@@ -1856,7 +1856,7 @@ uint8_t scr_SetQuestLevel( script_state_t& state, ai_state_t& self )
     returncode = false;
     if ( pself_target->isPlayer() && 0 != state.distance )
     {
-        const std::shared_ptr<Ego::Player> &player = activeModule().getPlayer(pself_target->is_which_player);
+        const std::shared_ptr<Ego::Player> &player = activeModule().getPlayer(pself_target->getPlayerNumber());
         if(player->getQuestLog().hasActiveQuest(idsz)) {
             player->getQuestLog().setQuestProgress(idsz, player->getQuestLog()[idsz] + state.distance);
             returncode = true;
@@ -2042,9 +2042,9 @@ uint8_t scr_KurseTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_REQUIRE_TARGET( pself_target );
 
     returncode = false;
-    if ( pself_target->isitem && !pself_target->iskursed )
+    if ( pself_target->isItem() && !pself_target->isKursed() )
     {
-        pself_target->iskursed = true;
+        pself_target->setKursed(true);
         returncode = true;
     }
 

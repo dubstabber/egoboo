@@ -54,13 +54,13 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 	std::shared_ptr<const Texture> icon_ref = (pitem != nullptr) ? pitem->getIcon() : TextureManager::get().getTexture("mp_data/nullicon");
 
 	// draw the icon
-	if (draw_sparkle == NOSPARKLE) draw_sparkle = (NULL == pitem) ? NOSPARKLE : pitem->sparkle;
+	if (draw_sparkle == NOSPARKLE) draw_sparkle = (NULL == pitem) ? NOSPARKLE : pitem->getSparkle();
 	draw_game_icon(icon_ref, x, y, draw_sparkle, GameSessionContext::get().worldUpdateCount(), -1);
 
 	// draw the ammo, if requested
 	if (draw_ammo && (NULL != pitem))
 	{
-		if (0 != pitem->ammomax && pitem->ammoknown)
+		if (0 != pitem->ammomax && pitem->isAmmoKnown())
 		{
 			if ((!pitem->getProfile()->isStackable()) || pitem->ammo > 1)
 			{
@@ -354,17 +354,17 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     bool levelUp = false;
     if (pchr->isPlayer()) {
-        levelUp = activeModule->getPlayer(pchr->is_which_player)->hasUnspentLevel();
+        levelUp = activeModule->getPlayer(pchr->getPlayerNumber())->hasUnspentLevel();
     }
 
     // draw the character's main icon
     draw_one_character_icon(pchr->getObjRef(), getX() + 40, yOffset, false, levelUp ? COLOR_YELLOW : NOSPARKLE);
 
     // draw the left hand item icon
-    draw_one_character_icon(pchr->holdingwhich[SLOT_LEFT], getX() + 8, yOffset, true, NOSPARKLE);
+    draw_one_character_icon(pchr->getHeldObject(SLOT_LEFT), getX() + 8, yOffset, true, NOSPARKLE);
 
     // draw the right hand item icon
-    draw_one_character_icon(pchr->holdingwhich[SLOT_RIGHT], getX() + 72, yOffset, true, NOSPARKLE);
+    draw_one_character_icon(pchr->getHeldObject(SLOT_RIGHT), getX() + 72, yOffset, true, NOSPARKLE);
 
     // skip to the next row
     yOffset += 32;
@@ -391,7 +391,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     //Finally draw charge bar if applicable
     if (pchr->isPlayer()) {
-        const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->is_which_player);
+        const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->getPlayerNumber());
         if (player->getChargeBarFrame() >= GameSessionContext::get().worldUpdateCount()) {
             _chargeBar->setVisible(true);
             _chargeBar->setMaxValue(player->getBarMaxCharge());

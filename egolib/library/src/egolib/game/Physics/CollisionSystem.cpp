@@ -684,8 +684,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     // seriously reduce the interaction_strength with mounts
     // this thould allow characters to mount certain mounts a lot easier
-    if (( objectA->isMount() && ObjectRef::Invalid == objectA->holdingwhich[SLOT_LEFT] && !objectB->isMount() ) ||
-        ( objectB->isMount() && ObjectRef::Invalid == objectB->holdingwhich[SLOT_LEFT] && !objectA->isMount() ) )
+    if (( objectA->isMount() && ObjectRef::Invalid == objectA->getHeldObject(SLOT_LEFT) && !objectB->isMount() ) ||
+        ( objectB->isMount() && ObjectRef::Invalid == objectB->getHeldObject(SLOT_LEFT) && !objectA->isMount() ) )
     {
         interaction_strength *= 0.75f;
     }

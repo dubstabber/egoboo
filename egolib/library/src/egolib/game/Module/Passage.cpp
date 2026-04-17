@@ -95,7 +95,7 @@ bool Passage::close()
             {
                 if (objectIsInPassage(object))
                 {
-                    if (!object->canbecrushed || (object->isAlive() && object->getProfile()->canOpenStuff()))
+                    if (!object->canBeCrushed() || (object->isAlive() && object->getProfile()->canOpenStuff()))
                     {
                         // Someone is blocking who can open stuff, stop here
                         return false;
@@ -252,13 +252,13 @@ void Passage::makeShop(ObjectRef owner)
     {
         if (object->isTerminated()) continue;
 
-        if ( object->isitem )
+        if ( object->isItem() )
         {
             if (objectIsInPassage(object))
             {
-                object->isshopitem = true;               // Full value
-                object->iskursed   = false;              // Shop items are never kursed
-                object->nameknown  = true;               // Identify it!
+                object->setShopItem(true);               // Full value
+                object->setKursed(false);                // Shop items are never kursed
+                object->setNameKnown(true);              // Identify it!
             }
         }
     }    

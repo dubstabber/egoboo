@@ -44,7 +44,7 @@ bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Ob
     if (dropper->isTerminated() || item->isTerminated()) return false;
 
     bool inShop = false;
-    if (item->isitem)
+    if (item->isItem())
     {
         ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))
@@ -78,7 +78,7 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
     if (buyer->isTerminated() || item->isTerminated()) return false;
 
     bool canGrab = true;
-    if (item->isitem)
+    if (item->isItem())
     {
         ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))
@@ -138,7 +138,7 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
     if (thief->isTerminated() || item->isTerminated()) return false;
 
     bool canSteal = true;
-    if (item->isitem)
+    if (item->isItem())
     {
         ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))

@@ -120,7 +120,7 @@ void MainLoop::readPlayerInput()
             if (!pchr->isAlive() && 0 == session.respawnCooldown())
             {
                 pchr->respawn();
-                module.getTeamList()[pchr->team].setLeader(pchr);
+                module.getTeamList()[pchr->getTeamRef()].setLeader(pchr);
                 SET_BIT(pchr->ai.alert, ALERTIF_CLEANEDUP);
 
                 // cost some experience for doing this...  never lose a level

@@ -431,7 +431,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         }
 
         tmp_seekurse_level = std::min(localPlayerPerception.seeKurseLevel, 1.0f);
-        if ((localPlayerPerception.seeKurseLevel > 0.0f) && object->iskursed && 1.0f != tmp_seekurse_level)
+        if ((localPlayerPerception.seeKurseLevel > 0.0f) && object->isKursed() && 1.0f != tmp_seekurse_level)
         {
             if (HAS_NO_BITS(renderedFrameCount(), SEEKURSEAND))
             {

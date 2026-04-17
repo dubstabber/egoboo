@@ -150,7 +150,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
 
     auto object = makeFollower(objectHandler, 121);
     ASSERT_NE(object, nullptr);
-    object->nameknown = false;
+    object->setNameKnown(false);
 
     ASSERT_NE(object->getProfile(), nullptr);
     EXPECT_FALSE(vfs_exists((object->getProfile()->getPathname() + "/quest.txt").c_str()));
@@ -161,9 +161,9 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     const auto& player = playerList.front();
     ASSERT_NE(player, nullptr);
     EXPECT_EQ(player->getObject(), object);
-    EXPECT_EQ(object->is_which_player, 0);
+    EXPECT_EQ(object->getPlayerNumber(), 0);
     EXPECT_TRUE(object->isPlayer());
-    EXPECT_FALSE(object->nameknown);
+    EXPECT_FALSE(object->isNameKnown());
     EXPECT_EQ(session.localPlayerCount(), 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
@@ -185,8 +185,8 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIn
     ASSERT_TRUE(module_player_startup::addPlayer(playerList, secondObject, Ego::Input::InputDevice::DeviceList[1], false));
     ASSERT_EQ(playerList.size(), 2u);
 
-    EXPECT_EQ(firstObject->is_which_player, 0);
-    EXPECT_EQ(secondObject->is_which_player, 1);
+    EXPECT_EQ(firstObject->getPlayerNumber(), 0);
+    EXPECT_EQ(secondObject->getPlayerNumber(), 1);
     EXPECT_EQ(playerList[0]->getObject(), firstObject);
     EXPECT_EQ(playerList[1]->getObject(), secondObject);
     EXPECT_EQ(session.localPlayerCount(), 2u);
@@ -201,13 +201,13 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerCanIdentifySpawnOnSuccessfulBinding)
 
     auto object = makeFollower(objectHandler, 124);
     ASSERT_NE(object, nullptr);
-    object->nameknown = false;
+    object->setNameKnown(false);
 
     ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[1], true));
     ASSERT_EQ(playerList.size(), 1u);
 
     EXPECT_TRUE(object->isPlayer());
-    EXPECT_TRUE(object->nameknown);
+    EXPECT_TRUE(object->isNameKnown());
     EXPECT_EQ(session.localPlayerCount(), 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
 }
