@@ -126,6 +126,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `64-object-graphics-profile-animation-reset-pass.md`
 - `65-object-graphics-animation-control-policy-pass.md`
 - `66-object-graphics-animation-transition-pass.md`
+- `67-object-graphics-animation-state-bookkeeping-pass.md`
+- `68-object-graphics-frame-publication-pass.md`
 
 ## Recommended reading order
 
@@ -185,6 +187,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 54. Read `64-object-graphics-profile-animation-reset-pass.md` for the split between profile/model reset and initial animation policy inside `ObjectGraphics`, the preserved `Object` caller contract, and the narrowed follow-on recommendation around broader animation/control policy cleanup.
 55. Read `65-object-graphics-animation-control-policy-pass.md` for the bounded extraction of `updateAnimationRate()` policy, the preserved caller contract inside `ObjectGraphics`, and the narrowed follow-on recommendation around end-of-animation transition cleanup.
 56. Read `66-object-graphics-animation-transition-pass.md` for the bounded extraction of `incrementFrame()` end-of-animation transition policy, the preserved caller contract inside `ObjectGraphics`, and the narrowed follow-on recommendation around animation-state mutation and frame bookkeeping cleanup.
+57. Read `67-object-graphics-animation-state-bookkeeping-pass.md` for the bounded cleanup of action mutation versus frame-bookkeeping responsibilities inside `ObjectGraphics` and the narrowed follow-on recommendation around animation-state publication.
+58. Read `68-object-graphics-frame-publication-pass.md` for the explicit frame-publication helper cleanup around `setFrameFull()` / `removeInterpolation()` and the narrowed follow-on recommendation around `updateAnimation()` and cache-publication sequencing.
 
 ## Immediate recommendation
 

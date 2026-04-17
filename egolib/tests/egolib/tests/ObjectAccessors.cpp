@@ -855,6 +855,68 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameFullHealsCurrentActionAndPre
     EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.5f);
 }
 
+TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationSnapsToTargetWithoutChangingActionState)
+{
+    auto object = makeObject(_objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 339);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int firstFrame = model->getFirstFrame(currentAction);
+    const int lastFrame = model->getLastFrame(currentAction);
+    ASSERT_NE(firstFrame, lastFrame);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WA;
+    object->inst._canBeInterrupted = false;
+    object->inst._sourceFrameIndex = firstFrame;
+    object->inst._targetFrameIndex = lastFrame;
+    object->inst._animationProgressInteger = 3;
+    object->inst._animationProgress = 0.75f;
+
+    object->inst.removeInterpolation();
+
+    EXPECT_EQ(object->getCurrentAnimation(), currentAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationIsNoOpWhenAlreadyCollapsed)
+{
+    auto object = makeObject(_objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 340);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int frame = model->getFirstFrame(currentAction);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WB;
+    object->inst._canBeInterrupted = true;
+    object->inst._sourceFrameIndex = frame;
+    object->inst._targetFrameIndex = frame;
+    object->inst._animationProgressInteger = 0;
+    object->inst._animationProgress = 0.0f;
+
+    object->inst.removeInterpolation();
+
+    EXPECT_EQ(object->getCurrentAnimation(), currentAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WB);
+    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_EQ(object->inst._sourceFrameIndex, frame);
+    EXPECT_EQ(object->inst._targetFrameIndex, frame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+}
+
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAsInterpolationSource)
 {
     auto& objectHandler = beginActiveTestModule();

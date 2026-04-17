@@ -1179,9 +1179,9 @@ bool ObjectGraphics::tryCommitActionState(const ModelAction action, const bool a
     return true;
 }
 
-void ObjectGraphics::commitFrameState(const uint16_t sourceFrameIndex,
-                                      const uint16_t targetFrameIndex,
-                                      const uint8_t animationProgressInteger)
+void ObjectGraphics::publishFrameState(const uint16_t sourceFrameIndex,
+                                       const uint16_t targetFrameIndex,
+                                       const uint8_t animationProgressInteger)
 {
     _sourceFrameIndex = sourceFrameIndex;
     _targetFrameIndex = targetFrameIndex;
@@ -1197,7 +1197,7 @@ bool ObjectGraphics::tryCommitFrameState(const int frame)
     }
 
     // jump to the next frame
-    commitFrameState(_targetFrameIndex, frame, 0);
+    publishFrameState(_targetFrameIndex, frame, 0);
 
     return true;
 }
@@ -1407,7 +1407,7 @@ bool ObjectGraphics::setFrameFull(int frame_along, int ilip)
     int new_nxt = frame_stt + frame_along;
     new_nxt = std::min(new_nxt, frame_end);
 
-    commitFrameState(_sourceFrameIndex, new_nxt, static_cast<uint8_t>(ilip));
+    publishFrameState(_sourceFrameIndex, new_nxt, static_cast<uint8_t>(ilip));
 
     // set the validity of the cache
     return true;
@@ -1439,9 +1439,7 @@ ModelAction ObjectGraphics::getCurrentAnimation() const
 void ObjectGraphics::removeInterpolation()
 {
     if (_sourceFrameIndex != _targetFrameIndex ) {
-        _sourceFrameIndex = _targetFrameIndex;
-        _animationProgressInteger = 0;
-        _animationProgress = 0.0f;
+        publishFrameState(_targetFrameIndex, _targetFrameIndex, 0);
     }
 }
 

@@ -356,7 +356,7 @@ private:
 
     bool normalizeCurrentAnimationForFrameMutation();
 
-    void commitFrameState(uint16_t sourceFrameIndex, uint16_t targetFrameIndex, uint8_t animationProgressInteger);
+    void publishFrameState(uint16_t sourceFrameIndex, uint16_t targetFrameIndex, uint8_t animationProgressInteger);
 
     void invalidateChildInstancesIfCacheInvalid();
 
