@@ -34,9 +34,6 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
 
-//Global singelton
-std::unique_ptr<GameEngine> _gameEngine;
-
 //Declaration of class constants
 const uint32_t GameEngine::GAME_TARGET_FPS;
 const uint32_t GameEngine::GAME_TARGET_UPS;

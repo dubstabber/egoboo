@@ -20,6 +20,7 @@
 /// @author Michael Heilmann
 
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
 /**
@@ -39,12 +40,14 @@ int main(int argc, char **argv)
         Ego::Core::System::initialize(std::string(argv[0]));
         try
         {
-            _gameEngine = std::make_unique<GameEngine>();
-
-            _gameEngine->start();
+            EngineContext& engineContext = EngineContext::get();
+            engineContext.setEngine(std::make_unique<GameEngine>());
+            engineContext.engine().start();
+            engineContext.clearEngine();
         }
         catch (...)
         {
+            EngineContext::get().clearEngine();
             Ego::Core::System::uninitialize();
             std::rethrow_exception(std::current_exception());
 		}

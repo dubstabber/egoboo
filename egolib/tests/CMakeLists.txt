@@ -13,7 +13,7 @@ include_directories(${PROJECT_SOURCE_DIR}/../library/src)
 include_directories(${PROJECT_SOURCE_DIR})
 
 # Build a list of all tests.
-file(GLOB_RECURSE test_files ${PROJECT_SOURCE_DIR}/egolib/tests/*.cpp)
+file(GLOB_RECURSE test_files CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/egolib/tests/*.cpp)
 
 add_executable(egolib-tests-executable ${test_files})
 target_link_libraries(egolib-tests-executable egolib-library)

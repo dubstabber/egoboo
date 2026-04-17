@@ -5,20 +5,43 @@
 
 #include <stdexcept>
 
+namespace
+{
+std::unique_ptr<GameEngine> activeEngine;
+}
+
 EngineContext& EngineContext::get()
 {
     static EngineContext instance;
     return instance;
 }
 
+void EngineContext::setEngine(std::unique_ptr<GameEngine> engine)
+{
+    if (!engine)
+    {
+        throw std::logic_error("cannot install null game engine");
+    }
+    if (activeEngine)
+    {
+        throw std::logic_error("game engine already installed");
+    }
+    activeEngine = std::move(engine);
+}
+
+void EngineContext::clearEngine()
+{
+    activeEngine.reset();
+}
+
 GameEngine* EngineContext::tryEngine()
 {
-    return _gameEngine.get();
+    return activeEngine.get();
 }
 
 const GameEngine* EngineContext::tryEngine() const
 {
-    return _gameEngine.get();
+    return activeEngine.get();
 }
 
 GameEngine& EngineContext::engine()

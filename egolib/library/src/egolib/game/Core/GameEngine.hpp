@@ -276,7 +276,3 @@ private:
     std::unique_ptr<ContentRuntimeBootstrap> _contentRuntimeBootstrap;
     std::unique_ptr<Ego::GUI::UIManager> _uiManager;
 };
-
-extern std::unique_ptr<GameEngine> _gameEngine;
-
-//TODO: remove these globals

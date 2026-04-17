@@ -20,7 +20,7 @@ Out of scope for the active architecture model:
 ## Fast findings
 
 - The executable is tiny. Almost all runtime behavior lives inside `egolib`, which currently mixes engine services, gameplay logic, rendering, file formats, GUI, and legacy C code in one static library.
-- The runtime depends heavily on global singletons and global mutable state, especially `_gameEngine`, `_currentModule`, and `update_wld`.
+- The runtime historically depended heavily on global singletons and global mutable state, especially `_gameEngine`, `_currentModule`, and `update_wld`. The active ownership seams for `_currentModule` and `_gameEngine` are now retired in-repo; only a small amount of `update_wld` terminology residue remains in comments and debug labels.
 - The virtual file system is not a thin wrapper. It actively rewrites where content comes from by mounting module and global directories onto logical paths like `mp_data`, `mp_modules`, and `mp_objects`.
 - The content model is directory-shaped and convention-driven: `menu.txt`, `spawn.txt`, `data.txt`, `script.txt`, `message.txt`, `partN.txt`, `enchant.txt`, `level.mpd`, `tris.md2`, plus bitmap and audio assets.
 - There are several abandoned or partial modernization attempts already in the tree: `doc/ego2xml/`, `utilities/migrator/`, and `egolib/library/src/egolib/game/Lua/`.
@@ -43,8 +43,8 @@ Refreshed 2026-04-17. The 2026-04-12 baseline values are preserved in `01-reposi
 | Header files (`.hpp`)                                                                |                                                        271 |
 | Largest translation unit                                                             |             `egolib/library/src/egolib/vfs.c` (2445 lines) |
 | `_currentModule` references (in runtime code)                                        |                                                          0 |
-| `_gameEngine` references (in runtime code)                                           |                                                          6 |
-| `update_wld` references (in runtime code)                                            |                                                          6 |
+| `_gameEngine` references (in runtime code)                                           |                                                          0 |
+| `update_wld` references (in runtime code)                                            |                                                          3 |
 | `TODO`/`FIXME`/`HACK` style matches in `egolib` active code                          |                                                         63 |
 | Modules under `data/modules`                                                         |                                                         42 |
 | Object directories under `data/` (`data.txt`-bearing)                                |                                                        953 |
@@ -54,7 +54,7 @@ Refreshed 2026-04-17. The 2026-04-12 baseline values are preserved in `01-reposi
 | `level.mpd` files                                                                    |                                                         42 |
 | `tris.md2` files                                                                     |                                                        956 |
 
-The `_currentModule` / `_gameEngine` / `update_wld` reference counts dropped from the 2026-04-12 baseline (592 / 266 / 65) as the runtime-context extraction passes (`11-`…`45-`) migrated consumers onto the session and module accessor surfaces. Remaining references are concentrated in `GameEngine.{hpp,cpp}`, `EngineContext.cpp`, `Main.cpp`, `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`.
+The `_currentModule` / `_gameEngine` / `update_wld` reference counts dropped from the 2026-04-12 baseline (592 / 266 / 65) as the runtime-context extraction passes (`11-`…`51-`) migrated consumers onto the session and engine accessor surfaces. The raw `_currentModule` and `_gameEngine` seams are now retired in-repo. The remaining `update_wld` mentions are limited to `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`, where they survive only as legacy wording in a debug label and comments.
 
 The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly an 8153-line single TU) was split into seven domain-specific files (`script_functions_{action,bitwise,movement,spawn,state,systems,target}.c`). This is a deliberate decomposition, not a regression in C→C++ progress.
 
@@ -110,6 +110,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `48-local-stats-legacy-boundary-pass.md`
 - `49-local-stats-accessor-shim-pass.md`
 - `50-local-stats-export-retirement-pass.md`
+- `51-engine-context-ownership-pass.md`
 
 ## Recommended reading order
 
@@ -152,7 +153,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 37. Read `47-local-player-respawn-cooldown-ownership-pass.md` for the session-owned respawn cooldown surface, the preserved `local_stats.revivetimer` compatibility mirror, and the new post-cleanup recommendation for the remaining legacy ABI boundary.
 38. Read `48-local-stats-legacy-boundary-pass.md` for the audit-backed narrowing of the `local_stats` declaration surface and the remaining question around out-of-repo compatibility consumers.
 39. Read `49-local-stats-accessor-shim-pass.md` for the explicit accessor-based quarantine around the exported `local_stats` global and the remaining decision point around external consumers.
-40. Read `50-local-stats-export-retirement-pass.md` for the retirement of the raw `local_stats` export, the accessor-only legacy mirror boundary, and the return to the remaining `_gameEngine` / `update_wld` cleanup seams.
+40. Read `50-local-stats-export-retirement-pass.md` for the retirement of the raw `local_stats` export, the accessor-only legacy mirror boundary, and the return to the final in-repo engine ownership cleanup seam.
+41. Read `51-engine-context-ownership-pass.md` for the retirement of the raw `_gameEngine` export, the `EngineContext` ownership seam, and the clarification that remaining `update_wld` mentions are terminology residue rather than an active global-state boundary.
 
 ## Immediate recommendation
 

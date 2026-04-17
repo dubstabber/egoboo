@@ -14,6 +14,9 @@ class EngineContext : private idlib::non_copyable
 public:
     static EngineContext& get();
 
+    void setEngine(std::unique_ptr<GameEngine> engine);
+    void clearEngine();
+
     GameEngine* tryEngine();
     const GameEngine* tryEngine() const;
 
