@@ -90,6 +90,7 @@ public:
     const LocalPlayerStatus& localPlayerStatus() const;
     const LocalPlayerPerceptionState& localPlayerPerception() const;
     const EnemySenseState& enemySense() const;
+    int respawnCooldown() const;
     bool hasLocalPlayers() const;
     bool allLocalPlayersDead() const;
 
@@ -97,9 +98,12 @@ public:
     void publishLocalPlayerStatus(const LocalPlayerStatus& status);
     void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state);
     void publishEnemySense(const EnemySenseState& state);
+    void publishRespawnCooldown(int ticks);
+    void tickRespawnCooldown();
     void resetLocalPlayerState();
     void resetLocalPlayerPerception();
     void resetEnemySense();
+    void resetRespawnCooldown();
 
     import_list_t& importList();
     const import_list_t& importList() const;
@@ -122,5 +126,6 @@ private:
     LocalPlayerStatus _localPlayerStatus;
     LocalPlayerPerceptionState _localPlayerPerception;
     EnemySenseState _enemySense;
+    int _respawnCooldown;
     bool _hasPublishedLocalPlayerStatus;
 };

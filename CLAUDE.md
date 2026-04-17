@@ -57,7 +57,7 @@ The legacy content set is not internally consistent. Many validator failures are
 
 | Directory | Purpose |
 |-----------|---------|
-| `egolib/` | Main runtime library (~464 source files, 24 subsystems) — where most code lives |
+| `egolib/` | Main runtime library (~620 source files, 24 subsystems) — where most code lives |
 | `egoboo/` | Minimal executable wrapper (`src/game/Main.cpp` creates `GameEngine` and enters main loop) |
 | `idlib/` | Foundation library submodule (math, types, utilities) |
 | `idlib-game-engine/` | Engine framework submodule (graphics, physics, file systems) |
@@ -83,11 +83,13 @@ The superproject passes the top-level `idlib/` into `idlib-game-engine` during C
 
 ### Global State (major coupling points)
 
-- `_gameEngine` (~266 references) — main runtime instance
-- `_currentModule` (~592 references) — active game module
-- `update_wld` (~65 references) — world update function
+Historically the runtime was wired around three mutable globals. The runtime-context extraction passes (`refactoring-documents/11-`…`45-`) have migrated most consumers onto session/module accessor surfaces. Current in-code reference counts (as of 2026-04-17):
 
-Avoid introducing new hidden global dependencies. Be careful around code that affects VFS setup, module loading, object profile loading, or script compilation.
+- `_gameEngine` — ~6 references; remaining uses are in `Main.cpp`, `GameEngine.{hpp,cpp}`, and `EngineContext.cpp`.
+- `_currentModule` — 0 direct references in runtime code; all consumers now go through session/module accessors. Prefer `GameSessionContext` and `GameModule` surfaces for new code.
+- `update_wld` — ~6 references; remaining uses are in `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`.
+
+Avoid reintroducing hidden global dependencies. Be careful around code that affects VFS setup, module loading, object profile loading, or script compilation.
 
 ### Egolib Subsystems
 
@@ -96,12 +98,15 @@ AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (obj
 ### High-Risk Hotspots
 
 Read relevant audit docs before modifying:
-- `egolib/library/src/egolib/game/script_functions.c` (8153 lines, largest file)
+- `egolib/library/src/egolib/vfs.c` (2445 lines, current largest TU)
+- `egolib/library/src/egolib/game/script_functions_{action,bitwise,movement,spawn,state,systems,target}.c` (split from the former 8153-line `script_functions.c`; `_systems.c` and `_target.c` are the largest at ~2100 and ~1780 lines)
 - `egolib/library/src/egolib/game/game.c`
 - `egolib/library/src/egolib/game/graphic.c`
-- `egolib/library/src/egolib/vfs.c`
+- `egolib/library/src/egolib/game/Physics/particle_collision.c`
+- `egolib/library/src/egolib/game/mesh.c`
+- `egolib/library/src/egolib/fileutil.c`
 - `egolib/library/src/egolib/Entities/Object.cpp`
-- `egolib/library/src/egolib/game/Module/Module.cpp`
+- `egolib/library/src/egolib/game/Module/Module.cpp` (plus sibling TUs `Module_bootstrap.cpp`, `Module_loading.cpp`, `Module_spawn.cpp`, `Module_update.cpp` from the module split pass — see `refactoring-documents/28-module-translation-unit-split-pass.md`)
 
 These are large, central, and coupled to legacy global state.
 

@@ -75,7 +75,7 @@ struct local_stats_t
     float seekurse_level;
 
     bool allpladead;         ///< Have players died?
-    int revivetimer;        ///< Cooldown to respawn
+    int revivetimer;         ///< Legacy compatibility mirror for the session-owned respawn cooldown
 
     //ESP
     TEAM_REF sense_enemies_team;

@@ -320,6 +320,7 @@ void game_reset_players()
     session.resetLocalPlayerState();
     session.resetLocalPlayerPerception();
     session.resetEnemySense();
+    session.resetRespawnCooldown();
 }
 
 //--------------------------------------------------------------------------------------------

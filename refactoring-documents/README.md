@@ -1,6 +1,6 @@
 # Refactoring Documents
 
-This directory is the baseline architecture and refactoring audit for the current Egoboo workspace as inspected on 2026-04-12.
+This directory is the baseline architecture and refactoring audit for the current Egoboo workspace. Original baseline: 2026-04-12. Last index refresh: 2026-04-17.
 
 The goal of this first pass is not to redesign the project in the abstract. It is to document what is actually running today, what is clearly stale, where the major coupling points are, and how to approach a long refactor without breaking the game beyond recovery.
 
@@ -24,7 +24,7 @@ Out of scope for the active architecture model:
 - The virtual file system is not a thin wrapper. It actively rewrites where content comes from by mounting module and global directories onto logical paths like `mp_data`, `mp_modules`, and `mp_objects`.
 - The content model is directory-shaped and convention-driven: `menu.txt`, `spawn.txt`, `data.txt`, `script.txt`, `message.txt`, `partN.txt`, `enchant.txt`, `level.mpd`, `tris.md2`, plus bitmap and audio assets.
 - There are several abandoned or partial modernization attempts already in the tree: `doc/ego2xml/`, `utilities/migrator/`, and `egolib/library/src/egolib/game/Lua/`.
-- Build documentation is inconsistent with the real build. Root docs describe CMake, `README.Linux` still describes `make all`, and the local workspace now relies on `run-egoboo.sh` plus Fedora-specific source edits.
+- Build documentation has been reconciled. `README.md` and `doc/build-linux.md` / `doc/build-windows.md` are the source of truth; `README.Linux` is now a short stub that redirects to `doc/build-linux.md`. The Fedora-specific source edits previously tracked as uncommitted workspace drift have since landed as repo commits (see `b97717e48`).
 - Windows build direction is still inconsistent. A MinGW-based path exists, but the maintained project direction should be native Windows compilation with fully open-source tooling rather than Visual Studio-specific workflows or Wine-only validation.
 - The Linux-hosted Windows path is not healthy yet. `debug-output.txt` shows a current Wine-run startup failure involving font atlas initialization and a later crash during audio loading.
 - The current codebase still has many bugs, incomplete features, and portability warnings. The refactor goal is not just cleaner structure; it is a more usable and maintainable game.
@@ -32,25 +32,31 @@ Out of scope for the active architecture model:
 
 ## Snapshot metrics
 
-| Metric                                                                               |                                                            Value |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------: |
-| Runtime source files in `egolib`/`egoboo`/`cartman` (`*.c`, `*.cpp`, `*.h`, `*.hpp`) |                                                              591 |
-| C files                                                                              |                                                               56 |
-| C++ implementation files                                                             |                                                              210 |
-| Header files (`.h`)                                                                  |                                                               64 |
-| Header files (`.hpp`)                                                                |                                                              261 |
-| Largest translation unit                                                             | `egolib/library/src/egolib/game/script_functions.c` (8153 lines) |
-| `_currentModule` references                                                          |                                                              592 |
-| `_gameEngine` references                                                             |                                                              266 |
-| `update_wld` references                                                              |                                                               65 |
-| `TODO`/`FIXME`/`HACK` style matches in active code                                   |                                                               73 |
-| Modules under `data/modules`                                                         |                                                               42 |
-| Object directories under `data/`                                                     |                                                              968 |
-| `data.txt` files                                                                     |                                                              946 |
-| `script.txt` files                                                                   |                                                              951 |
-| `enchant.txt` files                                                                  |                                                              206 |
-| `level.mpd` files                                                                    |                                                               43 |
-| `tris.md2` files                                                                     |                                                              953 |
+Refreshed 2026-04-17. The 2026-04-12 baseline values are preserved in `01-repository-and-build-audit.md`.
+
+| Metric                                                                               |                                                      Value |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------: |
+| Runtime source files in `egolib`/`egoboo`/`cartman` (`*.c`, `*.cpp`, `*.h`, `*.hpp`) |                                                        656 |
+| C files                                                                              |                                                         70 |
+| C++ implementation files                                                             |                                                        244 |
+| Header files (`.h`)                                                                  |                                                         71 |
+| Header files (`.hpp`)                                                                |                                                        271 |
+| Largest translation unit                                                             |             `egolib/library/src/egolib/vfs.c` (2445 lines) |
+| `_currentModule` references (in runtime code)                                        |                                                          0 |
+| `_gameEngine` references (in runtime code)                                           |                                                          6 |
+| `update_wld` references (in runtime code)                                            |                                                          6 |
+| `TODO`/`FIXME`/`HACK` style matches in `egolib` active code                          |                                                         63 |
+| Modules under `data/modules`                                                         |                                                         42 |
+| Object directories under `data/` (`data.txt`-bearing)                                |                                                        953 |
+| `data.txt` files                                                                     |                                                        953 |
+| `script.txt` files                                                                   |                                                        958 |
+| `enchant.txt` files                                                                  |                                                        207 |
+| `level.mpd` files                                                                    |                                                         42 |
+| `tris.md2` files                                                                     |                                                        956 |
+
+The `_currentModule` / `_gameEngine` / `update_wld` reference counts dropped from the 2026-04-12 baseline (592 / 266 / 65) as the runtime-context extraction passes (`11-`…`45-`) migrated consumers onto the session and module accessor surfaces. Remaining references are concentrated in `GameEngine.{hpp,cpp}`, `EngineContext.cpp`, `Main.cpp`, `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`.
+
+The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly an 8153-line single TU) was split into seven domain-specific files (`script_functions_{action,bitwise,movement,spawn,state,systems,target}.c`). This is a deliberate decomposition, not a regression in C→C++ progress.
 
 ## Documents in this folder
 
@@ -70,11 +76,11 @@ Out of scope for the active architecture model:
 - `14-graphics-runtime-shell-context-pass.md`
 - `15-entity-physics-runtime-context-pass.md`
 - `16-scripting-runtime-shell-context-pass.md`
-- `20-inventory-and-commerce-runtime-context-pass.md`
-- `21-presentation-engine-context-pass.md`
 - `17-codebase-health-assessment.md`
 - `18-modularization-analysis.md`
 - `19-new-refactoring-plan.md`
+- `20-inventory-and-commerce-runtime-context-pass.md`
+- `21-presentation-engine-context-pass.md`
 - `22-module-runtime-ownership-plan.md`
 - `23-session-state-ownership-pass.md`
 - `24-spawn-reconciliation-remediation-pass.md`
@@ -99,6 +105,8 @@ Out of scope for the active architecture model:
 - `43-local-player-status-compatibility-quarantine-pass.md`
 - `44-local-player-perception-ownership-pass.md`
 - `45-local-player-enemy-sense-ownership-pass.md`
+- `46-cross-platform-and-third-party-independence-status.md`
+- `47-local-player-respawn-cooldown-ownership-pass.md`
 
 ## Recommended reading order
 
@@ -137,6 +145,8 @@ Out of scope for the active architecture model:
 33. Read `43-local-player-status-compatibility-quarantine-pass.md` for the final quarantine of the local-player status mirrors and the next recommendation around broader legacy-global cleanup.
 34. Read `44-local-player-perception-ownership-pass.md` for the session-owned local-player perception surface, preserved legacy mirrors, and the remaining legacy-global follow-on seams.
 35. Read `45-local-player-enemy-sense-ownership-pass.md` for the session-owned minimap enemy-sense surface, preserved legacy mirrors, and the remaining respawn-timing follow-on seam.
+36. Read `46-cross-platform-and-third-party-independence-status.md` for the current cross-platform build, Visual Studio retirement, and third-party dependency self-containment snapshot with the remaining gap list.
+37. Read `47-local-player-respawn-cooldown-ownership-pass.md` for the session-owned respawn cooldown surface, the preserved `local_stats.revivetimer` compatibility mirror, and the new post-cleanup recommendation for the remaining legacy ABI boundary.
 
 ## Immediate recommendation
 

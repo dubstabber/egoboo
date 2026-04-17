@@ -10,6 +10,7 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 
+#include <algorithm>
 #include <cmath>
 #include <ctime>
 #include <stdexcept>
@@ -41,6 +42,11 @@ void publishLegacyEnemySenseCompatibilityMirrors(const GameSessionContext& sessi
     const EnemySenseState& enemySense = session.enemySense();
     local_stats.sense_enemies_team = enemySense.team;
     local_stats.sense_enemies_idsz = enemySense.idsz;
+}
+
+void publishLegacyRespawnCooldownCompatibilityMirrors(const GameSessionContext& session)
+{
+    local_stats.revivetimer = session.respawnCooldown();
 }
 }
 
@@ -149,6 +155,7 @@ GameSessionContext::GameSessionContext() :
     _localPlayerStatus(),
     _localPlayerPerception(),
     _enemySense(),
+    _respawnCooldown(0),
     _hasPublishedLocalPlayerStatus(false)
 {}
 
@@ -199,6 +206,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     resetLocalPlayerState();
     resetLocalPlayerPerception();
     resetEnemySense();
+    resetRespawnCooldown();
 
     _activeModule = std::make_unique<GameModule>(module, seed);
 
@@ -323,6 +331,11 @@ const EnemySenseState& GameSessionContext::enemySense() const
     return _enemySense;
 }
 
+int GameSessionContext::respawnCooldown() const
+{
+    return _respawnCooldown;
+}
+
 bool GameSessionContext::hasLocalPlayers() const
 {
     return localPlayerCount() > 0;
@@ -358,6 +371,21 @@ void GameSessionContext::publishEnemySense(const EnemySenseState& state)
     publishLegacyEnemySenseCompatibilityMirrors(*this);
 }
 
+void GameSessionContext::publishRespawnCooldown(int ticks)
+{
+    _respawnCooldown = std::max(0, ticks);
+    publishLegacyRespawnCooldownCompatibilityMirrors(*this);
+}
+
+void GameSessionContext::tickRespawnCooldown()
+{
+    if (_respawnCooldown > 0)
+    {
+        --_respawnCooldown;
+        publishLegacyRespawnCooldownCompatibilityMirrors(*this);
+    }
+}
+
 void GameSessionContext::resetLocalPlayerState()
 {
     _preModuleLocalPlayerCount = 0;
@@ -376,6 +404,12 @@ void GameSessionContext::resetEnemySense()
 {
     _enemySense = EnemySenseState{};
     publishLegacyEnemySenseCompatibilityMirrors(*this);
+}
+
+void GameSessionContext::resetRespawnCooldown()
+{
+    _respawnCooldown = 0;
+    publishLegacyRespawnCooldownCompatibilityMirrors(*this);
 }
 
 import_list_t& GameSessionContext::importList()

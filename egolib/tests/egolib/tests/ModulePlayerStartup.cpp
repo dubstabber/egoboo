@@ -255,6 +255,7 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerMirrorsResetWithSessionState
 
     session.publishLocalPlayerCount(2);
     session.publishLocalPlayerStatus(LocalPlayerStatus{2, 0, 2});
+    session.publishRespawnCooldown(ONESECOND);
     ASSERT_EQ(session.localPlayerCount(), 2u);
     ASSERT_TRUE(session.allLocalPlayersDead());
 
@@ -263,9 +264,11 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerMirrorsResetWithSessionState
     EXPECT_EQ(session.localPlayerCount(), 0u);
     EXPECT_FALSE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
+    EXPECT_EQ(session.respawnCooldown(), 0);
     EXPECT_EQ(local_stats.player_count, 0);
     EXPECT_TRUE(local_stats.noplayers);
     EXPECT_FALSE(local_stats.allpladead);
+    EXPECT_EQ(local_stats.revivetimer, 0);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyAllPlayersDeadMirrorTracksPublishedSessionStatus)
@@ -524,6 +527,34 @@ TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsResetWithSessionState)
     EXPECT_EQ(enemySense.idsz, IDSZ2::None);
     EXPECT_EQ(local_stats.sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_MAX));
     EXPECT_EQ(local_stats.sense_enemies_idsz, IDSZ2::None);
+}
+
+TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTracksPublishedSessionState)
+{
+    auto& session = GameSessionContext::get();
+
+    session.publishRespawnCooldown(ONESECOND);
+
+    EXPECT_EQ(session.respawnCooldown(), ONESECOND);
+    EXPECT_EQ(local_stats.revivetimer, ONESECOND);
+}
+
+TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTicksDownAndSaturatesAtZero)
+{
+    auto& session = GameSessionContext::get();
+    session.publishRespawnCooldown(2);
+
+    session.tickRespawnCooldown();
+    EXPECT_EQ(session.respawnCooldown(), 1);
+    EXPECT_EQ(local_stats.revivetimer, 1);
+
+    session.tickRespawnCooldown();
+    EXPECT_EQ(session.respawnCooldown(), 0);
+    EXPECT_EQ(local_stats.revivetimer, 0);
+
+    session.tickRespawnCooldown();
+    EXPECT_EQ(session.respawnCooldown(), 0);
+    EXPECT_EQ(local_stats.revivetimer, 0);
 }
 
 } // namespace

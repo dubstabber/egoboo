@@ -548,7 +548,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
 
     // If it's a player, let it die properly before enabling respawn
     if (isPlayer())  {
-        local_stats.revivetimer = ONESECOND; // 1 second
+        gameSession().publishRespawnCooldown(ONESECOND); // 1 second
     }
 
     // Let it's AI script run one last time

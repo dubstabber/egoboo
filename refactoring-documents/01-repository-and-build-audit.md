@@ -58,6 +58,8 @@ The repo already contains contradictory build stories.
 - `README.Linux` still describes `make all` and `make install`.
 - `run-egoboo.sh` assumes a local binary in `build/products/x64/bin/egoboo` and injects environment variables for Linux execution.
 
+> **Status update (2026-04-17):** The canonical Linux and Windows build paths are now documented in `doc/build-linux.md` and `doc/build-windows.md`, and `README.Linux` has been reduced to a short stub that redirects to `doc/build-linux.md`. The drift described below is largely resolved; new doc drift should be tracked here as it appears.
+
 ### What this implies
 
 - The canonical build instructions are unclear.
@@ -68,6 +70,8 @@ The repo already contains contradictory build stories.
 ## 4. Local portability patches already in the workspace
 
 The current workspace contains uncommitted edits that change how the game builds or runs on Linux/Fedora.
+
+> **Status update (2026-04-17):** The patches enumerated below have since been committed (see `b97717e48` "Update runtime data handling and refactor file management" and related commits). They are no longer uncommitted workspace drift; they are part of the recorded history and describe the intentional Fedora portability behavior that should be preserved.
 
 ### Observed local edits
 
@@ -122,6 +126,8 @@ This matters because:
 
 - Refactors across the engine boundary can silently depend on local submodule state.
 - Reproducibility is weaker when the intended branch policy and the actual workspace state differ.
+
+> **Status update (2026-04-17):** `.gitmodules` now declares `branch = master` for both `idlib` and `idlib-game-engine`, and `git submodule status` confirms both submodules track `master`. The divergence described above is resolved. If submodule branch policy changes again, update this section.
 
 ## 7. Tooling health
 

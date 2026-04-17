@@ -85,10 +85,7 @@ void MainLoop::updateLocalStats()
     characterStatClock()++;
 
     // Reset the respawn timer
-    if ( local_stats.revivetimer > 0 )
-    {
-        local_stats.revivetimer--;
-    }
+    session.tickRespawnCooldown();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -120,7 +117,7 @@ void MainLoop::readPlayerInput()
         // Let players respawn
         if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
         {
-            if (!pchr->isAlive() && 0 == local_stats.revivetimer)
+            if (!pchr->isAlive() && 0 == session.respawnCooldown())
             {
                 pchr->respawn();
                 module.getTeamList()[pchr->team].setLeader(pchr);
