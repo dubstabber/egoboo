@@ -377,7 +377,7 @@ void Camera::updateTrack()
                 const std::shared_ptr<Object>& object = session.objectHandler()[objectRef];
                 if (!object || object->isTerminated() || !object->isAlive()) continue;
 
-                sum_pos += object->getPosition() + Ego::Vector3f(0.0f, 0.0f, object->chr_min_cv._maxs[OCT_Z] * 0.9f);
+                sum_pos += object->getPosition() + Ego::Vector3f(0.0f, 0.0f, object->getMinCollisionVolume()._maxs[OCT_Z] * 0.9f);
                 sum_level += object->getObjectPhysics().getGroundElevation();
                 sum_wt += 1.0f;
             }

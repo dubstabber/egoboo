@@ -599,17 +599,17 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
 
         if (drawLeftSlot)
         {
-            auto bb = idlib::translate(pchr->slot_cv[SLOT_LEFT], pchr->getPosition());
+            auto bb = idlib::translate(pchr->getSlotCollisionVolume(SLOT_LEFT), pchr->getPosition());
             Renderer3D::renderOctBB(bb, true, true);
         }
         if (drawRightSlot)
         {
-            auto bb = idlib::translate(pchr->slot_cv[SLOT_RIGHT], pchr->getPosition());
+            auto bb = idlib::translate(pchr->getSlotCollisionVolume(SLOT_RIGHT), pchr->getPosition());
             Renderer3D::renderOctBB(bb, true, true);
         }
         if (drawCharacter)
         {
-            auto bb = idlib::translate(pchr->chr_min_cv, pchr->getPosition());
+            auto bb = idlib::translate(pchr->getMinCollisionVolume(), pchr->getPosition());
             Renderer3D::renderOctBB(bb, true, true);
         }
     }

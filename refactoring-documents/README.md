@@ -119,6 +119,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `57-object-appearance-profile-encapsulation-pass.md`
 - `58-object-stats-ammo-gender-encapsulation-pass.md`
 - `59-object-orientation-encapsulation-pass.md`
+- `60-object-bumper-collision-volume-encapsulation-pass.md`
 
 ## Recommended reading order
 
@@ -171,6 +172,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 47. Read `57-object-appearance-profile-encapsulation-pass.md` for the bounded encapsulation of skin/base-model/overlay/shadow scalar state and the recommendation to finish the remaining stats/ammo/gender scalar cleanup before broader interface work.
 48. Read `58-object-stats-ammo-gender-encapsulation-pass.md` for the bounded encapsulation of the remaining stats/ammo/gender scalar surface and the branching recommendation between orientation and `inst`.
 49. Read `59-object-orientation-encapsulation-pass.md` for the bounded encapsulation of `ori` / `ori_old`, the reason that seam landed before `inst`, and the next follow-on recommendation around bumper/CV or render-facing cleanup.
+50. Read `60-object-bumper-collision-volume-encapsulation-pass.md` for the bounded encapsulation of `Object` bumper/collision-volume state, the grouped collision publish path in `ObjectPhysics`, and the narrowed follow-on recommendation around `inst`.
 
 ## Immediate recommendation
 

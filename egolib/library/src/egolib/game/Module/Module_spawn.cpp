@@ -175,16 +175,15 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // Character size and bumping
     pchr->setBaseFat(ppro->getSize());
     pchr->setBaseShadowSize(ppro->getShadowSize());
-    pchr->bump_stt.size     = ppro->getBumpSize();
-    pchr->bump_stt.size_big = ppro->getBumpSizeBig();
-    pchr->bump_stt.height   = ppro->getBumpHeight();
+    bumper_t baseBump;
+    baseBump.size = ppro->getBumpSize();
+    baseBump.size_big = ppro->getBumpSizeBig();
+    baseBump.height = ppro->getBumpHeight();
+    pchr->initializeBaseBump(baseBump);
 
     //Initialize size and collision box
     pchr->setFatRaw(pchr->getBaseFat());
     pchr->setSavedShadowSize(pchr->getBaseShadowSize());
-    pchr->bump_save.size     = pchr->bump_stt.size;
-    pchr->bump_save.size_big = pchr->bump_stt.size_big;
-    pchr->bump_save.height   = pchr->bump_stt.height;
     pchr->recalculateCollisionSize();
 
     // Character size and bumping

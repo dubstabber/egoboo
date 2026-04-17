@@ -222,7 +222,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     // set the line-of-sight source
     los_info.x0         = psrc->getPosX();
     los_info.y0         = psrc->getPosY();
-    los_info.z0         = psrc->getPosZ() + psrc->bump.height;
+    los_info.z0         = psrc->getPosZ() + psrc->getCurrentBump().height;
     los_info.stopped_by = psrc->getStoppedByMask();
 
     ObjectRef best_target = ObjectRef::Invalid;
@@ -245,7 +245,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
                 // set the line-of-sight source
                 los_info.x1 = ptst->getPosition()[kX];
                 los_info.y1 = ptst->getPosition()[kY];
-                los_info.z1 = ptst->getPosition()[kZ] + std::max( 1.0f, ptst->bump.height );
+                los_info.z1 = ptst->getPosition()[kZ] + std::max( 1.0f, ptst->getCurrentBump().height );
 
                 if ( line_of_sight_info_t::blocked( los_info, module.getMeshPointer() ) ) continue;
             }

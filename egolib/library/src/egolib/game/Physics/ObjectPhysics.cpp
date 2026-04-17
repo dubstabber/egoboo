@@ -317,7 +317,7 @@ float ObjectPhysics::recalculateGroundElevation()
     //Standing on a platform?
     const std::shared_ptr<Object> &platform = _object.getAttachedPlatform();
     if (platform) {
-        return platform->getPosZ() + platform->chr_min_cv._maxs[OCT_Z];
+        return platform->getPosZ() + platform->getMinCollisionVolume()._maxs[OCT_Z];
     }
 
     //Walking on water?
@@ -488,7 +488,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
     _platformOffset.y() = _object.getPosY() - platform->getPosY();
 
     //Make sure the object is now on top of the platform
-    const float platformElevation = platform->getPosZ() + platform->chr_min_cv._maxs[OCT_Z];
+    const float platformElevation = platform->getPosZ() + platform->getMinCollisionVolume()._maxs[OCT_Z];
     if(_object.getPosZ() < platformElevation) {
         _object.setPosition(_object.getPosX(), _object.getPosY(), platformElevation);
     }
@@ -695,7 +695,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     }
 
     //Determine the position of the grip
-    oct_vec_v2_t mids = _object.slot_cv[slot].getMid();
+    oct_vec_v2_t mids = _object.getSlotCollisionVolume(slot).getMid();
 
     Vector3f   slot_pos = Vector3f(mids[OCT_X], mids[OCT_Y], mids[OCT_Z]) + _object.getPosition();
 
@@ -761,7 +761,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
         }
 
         //Bigger characters have bigger grab size
-        maxHorizontalGrabDistance += _object.bump.size / 4.0f;
+        maxHorizontalGrabDistance += _object.getCurrentBump().size / 4.0f;
 
         //Double grab distance for monsters that are trying to grapple
         if(grab_people) {
@@ -769,14 +769,15 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
         }
 
         // is it too far away to grab?
-        if (horizontalDistance > maxHorizontalGrabDistance + _object.bump.size / 4.0f && horizontalDistance > _object.bump.size) {
+        if (horizontalDistance > maxHorizontalGrabDistance + _object.getCurrentBump().size / 4.0f &&
+            horizontalDistance > _object.getCurrentBump().size) {
             continue;
         }
 
         //Check vertical distance as well
         else
         {
-            float maxVerticalGrabDistance = _object.bump.height / 2.0f;
+            float maxVerticalGrabDistance = _object.getCurrentBump().height / 2.0f;
 
             if(grab_people) {
                 //This allows very flat creatures like the Carpet Mimics grab people
@@ -959,12 +960,10 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
 void ObjectPhysics::updateCollisionSize(bool update_matrix)
 {
-    // re-initialize the collision volumes
-    _object.chr_min_cv = oct_bb_t();
-    _object.chr_max_cv = oct_bb_t();
-    for (size_t cnt = 0; cnt < SLOT_COUNT; cnt++) {
-        _object.slot_cv[cnt] = oct_bb_t();
-    }
+    oct_bb_t minCollisionVolume;
+    oct_bb_t maxCollisionVolume;
+    std::array<oct_bb_t, SLOT_COUNT> slotCollisionVolumes;
+    slotCollisionVolumes.fill(oct_bb_t());
 
     // make sure the matrix is updated properly
     if (update_matrix) {
@@ -993,35 +992,35 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
     oct_bb_t::points_to_oct_bb(bdst, dst, vcount);
 
     //---- set the bounding boxes
-    _object.chr_min_cv = bdst;
-    _object.chr_max_cv = bdst;
+    minCollisionVolume = bdst;
+    maxCollisionVolume = bdst;
 
     oct_bb_t bmin;
-    bmin.assign(_object.bump);
+    bmin.assign(_object.getCurrentBump());
 
-    // only use _object.bump.size if it was overridden in data.txt through the [MODL] expansion
+    // only use the current bump size if it was overridden in data.txt through the [MODL] expansion
     if ( _object.getProfile()->getBumpOverrideSize() )
     {
-        _object.chr_min_cv.cut(bmin, OCT_X);
-        _object.chr_min_cv.cut(bmin, OCT_Y);
+        minCollisionVolume.cut(bmin, OCT_X);
+        minCollisionVolume.cut(bmin, OCT_Y);
 
-        _object.chr_max_cv.join(bmin, OCT_X);
-        _object.chr_max_cv.join(bmin, OCT_Y);
+        maxCollisionVolume.join(bmin, OCT_X);
+        maxCollisionVolume.join(bmin, OCT_Y);
     }
 
-    // only use _object.bump.size_big if it was overridden in data.txt through the [MODL] expansion
+    // only use the current bump size_big if it was overridden in data.txt through the [MODL] expansion
     if (_object.getProfile()->getBumpOverrideSizeBig()) {
-        _object.chr_min_cv.cut(bmin, OCT_XY);
-        _object.chr_min_cv.cut(bmin, OCT_YX);
+        minCollisionVolume.cut(bmin, OCT_XY);
+        minCollisionVolume.cut(bmin, OCT_YX);
 
-        _object.chr_max_cv.join(bmin, OCT_XY);
-        _object.chr_max_cv.join(bmin, OCT_YX);
+        maxCollisionVolume.join(bmin, OCT_XY);
+        maxCollisionVolume.join(bmin, OCT_YX);
     }
 
-    // only use _object.bump.height if it was overridden in data.txt through the [MODL] expansion
+    // only use the current bump height if it was overridden in data.txt through the [MODL] expansion
     if (_object.getProfile()->getBumpOverrideHeight()) {
-        _object.chr_min_cv.cut(bmin, OCT_Z);
-        _object.chr_max_cv.join(bmin, OCT_Z);
+        minCollisionVolume.cut(bmin, OCT_Z);
+        maxCollisionVolume.join(bmin, OCT_Z);
     }
 
     //// raise the upper bound for platforms
@@ -1032,8 +1031,12 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 
     //This makes it easier to jump on top of mounts
     if(_object.isMount()) {
-       _object.chr_max_cv._maxs[OCT_Z] = Ego::Math::constrain<float>(_object.chr_max_cv._maxs[OCT_Z]-MOUNTTOLERANCE, MOUNTTOLERANCE, MOUNTTOLERANCE*3.0f);
-       _object.chr_min_cv._maxs[OCT_Z] = Ego::Math::constrain<float>(_object.chr_min_cv._maxs[OCT_Z]-MOUNTTOLERANCE, MOUNTTOLERANCE, MOUNTTOLERANCE*3.0f);
+       maxCollisionVolume._maxs[OCT_Z] = Ego::Math::constrain<float>(maxCollisionVolume._maxs[OCT_Z] - MOUNTTOLERANCE,
+                                                                     MOUNTTOLERANCE,
+                                                                     MOUNTTOLERANCE * 3.0f);
+       minCollisionVolume._maxs[OCT_Z] = Ego::Math::constrain<float>(minCollisionVolume._maxs[OCT_Z] - MOUNTTOLERANCE,
+                                                                     MOUNTTOLERANCE,
+                                                                     MOUNTTOLERANCE * 3.0f);
     }
 
     // calculate collision volumes for various slots
@@ -1041,19 +1044,24 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
     {
         if (!_object.getProfile()->isSlotValid(static_cast<slot_t>(cnt))) continue;
 
-        chr_calc_grip_cv(&_object, GRIP_LEFT, &_object.slot_cv[cnt], false);
+        oct_bb_t slotCollisionVolume;
+        chr_calc_grip_cv(&_object, GRIP_LEFT, &slotCollisionVolume, false);
+        slotCollisionVolumes[cnt] = slotCollisionVolume;
 
-        _object.chr_max_cv.join(_object.slot_cv[cnt]);
+        maxCollisionVolume.join(slotCollisionVolume);
     }
 
     // convert the level 1 bounding box to a level 0 bounding box
-    oct_bb_t::downgrade(bdst, _object.bump_stt, _object.bump, _object.bump_1);
+    bumper_t looseBump;
+    oct_bb_t::downgrade(bdst, _object.getInitialBump(), _object.getCurrentBump(), looseBump);
+    _object.setLooseBump(looseBump);
+    _object.setCollisionVolumes(minCollisionVolume, maxCollisionVolume, slotCollisionVolumes);
 
     //Recalculate the fast 2D collision box
-    _aabb2D = AxisAlignedBox2f(Point2f(_object.getPosX() + _object.chr_min_cv.getMin()[OCT_X],
-                               _object.getPosY() + _object.chr_min_cv.getMin()[OCT_Y]),
-                               Point2f(_object.getPosX() + _object.chr_min_cv.getMax()[OCT_X],
-                               _object.getPosY() + _object.chr_min_cv.getMax()[OCT_Y]));
+    _aabb2D = AxisAlignedBox2f(Point2f(_object.getPosX() + minCollisionVolume.getMin()[OCT_X],
+                               _object.getPosY() + minCollisionVolume.getMin()[OCT_Y]),
+                               Point2f(_object.getPosX() + minCollisionVolume.getMax()[OCT_X],
+                               _object.getPosY() + minCollisionVolume.getMax()[OCT_Y]));
 }
 
 bool ObjectPhysics::floorIsSlippy() const

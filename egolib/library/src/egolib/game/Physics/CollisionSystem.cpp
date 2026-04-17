@@ -391,14 +391,14 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Ego::Particle> &part
     oct_bb_t cv;
 
     // detect a when the possible collision occurred
-    return phys_intersect_oct_bb(object->chr_min_cv, object->getPosition(), object->getVelocity(), particle->prt_max_cv, particle->getPosition(), particle->getVelocity(), testPlatform, cv, tmin, tmax);
+    return phys_intersect_oct_bb(object->getMinCollisionVolume(), object->getPosition(), object->getVelocity(), particle->prt_max_cv, particle->getPosition(), particle->getVelocity(), testPlatform, cv, tmin, tmax);
 }
 
 bool CollisionSystem::detectCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, float *tmin, float *tmax) const
 {
     // "non-interacting" objects interact with platforms
-    if ((0 == objectA->bump.size && !objectB->isPlatform() ) ||
-        (0 == objectB->bump.size && !objectA->isPlatform() )) {
+    if ((0 == objectA->getCurrentBump().size && !objectB->isPlatform() ) ||
+        (0 == objectB->getCurrentBump().size && !objectA->isPlatform() )) {
         return false;
     }
 
@@ -424,7 +424,7 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Object> &objectA, co
     oct_bb_t cv;
 
     // detect a when the possible collision occurred
-    return phys_intersect_oct_bb(objectA->chr_max_cv, objectA->getPosition(), objectA->getVelocity(), objectB->chr_max_cv, objectB->getPosition(), objectB->getVelocity(), testPlatform, cv, tmin, tmax);
+    return phys_intersect_oct_bb(objectA->getMaxCollisionVolume(), objectA->getPosition(), objectA->getVelocity(), objectB->getMaxCollisionVolume(), objectB->getPosition(), objectB->getVelocity(), testPlatform, cv, tmin, tmax);
 }
 
 void CollisionSystem::handleCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, const float tmin, const float tmax)
@@ -456,7 +456,7 @@ bool CollisionSystem::handleMountingCollision(const std::shared_ptr<Object> &cha
     //Do some collision checks
 	bool collideXY = idlib::euclidean_norm(xy(character->getPosition()) - xy(mount->getPosition())) < MOUNTTOLERANCE;
 
-	bool collideZ = (mount->getPosZ() + mount->chr_min_cv._maxs[OCT_Z]) < character->getPosZ();
+	bool collideZ = (mount->getPosZ() + mount->getMinCollisionVolume()._maxs[OCT_Z]) < character->getPosZ();
 
     //If we are falling on top of the mount, then we are trying to mount
 	bool characterWantsToMount = collideXY && collideZ;
@@ -479,6 +479,8 @@ bool CollisionSystem::handleMountingCollision(const std::shared_ptr<Object> &cha
 bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB)
 {
     oct_vec_v2_t odepth;
+    const oct_bb_t& objectAMinCollision = objectA->getMinCollisionVolume();
+    const oct_bb_t& objectBMinCollision = objectB->getMinCollisionVolume();
 
     const auto ichr_a = objectA->getObjRef();
     const auto ichr_b = objectB->getObjRef();
@@ -495,8 +497,8 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
 
     if ( !platform_a && !platform_b ) return false;
 
-    odepth[OCT_Z] = std::min(objectB->chr_min_cv._maxs[OCT_Z] + objectB->getPosZ(), objectA->chr_min_cv._maxs[OCT_Z] + objectA->getPosZ()) -
-                    std::max(objectB->chr_min_cv._mins[OCT_Z] + objectB->getPosZ(), objectA->chr_min_cv._mins[OCT_Z] + objectA->getPosZ() );
+    odepth[OCT_Z] = std::min(objectBMinCollision._maxs[OCT_Z] + objectB->getPosZ(), objectAMinCollision._maxs[OCT_Z] + objectA->getPosZ()) -
+                    std::max(objectBMinCollision._mins[OCT_Z] + objectB->getPosZ(), objectAMinCollision._mins[OCT_Z] + objectA->getPosZ() );
 
     bool collide_z  = odepth[OCT_Z] > -PLATTOLERANCE && odepth[OCT_Z] < PLATTOLERANCE;
 
@@ -509,11 +511,11 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
     {
         float depth_a, depth_b;
 
-        depth_a = ( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z] ) - ( objectA->getPosZ() + objectA->chr_min_cv._mins[OCT_Z] );
-        depth_b = ( objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] ) - ( objectB->getPosZ() + objectB->chr_min_cv._mins[OCT_Z] );
+        depth_a = ( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z] ) - ( objectA->getPosZ() + objectAMinCollision._mins[OCT_Z] );
+        depth_b = ( objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] ) - ( objectB->getPosZ() + objectBMinCollision._mins[OCT_Z] );
 
-        odepth[OCT_Z] = std::min( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z], objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] ) -
-                        std::max( objectB->getPosZ() + objectB->chr_min_cv._mins[OCT_Z], objectA->getPosZ() + objectA->chr_min_cv._mins[OCT_Z] );
+        odepth[OCT_Z] = std::min( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z], objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] ) -
+                        std::max( objectB->getPosZ() + objectBMinCollision._mins[OCT_Z], objectA->getPosZ() + objectAMinCollision._mins[OCT_Z] );
 
         chara_on_top = std::abs(odepth[OCT_Z] - depth_a) < std::abs(odepth[OCT_Z] - depth_b);
 
@@ -521,71 +523,71 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
         if ( chara_on_top )
         {
             // size of a doesn't matter
-            odepth[OCT_X]  = std::min(( objectB->chr_min_cv._maxs[OCT_X] + objectB->getPosX() ) - objectA->getPosX(),
-                                        objectA->getPosX() - ( objectB->chr_min_cv._mins[OCT_X] + objectB->getPosX() ) );
+            odepth[OCT_X]  = std::min(( objectBMinCollision._maxs[OCT_X] + objectB->getPosX() ) - objectA->getPosX(),
+                                        objectA->getPosX() - ( objectBMinCollision._mins[OCT_X] + objectB->getPosX() ) );
 
-            odepth[OCT_Y]  = std::min(( objectB->chr_min_cv._maxs[OCT_Y] + objectB->getPosY() ) -  objectA->getPosY(),
-                                        objectA->getPosY() - ( objectB->chr_min_cv._mins[OCT_Y] + objectB->getPosY() ) );
+            odepth[OCT_Y]  = std::min(( objectBMinCollision._maxs[OCT_Y] + objectB->getPosY() ) -  objectA->getPosY(),
+                                        objectA->getPosY() - ( objectBMinCollision._mins[OCT_Y] + objectB->getPosY() ) );
 
-            odepth[OCT_XY] = std::min(( objectB->chr_min_cv._maxs[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) - ( objectA->getPosX() + objectA->getPosY() ),
-                                      ( objectA->getPosX() + objectA->getPosY() ) - ( objectB->chr_min_cv._mins[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) );
+            odepth[OCT_XY] = std::min(( objectBMinCollision._maxs[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) - ( objectA->getPosX() + objectA->getPosY() ),
+                                      ( objectA->getPosX() + objectA->getPosY() ) - ( objectBMinCollision._mins[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) );
 
-            odepth[OCT_YX] = std::min(( objectB->chr_min_cv._maxs[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) - ( -objectA->getPosX() + objectA->getPosY() ),
-                                      ( -objectA->getPosX() + objectA->getPosY() ) - ( objectB->chr_min_cv._mins[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) );
+            odepth[OCT_YX] = std::min(( objectBMinCollision._maxs[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) - ( -objectA->getPosX() + objectA->getPosY() ),
+                                      ( -objectA->getPosX() + objectA->getPosY() ) - ( objectBMinCollision._mins[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) );
         }
         else
         {
             // size of b doesn't matter
 
-            odepth[OCT_X]  = std::min(( objectA->chr_min_cv._maxs[OCT_X] + objectA->getPosX() ) - objectB->getPosX(),
-                                        objectB->getPosX() - ( objectA->chr_min_cv._mins[OCT_X] + objectA->getPosX() ) );
+            odepth[OCT_X]  = std::min(( objectAMinCollision._maxs[OCT_X] + objectA->getPosX() ) - objectB->getPosX(),
+                                        objectB->getPosX() - ( objectAMinCollision._mins[OCT_X] + objectA->getPosX() ) );
 
-            odepth[OCT_Y]  = std::min(( objectA->chr_min_cv._maxs[OCT_Y] + objectA->getPosY() ) -  objectB->getPosY(),
-                                        objectB->getPosY() - ( objectA->chr_min_cv._mins[OCT_Y] + objectA->getPosY() ) );
+            odepth[OCT_Y]  = std::min(( objectAMinCollision._maxs[OCT_Y] + objectA->getPosY() ) -  objectB->getPosY(),
+                                        objectB->getPosY() - ( objectAMinCollision._mins[OCT_Y] + objectA->getPosY() ) );
 
-            odepth[OCT_XY] = std::min(( objectA->chr_min_cv._maxs[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) - ( objectB->getPosX() + objectB->getPosY() ),
-                                      ( objectB->getPosX() + objectB->getPosY() ) - ( objectA->chr_min_cv._mins[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) );
+            odepth[OCT_XY] = std::min(( objectAMinCollision._maxs[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) - ( objectB->getPosX() + objectB->getPosY() ),
+                                      ( objectB->getPosX() + objectB->getPosY() ) - ( objectAMinCollision._mins[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) );
 
-            odepth[OCT_YX] = std::min(( objectA->chr_min_cv._maxs[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) - ( -objectB->getPosX() + objectB->getPosY() ),
-                                      ( -objectB->getPosX() + objectB->getPosY() ) - ( objectA->chr_min_cv._mins[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) );
+            odepth[OCT_YX] = std::min(( objectAMinCollision._maxs[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) - ( -objectB->getPosX() + objectB->getPosY() ),
+                                      ( -objectB->getPosX() + objectB->getPosY() ) - ( objectAMinCollision._mins[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) );
         }
     }
     else if ( platform_a )
     {
         chara_on_top = false;
-        odepth[OCT_Z] = ( objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] ) - ( objectB->getPosZ() + objectB->chr_min_cv._mins[OCT_Z] );
+        odepth[OCT_Z] = ( objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] ) - ( objectB->getPosZ() + objectBMinCollision._mins[OCT_Z] );
 
         // size of b doesn't matter
 
-        odepth[OCT_X] = std::min((objectA->chr_min_cv._maxs[OCT_X] + objectA->getPosX() ) - objectB->getPosX(),
-                                  objectB->getPosX() - ( objectA->chr_min_cv._mins[OCT_X] + objectA->getPosX() ) );
+        odepth[OCT_X] = std::min((objectAMinCollision._maxs[OCT_X] + objectA->getPosX() ) - objectB->getPosX(),
+                                  objectB->getPosX() - ( objectAMinCollision._mins[OCT_X] + objectA->getPosX() ) );
 
-        odepth[OCT_Y] = std::min((objectA->chr_min_cv._maxs[OCT_Y] + objectA->getPosY()) - objectB->getPosY(),
-                                  objectB->getPosY() - ( objectA->chr_min_cv._mins[OCT_Y] + objectA->getPosY() ) );
+        odepth[OCT_Y] = std::min((objectAMinCollision._maxs[OCT_Y] + objectA->getPosY()) - objectB->getPosY(),
+                                  objectB->getPosY() - ( objectAMinCollision._mins[OCT_Y] + objectA->getPosY() ) );
 
-        odepth[OCT_XY] = std::min((objectA->chr_min_cv._maxs[OCT_XY] + (objectA->getPosX() + objectA->getPosY())) - (objectB->getPosX() + objectB->getPosY()),
-                                  ( objectB->getPosX() + objectB->getPosY() ) - ( objectA->chr_min_cv._mins[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) );
+        odepth[OCT_XY] = std::min((objectAMinCollision._maxs[OCT_XY] + (objectA->getPosX() + objectA->getPosY())) - (objectB->getPosX() + objectB->getPosY()),
+                                  ( objectB->getPosX() + objectB->getPosY() ) - ( objectAMinCollision._mins[OCT_XY] + ( objectA->getPosX() + objectA->getPosY() ) ) );
 
-        odepth[OCT_YX] = std::min((objectA->chr_min_cv._maxs[OCT_YX] + (-objectA->getPosX() + objectA->getPosY())) - (-objectB->getPosX() + objectB->getPosY()),
-                                  ( -objectB->getPosX() + objectB->getPosY() ) - ( objectA->chr_min_cv._mins[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) );
+        odepth[OCT_YX] = std::min((objectAMinCollision._maxs[OCT_YX] + (-objectA->getPosX() + objectA->getPosY())) - (-objectB->getPosX() + objectB->getPosY()),
+                                  ( -objectB->getPosX() + objectB->getPosY() ) - ( objectAMinCollision._mins[OCT_YX] + ( -objectA->getPosX() + objectA->getPosY() ) ) );
     }
     else if ( platform_b )
     {
         chara_on_top = true;
-        odepth[OCT_Z] = ( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z] ) - ( objectA->getPosZ() + objectA->chr_min_cv._mins[OCT_Z] );
+        odepth[OCT_Z] = ( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z] ) - ( objectA->getPosZ() + objectAMinCollision._mins[OCT_Z] );
 
         // size of a doesn't matter
-        odepth[OCT_X] = std::min((objectB->chr_min_cv._maxs[OCT_X] + objectB->getPosX()) - objectA->getPosX(),
-                                  objectA->getPosX() - ( objectB->chr_min_cv._mins[OCT_X] + objectB->getPosX() ) );
+        odepth[OCT_X] = std::min((objectBMinCollision._maxs[OCT_X] + objectB->getPosX()) - objectA->getPosX(),
+                                  objectA->getPosX() - ( objectBMinCollision._mins[OCT_X] + objectB->getPosX() ) );
 
-        odepth[OCT_Y] = std::min(objectB->chr_min_cv._maxs[OCT_Y] + (objectB->getPosY() - objectA->getPosY()),
-                                 ( objectA->getPosY() - objectB->chr_min_cv._mins[OCT_Y] ) + objectB->getPosY() );
+        odepth[OCT_Y] = std::min(objectBMinCollision._maxs[OCT_Y] + (objectB->getPosY() - objectA->getPosY()),
+                                 ( objectA->getPosY() - objectBMinCollision._mins[OCT_Y] ) + objectB->getPosY() );
 
-        odepth[OCT_XY] = std::min((objectB->chr_min_cv._maxs[OCT_XY] + (objectB->getPosX() + objectB->getPosY())) - (objectA->getPosX() + objectA->getPosY()),
-                                  ( objectA->getPosX() + objectA->getPosY() ) - ( objectB->chr_min_cv._mins[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) );
+        odepth[OCT_XY] = std::min((objectBMinCollision._maxs[OCT_XY] + (objectB->getPosX() + objectB->getPosY())) - (objectA->getPosX() + objectA->getPosY()),
+                                  ( objectA->getPosX() + objectA->getPosY() ) - ( objectBMinCollision._mins[OCT_XY] + ( objectB->getPosX() + objectB->getPosY() ) ) );
 
-        odepth[OCT_YX] = std::min(( objectB->chr_min_cv._maxs[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) - ( -objectA->getPosX() + objectA->getPosY() ),
-                                  ( -objectA->getPosX() + objectA->getPosY() ) - ( objectB->chr_min_cv._mins[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) );
+        odepth[OCT_YX] = std::min(( objectBMinCollision._maxs[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) - ( -objectA->getPosX() + objectA->getPosY() ),
+                                  ( -objectA->getPosX() + objectA->getPosY() ) - ( objectBMinCollision._mins[OCT_YX] + ( -objectB->getPosX() + objectB->getPosY() ) ) );
 
     }
 
@@ -600,9 +602,9 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
         // check for the best possible attachment
         if ( chara_on_top )
         {
-            if ( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z] > objectA->targetplatform_level )
+            if ( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z] > objectA->targetplatform_level )
             {
-                objectA->targetplatform_level = objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z];
+                objectA->targetplatform_level = objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z];
                 objectA->targetplatform_ref   = ichr_b;
 
                 return objectA->getObjectPhysics().attachToPlatform(objectB);
@@ -610,9 +612,9 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
         }
         else
         {
-            if ( objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] > objectB->targetplatform_level )
+            if ( objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] > objectB->targetplatform_level )
             {
-                objectB->targetplatform_level = objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z];
+                objectB->targetplatform_level = objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z];
                 objectB->targetplatform_ref   = ichr_a;
 
                 return objectB->getObjectPhysics().attachToPlatform(objectA);
@@ -627,6 +629,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 {
     const ObjectRef ichr_a = objectA->getObjRef();
     const ObjectRef ichr_b = objectB->getObjRef();
+    const oct_bb_t& objectAMinCollision = objectA->getMinCollisionVolume();
+    const oct_bb_t& objectBMinCollision = objectB->getMinCollisionVolume();
 
     // platform interaction. if the onwhichplatform_ref is set, then
     // all collision tests have been met
@@ -655,7 +659,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     }
 
     // don't do anything if there is no interaction strength
-    if (0.0f == objectA->bump_stt.size || 0.0f == objectB->bump_stt.size) {
+    if (0.0f == objectA->getInitialBump().size || 0.0f == objectB->getInitialBump().size) {
         return false;
     }
 
@@ -694,7 +698,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     // that are overlapping with the platform you are actually on
     if ( objectB->canUsePlatforms() && objectA->isPlatform() && ObjectRef::Invalid != objectB->onwhichplatform_ref && ichr_a != objectB->onwhichplatform_ref )
     {
-        float lerp_z = ( objectB->getPosZ() - ( objectA->getPosZ() + objectA->chr_min_cv._maxs[OCT_Z] ) ) / PLATTOLERANCE;
+        float lerp_z = ( objectB->getPosZ() - ( objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain(lerp_z, -1.0f, 1.0f);
 
         if ( lerp_z >= 0.0f )
@@ -709,7 +713,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     if ( objectA->canUsePlatforms() && objectB->isPlatform() && ObjectRef::Invalid != objectA->onwhichplatform_ref && ichr_b != objectA->onwhichplatform_ref )
     {
-        float lerp_z = ( objectA->getPosZ() - ( objectB->getPosZ() + objectB->chr_min_cv._maxs[OCT_Z] ) ) / PLATTOLERANCE;
+        float lerp_z = ( objectA->getPosZ() - ( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain( lerp_z, -1.0f, +1.0f );
 
         if ( lerp_z >= 0.0f )
@@ -726,8 +730,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 	oct_bb_t map_bb_a, map_bb_b;
 
     // shift the character bounding boxes to be centered on their positions
-    map_bb_a = idlib::translate(objectA->chr_min_cv, objectA->getPosition());
-    map_bb_b = idlib::translate(objectB->chr_min_cv, objectB->getPosition());
+    map_bb_a = idlib::translate(objectAMinCollision, objectA->getPosition());
+    map_bb_b = idlib::translate(objectBMinCollision, objectB->getPosition());
 
     // make the object more like a table if there is a platform-like interaction
     float exponent = 1.0f;
@@ -879,7 +883,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
                 // use pressure to push them appart. reduce their relative velocities.
 
                 float distance = idlib::euclidean_norm(objectA->getPosition() - objectB->getPosition());
-                distance /= std::max(objectA->bump.size, objectB->bump.size);
+                distance /= std::max(objectA->getCurrentBump().size, objectB->getCurrentBump().size);
                 if(distance > 0.0f)
                 {
                     objectA->phys.sum_avel(nrm * distance * recoil_a * interaction_strength);

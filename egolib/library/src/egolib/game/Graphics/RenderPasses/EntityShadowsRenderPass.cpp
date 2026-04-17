@@ -175,8 +175,8 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     float height = pchr->inst.getMatrix()(2, 3) - level;
     if (height < 0) height = 0;
 
-    float size_umbra = 1.5f * (pchr->bump.size - height / 30.0f);
-    float size_penumbra = 1.5f * (pchr->bump.size + height / 30.0f);
+    float size_umbra = 1.5f * (pchr->getCurrentBump().size - height / 30.0f);
+    float size_penumbra = 1.5f * (pchr->getCurrentBump().size + height / 30.0f);
 
     alpha *= 0.3f;
 
@@ -186,8 +186,8 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     alpha_umbra = alpha_penumbra = alpha;
     if (height > 0)
     {
-        float factor_penumbra = (1.5f) * ((pchr->bump.size) / size_penumbra);
-        float factor_umbra = (1.5f) * ((pchr->bump.size) / size_umbra);
+        float factor_penumbra = (1.5f) * (pchr->getCurrentBump().size / size_penumbra);
+        float factor_umbra = (1.5f) * (pchr->getCurrentBump().size / size_umbra);
 
         factor_umbra = std::max(1.0f, factor_umbra);
         factor_penumbra = std::max(1.0f, factor_penumbra);

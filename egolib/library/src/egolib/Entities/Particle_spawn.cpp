@@ -239,7 +239,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
                         if (distance > 0.0f)
                         {
                             // This is the vel[kZ] alteration
-                            vel[kZ] = (target->getPosZ() + (target->bump.height * 0.5f) - tmp_pos[kZ]) / distance;
+                            vel[kZ] = (target->getPosZ() + (target->getCurrentBump().height * 0.5f) - tmp_pos[kZ]) / distance;
                         }
                     }
                 }

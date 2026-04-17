@@ -179,7 +179,7 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
     ObjectProfile * profile = chr_get_ppro( ichr );
     if ( nullptr != profile )
     {
-        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->bump.size, pchr->getStoppedByMask(), nrm.v, &pressure, NULL ) )
+        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->getCurrentBump().size, pchr->getStoppedByMask(), nrm.v, &pressure, NULL ) )
         {
 			// yes it is safe. add it.
 			returncode = true;

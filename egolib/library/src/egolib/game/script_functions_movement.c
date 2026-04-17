@@ -255,7 +255,7 @@ uint8_t scr_GetBumpHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = pchr->bump.height;
+    state.argument = pchr->getCurrentBump().height;
 
     SCRIPT_FUNCTION_END();
 }

@@ -289,30 +289,31 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     // only check possible object-platform interactions
     platform_a = /* pprt_b->canuseplatforms && */ pchr_a->isPlatform();
     if ( !platform_a ) return false;
+    const oct_bb_t& chrMinCollision = pchr_a->getMinCollisionVolume();
 
-    odepth[OCT_Z]  = std::min( pprt_b->prt_max_cv._maxs[OCT_Z] + pprt_b->getPosZ(), pchr_a->chr_min_cv._maxs[OCT_Z] + pchr_a->getPosZ() ) -
-                     std::max( pprt_b->prt_max_cv._mins[OCT_Z] + pprt_b->getPosZ(), pchr_a->chr_min_cv._mins[OCT_Z] + pchr_a->getPosZ() );
+    odepth[OCT_Z]  = std::min( pprt_b->prt_max_cv._maxs[OCT_Z] + pprt_b->getPosZ(), chrMinCollision._maxs[OCT_Z] + pchr_a->getPosZ() ) -
+                     std::max( pprt_b->prt_max_cv._mins[OCT_Z] + pprt_b->getPosZ(), chrMinCollision._mins[OCT_Z] + pchr_a->getPosZ() );
 
     collide_z = (odepth[OCT_Z] > -PLATTOLERANCE) && (odepth[OCT_Z] < PLATTOLERANCE);
 
     if ( !collide_z ) return false;
 
     // determine how the characters can be attached
-    odepth[OCT_Z] = ( pchr_a->getPosZ() + pchr_a->chr_min_cv._maxs[OCT_Z] ) - ( pprt_b->getPosZ() + pprt_b->prt_max_cv._mins[OCT_Z] );
+    odepth[OCT_Z] = ( pchr_a->getPosZ() + chrMinCollision._maxs[OCT_Z] ) - ( pprt_b->getPosZ() + pprt_b->prt_max_cv._mins[OCT_Z] );
 
     // size of b doesn't matter
 
-    odepth[OCT_X] = std::min((pchr_a->chr_min_cv._maxs[OCT_X] + pchr_a->getPosX()) - pprt_b->getPosX(),
-                              pprt_b->getPosX() - ( pchr_a->chr_min_cv._mins[OCT_X] + pchr_a->getPosX() ) );
+    odepth[OCT_X] = std::min((chrMinCollision._maxs[OCT_X] + pchr_a->getPosX()) - pprt_b->getPosX(),
+                              pprt_b->getPosX() - ( chrMinCollision._mins[OCT_X] + pchr_a->getPosX() ) );
 
-    odepth[OCT_Y]  = std::min(( pchr_a->chr_min_cv._maxs[OCT_Y] + pchr_a->getPosY() ) -  pprt_b->getPosY(),
-                                pprt_b->getPosY() - ( pchr_a->chr_min_cv._mins[OCT_Y] + pchr_a->getPosY() ) );
+    odepth[OCT_Y]  = std::min(( chrMinCollision._maxs[OCT_Y] + pchr_a->getPosY() ) -  pprt_b->getPosY(),
+                                pprt_b->getPosY() - ( chrMinCollision._mins[OCT_Y] + pchr_a->getPosY() ) );
 
-    odepth[OCT_XY] = std::min(( pchr_a->chr_min_cv._maxs[OCT_XY] + ( pchr_a->getPosX() + pchr_a->getPosY() ) ) - ( pprt_b->getPosX() + pprt_b->getPosY() ),
-                              ( pprt_b->getPosX() + pprt_b->getPosY() ) - ( pchr_a->chr_min_cv._mins[OCT_XY] + ( pchr_a->getPosX() + pchr_a->getPosY() ) ) );
+    odepth[OCT_XY] = std::min(( chrMinCollision._maxs[OCT_XY] + ( pchr_a->getPosX() + pchr_a->getPosY() ) ) - ( pprt_b->getPosX() + pprt_b->getPosY() ),
+                              ( pprt_b->getPosX() + pprt_b->getPosY() ) - ( chrMinCollision._mins[OCT_XY] + ( pchr_a->getPosX() + pchr_a->getPosY() ) ) );
 
-    odepth[OCT_YX] = std::min(( pchr_a->chr_min_cv._maxs[OCT_YX] + ( -pchr_a->getPosX() + pchr_a->getPosY() ) ) - ( -pprt_b->getPosX() + pprt_b->getPosY() ),
-                              ( -pprt_b->getPosX() + pprt_b->getPosY() ) - ( pchr_a->chr_min_cv._mins[OCT_YX] + ( -pchr_a->getPosX() + pchr_a->getPosY() ) ) );
+    odepth[OCT_YX] = std::min(( chrMinCollision._maxs[OCT_YX] + ( -pchr_a->getPosX() + pchr_a->getPosY() ) ) - ( -pprt_b->getPosX() + pprt_b->getPosY() ),
+                              ( -pprt_b->getPosX() + pprt_b->getPosY() ) - ( chrMinCollision._mins[OCT_YX] + ( -pchr_a->getPosX() + pchr_a->getPosY() ) ) );
 
     collide_x  = odepth[OCT_X]  > 0.0f;
     collide_y  = odepth[OCT_Y]  > 0.0f;
@@ -323,9 +324,9 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     if ( collide_x && collide_y && collide_xy && collide_yx && collide_z )
     {
         // check for the best possible attachment
-        if ( pchr_a->getPosZ() + pchr_a->chr_min_cv._maxs[OCT_Z] > pprt_b->targetplatform_level )
+        if ( pchr_a->getPosZ() + chrMinCollision._maxs[OCT_Z] > pprt_b->targetplatform_level )
         {
-            pprt_b->targetplatform_level = pchr_a->getPosZ() + pchr_a->chr_min_cv._maxs[OCT_Z];
+            pprt_b->targetplatform_level = pchr_a->getPosZ() + chrMinCollision._maxs[OCT_Z];
             pprt_b->targetplatform_ref   = ichr_a;
 
             attach_prt_to_platform(pprt_b.get(), pchr_a);
@@ -360,7 +361,7 @@ bool do_chr_prt_collision_get_details(chr_prt_collision_data_t& pdata, const flo
     bool handled = false;
 
     // shift the source bounding boxes to be centered on the given positions
-    cv_chr = idlib::translate(pdata.pchr->chr_min_cv, pdata.pchr->getPosition());
+    cv_chr = idlib::translate(pdata.pchr->getMinCollisionVolume(), pdata.pchr->getPosition());
 
     // the smallest particle collision volume
     cv_prt_min = idlib::translate(pdata.pprt->prt_min_cv, pdata.pprt->getPosition());
@@ -1312,7 +1313,7 @@ static bool attach_prt_to_platform( Ego::Particle * pprt, Object * pplat )
     pprt->targetplatform_ref     = ObjectRef::Invalid;
 
     // update the character's relationship to the ground
-    pprt->setElevation( std::max( pprt->enviro.level, pplat->getPosZ() + pplat->chr_min_cv._maxs[OCT_Z] ) );
+    pprt->setElevation( std::max( pprt->enviro.level, pplat->getPosZ() + pplat->getMinCollisionVolume()._maxs[OCT_Z] ) );
 
     return true;
 }

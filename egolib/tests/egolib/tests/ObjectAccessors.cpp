@@ -273,9 +273,61 @@ TEST_F(ObjectAccessorFixture, OrientationAccessorsRoundTripSelectedState)
     EXPECT_EQ(object->getPreviousFacingZ(), Facing(4444));
 }
 
-TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedState)
+TEST_F(ObjectAccessorFixture, CollisionShapeAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(308);
+    ASSERT_NE(object, nullptr);
+
+    bumper_t initialBump;
+    initialBump.size = 11.0f;
+    initialBump.size_big = 13.0f;
+    initialBump.height = 17.0f;
+
+    bumper_t currentBump;
+    currentBump.size = 19.0f;
+    currentBump.size_big = 23.0f;
+    currentBump.height = 29.0f;
+
+    bumper_t looseBump;
+    looseBump.size = 31.0f;
+    looseBump.size_big = 37.0f;
+    looseBump.height = 41.0f;
+
+    oct_bb_t minCollisionVolume(oct_vec_v2_t(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f));
+    oct_bb_t maxCollisionVolume(oct_vec_v2_t(6.0f, 7.0f, 8.0f, 9.0f, 10.0f));
+    std::array<oct_bb_t, SLOT_COUNT> slotCollisionVolumes;
+    slotCollisionVolumes.fill(oct_bb_t());
+    slotCollisionVolumes[SLOT_LEFT] = oct_bb_t(oct_vec_v2_t(11.0f, 12.0f, 13.0f, 14.0f, 15.0f));
+    slotCollisionVolumes[SLOT_RIGHT] = oct_bb_t(oct_vec_v2_t(16.0f, 17.0f, 18.0f, 19.0f, 20.0f));
+
+    object->initializeBaseBump(initialBump);
+    object->setCurrentBump(currentBump);
+    object->setLooseBump(looseBump);
+    object->setCollisionVolumes(minCollisionVolume, maxCollisionVolume, slotCollisionVolumes);
+
+    EXPECT_FLOAT_EQ(object->getInitialBump().size, 11.0f);
+    EXPECT_FLOAT_EQ(object->getInitialBump().size_big, 13.0f);
+    EXPECT_FLOAT_EQ(object->getInitialBump().height, 17.0f);
+    EXPECT_FLOAT_EQ(object->getSavedBump().size, 11.0f);
+    EXPECT_FLOAT_EQ(object->getSavedBump().size_big, 13.0f);
+    EXPECT_FLOAT_EQ(object->getSavedBump().height, 17.0f);
+    EXPECT_FLOAT_EQ(object->getCurrentBump().size, 19.0f);
+    EXPECT_FLOAT_EQ(object->getCurrentBump().size_big, 23.0f);
+    EXPECT_FLOAT_EQ(object->getCurrentBump().height, 29.0f);
+    EXPECT_FLOAT_EQ(object->getLooseBump().size, 31.0f);
+    EXPECT_FLOAT_EQ(object->getLooseBump().size_big, 37.0f);
+    EXPECT_FLOAT_EQ(object->getLooseBump().height, 41.0f);
+    EXPECT_FLOAT_EQ(object->getMinCollisionVolume()._mins[OCT_X], -1.0f);
+    EXPECT_FLOAT_EQ(object->getMinCollisionVolume()._maxs[OCT_X], -1.0f);
+    EXPECT_FLOAT_EQ(object->getMaxCollisionVolume()._mins[OCT_X], 6.0f);
+    EXPECT_FLOAT_EQ(object->getMaxCollisionVolume()._maxs[OCT_X], 6.0f);
+    EXPECT_FLOAT_EQ(object->getSlotCollisionVolume(SLOT_LEFT)._mins[OCT_X], 11.0f);
+    EXPECT_FLOAT_EQ(object->getSlotCollisionVolume(SLOT_RIGHT)._mins[OCT_X], 16.0f);
+}
+
+TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(309);
     ASSERT_NE(object, nullptr);
 
     const SKIN_T validSkin = object->getProfile()->isValidSkin(1) ? 1 : 0;
@@ -303,7 +355,7 @@ TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedStat
 
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
 {
-    auto object = makeFollower(309);
+    auto object = makeFollower(310);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

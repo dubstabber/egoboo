@@ -499,6 +499,49 @@ public:
 
     void setResizeTimeRemaining(int16_t remaining) { fat_goto_time = remaining; }
 
+    const bumper_t& getInitialBump() const { return bump_stt; }
+
+    void setInitialBump(const bumper_t& baseBump) { bump_stt = baseBump; }
+
+    const bumper_t& getCurrentBump() const { return bump; }
+
+    void setCurrentBump(const bumper_t& currentBump) { bump = currentBump; }
+
+    const bumper_t& getSavedBump() const { return bump_save; }
+
+    void setSavedBump(const bumper_t& savedBump) { bump_save = savedBump; }
+
+    void initializeBaseBump(const bumper_t& baseBump)
+    {
+        setInitialBump(baseBump);
+        setSavedBump(baseBump);
+    }
+
+    const bumper_t& getLooseBump() const { return bump_1; }
+
+    void setLooseBump(const bumper_t& looseBump) { bump_1 = looseBump; }
+
+    const oct_bb_t& getMinCollisionVolume() const { return chr_min_cv; }
+
+    void setMinCollisionVolume(const oct_bb_t& minCollisionVolume) { chr_min_cv = minCollisionVolume; }
+
+    const oct_bb_t& getMaxCollisionVolume() const { return chr_max_cv; }
+
+    void setMaxCollisionVolume(const oct_bb_t& maxCollisionVolume) { chr_max_cv = maxCollisionVolume; }
+
+    const oct_bb_t& getSlotCollisionVolume(slot_t slot) const { return slot_cv[slot]; }
+
+    void setSlotCollisionVolume(slot_t slot, const oct_bb_t& slotCollisionVolume) { slot_cv[slot] = slotCollisionVolume; }
+
+    void setCollisionVolumes(const oct_bb_t& minCollisionVolume,
+                             const oct_bb_t& maxCollisionVolume,
+                             const std::array<oct_bb_t, SLOT_COUNT>& slotCollisionVolumes)
+    {
+        chr_min_cv = minCollisionVolume;
+        chr_max_cv = maxCollisionVolume;
+        slot_cv = slotCollisionVolumes;
+    }
+
     /**
     * @brief Set the (base) height of a character.
     * @param chr the character
@@ -1157,6 +1200,7 @@ public:
     ///        The old bumper data that is read from the data.txt file will be kept in
     ///        the struct "bump". A new bumper that actually matches the size of the object will
     ///        be kept in the struct "collision"
+private:
     bumper_t bump_stt;
     bumper_t bump;
     bumper_t bump_save;

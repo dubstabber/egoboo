@@ -364,8 +364,8 @@ float get_mesh_max_vertex_2( ego_mesh_t *mesh, Object *object)
 
     for ( corner = 0; corner < 4; corner++ )
     {
-        pos_x[corner] = object->getPosX() + (( 0 == ix_off[corner] ) ? object->chr_min_cv._mins[OCT_X] : object->chr_min_cv._maxs[OCT_X] );
-        pos_y[corner] = object->getPosY() + (( 0 == iy_off[corner] ) ? object->chr_min_cv._mins[OCT_Y] : object->chr_min_cv._maxs[OCT_Y] );
+        pos_x[corner] = object->getPosX() + (( 0 == ix_off[corner] ) ? object->getMinCollisionVolume()._mins[OCT_X] : object->getMinCollisionVolume()._maxs[OCT_X] );
+        pos_y[corner] = object->getPosY() + (( 0 == iy_off[corner] ) ? object->getMinCollisionVolume()._mins[OCT_Y] : object->getMinCollisionVolume()._maxs[OCT_Y] );
     }
 
     zmax = mesh->getElevation(Ego::Vector2f(pos_x[0], pos_y[0]), object->getAttribute(Ego::Attribute::WALK_ON_WATER) > 0 );
@@ -394,7 +394,7 @@ float get_chr_level( ego_mesh_t *mesh, Object *object )
 
     // certain scenery items like doors and such just need to be able to
     // collide with the mesh. They all have 0 == pchr->bump.size
-    if ( 0.0f == object->bump_stt.size )
+    if ( 0.0f == object->getInitialBump().size )
     {
         return mesh->getElevation(Ego::Vector2f(object->getPosX(), object->getPosY()),
 			                      object->getAttribute(Ego::Attribute::WALK_ON_WATER) > 0);
@@ -402,7 +402,7 @@ float get_chr_level( ego_mesh_t *mesh, Object *object )
 
     // otherwise, use the small collision volume to determine which tiles the object overlaps
     // move the collision volume so that it surrounds the object
-    bump = idlib::translate(object->chr_min_cv, object->getPosition());
+    bump = idlib::translate(object->getMinCollisionVolume(), object->getPosition());
 
     // determine the size of this object in tiles
     ixmin = bump._mins[OCT_X] / Info<float>::Grid::Size(); ixmin = Ego::Math::constrain( ixmin, 0, int(mesh->_info.getTileCountX()) - 1 );
