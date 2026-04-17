@@ -27,11 +27,11 @@
 
 // Forward declaration
 class Camera;
+class Object;
 namespace Ego {
 class Particle;
 namespace Graphics { 
 struct ParticleGraphics;
-class ObjectGraphics;
 } }
 
 //--------------------------------------------------------------------------------------------
@@ -54,7 +54,6 @@ struct ParticleGraphicsRenderer
     static void render_all_prt_attachment();
     static void prt_draw_attached_point(const std::shared_ptr<Ego::Particle> &bdl_prt);
 private:
-    static void draw_one_attachment_point(Ego::Graphics::ObjectGraphics& inst, int vrt_offset);
+    static void draw_one_attachment_point(const Object& object, int vrt_offset);
     static void calc_billboard_verts(const Ego::Texture& texture, idlib::vertex_buffer& vb, Ego::Graphics::ParticleGraphics& pinst, float size, bool do_reflect);
 };
-

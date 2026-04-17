@@ -454,14 +454,14 @@ void ParticleGraphicsRenderer::render_all_prt_bbox()
     }
 }
 
-void ParticleGraphicsRenderer::draw_one_attachment_point(Ego::Graphics::ObjectGraphics& inst, int vrt_offset)
+void ParticleGraphicsRenderer::draw_one_attachment_point(const Object& object, int vrt_offset)
 {
     /// @author BB
     /// @details a function that will draw some of the vertices of the given character.
     ///     The original idea was to use this to debug the grip for attached items.
-    uint32_t vrt = (int)inst.getVertexCount() - (int)vrt_offset;
+    uint32_t vrt = (int)object.getVertexCount() - (int)vrt_offset;
 
-    if (vrt >= inst.getVertexCount()) return;
+    if (vrt >= object.getVertexCount()) return;
 
     auto& renderer = Ego::Renderer::get();
     // disable the texturing so all the points will be white,
@@ -469,10 +469,10 @@ void ParticleGraphicsRenderer::draw_one_attachment_point(Ego::Graphics::ObjectGr
     renderer.getTextureUnit().setActivated(nullptr);
     renderer.setPointSize(5);
     renderer.setViewMatrix(idlib::identity<Ego::Matrix4f4f>());
-    renderer.setWorldMatrix(inst.getMatrix());
+    renderer.setWorldMatrix(object.getMatrix());
     GL_DEBUG(glBegin(GL_POINTS));
     {
-        GL_DEBUG(glVertex3fv)(inst.getVertex(vrt).pos);
+        GL_DEBUG(glVertex3fv)(object.getVertex(vrt).pos);
     }
     GL_DEBUG_END();
 }
@@ -483,7 +483,7 @@ void ParticleGraphicsRenderer::prt_draw_attached_point(const std::shared_ptr<Ego
         return;
     }
 
-    draw_one_attachment_point(particle->getAttachedObject()->graphics(), particle->attachedto_vrt_off);
+    draw_one_attachment_point(*particle->getAttachedObject(), particle->attachedto_vrt_off);
 }
 
 void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Particle>& particle)

@@ -121,7 +121,7 @@ public:
 
     gfx_rv updateVertices(int vmin, int vmax, bool force);
         
-    void getTint(GLXvector4f tint, const bool reflection, const int type);
+    void getTint(GLXvector4f tint, const bool reflection, const int type) const;
 
     const GLvertex& getVertex(const size_t index) const;
 

@@ -652,7 +652,7 @@ bool ObjectGraphics::isVertexCacheValid() const
     return true;
 }
 
-void ObjectGraphics::getTint(GLXvector4f tint, const bool reflection, const int type)
+void ObjectGraphics::getTint(GLXvector4f tint, const bool reflection, const int type) const
 {
 	int local_alpha;
 	int local_light;

@@ -49,8 +49,8 @@ private:
 
 #if _DEBUG
     static void draw_chr_verts(const std::shared_ptr<Object>&pchr, int vrt_offset, int verts);
-    static void _draw_one_grip_raw(Ego::Graphics::ObjectGraphics * pinst, int slot);
-    static void draw_one_grip(Ego::Graphics::ObjectGraphics * pinst, int slot);
+    static void _draw_one_grip_raw(const Object& object, int slot);
+    static void draw_one_grip(const Object& object, int slot);
     //static void draw_chr_grips( Object * pchr );
     static void draw_chr_attached_grip(const std::shared_ptr<Object>& pchr);
     static void draw_chr_bbox(const std::shared_ptr<Object>& pchr);

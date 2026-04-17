@@ -302,9 +302,11 @@ public:
 
     void setVOffset(SFP8_T value) { inst.setVOffset(value); }
 
-    Ego::Graphics::ObjectGraphics& graphics() { return inst; }
+    bool hasModelDescriptor() const { return inst.getModelDescriptor() != nullptr; }
 
-    const Ego::Graphics::ObjectGraphics& graphics() const { return inst; }
+    uint8_t getReflectionAlpha() const { return inst.getReflectionAlpha(); }
+
+    void getTint(GLXvector4f tint, bool reflection, int type) const { inst.getTint(tint, reflection, type); }
 
     bool playAction(ModelAction action, bool actionReady) { return inst.playAction(action, actionReady); }
 

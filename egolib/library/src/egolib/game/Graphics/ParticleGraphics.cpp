@@ -169,8 +169,6 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     }
     else if (pprt->isAttached())
     {
-        auto& cinst = pprt->getAttachedObject()->graphics();
-
         if (chr_matrix_valid(pprt->getAttachedObject().get()))
         {
             // Use the character matrix to orient the particle.
@@ -179,10 +177,10 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
 
             switch (inst.orientation)
             {
-                case prt_ori_t::ORIENTATION_X: vup = mat_getChrForward(cinst.getMatrix()); break;
-                case prt_ori_t::ORIENTATION_Y: vup = mat_getChrRight(cinst.getMatrix());   break;
+                case prt_ori_t::ORIENTATION_X: vup = mat_getChrForward(pprt->getAttachedObject()->getMatrix()); break;
+                case prt_ori_t::ORIENTATION_Y: vup = mat_getChrRight(pprt->getAttachedObject()->getMatrix());   break;
                 default:
-                case prt_ori_t::ORIENTATION_Z: vup = mat_getChrUp(cinst.getMatrix());      break;
+                case prt_ori_t::ORIENTATION_Z: vup = mat_getChrUp(pprt->getAttachedObject()->getMatrix());      break;
             }
 
             vup = normalize(vup).get_vector();

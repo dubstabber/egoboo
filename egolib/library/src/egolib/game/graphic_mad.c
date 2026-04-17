@@ -49,7 +49,7 @@ struct Md2VertexBuffer {
 
 gfx_rv ObjectGraphicsRenderer::render_enviro( Camera& cam, const std::shared_ptr<Object>& pchr, GLXvector4f tint, const BIT_FIELD bits )
 {
-    if (!pchr->graphics().getModelDescriptor())
+    if (!pchr->hasModelDescriptor())
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `"<< pchr->getObjRef() << "`" << Log::EndOfEntry;
@@ -200,7 +200,7 @@ else
 
 gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const std::shared_ptr<Object>& pchr, GLXvector4f tint, const BIT_FIELD bits)
 {
-    if (!pchr->graphics().getModelDescriptor())
+    if (!pchr->hasModelDescriptor())
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `" << pchr->getObjRef() << "`" << Log::EndOfEntry;
@@ -415,12 +415,12 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
             Ego::OpenGL::Utilities::isError();
 
             //Transparent
-            if (pchr->graphics().getReflectionAlpha() != 0xFF && pchr->getLight() == 0xFF) {
+            if (pchr->getReflectionAlpha() != 0xFF && pchr->getLight() == 0xFF) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, true, CHR_ALPHA);
+                pchr->getTint(tint, true, CHR_ALPHA);
 
                 if (gfx_error == render(cam, pchr, tint, CHR_ALPHA | CHR_REFLECT)) {
                     retval = gfx_error;
@@ -433,7 +433,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, true, CHR_LIGHT);
+                pchr->getTint(tint, true, CHR_LIGHT);
 
                 if (gfx_error == ObjectGraphicsRenderer::render(cam, pchr, tint, CHR_LIGHT)) {
                     retval = gfx_error;
@@ -442,12 +442,12 @@ gfx_rv ObjectGraphicsRenderer::render_ref( Camera& cam, const std::shared_ptr<Ob
             }
 
             //Render shining effect on top of model
-            if (pchr->graphics().getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
+            if (pchr->getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, true, CHR_PHONG);
+                pchr->getTint(tint, true, CHR_PHONG);
 
                 if (gfx_error == ObjectGraphicsRenderer::render(cam, pchr, tint, CHR_PHONG)) {
                     retval = gfx_error;
@@ -489,7 +489,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, false, CHR_ALPHA);
+                pchr->getTint(tint, false, CHR_ALPHA);
 
                 if (render(cam, pchr, tint, CHR_ALPHA)) {
                     rendered = true;
@@ -507,7 +507,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, false, CHR_LIGHT);
+                pchr->getTint(tint, false, CHR_LIGHT);
 
                 if (render(cam, pchr, tint, CHR_LIGHT)) {
                     rendered = true;
@@ -515,12 +515,12 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const std::shared_ptr<O
             }
 
             // Render shining effect on top of model
-            if (pchr->graphics().getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
+            if (pchr->getReflectionAlpha() == 0xFF && gfx.phongon && pchr->getSheen() > 0) {
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one);
 
                 GLXvector4f tint;
-                pchr->graphics().getTint(tint, false, CHR_PHONG);
+                pchr->getTint(tint, false, CHR_PHONG);
 
                 if (render(cam, pchr, tint, CHR_PHONG)) {
                     rendered = true;
@@ -574,7 +574,7 @@ gfx_rv ObjectGraphicsRenderer::render_solid( Camera& cam, const std::shared_ptr<
             }
 
             GLXvector4f tint;
-            pchr->graphics().getTint(tint, false, CHR_SOLID);
+            pchr->getTint(tint, false, CHR_SOLID);
 
             if (gfx_error == render(cam, pchr, tint, CHR_SOLID)) {
                 retval = gfx_error;
@@ -658,18 +658,18 @@ void ObjectGraphicsRenderer::draw_chr_verts(const std::shared_ptr<Object>& pchr,
 #endif
 
 #if _DEBUG
-void ObjectGraphicsRenderer::draw_one_grip( Ego::Graphics::ObjectGraphics *pinst, int slot )
+void ObjectGraphicsRenderer::draw_one_grip(const Object& object, int slot)
 {
     // disable the texturing so all the points will be white,
     // not the texture color of the last vertex we drawn
     Ego::Renderer::get().getTextureUnit().setActivated(nullptr);
 
-    Ego::Renderer::get().setWorldMatrix(pinst->getMatrix());
+    Ego::Renderer::get().setWorldMatrix(object.getMatrix());
 
-    _draw_one_grip_raw( pinst, slot );
+    _draw_one_grip_raw(object, slot);
 }
 
-void ObjectGraphicsRenderer::_draw_one_grip_raw( Ego::Graphics::ObjectGraphics *pinst, int slot )
+void ObjectGraphicsRenderer::_draw_one_grip_raw(const Object& object, int slot)
 {
     int vmin, vmax, cnt;
 
@@ -682,12 +682,10 @@ void ObjectGraphicsRenderer::_draw_one_grip_raw( Ego::Graphics::ObjectGraphics *
     col_ary[1] = grn;
     col_ary[2] = blu;
 
-    if ( NULL == pinst ) return;
-
-    vmin = ( int )pinst->getVertexCount() - ( int )slot_to_grip_offset(( slot_t )slot );
+    vmin = ( int )object.getVertexCount() - ( int )slot_to_grip_offset(( slot_t )slot );
     vmax = vmin + GRIP_VERTS;
 
-    if ( vmin >= 0 && vmax >= 0 && ( size_t )vmax <= pinst->getVertexCount() )
+    if ( vmin >= 0 && vmax >= 0 && ( size_t )vmax <= object.getVertexCount() )
     {
 		Ego::Vector3f src, dst, diff;
 
@@ -695,13 +693,13 @@ void ObjectGraphicsRenderer::_draw_one_grip_raw( Ego::Graphics::ObjectGraphics *
         {
             for ( cnt = 1; cnt < GRIP_VERTS; cnt++ )
             {
-                src[kX] = pinst->getVertex(vmin).pos[XX];
-                src[kY] = pinst->getVertex(vmin).pos[YY];
-                src[kZ] = pinst->getVertex(vmin).pos[ZZ];
+                src[kX] = object.getVertex(vmin).pos[XX];
+                src[kY] = object.getVertex(vmin).pos[YY];
+                src[kZ] = object.getVertex(vmin).pos[ZZ];
 
-                diff[kX] = pinst->getVertex(vmin+cnt).pos[XX] - src[kX];
-                diff[kY] = pinst->getVertex(vmin+cnt).pos[YY] - src[kY];
-                diff[kZ] = pinst->getVertex(vmin+cnt).pos[ZZ] - src[kZ];
+                diff[kX] = object.getVertex(vmin+cnt).pos[XX] - src[kX];
+                diff[kY] = object.getVertex(vmin+cnt).pos[YY] - src[kY];
+                diff[kZ] = object.getVertex(vmin+cnt).pos[ZZ] - src[kZ];
 
                 dst[kX] = src[kX] + 3 * diff[kX];
                 dst[kY] = src[kY] + 3 * diff[kY];
@@ -724,7 +722,7 @@ void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object
     const auto& pholder = pchr->getHolder();
     if (!pholder || pholder->isTerminated()) return;
 
-    draw_one_grip(&(pholder->graphics()), pchr->getAttachmentSlot());
+    draw_one_grip(*pholder, pchr->getAttachmentSlot());
 }
 #endif
 

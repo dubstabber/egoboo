@@ -4,6 +4,7 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/vfs.h"
 
@@ -373,6 +374,23 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
     EXPECT_EQ(object->getColorShift().blue, 3);
     EXPECT_EQ(object->getUOffset(), 321);
     EXPECT_EQ(object->getVOffset(), 654);
+
+    GameSessionContext::get().publishLocalPlayerPerception(LocalPlayerPerceptionState{});
+
+    EXPECT_TRUE(object->hasModelDescriptor());
+
+    GLXvector4f tint;
+    object->getTint(tint, false, CHR_ALPHA);
+
+    constexpr float colourScale = 87.0f / 255.0f;
+    constexpr float alphaScale = 123.0f / 255.0f;
+    EXPECT_NEAR(tint[RR], colourScale / 2.0f, 0.0001f);
+    EXPECT_NEAR(tint[GG], colourScale / 4.0f, 0.0001f);
+    EXPECT_NEAR(tint[BB], colourScale / 8.0f, 0.0001f);
+    EXPECT_NEAR(tint[AA], alphaScale, 0.0001f);
+
+    object->setAlpha(0);
+    EXPECT_EQ(object->getReflectionAlpha(), 0);
 }
 
 TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
