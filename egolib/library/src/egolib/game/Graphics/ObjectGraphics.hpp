@@ -340,6 +340,14 @@ private:
     /// @details all the code necessary to move on to the next frame of the animation
     void incrementFrame();
 
+    int handleFrozenAnimationEnd(int frame_lst);
+
+    int handleLoopedAnimationEnd();
+
+    int handleQueuedAnimationEnd();
+
+    ModelAction resolveMountedLoopAnimation() const;
+
     /// @details This function starts the next action for a character
     bool incrementAction();
 

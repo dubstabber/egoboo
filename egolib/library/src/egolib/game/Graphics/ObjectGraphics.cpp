@@ -1096,46 +1096,15 @@ void ObjectGraphics::incrementFrame()
     {
         if (_freezeAtLastFrame)
         {
-            // Freeze that animation at the last frame
-            frame_nxt = frame_lst;
-
-            // Break a kept action at any time
-            _canBeInterrupted = true;
+            frame_nxt = handleFrozenAnimationEnd(frame_lst);
         }
         else if (_loopAnimation)
         {
-            // Convert the action into a riding action if the character is mounted
-            if (_object.isBeingHeld())
-            {
-                ModelAction mount_action;
-
-                // determine what kind of action we are going to substitute for a riding character
-                if (_object.getLeftHandItem() || _object.getRightHandItem()) {
-                    // if the character is holding anything, make the animation
-                    // ACTION_MH == "sitting" so that it does not look so silly
-                    mount_action = _object.getProfile()->getModel()->getAction(ACTION_MH);
-                }
-                else {
-                    // if it is not holding anything, go for the riding animation
-                    mount_action = _object.getProfile()->getModel()->getAction(ACTION_MI);
-                }
-                
-                startAnimation(mount_action, true, true);
-            }
-
-            // set the frame to the beginning of the action
-            frame_nxt = getModelDescriptor()->getFirstFrame(_currentAnimation);
-
-            // Break a looped action at any time
-            _canBeInterrupted = true;
+            frame_nxt = handleLoopedAnimationEnd();
         }
         else
         {
-            // Go on to the next action. don't let just anything interrupt it?
-            incrementAction();
-
-            // incrementAction() actually sets this value properly. just grab the new value.
-            frame_nxt = _targetFrameIndex;
+            frame_nxt = handleQueuedAnimationEnd();
         }
     }
 
@@ -1146,6 +1115,48 @@ void ObjectGraphics::incrementFrame()
     if (!isVertexCacheValid()) {
         chr_invalidate_child_instances(_object);
     }
+}
+
+int ObjectGraphics::handleFrozenAnimationEnd(int frame_lst)
+{
+    // Freeze that animation at the last frame.
+    _canBeInterrupted = true;
+    return frame_lst;
+}
+
+int ObjectGraphics::handleLoopedAnimationEnd()
+{
+    // Convert the action into a riding action if the character is mounted.
+    if (_object.isBeingHeld())
+    {
+        startAnimation(resolveMountedLoopAnimation(), true, true);
+    }
+
+    // Break a looped action at any time.
+    _canBeInterrupted = true;
+
+    // Set the frame to the beginning of the current action.
+    return getModelDescriptor()->getFirstFrame(_currentAnimation);
+}
+
+int ObjectGraphics::handleQueuedAnimationEnd()
+{
+    // Go on to the next action. don't let just anything interrupt it?
+    incrementAction();
+
+    // incrementAction() actually sets this value properly. just grab the new value.
+    return _targetFrameIndex;
+}
+
+ModelAction ObjectGraphics::resolveMountedLoopAnimation() const
+{
+    // ACTION_MH == "sitting"; use it when the rider is holding something.
+    if (_object.getLeftHandItem() || _object.getRightHandItem())
+    {
+        return getModelDescriptor()->getAction(ACTION_MH);
+    }
+
+    return getModelDescriptor()->getAction(ACTION_MI);
 }
 
 bool ObjectGraphics::startAnimation(const ModelAction action, const bool action_ready, const bool override_action)

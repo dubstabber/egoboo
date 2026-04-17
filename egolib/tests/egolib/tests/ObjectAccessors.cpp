@@ -150,6 +150,53 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ObjectAccessorFixture::s_runtime;
 
+ModelAction findValidAction(const std::shared_ptr<Object>& object,
+                            std::initializer_list<ModelAction> candidates,
+                            ModelAction excluded = ACTION_COUNT)
+{
+    const auto& model = object->inst.getModelDescriptor();
+    if (!model)
+    {
+        return ACTION_COUNT;
+    }
+
+    for (const ModelAction action : candidates)
+    {
+        if (action != excluded && model->isActionValid(action))
+        {
+            return action;
+        }
+    }
+
+    return ACTION_COUNT;
+}
+
+ModelAction findLoopingAction(const std::shared_ptr<Object>& object,
+                              std::initializer_list<ModelAction> candidates,
+                              ModelAction excluded = ACTION_COUNT)
+{
+    const auto& model = object->inst.getModelDescriptor();
+    if (!model)
+    {
+        return ACTION_COUNT;
+    }
+
+    for (const ModelAction action : candidates)
+    {
+        if (action == excluded || !model->isActionValid(action))
+        {
+            continue;
+        }
+
+        if (model->getLastFrame(action) > model->getFirstFrame(action))
+        {
+            return action;
+        }
+    }
+
+    return ACTION_COUNT;
+}
+
 TEST_F(ObjectAccessorFixture, SelectedObjectRefsDefaultToInvalidAndRoundTripThroughAccessors)
 {
     auto object = makeFollower(301);
@@ -777,9 +824,172 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyRemapsFlyingIdleToFlap
     EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
 }
 
+TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndFreezeKeepsLastFrameAndMakesActionInterruptible)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 325);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction action = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(action, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int lastFrame = model->getLastFrame(action);
+
+    object->inst._currentAnimation = action;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = false;
+    object->inst._freezeAtLastFrame = true;
+    object->inst._loopAnimation = false;
+    object->inst._sourceFrameIndex = model->getFirstFrame(action);
+    object->inst._targetFrameIndex = lastFrame;
+
+    object->inst.incrementFrame();
+
+    EXPECT_EQ(object->getCurrentAnimation(), action);
+    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
+    EXPECT_TRUE(object->canBeInterrupted());
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndLoopWrapsToFirstFrameAndMakesActionInterruptible)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 326);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction action = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(action, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int firstFrame = model->getFirstFrame(action);
+    const int lastFrame = model->getLastFrame(action);
+
+    object->inst._currentAnimation = action;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = false;
+    object->inst._freezeAtLastFrame = false;
+    object->inst._loopAnimation = true;
+    object->inst._sourceFrameIndex = firstFrame;
+    object->inst._targetFrameIndex = lastFrame;
+
+    object->inst.incrementFrame();
+
+    EXPECT_EQ(object->getCurrentAnimation(), action);
+    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
+    EXPECT_TRUE(object->canBeInterrupted());
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithHeldItemSubstitutesSitAnimation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 327);
+    auto rider = makeFollower(objectHandler, 328);
+    auto heldItem = makeFollower(objectHandler, 329);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(rider, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+
+    const auto& model = rider->inst.getModelDescriptor();
+    const ModelAction mountedAction = model->getAction(ACTION_MH);
+    ASSERT_NE(mountedAction, ACTION_COUNT);
+
+    const ModelAction initialAction = findValidAction(rider, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC}, mountedAction);
+    ASSERT_NE(initialAction, ACTION_COUNT);
+    const int lastFrame = model->getLastFrame(initialAction);
+    const int firstMountFrame = model->getFirstFrame(mountedAction);
+
+    rider->setHolderRef(holder->getObjRef());
+    rider->setHeldObject(SLOT_LEFT, heldItem->getObjRef());
+    rider->inst._currentAnimation = initialAction;
+    rider->inst._nextAnimation = ACTION_DA;
+    rider->inst._canBeInterrupted = false;
+    rider->inst._freezeAtLastFrame = false;
+    rider->inst._loopAnimation = true;
+    rider->inst._sourceFrameIndex = model->getFirstFrame(initialAction);
+    rider->inst._targetFrameIndex = lastFrame;
+
+    rider->inst.incrementFrame();
+
+    EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
+    EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
+    EXPECT_TRUE(rider->canBeInterrupted());
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithEmptyHandsSubstitutesRideAnimation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 330);
+    auto rider = makeFollower(objectHandler, 331);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(rider, nullptr);
+
+    const auto& model = rider->inst.getModelDescriptor();
+    const ModelAction mountedAction = model->getAction(ACTION_MI);
+    ASSERT_NE(mountedAction, ACTION_COUNT);
+
+    const ModelAction initialAction = findValidAction(rider, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC}, mountedAction);
+    ASSERT_NE(initialAction, ACTION_COUNT);
+    const int lastFrame = model->getLastFrame(initialAction);
+    const int firstMountFrame = model->getFirstFrame(mountedAction);
+
+    rider->setHolderRef(holder->getObjRef());
+    rider->setHeldObject(SLOT_LEFT, ObjectRef::Invalid);
+    rider->setHeldObject(SLOT_RIGHT, ObjectRef::Invalid);
+    rider->inst._currentAnimation = initialAction;
+    rider->inst._nextAnimation = ACTION_DA;
+    rider->inst._canBeInterrupted = false;
+    rider->inst._freezeAtLastFrame = false;
+    rider->inst._loopAnimation = true;
+    rider->inst._sourceFrameIndex = model->getFirstFrame(initialAction);
+    rider->inst._targetFrameIndex = lastFrame;
+
+    rider->inst.incrementFrame();
+
+    EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
+    EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
+    EXPECT_TRUE(rider->canBeInterrupted());
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndTransitionsToQueuedNextAction)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 332);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_DA, ACTION_DB, ACTION_DC, ACTION_WC, ACTION_WA});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const ModelAction nextAction = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_WB, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
+    ASSERT_NE(nextAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int currentLastFrame = model->getLastFrame(currentAction);
+    const int nextFirstFrame = model->getFirstFrame(nextAction);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = nextAction;
+    object->inst._canBeInterrupted = false;
+    object->inst._freezeAtLastFrame = false;
+    object->inst._loopAnimation = false;
+    object->inst._sourceFrameIndex = model->getFirstFrame(currentAction);
+    object->inst._targetFrameIndex = currentLastFrame;
+
+    object->inst.incrementFrame();
+
+    EXPECT_EQ(object->getCurrentAnimation(), nextAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_EQ(object->inst._sourceFrameIndex, currentLastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
+    EXPECT_TRUE(object->canBeInterrupted());
+}
+
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
 {
-    auto object = makeFollower(325);
+    auto object = makeFollower(333);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);
