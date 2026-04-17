@@ -954,25 +954,9 @@ void ObjectGraphics::updateAnimation()
     {
         flip_diff -= flip_next;
 
-        //Update one linear interpolated frame
-        _animationProgressInteger += 1;
-        _animationProgress = 0.25f * _animationProgressInteger;
-
-        // handle frame FX for the new frame
-        if ( 3 == _animationProgressInteger )
+        publishInterpolationState(_animationProgressInteger + 1, 0.25f * (_animationProgressInteger + 1));
+        if (!applyPublishedInterpolationStep())
         {
-            handleAnimationFX();
-        }
-
-        if ( 4 == _animationProgressInteger )
-        {
-            incrementFrame();
-        }
-
-        if ( _animationProgressInteger > 4 )
-        {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid ilip", Log::EndOfEntry);
-            _animationProgressInteger = 0;
             break;
         }
 
@@ -981,30 +965,15 @@ void ObjectGraphics::updateAnimation()
 
     if ( flip_diff > 0.0f )
     {
-        int ilip_old = _animationProgressInteger;
+        const uint8_t ilip_old = _animationProgressInteger;
+        const float updatedProgress = _animationProgress + flip_diff;
+        const uint8_t updatedInteger = static_cast<uint8_t>(std::floor(updatedProgress * 4)) % 4;
 
-        // update the lips
-        _animationProgress += flip_diff;
-        _animationProgressInteger = ((int)std::floor(_animationProgress * 4)) % 4;
+        publishInterpolationState(updatedInteger, updatedProgress);
 
         if ( ilip_old != _animationProgressInteger )
         {
-            // handle frame FX for the new frame
-            if ( 3 == _animationProgressInteger )
-            {
-                handleAnimationFX();
-            }
-
-            if ( 4 == _animationProgressInteger )
-            {
-                incrementFrame();
-            }
-
-            if ( _animationProgressInteger > 4 )
-            {
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid ilip", Log::EndOfEntry);
-                _animationProgressInteger = 0;
-            }
+            applyPublishedInterpolationStep();
         }
     }
 
@@ -1112,9 +1081,7 @@ void ObjectGraphics::incrementFrame()
     _targetFrameIndex = frame_nxt;
 
     // if the instance is invalid, invalidate everything that depends on this object
-    if (!isVertexCacheValid()) {
-        chr_invalidate_child_instances(_object);
-    }
+    invalidateChildInstancesIfCacheInvalid();
 }
 
 int ObjectGraphics::handleFrozenAnimationEnd(int frame_lst)
@@ -1187,6 +1154,35 @@ void ObjectGraphics::publishFrameState(const uint16_t sourceFrameIndex,
     _targetFrameIndex = targetFrameIndex;
     _animationProgressInteger = animationProgressInteger;
     _animationProgress = _animationProgressInteger * 0.25f;
+}
+
+void ObjectGraphics::publishInterpolationState(const uint8_t animationProgressInteger,
+                                               const float animationProgress)
+{
+    _animationProgressInteger = animationProgressInteger;
+    _animationProgress = animationProgress;
+}
+
+bool ObjectGraphics::applyPublishedInterpolationStep()
+{
+    if ( 3 == _animationProgressInteger )
+    {
+        handleAnimationFX();
+    }
+
+    if ( 4 == _animationProgressInteger )
+    {
+        incrementFrame();
+    }
+
+    if ( _animationProgressInteger > 4 )
+    {
+        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid ilip", Log::EndOfEntry);
+        _animationProgressInteger = 0;
+        return false;
+    }
+
+    return true;
 }
 
 bool ObjectGraphics::tryCommitFrameState(const int frame)

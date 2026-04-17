@@ -128,6 +128,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `66-object-graphics-animation-transition-pass.md`
 - `67-object-graphics-animation-state-bookkeeping-pass.md`
 - `68-object-graphics-frame-publication-pass.md`
+- `69-object-graphics-update-animation-publication-pass.md`
 
 ## Recommended reading order
 
@@ -189,6 +190,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 56. Read `66-object-graphics-animation-transition-pass.md` for the bounded extraction of `incrementFrame()` end-of-animation transition policy, the preserved caller contract inside `ObjectGraphics`, and the narrowed follow-on recommendation around animation-state mutation and frame bookkeeping cleanup.
 57. Read `67-object-graphics-animation-state-bookkeeping-pass.md` for the bounded cleanup of action mutation versus frame-bookkeeping responsibilities inside `ObjectGraphics` and the narrowed follow-on recommendation around animation-state publication.
 58. Read `68-object-graphics-frame-publication-pass.md` for the explicit frame-publication helper cleanup around `setFrameFull()` / `removeInterpolation()` and the narrowed follow-on recommendation around `updateAnimation()` and cache-publication sequencing.
+59. Read `69-object-graphics-update-animation-publication-pass.md` for the bounded `updateAnimation()` interpolation/publication helper extraction, the preserved step-order characterization coverage, and the narrowed follow-on recommendation around cache-validity bookkeeping.
 
 ## Immediate recommendation
 

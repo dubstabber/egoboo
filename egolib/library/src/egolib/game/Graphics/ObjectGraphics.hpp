@@ -358,6 +358,10 @@ private:
 
     void publishFrameState(uint16_t sourceFrameIndex, uint16_t targetFrameIndex, uint8_t animationProgressInteger);
 
+    void publishInterpolationState(uint8_t animationProgressInteger, float animationProgress);
+
+    bool applyPublishedInterpolationStep();
+
     void invalidateChildInstancesIfCacheInvalid();
 
     /// @details This function starts the next action for a character
