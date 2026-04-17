@@ -835,7 +835,7 @@ uint8_t scr_DebugMessage( script_state_t& state, ai_state_t& self )
     DisplayMsg_printf( "aistate %d, aicontent %d, target %" PRIuZ, self.state, self.content, self.getTarget().get() );
     DisplayMsg_printf( "tmpx %d, tmpy %d", state.x, state.y );
     DisplayMsg_printf( "tmpdistance %d, tmpturn %d", state.distance, state.turn );
-    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(pchr->ori.facing_z) );
+    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(pchr->getFacingZ()) );
 
     SCRIPT_FUNCTION_END();
 }

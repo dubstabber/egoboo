@@ -301,7 +301,7 @@ std::shared_ptr<const Ego::Texture> ParticleHandler::getTransparentParticleTextu
 
 void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
 {
-    Facing facing_z = object->ori.facing_z;
+    Facing facing_z = object->getFacingZ();
     for (int cnt = 0; cnt < object->getProfile()->getParticlePoofAmount(); cnt++)
     {
         ParticleHandler::get().spawnParticle(object->getOldPosition(), facing_z, object->getProfile()->getSlotNumber(), object->getProfile()->getParticlePoofProfile(),
@@ -315,7 +315,7 @@ void ParticleHandler::spawnDefencePing(const std::shared_ptr<Object> &object, co
 {
     if (0 != object->getDamageTimer()) return;
 
-    spawnGlobalParticle(object->getPosition(), object->ori.facing_z, LocalParticleProfileRef(PIP_DEFEND), 0);
+    spawnGlobalParticle(object->getPosition(), object->getFacingZ(), LocalParticleProfileRef(PIP_DEFEND), 0);
 
     object->setDamageTimer(DEFENDTIME);
     SET_BIT(object->ai.alert, ALERTIF_BLOCKED);

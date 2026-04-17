@@ -557,7 +557,7 @@ uint8_t scr_Teleport( script_state_t& state, ai_state_t& self )
     auto location = Ego::Vector3f(Ego::Script::Interpreter::safeCast<float>(state.x),
                                   Ego::Script::Interpreter::safeCast<float>(state.y),
                                   pchr->getPosZ());
-    returncode = pchr->teleport(location, Facing(pchr->ori.facing_z));
+    returncode = pchr->teleport(location, pchr->getFacingZ());
 
     SCRIPT_FUNCTION_END();
 }

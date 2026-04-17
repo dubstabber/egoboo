@@ -464,7 +464,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 
     // find the "attack direction" of the particle
     Facing direction = idlib::canonicalize(vec_to_facing(pdata.pchr->getPosX() - pdata.pprt->getPosX(), pdata.pchr->getPosY() - pdata.pprt->getPosY()));
-    direction = pdata.pchr->ori.facing_z - Facing(direction) + ATK_BEHIND;
+    direction = pdata.pchr->getFacingZ() - Facing(direction) + ATK_BEHIND;
 
     // shield block?
     // if the effect is shield piercing, ignore shielding
@@ -704,7 +704,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
             IPair modifiedDamage = pdata.pprt->damage;
 
             FACING_T direction = FACING_T(vec_to_facing( pdata.pprt->getVelocity().x() , pdata.pprt->getVelocity().y() ));
-            direction = FACING_T(pdata.pchr->ori.facing_z - Facing(direction) + ATK_BEHIND);
+            direction = FACING_T(pdata.pchr->getFacingZ() - Facing(direction) + ATK_BEHIND);
 
             // These things only apply if the particle has an owner
             if ( nullptr != powner )
@@ -1341,7 +1341,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
 
     // Only damage if hitting from proper direction
     Facing direction = vec_to_facing(pprt->getVelocity().x(), pprt->getVelocity().y());
-    direction = ATK_BEHIND + pchr->ori.facing_z - direction;
+    direction = ATK_BEHIND + pchr->getFacingZ() - direction;
 
     // Check that direction
     if (ppip->hasBit(DAMFX_NBLOC) || !pchr->isInvictusDirection(direction))
@@ -1393,7 +1393,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
 
                 // clear the occupied list
                 float z = pprt->getPosZ() - pchr->getPosZ();
-                Facing facing = idlib::canonicalize(pprt->facing - pchr->ori.facing_z);
+                Facing facing = idlib::canonicalize(pprt->facing - pchr->getFacingZ());
                 Facing turn = facing;
                 float fsin = std::sin(turn);
                 float fcos = std::cos(turn);
@@ -1443,7 +1443,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                         }
 
                         std::shared_ptr<Ego::Particle> bs_part = 
-                            ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->ori.facing_z), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
+                            ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
                                                                       character, bestvertex + 1, pprt->team, pprt->owner_ref, particle, cnt, character);
 
                         if (bs_part)

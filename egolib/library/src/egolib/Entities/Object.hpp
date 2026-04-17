@@ -1017,6 +1017,22 @@ public:
 
     void setTurnMode(turn_mode_t mode) { turnmode = mode; }
 
+    Facing getFacingZ() const { return ori.facing_z; }
+
+    void setFacingZ(Facing facing) { ori.facing_z = facing; }
+
+    Facing getMapTwistFacingX() const { return ori.map_twist_facing_x; }
+
+    void setMapTwistFacingX(Facing facing) { ori.map_twist_facing_x = facing; }
+
+    Facing getMapTwistFacingY() const { return ori.map_twist_facing_y; }
+
+    void setMapTwistFacingY(Facing facing) { ori.map_twist_facing_y = facing; }
+
+    Facing getPreviousFacingZ() const { return ori_old.facing_z; }
+
+    void setPreviousFacingZ(Facing facing) { ori_old.facing_z = facing; }
+
 private:
 
     /**
@@ -1151,10 +1167,10 @@ public:
 
     std::array<oct_bb_t, SLOT_COUNT> slot_cv;     ///< the cv's for the object's slots
 
+private:
     orientation_t  ori;                           ///< Character's orientation
     orientation_t  ori_old;                       ///< Character's last orientation
 
-private:
     // data for doing the physics in bump_all_objects()|
 
     uint8_t stoppedby;                            ///< Collision mask

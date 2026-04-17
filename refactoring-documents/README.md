@@ -117,6 +117,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `55-object-runtime-timer-status-encapsulation-pass.md`
 - `56-object-movement-collision-mask-encapsulation-pass.md`
 - `57-object-appearance-profile-encapsulation-pass.md`
+- `58-object-stats-ammo-gender-encapsulation-pass.md`
+- `59-object-orientation-encapsulation-pass.md`
 
 ## Recommended reading order
 
@@ -167,6 +169,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 45. Read `55-object-runtime-timer-status-encapsulation-pass.md` for the follow-on encapsulation of cooldown timers, confusion state, dismount bookkeeping, water-state, and icon-display state plus the narrowed recommendation before any role-interface extraction.
 46. Read `56-object-movement-collision-mask-encapsulation-pass.md` for the next bounded encapsulation of `stoppedby`, `turnmode`, and bump-list linkage before moving into either the appearance cluster or stats/ammo scalar cleanup.
 47. Read `57-object-appearance-profile-encapsulation-pass.md` for the bounded encapsulation of skin/base-model/overlay/shadow scalar state and the recommendation to finish the remaining stats/ammo/gender scalar cleanup before broader interface work.
+48. Read `58-object-stats-ammo-gender-encapsulation-pass.md` for the bounded encapsulation of the remaining stats/ammo/gender scalar surface and the branching recommendation between orientation and `inst`.
+49. Read `59-object-orientation-encapsulation-pass.md` for the bounded encapsulation of `ori` / `ori_old`, the reason that seam landed before `inst`, and the next follow-on recommendation around bumper/CV or render-facing cleanup.
 
 ## Immediate recommendation
 

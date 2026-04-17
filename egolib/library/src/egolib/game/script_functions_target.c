@@ -1726,7 +1726,7 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
 
 	FACING_T sTmp = 0;
     sTmp = FACING_T(vec_to_facing( pchr->getPosX() - pself_target->getPosX() , pchr->getPosY() - pself_target->getPosY() ));
-    sTmp -= FACING_T(pself_target->ori.facing_z);
+    sTmp -= FACING_T(pself_target->getFacingZ());
     returncode = ( sTmp > 55535 || sTmp < 10000 );
 
     SCRIPT_FUNCTION_END();

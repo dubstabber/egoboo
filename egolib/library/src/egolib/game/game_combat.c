@@ -306,7 +306,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->getAmmo() > 1 ) || ACTION_IS_TYPE( pweapon->inst.getCurrentAnimation(), F ) ) )
     {
         // Throw the weapon if it's stacked or a hurl animation
-        std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->getSkin(), pchr->ori.facing_z, pweapon->getName(), ObjectRef::Invalid);
+        std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
             pthrown->setKursed(false);
@@ -325,7 +325,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             }
             velocity = Ego::Math::constrain( velocity, MINTHROWVELOCITY, MAXTHROWVELOCITY );
 
-            Facing turn = pchr->ori.facing_z + ATK_BEHIND;
+            Facing turn = pchr->getFacingZ() + ATK_BEHIND;
             pthrown->setVelocity({pthrown->getVelocity().x() + std::cos(turn) * velocity,
                                   pthrown->getVelocity().y() + std::sin(turn) * velocity,
                                   Object::DROPZVEL});
@@ -389,7 +389,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                     // make the weapon's holder the owner of the attack particle?
                     // will this mess up wands?
                     std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnParticle(pweapon->getPosition(),
-                        idlib::canonicalize(pchr->ori.facing_z), weaponProfile->getSlotNumber(),
+                        idlib::canonicalize(pchr->getFacingZ()), weaponProfile->getSlotNumber(),
                         attackParticle, weaponProfile->hasAttachParticleToWeapon() ? iweapon : ObjectRef::Invalid,
                         spawn_vrt_offset, pholder->getTeam().toRef(), iholder);
 

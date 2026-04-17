@@ -257,9 +257,25 @@ TEST_F(ObjectAccessorFixture, MovementAndCollisionMaskAccessorsRoundTripSelected
     EXPECT_EQ(object->getTurnMode(), TURNMODE_SPIN);
 }
 
-TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedState)
+TEST_F(ObjectAccessorFixture, OrientationAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(307);
+    ASSERT_NE(object, nullptr);
+
+    object->setFacingZ(Facing(1111));
+    object->setMapTwistFacingX(Facing(2222));
+    object->setMapTwistFacingY(Facing(3333));
+    object->setPreviousFacingZ(Facing(4444));
+
+    EXPECT_EQ(object->getFacingZ(), Facing(1111));
+    EXPECT_EQ(object->getMapTwistFacingX(), Facing(2222));
+    EXPECT_EQ(object->getMapTwistFacingY(), Facing(3333));
+    EXPECT_EQ(object->getPreviousFacingZ(), Facing(4444));
+}
+
+TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(308);
     ASSERT_NE(object, nullptr);
 
     const SKIN_T validSkin = object->getProfile()->isValidSkin(1) ? 1 : 0;
@@ -287,7 +303,7 @@ TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedStat
 
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)
 {
-    auto object = makeFollower(308);
+    auto object = makeFollower(309);
     ASSERT_NE(object, nullptr);
 
     object->setGender(Gender::Neuter);

@@ -260,8 +260,8 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     }
 
     //Facing
-    pchr->ori.facing_z     = Facing(FACING_T(facing));
-    pchr->ori_old.facing_z = pchr->ori.facing_z;
+    pchr->setFacingZ(Facing(FACING_T(facing)));
+    pchr->setPreviousFacingZ(pchr->getFacingZ());
 
     // Name the character
     if (name.empty())
@@ -278,7 +278,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // Particle attachments
     for (uint8_t tnc = 0; tnc < ppro->getAttachedParticleAmount(); tnc++)
     {
-        ParticleHandler::get().spawnParticle(pchr->getPosition(), pchr->ori.facing_z, ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
+        ParticleHandler::get().spawnParticle(pchr->getPosition(), pchr->getFacingZ(), ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
                                              pchr->getObjRef(), GRIP_LAST + tnc, pchr->getTeamRef(), pchr->getObjRef(), ParticleRef::Invalid, tnc);
     }
 
@@ -436,13 +436,13 @@ void GameModule::tiltCharactersToTerrain()
         if (object->getProfile()->hasStickyButt())
         {
             uint8_t twist = getMeshPointer()->get_twist(object->getTile());
-            object->ori.map_twist_facing_y = Facing(g_meshLookupTables.twist_facing_y[twist]);
-            object->ori.map_twist_facing_x = Facing(g_meshLookupTables.twist_facing_x[twist]);
+            object->setMapTwistFacingY(Facing(g_meshLookupTables.twist_facing_y[twist]));
+            object->setMapTwistFacingX(Facing(g_meshLookupTables.twist_facing_x[twist]));
         }
         else
         {
-            object->ori.map_twist_facing_y = orientation_t::MAP_TURN_OFFSET;
-            object->ori.map_twist_facing_x = orientation_t::MAP_TURN_OFFSET;
+            object->setMapTwistFacingY(orientation_t::MAP_TURN_OFFSET);
+            object->setMapTwistFacingX(orientation_t::MAP_TURN_OFFSET);
         }
     }
 }

@@ -230,7 +230,7 @@ void Enchantment::update()
         if(_spawnParticlesTimer == 0) {
             _spawnParticlesTimer = _enchantProfile->contspawn._delay;
 
-            Facing facing = target->ori.facing_z;
+            Facing facing = target->getFacingZ();
             for (uint8_t i = 0; i < _enchantProfile->contspawn._amount; ++i)
             {
                 ParticleHandler::get().spawnLocalParticle(target->getPosition(), facing, ObjectProfileRef(_spawnerProfileID), _enchantProfile->contspawn._lpip,
@@ -351,7 +351,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // Create an overlay character?
     if (_enchantProfile->spawn_overlay)
     {
-        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->ori.facing_z, "", ObjectRef::Invalid );
+        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid );
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...

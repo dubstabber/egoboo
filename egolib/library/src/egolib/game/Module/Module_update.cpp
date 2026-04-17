@@ -119,7 +119,7 @@ void GameModule::updatePits()
             else if (_pitsTeleport && pchr->getPosZ() < PITDEPTH * 4)
             {
                 // Teleport them back to a "safe" spot
-                if (!pchr->teleport(_pitsTeleportPos, Facing(pchr->ori.facing_z))) {
+                if (!pchr->teleport(_pitsTeleportPos, pchr->getFacingZ())) {
                     // Kill it instead
                     pchr->kill(Object::INVALID_OBJECT, false);
                     pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});

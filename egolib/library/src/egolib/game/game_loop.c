@@ -399,7 +399,7 @@ int reaffirm_attached_particles(ObjectRef objectRef) {
     int number_added = 0;
     for (int attempts = 0; attempts < amount && number_attached < amount; ++attempts) {
         std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnParticle(
-			object->getPosition(), idlib::canonicalize(object->ori.facing_z), object->getProfile()->getSlotNumber(),
+			object->getPosition(), idlib::canonicalize(object->getFacingZ()), object->getProfile()->getSlotNumber(),
 			object->getProfile()->getAttachedParticleProfile(), objectRef, GRIP_LAST + number_attached,
 			object->getTeam().toRef(), objectRef, ParticleRef::Invalid, number_attached);
 

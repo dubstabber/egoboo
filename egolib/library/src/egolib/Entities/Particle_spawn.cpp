@@ -523,7 +523,7 @@ bool Particle::attach(const ObjectRef attach)
     // Correct facing so swords knock characters in the right direction...
     if (getProfile()->hasBit(DAMFX_TURN))
     {
-        facing = idlib::canonicalize(pchr->ori.facing_z);
+        facing = idlib::canonicalize(pchr->getFacingZ());
     }
 
     return true;

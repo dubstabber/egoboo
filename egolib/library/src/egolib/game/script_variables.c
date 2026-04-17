@@ -56,7 +56,7 @@ int32_t load_VARSELFY(script_state_t& scriptState, ai_state_t& aiState, Object *
 
 int32_t load_VARSELFTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return uint16_t(pobject->ori.facing_z);
+    return uint16_t(pobject->getFacingZ());
 }
 
 int32_t load_VARSELFCOUNTER(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -104,7 +104,7 @@ int32_t load_VARTARGETDISTANCE(script_state_t& scriptState, ai_state_t& aiState,
 
 int32_t load_VARTARGETTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : uint16_t(ptarget->ori.facing_z);
+    return (nullptr == ptarget) ? 0 : uint16_t(ptarget->getFacingZ());
 }
 
 int32_t load_VARLEADERX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -148,11 +148,11 @@ int32_t load_VARLEADERTURN(script_state_t& scriptState, ai_state_t& aiState, Obj
 {
     if (pleader)
     {
-        return uint16_t(pleader->ori.facing_z);
+        return uint16_t(pleader->getFacingZ());
     }
     else
     {
-        return uint16_t(pobject->ori.facing_z);
+        return uint16_t(pobject->getFacingZ());
     }
 }
 
@@ -376,7 +376,7 @@ int32_t load_VAROWNERY(script_state_t& scriptState, ai_state_t& aiState, Object 
 
 int32_t load_VAROWNERTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == powner) ? 0 : uint16_t(powner->ori.facing_z);
+    return (nullptr == powner) ? 0 : uint16_t(powner->getFacingZ());
 }
 
 int32_t load_VAROWNERDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
