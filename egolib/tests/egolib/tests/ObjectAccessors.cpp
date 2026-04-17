@@ -197,6 +197,36 @@ ModelAction findLoopingAction(const std::shared_ptr<Object>& object,
     return ACTION_COUNT;
 }
 
+bool findHealableInvalidAction(const std::shared_ptr<Object>& object,
+                               ModelAction& invalidAction,
+                               ModelAction& healedAction)
+{
+    const auto& model = object->inst.getModelDescriptor();
+    if (!model)
+    {
+        return false;
+    }
+
+    for (int rawAction = 0; rawAction < ACTION_COUNT; ++rawAction)
+    {
+        const auto candidate = static_cast<ModelAction>(rawAction);
+        if (model->isActionValid(candidate))
+        {
+            continue;
+        }
+
+        const ModelAction healedCandidate = model->getAction(rawAction);
+        if (healedCandidate != ACTION_COUNT)
+        {
+            invalidAction = candidate;
+            healedAction = healedCandidate;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 TEST_F(ObjectAccessorFixture, SelectedObjectRefsDefaultToInvalidAndRoundTripThroughAccessors)
 {
     auto object = makeFollower(301);
@@ -689,6 +719,179 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimati
     EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
     EXPECT_TRUE(object->hasModelDescriptor());
     EXPECT_TRUE(object->inst._freezeAtLastFrame);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsSetActionMutatesAnimationStateWithoutTouchingFrameBookkeeping)
+{
+    auto object = makeObject(_objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 334);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const ModelAction nextAction = findValidAction(object, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
+    ASSERT_NE(nextAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int sourceFrame = model->getFirstFrame(currentAction);
+    const int targetFrame = model->getLastFrame(currentAction);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WB;
+    object->inst._canBeInterrupted = false;
+    object->inst._sourceFrameIndex = sourceFrame;
+    object->inst._targetFrameIndex = targetFrame;
+    object->inst._animationProgressInteger = 3;
+    object->inst._animationProgress = 0.75f;
+
+    EXPECT_TRUE(object->inst.setAction(nextAction, true, true));
+
+    EXPECT_EQ(object->getCurrentAnimation(), nextAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_EQ(object->inst._sourceFrameIndex, sourceFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, targetFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 3);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.75f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameMutatesBookkeepingWithoutChangingActionState)
+{
+    auto object = makeObject(_objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 335);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int firstFrame = model->getFirstFrame(currentAction);
+    const int lastFrame = model->getLastFrame(currentAction);
+    ASSERT_NE(firstFrame, lastFrame);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WA;
+    object->inst._canBeInterrupted = false;
+    object->inst._sourceFrameIndex = firstFrame;
+    object->inst._targetFrameIndex = lastFrame;
+    object->inst._animationProgressInteger = 2;
+    object->inst._animationProgress = 0.5f;
+
+    EXPECT_TRUE(object->inst.setFrame(firstFrame));
+
+    EXPECT_EQ(object->getCurrentAnimation(), currentAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsStartAnimationRestartsAtFirstFrameAndUsesPriorTargetAsSource)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 336);
+    ASSERT_NE(object, nullptr);
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(currentAction, ACTION_COUNT);
+
+    const ModelAction nextAction = findValidAction(object, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
+    ASSERT_NE(nextAction, ACTION_COUNT);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int firstFrame = model->getFirstFrame(currentAction);
+    const int lastFrame = model->getLastFrame(currentAction);
+    const int nextFirstFrame = model->getFirstFrame(nextAction);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WB;
+    object->inst._canBeInterrupted = false;
+    object->inst._sourceFrameIndex = firstFrame;
+    object->inst._targetFrameIndex = lastFrame;
+    object->inst._animationProgressInteger = 3;
+    object->inst._animationProgress = 0.75f;
+
+    EXPECT_TRUE(object->inst.startAnimation(nextAction, true, true));
+
+    EXPECT_EQ(object->getCurrentAnimation(), nextAction);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameFullHealsCurrentActionAndPreservesSourceFrame)
+{
+    auto object = makeObject(_objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 337);
+    ASSERT_NE(object, nullptr);
+
+    ModelAction invalidAction = ACTION_COUNT;
+    ModelAction healedAction = ACTION_COUNT;
+    ASSERT_TRUE(findHealableInvalidAction(object, invalidAction, healedAction));
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int preservedSourceFrame = model->getFirstFrame(healedAction);
+    const int firstFrame = model->getFirstFrame(healedAction);
+    const int lastFrame = model->getLastFrame(healedAction);
+    const int frameCount = 1 + (lastFrame - firstFrame);
+    const int frameAlong = (frameCount > 1) ? 1 : 0;
+
+    object->inst._currentAnimation = invalidAction;
+    object->inst._sourceFrameIndex = preservedSourceFrame;
+    object->inst._targetFrameIndex = firstFrame;
+    object->inst._animationProgressInteger = 0;
+    object->inst._animationProgress = 0.0f;
+
+    EXPECT_TRUE(object->inst.setFrameFull(frameAlong, 2));
+
+    EXPECT_FALSE(model->isActionValid(invalidAction));
+    EXPECT_EQ(object->getCurrentAnimation(), healedAction);
+    EXPECT_EQ(object->inst._sourceFrameIndex, preservedSourceFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, std::min(firstFrame + frameAlong, lastFrame));
+    EXPECT_EQ(object->inst._animationProgressInteger, 2);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.5f);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAsInterpolationSource)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 338);
+    ASSERT_NE(object, nullptr);
+    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WA));
+
+    const auto& model = object->inst.getModelDescriptor();
+    const ModelAction initialAction = findValidAction(object, {ACTION_DA, ACTION_DB, ACTION_DC, ACTION_WC}, ACTION_WA);
+    ASSERT_NE(initialAction, ACTION_COUNT);
+
+    const int initialFirstFrame = model->getFirstFrame(initialAction);
+    const int initialTargetFrame = model->getLastFrame(initialAction);
+    const int expectedSourceFrame = model->getFrameLipToWalkFrame(LIPWA, model->getMD2()->getFrames()[initialTargetFrame].framelip);
+    const int expectedTargetFrame = model->getFirstFrame(ACTION_WA);
+
+    object->_stealth = true;
+    object->inst._currentAnimation = initialAction;
+    object->inst._nextAnimation = ACTION_DA;
+    object->inst._canBeInterrupted = true;
+    object->inst._freezeAtLastFrame = false;
+    object->inst._sourceFrameIndex = initialFirstFrame;
+    object->inst._targetFrameIndex = initialTargetFrame;
+    object->inst._animationProgressInteger = 2;
+    object->inst._animationProgress = 0.5f;
+    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
+    object->getObjectPhysics().setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+
+    object->inst.updateAnimationRate();
+
+    EXPECT_EQ(object->getCurrentAnimation(), ACTION_WA);
+    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_EQ(object->inst._sourceFrameIndex, expectedSourceFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, expectedTargetFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedSceneryAnimationPolicyStopsAnimationRate)

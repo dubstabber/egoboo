@@ -1159,38 +1159,96 @@ ModelAction ObjectGraphics::resolveMountedLoopAnimation() const
     return getModelDescriptor()->getAction(ACTION_MI);
 }
 
-bool ObjectGraphics::startAnimation(const ModelAction action, const bool action_ready, const bool override_action)
+bool ObjectGraphics::tryCommitActionState(const ModelAction action, const bool action_ready, const bool override_action)
 {
-    if (!setAction(action, action_ready, override_action)) {
+    // is the chosen action valid?
+    if (!getModelDescriptor()->isActionValid(action)) {
         return false;
     }
 
-    if(!setFrame(getModelDescriptor()->getFirstFrame(action))) {
+    // are we going to check action_ready?
+    if (!override_action && !_canBeInterrupted) {
+        return false;
+    }
+
+    // set up the action
+    _currentAnimation = action;
+    _nextAnimation = ACTION_DA;
+    _canBeInterrupted = action_ready;
+
+    return true;
+}
+
+void ObjectGraphics::commitFrameState(const uint16_t sourceFrameIndex,
+                                      const uint16_t targetFrameIndex,
+                                      const uint8_t animationProgressInteger)
+{
+    _sourceFrameIndex = sourceFrameIndex;
+    _targetFrameIndex = targetFrameIndex;
+    _animationProgressInteger = animationProgressInteger;
+    _animationProgress = _animationProgressInteger * 0.25f;
+}
+
+bool ObjectGraphics::tryCommitFrameState(const int frame)
+{
+    // is the frame within the valid range for this action?
+    if (!getModelDescriptor()->isFrameValid(_currentAnimation, frame)) {
+        return false;
+    }
+
+    // jump to the next frame
+    commitFrameState(_targetFrameIndex, frame, 0);
+
+    return true;
+}
+
+bool ObjectGraphics::tryRestartAnimationAtActionStart(const ModelAction action,
+                                                      const bool action_ready,
+                                                      const bool override_action)
+{
+    if (!tryCommitActionState(action, action_ready, override_action)) {
+        return false;
+    }
+
+    return tryCommitFrameState(getModelDescriptor()->getFirstFrame(action));
+}
+
+bool ObjectGraphics::normalizeCurrentAnimationForFrameMutation()
+{
+    // we have to have a valid action range
+    if (_currentAnimation > ACTION_COUNT) {
+        return false;
+    }
+
+    // try to heal a bad action
+    _currentAnimation = getModelDescriptor()->getAction(_currentAnimation);
+
+    // reject the action if it cannot be made valid
+    return _currentAnimation != ACTION_COUNT;
+}
+
+void ObjectGraphics::invalidateChildInstancesIfCacheInvalid()
+{
+    if (!isVertexCacheValid()) {
+        chr_invalidate_child_instances(_object);
+    }
+}
+
+bool ObjectGraphics::startAnimation(const ModelAction action, const bool action_ready, const bool override_action)
+{
+    if (!tryRestartAnimationAtActionStart(action, action_ready, override_action)) {
         return false;
     }
 
     // if the instance is invalid, invalidate everything that depends on this object
-    if (!isVertexCacheValid()) {
-        chr_invalidate_child_instances(_object);
-    }
+    invalidateChildInstancesIfCacheInvalid();
 
     return true;
 }
 
 bool ObjectGraphics::setFrame(int frame)
 {
-    // is the frame within the valid range for this action?
-    if(!getModelDescriptor()->isFrameValid(_currentAnimation, frame)) {
-        return false;
-    }
-
-    // jump to the next frame
-    _animationProgress = 0.0f;
-    _animationProgressInteger = 0;
-    _sourceFrameIndex = _targetFrameIndex;
-    _targetFrameIndex = frame;
-
-    return true;
+    return tryCommitFrameState(frame);
 }
 
 bool ObjectGraphics::incrementAction()
@@ -1281,9 +1339,7 @@ void ObjectGraphics::applyMovementAnimationPolicy(ModelAction action, int lip)
 
     if (_currentAnimation != resolvedAction)
     {
-        setAction(resolvedAction, true, true);
-        setFrame(getModelDescriptor()->getFrameLipToWalkFrame(lip, getNextFrame().framelip));
-        startAnimation(resolvedAction, true, true);
+        restartMovementAnimation(resolvedAction, lip);
     }
 
     _nextAnimation = resolvedAction;
@@ -1330,36 +1386,12 @@ bool ObjectGraphics::canBeInterrupted() const
 
 bool ObjectGraphics::setAction(const ModelAction action, const bool action_ready, const bool override_action)
 {
-    // is the chosen action valid?
-    if (!getModelDescriptor()->isActionValid(action)) {
-        return false;
-    }
-
-    // are we going to check action_ready?
-    if (!override_action && !_canBeInterrupted) {
-        return false;
-    }
-
-    // set up the action
-    _currentAnimation = action;
-    _nextAnimation = ACTION_DA;
-    _canBeInterrupted = action_ready;
-
-    return true;
+    return tryCommitActionState(action, action_ready, override_action);
 }
 
 bool ObjectGraphics::setFrameFull(int frame_along, int ilip)
 {
-    // we have to have a valid action range
-    if (_currentAnimation > ACTION_COUNT) {
-        return false;
-    }
-
-    // try to heal a bad action
-    _currentAnimation = getModelDescriptor()->getAction(_currentAnimation);
-
-    // reject the action if it is cannot be made valid
-    if (_currentAnimation == ACTION_COUNT) {
+    if (!normalizeCurrentAnimationForFrameMutation()) {
         return false;
     }
 
@@ -1375,12 +1407,28 @@ bool ObjectGraphics::setFrameFull(int frame_along, int ilip)
     int new_nxt = frame_stt + frame_along;
     new_nxt = std::min(new_nxt, frame_end);
 
-    _targetFrameIndex = new_nxt;
-    _animationProgressInteger = ilip;
-    _animationProgress = _animationProgressInteger * 0.25f;
+    commitFrameState(_sourceFrameIndex, new_nxt, static_cast<uint8_t>(ilip));
 
     // set the validity of the cache
     return true;
+}
+
+void ObjectGraphics::restartMovementAnimation(ModelAction action, int lip)
+{
+    if (!tryCommitActionState(action, true, true)) {
+        return;
+    }
+
+    const int walkFrame = getModelDescriptor()->getFrameLipToWalkFrame(lip, getNextFrame().framelip);
+    if (!tryCommitFrameState(walkFrame)) {
+        return;
+    }
+
+    if (!tryRestartAnimationAtActionStart(action, true, true)) {
+        return;
+    }
+
+    invalidateChildInstancesIfCacheInvalid();
 }
 
 ModelAction ObjectGraphics::getCurrentAnimation() const

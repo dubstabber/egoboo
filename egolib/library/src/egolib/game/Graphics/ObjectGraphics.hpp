@@ -348,6 +348,18 @@ private:
 
     ModelAction resolveMountedLoopAnimation() const;
 
+    bool tryCommitActionState(ModelAction action, bool actionReady, bool overrideAction);
+
+    bool tryCommitFrameState(int frame);
+
+    bool tryRestartAnimationAtActionStart(ModelAction action, bool actionReady, bool overrideAction);
+
+    bool normalizeCurrentAnimationForFrameMutation();
+
+    void commitFrameState(uint16_t sourceFrameIndex, uint16_t targetFrameIndex, uint8_t animationProgressInteger);
+
+    void invalidateChildInstancesIfCacheInvalid();
+
     /// @details This function starts the next action for a character
     bool incrementAction();
 
@@ -360,6 +372,8 @@ private:
     bool applyMountedAnimationRatePolicy();
 
     void applyIdleAnimationPolicy();
+
+    void restartMovementAnimation(ModelAction action, int lip);
 
     void applyMovementAnimationPolicy(ModelAction action, int lip);
 
