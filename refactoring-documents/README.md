@@ -107,6 +107,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `45-local-player-enemy-sense-ownership-pass.md`
 - `46-cross-platform-and-third-party-independence-status.md`
 - `47-local-player-respawn-cooldown-ownership-pass.md`
+- `48-local-stats-legacy-boundary-pass.md`
 
 ## Recommended reading order
 
@@ -147,6 +148,7 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 35. Read `45-local-player-enemy-sense-ownership-pass.md` for the session-owned minimap enemy-sense surface, preserved legacy mirrors, and the remaining respawn-timing follow-on seam.
 36. Read `46-cross-platform-and-third-party-independence-status.md` for the current cross-platform build, Visual Studio retirement, and third-party dependency self-containment snapshot with the remaining gap list.
 37. Read `47-local-player-respawn-cooldown-ownership-pass.md` for the session-owned respawn cooldown surface, the preserved `local_stats.revivetimer` compatibility mirror, and the new post-cleanup recommendation for the remaining legacy ABI boundary.
+38. Read `48-local-stats-legacy-boundary-pass.md` for the audit-backed narrowing of the `local_stats` declaration surface and the remaining question around out-of-repo compatibility consumers.
 
 ## Immediate recommendation
 

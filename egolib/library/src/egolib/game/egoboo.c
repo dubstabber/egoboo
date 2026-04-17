@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/egoboo.h"
+#include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Module/Module.hpp"

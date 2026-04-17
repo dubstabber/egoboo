@@ -8,6 +8,7 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Module/Module_player_startup.hpp"

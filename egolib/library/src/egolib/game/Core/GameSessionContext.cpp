@@ -6,6 +6,7 @@
 #include "egolib/egoboo_setup.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
