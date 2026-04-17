@@ -22,6 +22,10 @@
 
 namespace
 {
+const local_stats_t& localStatsMirror()
+{
+    return *legacy_local_stats_const();
+}
 
 constexpr char kQuestTestRoot[] = "quest-tests";
 
@@ -243,11 +247,11 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerCountMirrorTracksPreModuleFa
     ASSERT_TRUE(module_player_startup::addPlayer(playerList, object, Ego::Input::InputDevice::DeviceList[0], false));
     ASSERT_EQ(playerList.size(), 1u);
 
-    EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(local_stats.player_count));
+    EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(localStatsMirror().player_count));
     EXPECT_EQ(session.localPlayerCount(), 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
-    EXPECT_FALSE(local_stats.noplayers);
+    EXPECT_FALSE(localStatsMirror().noplayers);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerMirrorsResetWithSessionState)
@@ -266,10 +270,10 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerMirrorsResetWithSessionState
     EXPECT_FALSE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
     EXPECT_EQ(session.respawnCooldown(), 0);
-    EXPECT_EQ(local_stats.player_count, 0);
-    EXPECT_TRUE(local_stats.noplayers);
-    EXPECT_FALSE(local_stats.allpladead);
-    EXPECT_EQ(local_stats.revivetimer, 0);
+    EXPECT_EQ(localStatsMirror().player_count, 0);
+    EXPECT_TRUE(localStatsMirror().noplayers);
+    EXPECT_FALSE(localStatsMirror().allpladead);
+    EXPECT_EQ(localStatsMirror().revivetimer, 0);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyAllPlayersDeadMirrorTracksPublishedSessionStatus)
@@ -284,12 +288,12 @@ TEST_F(ModulePlayerStartupFixture, LegacyAllPlayersDeadMirrorTracksPublishedSess
     EXPECT_EQ(session.localPlayerStatus().deadCount, 1u);
     EXPECT_TRUE(session.hasLocalPlayers());
     EXPECT_FALSE(session.allLocalPlayersDead());
-    EXPECT_FALSE(local_stats.allpladead);
+    EXPECT_FALSE(localStatsMirror().allpladead);
 
     session.publishLocalPlayerStatus(LocalPlayerStatus{2, 0, 2});
 
     EXPECT_TRUE(session.allLocalPlayersDead());
-    EXPECT_TRUE(local_stats.allpladead);
+    EXPECT_TRUE(localStatsMirror().allpladead);
 }
 
 TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusTreatsEmptyRegistrationAsAllPlayersDead)
@@ -461,13 +465,13 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsTrackPublis
     EXPECT_FLOAT_EQ(perception.seeDarkLevel, 2.0f);
     EXPECT_FLOAT_EQ(perception.seeDarkMagnitude, std::exp(0.32f * 2.0f));
     EXPECT_FLOAT_EQ(perception.seeKurseLevel, 1.5f);
-    EXPECT_FLOAT_EQ(local_stats.grog_level, 6.0f);
-    EXPECT_FLOAT_EQ(local_stats.daze_level, 4.0f);
-    EXPECT_FLOAT_EQ(local_stats.seeinvis_level, 3.0f);
-    EXPECT_FLOAT_EQ(local_stats.seeinvis_mag, std::exp(0.32f * 3.0f));
-    EXPECT_FLOAT_EQ(local_stats.seedark_level, 2.0f);
-    EXPECT_FLOAT_EQ(local_stats.seedark_mag, std::exp(0.32f * 2.0f));
-    EXPECT_FLOAT_EQ(local_stats.seekurse_level, 1.5f);
+    EXPECT_FLOAT_EQ(localStatsMirror().grog_level, 6.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().daze_level, 4.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seeinvis_level, 3.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seeinvis_mag, std::exp(0.32f * 3.0f));
+    EXPECT_FLOAT_EQ(localStatsMirror().seedark_level, 2.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seedark_mag, std::exp(0.32f * 2.0f));
+    EXPECT_FLOAT_EQ(localStatsMirror().seekurse_level, 1.5f);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsResetWithSessionState)
@@ -493,13 +497,13 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerPerceptionMirrorsResetWithSe
     EXPECT_FLOAT_EQ(perception.seeDarkLevel, 0.0f);
     EXPECT_FLOAT_EQ(perception.seeDarkMagnitude, 1.0f);
     EXPECT_FLOAT_EQ(perception.seeKurseLevel, 0.0f);
-    EXPECT_FLOAT_EQ(local_stats.grog_level, 0.0f);
-    EXPECT_FLOAT_EQ(local_stats.daze_level, 0.0f);
-    EXPECT_FLOAT_EQ(local_stats.seeinvis_level, 0.0f);
-    EXPECT_FLOAT_EQ(local_stats.seeinvis_mag, 1.0f);
-    EXPECT_FLOAT_EQ(local_stats.seedark_level, 0.0f);
-    EXPECT_FLOAT_EQ(local_stats.seedark_mag, 1.0f);
-    EXPECT_FLOAT_EQ(local_stats.seekurse_level, 0.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().grog_level, 0.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().daze_level, 0.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seeinvis_level, 0.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seeinvis_mag, 1.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seedark_level, 0.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seedark_mag, 1.0f);
+    EXPECT_FLOAT_EQ(localStatsMirror().seekurse_level, 0.0f);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsTrackPublishedSessionState)
@@ -512,8 +516,8 @@ TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsTrackPublishedSessionS
     const EnemySenseState& enemySense = session.enemySense();
     EXPECT_EQ(enemySense.team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
     EXPECT_EQ(enemySense.idsz, IDSZ2('U', 'N', 'D', 'E'));
-    EXPECT_EQ(local_stats.sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
-    EXPECT_EQ(local_stats.sense_enemies_idsz, IDSZ2('U', 'N', 'D', 'E'));
+    EXPECT_EQ(localStatsMirror().sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(localStatsMirror().sense_enemies_idsz, IDSZ2('U', 'N', 'D', 'E'));
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsResetWithSessionState)
@@ -526,8 +530,8 @@ TEST_F(ModulePlayerStartupFixture, LegacyEnemySenseMirrorsResetWithSessionState)
     const EnemySenseState& enemySense = session.enemySense();
     EXPECT_EQ(enemySense.team, static_cast<TEAM_REF>(Team::TEAM_MAX));
     EXPECT_EQ(enemySense.idsz, IDSZ2::None);
-    EXPECT_EQ(local_stats.sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_MAX));
-    EXPECT_EQ(local_stats.sense_enemies_idsz, IDSZ2::None);
+    EXPECT_EQ(localStatsMirror().sense_enemies_team, static_cast<TEAM_REF>(Team::TEAM_MAX));
+    EXPECT_EQ(localStatsMirror().sense_enemies_idsz, IDSZ2::None);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTracksPublishedSessionState)
@@ -537,7 +541,7 @@ TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTracksPublishedSes
     session.publishRespawnCooldown(ONESECOND);
 
     EXPECT_EQ(session.respawnCooldown(), ONESECOND);
-    EXPECT_EQ(local_stats.revivetimer, ONESECOND);
+    EXPECT_EQ(localStatsMirror().revivetimer, ONESECOND);
 }
 
 TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTicksDownAndSaturatesAtZero)
@@ -547,15 +551,15 @@ TEST_F(ModulePlayerStartupFixture, LegacyRespawnCooldownMirrorTicksDownAndSatura
 
     session.tickRespawnCooldown();
     EXPECT_EQ(session.respawnCooldown(), 1);
-    EXPECT_EQ(local_stats.revivetimer, 1);
+    EXPECT_EQ(localStatsMirror().revivetimer, 1);
 
     session.tickRespawnCooldown();
     EXPECT_EQ(session.respawnCooldown(), 0);
-    EXPECT_EQ(local_stats.revivetimer, 0);
+    EXPECT_EQ(localStatsMirror().revivetimer, 0);
 
     session.tickRespawnCooldown();
     EXPECT_EQ(session.respawnCooldown(), 0);
-    EXPECT_EQ(local_stats.revivetimer, 0);
+    EXPECT_EQ(localStatsMirror().revivetimer, 0);
 }
 
 } // namespace

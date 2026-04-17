@@ -26,4 +26,7 @@ struct local_stats_t
     IDSZ2 sense_enemies_idsz;
 };
 
-extern local_stats_t local_stats;
+// Prefer this explicit shim in repo code so the legacy mirror storage remains
+// quarantined behind one named compatibility surface.
+local_stats_t* legacy_local_stats();
+const local_stats_t* legacy_local_stats_const();

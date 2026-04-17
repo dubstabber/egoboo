@@ -108,6 +108,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 - `46-cross-platform-and-third-party-independence-status.md`
 - `47-local-player-respawn-cooldown-ownership-pass.md`
 - `48-local-stats-legacy-boundary-pass.md`
+- `49-local-stats-accessor-shim-pass.md`
+- `50-local-stats-export-retirement-pass.md`
 
 ## Recommended reading order
 
@@ -149,6 +151,8 @@ The `.c` file count rose from 56 → 70 because `script_functions.c` (formerly a
 36. Read `46-cross-platform-and-third-party-independence-status.md` for the current cross-platform build, Visual Studio retirement, and third-party dependency self-containment snapshot with the remaining gap list.
 37. Read `47-local-player-respawn-cooldown-ownership-pass.md` for the session-owned respawn cooldown surface, the preserved `local_stats.revivetimer` compatibility mirror, and the new post-cleanup recommendation for the remaining legacy ABI boundary.
 38. Read `48-local-stats-legacy-boundary-pass.md` for the audit-backed narrowing of the `local_stats` declaration surface and the remaining question around out-of-repo compatibility consumers.
+39. Read `49-local-stats-accessor-shim-pass.md` for the explicit accessor-based quarantine around the exported `local_stats` global and the remaining decision point around external consumers.
+40. Read `50-local-stats-export-retirement-pass.md` for the retirement of the raw `local_stats` export, the accessor-only legacy mirror boundary, and the return to the remaining `_gameEngine` / `update_wld` cleanup seams.
 
 ## Immediate recommendation
 

@@ -32,9 +32,19 @@
 //--------------------------------------------------------------------------------------------
 
 // Legacy runtime aggregate; local-player status mirrors are synchronized via GameSessionContext.
-local_stats_t local_stats;
+static local_stats_t local_stats_storage;
 bool timeron = false;  ///< Game timer displayed?
 uint32_t timervalue = 0; ///< Timer time ( 50ths of a second )
+
+local_stats_t* legacy_local_stats()
+{
+    return &local_stats_storage;
+}
+
+const local_stats_t* legacy_local_stats_const()
+{
+    return &local_stats_storage;
+}
 
 //--------------------------------------------------------------------------------------------
 

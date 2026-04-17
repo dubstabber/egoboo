@@ -20,34 +20,37 @@ namespace
 {
 void publishLegacyLocalPlayerStatusCompatibilityMirrors(const GameSessionContext& session)
 {
-    // Preserve the exported local_stats ABI while GameSessionContext owns the state.
-    local_stats.player_count = static_cast<int>(session.localPlayerCount());
-    local_stats.noplayers = !session.hasLocalPlayers();
-    local_stats.allpladead = session.allLocalPlayersDead();
+    local_stats_t& legacyStats = *legacy_local_stats();
+    // Preserve the legacy local-stats mirror while GameSessionContext owns the state.
+    legacyStats.player_count = static_cast<int>(session.localPlayerCount());
+    legacyStats.noplayers = !session.hasLocalPlayers();
+    legacyStats.allpladead = session.allLocalPlayersDead();
 }
 
 void publishLegacyLocalPlayerPerceptionCompatibilityMirrors(const GameSessionContext& session)
 {
+    local_stats_t& legacyStats = *legacy_local_stats();
     const LocalPlayerPerceptionState& perception = session.localPlayerPerception();
-    local_stats.grog_level = perception.grogLevel;
-    local_stats.daze_level = perception.dazeLevel;
-    local_stats.seeinvis_level = perception.seeInvisibleLevel;
-    local_stats.seeinvis_mag = perception.seeInvisibleMagnitude;
-    local_stats.seedark_level = perception.seeDarkLevel;
-    local_stats.seedark_mag = perception.seeDarkMagnitude;
-    local_stats.seekurse_level = perception.seeKurseLevel;
+    legacyStats.grog_level = perception.grogLevel;
+    legacyStats.daze_level = perception.dazeLevel;
+    legacyStats.seeinvis_level = perception.seeInvisibleLevel;
+    legacyStats.seeinvis_mag = perception.seeInvisibleMagnitude;
+    legacyStats.seedark_level = perception.seeDarkLevel;
+    legacyStats.seedark_mag = perception.seeDarkMagnitude;
+    legacyStats.seekurse_level = perception.seeKurseLevel;
 }
 
 void publishLegacyEnemySenseCompatibilityMirrors(const GameSessionContext& session)
 {
+    local_stats_t& legacyStats = *legacy_local_stats();
     const EnemySenseState& enemySense = session.enemySense();
-    local_stats.sense_enemies_team = enemySense.team;
-    local_stats.sense_enemies_idsz = enemySense.idsz;
+    legacyStats.sense_enemies_team = enemySense.team;
+    legacyStats.sense_enemies_idsz = enemySense.idsz;
 }
 
 void publishLegacyRespawnCooldownCompatibilityMirrors(const GameSessionContext& session)
 {
-    local_stats.revivetimer = session.respawnCooldown();
+    legacy_local_stats()->revivetimer = session.respawnCooldown();
 }
 }
 
