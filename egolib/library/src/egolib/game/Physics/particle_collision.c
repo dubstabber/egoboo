@@ -50,6 +50,11 @@ const IDamageable& damageable(const Object& object)
 {
     return object;
 }
+
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
 }
 
 //Private functions
@@ -299,7 +304,8 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     // only check possible object-platform interactions
     platform_a = /* pprt_b->canuseplatforms && */ pchr_a->isPlatform();
     if ( !platform_a ) return false;
-    const oct_bb_t& chrMinCollision = pchr_a->getMinCollisionVolume();
+    const IPhysical& physicalCharacter = physical(*pchr_a);
+    const oct_bb_t& chrMinCollision = physicalCharacter.getMinCollisionVolume();
 
     odepth[OCT_Z]  = std::min( pprt_b->prt_max_cv._maxs[OCT_Z] + pprt_b->getPosZ(), chrMinCollision._maxs[OCT_Z] + pchr_a->getPosZ() ) -
                      std::max( pprt_b->prt_max_cv._mins[OCT_Z] + pprt_b->getPosZ(), chrMinCollision._mins[OCT_Z] + pchr_a->getPosZ() );
@@ -371,7 +377,8 @@ bool do_chr_prt_collision_get_details(chr_prt_collision_data_t& pdata, const flo
     bool handled = false;
 
     // shift the source bounding boxes to be centered on the given positions
-    cv_chr = idlib::translate(pdata.pchr->getMinCollisionVolume(), pdata.pchr->getPosition());
+    const IPhysical& physicalCharacter = physical(*pdata.pchr);
+    cv_chr = idlib::translate(physicalCharacter.getMinCollisionVolume(), pdata.pchr->getPosition());
 
     // the smallest particle collision volume
     cv_prt_min = idlib::translate(pdata.pprt->prt_min_cv, pdata.pprt->getPosition());
@@ -476,7 +483,8 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 
     // find the "attack direction" of the particle
     Facing direction = idlib::canonicalize(vec_to_facing(pdata.pchr->getPosX() - pdata.pprt->getPosX(), pdata.pchr->getPosY() - pdata.pprt->getPosY()));
-    direction = pdata.pchr->getFacingZ() - Facing(direction) + ATK_BEHIND;
+    const IPhysical& physicalCharacter = physical(*pdata.pchr);
+    direction = physicalCharacter.getFacingZ() - Facing(direction) + ATK_BEHIND;
 
     // shield block?
     // if the effect is shield piercing, ignore shielding
@@ -717,7 +725,8 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
             IPair modifiedDamage = pdata.pprt->damage;
 
             FACING_T direction = FACING_T(vec_to_facing( pdata.pprt->getVelocity().x() , pdata.pprt->getVelocity().y() ));
-            direction = FACING_T(pdata.pchr->getFacingZ() - Facing(direction) + ATK_BEHIND);
+            const IPhysical& physicalCharacter = physical(*pdata.pchr);
+            direction = FACING_T(physicalCharacter.getFacingZ() - Facing(direction) + ATK_BEHIND);
 
             // These things only apply if the particle has an owner
             if ( nullptr != powner )
@@ -1327,7 +1336,8 @@ static bool attach_prt_to_platform( Ego::Particle * pprt, Object * pplat )
     pprt->targetplatform_ref     = ObjectRef::Invalid;
 
     // update the character's relationship to the ground
-    pprt->setElevation( std::max( pprt->enviro.level, pplat->getPosZ() + pplat->getMinCollisionVolume()._maxs[OCT_Z] ) );
+    const IPhysical& platformPhysical = physical(*pplat);
+    pprt->setElevation( std::max( pprt->enviro.level, pplat->getPosZ() + platformPhysical.getMinCollisionVolume()._maxs[OCT_Z] ) );
 
     return true;
 }
@@ -1356,7 +1366,8 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
 
     // Only damage if hitting from proper direction
     Facing direction = vec_to_facing(pprt->getVelocity().x(), pprt->getVelocity().y());
-    direction = ATK_BEHIND + pchr->getFacingZ() - direction;
+    const IPhysical& physicalCharacter = physical(*pchr);
+    direction = ATK_BEHIND + physicalCharacter.getFacingZ() - direction;
 
     // Check that direction
     if (ppip->hasBit(DAMFX_NBLOC) || !pchr->isInvictusDirection(direction))
@@ -1408,7 +1419,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
 
                 // clear the occupied list
                 float z = pprt->getPosZ() - pchr->getPosZ();
-                Facing facing = idlib::canonicalize(pprt->facing - pchr->getFacingZ());
+                Facing facing = idlib::canonicalize(pprt->facing - physicalCharacter.getFacingZ());
                 Facing turn = facing;
                 float fsin = std::sin(turn);
                 float fcos = std::cos(turn);
@@ -1458,7 +1469,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                         }
 
                         std::shared_ptr<Ego::Particle> bs_part = 
-                            ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
+                            ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(physicalCharacter.getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
                                                                       character, bestvertex + 1, pprt->team, pprt->owner_ref, particle, cnt, character);
 
                         if (bs_part)

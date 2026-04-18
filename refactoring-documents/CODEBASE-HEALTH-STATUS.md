@@ -22,7 +22,7 @@ The codebase is in an **active, well-managed transitional state**. The original 
 
 Core design debt that remains:
 
-- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and role-extraction passes 77 through 79 have started peeling off `IInventoryHolder`, `IRenderable`, and `IScriptable`, but `Object` still owns too much surface.
+- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and role-extraction passes 77 through 81 have now peeled off `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical`, but `Object` still owns too much surface.
 - Singleton access is still pervasive (~1,150 `::get()` call sites) and no service-interface or DI layer exists yet.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
@@ -275,7 +275,7 @@ Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, 
 
 ### Encapsulation
 
-Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, and the enchant/temp-attribute and inventory/team seams. The remaining surface is now mostly alias-style handle returns and the deliberate `aiStateForScript()` compatibility bridge.
+Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers, and passes 77–81 have started expressing those narrowed surfaces as explicit roles. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, the enchant/temp-attribute and inventory/team seams, and the read-only `IDamageable`/`IPhysical` role surfaces. The remaining surface is now mostly alias-style handle returns and the deliberate `aiStateForScript()` compatibility bridge.
 
 ### Const correctness
 
@@ -413,7 +413,7 @@ These items compound the refactoring progress most efficiently given the current
 
 ### Runtime and structure
 
-1. **Continue role-interface extraction for `Object`** — land `IDamageable` and `IPhysical`, then keep migrating consumers onto the already-landed `IInventoryHolder`, `IRenderable`, and `IScriptable` seams.
+1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical` instead of `Object` where only bounded role behavior is needed.
 2. **Close the remaining deliberate script bridge and alias-style handles on `Object`** — keep `aiStateForScript()` and similar handle-return seams isolated while role extraction proceeds.
 3. **Introduce a service-interface layer over singletons** — start with `AudioSystem` (smallest reach). This is the DIP keystone.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.

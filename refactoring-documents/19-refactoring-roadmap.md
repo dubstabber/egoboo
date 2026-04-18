@@ -5,7 +5,7 @@ Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 202
 - `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
 - `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
 - `25-entity-layer-decomposition-plan.md` (phases 1–3 complete; `Object.cpp` / `ObjectProfile.cpp` / `Particle.cpp` all split)
-- `33-maintainability-improvement-plan.md` (Tier 1.1 context-wrapper migration complete; Tier 1.2 `Object` seam closure and role extraction in flight — see passes 72–79 in `71-completed-passes-log.md`)
+- `33-maintainability-improvement-plan.md` (Tier 1.1 context-wrapper migration complete; Tier 1.2 `Object` seam closure and role extraction in flight — see passes 72–81 in `71-completed-passes-log.md`)
 
 For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-STATUS.md`. For the completed work that got us here, read `71-completed-passes-log.md`.
 
@@ -40,9 +40,6 @@ Landed so far:
 - `IInventoryHolder` — equipment, held, inventory slot access
 - `IRenderable` — render-facing surface (matrix cache, tint, model descriptor)
 - `IScriptable` — script-visible state and commands
-
-Still to land:
-
 - `IDamageable` — combat damage application surface
 - `IPhysical` — collision volume, orientation, bumper state
 

@@ -32,6 +32,7 @@
 
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
 #include "egolib/game/egoboo.h"
@@ -80,6 +81,7 @@ enum LatchButton
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
                public IDamageable,
                public IInventoryHolder,
+               public IPhysical,
                public IRenderable,
                public IScriptable,
                public std::enable_shared_from_this<Object>
@@ -636,15 +638,15 @@ public:
 
     void setResizeTimeRemaining(int16_t remaining) { fat_goto_time = remaining; }
 
-    const bumper_t& getInitialBump() const { return bump_stt; }
+    const bumper_t& getInitialBump() const override { return bump_stt; }
 
     void setInitialBump(const bumper_t& baseBump) { bump_stt = baseBump; }
 
-    const bumper_t& getCurrentBump() const { return bump; }
+    const bumper_t& getCurrentBump() const override { return bump; }
 
     void setCurrentBump(const bumper_t& currentBump) { bump = currentBump; }
 
-    const bumper_t& getSavedBump() const { return bump_save; }
+    const bumper_t& getSavedBump() const override { return bump_save; }
 
     void setSavedBump(const bumper_t& savedBump) { bump_save = savedBump; }
 
@@ -654,19 +656,19 @@ public:
         setSavedBump(baseBump);
     }
 
-    const bumper_t& getLooseBump() const { return bump_1; }
+    const bumper_t& getLooseBump() const override { return bump_1; }
 
     void setLooseBump(const bumper_t& looseBump) { bump_1 = looseBump; }
 
-    const oct_bb_t& getMinCollisionVolume() const { return chr_min_cv; }
+    const oct_bb_t& getMinCollisionVolume() const override { return chr_min_cv; }
 
     void setMinCollisionVolume(const oct_bb_t& minCollisionVolume) { chr_min_cv = minCollisionVolume; }
 
-    const oct_bb_t& getMaxCollisionVolume() const { return chr_max_cv; }
+    const oct_bb_t& getMaxCollisionVolume() const override { return chr_max_cv; }
 
     void setMaxCollisionVolume(const oct_bb_t& maxCollisionVolume) { chr_max_cv = maxCollisionVolume; }
 
-    const oct_bb_t& getSlotCollisionVolume(slot_t slot) const { return slot_cv[slot]; }
+    const oct_bb_t& getSlotCollisionVolume(slot_t slot) const override { return slot_cv[slot]; }
 
     void setSlotCollisionVolume(slot_t slot, const oct_bb_t& slotCollisionVolume) { slot_cv[slot] = slotCollisionVolume; }
 
@@ -1300,19 +1302,19 @@ public:
 
     void setTurnMode(turn_mode_t mode) { turnmode = mode; }
 
-    Facing getFacingZ() const { return ori.facing_z; }
+    Facing getFacingZ() const override { return ori.facing_z; }
 
     void setFacingZ(Facing facing) { ori.facing_z = facing; }
 
-    Facing getMapTwistFacingX() const { return ori.map_twist_facing_x; }
+    Facing getMapTwistFacingX() const override { return ori.map_twist_facing_x; }
 
     void setMapTwistFacingX(Facing facing) { ori.map_twist_facing_x = facing; }
 
-    Facing getMapTwistFacingY() const { return ori.map_twist_facing_y; }
+    Facing getMapTwistFacingY() const override { return ori.map_twist_facing_y; }
 
     void setMapTwistFacingY(Facing facing) { ori.map_twist_facing_y = facing; }
 
-    Facing getPreviousFacingZ() const { return ori_old.facing_z; }
+    Facing getPreviousFacingZ() const override { return ori_old.facing_z; }
 
     void setPreviousFacingZ(Facing facing) { ori_old.facing_z = facing; }
 

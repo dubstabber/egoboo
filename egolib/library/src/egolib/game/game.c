@@ -25,6 +25,14 @@
 
 EndText g_endText;
 
+namespace
+{
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
+}
+
 //--------------------------------------------------------------------------------------------
 // Session lifecycle and message text helpers
 //--------------------------------------------------------------------------------------------
@@ -354,6 +362,8 @@ float get_mesh_max_vertex_2( ego_mesh_t *mesh, Object *object)
 		throw idlib::argument_null_error(__FILE__, __LINE__, "object");
 	}
 
+    const IPhysical& physicalObject = physical(*object);
+
     int corner;
     int ix_off[4] = {1, 1, 0, 0};
     int iy_off[4] = {0, 1, 1, 0};
@@ -364,8 +374,8 @@ float get_mesh_max_vertex_2( ego_mesh_t *mesh, Object *object)
 
     for ( corner = 0; corner < 4; corner++ )
     {
-        pos_x[corner] = object->getPosX() + (( 0 == ix_off[corner] ) ? object->getMinCollisionVolume()._mins[OCT_X] : object->getMinCollisionVolume()._maxs[OCT_X] );
-        pos_y[corner] = object->getPosY() + (( 0 == iy_off[corner] ) ? object->getMinCollisionVolume()._mins[OCT_Y] : object->getMinCollisionVolume()._maxs[OCT_Y] );
+        pos_x[corner] = object->getPosX() + (( 0 == ix_off[corner] ) ? physicalObject.getMinCollisionVolume()._mins[OCT_X] : physicalObject.getMinCollisionVolume()._maxs[OCT_X] );
+        pos_y[corner] = object->getPosY() + (( 0 == iy_off[corner] ) ? physicalObject.getMinCollisionVolume()._mins[OCT_Y] : physicalObject.getMinCollisionVolume()._maxs[OCT_Y] );
     }
 
     zmax = mesh->getElevation(Ego::Vector2f(pos_x[0], pos_y[0]), object->getAttribute(Ego::Attribute::WALK_ON_WATER) > 0 );
@@ -391,10 +401,11 @@ float get_chr_level( ego_mesh_t *mesh, Object *object )
     oct_bb_t bump;
 
     if (!mesh || !object || object->isTerminated()) return 0;
+    const IPhysical& physicalObject = physical(*object);
 
     // certain scenery items like doors and such just need to be able to
     // collide with the mesh. They all have 0 == pchr->bump.size
-    if ( 0.0f == object->getInitialBump().size )
+    if ( 0.0f == physicalObject.getInitialBump().size )
     {
         return mesh->getElevation(Ego::Vector2f(object->getPosX(), object->getPosY()),
 			                      object->getAttribute(Ego::Attribute::WALK_ON_WATER) > 0);
@@ -402,7 +413,7 @@ float get_chr_level( ego_mesh_t *mesh, Object *object )
 
     // otherwise, use the small collision volume to determine which tiles the object overlaps
     // move the collision volume so that it surrounds the object
-    bump = idlib::translate(object->getMinCollisionVolume(), object->getPosition());
+    bump = idlib::translate(physicalObject.getMinCollisionVolume(), object->getPosition());
 
     // determine the size of this object in tiles
     ixmin = bump._mins[OCT_X] / Info<float>::Grid::Size(); ixmin = Ego::Math::constrain( ixmin, 0, int(mesh->_info.getTileCountX()) - 1 );

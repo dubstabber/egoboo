@@ -695,6 +695,58 @@ TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesA
     EXPECT_TRUE(target->isAlive());
 }
 
+TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrientationState)
+{
+    auto object = makeFollower(30503);
+    ASSERT_NE(object, nullptr);
+
+    bumper_t initialBump;
+    initialBump.size = 11.0f;
+    initialBump.size_big = 13.0f;
+    initialBump.height = 17.0f;
+
+    bumper_t currentBump;
+    currentBump.size = 19.0f;
+    currentBump.size_big = 23.0f;
+    currentBump.height = 29.0f;
+
+    bumper_t looseBump;
+    looseBump.size = 31.0f;
+    looseBump.size_big = 37.0f;
+    looseBump.height = 41.0f;
+
+    oct_bb_t minCollisionVolume(oct_vec_v2_t(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f));
+    oct_bb_t maxCollisionVolume(oct_vec_v2_t(6.0f, 7.0f, 8.0f, 9.0f, 10.0f));
+    std::array<oct_bb_t, SLOT_COUNT> slotCollisionVolumes;
+    slotCollisionVolumes.fill(oct_bb_t());
+    slotCollisionVolumes[SLOT_LEFT] = oct_bb_t(oct_vec_v2_t(11.0f, 12.0f, 13.0f, 14.0f, 15.0f));
+    slotCollisionVolumes[SLOT_RIGHT] = oct_bb_t(oct_vec_v2_t(16.0f, 17.0f, 18.0f, 19.0f, 20.0f));
+
+    object->initializeBaseBump(initialBump);
+    object->setCurrentBump(currentBump);
+    object->setLooseBump(looseBump);
+    object->setCollisionVolumes(minCollisionVolume, maxCollisionVolume, slotCollisionVolumes);
+    object->setFacingZ(Facing(1111));
+    object->setMapTwistFacingX(Facing(2222));
+    object->setMapTwistFacingY(Facing(3333));
+    object->setPreviousFacingZ(Facing(4444));
+
+    const IPhysical& physical = *object;
+
+    EXPECT_FLOAT_EQ(physical.getInitialBump().size, 11.0f);
+    EXPECT_FLOAT_EQ(physical.getSavedBump().size, 11.0f);
+    EXPECT_FLOAT_EQ(physical.getCurrentBump().size, 19.0f);
+    EXPECT_FLOAT_EQ(physical.getLooseBump().size, 31.0f);
+    EXPECT_FLOAT_EQ(physical.getMinCollisionVolume()._mins[OCT_X], -1.0f);
+    EXPECT_FLOAT_EQ(physical.getMaxCollisionVolume()._mins[OCT_X], 6.0f);
+    EXPECT_FLOAT_EQ(physical.getSlotCollisionVolume(SLOT_LEFT)._mins[OCT_X], 11.0f);
+    EXPECT_FLOAT_EQ(physical.getSlotCollisionVolume(SLOT_RIGHT)._mins[OCT_X], 16.0f);
+    EXPECT_EQ(physical.getFacingZ(), Facing(1111));
+    EXPECT_EQ(physical.getMapTwistFacingX(), Facing(2222));
+    EXPECT_EQ(physical.getMapTwistFacingY(), Facing(3333));
+    EXPECT_EQ(physical.getPreviousFacingZ(), Facing(4444));
+}
+
 TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(3051);

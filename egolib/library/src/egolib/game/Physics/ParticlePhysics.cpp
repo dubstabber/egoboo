@@ -10,6 +10,11 @@ GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
 }
+
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
 }
 
 namespace Ego
@@ -336,9 +341,10 @@ void ParticlePhysics::updateHoming()
 
     // grab a pointer to the target
     const std::shared_ptr<Object> &ptarget = _particle.getTarget();
+    const IPhysical& targetPhysical = physical(*ptarget);
 
     Vector3f vdiff = ptarget->getPosition() - _particle.getPosition();
-    vdiff.z() += ptarget->getCurrentBump().height * 0.5f;
+    vdiff.z() += targetPhysical.getCurrentBump().height * 0.5f;
 
     float min_length = 2 * 5 * 256 * (FLOAT_TO_FP8(activeModule().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
 
@@ -551,7 +557,8 @@ void ParticlePhysics::updateEnviroment()
     loc_level = penviro->floor_level;
     if (platform)
     {
-        loc_level = std::max(penviro->floor_level, platform->getPosZ() + platform->getMinCollisionVolume()._maxs[OCT_Z]);
+        const IPhysical& platformPhysical = physical(*platform);
+        loc_level = std::max(penviro->floor_level, platform->getPosZ() + platformPhysical.getMinCollisionVolume()._maxs[OCT_Z]);
     }
     _particle.setElevation(loc_level);
 
