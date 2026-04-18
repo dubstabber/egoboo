@@ -32,6 +32,7 @@
 
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IRenderable.hpp"
+#include "egolib/Entities/IScriptable.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
@@ -78,6 +79,7 @@ enum LatchButton
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
                public IInventoryHolder,
                public IRenderable,
+               public IScriptable,
                public std::enable_shared_from_this<Object>
 {
 public:
@@ -1168,83 +1170,83 @@ public:
 
     void setDismountObject(ObjectRef objectRef) { dismount_object = objectRef; }
 
-    BIT_FIELD getAIAlertBits() const;
+    BIT_FIELD getAIAlertBits() const override;
 
-    void setAIAlertBits(BIT_FIELD bits);
+    void setAIAlertBits(BIT_FIELD bits) override;
 
-    void addAIAlertBits(BIT_FIELD bits);
+    void addAIAlertBits(BIT_FIELD bits) override;
 
-    void clearAIAlertBits(BIT_FIELD bits);
+    void clearAIAlertBits(BIT_FIELD bits) override;
 
-    bool hasAnyAIAlertBits(BIT_FIELD bits) const;
+    bool hasAnyAIAlertBits(BIT_FIELD bits) const override;
 
-    int getAIStateValue() const;
+    int getAIStateValue() const override;
 
-    void setAIStateValue(int value);
+    void setAIStateValue(int value) override;
 
-    int getAIContent() const;
+    int getAIContent() const override;
 
-    void setAIContent(int value);
+    void setAIContent(int value) override;
 
-    int getAIPassage() const;
+    int getAIPassage() const override;
 
-    void setAIPassage(int value);
+    void setAIPassage(int value) override;
 
-    uint32_t getAITimer() const;
+    uint32_t getAITimer() const override;
 
-    void setAITimer(uint32_t timer);
+    void setAITimer(uint32_t timer) override;
 
-    int32_t getAIPoofTime() const;
+    int32_t getAIPoofTime() const override;
 
-    void setAIPoofTime(int32_t time);
+    void setAIPoofTime(int32_t time) override;
 
-    ObjectRef getAIOwner() const;
+    ObjectRef getAIOwner() const override;
 
-    void setAIOwner(ObjectRef objectRef);
+    void setAIOwner(ObjectRef objectRef) override;
 
-    ObjectRef getAIChild() const;
+    ObjectRef getAIChild() const override;
 
-    void setAIChild(ObjectRef objectRef);
+    void setAIChild(ObjectRef objectRef) override;
 
-    ObjectRef getAITarget() const;
+    ObjectRef getAITarget() const override;
 
-    void setAITarget(ObjectRef objectRef);
+    void setAITarget(ObjectRef objectRef) override;
 
-    ObjectRef getAILastAttacker() const;
+    ObjectRef getAILastAttacker() const override;
 
-    void setAILastAttacker(ObjectRef objectRef);
+    void setAILastAttacker(ObjectRef objectRef) override;
 
-    ObjectRef getAIBumped() const;
+    ObjectRef getAIBumped() const override;
 
-    ObjectRef getAILastItemUsed() const;
+    ObjectRef getAILastItemUsed() const override;
 
-    void setAILastItemUsed(ObjectRef objectRef);
+    void setAILastItemUsed(ObjectRef objectRef) override;
 
-    ObjectRef getAILastHit() const;
+    ObjectRef getAILastHit() const override;
 
-    void setAILastHit(ObjectRef objectRef);
+    void setAILastHit(ObjectRef objectRef) override;
 
-    DamageType getAILastDamageType() const;
+    DamageType getAILastDamageType() const override;
 
-    void setAILastDamageType(DamageType damageType);
+    void setAILastDamageType(DamageType damageType) override;
 
-    Facing getAILastDirection() const;
+    Facing getAILastDirection() const override;
 
-    void setAILastDirection(Facing direction);
+    void setAILastDirection(Facing direction) override;
 
-    float getAIMaxSpeed() const;
+    float getAIMaxSpeed() const override;
 
-    void setAIMaxSpeed(float speed);
+    void setAIMaxSpeed(float speed) override;
 
-    bool addAIOrder(uint32_t value, uint16_t counter);
+    bool addAIOrder(uint32_t value, uint16_t counter) override;
 
-    bool markAIChanged();
+    bool markAIChanged() override;
 
-    bool recordAIBump(ObjectRef objectRef);
+    bool recordAIBump(ObjectRef objectRef) override;
 
-    void resetAIState();
+    void resetAIState() override;
 
-    void spawnAIState(uint16_t rank);
+    void spawnAIState(uint16_t rank) override;
 
     // Transitional seam for Script/script.c while the script runtime still consumes ai_state_t directly.
     ai_state_t& aiStateForScript();

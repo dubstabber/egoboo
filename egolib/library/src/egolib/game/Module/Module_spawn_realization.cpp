@@ -63,6 +63,17 @@ bool isObjectTerminated(const std::shared_ptr<Object>& object, const SpawnRealiz
     return object ? object->isTerminated() : true;
 }
 
+void publishSpawnScriptState(IScriptable& object, const spawn_file_info_t& spawnInfo)
+{
+    object.setAIContent(spawnInfo.content);
+    object.setAIPassage(spawnInfo.passage);
+}
+
+void publishGrabbedAlert(IScriptable& object)
+{
+    object.addAIAlertBits(ALERTIF_GRABBED);
+}
+
 int findImportMatchIndex(const ObjectProfileRef profileID, const SpawnRealizationState& state)
 {
     if (!state.importList || !state.importData || !state.isProfileLoaded)
@@ -200,8 +211,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
     }
 
     object->giveMoney(spawnInfo.money);
-    object->setAIContent(spawnInfo.content);
-    object->setAIPassage(spawnInfo.passage);
+    publishSpawnScriptState(*object, spawnInfo);
 
     switch (spawnInfo.attach)
     {
@@ -223,7 +233,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
                 return nullptr;
             }
 
-            object->addAIAlertBits(ALERTIF_GRABBED);
+            publishGrabbedAlert(*object);
         break;
 
         case ATTACH_LEFT:

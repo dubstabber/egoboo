@@ -22,6 +22,17 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Entities/Object.hpp"
 
+namespace
+{
+void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
+{
+    if (listener.getAITarget() == targetRef)
+    {
+        listener.addAIAlertBits(ALERTIF_TARGETKILLED);
+    }
+}
+}
+
 ObjectRef GET_INDEX_PCHR(const Object *pobj) {
     return (nullptr == pobj) ? ObjectRef::Invalid : pobj->getObjRef();
 }
@@ -249,10 +260,7 @@ void ObjectHandler::maybeRunDeferred()
                         
                         //Don't do ourselves or terminated characters
                         if (chr->isTerminated() || chr == element) continue;
-                        if (chr->getAITarget() == element->getObjRef())
-                        {
-                            chr->addAIAlertBits(ALERTIF_TARGETKILLED);
-                        }
+                        publishTargetKilledAlert(*chr, element->getObjRef());
 
                         if (chr->getTeam().getLeader() == element)
                         {

@@ -3,6 +3,25 @@
 
 #include "egolib/game/script_functions_internal.h"
 
+namespace
+{
+void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
+{
+    child.setAIPassage(self.passage);
+    child.setAIOwner(self.owner);
+}
+
+void publishGrabbedAlert(IScriptable& child)
+{
+    child.addAIAlertBits(ALERTIF_GRABBED);
+}
+
+void publishCleanedUpState(IScriptable& listener)
+{
+    listener.addAIAlertBits(ALERTIF_CLEANEDUP);
+}
+}
+
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
@@ -125,8 +144,7 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
                                               0.0f));
 
             pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-            pchild->setAIPassage(self.passage);
-            pchild->setAIOwner(self.owner);
+            inheritSpawnScriptState(*pchild, self);
 
             pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
             pchild->setDismountObject(self.getSelf());
@@ -196,7 +214,7 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
             listener->setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
         }
 
-        listener->addAIAlertBits(ALERTIF_CLEANEDUP);
+        publishCleanedUpState(*listener);
     }
 
     SCRIPT_FUNCTION_END();
@@ -546,8 +564,7 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
         self.child = pchild->getObjRef();
 
         pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        pchild->setAIPassage(self.passage);
-        pchild->setAIOwner(self.owner);
+        inheritSpawnScriptState(*pchild, self);
 
         pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
         pchild->setDismountObject(self.getSelf());
@@ -589,8 +606,7 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
         self.child = pchild->getObjRef();
 
         pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        pchild->setAIPassage(self.passage);
-        pchild->setAIOwner(self.owner);
+        inheritSpawnScriptState(*pchild, self);
 
         pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
         pchild->setDismountObject(self.getSelf());
@@ -953,7 +969,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
             // Inventory character
             if ( Inventory::add_item( self.getTarget(), pchild->getObjRef(), pchr->getFirstFreeInventorySlot(), true ) )
             {
-                pchild->addAIAlertBits(ALERTIF_GRABBED);  // Make spellbooks change
+                publishGrabbedAlert(*pchild);  // Make spellbooks change
                 pchild->setHolderRef(self.getTarget());  // Make grab work
                 scr_run_chr_script( pchild->getObjRef() );  // Empty the grabbed messages
 
@@ -961,8 +977,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
                 //Set some AI values
                 self.child = pchild->getObjRef();
-                pchild->setAIPassage(self.passage);
-                pchild->setAIOwner(self.owner);
+                inheritSpawnScriptState(*pchild, self);
             }
 
             //No more room!
@@ -986,8 +1001,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
                 //Set some AI values
                 self.child = pchild->getObjRef();
-                pchild->setAIPassage(self.passage);
-                pchild->setAIOwner(self.owner);
+                inheritSpawnScriptState(*pchild, self);
             }
 
             //Grip is already used
@@ -1003,8 +1017,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
             //Set some AI values
             self.child = pchild->getObjRef();
-            pchild->setAIPassage(self.passage);
-            pchild->setAIOwner(self.owner);
+            inheritSpawnScriptState(*pchild, self);
         }
     }
 

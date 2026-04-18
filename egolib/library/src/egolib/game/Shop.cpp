@@ -37,6 +37,16 @@ auto& objectHandler()
 {
     return activeModule().getObjectHandler();
 }
+
+void publishShopOrder(IScriptable& shopKeeper, uint32_t value, uint16_t orderCounter)
+{
+    shopKeeper.addAIOrder(value, orderCounter);
+}
+
+void publishTheftTarget(IScriptable& shopKeeper, ObjectRef thiefRef)
+{
+    shopKeeper.setAITarget(thiefRef);
+}
 }
 
 bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Object>& item)
@@ -58,14 +68,14 @@ bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Ob
             // Are they are trying to sell junk or quest items?
             if (0 == price)
             {
-                owner->addAIOrder((uint32_t)price, Passage::SHOP_BUY);
+                publishShopOrder(*owner, static_cast<uint32_t>(price), Passage::SHOP_BUY);
             }
             else
             {
                 dropper->giveMoney(price);
                 owner->giveMoney(-price);
 
-                owner->addAIOrder((uint32_t)price, Passage::SHOP_BUY);
+                publishShopOrder(*owner, static_cast<uint32_t>(price), Passage::SHOP_BUY);
             }
         }
     }
@@ -91,7 +101,7 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
             if (buyer->getMoney() >= price)
             {
                 // Okay to sell
-                owner->addAIOrder((uint32_t)price, Passage::SHOP_SELL);
+                publishShopOrder(*owner, static_cast<uint32_t>(price), Passage::SHOP_SELL);
 
                 buyer->giveMoney(-price);
                 owner->giveMoney(price);
@@ -101,7 +111,7 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
             else
             {
                 // Don't allow purchase
-                owner->addAIOrder(price, Passage::SHOP_NOAFFORD);
+                publishShopOrder(*owner, static_cast<uint32_t>(price), Passage::SHOP_NOAFFORD);
                 canGrab = false;
             }
         }
@@ -149,8 +159,8 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
             canSteal = true;
             if (owner->canSeeObject(thief) || detection <= 5 || (detection - thief->getAttribute(Ego::Attribute::AGILITY) + owner->getAttribute(Ego::Attribute::INTELLECT)) > 50)
             {
-                owner->addAIOrder(Passage::SHOP_STOLEN, Passage::SHOP_THEFT);
-                owner->setAITarget(thief->getObjRef());
+                publishShopOrder(*owner, Passage::SHOP_STOLEN, Passage::SHOP_THEFT);
+                publishTheftTarget(*owner, thief->getObjRef());
                 canSteal = false;
             }
         }

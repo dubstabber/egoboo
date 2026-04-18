@@ -712,6 +712,34 @@ TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
     EXPECT_FLOAT_EQ(object->getAIMaxSpeed(), 0.75f);
 }
 
+TEST_F(ObjectAccessorFixture, ScriptRoleSurfaceSupportsInterfaceBasedStatePublication)
+{
+    auto object = makeFollower(30511);
+    ASSERT_NE(object, nullptr);
+
+    IScriptable& scriptable = *object;
+    const IScriptable& constScriptable = *object;
+
+    scriptable.setAIStateValue(31);
+    scriptable.setAIContent(32);
+    scriptable.setAIPassage(33);
+    scriptable.setAITimer(34);
+    scriptable.setAIPoofTime(35);
+    scriptable.setAIOwner(ObjectRef(36));
+    scriptable.setAITarget(ObjectRef(37));
+    scriptable.addAIAlertBits(ALERTIF_CHANGED | ALERTIF_ORDERED);
+
+    EXPECT_EQ(constScriptable.getAIStateValue(), 31);
+    EXPECT_EQ(constScriptable.getAIContent(), 32);
+    EXPECT_EQ(constScriptable.getAIPassage(), 33);
+    EXPECT_EQ(constScriptable.getAITimer(), 34u);
+    EXPECT_EQ(constScriptable.getAIPoofTime(), 35);
+    EXPECT_EQ(constScriptable.getAIOwner(), ObjectRef(36));
+    EXPECT_EQ(constScriptable.getAITarget(), ObjectRef(37));
+    EXPECT_TRUE(constScriptable.hasAnyAIAlertBits(ALERTIF_CHANGED));
+    EXPECT_TRUE(constScriptable.hasAnyAIAlertBits(ALERTIF_ORDERED));
+}
+
 TEST_F(ObjectAccessorFixture, AIScriptBridgeAndPublicAccessorsStayInSync)
 {
     auto object = makeFollower(30515);

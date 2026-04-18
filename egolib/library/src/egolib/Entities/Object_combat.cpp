@@ -22,6 +22,17 @@
 
 #include "egolib/Entities/Object_internal.h"
 
+namespace
+{
+void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
+{
+    if (listener.getAITarget() == targetRef)
+    {
+        listener.addAIAlertBits(ALERTIF_TARGETKILLED);
+    }
+}
+}
+
 int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
                    const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
 {
@@ -537,10 +548,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         }
 
         // Let the other characters know it died
-        if ( listener->getAITarget() == getObjRef() )
-        {
-            listener->addAIAlertBits(ALERTIF_TARGETKILLED);
-        }
+        publishTargetKilledAlert(*listener, getObjRef());
     }
 
     // Detach the character from the game
