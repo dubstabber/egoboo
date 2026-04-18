@@ -656,6 +656,45 @@ TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getDismountObject(), ObjectRef(21));
 }
 
+TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 30501);
+    auto attacker = makeFollower(objectHandler, 30502);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(attacker, nullptr);
+
+    IDamageable& damageable = *target;
+    const IDamageable& constDamageable = *target;
+
+    target->setDamageTargetType(DamageType::DAMAGE_FIRE);
+    target->setReaffirmDamageType(DamageType::DAMAGE_ZAP);
+    damageable.setDamageTimer(18);
+
+    EXPECT_EQ(constDamageable.getObjRef(), target->getObjRef());
+    EXPECT_TRUE(constDamageable.isAlive());
+    EXPECT_FALSE(constDamageable.isInvincible());
+    EXPECT_EQ(constDamageable.getDamageTimer(), 18);
+    EXPECT_EQ(constDamageable.getDamageTargetType(), DamageType::DAMAGE_FIRE);
+    EXPECT_EQ(constDamageable.getReaffirmDamageType(), DamageType::DAMAGE_ZAP);
+    EXPECT_FLOAT_EQ(constDamageable.getDamageReduction(DAMAGE_SLASH), target->getDamageReduction(DAMAGE_SLASH));
+
+    target->setInvincible(true);
+    const IPair preventedDamage{FLOAT_TO_FP8(5.0f), 0};
+    EXPECT_EQ(damageable.damage(ATK_FRONT, preventedDamage, DAMAGE_FIRE, attacker->getTeamRef(), attacker, false, false, false), 0);
+    EXPECT_TRUE(target->isAlive());
+
+    target->setInvincible(false);
+    target->_currentLife = std::max(1.0f, target->getAttribute(Ego::Attribute::MAX_LIFE) - 5.0f);
+    const float lifeBeforeHeal = target->getLife();
+    EXPECT_TRUE(damageable.heal(attacker, FLOAT_TO_FP8(1.0f), true));
+    EXPECT_GT(target->getLife(), lifeBeforeHeal);
+
+    target->setInvincible(true);
+    damageable.kill(attacker, false);
+    EXPECT_TRUE(target->isAlive());
+}
+
 TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(3051);

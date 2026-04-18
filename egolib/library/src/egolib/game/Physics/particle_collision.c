@@ -40,6 +40,16 @@ uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();
 }
+
+IDamageable& damageable(Object& object)
+{
+    return object;
+}
+
+const IDamageable& damageable(const Object& object)
+{
+    return object;
+}
 }
 
 //Private functions
@@ -453,9 +463,10 @@ bool do_chr_prt_collision_get_details(chr_prt_collision_data_t& pdata, const flo
 bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 {
     bool prt_deflected = false;
+    const IDamageable& constDamageableCharacter = damageable(*pdata.pchr);
 
     /// @note ZF@> Simply ignore characters with invictus for now, it causes some strange effects
-    if ( pdata.pchr->isInvincible() ) return true;
+    if (constDamageableCharacter.isInvincible()) return true;
 
     //Don't deflect money or particles spawned by the Object itself
     bool prt_wants_deflection = (pdata.pprt->owner_ref != pdata.pchr->getObjRef()) && !pdata.ppip->bump_money && pdata.max_damage > 0;
@@ -472,7 +483,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
     bool chr_is_invictus = !pdata.ppip->hasBit(DAMFX_NBLOC) && pdata.pchr->isInvictusDirection(direction);
 
     // try to deflect the particle
-    bool chr_can_deflect = (0 != pdata.pchr->getDamageTimer()) && (pdata.max_damage > 0);
+    bool chr_can_deflect = (0 != constDamageableCharacter.getDamageTimer()) && (pdata.max_damage > 0);
     prt_deflected = false;
     pdata.mana_paid = false;
     if(chr_can_deflect)
@@ -598,7 +609,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
         }
 
         // Tell the players that the attack was somehow deflected
-        if(0 == pdata.pchr->getDamageTimer()) 
+        if (0 == constDamageableCharacter.getDamageTimer())
         {
             ParticleHandler::get().spawnDefencePing(pdata.pchr->toSharedPointer(), activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
             if(using_shield) {
@@ -617,6 +628,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 {
     std::shared_ptr<Object> powner = activeModule().getObjectHandler()[pdata.pprt->owner_ref];
+    IDamageable& damageableCharacter = damageable(*pdata.pchr);
 
     //Get the Profile of the Object that spawned this particle (i.e the weapon itself, not the holder)
     const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pdata.pprt->getSpawnerProfile());
@@ -813,7 +825,8 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             IPair grimReaperDamage;
                             grimReaperDamage.base = FLOAT_TO_FP8(50.0f);
                             grimReaperDamage.rand = 0.0f;
-                            pdata.pchr->damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team, activeModule().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
+                            damageableCharacter.damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team,
+                                                       activeModule().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                             AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
                         }
@@ -867,7 +880,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
             }
 
             // Damage the character
-            pdata.actual_damage = pdata.pchr->damage(Facing(direction), modifiedDamage, pdata.pprt->damagetype, 
+            pdata.actual_damage = damageableCharacter.damage(Facing(direction), modifiedDamage, pdata.pprt->damagetype,
                 pdata.pprt->team, activeModule().getObjectHandler()[pdata.pprt->owner_ref], pdata.ppip->hasBit(DAMFX_ARMO), !pdata.ppip->hasBit(DAMFX_TIME), false);
         }
     }
@@ -879,11 +892,12 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
 {
     const float maxDamage = std::abs(pdata.pprt->damage.base) + std::abs(pdata.pprt->damage.rand);
+    const IDamageable& constDamageableCharacter = damageable(*pdata.pchr);
 
     // always allow valid reaffirmation
-    if (( pdata.pchr->getReaffirmDamageType() < DAMAGE_COUNT ) &&
+    if ((constDamageableCharacter.getReaffirmDamageType() < DAMAGE_COUNT) &&
         ( pdata.pprt->damagetype < DAMAGE_COUNT ) &&
-        ( pdata.pchr->getReaffirmDamageType() == pdata.pprt->damagetype ) &&
+        (constDamageableCharacter.getReaffirmDamageType() == pdata.pprt->damagetype) &&
         ( maxDamage > 0) )
     {
         return true;

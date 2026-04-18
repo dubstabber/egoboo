@@ -2,6 +2,7 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/Enchant.hpp"
+#include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"

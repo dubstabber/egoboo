@@ -229,12 +229,13 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     if(!target) {
         return false;
     }
+    IDamageable& damageableTarget = *target;
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    target->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()), 
-                   pchr->getTeamRef(), objectHandler()[self.getSelf()], false, false, true);
+    damageableTarget.damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()),
+                            pchr->getTeamRef(), objectHandler()[self.getSelf()], false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -675,7 +676,8 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 
     const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
     if(target) {
-        target->kill(objectHandler()[ichr], false);
+        IDamageable& damageableTarget = *target;
+        damageableTarget.kill(objectHandler()[ichr], false);
     }
 
     SCRIPT_FUNCTION_END();
@@ -755,7 +757,8 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->heal(objectHandler()[pchr->getObjRef()], state.argument, true);
+    IDamageable& damageableSelf = *pchr;
+    damageableSelf.heal(objectHandler()[pchr->getObjRef()], state.argument, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -897,7 +900,8 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     if ( pself_target->isAlive() )
     {
         pself_target->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
-        pself_target->heal(objectHandler()[pchr->getObjRef()], state.argument, true);
+        IDamageable& damageableTarget = *pself_target;
+        damageableTarget.heal(objectHandler()[pchr->getObjRef()], state.argument, true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -996,7 +1000,8 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
     }
 
     returncode = false;
-    if ( target->heal(objectHandler()[self.getSelf()], state.argument, false) )
+    IDamageable& damageableTarget = *target;
+    if (damageableTarget.heal(objectHandler()[self.getSelf()], state.argument, false))
     {
         returncode = true;
         target->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
@@ -2085,11 +2090,12 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     if(!target) {
         return false;
     }
+    IDamageable& damageableSelf = *pchr;
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    pchr->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeam().toRef(), target, false, false, true);
+    damageableSelf.damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeam().toRef(), target, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }

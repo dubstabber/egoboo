@@ -38,6 +38,8 @@ void Particle::updateAttachedDamage()
     if (!isAttached()) return;
 
     const std::shared_ptr<Object> &attachedObject = getAttachedObject();
+    IDamageable& damageable = *attachedObject;
+    const IDamageable& constDamageable = *attachedObject;
 
     // find out who is holding the owner of this object
     ObjectRef iholder = chr_get_lowest_attachment(attachedObject->getObjRef(), true);
@@ -56,10 +58,10 @@ void Particle::updateAttachedDamage()
                        attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == ProfileSystem::get().getProfile(_spawnerProfile)->getIDSZ(IDSZ_PARENT));
 
     // 3) the character is "lit on fire" by the particle damage type
-    bool is_immolated_by = (damagetype < DAMAGE_COUNT && attachedObject->getReaffirmDamageType() == damagetype);
+    bool is_immolated_by = (damagetype < DAMAGE_COUNT && constDamageable.getReaffirmDamageType() == damagetype);
 
     // 4) the character has no protection to the particle
-    bool no_protection_from = (0 != max_damage) && (damagetype < DAMAGE_COUNT) && (0.0f <= attachedObject->getDamageReduction(damagetype));
+    bool no_protection_from = (0 != max_damage) && (damagetype < DAMAGE_COUNT) && (0.0f <= constDamageable.getDamageReduction(damagetype));
 
     if (!skewered_by_arrow && !has_vulnie && !is_immolated_by && !no_protection_from)
     {
@@ -111,9 +113,9 @@ void Particle::updateAttachedDamage()
     }
 
     //---- do the damage
-    int actual_damage = attachedObject->damage(ATK_BEHIND, local_damage, static_cast<DamageType>(damagetype), team,
-                                               activeModule().getObjectHandler()[owner_ref], getProfile()->hasBit(DAMFX_ARMO),
-                                               !getProfile()->hasBit(DAMFX_TIME), false);
+    int actual_damage = damageable.damage(ATK_BEHIND, local_damage, static_cast<DamageType>(damagetype), team,
+                                          activeModule().getObjectHandler()[owner_ref], getProfile()->hasBit(DAMFX_ARMO),
+                                          !getProfile()->hasBit(DAMFX_TIME), false);
 
     // adjust any remaining particle damage
     if (damage.base > 0)

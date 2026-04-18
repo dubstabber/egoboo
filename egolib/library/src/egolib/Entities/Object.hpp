@@ -30,6 +30,7 @@
 #include "egolib/Logic/Team.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 
+#include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
@@ -77,6 +78,7 @@ enum LatchButton
 
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
+               public IDamageable,
                public IInventoryHolder,
                public IRenderable,
                public IScriptable,
@@ -161,7 +163,7 @@ public:
 	 * @brief Get the unique object reference of this object.
      * @return the unique object reference of this object
      */
-    ObjectRef getObjRef() const { return _objRef; }
+    ObjectRef getObjRef() const override { return _objRef; }
 
     /**
     * @return the current team this object is on. This can change in-game (mounts or pets for example)
@@ -466,7 +468,7 @@ public:
     *   if this is true, then we allow damaging this object even though it is normally immune to damage.
     **/
     int damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
-               const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus);
+               const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus) override;
 
     /**
      * @brief
@@ -476,7 +478,7 @@ public:
      * @param amount
      *  the amount to heal the character
      */
-    bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility);
+    bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility) override;
 
     /**
     * @return true if this Object is currently doing an attack animation
@@ -500,7 +502,7 @@ public:
     * @brief
     *   Returns true if this Object has not been killed by anything
     **/
-    bool isAlive() const {return _isAlive;}
+    bool isAlive() const override {return _isAlive;}
 
     /**
     * @return
@@ -518,7 +520,7 @@ public:
 
     void setAmmoKnown(bool known) { ammoknown = known; }
 
-    bool isInvincible() const {return invictus;}
+    bool isInvincible() const override {return invictus;}
 
     void setInvincible(bool invincible) { invictus = invincible; }
 
@@ -702,7 +704,7 @@ public:
     * @author BB
     * @details Handle a character death. Set various states, disconnect it from the world, etc.
     **/
-    void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility);
+    void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility) override;
 
     /// @author ZZ
     /// @details This function fixes an item's transparency
@@ -826,7 +828,7 @@ public:
     *   A floating point value representing the damage reduction (0.0f = no reduction, 1.0f = no damage, -1.0f = double damage)
     *   I.e a return value of 0.05f would mean damage reduction of 5%.
     **/
-    float getDamageReduction(const DamageType type, const bool includeArmor = true) const;
+    float getDamageReduction(const DamageType type, const bool includeArmor = true) const override;
 
     /**
     * @brief
@@ -1023,11 +1025,11 @@ public:
     **/
     bool isInvictusDirection(Facing direction) const;
 
-    DamageType getDamageTargetType() const { return damagetarget_damagetype; }
+    DamageType getDamageTargetType() const override { return damagetarget_damagetype; }
 
     void setDamageTargetType(DamageType damageType) { damagetarget_damagetype = damageType; }
 
-    DamageType getReaffirmDamageType() const { return reaffirm_damagetype; }
+    DamageType getReaffirmDamageType() const override { return reaffirm_damagetype; }
 
     void setReaffirmDamageType(DamageType damageType) { reaffirm_damagetype = damageType; }
 
@@ -1150,9 +1152,9 @@ public:
 
     void setReloadTimer(uint16_t timer) { reload_timer = timer; }
 
-    uint8_t getDamageTimer() const { return damage_timer; }
+    uint8_t getDamageTimer() const override { return damage_timer; }
 
-    void setDamageTimer(uint8_t timer) { damage_timer = timer; }
+    void setDamageTimer(uint8_t timer) override { damage_timer = timer; }
 
     bool shouldDrawIcon() const { return draw_icon; }
 

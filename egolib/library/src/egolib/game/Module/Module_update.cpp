@@ -22,6 +22,15 @@
 
 #include "egolib/game/Module/Module_internal.h"
 
+namespace
+{
+int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
+                       const std::shared_ptr<Object>& attacker, bool setDamageTime)
+{
+    return target.damage(ATK_BEHIND, damage, damageType, Team::TEAM_DAMAGE, attacker, true, setDamageTime, false);
+}
+}
+
 void GameModule::checkPassageMusic()
 {
     // Look at each player
@@ -103,15 +112,17 @@ void GameModule::updatePits()
 
         // Kill or teleport any characters that fell in a pit...
         for (const std::shared_ptr<Object> &pchr : _gameObjects.iterator()) {
+            IDamageable& damageable = *pchr;
+
             // Is it a valid character?
-            if (pchr->isInvincible() || !pchr->isAlive()) continue;
+            if (damageable.isInvincible() || !damageable.isAlive()) continue;
             if (pchr->isBeingHeld()) continue;
 
             // Do we kill it?
             if (_pitsKill && pchr->getPosZ() < PITDEPTH)
             {
                 // Got one!
-                pchr->kill(Object::INVALID_OBJECT, false);
+                damageable.kill(Object::INVALID_OBJECT, false);
                 pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
             }
 
@@ -121,7 +132,7 @@ void GameModule::updatePits()
                 // Teleport them back to a "safe" spot
                 if (!pchr->teleport(_pitsTeleportPos, pchr->getFacingZ())) {
                     // Kill it instead
-                    pchr->kill(Object::INVALID_OBJECT, false);
+                    damageable.kill(Object::INVALID_OBJECT, false);
                     pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
                 }
                 else {
@@ -137,8 +148,8 @@ void GameModule::updatePits()
                     }
 
                     // Do some damage (same as damage tile)
-                    pchr->damage(ATK_BEHIND, _damageTile.amount, static_cast<DamageType>(_damageTile.damagetype), Team::TEAM_DAMAGE,
-                                 _gameObjects[pchr->getAIBumped()], true, false, false);
+                    applyTerrainDamage(damageable, _damageTile.amount, static_cast<DamageType>(_damageTile.damagetype),
+                                       _gameObjects[pchr->getAIBumped()], false);
                 }
             }
         }
@@ -164,8 +175,11 @@ void GameModule::updateDamageTiles()
 
     // do the damage tile stuff
     for (const std::shared_ptr<Object> &pchr : _gameObjects.iterator()) {
+        IDamageable& damageable = *pchr;
+        const IDamageable& constDamageable = *pchr;
+
         // if the object is not really in the game, do nothing
-        if (pchr->isHidden() || !pchr->isAlive()) continue;
+        if (pchr->isHidden() || !constDamageable.isAlive()) continue;
 
         // if you are being held by something, you are protected
         if (pchr->isInsideInventory()) continue;
@@ -181,7 +195,7 @@ void GameModule::updateDamageTiles()
         // but make the tolerance closer so that books won't burn so easily
         if (!pchr->isBeingHeld() || pchr->getPosZ() < pchr->getFloorElevation() + DAMAGERAISE)
         {
-            if (pchr->getReaffirmDamageType() == _damageTile.damagetype)
+            if (constDamageable.getReaffirmDamageType() == _damageTile.damagetype)
             {
                 if (0 == (currentUpdateFrame & TILE_REAFFIRM_AND))
                 {
@@ -194,15 +208,15 @@ void GameModule::updateDamageTiles()
         if (pchr->isBeingHeld()) continue;
 
         // don't do direct damage to invulnerable objects
-        if (pchr->isInvincible()) continue;
+        if (constDamageable.isInvincible()) continue;
 
-        if (0 == pchr->getDamageTimer())
+        if (0 == constDamageable.getDamageTimer())
         {
-            int actual_damage = pchr->damage(ATK_BEHIND, _damageTile.amount,
-                                             static_cast<DamageType>(_damageTile.damagetype),
-                                             Team::TEAM_DAMAGE, nullptr, true, false, false);
+            int actual_damage = applyTerrainDamage(damageable, _damageTile.amount,
+                                                   static_cast<DamageType>(_damageTile.damagetype),
+                                                   nullptr, false);
 
-            pchr->setDamageTimer(DAMAGETILETIME);
+            damageable.setDamageTimer(DAMAGETILETIME);
 
             if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
                 ParticleHandler::get().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);

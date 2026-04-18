@@ -66,6 +66,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/Common.hpp
     src/egolib/Entities/Enchant.cpp
     src/egolib/Entities/Enchant.hpp
+    src/egolib/Entities/IDamageable.hpp
     src/egolib/Entities/IInventoryHolder.hpp
     src/egolib/Entities/_Include.hpp
     src/egolib/Entities/Object_attributes.cpp
