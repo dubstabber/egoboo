@@ -1,5 +1,6 @@
 #pragma once
 
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "idlib/non_copyable.hpp"
 
 #include <cstdint>
@@ -28,6 +29,15 @@ public:
 
     Ego::GUI::UIManager& uiManager();
     const Ego::GUI::UIManager& uiManager() const;
+
+    void installAudioSystem(IAudioSystem& audioSystem);
+    void clearAudioSystem();
+
+    IAudioSystem* tryAudioSystem();
+    const IAudioSystem* tryAudioSystem() const;
+
+    IAudioSystem& audioSystem();
+    const IAudioSystem& audioSystem() const;
 
     uint32_t renderedFrameCount() const;
 

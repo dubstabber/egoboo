@@ -20,6 +20,7 @@
 
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/egolib.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
@@ -317,6 +318,7 @@ bool GameEngine::initialize()
 
 	// Initialize the audio system.
 	AudioSystem::initialize();
+    EngineContext::get().installAudioSystem(AudioSystem::get());
 
 	// Initialize the particle handler.
 	ParticleHandler::initialize();
@@ -466,6 +468,7 @@ void GameEngine::uninitialize()
 	ParticleHandler::uninitialize();
 
     // Uninitialize the audio system.
+    EngineContext::get().clearAudioSystem();
     AudioSystem::uninitialize();
 
     // Unsubscribe from window events.

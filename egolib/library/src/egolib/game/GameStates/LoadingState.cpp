@@ -23,6 +23,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/LoadingState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -39,6 +40,14 @@
 #include "egolib/game/link.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 LoadingState::LoadingState(std::shared_ptr<ModuleProfile> module, const std::list<std::string> &playersToLoad) :
     _loadingThread(),
@@ -115,7 +124,7 @@ void LoadingState::beginState()
 {
     //Start the background loading thread
     _loadingThread = std::thread(&LoadingState::loadModuleData, this);
-    AudioSystem::get().playMusic("loading_screen.ogg");
+    audioSystem().playMusic("loading_screen.ogg");
 }
 
 
@@ -217,7 +226,7 @@ void LoadingState::loadModuleData()
         CameraSystem::get().setNumberOfCameras(GameSessionContext::get().localPlayerCount());
 
         // Fade out music when finished loading
-        AudioSystem::get().stopMusic();
+        audioSystem().stopMusic();
 
         // make sure the per-module configuration settings are correct
         config_synch(egoboo_config_t::get(), true, false);
@@ -226,7 +235,7 @@ void LoadingState::loadModuleData()
         setProgressText("Finished!", 100);
 
         // Hit that gong
-        AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_GAME_READY));
+        audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_GAME_READY));
 
         //2 second delay to let music finish, this prevents a frame lag on module startup
         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -242,7 +251,7 @@ void LoadingState::loadModuleData()
                 Ego::Graphics::TextureAtlasManager::get().loadTileSet();
 
                 //Hush gong
-                AudioSystem::get().fadeAllSounds();
+                audioSystem().fadeAllSounds();
                 engine().setGameState(std::make_shared<PlayingState>());
             }));
         addComponent(startButton);

@@ -23,6 +23,7 @@
 /// @author Johan Jansen, penguinflyer5234
 
 #include "egolib/game/GameStates/DebugObjectLoadingState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -41,6 +42,14 @@
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/link.h"
 #include "egolib/fileutil.h"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 class DebugObjectLoadingState::GrowableLabel : public Ego::GUI::Component
 {
@@ -316,7 +325,7 @@ void DebugObjectLoadingState::beginState()
 {
     //Start the background loading thread
     //_loadingThread = std::thread(&LoadingState2::loadModuleData, this);
-    AudioSystem::get().playMusic(27); //TODO: needs to be referenced by string
+    audioSystem().playMusic(27); //TODO: needs to be referenced by string
 }
 
 void DebugObjectLoadingState::loadObjectData()

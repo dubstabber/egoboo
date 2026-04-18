@@ -1,4 +1,5 @@
 #include "LevelUpWindow.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
@@ -6,6 +7,14 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 namespace Ego {
 namespace GUI {
@@ -68,7 +77,7 @@ public:
                 LevelUpWindow *parentWindow = dynamic_cast<LevelUpWindow*>(getParent());
                 parentWindow->setHoverPerk(_perk.getID());
 
-                AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_GUI_HOVER));
+                audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_GUI_HOVER));
                 return true;
             }
         }
@@ -79,7 +88,7 @@ public:
     bool notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) override {
         if (_mouseOver && e.get_button() == SDL_BUTTON_LEFT) {
             static_cast<LevelUpWindow*>(getParent())->doLevelUp(this);
-            AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_PERK_SELECT));
+            audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_PERK_SELECT));
             return true;
         }
         return false;
@@ -215,7 +224,7 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     setHoverPerk(Perks::NR_OF_PERKS);
 
     //Play level up sound
-    AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_LEVELUP));
+    audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_LEVELUP));
 }
 
 LevelUpWindow::~LevelUpWindow() {}
@@ -486,7 +495,7 @@ void LevelUpWindow::drawContainer(DrawingContext& drawingContext) {
             if (!_attributeIncrease[i]) continue;
             if (_attributeIncrease[i]->isVisible()) continue;
             _attributeIncrease[i]->setVisible(true);
-            AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_COINFALL));
+            audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_COINFALL));
             return;
         }
 

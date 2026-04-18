@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/GameStates/VictoryScreen.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -40,6 +41,14 @@
 //For cheats
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Module/Module.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 PlayingState::PlayingState() :
     _miniMap(std::make_shared<Ego::GUI::MiniMap>()),
@@ -112,7 +121,7 @@ PlayingState::~PlayingState()
     }
 
     //Stop music
-    AudioSystem::get().fadeAllSounds();  
+    audioSystem().fadeAllSounds();
 }
 
 void PlayingState::updateStatusBarPosition()

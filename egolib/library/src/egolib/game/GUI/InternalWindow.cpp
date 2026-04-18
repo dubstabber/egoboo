@@ -22,10 +22,19 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/InternalWindow.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
 
 static constexpr int BORDER_PIXELS = 5;
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 namespace Ego {
 namespace GUI {
@@ -132,7 +141,7 @@ bool InternalWindow::notifyMouseButtonPressed(const Events::MouseButtonPressedEv
     auto newe = Events::MouseButtonPressedEvent(e.get_position() - idlib::semantic_cast<Vector2f>(getPosition()), e.get_button());
     if (_mouseOver && e.get_button() == SDL_BUTTON_LEFT) {
         if (!_isDragging && _closeButton->contains(newe.get_position())) {
-            AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_BUTTON_CLICK));
+            audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_BUTTON_CLICK));
             destroy();
             return true;
         }
@@ -187,4 +196,3 @@ void InternalWindow::setSize(const Vector2f& size) {
 
 } // namespace GUI
 } // namespace Ego
-

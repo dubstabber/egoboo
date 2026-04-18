@@ -1,5 +1,6 @@
 #include "egolib/game/Core/EngineContext.hpp"
 
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -8,6 +9,7 @@
 namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
+IAudioSystem* activeAudioSystem = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -31,6 +33,7 @@ void EngineContext::setEngine(std::unique_ptr<GameEngine> engine)
 
 void EngineContext::clearEngine()
 {
+    clearAudioSystem();
     activeEngine.reset();
 }
 
@@ -102,6 +105,50 @@ const Ego::GUI::UIManager& EngineContext::uiManager() const
         throw std::logic_error("no active ui manager");
     }
     return *currentUIManager;
+}
+
+void EngineContext::installAudioSystem(IAudioSystem& audioSystem)
+{
+    if (activeAudioSystem)
+    {
+        throw std::logic_error("audio system already installed");
+    }
+    activeAudioSystem = &audioSystem;
+}
+
+void EngineContext::clearAudioSystem()
+{
+    activeAudioSystem = nullptr;
+}
+
+IAudioSystem* EngineContext::tryAudioSystem()
+{
+    return activeAudioSystem;
+}
+
+const IAudioSystem* EngineContext::tryAudioSystem() const
+{
+    return activeAudioSystem;
+}
+
+IAudioSystem& EngineContext::audioSystem()
+{
+    IAudioSystem* currentAudioSystem = tryAudioSystem();
+    if (!currentAudioSystem)
+    {
+        throw std::logic_error("no active audio system");
+    }
+    return *currentAudioSystem;
+}
+
+const IAudioSystem& EngineContext::audioSystem() const
+{
+    const IAudioSystem* currentAudioSystem = tryAudioSystem();
+    if (!currentAudioSystem)
+    {
+        throw std::logic_error("no active audio system");
+    }
+    return *currentAudioSystem;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

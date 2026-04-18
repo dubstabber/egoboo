@@ -22,6 +22,7 @@
 /// @author Johan Jansen, penguinflyer5234
 
 #include "egolib/game/GameStates/DebugModuleLoadingState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -37,6 +38,14 @@
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/link.h"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 struct DebugModuleLoadingState::ModuleGUIContainer : public Container
 {
@@ -176,7 +185,7 @@ void DebugModuleLoadingState::beginState()
 {
 	//Start the background loading thread
 	//_loadingThread = std::thread(&LoadingState2::loadModuleData, this);
-    AudioSystem::get().playMusic("loading_screen.ogg");
+    audioSystem().playMusic("loading_screen.ogg");
 }
 
 
@@ -273,7 +282,7 @@ void DebugModuleLoadingState::loadModuleData()
         CameraSystem::get().setNumberOfCameras(GameSessionContext::get().localPlayerCount());
 
         //Fade out music when finished loading
-        AudioSystem::get().stopMusic();
+        audioSystem().stopMusic();
 
         //Complete!
         singleThreadRedrawHack("Finished!");

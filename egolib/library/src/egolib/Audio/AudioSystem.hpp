@@ -22,11 +22,9 @@
 #pragma once
 
 #include <SDL_mixer.h>
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/Math/_Include.hpp"
-
-typedef int MusicID;
-typedef int SoundID;
 
 static constexpr int INVALID_SOUND_CHANNEL = -1;
 static constexpr SoundID INVALID_SOUND_ID = -1;
@@ -74,31 +72,6 @@ private:
 };
 
 
-/// Pre defined global particle sounds
-enum GlobalSound : uint8_t
-{
-    GSND_COINGET,       //Coin grabbed
-    GSND_DEFEND,        //Attack deflected clink
-    GSND_SPLISH,    	//Raindrop
-    GSND_SPLOSH,		//Hit water
-    GSND_COINFALL,		//Coin hits ground
-    GSND_LEVELUP,		//Character gains level
-    GSND_PITFALL,		//Character falls down a pit
-    GSND_SHIELDBLOCK,	//Shield block sound
-    GSND_BUTTON_CLICK,	//GUI button clicked
-    GSND_GAME_READY,	//Finished loading module
-    GSND_PERK_SELECT,   //Selected new perk
-    GSND_GUI_HOVER,     //Mouse over sound effect
-    GSND_DODGE,         //Dodged attack
-    GSND_CRITICAL_HIT,  //Critical Hit
-    GSND_DISINTEGRATE,  //Disintegrated
-    GSND_DRUMS,         //Used for "Too Silly to Die" perk
-    GSND_ANGEL_CHOIR,   //Angel Choir
-    GSND_STEALTH,       //Enter stealth
-    GSND_STEALTH_END,   //Exit stealth
-    GSND_COUNT
-};
-
 class AudioSystem;
 
 struct AudioSystemCreateFunctor
@@ -111,7 +84,8 @@ struct AudioSystemDestroyFunctor
 	void operator()(AudioSystem *p) const;
 };
 
-class AudioSystem : public idlib::singleton<AudioSystem, AudioSystemCreateFunctor, AudioSystemDestroyFunctor>
+class AudioSystem : public IAudioSystem,
+                    public idlib::singleton<AudioSystem, AudioSystemCreateFunctor, AudioSystemDestroyFunctor>
 {
 public:
     static constexpr int MIX_HIGH_QUALITY = 44100;
@@ -134,7 +108,7 @@ public:
      * @brief
      *  Stop music.
      */
-    void stopMusic();
+    void stopMusic() override;
 
     /**
      * @brief
@@ -145,19 +119,19 @@ public:
     /**
      * Stop all sounds that are playing over time.
      */
-    void fadeAllSounds();
+    void fadeAllSounds() override;
 
     /**
     * @author ZF
     * @details This functions plays a specified track loaded into memory
     **/
-    void playMusic(const MusicID musicID, const uint16_t fadetime = 0);
+    void playMusic(const MusicID musicID, const uint16_t fadetime = 0) override;
 
     /**
     * @author ZF
     * @details This functions plays a specified track loaded into memory
     **/
-    void playMusic(const std::string& songName, const uint16_t fadetime = 0);
+    void playMusic(const std::string& songName, const uint16_t fadetime = 0) override;
 
     SoundID loadSound(const std::string &fileName);
 
@@ -221,9 +195,9 @@ public:
 
     /// @author ZF
     /// @details This function plays a specified sound at full possible volume and returns which channel it's using
-    int playSoundFull(SoundID soundID);
+    int playSoundFull(SoundID soundID) override;
 
-    inline SoundID getGlobalSound(GlobalSound id) const
+    inline SoundID getGlobalSound(GlobalSound id) const override
     {
         return _globalSounds[id];
     }
@@ -246,7 +220,7 @@ public:
     * @param value
     *   between 0 (none) and 128 (max volume)
     **/
-    void setMusicVolume(int value);
+    void setMusicVolume(int value) override;
 
     /**
     * @brief
@@ -254,7 +228,7 @@ public:
     * @param value
     *   between 0 (none) and 128 (max volume)
     **/
-    void setSoundEffectVolume(int value);
+    void setSoundEffectVolume(int value) override;
 
 private:
     /**

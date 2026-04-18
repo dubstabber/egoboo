@@ -22,10 +22,19 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/AudioOptionsScreen.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/Slider.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 AudioOptionsScreen::AudioOptionsScreen()
 {
@@ -56,7 +65,7 @@ AudioOptionsScreen::AudioOptionsScreen()
     {
         egoboo_config_t::get().sound_music_volume.setValue(value);
         egoboo_config_t::get().sound_music_enable.setValue(value > 0);
-        AudioSystem::get().setMusicVolume(value);
+        audioSystem().setMusicVolume(value);
     });
     musicVolumeSlider->setValue(egoboo_config_t::get().sound_music_volume.getValue());
     addComponent(musicVolumeSlider);
@@ -76,8 +85,8 @@ AudioOptionsScreen::AudioOptionsScreen()
     {
         egoboo_config_t::get().sound_effects_volume.setValue(value);
         egoboo_config_t::get().sound_effects_enable.setValue(value > 0);
-        AudioSystem::get().setSoundEffectVolume(value);
-        AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_BUTTON_CLICK));
+        audioSystem().setSoundEffectVolume(value);
+        audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_BUTTON_CLICK));
     });
     soundEffectVolumeSlider->setValue(egoboo_config_t::get().sound_effects_volume.getValue());
     addComponent(soundEffectVolumeSlider);

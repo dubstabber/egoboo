@@ -32,6 +32,7 @@ set(EGOLIB_AI_SOURCES
 
 # -- Audio -------------------------------------------------------------------
 set(EGOLIB_AUDIO_SOURCES
+    src/egolib/Audio/IAudioSystem.hpp
     src/egolib/Audio/AudioSystem.cpp
     src/egolib/Audio/AudioSystem.hpp
 )

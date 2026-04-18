@@ -27,6 +27,11 @@ EndText g_endText;
 
 namespace
 {
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 const IPhysical& physical(const Object& object)
 {
     return object;
@@ -527,16 +532,16 @@ void playMainMenuSong()
 {
     //Special xmas theme
     if (Zeitgeist::CheckTime(Zeitgeist::Time::Christmas)) {
-        AudioSystem::get().playMusic("xmas.ogg");
+        audioSystem().playMusic("xmas.ogg");
     }
 
     //Special Halloween theme
     else if (Zeitgeist::CheckTime(Zeitgeist::Time::Halloween)) {
-        AudioSystem::get().playMusic("halloween.ogg");
+        audioSystem().playMusic("halloween.ogg");
     }
 
     //Default egoboo theme
     else {
-        AudioSystem::get().playMusic("themesong.ogg");
+        audioSystem().playMusic("themesong.ogg");
     }
 }

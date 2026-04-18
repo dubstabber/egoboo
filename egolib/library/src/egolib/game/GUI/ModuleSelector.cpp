@@ -22,8 +22,17 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/ModuleSelector.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Material.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 namespace Ego {
 namespace GUI {
@@ -203,7 +212,7 @@ bool ModuleSelector::notifyMouseWheelTurned(const Events::MouseWheelTurnedEvent&
         return false;
     }
     _startIndex = Math::constrain<int>(_startIndex + e.get_delta().y(), 0, _modules.size() - 3);
-    AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_BUTTON_CLICK));
+    audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_BUTTON_CLICK));
     _nextModuleButton->setEnabled(_startIndex < _modules.size() - 3);
     _previousModuleButton->setEnabled(_startIndex > 0);
     return true;

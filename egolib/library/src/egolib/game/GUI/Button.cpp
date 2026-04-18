@@ -1,4 +1,13 @@
 #include "egolib/game/GUI/Button.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
+
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
 
 namespace Ego {
 namespace GUI {
@@ -88,7 +97,7 @@ bool Button::notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) 
 
 void Button::doClick() {
     if (!isEnabled()) return;
-    AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_BUTTON_CLICK));
+    audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_BUTTON_CLICK));
     Clicked();
 }
 
