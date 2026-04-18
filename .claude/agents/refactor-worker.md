@@ -60,8 +60,8 @@ High-risk files (read audit docs before modifying):
 Before starting work, read whichever are relevant:
 - `refactoring-documents/04-refactoring-strategy.md` — overall refactoring approach
 - `refactoring-documents/19-new-refactoring-plan.md` — prioritized roadmap
-- `refactoring-documents/17-codebase-health-assessment.md` — quality metrics
-- `refactoring-documents/18-modularization-analysis.md` — module boundaries and coupling
+- `refactoring-documents/CODEBASE-HEALTH-STATUS.md` — consolidated health, modularization, SOLID, and cross-platform status
+- `refactoring-documents/33-maintainability-improvement-plan.md` — tiered improvement plan
 
 ## What to save to memory
 

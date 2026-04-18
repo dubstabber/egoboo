@@ -48,56 +48,29 @@ Important details:
 - Legacy C and newer C++ are compiled into the same library without a clear boundary.
 - The build graph does not communicate intended architecture, only "compile everything".
 
-## 3. Build documentation drift
+## 3. Build documentation
 
-The repo already contains contradictory build stories.
+Canonical build paths:
 
-### Current situation
+- `doc/build-linux.md` — Linux native build.
+- `doc/build-windows.md` — Linux-hosted mingw-w64 cross-build.
+- Top-level `README.md` describes the out-of-tree CMake build.
+- `run-egoboo.sh` runs the local binary at `build/products/x64/bin/egoboo` with the environment variables Linux execution requires.
 
-- `README.md` describes an out-of-tree CMake build.
-- `README.Linux` still describes `make all` and `make install`.
-- `run-egoboo.sh` assumes a local binary in `build/products/x64/bin/egoboo` and injects environment variables for Linux execution.
+Legacy platform READMEs (`README.MinGW`, `README.OSX`, `README.Windows`, `README.VisualStudio`) still exist in the tree but are outside the maintained path; `README.Linux` is a short stub that redirects to `doc/build-linux.md`. Retirement of the legacy READMEs is tracked as roadmap item T2.6.
 
-> **Status update (2026-04-17):** The canonical Linux and Windows build paths are now documented in `doc/build-linux.md` and `doc/build-windows.md`, and `README.Linux` has been reduced to a short stub that redirects to `doc/build-linux.md`. The drift described below is largely resolved; new doc drift should be tracked here as it appears.
+## 4. Fedora portability behavior (preserved)
 
-### What this implies
+Egoboo runs on modern Fedora thanks to specific portability fixes that are now part of the committed history (see commit `b97717e48` and related). These should be preserved — they represent real portability decisions, not accidental workspace drift:
 
-- The canonical build instructions are unclear.
-- Fresh contributors are likely to read stale instructions first.
-- Linux support currently depends on local knowledge that is not represented in one authoritative document.
-- Windows support is also split between future intent and current reality: a Linux-to-Windows cross-build exists, but the runtime and dependency story are still fragile.
+- `egolib/library/src/egolib/Platform/file_linux.c` — `EGOBOO_DATA_DIR` env override before falling back to `SDL_GetBasePath()`.
+- `egolib/library/src/egolib/vfs.c` — `PHYSFS_permitSymbolicLinks(1)` enabled.
+- `egolib/library/src/egolib/Graphics/SDL/GraphicsWindow.cpp` — forces an OpenGL 2.1 compatibility profile.
+- `egolib/library/src/egolib/Graphics/SDL/GraphicsContext.cpp` — `glewExperimental` enabled, GLEW error handling improved, GL context details logged.
+- `egolib/library/src/egolib/Graphics/SDL/Utilities.cpp` — relaxed fullscreen requirement behavior.
+- `egolib/library/src/egolib/Float.hpp` — explicit `<cstdint>` include.
 
-## 4. Local portability patches already in the workspace
-
-The current workspace contains uncommitted edits that change how the game builds or runs on Linux/Fedora.
-
-> **Status update (2026-04-17):** The patches enumerated below have since been committed (see `b97717e48` "Update runtime data handling and refactor file management" and related commits). They are no longer uncommitted workspace drift; they are part of the recorded history and describe the intentional Fedora portability behavior that should be preserved.
-
-### Observed local edits
-
-- `egolib/library/src/egolib/Platform/file_linux.c`
-  - Adds `EGOBOO_DATA_DIR` support before falling back to `SDL_GetBasePath()`
-- `egolib/library/src/egolib/vfs.c`
-  - Enables `PHYSFS_permitSymbolicLinks(1)`
-- `egolib/library/src/egolib/Graphics/SDL/GraphicsWindow.cpp`
-  - Forces an OpenGL 2.1 compatibility profile
-- `egolib/library/src/egolib/Graphics/SDL/GraphicsContext.cpp`
-  - Enables `glewExperimental`, improves GLEW error handling, logs GL context details
-- `egolib/library/src/egolib/Graphics/SDL/Utilities.cpp`
-  - Changes fullscreen requirement relaxation behavior
-- `egolib/library/src/egolib/Float.hpp`
-  - Adds missing `<cstdint>` include
-
-### Interpretation
-
-These are not random edits. They are evidence that:
-
-- The project has real portability debt on modern Linux systems.
-- The runtime still assumes filesystem and GL behavior that is no longer portable enough.
-- "It compiles on my machine" currently depends on local source drift.
-- The same class of portability debt is likely blocking cleaner Windows support and Linux-hosted Windows cross-build parity.
-
-These patches should be documented and then turned into explicit, reviewable portability decisions rather than staying as anonymous workspace edits.
+Broader portability debt still exists. Treat further Linux/Wine runtime surprises as opportunities to make more portability behavior explicit rather than layer more local patches on top of them.
 
 ## 5. Current Windows cross-build reality
 
@@ -118,40 +91,26 @@ The checked-in `debug-output.txt` shows concrete evidence of that runtime state 
 
 This is enough to treat the current Windows-on-Linux path as a debugging baseline, not as completed portability work.
 
-## 6. Submodule state and branch drift
+## 6. Submodule state
 
-`.gitmodules` says `idlib` and `idlib-game-engine` are intended to follow `develop`, but the checked submodule statuses currently point at `master` lineage.
-
-This matters because:
-
-- Refactors across the engine boundary can silently depend on local submodule state.
-- Reproducibility is weaker when the intended branch policy and the actual workspace state differ.
-
-> **Status update (2026-04-17):** `.gitmodules` now declares `branch = master` for both `idlib` and `idlib-game-engine`, and `git submodule status` confirms both submodules track `master`. The divergence described above is resolved. If submodule branch policy changes again, update this section.
+`.gitmodules` declares `branch = master` for both `idlib` and `idlib-game-engine`. `git submodule status` confirms both submodules track `master`. Refactors across the engine boundary should not silently depend on local submodule state; if submodule branch policy changes, update this section.
 
 ## 7. Tooling health
 
 ### Tests
 
-Automated test coverage is shallow at the Egoboo layer.
+Automated test coverage at the Egoboo layer has grown but is still thin. Current `egolib/tests/egolib/tests/` sources:
 
-- `egolib/tests` has only 4 test sources:
-  - compilation
-  - mesh iterator
-  - quad tree
-  - string utilities
-- `idlib` has broader utility tests.
-- `idlib-game-engine` has a single compilation-level test source.
+- utility: `Compilation.cpp`, `StringUtilities.cpp`, `QuadTree.cpp`, `MeshInfoIterator.cpp`
+- parsers: `ContentParsers.cpp`, `SpawnName.cpp`
+- module load / spawn smoke: `ModuleLoadSmoke.cpp`, `ModuleSpawnPlanning.cpp`, `ModuleSpawnRealization.cpp`, `ModulePlayerStartup.cpp`
+- player startup / quest hydration: `LoadPlayerElement.cpp`, `PlayerQuestLog.cpp`
+- seam/accessor regression: `EngineContext.cpp`, `ObjectAccessors.cpp`
+- math: `math/` submodule tests
 
-What is not protected:
+`idlib` has broader utility tests. `idlib-game-engine` has a single compilation-level test source.
 
-- module loading
-- object profile loading
-- scripting
-- save/import/export
-- mesh/content compatibility
-- rendering behavior
-- gameplay systems
+Test-to-code ratio is roughly 3.6% (≈4,340 test lines against ≈120,000 active source lines). Still absent: gameplay/combat logic, physics/collision, rendering correctness, script VM, and GUI tests.
 
 ### Utilities
 
@@ -163,24 +122,22 @@ What is not protected:
 
 ## 8. Large code hotspots
 
-The largest active translation units are a good proxy for risk concentration.
+The file-split passes have eliminated every former oversized translation unit. No active file now exceeds 2,500 lines. The current largest TUs are a proxy for where the interface, not the line count, is still the refactoring frontier.
 
 | File | Approx. lines |
 | --- | ---: |
-| `egolib/library/src/egolib/game/script_functions.c` | 8153 |
-| `egolib/library/src/egolib/Entities/Object.cpp` | 3155 |
-| `egolib/library/src/egolib/game/game.c` | 2443 |
-| `egolib/library/src/egolib/vfs.c` | 2435 |
-| `egolib/library/src/egolib/game/graphic.c` | 2222 |
-| `egolib/library/src/egolib/Profiles/ObjectProfile.cpp` | 1468 |
-| `egolib/library/src/egolib/game/Physics/particle_collision.c` | 1465 |
-| `egolib/library/src/egolib/game/Module/Module.cpp` | 1225 |
+| `egolib/library/src/egolib/vfs.c` | 2,445 |
+| `egolib/library/src/egolib/game/script_functions_systems.c` | 2,128 |
+| `egolib/library/src/egolib/game/script_functions_target.c` | 1,776 |
+| `egolib/library/src/egolib/game/script_functions_state.c` | 1,551 |
+| `egolib/library/src/egolib/game/Physics/particle_collision.c` | 1,480 |
+| `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` | 1,459 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 1,381 |
+| `egolib/library/src/egolib/game/mesh.c` | 1,370 |
+| `egolib/library/src/egolib/fileutil.c` | 1,339 |
+| `egolib/library/src/egolib/game/script_functions_spawn.c` | 1,181 |
 
-These are strong candidates for:
-
-- characterization tests
-- extraction of interfaces
-- file-splitting before behavior changes
+`Object.cpp` itself is now 79 lines: the implementation was split across seven per-aspect TUs (`Object_{core,combat,interaction,appearance,update,attributes,lifecycle}.cpp`) while the interface surface in `Object.hpp` stayed fat. That is the ISP/SRP frontier for T1.2 role-interface extraction. Script dispatch is likewise split across seven `script_functions_*.c` files but still one logical subsystem — the extensibility fix is T3.2 (registry model). For the full current hotspot table and the pre-split sizes, see `CODEBASE-HEALTH-STATUS.md` §3.
 
 ## 9. Practical conclusions for the refactor
 

@@ -1,0 +1,173 @@
+# Refactoring Roadmap
+
+Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-04-18. Supersedes and replaces:
+
+- `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
+- `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
+- `25-entity-layer-decomposition-plan.md` (phases 1–3 complete; `Object.cpp` / `ObjectProfile.cpp` / `Particle.cpp` all split)
+- `33-maintainability-improvement-plan.md` (Tier 1.1 context-wrapper migration complete; Tier 1.2 Object-field encapsulation in-flight — see passes 52–69 in `71-completed-passes-log.md`)
+
+For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-STATUS.md`. For the completed work that got us here, read `71-completed-passes-log.md`.
+
+## Principles (still in force)
+
+1. **No flag-day rewrites.** Every change incremental and verifiable.
+2. **Characterization tests before restructuring.** Especially on behavior-dense code.
+3. **Decouple from globals before extracting subsystems.**
+4. **Prioritize by coupling reduction, not cosmetic cleanup.**
+5. **Keep the Windows toolchain fully open source.** No new Visual Studio-only requirements.
+6. **Treat warnings as portability/maintainability debt, not background noise.**
+
+---
+
+## Tier 1 — In-flight (next 3–6 passes)
+
+### T1.1 Finish `Object` public-field privatization
+
+Continuation of passes 52–69. The remaining public surface on `Object.hpp` (still ~1,381 lines) includes `ai`, parts of `inst` forwarding, and miscellaneous state not yet sealed behind accessors.
+
+- Keep the bounded per-cluster accessor-pass cadence.
+- Add characterization coverage in `egolib/tests/egolib/tests/ObjectAccessors.cpp` as each cluster migrates.
+- Stop only when `Object.hpp` has no direct public data fields and the `ai` cluster reaches the same accessor discipline as `inst`.
+
+**Risk:** Low. Mechanical, bounded, covered by existing test harness.
+
+### T1.2 Introduce `Object` role interfaces
+
+Once T1.1 lands, the public surface is small enough to extract role-based abstract interfaces without churn:
+
+- `IDamageable` — combat damage application surface
+- `IInventoryHolder` — equipment, held, inventory slot access
+- `IScriptable` — script-visible state and commands
+- `IRenderable` — render-facing surface (matrix cache, tint, model descriptor)
+- `IPhysical` — collision volume, orientation, bumper state
+
+Migrate callers by role. This is the SRP/ISP keystone for `Object`.
+
+**Risk:** Medium. Requires careful caller-by-caller migration; each role interface should land in its own pass.
+
+### T1.3 Service-interface layer over singletons
+
+~1,150 `::get()` call sites remain (see `CODEBASE-HEALTH-STATUS.md` §4). Start with the smallest-reach singleton and build the DIP seam once, then apply the pattern:
+
+- First target: `AudioSystem` (~34 internal sites + a few gameplay callers).
+- Introduce `IAudioSystem` abstract interface; route all non-audio callers through a constructor-injected or context-owned reference.
+- Keep `AudioSystem::get()` as the bootstrap seam inside `Audio/` until a DI container is defined.
+- Repeat for `ImageManager`, `ProfileSystem`, `PerkHandler`, `Log`, `egoboo_config_t` as separate passes.
+
+**Risk:** Medium. First pass defines the pattern; later passes mostly mechanical.
+
+### T1.4 Document error-handling policy, retire `egolib_rv`
+
+Three strategies still coexist: C++ exceptions (~290 throw sites, ~76 try/catch), `egolib_rv` return codes, silent failure. Deliverables:
+
+- Write `doc/error-handling-policy.md` defining: exceptions for exceptional (construction failure, invariant violation), return codes/`std::optional` for expected-failure paths at boundaries, no silent failure.
+- Retire `egolib_rv` from C++ code paths one subsystem at a time, starting with the smallest.
+
+**Risk:** Low for policy doc; medium for `egolib_rv` retirement (touches a lot of code).
+
+---
+
+## Tier 2 — Build and cross-platform
+
+### T2.1 Retire MSVC from CI
+
+`appveyor-windows.yml` still generates a Visual Studio 2017 solution. The maintained Windows path is mingw-w64 cross.
+
+- Replace the Visual Studio generator in `appveyor-windows.yml` with mingw-w64 cross (matching `cmake/toolchains/mingw-w64-x86_64.cmake`).
+- Drop the two MSVC-only CMake branches (`CMakeLists.txt:51-69`, `egoboo/CMakeLists.txt:41-46`) and the `platform.h:125-136` MSVC pragma island.
+- Remove `distribute.ps1`, `external/install-vsix-appveyor.ps1`, `external/external.sln`, `external/SDL2-*/VisualC/`, `egoboo.gta.runsettings`.
+
+**Risk:** Low. Deletes unsupported config; repo audit in `CODEBASE-HEALTH-STATUS.md` §8 confirms no active consumer.
+
+### T2.2 Native-Windows open-source build
+
+Add `doc/build-windows-native.md` + `cmake/toolchains/msys2-ucrt64.cmake` for building on a Windows host with MSYS2 UCRT64. This completes the supported matrix alongside Linux native and Linux-hosted cross.
+
+### T2.3 Eliminate configure-time network fetch
+
+`idlib/CMakeLists.txt` fetches googletest 1.16.0 from GitHub by default. This breaks offline and sandboxed builds.
+
+- Default `idlib-with-fetch-googletest=OFF`.
+- Use the vendored `external/googletest` tree.
+
+### T2.4 Collapse third-party dependency divergence
+
+- Decide on one SDL2 story (system pkg-config on Linux, MinGW bundle on Windows cross); delete the orphaned `external/SDL2-2.0.3/` tree.
+- Remove `external/physfs-2.1.1` (the real PhysFS is in `idlib-game-engine/library/physfs-3.0.0`).
+
+### T2.5 Fix Wine font-atlas / audio crash
+
+`debug-output.txt` shows font atlas init failure in `egolib/Graphics/Font.cpp` and a Wine page-fault inside `Mix_LoadWAV_RW` during audio load. Without a fix, the cross build is not a credible verification substitute — `run-egoboo-windows.sh` currently gates it with `EGOBOO_DISABLE_MIPMAPS=1 EGOBOO_DISABLE_AUDIO=1` as a workaround.
+
+### T2.6 Quarantine legacy platform READMEs
+
+Move `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX` to `doc/legacy/` or delete. The canonical docs are `doc/build-linux.md` and `doc/build-windows.md`.
+
+---
+
+## Tier 3 — Deeper structural work
+
+These are unblocked only after Tier 1 lands. They represent the next frontier of maintainability work once the Object/singleton debt is paid down.
+
+### T3.1 Shrink `shared_ptr<Object>` usage
+
+~955 `shared_ptr` call sites, many of them `shared_ptr<Object>`, with `Object` inheriting from `enable_shared_from_this`. Entity ownership is shared-by-default. A dedicated pass should:
+
+- Identify which `shared_ptr<Object>` uses are true shared ownership vs. observer patterns.
+- Move observer-style uses to `weak_ptr<Object>` or raw non-owning references.
+- Consider whether `ObjectHandler` can become the sole owning reference, with all call-site refs becoming non-owning.
+
+### T3.2 Script dispatch → registry model
+
+`script_functions_{action,bitwise,movement,spawn,state,systems,target}.c` still implements ~400 script functions as one procedural dispatch split across seven files. Moving to a registry-based model would:
+
+- Enable Command pattern on script ops.
+- Remove the `switch` density density (~100+ switches in `egolib`).
+- Allow extension without touching the dispatch layer.
+
+### T3.3 Reduce `egolib.h` transitive reach
+
+`egolib.h` still pulls in 57 subsystems. Only a handful of `.c` files still include it directly. Finish removing direct includes and physically delete the uber-header.
+
+### T3.4 Behavioral test coverage
+
+Current test-to-code ratio is ~3.6% and covers parsers / module smoke / accessor regressions. Gaps:
+
+- Gameplay combat logic
+- Physics / collision behavior
+- Rendering correctness (golden-image or matrix-cache comparisons)
+- Script VM behavior
+- GUI state transitions
+
+Add characterization coverage before the next restructuring wave in each area.
+
+### T3.5 Native-Cartman build integration
+
+`cartman/` exists in-tree but is disconnected from the main CMake graph. Gate it with a CMake option and add it to the build matrix. Prevents further bit-rot.
+
+---
+
+## Items intentionally deferred
+
+- Renderer modernization (still out of scope per `04-refactoring-strategy.md` §5).
+- Save/import/export format replacement.
+- Network/multiplayer ambitions.
+- EgoScript → Lua migration (blocked on T3.2 script registry and a stable scripting API boundary — see `04-refactoring-strategy.md` §3 Phase 6).
+- Gameplay rebalance and asset visual upgrades.
+
+---
+
+## Definition of success (unchanged from `04-refactoring-strategy.md` §7)
+
+The refactor is succeeding when:
+
+- A new contributor can build and launch reliably from one document.
+- Gameplay code can be read without chasing globals through unrelated systems. *(Mostly achieved — see `CODEBASE-HEALTH-STATUS.md` §4.)*
+- Module and object content can be validated without starting the full game. *(Achieved — `egoboo-content-validator`.)*
+- Content semantics live in schemas and code, not scattered folklore.
+- Scripting has a stable API boundary. *(Blocked on T3.2.)*
+- Module loading and gameplay regressions are caught by repeatable tests.
+- Supported Linux and Windows build paths are close enough that portability fixes are shared work.
+- The Windows build is usable both natively and when cross-built from Linux. *(Blocked on T2.2 + T2.5.)*
+- Supported C++ build configurations are free of routine warning noise.

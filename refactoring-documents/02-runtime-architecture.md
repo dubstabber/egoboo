@@ -89,31 +89,22 @@ The state stack itself is not the main problem. The problem is that states do no
 
 ## 6. Global runtime state
 
-The most serious coupling issue is the amount of global mutable state used across the runtime.
+The historical shape of the runtime was defined by three large mutable globals — `_currentModule`, `_gameEngine`, `update_wld` — reached by hundreds of call sites. Those boundaries have been dismantled. Current state (see `CODEBASE-HEALTH-STATUS.md` §4 for the authoritative numbers):
 
-### Observed counts
+- `_currentModule` — 0 direct references in active runtime code; all consumers go through `GameSessionContext` / `GameModule` accessor surfaces.
+- `_gameEngine` — 0 direct references in active runtime code; remaining mentions are in commented-out documentation.
+- `update_wld` — 3 residue references in `Script/script.c`, `game/Graphics/ObjectGraphics.hpp`, and `Entities/Particle.hpp` as a legacy debug label, not active global coupling.
 
-- `_currentModule` references: 592
-- `_gameEngine` references: 266
-- `update_wld` references: 65
+Secondary runtime globals that still exist:
 
-### Key globals
-
-- `_gameEngine`
-- `_currentModule`
-- `update_wld`
-- `clock_chr_stat`
-- `clock_enc_stat`
+- `clock_chr_stat`, `clock_enc_stat`
 - `overrideslots`
 - `g_importList`
 - weather/fog/animated tile globals in `game.h`
 
-### Consequences
+### Remaining coupling risk
 
-- Nearly every subsystem can reach gameplay state directly.
-- GUI, rendering, physics, inventory, scripting, and audio are not isolated from module internals.
-- Unit testing becomes difficult because systems do not accept explicit dependencies.
-- Multi-session, headless validation, replay tooling, and deterministic tests are much harder than they need to be.
+The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count (~1,150 `::get()` call sites) has stayed roughly flat. The context wrappers are themselves singletons and remain the dominant DIP boundary until a service-interface / DI layer replaces them (roadmap T1.3).
 
 ## 7. Module runtime
 
@@ -167,14 +158,14 @@ This means "content format refactor" is also "runtime architecture refactor".
 
 `egolib` contains both older C-style systems and newer C++-style systems:
 
-- old-style C files such as `game.c`, `graphic.c`, `mesh.c`, `script_functions.c`
+- old-style C files such as `game.c`, `mesh.c`, and the seven `script_functions_*.c` files (split out of the former 8,183-line `script_functions.c`)
 - newer C++ areas such as `GameModule`, GUI classes, render passes, players, camera system, and parts of profiles
 
 The result is not merely mixed language style. It is mixed ownership style:
 
 - some code uses classes and RAII
-- some code still depends on globals and procedural sequencing
-- newer code often still reaches into older globals instead of going through explicit interfaces
+- some code still depends on procedural sequencing and cross-subsystem reach
+- newer code still reaches for concrete singletons rather than role interfaces
 
 ## 10. Major subsystem map
 
@@ -211,9 +202,9 @@ The result is not merely mixed language style. It is mixed ownership style:
 
 ## 11. Architectural pain points worth fixing first
 
-### Pain point 1: hidden dependency graph
+### Pain point 1: singleton-mediated dependency graph
 
-Because everything can reach `_currentModule`, the effective dependency graph is almost flat.
+Raw-global reach into `_currentModule` / `_gameEngine` is gone, but ~1,150 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to concrete singletons, not declared constructor parameters.
 
 ### Pain point 2: initialization order as architecture
 
@@ -277,4 +268,4 @@ The next architecture should aim for these explicit boundaries:
 - current EgoScript compatibility layer
 - future scripting engine adapter
 
-The first useful architectural move is to replace raw global access with an explicit `GameSessionContext` or equivalent runtime context object that subsystems receive by dependency, not by global lookup.
+The first architectural move — replacing raw global access with explicit `GameSessionContext` / `EngineContext` wrappers — has been executed (see passes 11–51 in `71-completed-passes-log.md`). The next frontier is to replace those context singletons with constructor-injected service interfaces so subsystems receive their dependencies instead of reaching for a concrete wrapper.
