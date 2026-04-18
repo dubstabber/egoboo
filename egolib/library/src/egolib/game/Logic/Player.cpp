@@ -150,9 +150,9 @@ void Player::updateLatches()
 
             //Make inventory movement wrap around
             if(new_selected < 0) {
-                _inventorySlot = object->getInventory().getMaxItems() - 1;
+                _inventorySlot = object->getInventoryMaxItems() - 1;
             }
-            else if(new_selected >= object->getInventory().getMaxItems()) {
+            else if(new_selected >= object->getInventoryMaxItems()) {
                 _inventorySlot = 0;
             }
             else {

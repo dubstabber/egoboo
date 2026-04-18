@@ -2,24 +2,24 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 
 namespace Ego {
 namespace GUI {
 
-InventorySlot::InventorySlot(const Inventory &inventory, const size_t slotNumber, const std::shared_ptr<Player>& player) :
-    _inventory(inventory),
+InventorySlot::InventorySlot(const std::shared_ptr<Object>& character, const size_t slotNumber, const std::shared_ptr<Player>& player) :
+    _character(character),
     _slotNumber(slotNumber),
     _player(player) {
     //ctor
 }
 
 void InventorySlot::draw(DrawingContext& drawingContext) {
-    std::shared_ptr<Object> item = _inventory.getItem(_slotNumber);
+    std::shared_ptr<Object> item = _character ? _character->getInventoryItem(_slotNumber) : nullptr;
 
     // grab the icon reference
     std::shared_ptr<const Texture> icon_ref;
-
 
     if (item) {
         icon_ref = item->getIcon();
@@ -70,7 +70,7 @@ bool InventorySlot::notifyMouseButtonPressed(const Events::MouseButtonPressedEve
     }
 
     const std::shared_ptr<Object> &pchr = _player->getObject();
-    if (pchr->isAlive() && pchr->canBeInterrupted() && 0 == pchr->getReloadTimer()) {
+    if (pchr && pchr->isAlive() && pchr->canBeInterrupted() && 0 == pchr->getReloadTimer()) {
         //put it away and swap with any existing item
         Inventory::swap_item(pchr->getObjRef(), _slotNumber, e.get_button() == SDL_BUTTON_LEFT ? SLOT_LEFT : SLOT_RIGHT, false);
 

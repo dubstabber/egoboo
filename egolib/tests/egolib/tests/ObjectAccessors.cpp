@@ -372,6 +372,36 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getHoldingWeight(), 12);
 }
 
+TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAndFirstFreeSlot)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3041);
+    auto item0 = makeFollower(objectHandler, 3042);
+    auto item2 = makeFollower(objectHandler, 3043);
+    ASSERT_NE(object, nullptr);
+    ASSERT_NE(item0, nullptr);
+    ASSERT_NE(item2, nullptr);
+
+    EXPECT_EQ(object->getInventoryMaxItems(), Inventory::MAXNUMINPACK);
+    EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
+    EXPECT_EQ(object->getInventoryItem(0), nullptr);
+    EXPECT_EQ(object->getInventoryItem(1), nullptr);
+    EXPECT_TRUE(object->getInventoryItems().empty());
+
+    object->getInventory().setItem(0, item0);
+    object->getInventory().setItem(2, item2);
+
+    EXPECT_EQ(object->getInventoryItem(0), item0);
+    EXPECT_EQ(object->getInventoryItem(1), nullptr);
+    EXPECT_EQ(object->getInventoryItem(2), item2);
+    EXPECT_EQ(object->getFirstFreeInventorySlot(), 1u);
+
+    const auto items = object->getInventoryItems();
+    ASSERT_EQ(items.size(), 2u);
+    EXPECT_EQ(items[0], item0);
+    EXPECT_EQ(items[1], item2);
+}
+
 TEST_F(ObjectAccessorFixture, TempAttributeHelpersRoundTripPresenceValueAndClearing)
 {
     auto object = makeFollower(344);

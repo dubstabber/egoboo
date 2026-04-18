@@ -166,7 +166,7 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
                 }
                 
                 // II: Check the pack
-                for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
+                for (const auto& pitem : pchr->getInventoryItems())
                 {
                     if ( pitem->getProfile()->hasTypeIDSZ(require_item) )
                     {

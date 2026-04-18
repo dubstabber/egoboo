@@ -296,6 +296,26 @@ Inventory& Object::getInventory()
     return _inventory;
 }
 
+size_t Object::getInventoryMaxItems() const
+{
+    return _inventory.getMaxItems();
+}
+
+size_t Object::getFirstFreeInventorySlot() const
+{
+    return _inventory.getFirstFreeSlotNumber();
+}
+
+std::shared_ptr<Object> Object::getInventoryItem(size_t slotNumber) const
+{
+    return _inventory.getItem(slotNumber);
+}
+
+std::vector<std::shared_ptr<Object>> Object::getInventoryItems() const
+{
+    return _inventory.iterate();
+}
+
 const std::shared_ptr<Object>& Object::toSharedPointer() const
 {
     return activeModule().getObjectHandler()[getObjRef()];

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "egolib/game/GUI/Component.hpp"
-#include "egolib/game/Inventory.hpp"
 
-// Forward declarations.
+class Object;
+
 namespace Ego { class Player; }
 
 namespace Ego {
@@ -11,7 +11,7 @@ namespace GUI {
 
 class InventorySlot : public Component {
 public:
-    InventorySlot(const Inventory &inventory, const size_t slotNumber, const std::shared_ptr<Player>& player);
+    InventorySlot(const std::shared_ptr<Object>& character, const size_t slotNumber, const std::shared_ptr<Player>& player);
 
     virtual void draw(Ego::GUI::DrawingContext& drawingContext) override;
 
@@ -19,11 +19,10 @@ public:
     bool notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) override;
 
 private:
-    const Inventory& _inventory;
+    std::shared_ptr<Object> _character;
     size_t _slotNumber;
     std::shared_ptr<Player> _player;
 };
 
 } // namespace GUI
 } // namespace Ego
-

@@ -299,12 +299,13 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     }
 
     //Inventory
-    const int slotSize = (target->getWidth() - 15 - _character->getInventory().getMaxItems() * 5) / _character->getInventory().getMaxItems();
+    const size_t inventorySlots = _character->getInventoryMaxItems();
+    const int slotSize = (target->getWidth() - 15 - inventorySlots * 5) / inventorySlots;
     xPos = 0;
     yPos += 5;
     std::vector<std::shared_ptr<Component>> slots;
-    for (size_t i = 0; i < _character->getInventory().getMaxItems(); ++i) {
-        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character->getInventory(), i, _character->isPlayer() ? activeModule.getPlayer(_character->getPlayerNumber()) : nullptr);
+    for (size_t i = 0; i < inventorySlots; ++i) {
+        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character, i, _character->isPlayer() ? activeModule.getPlayer(_character->getPlayerNumber()) : nullptr);
         slot->setSize(Vector2f(slotSize, slotSize));
         target->addComponent(slot);
         slots.push_back(slot);

@@ -179,7 +179,7 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachMarksGrabbedAlertWhenChildS
     ops.attachInventoryItem = [&](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>&)
     {
         attachCalled = true;
-        recordedSlot = parentObject->getInventory().getFirstFreeSlotNumber();
+        recordedSlot = parentObject->getFirstFreeInventorySlot();
     };
 
     auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(73, ATTACH_INVENTORY), parent, state, ops);
@@ -209,7 +209,7 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachReturnsNullWhenMergeTermina
     ops.attachInventoryItem = [&](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object)
     {
         attachCalled = true;
-        recordedSlot = parentObject->getInventory().getFirstFreeSlotNumber();
+        recordedSlot = parentObject->getFirstFreeInventorySlot();
         mergedIntoStack = true;
         object->setAIAlertBits(0);
     };
