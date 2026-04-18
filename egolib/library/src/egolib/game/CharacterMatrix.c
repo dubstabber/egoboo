@@ -565,7 +565,7 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
         if(apply_matrix_cache(pchr, mc_tmp)) {
             if(update_size) {
                 // call chr_update_collision_size() but pass in a false value to prevent a recursize call
-                pchr->getObjectPhysics().updateCollisionSize(false);
+                pchr->updateCollisionSize(false);
             }
             return rv_success;
         }

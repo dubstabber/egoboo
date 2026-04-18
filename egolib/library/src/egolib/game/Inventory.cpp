@@ -217,7 +217,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     if (inventory_item) {
         pobj->getInventory().removeItem(inventory_item, ignorekurse);
 
-        inventory_item->getObjectPhysics().attachToObject(pobj, grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
+        inventory_item->attachToObject(pobj, grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
         //fix flags
         inventory_item->clearAIAlertBits(ALERTIF_GRABBED);

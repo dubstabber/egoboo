@@ -378,7 +378,7 @@ void Camera::updateTrack()
                 if (!object || object->isTerminated() || !object->isAlive()) continue;
 
                 sum_pos += object->getPosition() + Ego::Vector3f(0.0f, 0.0f, object->getMinCollisionVolume()._maxs[OCT_Z] * 0.9f);
-                sum_level += object->getObjectPhysics().getGroundElevation();
+                sum_level += object->getFloorElevation();
                 sum_wt += 1.0f;
             }
 
@@ -441,7 +441,7 @@ void Camera::updateTrack()
 
                     // The character is on foot.
                     sum_pos += pchr->getPosition() * weight;
-                    sum_level += (pchr->getObjectPhysics().getGroundElevation() + 128) * weight;
+                    sum_level += (pchr->getFloorElevation() + 128) * weight;
                     sum_wt += weight;
                 }
 

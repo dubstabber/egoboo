@@ -224,7 +224,7 @@ int32_t load_VARWEIGHT(script_state_t& scriptState, ai_state_t& aiState, Object 
 
 int32_t load_VARSELFALTITUDE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getPosZ() - pobject->getObjectPhysics().getGroundElevation();
+    return pobject->getPosZ() - pobject->getFloorElevation();
 }
 
 int32_t load_VARSELFID(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -536,5 +536,5 @@ int32_t load_VARSELFZ(script_state_t& scriptState, ai_state_t& aiState, Object *
 
 int32_t load_VARTARGETALTITUDE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getPosZ() - ptarget->getObjectPhysics().getGroundElevation();
+    return (nullptr == ptarget) ? 0 : ptarget->getPosZ() - ptarget->getFloorElevation();
 }

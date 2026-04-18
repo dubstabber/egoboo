@@ -39,6 +39,61 @@ Team& Object::getTeam() const
     return activeModule().getTeamList()[getTeamRef()];
 }
 
+void Object::updatePhysics()
+{
+    _objectPhysics.updatePhysics();
+}
+
+bool Object::attachToPlatform(const std::shared_ptr<Object>& platform)
+{
+    return _objectPhysics.attachToPlatform(platform);
+}
+
+void Object::detachFromPlatform()
+{
+    _objectPhysics.detachFromPlatform();
+}
+
+const Ego::Vector2f& Object::getDesiredVelocity() const
+{
+    return _objectPhysics.getDesiredVelocity();
+}
+
+void Object::setDesiredVelocity(const Ego::Vector2f& velocity)
+{
+    _objectPhysics.setDesiredVelocity(velocity);
+}
+
+float Object::getMass() const
+{
+    return _objectPhysics.getMass();
+}
+
+bool Object::grabStuff(grip_offset_t gripOffset, bool grabPeople)
+{
+    return _objectPhysics.grabStuff(gripOffset, grabPeople);
+}
+
+bool Object::attachToObject(const std::shared_ptr<Object>& holder, grip_offset_t gripOffset)
+{
+    return _objectPhysics.attachToObject(holder, gripOffset);
+}
+
+void Object::updateCollisionSize(bool updateMatrix)
+{
+    _objectPhysics.updateCollisionSize(updateMatrix);
+}
+
+bool Object::floorIsSlippy() const
+{
+    return _objectPhysics.floorIsSlippy();
+}
+
+bool Object::isTouchingGround() const
+{
+    return _objectPhysics.isTouchingGround();
+}
+
 bool Object::canMount(const std::shared_ptr<Object> mount) const
 {
     //Cannot mount ourselves!

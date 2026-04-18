@@ -46,7 +46,7 @@ LocomotionAnimationDecision makeLocomotionAnimationDecision(Object& object,
         return decision;
     }
 
-    if (!object.getObjectPhysics().isTouchingGround() && !object.isFlying())
+    if (!object.isTouchingGround() && !object.isFlying())
     {
         return decision;
     }
@@ -61,8 +61,8 @@ LocomotionAnimationDecision makeLocomotionAnimationDecision(Object& object,
     else
     {
         speed = std::max(idlib::euclidean_norm(xy(object.getVelocity())),
-                         idlib::euclidean_norm(object.getObjectPhysics().getDesiredVelocity()));
-        if (object.getObjectPhysics().floorIsSlippy())
+                         idlib::euclidean_norm(object.getDesiredVelocity()));
+        if (object.floorIsSlippy())
         {
             decision.animationRate = 2.0f;
             speed *= 2.0f;
@@ -1004,22 +1004,22 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_GRABLEFT ) )
     {
-        _object.getObjectPhysics().grabStuff(GRIP_LEFT, false);
+        _object.grabStuff(GRIP_LEFT, false);
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_GRABRIGHT ) )
     {
-        _object.getObjectPhysics().grabStuff(GRIP_RIGHT, false);
+        _object.grabStuff(GRIP_RIGHT, false);
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_CHARLEFT ) )
     {
-        _object.getObjectPhysics().grabStuff(GRIP_LEFT, true);
+        _object.grabStuff(GRIP_LEFT, true);
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_CHARRIGHT ) )
     {
-        _object.getObjectPhysics().grabStuff(GRIP_RIGHT, true);
+        _object.grabStuff(GRIP_RIGHT, true);
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPLEFT ) )

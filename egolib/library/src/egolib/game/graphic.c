@@ -320,7 +320,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
 
         // the instance has changed, refresh the collision bound
         else {
-            pchr->getObjectPhysics().updateCollisionSize(true);            
+            pchr->updateCollisionSize(true);
         }
 
         // do the basic lighting

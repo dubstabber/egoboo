@@ -368,7 +368,7 @@ void Object::updateLatchButtons()
     if (_inputLatchesPressed[LATCHBUTTON_JUMP] && 0 == jump_timer) {
         if (isBeingHeld()) {
             detatchFromHolder(true, true);
-            getObjectPhysics().detachFromPlatform();
+            detachFromPlatform();
 
             jump_timer = Object::JUMPDELAY;
             if (isFlying()) {
@@ -394,7 +394,7 @@ void Object::updateLatchButtons()
                 hitready = true;
                 jump_timer = Object::JUMPDELAY;
 
-                if (isSubmerged() || getObjectPhysics().floorIsSlippy()) {
+                if (isSubmerged() || floorIsSlippy()) {
                     jump_timer *= hasPerk(Ego::Perks::ATHLETICS) ? 2 : 4;
                     jumpPower *= 0.5f;
                 }
@@ -427,7 +427,7 @@ void Object::updateLatchButtons()
         reload_timer = GRABDELAY;
         if (!getLeftHandItem()) {
             if (!getProfile()->getModel()->isActionValid(ACTION_ME)) {
-                getObjectPhysics().grabStuff(GRIP_LEFT, false);
+                grabStuff(GRIP_LEFT, false);
             } else {
                 inst.playAction(ACTION_ME, false);
             }
@@ -440,7 +440,7 @@ void Object::updateLatchButtons()
         reload_timer = GRABDELAY;
         if (!getRightHandItem()) {
             if (!getProfile()->getModel()->isActionValid(ACTION_MF)) {
-                getObjectPhysics().grabStuff(GRIP_RIGHT, false);
+                grabStuff(GRIP_RIGHT, false);
             } else {
                 inst.playAction(ACTION_MF, false);
             }

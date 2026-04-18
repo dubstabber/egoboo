@@ -312,7 +312,7 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
     if ( leftItem && ( !_profile->isSlotValid(SLOT_LEFT) || _profile->isMount() ) )
     {
         leftItem->detatchFromHolder(true, true);
-        leftItem->getObjectPhysics().detachFromPlatform();
+        leftItem->detachFromPlatform();
 
         if ( isMount() )
         {
@@ -328,7 +328,7 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
     if ( rightItem && !_profile->isSlotValid(SLOT_RIGHT) )
     {
         rightItem->detatchFromHolder(true, true);
-        rightItem->getObjectPhysics().detachFromPlatform();
+        rightItem->detachFromPlatform();
 
         if ( isMount() )
         {

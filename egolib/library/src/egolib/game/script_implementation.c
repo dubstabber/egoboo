@@ -362,7 +362,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
         if (pchr->isFlying()) continue;
 
 		float lerp_z;
-        lerp_z = ( pchr->getPosZ() - pchr->getObjectPhysics().getGroundElevation() ) / DAMAGERAISE;
+        lerp_z = ( pchr->getPosZ() - pchr->getFloorElevation() ) / DAMAGERAISE;
         lerp_z = 1.0f - Ego::Math::constrain( lerp_z, 0.0f, 1.0f );
 
         if ( pchr->phys.weight * lerp_z <= 20 ) continue;

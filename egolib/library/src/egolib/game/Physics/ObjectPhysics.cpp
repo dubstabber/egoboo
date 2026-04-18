@@ -806,7 +806,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
         if (Shop::canGrabItem(grabber, bestMatch))
         {
             // Stick 'em together and quit
-            if(bestMatch->getObjectPhysics().attachToObject(grabber, grip_off))
+            if(bestMatch->attachToObject(grabber, grip_off))
             {
                 if (grab_people)
                 {

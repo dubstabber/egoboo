@@ -175,11 +175,11 @@ void GameModule::updateDamageTiles()
         if (0 == _mesh->test_fx(pchr->getTile(), MAPFX_DAMAGE)) continue;
 
         // are we low enough?
-        if (pchr->getPosZ() > pchr->getObjectPhysics().getGroundElevation() + DAMAGERAISE) continue;
+        if (pchr->getPosZ() > pchr->getFloorElevation() + DAMAGERAISE) continue;
 
         // allow reaffirming damage to things like torches, even if they are being held,
         // but make the tolerance closer so that books won't burn so easily
-        if (!pchr->isBeingHeld() || pchr->getPosZ() < pchr->getObjectPhysics().getGroundElevation() + DAMAGERAISE)
+        if (!pchr->isBeingHeld() || pchr->getPosZ() < pchr->getFloorElevation() + DAMAGERAISE)
         {
             if (pchr->getReaffirmDamageType() == _damageTile.damagetype)
             {

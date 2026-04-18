@@ -337,7 +337,7 @@ void Object::update()
 
     // Down jump timer
     if(jump_timer > 0) {
-        if (isBeingHeld() || getObjectPhysics().isTouchingGround() || jumpnumber > 0) {
+        if (isBeingHeld() || isTouchingGround() || jumpnumber > 0) {
             jump_timer--;
         }
     }

@@ -293,12 +293,12 @@ void scr_run_chr_script(Object *pchr)
         if (pchr->isMount() && pchr->getLeftHandItem())
         {
             // Mount (rider is held in left grip)
-            pchr->getObjectPhysics().setDesiredVelocity(pchr->getLeftHandItem()->getObjectPhysics().getDesiredVelocity());
+            pchr->setDesiredVelocity(pchr->getLeftHandItem()->getDesiredVelocity());
         }
         else if (aiState.wp_valid)
         {
             // Normal AI
-            pchr->getObjectPhysics().setDesiredVelocity(Ego::Vector2f(
+            pchr->setDesiredVelocity(Ego::Vector2f(
                 (aiState.wp[kX] - pchr->getPosX()) / Info<float>::Grid::Size(),
                 (aiState.wp[kY] - pchr->getPosY()) / Info<float>::Grid::Size()));
         }

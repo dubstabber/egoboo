@@ -226,7 +226,7 @@ void Object::respawn()
 
     for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {
         if (object->getAttachedPlatform().get() == this) {
-            object->getObjectPhysics().detachFromPlatform();
+            object->detachFromPlatform();
         }
     }
 

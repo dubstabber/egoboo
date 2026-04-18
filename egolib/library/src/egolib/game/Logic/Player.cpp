@@ -124,7 +124,7 @@ void Player::updateLatches()
         object->setLatchButton(LATCHBUTTON_RIGHT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::USE_RIGHT));
         object->setLatchButton(LATCHBUTTON_ALTLEFT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::GRAB_LEFT));
         object->setLatchButton(LATCHBUTTON_ALTRIGHT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::GRAB_RIGHT));
-        object->getObjectPhysics().setDesiredVelocity(movementInput);
+        object->setDesiredVelocity(movementInput);
     }
 
     //inventory mode

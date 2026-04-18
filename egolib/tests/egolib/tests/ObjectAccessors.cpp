@@ -372,6 +372,35 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getHoldingWeight(), 12);
 }
 
+TEST_F(ObjectAccessorFixture, PhysicsForwardersClampDesiredVelocityAndExposeGroundContactState)
+{
+    auto object = makeFollower(3044);
+    ASSERT_NE(object, nullptr);
+
+    object->setDesiredVelocity(Ego::Vector2f(2.0f, 0.0f));
+    EXPECT_FLOAT_EQ(object->getDesiredVelocity().x(), 1.0f);
+    EXPECT_FLOAT_EQ(object->getDesiredVelocity().y(), 0.0f);
+
+    object->_objectPhysics._groundElevation = object->getPosZ();
+    EXPECT_TRUE(object->isTouchingGround());
+
+    object->_objectPhysics._groundElevation = object->getPosZ() + 100.0f;
+    EXPECT_FALSE(object->isTouchingGround());
+}
+
+TEST_F(ObjectAccessorFixture, PhysicsForwardersExposeFiniteAndInfiniteMass)
+{
+    auto object = makeFollower(3045);
+    ASSERT_NE(object, nullptr);
+
+    object->phys.weight = 80;
+    object->phys.bumpdampen = 0.5f;
+    EXPECT_FLOAT_EQ(object->getMass(), 160.0f);
+
+    object->phys.bumpdampen = 0.0f;
+    EXPECT_LT(object->getMass(), 0.0f);
+}
+
 TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAndFirstFreeSlot)
 {
     auto& objectHandler = beginActiveTestModule();
@@ -1295,9 +1324,9 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAs
     object->inst._targetFrameIndex = initialTargetFrame;
     object->inst._animationProgressInteger = 2;
     object->inst._animationProgress = 0.5f;
-    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
-    object->getObjectPhysics().setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+    object->setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
     object->inst.updateAnimationRate();
 
@@ -1367,8 +1396,8 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsT
     object->inst._nextAnimation = ACTION_DA;
     object->inst._canBeInterrupted = true;
     object->inst._freezeAtLastFrame = false;
-    object->getObjectPhysics()._groundElevation = object->getPosZ();
-    object->getObjectPhysics().setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+    object->_objectPhysics._groundElevation = object->getPosZ();
+    object->setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
     object->inst.updateAnimationRate();
 
@@ -1388,8 +1417,8 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyReturnsWalkingAnimationToI
     object->inst._nextAnimation = ACTION_WC;
     object->inst._canBeInterrupted = true;
     object->inst._freezeAtLastFrame = false;
-    object->getObjectPhysics()._groundElevation = object->getPosZ();
-    object->getObjectPhysics().setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+    object->_objectPhysics._groundElevation = object->getPosZ();
+    object->setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
     object->inst.updateAnimationRate();
 
@@ -1410,9 +1439,9 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnim
     object->inst._nextAnimation = ACTION_DA;
     object->inst._canBeInterrupted = true;
     object->inst._freezeAtLastFrame = false;
-    object->getObjectPhysics()._groundElevation = object->getPosZ();
+    object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
-    object->getObjectPhysics().setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+    object->setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
     object->inst.updateAnimationRate();
 

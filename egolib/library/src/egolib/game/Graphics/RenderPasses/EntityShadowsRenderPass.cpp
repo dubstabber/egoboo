@@ -90,7 +90,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     if (alpha < idlib::fraction<float, 1, 255>()) return;
 
     // Original points
-    float level = pchr->getObjectPhysics().getGroundElevation() + SHADOWRAISE;
+    float level = pchr->getFloorElevation() + SHADOWRAISE;
     float height = pchr->getMatrix()(2, 3) - level;
     float height_factor = 1.0f - height / (pchr->getShadowSize() * 5.0f);
     if (height_factor <= 0.0f) return;
@@ -173,7 +173,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     if (alpha < idlib::fraction<float, 1, 255>()) return;
 
     // Original points
-    float level = pchr->getObjectPhysics().getGroundElevation() + SHADOWRAISE;
+    float level = pchr->getFloorElevation() + SHADOWRAISE;
     float height = pchr->getMatrix()(2, 3) - level;
     if (height < 0) height = 0;
 

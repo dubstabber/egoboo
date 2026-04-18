@@ -209,7 +209,7 @@ void Object::recalculateCollisionSize()
     bump.size_big = bump_save.size_big * fat;
     bump.height = bump_save.height * fat;
 
-    getObjectPhysics().updateCollisionSize(true);
+    updateCollisionSize(true);
 }
 
 BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* pressure)

@@ -47,7 +47,7 @@ void MainLoop::move_all_objects()
         if(object->isTerminated()) {
             continue;
         }
-        object->getObjectPhysics().updatePhysics();
+        object->updatePhysics();
         //chr_update_matrix( object.get(), true );
     }
 }

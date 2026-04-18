@@ -119,15 +119,31 @@ public:
 
     /**
     * @return
-    *   ObjectPhysics of this Object
-    **/
-    Ego::Physics::ObjectPhysics& getObjectPhysics() { return _objectPhysics; }
-
-    /**
-    * @return
     *   The elevation of the floor
     **/
     float getFloorElevation() const { return _objectPhysics.getGroundElevation(); }
+
+    void updatePhysics();
+
+    bool attachToPlatform(const std::shared_ptr<Object>& platform);
+
+    void detachFromPlatform();
+
+    const Ego::Vector2f& getDesiredVelocity() const;
+
+    void setDesiredVelocity(const Ego::Vector2f& velocity);
+
+    float getMass() const;
+
+    bool grabStuff(grip_offset_t gripOffset, bool grabPeople);
+
+    bool attachToObject(const std::shared_ptr<Object>& holder, grip_offset_t gripOffset);
+
+    void updateCollisionSize(bool updateMatrix);
+
+    bool floorIsSlippy() const;
+
+    bool isTouchingGround() const;
 
     /**
 	 * @brief Get the unique object reference of this object.

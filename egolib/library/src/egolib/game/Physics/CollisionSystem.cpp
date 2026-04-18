@@ -141,10 +141,10 @@ void CollisionSystem::update()
         if (std::abs(max_apos[kZ]) > 0.0f)
         {
             tmp_pos[kZ] += max_apos[kZ];
-            if ( tmp_pos[kZ] < pchr->getObjectPhysics().getGroundElevation() )
+            if ( tmp_pos[kZ] < pchr->getFloorElevation() )
             {
                 // restore the old values
-                tmp_pos[kZ] = pchr->getObjectPhysics().getGroundElevation();
+                tmp_pos[kZ] = pchr->getFloorElevation();
                 if ( pchr->getVelocity().z() < 0 )
                 {
                     pchr->setVelocity(pchr->getVelocity() +
@@ -292,7 +292,7 @@ void CollisionSystem::updateObjectCollisions()
             //If we are no longer colliding in the horizontal plane, then we are disconnected
             if(!idlib::is_intersecting(object->getAxisAlignedBox2D(), platform->getAxisAlignedBox2D()))
             {
-                object->getObjectPhysics().detachFromPlatform();
+                object->detachFromPlatform();
             }
         }
 
@@ -470,7 +470,7 @@ bool CollisionSystem::handleMountingCollision(const std::shared_ptr<Object> &cha
 
     //Attempt to mount?
     if(characterWantsToMount) {
-        return character->getObjectPhysics().attachToObject(mount, GRIP_ONLY);
+        return character->attachToObject(mount, GRIP_ONLY);
     }
 
     return false;
@@ -607,7 +607,7 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
                 objectA->targetplatform_level = objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z];
                 objectA->targetplatform_ref   = ichr_b;
 
-                return objectA->getObjectPhysics().attachToPlatform(objectB);
+                return objectA->attachToPlatform(objectB);
             }
         }
         else
@@ -617,7 +617,7 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
                 objectB->targetplatform_level = objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z];
                 objectB->targetplatform_ref   = ichr_a;
 
-                return objectB->getObjectPhysics().attachToPlatform(objectA);
+                return objectB->attachToPlatform(objectA);
             }
         }
     }
@@ -782,8 +782,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     // do character-character interactions
 
     // calculate a "mass" for each object, taking into account possible infinite masses
-    float wta = objectA->getObjectPhysics().getMass();
-    float wtb = objectB->getObjectPhysics().getMass();
+    float wta = objectA->getMass();
+    float wtb = objectB->getMass();
 
     // make a special exception for interaction between "Mario platforms"
     if (( wta < 0.0f && objectA->isPlatform() ) && ( wtb < 0.0f && objectA->isPlatform() ) )
