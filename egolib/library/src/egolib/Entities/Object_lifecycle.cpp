@@ -164,13 +164,11 @@ Object::~Object()
             pitem->requestTerminate();
         }
 
-        if (isAlive() && !getProfile()->isInvincible()) {
-            module->getTeamList()[team_base].decreaseMorale();
+        if (isAlive() && !getProfile()->isInvincible() && VALID_TEAM_RANGE(team_base)) {
+            getMutableTeam(team_base).decreaseMorale();
         }
 
-        if (module->getTeamList()[team].getLeader().get() == this) {
-            module->getTeamList()[team].setLeader(INVALID_OBJECT);
-        }
+        clearTeamLeadershipIfSelf(team);
 
         disaffirm_attached_particles(getObjRef());
     }
@@ -188,10 +186,9 @@ void Object::removeFromGame(Object* obj)
     obj->sparkle = NOSPARKLE;
 
     obj->team = obj->team_base;
-    activeModule().getTeamList()[obj->team].decreaseMorale();
-
-    if (activeModule().getTeamList()[obj->team].getLeader().get() == obj) {
-        activeModule().getTeamList()[obj->team].setLeader(Object::INVALID_OBJECT);
+    if (VALID_TEAM_RANGE(obj->team)) {
+        obj->getMutableTeam(obj->team).decreaseMorale();
+        obj->clearTeamLeadershipIfSelf(obj->team);
     }
 
     activeModule().removeShopOwner(objRef);
@@ -242,11 +239,9 @@ void Object::respawn()
     canbecrushed = false;
     ori.map_twist_facing_y = orientation_t::MAP_TURN_OFFSET;
     ori.map_twist_facing_x = orientation_t::MAP_TURN_OFFSET;
-    if (!getTeam().getLeader()) {
-        getTeam().setLeader(activeModule().getObjectHandler()[getObjRef()]);
-    }
+    claimTeamLeadershipIfUnset(team);
     if (!isInvincible()) {
-        getTeam().increaseMorale();
+        getMutableTeam().increaseMorale();
     }
 
     inst.startAnimation(ACTION_DA, true, true);

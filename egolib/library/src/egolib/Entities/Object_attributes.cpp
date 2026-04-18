@@ -571,33 +571,29 @@ bool Object::activateStealth()
 
 void Object::setTeam(TEAM_REF team_new, bool permanent)
 {
+    if(!VALID_TEAM_RANGE(team_new)) {
+        team_new = static_cast<TEAM_REF>(Team::TEAM_NULL);
+    }
+
     //No change?
-    if(getTeam() == team_new) {
+    if(getTeamRef() == team_new) {
         return;
     }
 
     // do we count this character as being on a team?
     const bool canHaveTeam = !isItem() && isAlive() && !isInvincible();
+    const TEAM_REF oldTeam = this->team;
 
     // take the character off of its old team
-    if ( VALID_TEAM_RANGE(this->team) )
+    if ( VALID_TEAM_RANGE(oldTeam) )
     {
         // remove the character from the old team
         if ( canHaveTeam )
         {
-            getTeam().decreaseMorale();
+            getMutableTeam(oldTeam).decreaseMorale();
         }
 
-        //Were we the leader?
-        if (this == getTeam().getLeader().get())
-        {
-            getTeam().setLeader(Object::INVALID_OBJECT);
-        }
-    }
-
-    // make sure we have a valid value
-    if(!VALID_TEAM_RANGE(team_new)) {
-        team_new = static_cast<TEAM_REF>(Team::TEAM_NULL);
+        clearTeamLeadershipIfSelf(oldTeam);
     }
 
     // place the character onto its new team
@@ -610,12 +606,8 @@ void Object::setTeam(TEAM_REF team_new, bool permanent)
 
     // add the character to the new team
     if (canHaveTeam) {
-        getTeam().increaseMorale();
-    }
-
-    // we are the new leader if there isn't one already
-    if (canHaveTeam && !getTeam().getLeader()) {
-        getTeam().setLeader(activeModule().getObjectHandler()[getObjRef()]);
+        getMutableTeam().increaseMorale();
+        claimTeamLeadershipIfUnset(this->team);
     }
 
     if(permanent) {

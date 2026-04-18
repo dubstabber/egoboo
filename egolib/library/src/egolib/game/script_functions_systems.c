@@ -264,7 +264,7 @@ uint8_t scr_BecomeLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().getTeamList()[pchr->getTeamRef()].setLeader(objectHandler()[self.getSelf()]);
+    pchr->becomeTeamLeader();
 
     SCRIPT_FUNCTION_END();
 }
@@ -573,7 +573,7 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
     if(state.distance < XP_COUNT && state.distance >= 0) {
-        pchr->getTeam().giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
+        pchr->giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
     }
 
     SCRIPT_FUNCTION_END();

@@ -222,7 +222,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // Firstborn becomes the leader
     if (!getTeamList()[team].getLeader())
     {
-        getTeamList()[team].setLeader(pchr);
+        pchr->becomeTeamLeader();
     }
 
     // getSkinOverride() can return NO_SKIN_OVERRIDE, so we need to check

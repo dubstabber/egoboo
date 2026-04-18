@@ -121,7 +121,7 @@ uint8_t scr_CallForHelp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->getTeam().callForHelp(objectHandler()[self.getSelf()]);
+    pchr->callTeamForHelp();
 
     SCRIPT_FUNCTION_END();
 }

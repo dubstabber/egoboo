@@ -311,6 +311,95 @@ TEST_F(ObjectAccessorFixture, ScalarAccessorsRoundTripSelectedEncapsulatedState)
     EXPECT_EQ(object->getDamageThreshold(), 77);
 }
 
+TEST_F(ObjectAccessorFixture, TeamIntentBecomeLeaderAssignsSelfToCurrentTeam)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3021);
+    ASSERT_NE(object, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+
+    object->becomeTeamLeader();
+
+    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getLeader(), object);
+}
+
+TEST_F(ObjectAccessorFixture, SetTeamTransfersMoraleAndLeadershipThroughObjectSeam)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3022);
+    ASSERT_NE(object, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    Team& goodTeam = module.getTeamList()[Team::TEAM_GOOD];
+    Team& evilTeam = module.getTeamList()[Team::TEAM_EVIL];
+
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setItem(false);
+    object->setInvincible(false);
+    object->_isAlive = true;
+
+    goodTeam.increaseMorale();
+    goodTeam.setLeader(object);
+    evilTeam.setLeader(Object::INVALID_OBJECT);
+
+    const auto goodMoraleBefore = goodTeam.getMorale();
+    const auto evilMoraleBefore = evilTeam.getMorale();
+
+    object->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL), true);
+
+    EXPECT_EQ(object->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_EQ(object->getBaseTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_EQ(goodTeam.getMorale(), goodMoraleBefore - 1);
+    EXPECT_EQ(evilTeam.getMorale(), evilMoraleBefore + 1);
+    EXPECT_EQ(goodTeam.getLeader(), Object::INVALID_OBJECT);
+    EXPECT_EQ(evilTeam.getLeader(), object);
+}
+
+TEST_F(ObjectAccessorFixture, TeamIntentCallForHelpPublishesCallerOnCurrentTeam)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto caller = makeFollower(objectHandler, 3023);
+    ASSERT_NE(caller, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    caller->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+
+    caller->callTeamForHelp();
+
+    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getSissy(), caller);
+}
+
+TEST_F(ObjectAccessorFixture, RespawnRestoresMoraleAndClaimsLeadershipWhenUnset)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3026);
+    ASSERT_NE(object, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    Team& goodTeam = module.getTeamList()[Team::TEAM_GOOD];
+
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->_isAlive = false;
+    object->setInvincible(false);
+    goodTeam.setLeader(Object::INVALID_OBJECT);
+
+    const auto moraleBefore = goodTeam.getMorale();
+
+    object->respawn();
+
+    EXPECT_TRUE(object->isAlive());
+    EXPECT_EQ(object->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(goodTeam.getMorale(), moraleBefore + 1);
+    EXPECT_EQ(goodTeam.getLeader(), object);
+}
+
 TEST_F(ObjectAccessorFixture, FlagAndPlayerAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(303);

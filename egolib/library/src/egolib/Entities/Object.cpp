@@ -34,9 +34,70 @@ constexpr float Object::DROPZVEL;
 /// @todo Remove this if GCC & Clang are fixed.
 constexpr float Object::DISMOUNTZVEL;
 
-Team& Object::getTeam() const
+const Team& Object::getTeam() const
 {
-    return activeModule().getTeamList()[getTeamRef()];
+    return getMutableTeam();
+}
+
+Team& Object::getMutableTeam() const
+{
+    return getMutableTeam(getTeamRef());
+}
+
+Team& Object::getMutableTeam(TEAM_REF teamRef) const
+{
+    return activeModule().getTeamList()[teamRef];
+}
+
+void Object::becomeTeamLeader()
+{
+    if (!VALID_TEAM_RANGE(getTeamRef())) {
+        return;
+    }
+
+    getMutableTeam().setLeader(toSharedPointer());
+}
+
+void Object::callTeamForHelp()
+{
+    if (!VALID_TEAM_RANGE(getTeamRef())) {
+        return;
+    }
+
+    getMutableTeam().callForHelp(toSharedPointer());
+}
+
+void Object::giveTeamExperience(int amount, XPType type) const
+{
+    if (!VALID_TEAM_RANGE(getTeamRef())) {
+        return;
+    }
+
+    getMutableTeam().giveTeamExperience(amount, type);
+}
+
+void Object::clearTeamLeadershipIfSelf(TEAM_REF teamRef)
+{
+    if (!VALID_TEAM_RANGE(teamRef)) {
+        return;
+    }
+
+    Team& team = getMutableTeam(teamRef);
+    if (team.getLeader().get() == this) {
+        team.setLeader(Object::INVALID_OBJECT);
+    }
+}
+
+void Object::claimTeamLeadershipIfUnset(TEAM_REF teamRef)
+{
+    if (!VALID_TEAM_RANGE(teamRef)) {
+        return;
+    }
+
+    Team& team = getMutableTeam(teamRef);
+    if (!team.getLeader()) {
+        team.setLeader(toSharedPointer());
+    }
 }
 
 void Object::updatePhysics()

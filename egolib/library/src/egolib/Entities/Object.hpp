@@ -154,7 +154,13 @@ public:
     /**
     * @return the current team this object is on. This can change in-game (mounts or pets for example)
     **/
-    Team& getTeam() const;
+    const Team& getTeam() const;
+
+    void becomeTeamLeader();
+
+    void callTeamForHelp();
+
+    void giveTeamExperience(int amount, XPType type) const;
 
     TEAM_REF getTeamRef() const { return team; }
 
@@ -1295,6 +1301,14 @@ public:
     void setPreviousFacingZ(Facing facing) { ori_old.facing_z = facing; }
 
 private:
+
+    Team& getMutableTeam() const;
+
+    Team& getMutableTeam(TEAM_REF teamRef) const;
+
+    void clearTeamLeadershipIfSelf(TEAM_REF teamRef);
+
+    void claimTeamLeadershipIfUnset(TEAM_REF teamRef);
 
     /**
     * @brief This function should be used whenever a character gets attacked or healed. The function
