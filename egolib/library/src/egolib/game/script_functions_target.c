@@ -17,9 +17,10 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
+    const IDamageable& damageableTarget = *pself_target;
 
     // Proceed only if the character's target has just died or is already dead
-    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !pself_target->isAlive() );
+    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !damageableTarget.isAlive() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1168,15 +1169,9 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
+    IScriptable& scriptableTarget = *pself_target;
 
-    if ( !objectHandler().exists( self.getTarget() ) )
-    {
-        returncode = false;
-    }
-    else
-    {
-        returncode = pself_target->addAIOrder(state.argument, 0);
-    }
+    returncode = scriptableTarget.addAIOrder(state.argument, 0);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1419,8 +1414,9 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
+    const IScriptable& scriptableTarget = *pself_target;
 
-    state.argument = pself_target->getAIStateValue();
+    state.argument = scriptableTarget.getAIStateValue();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1437,8 +1433,9 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
+    const IScriptable& scriptableTarget = *pself_target;
 
-    state.argument = pself_target->getAIContent();
+    state.argument = scriptableTarget.getAIContent();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1611,8 +1608,9 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
+    const IScriptable& scriptableTarget = *pself_target;
 
-    state.argument = pself_target->getAILastDamageType();
+    state.argument = scriptableTarget.getAILastDamageType();
 
     SCRIPT_FUNCTION_END();
 }
