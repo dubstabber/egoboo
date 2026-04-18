@@ -30,6 +30,7 @@
 #include "egolib/Logic/Team.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 
+#include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
@@ -74,6 +75,7 @@ enum LatchButton
 
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
+               public IInventoryHolder,
                public std::enable_shared_from_this<Object>
 {
 public:

@@ -21,6 +21,7 @@
 /// @brief Inventory managment for characters
 #pragma once
 
+#include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/game/egoboo.h"
 
 class Inventory
@@ -38,6 +39,7 @@ public:
      *  Note that you still have to handle it falling out.
      */
     static bool remove_item(ObjectRef ichr, const size_t inventory_slot, const bool ignorekurse);
+    static bool remove_item(IInventoryHolder& holder, size_t inventory_slot, bool ignorekurse);
 
     /**
      * @brief
@@ -46,6 +48,7 @@ public:
      *  This fails if there already is an item there.
      */
     static bool add_item(ObjectRef iowner, const ObjectRef iitem, uint8_t inventorySlot, bool ignoreKurse);
+    static bool add_item(IInventoryHolder& owner, const std::shared_ptr<Object>& item, uint8_t inventorySlot, bool ignoreKurse);
     /**
      * @brief
      *  Swap item between inventory slot and grip slot.
@@ -53,6 +56,7 @@ public:
      *  This swaps an item between the specified inventory slot and the specified grip
      */
     static bool swap_item(ObjectRef iowner, uint8_t inventorySlot, const slot_t grip_off, bool ignoreKurse);
+    static bool swap_item(IInventoryHolder& owner, uint8_t inventorySlot, slot_t grip_off, bool ignoreKurse);
 
     /**
      * @brief
@@ -71,6 +75,7 @@ public:
      *  criterion.
      */
     static ObjectRef findItem(Object *powner, const IDSZ2& idsz, bool equippedOnly);
+    static ObjectRef findItem(const IInventoryHolder& owner, const IDSZ2& idsz, bool equippedOnly);
     /**
      * @brief
      *  Find an item in the pack.
@@ -147,14 +152,5 @@ public:
     bool removeItem(const std::shared_ptr<Object> &item, const bool ignorekurse);
 
 private:
-
-	/**
-    * @author ZZ
-    * @details This function looks in the character's pack for an item similar
-    *    to the one given.  If it finds one, it returns the similar item's
-    *    index number, otherwise it returns ObjectRef::Invalid.
-	**/
-	static ObjectRef hasStack(const ObjectRef item, const ObjectRef character);
-
     std::array<std::weak_ptr<Object>, MAXNUMINPACK> _items;
 };

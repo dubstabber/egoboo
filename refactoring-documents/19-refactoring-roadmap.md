@@ -24,11 +24,10 @@ For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-S
 
 ### T1.1 Finish `Object` mutable-seam closure
 
-Continuation of passes 52–74. The remaining `Object.hpp` debt is no longer raw public data fields; it is mutable ref-like seams and broad forwarding surfaces such as `getObjectPhysics()`, `getTeam()`, `getInventory()`, and the intentionally quarantined `aiStateForScript()` bridge.
+Passes 75 and 76 completed the remaining broad inventory/team seams, so T1.1 is effectively done. `Object.hpp` no longer exposes `getInventory()`, mutable `getTeam()`, or a public `getObjectPhysics()` seam. The intentionally quarantined `aiStateForScript()` bridge remains as the only deliberate raw-state escape hatch ahead of role extraction.
 
-- Keep the bounded per-cluster accessor-pass cadence.
-- Add characterization coverage in `egolib/tests/egolib/tests/ObjectAccessors.cpp` as each cluster migrates.
-- Stop only when the remaining mutable container/reference leaks are sealed and `aiStateForScript()` is the only deliberate legacy bridge left ahead of role extraction.
+- Keep any remaining closure work narrowly focused on `aiStateForScript()` and small alias-style handle returns rather than reopening broad field-access passes.
+- Preserve the accessor characterization coverage in `egolib/tests/egolib/tests/ObjectAccessors.cpp` as role extraction begins.
 
 **Risk:** Low. Mechanical, bounded, covered by existing test harness.
 

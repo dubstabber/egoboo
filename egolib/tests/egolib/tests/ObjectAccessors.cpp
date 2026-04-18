@@ -546,6 +546,28 @@ TEST_F(ObjectAccessorFixture, InventoryMutationHelpersSupportStaticInventoryOper
     EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
 }
 
+TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOperations)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto owner = makeFollower(objectHandler, 3048);
+    auto inventoryItem = makeFollower(objectHandler, 3049);
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(inventoryItem, nullptr);
+
+    IInventoryHolder& inventoryHolder = *owner;
+
+    EXPECT_TRUE(Inventory::add_item(inventoryHolder, inventoryItem, inventoryHolder.getFirstFreeInventorySlot(), true));
+    EXPECT_EQ(inventoryHolder.getInventoryItem(0), inventoryItem);
+
+    // Empty hand/slot swaps remain a stable success path through the role overload.
+    EXPECT_TRUE(Inventory::swap_item(inventoryHolder, 1, SLOT_LEFT, true));
+    EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(inventoryHolder.getInventoryItem(1), nullptr);
+
+    EXPECT_TRUE(Inventory::remove_item(inventoryHolder, 0, true));
+    EXPECT_EQ(inventoryHolder.getInventoryItem(0), nullptr);
+}
+
 TEST_F(ObjectAccessorFixture, TempAttributeHelpersRoundTripPresenceValueAndClearing)
 {
     auto object = makeFollower(344);
