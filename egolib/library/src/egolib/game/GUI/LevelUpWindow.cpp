@@ -24,7 +24,7 @@ static const int PERK_THUMBNAIL_SIZE = 64;
 class PerkButton : public Component {
 public:
     PerkButton(const Perks::PerkID id) :
-        _perk(Perks::PerkHandler::get().getPerk(id)),
+        _perk(EngineContext::get().perkHandler().getPerk(id)),
         _mouseOver(false),
         _hoverFadeEffect(0.0f) {
         //ctor
@@ -512,7 +512,7 @@ void LevelUpWindow::setHoverPerk(Perks::PerkID id) {
         _perkIncreaseLabel->setText("Hover mouse over a perk to see the benefits.");
         _perkIncreaseLabel->setColour(Colour4f::purple());
     } else {
-        const Perks::Perk &perk = Perks::PerkHandler::get().getPerk(id);
+        const Perks::Perk &perk = EngineContext::get().perkHandler().getPerk(id);
         _descriptionLabel->setText(perk.getDescription());
         _perkIncreaseLabel->setText(perk.getName() + "\n+1 " + Attribute::toString(perk.getType()));
         _perkIncreaseLabel->setColour(perk.getColour());

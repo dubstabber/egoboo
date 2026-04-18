@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Logic/IPerkHandler.hpp"
+#include "egolib/Logic/Perk.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 
@@ -23,18 +25,30 @@ public:
     void setSoundEffectVolume(int) override {}
 };
 
+class StubPerkHandler : public Ego::Perks::IPerkHandler
+{
+public:
+    const Ego::Perks::Perk& getPerk(Ego::Perks::PerkID) const override { return _perk; }
+    Ego::Perks::PerkID fromString(const std::string&) const override { return Ego::Perks::NR_OF_PERKS; }
+
+private:
+    Ego::Perks::Perk _perk;
+};
+
 class EngineContextFixture : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
 
     void TearDown() override
     {
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
 };
@@ -146,6 +160,65 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledAudioSystem)
     EXPECT_EQ(context.tryAudioSystem(), nullptr);
     EXPECT_THROW(context.engine(), std::logic_error);
     EXPECT_THROW(context.audioSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, PerkHandlerThrowsWhenNoPerkHandlerIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryPerkHandler(), nullptr);
+    EXPECT_THROW(context.perkHandler(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, InstallPerkHandlerPublishesInstalledPerkHandler)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubPerkHandler perkHandler;
+    context.installPerkHandler(perkHandler);
+
+    EXPECT_EQ(context.tryPerkHandler(), &perkHandler);
+    EXPECT_EQ(&context.perkHandler(), &perkHandler);
+}
+
+TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubPerkHandler first;
+    StubPerkHandler second;
+    context.installPerkHandler(first);
+
+    EXPECT_THROW(context.installPerkHandler(second), std::logic_error);
+    EXPECT_EQ(context.tryPerkHandler(), &first);
+}
+
+TEST_F(EngineContextFixture, ClearPerkHandlerRemovesInstalledPerkHandler)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubPerkHandler perkHandler;
+    context.installPerkHandler(perkHandler);
+
+    context.clearPerkHandler();
+
+    EXPECT_EQ(context.tryPerkHandler(), nullptr);
+    EXPECT_THROW(context.perkHandler(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubPerkHandler perkHandler;
+    context.installPerkHandler(perkHandler);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryPerkHandler(), nullptr);
+    EXPECT_THROW(context.perkHandler(), std::logic_error);
 }
 
 } // namespace

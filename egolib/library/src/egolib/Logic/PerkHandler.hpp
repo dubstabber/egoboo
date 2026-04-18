@@ -25,6 +25,7 @@
  */
 #pragma once
 
+#include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
 
 namespace Ego
@@ -32,7 +33,7 @@ namespace Ego
 namespace Perks
 {
 
-class PerkHandler : public idlib::singleton<PerkHandler>
+class PerkHandler : public idlib::singleton<PerkHandler>, public IPerkHandler
 {
 protected:
     friend idlib::default_new_functor<PerkHandler>;
@@ -51,7 +52,7 @@ protected:
     virtual ~PerkHandler();
 
 public:
-    const Perk& getPerk(const PerkID type) const;
+    const Perk& getPerk(PerkID type) const override;
 
     /**
     * @brief
@@ -59,7 +60,7 @@ public:
     * @return
     *   A PerkID of the specified Perk if successful, NR_OF_PERKS otherwise (eg. on parse failure)
     **/
-    PerkID fromString(const std::string &name) const;
+    PerkID fromString(const std::string &name) const override;
 
 private:
     void initializePerk(const PerkID id, const Ego::Attribute::AttributeType type, const std::string &iconPath, 

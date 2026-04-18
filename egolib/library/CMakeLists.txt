@@ -265,6 +265,7 @@ set(EGOLIB_LOGIC_SOURCES
     src/egolib/Logic/FeedbackType.hpp
     src/egolib/Logic/GameDifficulty.hpp
     src/egolib/Logic/Gender.hpp
+    src/egolib/Logic/IPerkHandler.hpp
     src/egolib/Logic/MissileTreatment.cpp
     src/egolib/Logic/MissileTreatment.hpp
     src/egolib/Logic/ObjectSlot.hpp

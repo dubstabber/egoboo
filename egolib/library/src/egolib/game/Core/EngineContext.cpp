@@ -1,6 +1,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -10,6 +11,7 @@ namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
 IAudioSystem* activeAudioSystem = nullptr;
+Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -34,6 +36,7 @@ void EngineContext::setEngine(std::unique_ptr<GameEngine> engine)
 void EngineContext::clearEngine()
 {
     clearAudioSystem();
+    clearPerkHandler();
     activeEngine.reset();
 }
 
@@ -149,6 +152,50 @@ const IAudioSystem& EngineContext::audioSystem() const
         throw std::logic_error("no active audio system");
     }
     return *currentAudioSystem;
+}
+
+void EngineContext::installPerkHandler(Ego::Perks::IPerkHandler& perkHandler)
+{
+    if (activePerkHandler)
+    {
+        throw std::logic_error("perk handler already installed");
+    }
+    activePerkHandler = &perkHandler;
+}
+
+void EngineContext::clearPerkHandler()
+{
+    activePerkHandler = nullptr;
+}
+
+Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler()
+{
+    return activePerkHandler;
+}
+
+const Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler() const
+{
+    return activePerkHandler;
+}
+
+Ego::Perks::IPerkHandler& EngineContext::perkHandler()
+{
+    Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
+    if (!currentPerkHandler)
+    {
+        throw std::logic_error("no active perk handler");
+    }
+    return *currentPerkHandler;
+}
+
+const Ego::Perks::IPerkHandler& EngineContext::perkHandler() const
+{
+    const Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
+    if (!currentPerkHandler)
+    {
+        throw std::logic_error("no active perk handler");
+    }
+    return *currentPerkHandler;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

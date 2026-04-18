@@ -348,7 +348,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
 
     // write down any perks that have been mastered
     for(size_t i = 0; i < Ego::Perks::NR_OF_PERKS; ++i) {
-        const Ego::Perks::Perk& perk = Ego::Perks::PerkHandler::get().getPerk(static_cast<Ego::Perks::PerkID>(i));
+        const Ego::Perks::Perk& perk = EngineContext::get().perkHandler().getPerk(static_cast<Ego::Perks::PerkID>(i));
         if(!character->hasPerk(perk.getID())) continue;
         std::string name = perk.getName();
         std::replace(name.begin(), name.end(), ' ', '_'); //replace space with underscore
@@ -357,7 +357,7 @@ bool ObjectProfile::exportCharacterToFile(const std::string &filePath, const Obj
 
     // write down all perks that we can still learn
     for(size_t i = 0; i < Ego::Perks::NR_OF_PERKS; ++i) {
-        const Ego::Perks::Perk& perk = Ego::Perks::PerkHandler::get().getPerk(static_cast<Ego::Perks::PerkID>(i));
+        const Ego::Perks::Perk& perk = EngineContext::get().perkHandler().getPerk(static_cast<Ego::Perks::PerkID>(i));
         if(!profile->_perkPool[i] || character->hasPerk(perk.getID())) continue;
         std::string name = perk.getName();
         std::replace(name.begin(), name.end(), ' ', '_'); //replace space with underscore

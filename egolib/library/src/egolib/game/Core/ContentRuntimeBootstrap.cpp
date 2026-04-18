@@ -5,6 +5,7 @@
 #include "egolib/Math/Random.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/egoboo_setup.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/vfs.h"
 
 #include <stdexcept>
@@ -52,6 +53,7 @@ ContentRuntimeBootstrap::ContentRuntimeBootstrap(const Options& options) :
     if (_options.initializePerkHandler)
     {
         Ego::Perks::PerkHandler::initialize();
+        EngineContext::get().installPerkHandler(Ego::Perks::PerkHandler::get());
         _perkHandlerInitialized = true;
     }
 
@@ -71,6 +73,7 @@ ContentRuntimeBootstrap::~ContentRuntimeBootstrap()
 
     if (_perkHandlerInitialized)
     {
+        EngineContext::get().clearPerkHandler();
         Ego::Perks::PerkHandler::uninitialize();
     }
 

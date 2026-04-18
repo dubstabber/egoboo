@@ -554,7 +554,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             {
                 std::string perkName = ctxt.readName();
                 std::replace(perkName.begin(), perkName.end(), '_', ' '); //replace underscore with spaces
-                Ego::Perks::PerkID id = Ego::Perks::PerkHandler::get().fromString(perkName);
+                Ego::Perks::PerkID id = EngineContext::get().perkHandler().fromString(perkName);
                 if(id != Ego::Perks::NR_OF_PERKS)
                 {
                     _startingPerks[id] = true;
@@ -571,7 +571,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             {
                 std::string perkName = ctxt.readOldString();
                 std::replace(perkName.begin(), perkName.end(), '_', ' '); //replace underscore with spaces
-                Ego::Perks::PerkID id = Ego::Perks::PerkHandler::get().fromString(perkName);
+                Ego::Perks::PerkID id = EngineContext::get().perkHandler().fromString(perkName);
                 if(id != Ego::Perks::NR_OF_PERKS)
                 {
                     _perkPool[id] = true;

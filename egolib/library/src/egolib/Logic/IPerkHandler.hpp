@@ -16,21 +16,25 @@
 //*    along with Egoboo.  If not, see <http://www.gnu.org/licenses/>.
 //*
 //********************************************************************************************
-
-/// @file egolib/Profiles/ObjectProfile_internal.h
-/// @brief Shared infrastructure for the split ObjectProfile implementation files.
-
 #pragma once
 
-#define EGOLIB_PROFILES_PRIVATE 1
-#include "egolib/Profiles/ObjectProfile.hpp"
+#include "egolib/Logic/Perk.hpp"
 
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/Entities/_Include.hpp"
-#include "egolib/Graphics/ModelDescriptor.hpp"
-#include "egolib/Audio/AudioSystem.hpp"
-#include "egolib/FileFormats/template.h"
-#include "egolib/Math/Random.hpp"
+#include <string>
 
-static const SkinInfo INVALID_SKIN = SkinInfo();
+namespace Ego
+{
+namespace Perks
+{
+
+class IPerkHandler
+{
+public:
+    virtual ~IPerkHandler() = default;
+
+    virtual const Perk& getPerk(PerkID type) const = 0;
+    virtual PerkID fromString(const std::string& name) const = 0;
+};
+
+} // namespace Perks
+} // namespace Ego

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Logic/IPerkHandler.hpp"
 #include "idlib/non_copyable.hpp"
 
 #include <cstdint>
@@ -38,6 +39,15 @@ public:
 
     IAudioSystem& audioSystem();
     const IAudioSystem& audioSystem() const;
+
+    void installPerkHandler(Ego::Perks::IPerkHandler& perkHandler);
+    void clearPerkHandler();
+
+    Ego::Perks::IPerkHandler* tryPerkHandler();
+    const Ego::Perks::IPerkHandler* tryPerkHandler() const;
+
+    Ego::Perks::IPerkHandler& perkHandler();
+    const Ego::Perks::IPerkHandler& perkHandler() const;
 
     uint32_t renderedFrameCount() const;
 

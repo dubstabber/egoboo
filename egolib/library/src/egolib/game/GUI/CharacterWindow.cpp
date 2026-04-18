@@ -7,6 +7,7 @@
 #include "egolib/game/GUI/ScrollableList.hpp"
 #include "egolib/game/GUI/IconButton.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
@@ -379,7 +380,7 @@ void CharacterWindow::buildKnownPerksTab(std::shared_ptr<Tab> target) {
 
         //Do we know it?
         if (_character->hasPerk(perkID)) {
-            const Perks::Perk &perk = Perks::PerkHandler::get().getPerk(perkID);
+            const Perks::Perk &perk = EngineContext::get().perkHandler().getPerk(perkID);
 
             std::shared_ptr<IconButton> perkButton = std::make_shared<IconButton>(perk.getName(), perk.getIcon());
             perkButton->setSize(Vector2f(perksKnown->getWidth() - 50, 32));
