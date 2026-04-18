@@ -185,8 +185,8 @@ TEST_F(ShopFixture, BuyPublishesSellOrderAndTransfersMoney)
     buyer->giveMoney(static_cast<int>(price));
 
     EXPECT_TRUE(Shop::buy(buyer, item));
-    EXPECT_EQ(owner->aiStateForScript().order_value, price);
-    EXPECT_EQ(owner->aiStateForScript().order_counter, Passage::SHOP_SELL);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_value, price);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_counter, Passage::SHOP_SELL);
     EXPECT_EQ(buyer->getMoney(), buyerStartMoney);
     EXPECT_EQ(owner->getMoney(), static_cast<uint16_t>(ownerStartMoney + price));
 }
@@ -210,8 +210,8 @@ TEST_F(ShopFixture, BuyRejectsWhenBuyerCannotAffordItem)
     const uint16_t ownerStartMoney = owner->getMoney();
 
     EXPECT_FALSE(Shop::buy(buyer, item));
-    EXPECT_EQ(owner->aiStateForScript().order_value, price);
-    EXPECT_EQ(owner->aiStateForScript().order_counter, Passage::SHOP_NOAFFORD);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_value, price);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_counter, Passage::SHOP_NOAFFORD);
     EXPECT_EQ(buyer->getMoney(), buyerStartMoney);
     EXPECT_EQ(owner->getMoney(), ownerStartMoney);
 }
@@ -235,8 +235,8 @@ TEST_F(ShopFixture, StealDetectionPublishesTheftTargetAndOrder)
     thief->setTempAttribute(Ego::Attribute::AGILITY, -100.0f);
 
     EXPECT_FALSE(Shop::steal(thief, item));
-    EXPECT_EQ(owner->aiStateForScript().order_value, Passage::SHOP_STOLEN);
-    EXPECT_EQ(owner->aiStateForScript().order_counter, Passage::SHOP_THEFT);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_value, Passage::SHOP_STOLEN);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_counter, Passage::SHOP_THEFT);
     EXPECT_EQ(owner->getAITarget(), thief->getObjRef());
 }
 

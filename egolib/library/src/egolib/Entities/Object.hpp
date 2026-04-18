@@ -1252,11 +1252,6 @@ public:
 
     void spawnAIState(uint16_t rank) override;
 
-    // Transitional seam for Script/script.c while the script runtime still consumes ai_state_t directly.
-    ai_state_t& aiStateForScript();
-
-    const ai_state_t& aiStateForScript() const;
-
     /**
     * @brief
     *   Re-initialized the bored timer to a random value
@@ -1351,6 +1346,9 @@ private:
     void updateLatchButtons();
 
 private:
+    friend ai_state_t& Ego::Script::runtimeState(Object& object);
+    friend const ai_state_t& Ego::Script::runtimeState(const Object& object);
+
     // character state
     ai_state_t     ai;              ///< ai data
 

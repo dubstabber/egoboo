@@ -217,17 +217,6 @@ void Object::spawnAIState(uint16_t rank)
     ai_state_t::spawn(ai, getObjRef(), getProfileID().get(), rank);
 }
 
-ai_state_t& Object::aiStateForScript()
-{
-    // Keep raw ai_state_t mutation quarantined here until the legacy script runtime is migrated.
-    return ai;
-}
-
-const ai_state_t& Object::aiStateForScript() const
-{
-    return ai;
-}
-
 void Object::update()
 {
     //Update active enchantments on this Object

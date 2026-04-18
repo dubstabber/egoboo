@@ -157,8 +157,8 @@ TEST_F(ScriptTargetFunctionsFixture, OrderTargetPublishesOrderThroughScriptableR
 
     EXPECT_TRUE(scr_OrderTarget(state, self));
     EXPECT_TRUE(target->hasAnyAIAlertBits(ALERTIF_ORDERED));
-    EXPECT_EQ(target->aiStateForScript().order_value, 77u);
-    EXPECT_EQ(target->aiStateForScript().order_counter, 0);
+    EXPECT_EQ(Ego::Script::runtimeState(*target).order_value, 77u);
+    EXPECT_EQ(Ego::Script::runtimeState(*target).order_counter, 0);
 }
 
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)

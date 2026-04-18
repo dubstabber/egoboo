@@ -332,6 +332,12 @@ Migrated pure AI alert/state publication callers in `game_combat.c`, `Inventory.
 
 Added focused gameplay regressions for latch-attack publication, team call-for-help, passage crush alerts, item-grab publication, and kursed put-away rejection. `aiStateForScript()` remains quarantined as the only raw legacy bridge.
 
+### Pass 86 — Script-owned raw AI bridge (2026-04-18)
+
+Removed `Object::aiStateForScript()` from the public `Object` surface and replaced it with the narrower `Ego::Script::runtimeState(...)` friend helper owned by the Script subsystem. `Script/script.c` now reaches raw `ai_state_t` through that Script-local seam instead of through `Object`.
+
+Updated `ObjectAccessors`, `ScriptTargetFunctions`, and `ShopInteractions` to assert script-private order/waypoint state through the new helper while keeping public AI publication checks on `IScriptable` and the existing accessors.
+
 ---
 
 ## Files touched most by this pass log

@@ -24,9 +24,9 @@ For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-S
 
 ### T1.1 Finish `Object` mutable-seam closure
 
-Passes 75 and 76 completed the remaining broad inventory/team seams, so T1.1 is effectively done. `Object.hpp` no longer exposes `getInventory()`, mutable `getTeam()`, or a public `getObjectPhysics()` seam. The intentionally quarantined `aiStateForScript()` bridge remains as the only deliberate raw-state escape hatch ahead of role extraction.
+Passes 75 and 76 completed the remaining broad inventory/team seams, so T1.1 is effectively done. `Object.hpp` no longer exposes `getInventory()`, mutable `getTeam()`, a public `getObjectPhysics()` seam, or the old `aiStateForScript()` raw-state bridge. The remaining deliberate escape hatches are now small alias-style handle returns plus the Script-owned `Ego::Script::runtimeState(...)` helper used by the legacy script runtime.
 
-- Keep any remaining closure work narrowly focused on `aiStateForScript()` and small alias-style handle returns rather than reopening broad field-access passes.
+- Keep any remaining closure work narrowly focused on small alias-style handle returns rather than reopening broad field-access passes.
 - Preserve the accessor characterization coverage in `egolib/tests/egolib/tests/ObjectAccessors.cpp` as role extraction begins.
 
 **Risk:** Low. Mechanical, bounded, covered by existing test harness.
@@ -46,7 +46,7 @@ Landed so far:
 Follow-on work inside this tier:
 
 - Migrate more callers to the landed role surfaces instead of `Object`.
-- Keep `aiStateForScript()` quarantined on `Object` until `Script/script.c` no longer consumes raw `ai_state_t`.
+- Keep the raw `ai_state_t` bridge confined to `Ego::Script::runtimeState(...)` until `Script/script.c` no longer consumes raw script-runtime state.
 
 This remains the SRP/ISP keystone for `Object`.
 

@@ -275,7 +275,7 @@ Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, 
 
 ### Encapsulation
 
-Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers, and passes 77–81 have started expressing those narrowed surfaces as explicit roles. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, the enchant/temp-attribute and inventory/team seams, and the read-only `IDamageable`/`IPhysical` role surfaces. The remaining surface is now mostly alias-style handle returns and the deliberate `aiStateForScript()` compatibility bridge.
+Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers, and passes 77–81 have started expressing those narrowed surfaces as explicit roles. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, the enchant/temp-attribute and inventory/team seams, and the read-only `IDamageable`/`IPhysical` role surfaces. The remaining `Object` surface is now mostly alias-style handle returns; the raw `ai_state_t` compatibility bridge has been moved into the Script subsystem as `Ego::Script::runtimeState(...)`.
 
 ### Const correctness
 
@@ -414,7 +414,7 @@ These items compound the refactoring progress most efficiently given the current
 ### Runtime and structure
 
 1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical` instead of `Object` where only bounded role behavior is needed.
-2. **Close the remaining deliberate script bridge and alias-style handles on `Object`** — keep `aiStateForScript()` and similar handle-return seams isolated while role extraction proceeds.
+2. **Close the remaining alias-style handle seams on `Object`** — keep the Script-owned `runtimeState(...)` helper confined to the legacy script runtime while role extraction proceeds.
 3. **Introduce a service-interface layer over singletons** — start with `AudioSystem` (smallest reach). This is the DIP keystone.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.
 

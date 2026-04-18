@@ -831,12 +831,12 @@ TEST_F(ObjectAccessorFixture, ScriptRoleSurfaceSupportsInterfaceBasedStatePublic
     EXPECT_TRUE(constScriptable.hasAnyAIAlertBits(ALERTIF_ORDERED));
 }
 
-TEST_F(ObjectAccessorFixture, AIScriptBridgeAndPublicAccessorsStayInSync)
+TEST_F(ObjectAccessorFixture, ScriptRuntimeStateAndPublicAccessorsStayInSync)
 {
     auto object = makeFollower(30515);
     ASSERT_NE(object, nullptr);
 
-    auto& aiState = object->aiStateForScript();
+    auto& aiState = Ego::Script::runtimeState(*object);
     aiState.poof_time = 61;
     aiState.owner = ObjectRef(62);
     aiState.setTarget(ObjectRef(63));
@@ -868,7 +868,7 @@ TEST_F(ObjectAccessorFixture, AIOrderHelperPublishesOrderedAlertAndTracksOutstan
     auto object = makeFollower(3052);
     ASSERT_NE(object, nullptr);
 
-    auto& aiState = object->aiStateForScript();
+    auto& aiState = Ego::Script::runtimeState(*object);
     EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_ORDERED));
     EXPECT_EQ(aiState.order_value, 0u);
     EXPECT_EQ(aiState.order_counter, 0);
@@ -888,7 +888,7 @@ TEST_F(ObjectAccessorFixture, AIChangeHelperPublishesChangedStateUntilNoNewSigna
     auto object = makeFollower(3053);
     ASSERT_NE(object, nullptr);
 
-    auto& aiState = object->aiStateForScript();
+    auto& aiState = Ego::Script::runtimeState(*object);
     EXPECT_FALSE(aiState.changed);
     EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_CHANGED));
 
@@ -917,7 +917,7 @@ TEST_F(ObjectAccessorFixture, AIBumpHelperRejectsInvalidObjectsAndThrottlesRepea
     EXPECT_FALSE(object->recordAIBump(ObjectRef::Invalid));
     EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
 
-    auto& aiState = object->aiStateForScript();
+    auto& aiState = Ego::Script::runtimeState(*object);
     EXPECT_TRUE(object->recordAIBump(bumpedObject->getObjRef()));
     EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
     EXPECT_EQ(aiState.getBumped(), bumpedObject->getObjRef());
@@ -940,7 +940,7 @@ TEST_F(ObjectAccessorFixture, AIResetAndSpawnHelpersRestoreDocumentedScriptState
     auto object = makeFollower(objectHandler, 3056);
     ASSERT_NE(object, nullptr);
 
-    auto& aiState = object->aiStateForScript();
+    auto& aiState = Ego::Script::runtimeState(*object);
     aiState.poof_time = 44;
     aiState.changed = true;
     aiState.terminate = true;

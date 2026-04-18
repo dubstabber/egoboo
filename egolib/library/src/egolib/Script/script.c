@@ -106,6 +106,16 @@ Runtime::~Runtime()
     /* Intentionally empty. */
 }
 
+ai_state_t& runtimeState(Object& object)
+{
+    return object.ai;
+}
+
+const ai_state_t& runtimeState(const Object& object)
+{
+    return object.ai;
+}
+
 } // namespace Script
 } // namespace Ego
 
@@ -165,7 +175,7 @@ void scr_run_chr_script(Object *pchr)
     {
         return;
     }
-    ai_state_t& aiState = pchr->aiStateForScript();
+    ai_state_t& aiState = Ego::Script::runtimeState(*pchr);
     script_info_t& script = pchr->getProfile()->getAIScript();
 
     // Has the time for this character to die come and gone?
@@ -776,7 +786,7 @@ void set_alerts(const ObjectRef character)
         return;
     }
     Object *pchr = objectHandler().get(character);
-    ai_state_t& aiState = pchr->aiStateForScript();
+    ai_state_t& aiState = Ego::Script::runtimeState(*pchr);
 
     if (waypoint_list_t::empty(aiState.wp_lst))
     {

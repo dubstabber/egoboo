@@ -537,6 +537,9 @@ void set_alerts( const ObjectRef character );
 namespace Ego {
 namespace Script {
 
+ai_state_t& runtimeState(::Object& object);
+const ai_state_t& runtimeState(const ::Object& object);
+
 // Forward declaration.
 template <typename FunctionType>
 struct IRuntimeStatistics;
