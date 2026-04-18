@@ -471,6 +471,168 @@ TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
     EXPECT_FLOAT_EQ(object->getAIMaxSpeed(), 0.75f);
 }
 
+TEST_F(ObjectAccessorFixture, AIOrderHelperPublishesOrderedAlertAndTracksOutstandingOrder)
+{
+    auto object = makeFollower(3052);
+    ASSERT_NE(object, nullptr);
+
+    auto& aiState = object->aiStateForScript();
+    EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_ORDERED));
+    EXPECT_EQ(aiState.order_value, 0u);
+    EXPECT_EQ(aiState.order_counter, 0);
+
+    EXPECT_TRUE(object->addAIOrder(123u, 4));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_ORDERED));
+    EXPECT_EQ(aiState.order_value, 123u);
+    EXPECT_EQ(aiState.order_counter, 4);
+
+    EXPECT_FALSE(object->addAIOrder(456u, 7));
+    EXPECT_EQ(aiState.order_value, 456u);
+    EXPECT_EQ(aiState.order_counter, 7);
+}
+
+TEST_F(ObjectAccessorFixture, AIChangeHelperPublishesChangedStateUntilNoNewSignalIsNeeded)
+{
+    auto object = makeFollower(3053);
+    ASSERT_NE(object, nullptr);
+
+    auto& aiState = object->aiStateForScript();
+    EXPECT_FALSE(aiState.changed);
+    EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_CHANGED));
+
+    EXPECT_TRUE(object->markAIChanged());
+    EXPECT_TRUE(aiState.changed);
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_CHANGED));
+
+    EXPECT_FALSE(object->markAIChanged());
+
+    object->clearAIAlertBits(ALERTIF_CHANGED);
+    EXPECT_TRUE(object->markAIChanged());
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_CHANGED));
+}
+
+TEST_F(ObjectAccessorFixture, AIBumpHelperRejectsInvalidObjectsAndThrottlesRepeatedAlerts)
+{
+    ObjectHandler& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3054);
+    auto bumpedObject = makeFollower(objectHandler, 3055);
+    ASSERT_NE(object, nullptr);
+    ASSERT_NE(bumpedObject, nullptr);
+
+    GameSessionContext::get().worldUpdateCount() = 10;
+    object->setAIAlertBits(0);
+
+    EXPECT_FALSE(object->recordAIBump(ObjectRef::Invalid));
+    EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
+
+    auto& aiState = object->aiStateForScript();
+    EXPECT_TRUE(object->recordAIBump(bumpedObject->getObjRef()));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.getBumped(), bumpedObject->getObjRef());
+    EXPECT_EQ(aiState.bumplast_time, 10);
+
+    object->clearAIAlertBits(ALERTIF_BUMPED);
+    EXPECT_TRUE(object->recordAIBump(bumpedObject->getObjRef()));
+    EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.bumplast_time, 10);
+
+    GameSessionContext::get().worldUpdateCount() = 1010;
+    EXPECT_TRUE(object->recordAIBump(bumpedObject->getObjRef()));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.bumplast_time, 1010);
+}
+
+TEST_F(ObjectAccessorFixture, AIResetAndSpawnHelpersRestoreDocumentedScriptStateDefaults)
+{
+    ObjectHandler& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3056);
+    ASSERT_NE(object, nullptr);
+
+    auto& aiState = object->aiStateForScript();
+    aiState.poof_time = 44;
+    aiState.changed = true;
+    aiState.terminate = true;
+    aiState.setSelf(ObjectRef(31));
+    aiState.setTarget(ObjectRef(32));
+    aiState.setOldTarget(ObjectRef(33));
+    aiState.setBumped(ObjectRef(34));
+    aiState.setLastAttacker(ObjectRef(35));
+    aiState.owner = ObjectRef(36);
+    aiState.child = ObjectRef(37);
+    aiState.alert = ALERTIF_BLOCKED | ALERTIF_ORDERED;
+    aiState.state = 38;
+    aiState.content = 39;
+    aiState.passage = 40;
+    aiState.timer = 41;
+    aiState.x[0] = 42;
+    aiState.y[1] = 43;
+    aiState.maxSpeed = 0.5f;
+    aiState.bumplast_time = 45;
+    aiState.hitlast = ObjectRef(46);
+    aiState.directionlast = Facing(47);
+    aiState.damagetypelast = DamageType::DAMAGE_FIRE;
+    aiState.lastitemused = ObjectRef(48);
+    aiState.order_value = 49;
+    aiState.order_counter = 50;
+    aiState.wp_valid = true;
+    aiState.astar_timer = 51;
+    waypoint_list_t::push(aiState.wp_lst, 12, 34);
+
+    object->resetAIState();
+
+    EXPECT_EQ(aiState.poof_time, -1);
+    EXPECT_FALSE(aiState.changed);
+    EXPECT_FALSE(aiState.terminate);
+    EXPECT_EQ(aiState.getSelf(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getTarget(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getOldTarget(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getBumped(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getLastAttacker(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAIOwner(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAIChild(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAIAlertBits(), 0);
+    EXPECT_EQ(object->getAIStateValue(), 0);
+    EXPECT_EQ(object->getAIContent(), 0);
+    EXPECT_EQ(object->getAIPassage(), 0);
+    EXPECT_EQ(object->getAITimer(), 0u);
+    EXPECT_EQ(aiState.x[0], 0);
+    EXPECT_EQ(aiState.y[1], 0);
+    EXPECT_FLOAT_EQ(object->getAIMaxSpeed(), 1.0f);
+    EXPECT_EQ(aiState.bumplast_time, 0);
+    EXPECT_EQ(object->getAILastHit(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAILastDirection(), Facing(0));
+    EXPECT_EQ(object->getAILastDamageType(), DamageType::DAMAGE_DIRECT);
+    EXPECT_EQ(object->getAILastItemUsed(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.order_value, 0u);
+    EXPECT_EQ(aiState.order_counter, 0);
+    EXPECT_FALSE(aiState.wp_valid);
+    EXPECT_TRUE(waypoint_list_t::empty(aiState.wp_lst));
+    EXPECT_EQ(aiState.astar_timer, 0u);
+
+    object->spawnAIState(6);
+
+    EXPECT_EQ(aiState.getSelf(), object->getObjRef());
+    EXPECT_EQ(aiState.getTarget(), object->getObjRef());
+    EXPECT_EQ(aiState.getOldTarget(), object->getObjRef());
+    EXPECT_EQ(aiState.getBumped(), object->getObjRef());
+    EXPECT_EQ(aiState.alert, ALERTIF_SPAWNED);
+    EXPECT_EQ(aiState.state, object->getProfile()->getStateOverride());
+    EXPECT_EQ(aiState.content, object->getProfile()->getContentOverride());
+    EXPECT_EQ(aiState.passage, 0);
+    EXPECT_EQ(aiState.owner, object->getObjRef());
+    EXPECT_EQ(aiState.child, object->getObjRef());
+    EXPECT_FLOAT_EQ(aiState.maxSpeed, 1.0f);
+    EXPECT_EQ(aiState.hitlast, object->getObjRef());
+    EXPECT_EQ(aiState.order_value, 0u);
+    EXPECT_EQ(aiState.order_counter, 6);
+    EXPECT_FALSE(aiState.wp_valid);
+    EXPECT_FALSE(waypoint_list_t::empty(aiState.wp_lst));
+    EXPECT_TRUE(ai_state_t::get_wp(aiState));
+    EXPECT_TRUE(aiState.wp_valid);
+    EXPECT_FLOAT_EQ(aiState.wp[kX], object->getSpawnPosition().x());
+    EXPECT_FLOAT_EQ(aiState.wp[kY], object->getSpawnPosition().y());
+}
+
 TEST_F(ObjectAccessorFixture, MovementAndCollisionMaskAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(306);

@@ -1182,20 +1182,20 @@ public:
 
     void setAIMaxSpeed(float speed) { ai.maxSpeed = speed; }
 
-    bool addAIOrder(uint32_t value, uint16_t counter) { return ai_state_t::add_order(ai, value, counter); }
+    bool addAIOrder(uint32_t value, uint16_t counter);
 
-    bool markAIChanged() { return ai_state_t::set_changed(ai); }
+    bool markAIChanged();
 
-    bool recordAIBump(ObjectRef objectRef) { return ai_state_t::set_bumplast(ai, objectRef); }
+    bool recordAIBump(ObjectRef objectRef);
 
-    void resetAIState() { ai_state_t::reset(ai); }
+    void resetAIState();
 
-    void spawnAIState(uint16_t rank) { ai_state_t::spawn(ai, getObjRef(), getProfileID().get(), rank); }
+    void spawnAIState(uint16_t rank);
 
     // Transitional seam for Script/script.c while the script runtime still consumes ai_state_t directly.
-    ai_state_t& aiStateForScript() { return ai; }
+    ai_state_t& aiStateForScript();
 
-    const ai_state_t& aiStateForScript() const { return ai; }
+    const ai_state_t& aiStateForScript() const;
 
     /**
     * @brief
