@@ -165,7 +165,7 @@ void scr_run_chr_script(Object *pchr)
     {
         return;
     }
-    ai_state_t& aiState = pchr->ai;
+    ai_state_t& aiState = pchr->aiStateForScript();
     script_info_t& script = pchr->getProfile()->getAIScript();
 
     // Has the time for this character to die come and gone?
@@ -776,7 +776,7 @@ void set_alerts(const ObjectRef character)
         return;
     }
     Object *pchr = objectHandler().get(character);
-    ai_state_t& aiState = pchr->ai;
+    ai_state_t& aiState = pchr->aiStateForScript();
 
     if (waypoint_list_t::empty(aiState.wp_lst))
     {
@@ -844,7 +844,7 @@ void issue_order(const ObjectRef character, uint32_t value)
 
         if (object->getTeam() == pchr->getTeam())
         {
-            ai_state_t::add_order(object->ai, value, counter);
+            object->addAIOrder(value, counter);
             counter++;
         }
     }
@@ -863,7 +863,7 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
 
         if (idsz == object->getProfile()->getIDSZ(IDSZ_SPECIAL))
         {
-            ai_state_t::add_order(object->ai, value, counter);
+            object->addAIOrder(value, counter);
             counter++;
         }
     }

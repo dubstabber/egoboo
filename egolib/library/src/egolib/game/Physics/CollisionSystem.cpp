@@ -916,8 +916,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     if ( bump )
     {
-        ai_state_t::set_bumplast(objectA->ai, ichr_b);
-        ai_state_t::set_bumplast(objectB->ai, ichr_a);
+        objectA->recordAIBump(ichr_b);
+        objectB->recordAIBump(ichr_a);
 
         //Destroy stealth for both objects if they are not friendly
         if(!objectA->isScenery() && !objectB->isScenery() && objectA->getTeam().hatesTeam(objectB->getTeam())) {

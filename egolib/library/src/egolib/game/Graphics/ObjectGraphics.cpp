@@ -1038,7 +1038,7 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_POOF ) && !_object.isPlayer() )
     {
-        _object.ai.poof_time = GameSessionContext::get().worldUpdateCount();
+        _object.setAIPoofTime(GameSessionContext::get().worldUpdateCount());
     }
 
     //Do footfall sound effect
@@ -1310,7 +1310,7 @@ void ObjectGraphics::applyIdleAnimationPolicy()
         //Don't yell "im bored!" while stealthed!
         if(!_object.isStealthed())
         {
-            SET_BIT(_object.ai.alert, ALERTIF_BORED);
+            _object.addAIAlertBits(ALERTIF_BORED);
 
             // set the action to "bored", which is ACTION_DB, ACTION_DC, or ACTION_DD
             const int rand_val = Random::next(std::numeric_limits<uint16_t>::max());

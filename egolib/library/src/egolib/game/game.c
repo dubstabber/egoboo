@@ -134,7 +134,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //AI target name
                 case 't':
                 {
-                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->getAITarget()];
                     if(target) {
                         result << target->getName();
                     }
@@ -144,7 +144,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Owner's name
                 case 'o':
                 {
-                    const std::shared_ptr<Object> &owner = module.getObjectHandler()[object->ai.owner];
+                    const std::shared_ptr<Object> &owner = module.getObjectHandler()[object->getAIOwner()];
                     if(owner) {
                         result << owner->getName(true, false, false);
                     }
@@ -154,7 +154,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Target class name
                 case 's':
                 {
-                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->getAITarget()];
                     if(target) {
                         result << target->getProfile()->getClassName();
                     }
@@ -209,7 +209,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 case 'g':  // Target's possessive
                 {
-                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->getAITarget()];
                     if(target) {
                         if (target->getGender() == Gender::Female) {
                             result << "her";
@@ -236,7 +236,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 case '8':
                 case '9':
                 {
-                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->ai.getTarget()];
+                    const std::shared_ptr<Object> &target = module.getObjectHandler()[object->getAITarget()];
                     if(target) {
                         result << target->getProfile()->getSkinInfo(c-'0').name;
                     }

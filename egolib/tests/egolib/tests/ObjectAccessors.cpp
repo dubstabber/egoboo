@@ -415,6 +415,62 @@ TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getDismountObject(), ObjectRef(21));
 }
 
+TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
+{
+    auto object = makeFollower(3051);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_EQ(object->getAIAlertBits(), 0);
+    EXPECT_EQ(object->getAIStateValue(), 0);
+    EXPECT_EQ(object->getAIContent(), 0);
+    EXPECT_EQ(object->getAIPassage(), 0);
+    EXPECT_EQ(object->getAITimer(), 0u);
+    EXPECT_EQ(object->getAIPoofTime(), -1);
+    EXPECT_EQ(object->getAIOwner(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAIChild(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAITarget(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAILastAttacker(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAIBumped(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAILastItemUsed(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAILastHit(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAILastDamageType(), DamageType::DAMAGE_DIRECT);
+    EXPECT_EQ(object->getAILastDirection(), Facing(0));
+
+    object->addAIAlertBits(ALERTIF_BLOCKED | ALERTIF_GRABBED);
+    object->clearAIAlertBits(ALERTIF_GRABBED);
+    object->setAIStateValue(11);
+    object->setAIContent(12);
+    object->setAIPassage(13);
+    object->setAITimer(14);
+    object->setAIPoofTime(15);
+    object->setAIOwner(ObjectRef(16));
+    object->setAIChild(ObjectRef(17));
+    object->setAITarget(ObjectRef(18));
+    object->setAILastAttacker(ObjectRef(19));
+    object->setAILastItemUsed(ObjectRef(20));
+    object->setAILastHit(ObjectRef(21));
+    object->setAILastDamageType(DamageType::DAMAGE_FIRE);
+    object->setAILastDirection(Facing(22));
+    object->setAIMaxSpeed(0.75f);
+
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BLOCKED));
+    EXPECT_FALSE(object->hasAnyAIAlertBits(ALERTIF_GRABBED));
+    EXPECT_EQ(object->getAIStateValue(), 11);
+    EXPECT_EQ(object->getAIContent(), 12);
+    EXPECT_EQ(object->getAIPassage(), 13);
+    EXPECT_EQ(object->getAITimer(), 14u);
+    EXPECT_EQ(object->getAIPoofTime(), 15);
+    EXPECT_EQ(object->getAIOwner(), ObjectRef(16));
+    EXPECT_EQ(object->getAIChild(), ObjectRef(17));
+    EXPECT_EQ(object->getAITarget(), ObjectRef(18));
+    EXPECT_EQ(object->getAILastAttacker(), ObjectRef(19));
+    EXPECT_EQ(object->getAILastItemUsed(), ObjectRef(20));
+    EXPECT_EQ(object->getAILastHit(), ObjectRef(21));
+    EXPECT_EQ(object->getAILastDamageType(), DamageType::DAMAGE_FIRE);
+    EXPECT_EQ(object->getAILastDirection(), Facing(22));
+    EXPECT_FLOAT_EQ(object->getAIMaxSpeed(), 0.75f);
+}
+
 TEST_F(ObjectAccessorFixture, MovementAndCollisionMaskAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(306);
@@ -1035,7 +1091,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsT
     auto object = makeFollower(objectHandler, 321);
     ASSERT_NE(object, nullptr);
 
-    object->ai.alert = 0;
+    object->setAIAlertBits(0);
     object->setBoredTimer(0);
     object->_stealth = false;
     object->inst._currentAnimation = ACTION_DA;
@@ -1047,7 +1103,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsT
 
     object->inst.updateAnimationRate();
 
-    EXPECT_TRUE(HAS_SOME_BITS(object->ai.alert, ALERTIF_BORED));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BORED));
     EXPECT_GT(object->getBoredTimer(), 0);
     EXPECT_TRUE(ACTION_IS_TYPE(object->getCurrentAnimation(), D));
 }

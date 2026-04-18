@@ -125,8 +125,8 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
                                               0.0f));
 
             pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-            pchild->ai.passage = self.passage;
-            pchild->ai.owner   = self.owner;
+            pchild->setAIPassage(self.passage);
+            pchild->setAIOwner(self.owner);
 
             pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
             pchild->setDismountObject(self.getSelf());
@@ -193,10 +193,10 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
 
         if ( !listener->isAlive() )
         {
-            listener->ai.timer  = worldUpdateCount() + 2;  // Don't let it think too much...
+            listener->setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
         }
 
-        SET_BIT( listener->ai.alert, ALERTIF_CLEANEDUP );
+        listener->addAIAlertBits(ALERTIF_CLEANEDUP);
     }
 
     SCRIPT_FUNCTION_END();
@@ -396,7 +396,7 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         else
         {
             // Poof others now
-            pself_target->ai.poof_time = worldUpdateCount();
+            pself_target->setAIPoofTime(worldUpdateCount());
 
             SET_TARGET(self.getSelf(), pself_target );
         }
@@ -434,7 +434,7 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
 
     if (ObjectRef::Invalid != self.child)
     {
-        objectHandler()[self.child]->ai.state = state.argument;
+        objectHandler()[self.child]->setAIStateValue(state.argument);
     }
 
     SCRIPT_FUNCTION_END();
@@ -546,8 +546,8 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
         self.child = pchild->getObjRef();
 
         pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        pchild->ai.passage = self.passage;
-        pchild->ai.owner   = self.owner;
+        pchild->setAIPassage(self.passage);
+        pchild->setAIOwner(self.owner);
 
         pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
         pchild->setDismountObject(self.getSelf());
@@ -589,8 +589,8 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
         self.child = pchild->getObjRef();
 
         pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        pchild->ai.passage = self.passage;
-        pchild->ai.owner   = self.owner;
+        pchild->setAIPassage(self.passage);
+        pchild->setAIOwner(self.owner);
 
         pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
         pchild->setDismountObject(self.getSelf());
@@ -857,7 +857,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         for (int cnt = 0; cnt < pchr->getProfile()->getParticlePoofAmount(); cnt++)
         {
             auto poofParticle = ParticleHandler::get().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
-                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), pchr->ai.owner, ParticleRef::Invalid, cnt);
+                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), pchr->getAIOwner(), ParticleRef::Invalid, cnt);
 
             // set some values
             if(poofParticle) {
@@ -953,7 +953,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
             // Inventory character
             if ( Inventory::add_item( self.getTarget(), pchild->getObjRef(), pchr->getInventory().getFirstFreeSlotNumber(), true ) )
             {
-                SET_BIT( pchild->ai.alert, ALERTIF_GRABBED );  // Make spellbooks change
+                pchild->addAIAlertBits(ALERTIF_GRABBED);  // Make spellbooks change
                 pchild->setHolderRef(self.getTarget());  // Make grab work
                 scr_run_chr_script( pchild->getObjRef() );  // Empty the grabbed messages
 
@@ -961,8 +961,8 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
                 //Set some AI values
                 self.child = pchild->getObjRef();
-                pchild->ai.passage = self.passage;
-                pchild->ai.owner   = self.owner;
+                pchild->setAIPassage(self.passage);
+                pchild->setAIOwner(self.owner);
             }
 
             //No more room!
@@ -986,8 +986,8 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
                 //Set some AI values
                 self.child = pchild->getObjRef();
-                pchild->ai.passage = self.passage;
-                pchild->ai.owner   = self.owner;
+                pchild->setAIPassage(self.passage);
+                pchild->setAIOwner(self.owner);
             }
 
             //Grip is already used
@@ -1003,8 +1003,8 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
             //Set some AI values
             self.child = pchild->getObjRef();
-            pchild->ai.passage = self.passage;
-            pchild->ai.owner   = self.owner;                
+            pchild->setAIPassage(self.passage);
+            pchild->setAIOwner(self.owner);
         }
     }
 
@@ -1089,7 +1089,7 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    objectHandler().get(self.child)->ai.content = state.argument;
+    objectHandler().get(self.child)->setAIContent(state.argument);
 
     SCRIPT_FUNCTION_END();
 }

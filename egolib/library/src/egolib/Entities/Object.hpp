@@ -1114,6 +1114,89 @@ public:
 
     void setDismountObject(ObjectRef objectRef) { dismount_object = objectRef; }
 
+    BIT_FIELD getAIAlertBits() const { return ai.alert; }
+
+    void setAIAlertBits(BIT_FIELD bits) { ai.alert = bits; }
+
+    void addAIAlertBits(BIT_FIELD bits) { ai.alert |= bits; }
+
+    void clearAIAlertBits(BIT_FIELD bits) { ai.alert &= ~bits; }
+
+    bool hasAnyAIAlertBits(BIT_FIELD bits) const { return HAS_SOME_BITS(ai.alert, bits); }
+
+    int getAIStateValue() const { return ai.state; }
+
+    void setAIStateValue(int value) { ai.state = value; }
+
+    int getAIContent() const { return ai.content; }
+
+    void setAIContent(int value) { ai.content = value; }
+
+    int getAIPassage() const { return ai.passage; }
+
+    void setAIPassage(int value) { ai.passage = value; }
+
+    uint32_t getAITimer() const { return ai.timer; }
+
+    void setAITimer(uint32_t timer) { ai.timer = timer; }
+
+    int32_t getAIPoofTime() const { return ai.poof_time; }
+
+    void setAIPoofTime(int32_t time) { ai.poof_time = time; }
+
+    ObjectRef getAIOwner() const { return ai.owner; }
+
+    void setAIOwner(ObjectRef objectRef) { ai.owner = objectRef; }
+
+    ObjectRef getAIChild() const { return ai.child; }
+
+    void setAIChild(ObjectRef objectRef) { ai.child = objectRef; }
+
+    ObjectRef getAITarget() const { return ai.getTarget(); }
+
+    void setAITarget(ObjectRef objectRef) { ai.setTarget(objectRef); }
+
+    ObjectRef getAILastAttacker() const { return ai.getLastAttacker(); }
+
+    void setAILastAttacker(ObjectRef objectRef) { ai.setLastAttacker(objectRef); }
+
+    ObjectRef getAIBumped() const { return ai.getBumped(); }
+
+    ObjectRef getAILastItemUsed() const { return ai.lastitemused; }
+
+    void setAILastItemUsed(ObjectRef objectRef) { ai.lastitemused = objectRef; }
+
+    ObjectRef getAILastHit() const { return ai.hitlast; }
+
+    void setAILastHit(ObjectRef objectRef) { ai.hitlast = objectRef; }
+
+    DamageType getAILastDamageType() const { return ai.damagetypelast; }
+
+    void setAILastDamageType(DamageType damageType) { ai.damagetypelast = damageType; }
+
+    Facing getAILastDirection() const { return ai.directionlast; }
+
+    void setAILastDirection(Facing direction) { ai.directionlast = direction; }
+
+    float getAIMaxSpeed() const { return ai.maxSpeed; }
+
+    void setAIMaxSpeed(float speed) { ai.maxSpeed = speed; }
+
+    bool addAIOrder(uint32_t value, uint16_t counter) { return ai_state_t::add_order(ai, value, counter); }
+
+    bool markAIChanged() { return ai_state_t::set_changed(ai); }
+
+    bool recordAIBump(ObjectRef objectRef) { return ai_state_t::set_bumplast(ai, objectRef); }
+
+    void resetAIState() { ai_state_t::reset(ai); }
+
+    void spawnAIState(uint16_t rank) { ai_state_t::spawn(ai, getObjRef(), getProfileID().get(), rank); }
+
+    // Transitional seam for Script/script.c while the script runtime still consumes ai_state_t directly.
+    ai_state_t& aiStateForScript() { return ai; }
+
+    const ai_state_t& aiStateForScript() const { return ai; }
+
     /**
     * @brief
     *   Re-initialized the bored timer to a random value
@@ -1199,11 +1282,10 @@ private:
 
     void updateLatchButtons();
 
-public:
+private:
     // character state
     ai_state_t     ai;              ///< ai data
 
-private:
     // character stats
     Gender  gender;          ///< Gender
 

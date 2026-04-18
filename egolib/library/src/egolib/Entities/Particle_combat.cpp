@@ -169,8 +169,8 @@ void Particle::destroy()
         std::shared_ptr<Object> child = activeModule().spawnObject(getPosition(), _spawnerProfile, team, 0, facing, "", ObjectRef::Invalid);
         if (child)
         {
-            child->ai.state = endspawn_characterstate;
-            child->ai.owner = owner_ref;
+            child->setAIStateValue(endspawn_characterstate);
+            child->setAIOwner(owner_ref);
         }
     }
 

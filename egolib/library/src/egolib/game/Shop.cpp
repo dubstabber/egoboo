@@ -58,14 +58,14 @@ bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Ob
             // Are they are trying to sell junk or quest items?
             if (0 == price)
             {
-                ai_state_t::add_order(owner->ai, (uint32_t)price, Passage::SHOP_BUY);
+                owner->addAIOrder((uint32_t)price, Passage::SHOP_BUY);
             }
             else
             {
                 dropper->giveMoney(price);
                 owner->giveMoney(-price);
 
-                ai_state_t::add_order(owner->ai, (uint32_t)price, Passage::SHOP_BUY);
+                owner->addAIOrder((uint32_t)price, Passage::SHOP_BUY);
             }
         }
     }
@@ -91,7 +91,7 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
             if (buyer->getMoney() >= price)
             {
                 // Okay to sell
-                ai_state_t::add_order(owner->ai, (uint32_t)price, Passage::SHOP_SELL);
+                owner->addAIOrder((uint32_t)price, Passage::SHOP_SELL);
 
                 buyer->giveMoney(-price);
                 owner->giveMoney(price);
@@ -101,7 +101,7 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
             else
             {
                 // Don't allow purchase
-                ai_state_t::add_order(owner->ai, price, Passage::SHOP_NOAFFORD);
+                owner->addAIOrder(price, Passage::SHOP_NOAFFORD);
                 canGrab = false;
             }
         }
@@ -149,8 +149,8 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
             canSteal = true;
             if (owner->canSeeObject(thief) || detection <= 5 || (detection - thief->getAttribute(Ego::Attribute::AGILITY) + owner->getAttribute(Ego::Attribute::INTELLECT)) > 50)
             {
-                ai_state_t::add_order(owner->ai, Passage::SHOP_STOLEN, Passage::SHOP_THEFT);
-                owner->ai.setTarget(thief->getObjRef());
+                owner->addAIOrder(Passage::SHOP_STOLEN, Passage::SHOP_THEFT);
+                owner->setAITarget(thief->getObjRef());
                 canSteal = false;
             }
         }

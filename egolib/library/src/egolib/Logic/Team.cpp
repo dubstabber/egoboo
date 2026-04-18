@@ -88,7 +88,7 @@ void Team::callForHelp(const std::shared_ptr<Object> &caller)
     {
         if ( chr != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
         {
-            SET_BIT( chr->ai.alert, ALERTIF_CALLEDFORHELP );
+            chr->addAIAlertBits(ALERTIF_CALLEDFORHELP);
         }
     }
 }

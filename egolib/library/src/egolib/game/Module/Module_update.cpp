@@ -64,7 +64,7 @@ void GameModule::updateAllObjects()
         object->updateAnimation();
 
         //Check if this object should be poofed (destroyed)
-        bool timeOut = (object->ai.poof_time > 0) && (object->ai.poof_time <= static_cast<int32_t>(currentUpdateFrame));
+        bool timeOut = (object->getAIPoofTime() > 0) && (object->getAIPoofTime() <= static_cast<int32_t>(currentUpdateFrame));
         if (timeOut) {
             object->requestTerminate();
         }
@@ -138,7 +138,7 @@ void GameModule::updatePits()
 
                     // Do some damage (same as damage tile)
                     pchr->damage(ATK_BEHIND, _damageTile.amount, static_cast<DamageType>(_damageTile.damagetype), Team::TEAM_DAMAGE,
-                                 _gameObjects[pchr->ai.getBumped()], true, false, false);
+                                 _gameObjects[pchr->getAIBumped()], true, false, false);
                 }
             }
         }

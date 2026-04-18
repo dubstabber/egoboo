@@ -97,7 +97,7 @@ bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 
     if (pholder->isMount()) {
         pholder->team = pholder->team_base;
-        SET_BIT(pholder->ai.alert, ALERTIF_DROPPED);
+        pholder->addAIAlertBits(ALERTIF_DROPPED);
     }
 
     team = team_base;
@@ -301,7 +301,7 @@ void Object::dropKeys()
                                         std::sin(turn) * DROPXYVEL,
                                         DROPZVEL));
 
-        SET_BIT(pkey->ai.alert, ALERTIF_DROPPED);
+        pkey->addAIAlertBits(ALERTIF_DROPPED);
         pkey->setPosition(getPosition());
     }
 }
@@ -343,7 +343,7 @@ void Object::dropAllItems()
                                          std::sin(direction) * DROPXYVEL,
                                          DROPZVEL));
 
-        SET_BIT(pitem->ai.alert, ALERTIF_DROPPED);
+        pitem->addAIAlertBits(ALERTIF_DROPPED);
         pitem->setPosition(getPosition());
 
         direction += Facing(diradd);

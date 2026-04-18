@@ -253,7 +253,7 @@ void ObjectPhysics::updateVelocityZ()
         _object.setJumpReady(true);
 
         if (_object.getVelocity().z() < -Ego::Physics::STOP_BOUNCING && _object.isHitReady()) {
-            SET_BIT(_object.ai.alert, ALERTIF_HITGROUND);
+            _object.addAIAlertBits(ALERTIF_HITGROUND);
             _object.setHitReady(false);
         }
 
@@ -389,7 +389,7 @@ float ObjectPhysics::getMaxSpeed() const
     //Check if AI has limited movement rate
     else if(!_object.isPlayer())
     {
-        maxspeed *= _object.ai.maxSpeed;
+        maxspeed *= _object.getAIMaxSpeed();
     }
 
     //Reduce speed while stealthed
@@ -440,7 +440,7 @@ void ObjectPhysics::updateFacing()
         case TURNMODE_WATCHTARGET:
             {
                 //Only proceed if we have a valid AI target that is not ourselves
-                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[_object.ai.getTarget()];
+                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[_object.getAITarget()];
                 if (aiTarget != nullptr && aiTarget->getObjRef() != _object.getObjRef())
                 {
                     _object.setFacingZ(idlib::canonicalize(rotate(_object.getFacingZ(), vec_to_facing(aiTarget->getPosX() - _object.getPosX(), aiTarget->getPosY() - _object.getPosY()), 8.0f)));
@@ -502,7 +502,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
 
     // tell the platform that we bumped into it
     // this is necessary for key buttons to work properly, for instance
-    ai_state_t::set_bumplast(platform->ai, _object.getObjRef());
+    platform->recordAIBump(_object.getObjRef());
 
     return true;
 }
@@ -823,7 +823,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
                                     bestMatch->getVelocity().y(),
                                     Object::DROPZVEL});
             bestMatch->setHitReady(true);
-            SET_BIT(bestMatch->ai.alert, ALERTIF_DROPPED);
+            bestMatch->addAIAlertBits(ALERTIF_DROPPED);
         }
     }
 
@@ -930,7 +930,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
         // Set the alert
         if (_object.isAlive()) {
-            SET_BIT(_object.ai.alert, ALERTIF_GRABBED);
+            _object.addAIAlertBits(ALERTIF_GRABBED);
         }
 
         // Lore Master perk identifies everything
@@ -948,7 +948,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
         // Set the alert
         if (!holder->isItem() && holder->isAlive())
         {
-            SET_BIT(holder->ai.alert, ALERTIF_GRABBED);
+            holder->addAIAlertBits(ALERTIF_GRABBED);
         }
     }
 

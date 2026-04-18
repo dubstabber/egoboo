@@ -426,7 +426,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
         if ( leader )
         {
-            auto itarget = leader->ai.getTarget();
+            auto itarget = leader->getAITarget();
 
             if ( objectHandler().exists( itarget ) )
             {
@@ -1174,7 +1174,7 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
     }
     else
     {
-        returncode = ai_state_t::add_order(pself_target->ai, state.argument, 0);
+        returncode = pself_target->addAIOrder(state.argument, 0);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1419,7 +1419,7 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    state.argument = pself_target->ai.state;
+    state.argument = pself_target->getAIStateValue();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1437,7 +1437,7 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    state.argument = pself_target->ai.content;
+    state.argument = pself_target->getAIContent();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1611,7 +1611,7 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    state.argument = pself_target->ai.damagetypelast;
+    state.argument = pself_target->getAILastDamageType();
 
     SCRIPT_FUNCTION_END();
 }

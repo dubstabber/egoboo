@@ -200,8 +200,8 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
     }
 
     object->giveMoney(spawnInfo.money);
-    object->ai.content = spawnInfo.content;
-    object->ai.passage = spawnInfo.passage;
+    object->setAIContent(spawnInfo.content);
+    object->setAIPassage(spawnInfo.passage);
 
     switch (spawnInfo.attach)
     {
@@ -223,7 +223,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
                 return nullptr;
             }
 
-            SET_BIT(object->ai.alert, ALERTIF_GRABBED);
+            object->addAIAlertBits(ALERTIF_GRABBED);
         break;
 
         case ATTACH_LEFT:

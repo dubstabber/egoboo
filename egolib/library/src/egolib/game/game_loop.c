@@ -121,7 +121,7 @@ void MainLoop::readPlayerInput()
             {
                 pchr->respawn();
                 module.getTeamList()[pchr->getTeamRef()].setLeader(pchr);
-                SET_BIT(pchr->ai.alert, ALERTIF_CLEANEDUP);
+                pchr->addAIAlertBits(ALERTIF_CLEANEDUP);
 
                 // cost some experience for doing this...  never lose a level
                 pchr->setExperience(pchr->getExperience() * EXPKEEP);
@@ -369,7 +369,7 @@ void disaffirm_attached_particles(ObjectRef objectRef) {
     }
     if (module.getObjectHandler().exists(objectRef)) {
         // Set the alert for disaffirmation (wet torch).
-        SET_BIT( module.getObjectHandler().get(objectRef)->ai.alert, ALERTIF_DISAFFIRMED );
+        module.getObjectHandler().get(objectRef)->addAIAlertBits(ALERTIF_DISAFFIRMED);
     }
 }
 
@@ -411,7 +411,7 @@ int reaffirm_attached_particles(ObjectRef objectRef) {
     }
 
     // Set the alert for reaffirmation ( for exploding barrels with fire )
-    SET_BIT(object->ai.alert, ALERTIF_REAFFIRMED);
+    object->addAIAlertBits(ALERTIF_REAFFIRMED);
 
     return number_added;
 }
@@ -434,8 +434,8 @@ void MainLoop::let_all_characters_think()
         }
 
         // check for actions that must always be handled
-        bool is_cleanedup = HAS_SOME_BITS( object->ai.alert, ALERTIF_CLEANEDUP );
-        bool is_crushed   = HAS_SOME_BITS( object->ai.alert, ALERTIF_CRUSHED );
+        bool is_cleanedup = object->hasAnyAIAlertBits(ALERTIF_CLEANEDUP);
+        bool is_crushed   = object->hasAnyAIAlertBits(ALERTIF_CRUSHED);
 
         // only let dead/destroyed things think if they have beem crushed/cleanedup
         if (object->isAlive() || is_crushed || is_cleanedup )
@@ -445,14 +445,14 @@ void MainLoop::let_all_characters_think()
 
             // Cleaned up characters shouldn't be alert to anything else
             if (is_cleanedup) {
-                object->ai.alert = ALERTIF_CLEANEDUP;
+                object->setAIAlertBits(ALERTIF_CLEANEDUP);
                 /*object->ai.timer = worldUpdateCount() + 1;*/
             }
 
             // Crushed characters shouldn't be alert to anything else
             if (is_crushed)  {
-                object->ai.alert = ALERTIF_CRUSHED;
-                object->ai.timer = worldUpdateCount() + 1;  //Prevents IfTimeOut from triggering
+                object->setAIAlertBits(ALERTIF_CRUSHED);
+                object->setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
             }
 
             scr_run_chr_script(object.get());

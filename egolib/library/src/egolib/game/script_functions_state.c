@@ -213,7 +213,7 @@ uint8_t scr_SetState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->ai.state = state.argument;
+    pchr->setAIStateValue(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1365,11 +1365,11 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     if ( objectHandler().exists( iattached ) )
     {
-        BIT_FIELD bits = objectHandler().get(iattached)->ai.alert;
+        BIT_FIELD bits = objectHandler().get(iattached)->getAIAlertBits();
 
         if ( HAS_SOME_BITS( bits, ALERTIF_BLOCKED ) )
         {
-            auto iLastAttacker = objectHandler().get(iattached)->ai.getLastAttacker();
+            auto iLastAttacker = objectHandler().get(iattached)->getAILastAttacker();
 
             if ( objectHandler().exists(iLastAttacker) )
             {

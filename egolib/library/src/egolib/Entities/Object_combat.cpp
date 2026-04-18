@@ -533,13 +533,13 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         if ( getTeam().getLeader().get() == this && listener->getTeam() == getTeam() )
         {
             // All folks on the leaders team get the alert
-            SET_BIT( listener->ai.alert, ALERTIF_LEADERKILLED );
+            listener->addAIAlertBits(ALERTIF_LEADERKILLED);
         }
 
         // Let the other characters know it died
-        if ( listener->ai.getTarget() == getObjRef() )
+        if ( listener->getAITarget() == getObjRef() )
         {
-            SET_BIT( listener->ai.alert, ALERTIF_TARGETKILLED );
+            listener->addAIAlertBits(ALERTIF_TARGETKILLED);
         }
     }
 

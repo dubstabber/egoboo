@@ -249,16 +249,14 @@ void ObjectHandler::maybeRunDeferred()
                         
                         //Don't do ourselves or terminated characters
                         if (chr->isTerminated() || chr == element) continue;
-						ai_state_t *ai = &(chr->ai);
-
-                        if (ai->getTarget() == element->getObjRef())
+                        if (chr->getAITarget() == element->getObjRef())
                         {
-                            SET_BIT(ai->alert, ALERTIF_TARGETKILLED);
+                            chr->addAIAlertBits(ALERTIF_TARGETKILLED);
                         }
 
                         if (chr->getTeam().getLeader() == element)
                         {
-                            SET_BIT(ai->alert, ALERTIF_LEADERKILLED);
+                            chr->addAIAlertBits(ALERTIF_LEADERKILLED);
                         }
                     }
                     return true;

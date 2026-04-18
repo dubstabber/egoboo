@@ -173,7 +173,7 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachMarksGrabbedAlertWhenChildS
     {
         loadProfile("follower.obj", entry.slot);
         auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
-        object->ai.alert = 0;
+        object->setAIAlertBits(0);
         return object;
     };
     ops.attachInventoryItem = [&](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>&)
@@ -187,7 +187,7 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachMarksGrabbedAlertWhenChildS
     ASSERT_NE(result, nullptr);
     EXPECT_TRUE(attachCalled);
     EXPECT_EQ(recordedSlot, 0u);
-    EXPECT_TRUE(HAS_SOME_BITS(result->ai.alert, ALERTIF_GRABBED));
+    EXPECT_TRUE(result->hasAnyAIAlertBits(ALERTIF_GRABBED));
 }
 
 TEST_F(ModuleSpawnRealizationFixture, InventoryAttachReturnsNullWhenMergeTerminatesChild)
@@ -211,7 +211,7 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachReturnsNullWhenMergeTermina
         attachCalled = true;
         recordedSlot = parentObject->getInventory().getFirstFreeSlotNumber();
         mergedIntoStack = true;
-        object->ai.alert = 0;
+        object->setAIAlertBits(0);
     };
     ops.isObjectTerminated = [&](const std::shared_ptr<Object>&)
     {
@@ -223,6 +223,27 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachReturnsNullWhenMergeTermina
     EXPECT_EQ(result, nullptr);
     EXPECT_TRUE(attachCalled);
     EXPECT_EQ(recordedSlot, 0u);
+}
+
+TEST_F(ModuleSpawnRealizationFixture, SpawnRealizationPublishesContentAndPassageThroughAccessors)
+{
+    auto state = makeState();
+    auto entry = makeEntry(751);
+    entry.content = 23;
+    entry.passage = 29;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t& spawnEntry)
+    {
+        loadProfile("follower.obj", spawnEntry.slot);
+        return _objectHandler.insert(ObjectProfileRef(spawnEntry.slot));
+    };
+
+    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->getAIContent(), 23);
+    EXPECT_EQ(result->getAIPassage(), 29);
 }
 
 TEST_F(ModuleSpawnRealizationFixture, AttachLeftUsesLeftGrip)

@@ -80,7 +80,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 	if (pitem->isKursed() && !ignoreKurse)
 	{
 		// Flag the item as not put away.
-		SET_BIT(pitem->ai.alert, ALERTIF_NOTPUTAWAY);
+		pitem->addAIAlertBits(ALERTIF_NOTPUTAWAY);
 		if (powner->isPlayer()) DisplayMsg_printf("%s is sticky...", pitem->getName().c_str());
 		return false;
 	}
@@ -88,7 +88,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
     // too big item?
 	if (pitem->getProfile()->isBigItem())
 	{
-		SET_BIT(pitem->ai.alert, ALERTIF_NOTPUTAWAY);
+		pitem->addAIAlertBits(ALERTIF_NOTPUTAWAY);
 		if (powner->isPlayer()) DisplayMsg_printf("%s is too big to be put away...", pitem->getName().c_str());
 		return false;
 	}
@@ -129,7 +129,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
             // Only some were transfered,
             pitem->setAmmo(pitem->getAmmo() + pstack->getAmmo() - pstack->getAmmoMax());
             pstack->setAmmo(pstack->getAmmoMax());
-            SET_BIT( powner->ai.alert, ALERTIF_TOOMUCHBAGGAGE );
+            powner->addAIAlertBits(ALERTIF_TOOMUCHBAGGAGE);
         }
     }
     else
@@ -146,7 +146,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         pitem->detatchFromHolder(true, false);
 
         // clear the dropped flag
-        UNSET_BIT( pitem->ai.alert, ALERTIF_DROPPED );
+        pitem->clearAIAlertBits(ALERTIF_DROPPED);
 
         //Do not trigger dismount logic on putting items into inventory
         pitem->setDismountObject(ObjectRef::Invalid);
@@ -160,7 +160,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         // fix the flags
 		if (pitem->getProfile()->isEquipment())
 		{
-			SET_BIT(pitem->ai.alert, ALERTIF_PUTAWAY);  // same as ALERTIF_ATLASTWAYPOINT;
+			pitem->addAIAlertBits(ALERTIF_PUTAWAY);  // same as ALERTIF_ATLASTWAYPOINT;
 		}
 
         //@todo: add in the equipment code here
@@ -198,7 +198,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     {
         if(item && item->isKursed()) {
             // Flag the last found_item as not put away
-            SET_BIT( item->ai.alert, ALERTIF_NOTPUTAWAY );  // Same as ALERTIF_NOTTAKENOUT
+            item->addAIAlertBits(ALERTIF_NOTPUTAWAY);  // Same as ALERTIF_NOTTAKENOUT
             if ( pobj->isPlayer() ) DisplayMsg_printf("%s is sticky...", item->getName().c_str());
             return false;
 
@@ -206,7 +206,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
 
         if(inventory_item && inventory_item->isKursed()) {
             // Flag the last found_item as not removed
-            SET_BIT( inventory_item->ai.alert, ALERTIF_NOTTAKENOUT );  // Same as ALERTIF_NOTPUTAWAY
+            inventory_item->addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
             if ( pobj->isPlayer() ) DisplayMsg_printf( "%s won't go out!", inventory_item->getName().c_str() );
             return false;
 
@@ -220,8 +220,8 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
         inventory_item->getObjectPhysics().attachToObject(pobj, grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
         //fix flags
-        UNSET_BIT(inventory_item->ai.alert, ALERTIF_GRABBED);
-        SET_BIT(inventory_item->ai.alert, ALERTIF_TAKENOUT);
+        inventory_item->clearAIAlertBits(ALERTIF_GRABBED);
+        inventory_item->addAIAlertBits(ALERTIF_TAKENOUT);
     }
 
     //put the new item in the inventory
@@ -360,7 +360,7 @@ bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignor
             if (item->isKursed() && !ignorekurse)
             {
                 //Flag the item as not removed
-                SET_BIT( item->ai.alert, ALERTIF_NOTTAKENOUT );  // Same as ALERTIF_NOTPUTAWAY
+                item->addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
                 DisplayMsg_printf( "%s won't go out!", item->getName().c_str());
                 return false;
             }

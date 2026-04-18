@@ -355,9 +355,9 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...
-            overlay->ai.setTarget(target->getObjRef());
+            overlay->setAITarget(target->getObjRef());
             overlay->setOverlay(true);
-            overlay->ai.state = _enchantProfile->spawn_overlay; // ??? WHY DO THIS ???
+            overlay->setAIStateValue(_enchantProfile->spawn_overlay); // ??? WHY DO THIS ???
 
             // Start out with ActionMJ...  Object activated
             ModelAction action = overlay->getProfile()->getModel()->getAction(ACTION_MJ);
