@@ -308,6 +308,12 @@ Introduced `IPhysical` as the fifth T1.2 `Object` role interface and made `Objec
 
 Extended `ObjectAccessors.cpp` with an interface parity regression covering bump-state, collision-volume, and orientation access through `IPhysical`. Build, targeted accessor tests, and the `test.mod` validator remained the acceptance bar for this pass.
 
+### Pass 82 — Conservative T1.2 caller migration (2026-04-18)
+
+Migrated low-risk gameplay helpers onto existing `Object` role seams without changing public APIs: `game.c` now resolves owner/target escape-code substitutions through `IScriptable`, and `Shop.cpp` routes shopkeeper order/target publication through the same role instead of the concrete `Object` surface.
+
+Added focused regressions for game-text owner/target expansion and shop buy / no-afford / theft-publication behavior. Kept `aiStateForScript()` quarantined; no `Script/script.c` changes in this pass.
+
 ---
 
 ## Files touched most by this pass log
