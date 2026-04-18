@@ -28,7 +28,7 @@ ObjectRef Inventory::findItem(Object *pobj, const IDSZ2& idsz, bool equippedOnly
 
     ObjectRef result = ObjectRef::Invalid;
 
-    for(const std::shared_ptr<Object> pitem : pobj->getInventory().iterate())
+    for (const std::shared_ptr<Object>& pitem : pobj->getInventoryItems())
     {
         bool matches_equipped = (!equippedOnly || pitem->isEquipped());
 
@@ -62,12 +62,12 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
     const std::shared_ptr<Object> &pitem = objectHandler()[iitem];
 
     // Does the owner have free slot in her inventory?
-    if (inventorySlot >= powner->getInventory().getMaxItems()) {
+    if (inventorySlot >= powner->getInventoryMaxItems()) {
         return false;
     }
 
     // If there is an item in the slot, do nothing.
-	if (powner->getInventory().getItem(inventorySlot)) {
+	if (powner->getInventoryItem(inventorySlot)) {
 		return false;
 	}
 
@@ -155,7 +155,7 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
         //now put the item into the inventory
         pitem->setHolderRef(ObjectRef::Invalid);
         pitem->setInventoryHolderRef(iowner);
-        powner->getInventory()._items[inventorySlot] = pitem;
+        powner->setInventoryItem(inventorySlot, pitem);
 
         // fix the flags
 		if (pitem->getProfile()->isEquipment())
@@ -178,14 +178,14 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
     }
 
     //Validate slot number
-    if(inventory_slot >= pobj->getInventory().getMaxItems()) {
+    if(inventory_slot >= pobj->getInventoryMaxItems()) {
         return false;
     }
 
     // Make sure everything is hunkydori
     if (pobj->isItem() || pobj->isInsideInventory()) return false;
 
-    const std::shared_ptr<Object> &inventory_item = pobj->getInventory().getItem(inventory_slot);
+    const std::shared_ptr<Object> &inventory_item = pobj->getInventoryItem(inventory_slot);
     const std::shared_ptr<Object> &item           = objectHandler()[pobj->getHeldObject(static_cast<slot_t>(grip_off))];
 
     //Nothing to do?
@@ -215,7 +215,7 @@ bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t 
 
     //remove existing item from inventory and into the character's hand
     if (inventory_item) {
-        pobj->getInventory().removeItem(inventory_item, ignorekurse);
+        pobj->removeInventoryItem(inventory_item, ignorekurse);
 
         inventory_item->attachToObject(pobj, grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
@@ -239,7 +239,7 @@ bool Inventory::remove_item( ObjectRef iholder, const size_t inventory_slot, con
         return false;
     }
 
-    return holder->getInventory().removeItem(holder->getInventory().getItem(inventory_slot), ignorekurse);
+    return holder->removeInventoryItem(holder->getInventoryItem(inventory_slot), ignorekurse);
 }
 
 ObjectRef Inventory::hasStack( const ObjectRef item, const ObjectRef character )
@@ -257,7 +257,7 @@ ObjectRef Inventory::hasStack( const ObjectRef item, const ObjectRef character )
         return ObjectRef::Invalid;
     }
 
-    for(const std::shared_ptr<Object> pstack : objectHandler().get(character)->getInventory().iterate())
+    for (const std::shared_ptr<Object>& pstack : objectHandler().get(character)->getInventoryItems())
     {
 
         found = pstack->getProfile()->isStackable();

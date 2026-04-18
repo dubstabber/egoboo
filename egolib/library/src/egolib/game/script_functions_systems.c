@@ -149,7 +149,7 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     //need to search inventory as well?
     if (!pitem)
     {
-        for(const std::shared_ptr<Object> &inventoryItem : ptarget->getInventory().iterate())
+        for (const std::shared_ptr<Object>& inventoryItem : ptarget->getInventoryItems())
         {
             //matching idsz?
             if ( inventoryItem->getProfile()->hasTypeIDSZ(idsz) ) {
@@ -176,7 +176,7 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
             if ( pitem->isInsideInventory() )
             {
                 // Remove from the pack
-                pchr->getInventory().removeItem(pitem, true);
+                pchr->removeInventoryItem(pitem, true);
             }
             else
             {
@@ -603,7 +603,7 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     ichr = pself_target->getHeldObject(SLOT_RIGHT);
     iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
 
-    for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
+    for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
     {
         iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
     }
@@ -642,7 +642,7 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
 
     if (iTmp == 0)
     {
-        for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
+        for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
         {
             iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
             if ( 0 != iTmp ) break;
@@ -1292,7 +1292,7 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
         objectHandler().get(ichr)->setKursed(false);
     }
 
-    for(const std::shared_ptr<Object> pitem : pchr->getInventory().iterate())
+    for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
     {
         pitem->setKursed(false);
     }

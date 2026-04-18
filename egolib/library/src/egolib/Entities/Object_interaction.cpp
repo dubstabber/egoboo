@@ -274,7 +274,7 @@ void Object::dropKeys()
     const IDSZ2 testa = IDSZ2('K', 'E', 'Y', 'A');
     const IDSZ2 testz = IDSZ2('K', 'E', 'Y', 'Z');
 
-    for (const std::shared_ptr<Object>& pkey : getInventory().iterate()) {
+    for (const std::shared_ptr<Object>& pkey : getInventoryItems()) {
         const IDSZ2& idsz_parent = pkey->getProfile()->getIDSZ(IDSZ_PARENT);
         const IDSZ2& idsz_type = pkey->getProfile()->getIDSZ(IDSZ_TYPE);
 
@@ -284,7 +284,7 @@ void Object::dropKeys()
         Facing direction = Facing::random();
         Facing turn = direction;
 
-        getInventory().removeItem(pkey, true);
+        removeInventoryItem(pkey, true);
 
         pkey->setDismountTimer(PHYS_DISMOUNT_TIME);
         pkey->setDismountObject(getObjRef());
@@ -317,7 +317,7 @@ void Object::dropAllItems()
         rightItem->detatchFromHolder(true, false);
     }
 
-    uint8_t pack_count = getInventory().iterate().size();
+    uint8_t pack_count = getInventoryItems().size();
     if (pack_count == 0) {
         return;
     }
@@ -325,8 +325,8 @@ void Object::dropAllItems()
     const FACING_T diradd = (std::numeric_limits<FACING_T>::max() / 2) / pack_count;
 
     Facing direction = ori.facing_z + ATK_BEHIND - Facing(diradd * (pack_count / 2));
-    for (const std::shared_ptr<Object>& pitem : getInventory().iterate()) {
-        getInventory().removeItem(pitem, true);
+    for (const std::shared_ptr<Object>& pitem : getInventoryItems()) {
+        removeInventoryItem(pitem, true);
         pitem->detatchFromHolder(true, false);
 
         pitem->setDismountTimer(PHYS_DISMOUNT_TIME);
@@ -416,11 +416,11 @@ void Object::updateLatchButtons()
     }
     if (_inputLatchesPressed[LATCHBUTTON_PACKLEFT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = Inventory::PACKDELAY;
-        Inventory::swap_item(ichr, getInventory().getFirstFreeSlotNumber(), SLOT_LEFT, false);
+        Inventory::swap_item(ichr, getFirstFreeInventorySlot(), SLOT_LEFT, false);
     }
     if (_inputLatchesPressed[LATCHBUTTON_PACKRIGHT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = Inventory::PACKDELAY;
-        Inventory::swap_item(ichr, getInventory().getFirstFreeSlotNumber(), SLOT_RIGHT, false);
+        Inventory::swap_item(ichr, getFirstFreeInventorySlot(), SLOT_RIGHT, false);
     }
 
     if (_inputLatchesPressed[LATCHBUTTON_ALTLEFT] && inst.canBeInterrupted() && 0 == reload_timer) {

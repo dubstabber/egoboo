@@ -401,7 +401,7 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     };
     ops.attachInventoryItem = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object)
     {
-        Inventory::add_item(parentObject->getObjRef(), object->getObjRef(), parentObject->getInventory().getFirstFreeSlotNumber(), true);
+        Inventory::add_item(parentObject->getObjRef(), object->getObjRef(), parentObject->getFirstFreeInventorySlot(), true);
     };
     ops.attachToGrip = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object, grip_offset_t grip)
     {

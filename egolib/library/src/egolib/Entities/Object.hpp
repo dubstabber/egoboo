@@ -840,12 +840,6 @@ public:
     **/
     void setBaseAttribute(const Ego::Attribute::AttributeType type, float value);
 
-    /**
-    * @return
-    *   The Inventory of this Object
-    **/
-    Inventory& getInventory();
-
     size_t getInventoryMaxItems() const;
 
     size_t getFirstFreeInventorySlot() const;
@@ -853,6 +847,10 @@ public:
     std::shared_ptr<Object> getInventoryItem(size_t slotNumber) const;
 
     std::vector<std::shared_ptr<Object>> getInventoryItems() const;
+
+    void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item);
+
+    bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse);
 
     uint16_t getAmmoMax() const { return ammomax; }
 

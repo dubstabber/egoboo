@@ -291,11 +291,6 @@ void Object::respawn()
     }
 }
 
-Inventory& Object::getInventory()
-{
-    return _inventory;
-}
-
 size_t Object::getInventoryMaxItems() const
 {
     return _inventory.getMaxItems();
@@ -314,6 +309,16 @@ std::shared_ptr<Object> Object::getInventoryItem(size_t slotNumber) const
 std::vector<std::shared_ptr<Object>> Object::getInventoryItems() const
 {
     return _inventory.iterate();
+}
+
+void Object::setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item)
+{
+    _inventory.setItem(slotNumber, item);
+}
+
+bool Object::removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse)
+{
+    return _inventory.removeItem(item, ignoreKurse);
 }
 
 const std::shared_ptr<Object>& Object::toSharedPointer() const

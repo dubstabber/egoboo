@@ -417,8 +417,8 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
     EXPECT_EQ(object->getInventoryItem(1), nullptr);
     EXPECT_TRUE(object->getInventoryItems().empty());
 
-    object->getInventory().setItem(0, item0);
-    object->getInventory().setItem(2, item2);
+    object->setInventoryItem(0, item0);
+    object->setInventoryItem(2, item2);
 
     EXPECT_EQ(object->getInventoryItem(0), item0);
     EXPECT_EQ(object->getInventoryItem(1), nullptr);
@@ -429,6 +429,32 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
     ASSERT_EQ(items.size(), 2u);
     EXPECT_EQ(items[0], item0);
     EXPECT_EQ(items[1], item2);
+
+    EXPECT_TRUE(object->removeInventoryItem(item0, true));
+    EXPECT_EQ(object->getInventoryItem(0), nullptr);
+    EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
+}
+
+TEST_F(ObjectAccessorFixture, InventoryMutationHelpersSupportStaticInventoryOperations)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto owner = makeFollower(objectHandler, 3046);
+    auto inventoryItem = makeFollower(objectHandler, 3047);
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(inventoryItem, nullptr);
+
+    EXPECT_TRUE(Inventory::add_item(owner->getObjRef(), inventoryItem->getObjRef(), owner->getFirstFreeInventorySlot(), true));
+    EXPECT_EQ(owner->getInventoryItem(0), inventoryItem);
+    EXPECT_EQ(inventoryItem->getInventoryHolderRef(), owner->getObjRef());
+
+    EXPECT_TRUE(Inventory::remove_item(owner->getObjRef(), 0, true));
+    EXPECT_EQ(owner->getInventoryItem(0), nullptr);
+    EXPECT_EQ(inventoryItem->getInventoryHolderRef(), ObjectRef::Invalid);
+
+    // Empty hand/slot swaps are a stable no-op and should continue to succeed.
+    EXPECT_TRUE(Inventory::swap_item(owner->getObjRef(), 0, SLOT_LEFT, true));
+    EXPECT_EQ(owner->getInventoryItem(0), nullptr);
+    EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
 }
 
 TEST_F(ObjectAccessorFixture, TempAttributeHelpersRoundTripPresenceValueAndClearing)

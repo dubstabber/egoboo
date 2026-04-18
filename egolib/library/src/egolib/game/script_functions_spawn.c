@@ -951,7 +951,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         if ( grip == ATTACH_INVENTORY )
         {
             // Inventory character
-            if ( Inventory::add_item( self.getTarget(), pchild->getObjRef(), pchr->getInventory().getFirstFreeSlotNumber(), true ) )
+            if ( Inventory::add_item( self.getTarget(), pchild->getObjRef(), pchr->getFirstFreeInventorySlot(), true ) )
             {
                 pchild->addAIAlertBits(ALERTIF_GRABBED);  // Make spellbooks change
                 pchild->setHolderRef(self.getTarget());  // Make grab work
