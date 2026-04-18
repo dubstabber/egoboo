@@ -219,6 +219,7 @@ void Object::spawnAIState(uint16_t rank)
 
 ai_state_t& Object::aiStateForScript()
 {
+    // Keep raw ai_state_t mutation quarantined here until the legacy script runtime is migrated.
     return ai;
 }
 

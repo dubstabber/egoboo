@@ -426,7 +426,8 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
         if ( leader )
         {
-            auto itarget = leader->getAITarget();
+            const IScriptable& scriptableLeader = *leader;
+            auto itarget = scriptableLeader.getAITarget();
 
             if ( objectHandler().exists( itarget ) )
             {

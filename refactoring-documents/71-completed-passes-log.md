@@ -314,6 +314,12 @@ Migrated low-risk gameplay helpers onto existing `Object` role seams without cha
 
 Added focused regressions for game-text owner/target expansion and shop buy / no-afford / theft-publication behavior. Kept `aiStateForScript()` quarantined; no `Script/script.c` changes in this pass.
 
+### Pass 83 — Conservative `IScriptable` gameplay migration (2026-04-18)
+
+Migrated another bounded set of gameplay helpers onto `IScriptable` without widening the role surface: `game_loop.c`, `script_functions_spawn.c`, `script_functions_target.c`, and `ParticleHandler.cpp` now route alert/timer/owner/target/content writes through the existing script-facing seam where those helpers only need AI publication behavior.
+
+Added focused gameplay-loop and particle regressions for cleaned-up / crushed alert handling and defence-ping publication, while keeping `Object::aiStateForScript()` explicitly quarantined for the legacy script runtime.
+
 ---
 
 ## Files touched most by this pass log

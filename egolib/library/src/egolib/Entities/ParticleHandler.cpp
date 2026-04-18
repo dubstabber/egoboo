@@ -32,6 +32,16 @@ GameModule* tryActiveModule()
 {
     return GameSessionContext::get().tryActiveModule();
 }
+
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+
+const IScriptable& scriptable(const Object& object)
+{
+    return object;
+}
 }
 
 std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle
@@ -301,11 +311,12 @@ std::shared_ptr<const Ego::Texture> ParticleHandler::getTransparentParticleTextu
 
 void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
 {
+    const IScriptable& scriptableObject = scriptable(*object);
     Facing facing_z = object->getFacingZ();
     for (int cnt = 0; cnt < object->getProfile()->getParticlePoofAmount(); cnt++)
     {
         ParticleHandler::get().spawnParticle(object->getOldPosition(), facing_z, object->getProfile()->getSlotNumber(), object->getProfile()->getParticlePoofProfile(),
-                                             ObjectRef::Invalid, GRIP_LAST, object->getTeamRef(), object->getAIOwner(), ParticleRef::Invalid, cnt);
+                                             ObjectRef::Invalid, GRIP_LAST, object->getTeamRef(), scriptableObject.getAIOwner(), ParticleRef::Invalid, cnt);
 
         facing_z += Facing(object->getProfile()->getParticlePoofFacingAdd());
     }
@@ -315,16 +326,17 @@ void ParticleHandler::spawnDefencePing(const std::shared_ptr<Object> &object, co
 {
     if (0 != object->getDamageTimer()) return;
 
+    IScriptable& scriptableObject = scriptable(*object);
     spawnGlobalParticle(object->getPosition(), object->getFacingZ(), LocalParticleProfileRef(PIP_DEFEND), 0);
 
     object->setDamageTimer(DEFENDTIME);
-    object->addAIAlertBits(ALERTIF_BLOCKED);
+    scriptableObject.addAIAlertBits(ALERTIF_BLOCKED);
 
     // For the ones attacking a shield
     if(attacker != nullptr && !attacker->isTerminated()) {
-        object->setAILastAttacker(attacker->getObjRef());
+        scriptableObject.setAILastAttacker(attacker->getObjRef());
     }
     else {
-        object->setAILastAttacker(ObjectRef::Invalid);
+        scriptableObject.setAILastAttacker(ObjectRef::Invalid);
     }
 }

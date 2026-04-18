@@ -25,6 +25,14 @@
 int chr_stoppedby_tests = 0;
 int chr_pressure_tests = 0;
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+}
+
 //--------------------------------------------------------------------------------------------
 void MainLoop::move_all_objects()
 {
@@ -119,9 +127,10 @@ void MainLoop::readPlayerInput()
         {
             if (!pchr->isAlive() && 0 == session.respawnCooldown())
             {
+                IScriptable& scriptableCharacter = scriptable(*pchr);
                 pchr->respawn();
                 pchr->becomeTeamLeader();
-                pchr->addAIAlertBits(ALERTIF_CLEANEDUP);
+                scriptableCharacter.addAIAlertBits(ALERTIF_CLEANEDUP);
 
                 // cost some experience for doing this...  never lose a level
                 pchr->setExperience(pchr->getExperience() * EXPKEEP);
@@ -369,7 +378,8 @@ void disaffirm_attached_particles(ObjectRef objectRef) {
     }
     if (module.getObjectHandler().exists(objectRef)) {
         // Set the alert for disaffirmation (wet torch).
-        module.getObjectHandler().get(objectRef)->addAIAlertBits(ALERTIF_DISAFFIRMED);
+        IScriptable& scriptableObject = scriptable(*module.getObjectHandler().get(objectRef));
+        scriptableObject.addAIAlertBits(ALERTIF_DISAFFIRMED);
     }
 }
 
@@ -411,7 +421,8 @@ int reaffirm_attached_particles(ObjectRef objectRef) {
     }
 
     // Set the alert for reaffirmation ( for exploding barrels with fire )
-    object->addAIAlertBits(ALERTIF_REAFFIRMED);
+    IScriptable& scriptableObject = scriptable(*object);
+    scriptableObject.addAIAlertBits(ALERTIF_REAFFIRMED);
 
     return number_added;
 }
@@ -433,9 +444,11 @@ void MainLoop::let_all_characters_think()
             continue;
         }
 
+        IScriptable& scriptableObject = scriptable(*object);
+
         // check for actions that must always be handled
-        bool is_cleanedup = object->hasAnyAIAlertBits(ALERTIF_CLEANEDUP);
-        bool is_crushed   = object->hasAnyAIAlertBits(ALERTIF_CRUSHED);
+        bool is_cleanedup = scriptableObject.hasAnyAIAlertBits(ALERTIF_CLEANEDUP);
+        bool is_crushed   = scriptableObject.hasAnyAIAlertBits(ALERTIF_CRUSHED);
 
         // only let dead/destroyed things think if they have beem crushed/cleanedup
         if (object->isAlive() || is_crushed || is_cleanedup )
@@ -445,14 +458,14 @@ void MainLoop::let_all_characters_think()
 
             // Cleaned up characters shouldn't be alert to anything else
             if (is_cleanedup) {
-                object->setAIAlertBits(ALERTIF_CLEANEDUP);
+                scriptableObject.setAIAlertBits(ALERTIF_CLEANEDUP);
                 /*object->ai.timer = worldUpdateCount() + 1;*/
             }
 
             // Crushed characters shouldn't be alert to anything else
             if (is_crushed)  {
-                object->setAIAlertBits(ALERTIF_CRUSHED);
-                object->setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
+                scriptableObject.setAIAlertBits(ALERTIF_CRUSHED);
+                scriptableObject.setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
             }
 
             scr_run_chr_script(object.get());

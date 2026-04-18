@@ -5,6 +5,11 @@
 
 namespace
 {
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
 {
     child.setAIPassage(self.passage);
@@ -211,7 +216,8 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
 
         if ( !listener->isAlive() )
         {
-            listener->setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
+            IScriptable& scriptableListener = scriptable(*listener);
+            scriptableListener.setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
         }
 
         publishCleanedUpState(*listener);
@@ -414,7 +420,8 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         else
         {
             // Poof others now
-            pself_target->setAIPoofTime(worldUpdateCount());
+            IScriptable& scriptableTarget = scriptable(*pself_target);
+            scriptableTarget.setAIPoofTime(worldUpdateCount());
 
             SET_TARGET(self.getSelf(), pself_target );
         }
@@ -873,7 +880,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         for (int cnt = 0; cnt < pchr->getProfile()->getParticlePoofAmount(); cnt++)
         {
             auto poofParticle = ParticleHandler::get().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
-                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), pchr->getAIOwner(), ParticleRef::Invalid, cnt);
+                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), scriptable(*pchr).getAIOwner(), ParticleRef::Invalid, cnt);
 
             // set some values
             if(poofParticle) {
@@ -1102,7 +1109,16 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    objectHandler().get(self.child)->setAIContent(state.argument);
+    Object *child = objectHandler().get(self.child);
+    if (nullptr == child)
+    {
+        returncode = false;
+    }
+    else
+    {
+        IScriptable& scriptableChild = scriptable(*child);
+        scriptableChild.setAIContent(state.argument);
+    }
 
     SCRIPT_FUNCTION_END();
 }
