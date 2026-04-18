@@ -31,6 +31,7 @@
 #include "egolib/InputControl/InputDevice.hpp"
 
 #include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IRenderable.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
@@ -76,6 +77,7 @@ enum LatchButton
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
                public IInventoryHolder,
+               public IRenderable,
                public std::enable_shared_from_this<Object>
 {
 public:
@@ -117,7 +119,13 @@ public:
     **/
     bool canCollide() const override;
 
-    const std::shared_ptr<const Ego::Texture> getSkinTexture() const;
+    std::shared_ptr<const Ego::Texture> getSkinTexture() const override;
+
+    bool isPhongMapped() const { return getProfile()->isPhongMapped(); }
+
+    bool hasReflection() const { return getProfile()->hasReflection(); }
+
+    bool isDontCullBackfaces() const { return getProfile()->isDontCullBackfaces(); }
 
     /**
     * @return
@@ -326,11 +334,13 @@ public:
 
     void setVOffset(SFP8_T value) { inst.setVOffset(value); }
 
-    bool hasModelDescriptor() const { return inst.getModelDescriptor() != nullptr; }
+    bool hasModelDescriptor() const override { return inst.getModelDescriptor() != nullptr; }
 
-    uint8_t getReflectionAlpha() const { return inst.getReflectionAlpha(); }
+    const std::shared_ptr<Ego::ModelDescriptor>& getModelDescriptor() const { return inst.getModelDescriptor(); }
 
-    void getTint(GLXvector4f tint, bool reflection, int type) const { inst.getTint(tint, reflection, type); }
+    uint8_t getReflectionAlpha() const override { return inst.getReflectionAlpha(); }
+
+    void getTint(GLXvector4f tint, bool reflection, int type) const override { inst.getTint(tint, reflection, type); }
 
     bool playAction(ModelAction action, bool actionReady) { return inst.playAction(action, actionReady); }
 
@@ -362,15 +372,15 @@ public:
 
     void updateAnimation() { inst.updateAnimation(); }
 
-    const Ego::Matrix4f4f& getMatrix() const { return inst.getMatrix(); }
+    const Ego::Matrix4f4f& getMatrix() const override { return inst.getMatrix(); }
 
-    const Ego::Matrix4f4f& getReflectionMatrix() const { return inst.getReflectionMatrix(); }
+    const Ego::Matrix4f4f& getReflectionMatrix() const override { return inst.getReflectionMatrix(); }
 
     void setMatrix(const Ego::Matrix4f4f& matrix) { inst.setMatrix(matrix); }
 
-    const GLvertex& getVertex(size_t index) const { return inst.getVertex(index); }
+    const GLvertex& getVertex(size_t index) const override { return inst.getVertex(index); }
 
-    size_t getVertexCount() const { return inst.getVertexCount(); }
+    size_t getVertexCount() const override { return inst.getVertexCount(); }
 
     gfx_rv updateVertices(int vmin, int vmax, bool force) { return inst.updateVertices(vmin, vmax, force); }
 
@@ -389,7 +399,7 @@ public:
 
     int getMaxLight() const { return inst.getMaxLight(); }
 
-    int getAmbientColour() const { return inst.getAmbientColour(); }
+    int getAmbientColour() const override { return inst.getAmbientColour(); }
 
     oct_bb_t getBoundingBox() const { return inst.getBoundingBox(); }
 

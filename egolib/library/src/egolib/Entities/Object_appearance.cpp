@@ -312,7 +312,7 @@ std::shared_ptr<const Ego::Texture> Object::getIcon() const
     }
 }
 
-const std::shared_ptr<const Ego::Texture> Object::getSkinTexture() const
+std::shared_ptr<const Ego::Texture> Object::getSkinTexture() const
 {
     return getProfile()->getSkin(this->skin).get_ptr();
 }

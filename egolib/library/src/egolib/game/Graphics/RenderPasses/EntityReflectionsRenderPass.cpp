@@ -67,7 +67,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
                 {
                     renderer.setColour(Colour4f::white());
 
-                    ObjectGraphicsRenderer::render_ref(camera, object);
+                    ObjectGraphicsRenderer::render_ref(camera, *object);
                 }
             }
             else if (ObjectRef::Invalid == el.get(i).iobj && ParticleRef::Invalid != el.get(i).iprt)

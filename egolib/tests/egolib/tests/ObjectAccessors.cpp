@@ -1059,6 +1059,44 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
     EXPECT_EQ(object->getReflectionAlpha(), 0);
 }
 
+TEST_F(ObjectAccessorFixture, RenderRoleSurfaceExposesRenderPolicyAndGeometryQueries)
+{
+    auto object = makeFollower(350);
+    ASSERT_NE(object, nullptr);
+
+    object->setAlpha(123);
+    object->setLight(87);
+    object->setSheen(45);
+    object->setColorShift(colorshift_t(1, 2, 3));
+    object->setMatrix(idlib::identity<Ego::Matrix4f4f>());
+
+    const IRenderable& renderable = *object;
+
+    EXPECT_EQ(renderable.getObjRef(), object->getObjRef());
+    EXPECT_EQ(renderable.isPhongMapped(), object->getProfile()->isPhongMapped());
+    EXPECT_EQ(renderable.hasReflection(), object->getProfile()->hasReflection());
+    EXPECT_EQ(renderable.isDontCullBackfaces(), object->getProfile()->isDontCullBackfaces());
+    EXPECT_TRUE(renderable.hasModelDescriptor());
+    EXPECT_NE(renderable.getModelDescriptor(), nullptr);
+    EXPECT_EQ(renderable.getAlpha(), 123);
+    EXPECT_EQ(renderable.getLight(), 87);
+    EXPECT_EQ(renderable.getSheen(), 45);
+    EXPECT_EQ(renderable.getVertexCount(), object->getVertexCount());
+    EXPECT_EQ(&renderable.getMatrix(), &object->getMatrix());
+    EXPECT_EQ(&renderable.getReflectionMatrix(), &object->getReflectionMatrix());
+    EXPECT_EQ(renderable.getAmbientColour(), object->getAmbientColour());
+
+    GLXvector4f tint;
+    renderable.getTint(tint, false, CHR_ALPHA);
+
+    constexpr float colourScale = 87.0f / 255.0f;
+    constexpr float alphaScale = 123.0f / 255.0f;
+    EXPECT_NEAR(tint[RR], colourScale / 2.0f, 0.0001f);
+    EXPECT_NEAR(tint[GG], colourScale / 4.0f, 0.0001f);
+    EXPECT_NEAR(tint[BB], colourScale / 8.0f, 0.0001f);
+    EXPECT_NEAR(tint[AA], alphaScale, 0.0001f);
+}
+
 TEST_F(ObjectAccessorFixture, RenderStateAccessorsApplyReflectionPolicy)
 {
     auto object = makeFollower(311);
