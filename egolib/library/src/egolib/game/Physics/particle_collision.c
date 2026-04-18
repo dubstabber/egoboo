@@ -46,11 +46,6 @@ IDamageable& damageable(Object& object)
     return object;
 }
 
-const IDamageable& damageable(const Object& object)
-{
-    return object;
-}
-
 const IPhysical& physical(const Object& object)
 {
     return object;
@@ -476,6 +471,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 {
     bool prt_deflected = false;
     const IDamageable& constDamageableCharacter = damageable(*pdata.pchr);
+    const IScriptable& scriptableCharacter = scriptable(*pdata.pchr);
 
     /// @note ZF@> Simply ignore characters with invictus for now, it causes some strange effects
     if (constDamageableCharacter.isInvincible()) return true;
@@ -566,7 +562,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             if ( !using_shield )
             {
                 item = pdata.pchr->getHeldObject(SLOT_RIGHT);
-                if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->getAILastItemUsed() == item )
+                if ( activeModule().getObjectHandler().exists( item ) && scriptableCharacter.getAILastItemUsed() == item )
                 {
                     using_shield = true;
                 }
@@ -576,7 +572,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             if ( !using_shield )
             {
                 item = pdata.pchr->getHeldObject(SLOT_LEFT);
-                if ( activeModule().getObjectHandler().exists( item ) && pdata.pchr->getAILastItemUsed() == item )
+                if ( activeModule().getObjectHandler().exists( item ) && scriptableCharacter.getAILastItemUsed() == item )
                 {
                     using_shield = true;
                 }
@@ -642,6 +638,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 {
     std::shared_ptr<Object> powner = activeModule().getObjectHandler()[pdata.pprt->owner_ref];
     IDamageable& damageableCharacter = damageable(*pdata.pchr);
+    IScriptable& scriptableCharacter = scriptable(*pdata.pchr);
 
     //Get the Profile of the Object that spawned this particle (i.e the weapon itself, not the holder)
     const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pdata.pprt->getSpawnerProfile());
@@ -700,7 +697,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     // Do grog
     if (pdata.ppip->grogTime > 0 && pdata.pchr->getProfile()->canBeGrogged())
     {
-        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
+        scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setGrogTimer(std::max(static_cast<unsigned>(pdata.pchr->getGrogTimer()), pdata.ppip->grogTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Groggy!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -709,7 +706,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     // Do daze
     if (pdata.ppip->dazeTime > 0 && pdata.pchr->getProfile()->canBeDazed())
     {
-        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
+        scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setDazeTimer(std::max(static_cast<unsigned>(pdata.pchr->getDazeTimer()), pdata.ppip->dazeTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Dazed!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -736,6 +733,8 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
             // These things only apply if the particle has an owner
             if ( nullptr != powner )
             {
+                IScriptable& scriptableOwner = scriptable(*powner);
+
                 //Check special perk effects
                 if(spawnerProfile != nullptr)
                 {                
@@ -744,7 +743,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     {
                         //Is the particle spawned by a gun?
                         if(spawnerProfile->isRangedWeapon() && spawnerProfile->getIDSZ(IDSZ_SKILL).equals('T','E','C','H')) {
-                            scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
+                            scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
                             pdata.pchr->setDazeTimer(pdata.pchr->getDazeTimer() + 3);
 
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Crackshot!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -753,7 +752,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
                     //Brutal Strike has chance to inflict 2 second Grog with melee CRUSH attacks
                     if(pdata.pchr->getProfile()->canBeGrogged() && powner->hasPerk(Ego::Perks::BRUTAL_STRIKE) && spawnerProfile->isMeleeWeapon() && pdata.pprt->damagetype == DAMAGE_CRUSH) {
-                        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
+                        scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
                         pdata.pchr->setGrogTimer(pdata.pchr->getGrogTimer() + 2);
 
                         GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -794,17 +793,18 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 }
 
                 // Notify the attacker of a scored hit
-                scriptable(*powner).addAIAlertBits(ALERTIF_SCOREDAHIT);
-                scriptable(*powner).setAILastHit(pdata.pchr->getObjRef());
+                scriptableOwner.addAIAlertBits(ALERTIF_SCOREDAHIT);
+                scriptableOwner.setAILastHit(pdata.pchr->getObjRef());
 
                 // Tell the weapons who the attacker hit last
                 bool meleeAttack = false;
                 const std::shared_ptr<Object> &leftHanditem = powner->getRightHandItem();
                 if (leftHanditem)
                 {
-                    scriptable(*leftHanditem).setAILastHit(pdata.pchr->getObjRef());
-                    if (powner->getAILastItemUsed() == leftHanditem->getObjRef()) {
-                        scriptable(*leftHanditem).addAIAlertBits(ALERTIF_SCOREDAHIT);  
+                    IScriptable& scriptableLeftHandItem = scriptable(*leftHanditem);
+                    scriptableLeftHandItem.setAILastHit(pdata.pchr->getObjRef());
+                    if (scriptableOwner.getAILastItemUsed() == leftHanditem->getObjRef()) {
+                        scriptableLeftHandItem.addAIAlertBits(ALERTIF_SCOREDAHIT);  
                         if(leftHanditem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !leftHanditem->getProfile()->isRangedWeapon()) {
                             meleeAttack = true;
                         }
@@ -814,9 +814,10 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 const std::shared_ptr<Object> &rightHandItem = powner->getRightHandItem();
                 if (rightHandItem)
                 {
-                    scriptable(*rightHandItem).setAILastHit(pdata.pchr->getObjRef());
-                    if (powner->getAILastItemUsed() == rightHandItem->getObjRef()) {
-                        scriptable(*rightHandItem).addAIAlertBits(ALERTIF_SCOREDAHIT);  
+                    IScriptable& scriptableRightHandItem = scriptable(*rightHandItem);
+                    scriptableRightHandItem.setAILastHit(pdata.pchr->getObjRef());
+                    if (scriptableOwner.getAILastItemUsed() == rightHandItem->getObjRef()) {
+                        scriptableRightHandItem.addAIAlertBits(ALERTIF_SCOREDAHIT);  
                         if(rightHandItem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !rightHandItem->getProfile()->isRangedWeapon()) {
                             meleeAttack = true;
                         }
@@ -824,7 +825,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 }
 
                 //Unarmed attack?
-                if (powner->getAILastItemUsed() == powner->getObjRef()) {
+                if (scriptableOwner.getAILastItemUsed() == powner->getObjRef()) {
                     meleeAttack = true;
                 }
 
@@ -868,7 +869,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     modifiedDamage.base = ( modifiedDamage.base << 1 );
                     modifiedDamage.rand = ( modifiedDamage.rand << 1 ) | 1;
 
-                    scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_HITVULNERABLE);
+                    scriptableCharacter.addAIAlertBits(ALERTIF_HITVULNERABLE);
 
                     // Initialize for the billboard
                     GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Super Effective!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -992,7 +993,8 @@ bool do_chr_prt_collision_handle_bump( chr_prt_collision_data_t& pdata )
                 }
             }
 
-            if ( pcollector->getProfile()->canGrabMoney() && pcollector->isAlive() && 0 == pcollector->getDamageTimer() && pcollector->getMoney() < Object::MAXMONEY)
+            const IDamageable& damageableCollector = damageable(*pcollector);
+            if ( pcollector->getProfile()->canGrabMoney() && pcollector->isAlive() && 0 == damageableCollector.getDamageTimer() && pcollector->getMoney() < Object::MAXMONEY)
             {
                 pcollector->giveMoney(pdata.pprt->getProfile()->bump_money);
 
@@ -1231,10 +1233,11 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
 
     // Torches and such are marked as invulnerable, so the particle is always deflected.
     // make a special case for reaffirmation
-    if (0 == cn_data.pchr->getDamageTimer() )
+    const IDamageable& damageableCharacter = damageable(*cn_data.pchr);
+    if (0 == damageableCharacter.getDamageTimer() )
     {
         // Check reaffirmation of particles
-        if ( cn_data.pchr->getReaffirmDamageType() == cn_data.pprt->damagetype )
+        if ( damageableCharacter.getReaffirmDamageType() == cn_data.pprt->damagetype )
         {
             // This prevents items in shops from being burned
             if ( !cn_data.pchr->isShopItem() )
@@ -1248,7 +1251,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
     }
 
     //Do they hit each other?
-    if(prt_can_hit_chr && 0 == cn_data.pchr->getDamageTimer())
+    if(prt_can_hit_chr && 0 == damageableCharacter.getDamageTimer())
     {
         bool dodged = false;
 

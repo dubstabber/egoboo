@@ -57,6 +57,8 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     }
     Object *pweapon = module.getObjectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
+    IScriptable& scriptableCharacter = scriptable(*pchr);
+    IScriptable& scriptableWeapon = scriptable(*pweapon);
 
     // No need to continue if we have an attack cooldown
     if ( 0 != pweapon->getReloadTimer() ) return false;
@@ -113,7 +115,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
         allowedtoattack = false;
         if ( 0 == pweapon->getReloadTimer() )
         {
-            scriptable(*pweapon).addAIAlertBits(ALERTIF_USED);
+            scriptableWeapon.addAIAlertBits(ALERTIF_USED);
         }
     }
 
@@ -140,8 +142,9 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     {
                         const ModelAction action = pmount->getProfile()->getModel()->randomizeAction(ACTION_UA);
                         pmount->playAction(action, false);
-                        scriptable(*pmount).addAIAlertBits(ALERTIF_USED);
-                        scriptable(*pchr).setAILastItemUsed(pmount->getObjRef());
+                        IScriptable& scriptableMount = scriptable(*pmount);
+                        scriptableMount.addAIAlertBits(ALERTIF_USED);
+                        scriptableCharacter.setAILastItemUsed(pmount->getObjRef());
 
                         retval = true;
                     }
@@ -232,14 +235,14 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                 }
 
                 // let everyone know what we did
-                scriptable(*pchr).setAILastItemUsed(iweapon);
+                scriptableCharacter.setAILastItemUsed(iweapon);
 
                 /// @note ZF@> why should there any reason the weapon should NOT be alerted when it is used?
                 // grab the MADFX_* flags for this action
 //                BIT_FIELD action_madfx = getProfile()->getModel()->getActionFX(action);
 //                if ( iweapon == ichr || HAS_NO_BITS( action, MADFX_ACTLEFT | MADFX_ACTRIGHT ) )
                 {
-                    scriptable(*pweapon).addAIAlertBits(ALERTIF_USED);
+                    scriptableWeapon.addAIAlertBits(ALERTIF_USED);
                 }
 
                 retval = true;
@@ -306,7 +309,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             // Make the iweapon attack too
             chr_play_action( pweapon, ACTION_MJ, false );
 
-            pweapon->addAIAlertBits(ALERTIF_USED);
+            scriptableWeapon.addAIAlertBits(ALERTIF_USED);
         }
     */
 
@@ -317,9 +320,10 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
+            IScriptable& scriptableThrown = scriptable(*pthrown);
             pthrown->setKursed(false);
             pthrown->setAmmo(1);
-            scriptable(*pthrown).addAIAlertBits(ALERTIF_THROWN);
+            scriptableThrown.addAIAlertBits(ALERTIF_THROWN);
 
             // deterimine the throw velocity
             float velocity = MINTHROWVELOCITY;

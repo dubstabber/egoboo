@@ -160,6 +160,27 @@ protected:
         return nullptr;
     }
 
+    std::shared_ptr<Object> makeStackableWeapon(GameModule& module, int slotBase) const
+    {
+        static const std::vector<std::string> candidates = {
+            "mp_data/globalobjects/weapons/knife.obj",
+            "mp_data/globalobjects/weapons/cknife.obj",
+            "mp_data/globalobjects/items/gem.obj"
+        };
+
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+            auto item = makeObject(module, candidates[i], slotBase + static_cast<int>(i));
+            if (item && item->isItem() && item->getProfile()->isStackable())
+            {
+                return item;
+            }
+        }
+
+        ADD_FAILURE() << "unable to load a stackable weapon fixture";
+        return nullptr;
+    }
+
     std::shared_ptr<Object> makeCrushableOccupant(GameModule& module, int slotBase) const
     {
         auto occupant = makeObject(module, "mp_objects/follower.obj", slotBase);
@@ -243,6 +264,42 @@ TEST_F(GameplayAlertPublicationFixture, AttachToObjectPublishesGrabbedAlertForIt
 
     EXPECT_TRUE(item->attachToObject(holder, GRIP_LEFT));
     EXPECT_TRUE(item->hasAnyAIAlertBits(ALERTIF_GRABBED));
+}
+
+TEST_F(GameplayAlertPublicationFixture, CharacterSwipePublishesThrownAlertOnSpawnedStackedWeapon)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 5436);
+    auto thrownWeapon = makeStackableWeapon(module, 5437);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(thrownWeapon, nullptr);
+    ASSERT_TRUE(thrownWeapon->attachToObject(holder, GRIP_LEFT));
+
+    thrownWeapon->setAmmo(2);
+    flushObjectHandler(module);
+
+    character_swipe(holder->getObjRef(), SLOT_LEFT);
+    flushObjectHandler(module);
+
+    bool foundThrownCopy = false;
+    for (const std::shared_ptr<Object>& object : module.getObjectHandler().iterator())
+    {
+        if (object == nullptr || object->getObjRef() == holder->getObjRef() || object->getObjRef() == thrownWeapon->getObjRef())
+        {
+            continue;
+        }
+
+        if (object->getProfileID() == thrownWeapon->getProfileID() &&
+            object->hasAnyAIAlertBits(ALERTIF_THROWN) &&
+            object->getAmmo() == 1)
+        {
+            foundThrownCopy = true;
+            break;
+        }
+    }
+
+    EXPECT_TRUE(foundThrownCopy);
 }
 
 TEST_F(GameplayAlertPublicationFixture, KursedPutawayPublishesNotPutAwayAlert)

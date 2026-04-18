@@ -394,7 +394,7 @@ float ObjectPhysics::getMaxSpeed() const
     //Check if AI has limited movement rate
     else if(!_object.isPlayer())
     {
-        maxspeed *= _object.getAIMaxSpeed();
+        maxspeed *= scriptable(_object).getAIMaxSpeed();
     }
 
     //Reduce speed while stealthed
@@ -445,7 +445,8 @@ void ObjectPhysics::updateFacing()
         case TURNMODE_WATCHTARGET:
             {
                 //Only proceed if we have a valid AI target that is not ourselves
-                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[_object.getAITarget()];
+                const IScriptable& scriptableObject = scriptable(_object);
+                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[scriptableObject.getAITarget()];
                 if (aiTarget != nullptr && aiTarget->getObjRef() != _object.getObjRef())
                 {
                     _object.setFacingZ(idlib::canonicalize(rotate(_object.getFacingZ(), vec_to_facing(aiTarget->getPosX() - _object.getPosX(), aiTarget->getPosY() - _object.getPosY()), 8.0f)));
