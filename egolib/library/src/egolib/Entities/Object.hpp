@@ -1114,73 +1114,73 @@ public:
 
     void setDismountObject(ObjectRef objectRef) { dismount_object = objectRef; }
 
-    BIT_FIELD getAIAlertBits() const { return ai.alert; }
+    BIT_FIELD getAIAlertBits() const;
 
-    void setAIAlertBits(BIT_FIELD bits) { ai.alert = bits; }
+    void setAIAlertBits(BIT_FIELD bits);
 
-    void addAIAlertBits(BIT_FIELD bits) { ai.alert |= bits; }
+    void addAIAlertBits(BIT_FIELD bits);
 
-    void clearAIAlertBits(BIT_FIELD bits) { ai.alert &= ~bits; }
+    void clearAIAlertBits(BIT_FIELD bits);
 
-    bool hasAnyAIAlertBits(BIT_FIELD bits) const { return HAS_SOME_BITS(ai.alert, bits); }
+    bool hasAnyAIAlertBits(BIT_FIELD bits) const;
 
-    int getAIStateValue() const { return ai.state; }
+    int getAIStateValue() const;
 
-    void setAIStateValue(int value) { ai.state = value; }
+    void setAIStateValue(int value);
 
-    int getAIContent() const { return ai.content; }
+    int getAIContent() const;
 
-    void setAIContent(int value) { ai.content = value; }
+    void setAIContent(int value);
 
-    int getAIPassage() const { return ai.passage; }
+    int getAIPassage() const;
 
-    void setAIPassage(int value) { ai.passage = value; }
+    void setAIPassage(int value);
 
-    uint32_t getAITimer() const { return ai.timer; }
+    uint32_t getAITimer() const;
 
-    void setAITimer(uint32_t timer) { ai.timer = timer; }
+    void setAITimer(uint32_t timer);
 
-    int32_t getAIPoofTime() const { return ai.poof_time; }
+    int32_t getAIPoofTime() const;
 
-    void setAIPoofTime(int32_t time) { ai.poof_time = time; }
+    void setAIPoofTime(int32_t time);
 
-    ObjectRef getAIOwner() const { return ai.owner; }
+    ObjectRef getAIOwner() const;
 
-    void setAIOwner(ObjectRef objectRef) { ai.owner = objectRef; }
+    void setAIOwner(ObjectRef objectRef);
 
-    ObjectRef getAIChild() const { return ai.child; }
+    ObjectRef getAIChild() const;
 
-    void setAIChild(ObjectRef objectRef) { ai.child = objectRef; }
+    void setAIChild(ObjectRef objectRef);
 
-    ObjectRef getAITarget() const { return ai.getTarget(); }
+    ObjectRef getAITarget() const;
 
-    void setAITarget(ObjectRef objectRef) { ai.setTarget(objectRef); }
+    void setAITarget(ObjectRef objectRef);
 
-    ObjectRef getAILastAttacker() const { return ai.getLastAttacker(); }
+    ObjectRef getAILastAttacker() const;
 
-    void setAILastAttacker(ObjectRef objectRef) { ai.setLastAttacker(objectRef); }
+    void setAILastAttacker(ObjectRef objectRef);
 
-    ObjectRef getAIBumped() const { return ai.getBumped(); }
+    ObjectRef getAIBumped() const;
 
-    ObjectRef getAILastItemUsed() const { return ai.lastitemused; }
+    ObjectRef getAILastItemUsed() const;
 
-    void setAILastItemUsed(ObjectRef objectRef) { ai.lastitemused = objectRef; }
+    void setAILastItemUsed(ObjectRef objectRef);
 
-    ObjectRef getAILastHit() const { return ai.hitlast; }
+    ObjectRef getAILastHit() const;
 
-    void setAILastHit(ObjectRef objectRef) { ai.hitlast = objectRef; }
+    void setAILastHit(ObjectRef objectRef);
 
-    DamageType getAILastDamageType() const { return ai.damagetypelast; }
+    DamageType getAILastDamageType() const;
 
-    void setAILastDamageType(DamageType damageType) { ai.damagetypelast = damageType; }
+    void setAILastDamageType(DamageType damageType);
 
-    Facing getAILastDirection() const { return ai.directionlast; }
+    Facing getAILastDirection() const;
 
-    void setAILastDirection(Facing direction) { ai.directionlast = direction; }
+    void setAILastDirection(Facing direction);
 
-    float getAIMaxSpeed() const { return ai.maxSpeed; }
+    float getAIMaxSpeed() const;
 
-    void setAIMaxSpeed(float speed) { ai.maxSpeed = speed; }
+    void setAIMaxSpeed(float speed);
 
     bool addAIOrder(uint32_t value, uint16_t counter);
 

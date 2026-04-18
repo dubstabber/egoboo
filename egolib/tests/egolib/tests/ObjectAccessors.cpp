@@ -471,6 +471,38 @@ TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
     EXPECT_FLOAT_EQ(object->getAIMaxSpeed(), 0.75f);
 }
 
+TEST_F(ObjectAccessorFixture, AIScriptBridgeAndPublicAccessorsStayInSync)
+{
+    auto object = makeFollower(30515);
+    ASSERT_NE(object, nullptr);
+
+    auto& aiState = object->aiStateForScript();
+    aiState.poof_time = 61;
+    aiState.owner = ObjectRef(62);
+    aiState.setTarget(ObjectRef(63));
+    aiState.setLastAttacker(ObjectRef(64));
+    aiState.alert = ALERTIF_BLOCKED | ALERTIF_CHANGED;
+
+    EXPECT_EQ(object->getAIPoofTime(), 61);
+    EXPECT_EQ(object->getAIOwner(), ObjectRef(62));
+    EXPECT_EQ(object->getAITarget(), ObjectRef(63));
+    EXPECT_EQ(object->getAILastAttacker(), ObjectRef(64));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BLOCKED));
+    EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_CHANGED));
+
+    object->setAIPoofTime(71);
+    object->setAIOwner(ObjectRef(72));
+    object->setAITarget(ObjectRef(73));
+    object->setAILastAttacker(ObjectRef(74));
+    object->setAIAlertBits(ALERTIF_GRABBED);
+
+    EXPECT_EQ(aiState.poof_time, 71);
+    EXPECT_EQ(aiState.owner, ObjectRef(72));
+    EXPECT_EQ(aiState.getTarget(), ObjectRef(73));
+    EXPECT_EQ(aiState.getLastAttacker(), ObjectRef(74));
+    EXPECT_EQ(aiState.alert, ALERTIF_GRABBED);
+}
+
 TEST_F(ObjectAccessorFixture, AIOrderHelperPublishesOrderedAlertAndTracksOutstandingOrder)
 {
     auto object = makeFollower(3052);

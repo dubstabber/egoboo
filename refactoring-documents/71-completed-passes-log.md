@@ -254,6 +254,12 @@ Moved the stateful `Object` AI helper methods (`addAIOrder`, `markAIChanged`, `r
 
 Extended `ObjectAccessors.cpp` with characterization coverage for AI order publication, changed-state publication, bump-alert throttling, and the reset/spawn defaults that script execution depends on.
 
+### Pass 73 — Object AI accessor closure (2026-04-18)
+
+Moved the remaining header-inline `Object` AI accessor block (`alert/state/content/timer/poof/owner-child-target/last-hit` accessors) out of `Object.hpp` and into the split implementation beside the existing AI helper seam. Kept `aiStateForScript()` public as the only raw `ai_state_t` bridge for the legacy script runtime.
+
+Extended `ObjectAccessors.cpp` with a bridge-equivalence regression and added `ModuleUpdate.cpp` coverage pinning `GameModule::updateAllObjects()` to the public `getAIPoofTime()` termination boundary.
+
 ---
 
 ## Files touched most by this pass log
