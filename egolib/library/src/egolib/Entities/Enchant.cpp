@@ -171,11 +171,11 @@ Enchantment::~Enchantment()
             }
             else if(Ego::Attribute::isOverrideSetAttribute(modifier._type)) {
                 //remove effect completely
-                target->getTempAttributes().erase(modifier._type);
+                target->clearTempAttribute(modifier._type);
             }
             else {
                 //remove cumulative bonus/penality
-                target->getTempAttributes()[modifier._type] -= modifier._value;
+                target->adjustTempAttribute(modifier._type, -modifier._value);
             }
         }
     }
@@ -183,8 +183,8 @@ Enchantment::~Enchantment()
     //Remove boost effects from owner
     std::shared_ptr<Object> owner = _owner.lock();
     if(owner != nullptr && !owner->isTerminated()) {
-        owner->getTempAttributes()[Ego::Attribute::MANA_REGEN] -= _ownerManaSustain;
-        owner->getTempAttributes()[Ego::Attribute::LIFE_REGEN] -= _ownerLifeSustain;
+        owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -_ownerManaSustain);
+        owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, -_ownerLifeSustain);
     }
 }
 
@@ -381,7 +381,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         }
 
         //Is there no conflict?
-        if(target->getTempAttributes().find(modifier._type) == target->getTempAttributes().end()) {
+        if(!target->hasTempAttribute(modifier._type)) {
             return false;
         }
 
@@ -438,7 +438,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         //Morph is special and handled differently than others
         if(modifier._type == Ego::Attribute::MORPH) {
             //Store target's original armor
-            target->getTempAttributes()[Ego::Attribute::MORPH] = target->getSkin();
+            target->setTempAttribute(Ego::Attribute::MORPH, target->getSkin());
 
             //Transform the object
             target->polymorphObject(ObjectProfileRef(_spawnerProfileID), 0);
@@ -446,24 +446,24 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
 
         //Is it a set type?
         else if(Ego::Attribute::isOverrideSetAttribute(modifier._type)) {
-            target->getTempAttributes()[modifier._type] = modifier._value;
+            target->setTempAttribute(modifier._type, modifier._value);
         }
 
         //It's a cumulative addition
         else {
-            target->getTempAttributes()[modifier._type] += modifier._value;            
+            target->adjustTempAttribute(modifier._type, modifier._value);
         }
     }
 
     //Finally apply boost values to owner as well
     std::shared_ptr<Object> owner = _owner.lock();
     if(owner != nullptr && !owner->isTerminated()) {
-        owner->getTempAttributes()[Ego::Attribute::MANA_REGEN] += _ownerManaSustain;
-        owner->getTempAttributes()[Ego::Attribute::LIFE_REGEN] += _ownerLifeSustain;
+        owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, _ownerManaSustain);
+        owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, _ownerLifeSustain);
     }
 
     //Insert this enchantment into the Objects list of active enchants
-    target->getActiveEnchants().push_front(shared_from_this());    
+    target->addActiveEnchant(shared_from_this());
 }
 
 std::shared_ptr<Object> Enchantment::getTarget() const
@@ -490,10 +490,10 @@ void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain,
     //Update boost effects to owner
     std::shared_ptr<Object> owner = _owner.lock();
     if(owner && !owner->isTerminated()) {
-        owner->getTempAttributes()[Ego::Attribute::MANA_REGEN] -= _ownerManaSustain;
-        owner->getTempAttributes()[Ego::Attribute::LIFE_REGEN] -= _ownerLifeSustain;
-        owner->getTempAttributes()[Ego::Attribute::MANA_REGEN] += ownerManaSustain;
-        owner->getTempAttributes()[Ego::Attribute::LIFE_REGEN] += ownerLifeSustain;
+        owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -_ownerManaSustain);
+        owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, -_ownerLifeSustain);
+        owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, ownerManaSustain);
+        owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, ownerLifeSustain);
     }
     _ownerManaSustain = ownerManaSustain;
     _ownerLifeSustain = ownerLifeSustain;
@@ -503,14 +503,14 @@ void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain,
     if(target != nullptr) {
         for(EnchantModifier &modifier : _modifiers) {
             if(modifier._type == Ego::Attribute::MANA_REGEN) {
-                target->getTempAttributes()[Ego::Attribute::MANA_REGEN] -= modifier._value;
+                target->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -modifier._value);
                 modifier._value = -targetManaDrain;
-                target->getTempAttributes()[Ego::Attribute::MANA_REGEN] += modifier._value;
+                target->adjustTempAttribute(Ego::Attribute::MANA_REGEN, modifier._value);
             }
             else if(modifier._type == Ego::Attribute::LIFE_REGEN) {
-                target->getTempAttributes()[Ego::Attribute::LIFE_REGEN] -= modifier._value;
+                target->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, -modifier._value);
                 modifier._value = -targetLifeDrain;
-                target->getTempAttributes()[Ego::Attribute::LIFE_REGEN] += modifier._value;            
+                target->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, modifier._value);
             }
         }        
     }  

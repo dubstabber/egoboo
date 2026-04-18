@@ -1219,9 +1219,9 @@ uint8_t scr_SetEnchantBoostValues( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if(!pchr->getActiveEnchants().empty()) {
-        const std::shared_ptr<Ego::Enchantment> &enchant = pchr->getActiveEnchants().front();
-        if(!enchant->isTerminated()) {
+    if(pchr->hasActiveEnchants()) {
+        const std::shared_ptr<Ego::Enchantment> enchant = pchr->getFirstActiveEnchant();
+        if(enchant != nullptr && !enchant->isTerminated()) {
             enchant->setBoostValues(FP8_TO_FLOAT(state.argument), FP8_TO_FLOAT(state.distance), FP8_TO_FLOAT(state.x), FP8_TO_FLOAT(state.y));
             returncode = true;            
         }
@@ -1533,9 +1533,7 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     for(const std::shared_ptr<Object> &object : objectHandler().iterator()) {
-        for(const std::shared_ptr<Ego::Enchantment> &enchant : object->getActiveEnchants()) {
-            enchant->requestTerminate();
-        }
+        object->disenchant();
     }
 
     SCRIPT_FUNCTION_END();

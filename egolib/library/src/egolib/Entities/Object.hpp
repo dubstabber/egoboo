@@ -897,7 +897,13 @@ public:
 
     void removeEnchantsWithIDSZ(const IDSZ2& idsz);
 
-    std::forward_list<std::shared_ptr<Ego::Enchantment>>& getActiveEnchants();
+    const std::forward_list<std::shared_ptr<Ego::Enchantment>>& getActiveEnchants() const;
+
+    bool hasActiveEnchants() const;
+
+    std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const;
+
+    void addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant);
 
     /**
     * @brief
@@ -941,7 +947,15 @@ public:
 
     void setSavedShadowSize(uint32_t shadowSize) { shadow_size_save = shadowSize; }
 
-    std::unordered_map<Ego::Attribute::AttributeType, float, std::hash<uint8_t>>& getTempAttributes();
+    bool hasTempAttribute(Ego::Attribute::AttributeType type) const;
+
+    float getTempAttributeValue(Ego::Attribute::AttributeType type) const;
+
+    void setTempAttribute(Ego::Attribute::AttributeType type, float value);
+
+    void adjustTempAttribute(Ego::Attribute::AttributeType type, float delta);
+
+    void clearTempAttribute(Ego::Attribute::AttributeType type);
 
     std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const;
 

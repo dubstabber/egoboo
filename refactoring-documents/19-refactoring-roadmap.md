@@ -22,13 +22,13 @@ For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-S
 
 ## Tier 1 — In-flight (next 3–6 passes)
 
-### T1.1 Finish `Object` public-field privatization
+### T1.1 Finish `Object` mutable-seam closure
 
-Continuation of passes 52–69. The remaining public surface on `Object.hpp` (still ~1,381 lines) includes `ai`, parts of `inst` forwarding, and miscellaneous state not yet sealed behind accessors.
+Continuation of passes 52–74. The remaining `Object.hpp` debt is no longer raw public data fields; it is mutable ref-like seams and broad forwarding surfaces such as `getObjectPhysics()`, `getTeam()`, `getInventory()`, and the intentionally quarantined `aiStateForScript()` bridge.
 
 - Keep the bounded per-cluster accessor-pass cadence.
 - Add characterization coverage in `egolib/tests/egolib/tests/ObjectAccessors.cpp` as each cluster migrates.
-- Stop only when `Object.hpp` has no direct public data fields and the `ai` cluster reaches the same accessor discipline as `inst`.
+- Stop only when the remaining mutable container/reference leaks are sealed and `aiStateForScript()` is the only deliberate legacy bridge left ahead of role extraction.
 
 **Risk:** Low. Mechanical, bounded, covered by existing test harness.
 

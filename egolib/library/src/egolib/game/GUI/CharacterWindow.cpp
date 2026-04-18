@@ -421,7 +421,7 @@ void CharacterWindow::buildActiveEnchantsTab(std::shared_ptr<Tab> target) {
 
     //Count number of unique enchants and merge all others
     std::unordered_map<std::string, std::vector<std::shared_ptr<Enchantment>>> enchantCount;
-    for (const std::shared_ptr<Enchantment> &enchant : _character->getActiveEnchants()) {
+    for (const std::shared_ptr<Enchantment>& enchant : _character->getActiveEnchants()) {
         if (!enchant->getProfile()->getEnchantName().empty()) {
             enchantCount[enchant->getProfile()->getEnchantName()].push_back(enchant);
         } else {

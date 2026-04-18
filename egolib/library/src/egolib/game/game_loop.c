@@ -315,7 +315,7 @@ void show_full_status( int statindex )
     SKIN_T skinlevel = pchr->getSkin();
 
     // Enchanted?
-    DisplayMsg_printf("=%s is %s=", pchr->getName().c_str(), !pchr->getActiveEnchants().empty() ? "enchanted" : "unenchanted" );
+    DisplayMsg_printf("=%s is %s=", pchr->getName().c_str(), pchr->hasActiveEnchants() ? "enchanted" : "unenchanted" );
 
     // Armor Stats
     DisplayMsg_printf("~DEF: %d  SLASH:%3.0f%%~CRUSH:%3.0f%% POKE:%3.0f%%", pchr->getProfile()->getSkinInfo(skinlevel).defence,
@@ -345,7 +345,7 @@ void show_magic_status( int statindex )
     }
 
     // Enchanted?
-    DisplayMsg_printf("=%s is %s=", pchr->getName().c_str(), !pchr->getActiveEnchants().empty() ? "enchanted" : "unenchanted");
+    DisplayMsg_printf("=%s is %s=", pchr->getName().c_str(), pchr->hasActiveEnchants() ? "enchanted" : "unenchanted");
 
     // Enchantment status
     DisplayMsg_printf("~See Invisible: %s~~See Kurses: %s",

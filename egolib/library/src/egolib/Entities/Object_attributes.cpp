@@ -40,17 +40,16 @@ float Object::getAttribute(const Ego::Attribute::AttributeType type) const
 
     float attributeValue = _baseAttribute[type];
 
-    //Try to find temp value in map, but don't create it if it doesn't already exist
-    const auto& result = _tempAttribute.find(type);
-    if(result != _tempAttribute.end()) {
+    if (hasTempAttribute(type)) {
+        const float tempAttributeValue = getTempAttributeValue(type);
 
         //Is this a SET type attribute or a cumulative ADD type attribute?
         if(isOverrideSetAttribute(type)) {
-            return (*result).second;
+            return tempAttributeValue;
         }
         else {
             //Total value is base plus temp bonuses from enchants
-            attributeValue += (*result).second;
+            attributeValue += tempAttributeValue;
         }
     }
 
@@ -213,9 +212,24 @@ void Object::removeEnchantsWithIDSZ(const IDSZ2& idsz)
     }
 }
 
-std::forward_list<std::shared_ptr<Ego::Enchantment>>& Object::getActiveEnchants()
+const std::forward_list<std::shared_ptr<Ego::Enchantment>>& Object::getActiveEnchants() const
 {
     return _activeEnchants;
+}
+
+bool Object::hasActiveEnchants() const
+{
+    return !_activeEnchants.empty();
+}
+
+std::shared_ptr<Ego::Enchantment> Object::getFirstActiveEnchant() const
+{
+    return _activeEnchants.empty() ? nullptr : _activeEnchants.front();
+}
+
+void Object::addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant)
+{
+    _activeEnchants.push_front(enchant);
 }
 
 bool Object::disenchant()
@@ -231,9 +245,30 @@ bool Object::disenchant()
     return oneRemoved;
 }
 
-std::unordered_map<Ego::Attribute::AttributeType, float, std::hash<uint8_t>>& Object::getTempAttributes()
+bool Object::hasTempAttribute(const Ego::Attribute::AttributeType type) const
 {
-    return _tempAttribute;
+    return _tempAttribute.find(type) != _tempAttribute.end();
+}
+
+float Object::getTempAttributeValue(const Ego::Attribute::AttributeType type) const
+{
+    const auto result = _tempAttribute.find(type);
+    return result == _tempAttribute.end() ? 0.0f : result->second;
+}
+
+void Object::setTempAttribute(const Ego::Attribute::AttributeType type, const float value)
+{
+    _tempAttribute[type] = value;
+}
+
+void Object::adjustTempAttribute(const Ego::Attribute::AttributeType type, const float delta)
+{
+    _tempAttribute[type] += delta;
+}
+
+void Object::clearTempAttribute(const Ego::Attribute::AttributeType type)
+{
+    _tempAttribute.erase(type);
 }
 
 bool Object::isFlying() const

@@ -271,11 +271,11 @@ Factory (entity creation), Strategy (damage formulas / AI / render passes), Comm
 
 ### Naming
 
-Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, `prt_find_target`), transitional `camelCase` method + mixed-field types (`getProfile()` sitting next to public `fat_goto_time`), and modern `PascalCase` types with `camelCase` methods (`GameSessionContext`, `beginModule()`).
+Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, `prt_find_target`), transitional `camelCase` methods layered over legacy state terminology, and modern `PascalCase` types with `camelCase` methods (`GameSessionContext`, `beginModule()`).
 
 ### Encapsulation
 
-Passes 52–69 have been steadily moving raw public field access behind accessor methods on `Object`. Coverage so far includes: team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, and the `inst` graphics boundary. The remaining surface is narrower than in the baseline, but `Object.hpp` still exposes more state than it would if role interfaces existed.
+Passes 52–74 have steadily moved raw `Object` state behind accessor methods or narrow helpers. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, and the enchant/temp-attribute container seams. The remaining surface is now mostly broad mutable references (`getObjectPhysics()`, `getTeam()`, `getInventory()`) plus the deliberate `aiStateForScript()` compatibility bridge.
 
 ### Const correctness
 
@@ -394,7 +394,7 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 
 ## 11. Key Weaknesses
 
-1. **`Object` is still a god class by interface.** 1,381-line header, 70+ public methods, and a still-large public field surface despite ongoing accessor passes.
+1. **`Object` is still a god class by interface.** 1,381-line header, 70+ public methods, and several broad mutable seams despite the accessor passes.
 2. **Singleton proliferation persists.** ~1,150 `::get()` call sites with no abstraction boundary. Context wrappers are themselves singletons.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
@@ -413,7 +413,7 @@ These items compound the refactoring progress most efficiently given the current
 
 ### Runtime and structure
 
-1. **Continue `Object` field encapsulation toward complete privatization** — the numbered passes (52–69) are close to sealing the remaining public field surface.
+1. **Continue `Object` mutable-seam closure toward role extraction** — the numbered passes (52–74) have sealed raw field access and should now finish the remaining broad mutable seams.
 2. **Introduce role interfaces for `Object`** — `IDamageable`, `IInventoryHolder`, `IScriptable`, `IRenderable`, `IPhysical` — then migrate consumers. The encapsulation passes have prepared the ground for this.
 3. **Introduce a service-interface layer over singletons** — start with `AudioSystem` (smallest reach). This is the DIP keystone.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.

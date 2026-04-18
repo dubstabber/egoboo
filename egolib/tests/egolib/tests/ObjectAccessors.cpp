@@ -372,6 +372,51 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getHoldingWeight(), 12);
 }
 
+TEST_F(ObjectAccessorFixture, TempAttributeHelpersRoundTripPresenceValueAndClearing)
+{
+    auto object = makeFollower(344);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_FALSE(object->hasTempAttribute(Ego::Attribute::MANA_REGEN));
+    EXPECT_FLOAT_EQ(object->getTempAttributeValue(Ego::Attribute::MANA_REGEN), 0.0f);
+
+    object->setTempAttribute(Ego::Attribute::MANA_REGEN, 1.5f);
+    EXPECT_TRUE(object->hasTempAttribute(Ego::Attribute::MANA_REGEN));
+    EXPECT_FLOAT_EQ(object->getTempAttributeValue(Ego::Attribute::MANA_REGEN), 1.5f);
+
+    object->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -0.25f);
+    EXPECT_FLOAT_EQ(object->getTempAttributeValue(Ego::Attribute::MANA_REGEN), 1.25f);
+
+    object->clearTempAttribute(Ego::Attribute::MANA_REGEN);
+    EXPECT_FALSE(object->hasTempAttribute(Ego::Attribute::MANA_REGEN));
+    EXPECT_FLOAT_EQ(object->getTempAttributeValue(Ego::Attribute::MANA_REGEN), 0.0f);
+}
+
+TEST_F(ObjectAccessorFixture, EnchantHelpersExposeReadOnlyListStateAndFrontEntry)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 345);
+    auto spawner = makeObject(objectHandler, "mp_data/globalobjects/magic/truesight.obj", 346);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(spawner, nullptr);
+
+    EXPECT_FALSE(target->hasActiveEnchants());
+    EXPECT_EQ(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_TRUE(target->getActiveEnchants().empty());
+
+    const auto enchant = target->addEnchant(spawner->getProfile()->getEnchantRef(),
+                                            spawner->getProfileID().get(),
+                                            spawner,
+                                            spawner);
+    ASSERT_NE(enchant, nullptr);
+
+    EXPECT_TRUE(target->hasActiveEnchants());
+    EXPECT_FALSE(target->getActiveEnchants().empty());
+    EXPECT_EQ(target->getFirstActiveEnchant(), enchant);
+    EXPECT_EQ(target->getActiveEnchants().front(), enchant);
+    EXPECT_EQ(spawner->getLastEnchantmentSpawned(), enchant);
+}
+
 TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(305);
