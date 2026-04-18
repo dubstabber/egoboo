@@ -26,6 +26,14 @@
 #include "egolib/game/mesh.h"
 #include "egolib/Entities/_Include.hpp"
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+}
+
 const ObjectRef Passage::SHOP_NOOWNER = ObjectRef::Invalid;
 
 Passage::Passage(GameModule &module, const int x0, const int y0, const int x1, const int y1, const uint8_t mask) :
@@ -110,7 +118,7 @@ bool Passage::close()
 
         // Crush any unfortunate characters
         for(const std::shared_ptr<Object> &character : crushedCharacters) {
-            character->addAIAlertBits(ALERTIF_CRUSHED);
+            scriptable(*character).addAIAlertBits(ALERTIF_CRUSHED);
         }
     }
 

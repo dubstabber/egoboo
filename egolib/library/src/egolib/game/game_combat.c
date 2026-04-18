@@ -26,6 +26,14 @@
 #define MINTHROWVELOCITY    15.0f
 #define MAXTHROWVELOCITY    75.0f
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+}
+
 //--------------------------------------------------------------------------------------------
 bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 {
@@ -105,7 +113,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
         allowedtoattack = false;
         if ( 0 == pweapon->getReloadTimer() )
         {
-            pweapon->addAIAlertBits(ALERTIF_USED);
+            scriptable(*pweapon).addAIAlertBits(ALERTIF_USED);
         }
     }
 
@@ -132,8 +140,8 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     {
                         const ModelAction action = pmount->getProfile()->getModel()->randomizeAction(ACTION_UA);
                         pmount->playAction(action, false);
-                        pmount->addAIAlertBits(ALERTIF_USED);
-                        pchr->setAILastItemUsed(pmount->getObjRef());
+                        scriptable(*pmount).addAIAlertBits(ALERTIF_USED);
+                        scriptable(*pchr).setAILastItemUsed(pmount->getObjRef());
 
                         retval = true;
                     }
@@ -224,14 +232,14 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                 }
 
                 // let everyone know what we did
-                pchr->setAILastItemUsed(iweapon);
+                scriptable(*pchr).setAILastItemUsed(iweapon);
 
                 /// @note ZF@> why should there any reason the weapon should NOT be alerted when it is used?
                 // grab the MADFX_* flags for this action
 //                BIT_FIELD action_madfx = getProfile()->getModel()->getActionFX(action);
 //                if ( iweapon == ichr || HAS_NO_BITS( action, MADFX_ACTLEFT | MADFX_ACTRIGHT ) )
                 {
-                    pweapon->addAIAlertBits(ALERTIF_USED);
+                    scriptable(*pweapon).addAIAlertBits(ALERTIF_USED);
                 }
 
                 retval = true;
@@ -311,7 +319,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         {
             pthrown->setKursed(false);
             pthrown->setAmmo(1);
-            pthrown->addAIAlertBits(ALERTIF_THROWN);
+            scriptable(*pthrown).addAIAlertBits(ALERTIF_THROWN);
 
             // deterimine the throw velocity
             float velocity = MINTHROWVELOCITY;

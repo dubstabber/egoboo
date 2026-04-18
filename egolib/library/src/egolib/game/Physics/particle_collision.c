@@ -55,6 +55,11 @@ const IPhysical& physical(const Object& object)
 {
     return object;
 }
+
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
 }
 
 //Private functions
@@ -695,7 +700,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     // Do grog
     if (pdata.ppip->grogTime > 0 && pdata.pchr->getProfile()->canBeGrogged())
     {
-        pdata.pchr->addAIAlertBits(ALERTIF_CONFUSED);
+        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setGrogTimer(std::max(static_cast<unsigned>(pdata.pchr->getGrogTimer()), pdata.ppip->grogTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Groggy!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -704,7 +709,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     // Do daze
     if (pdata.ppip->dazeTime > 0 && pdata.pchr->getProfile()->canBeDazed())
     {
-        pdata.pchr->addAIAlertBits(ALERTIF_CONFUSED);
+        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setDazeTimer(std::max(static_cast<unsigned>(pdata.pchr->getDazeTimer()), pdata.ppip->dazeTime));
 
         GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Dazed!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -739,7 +744,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     {
                         //Is the particle spawned by a gun?
                         if(spawnerProfile->isRangedWeapon() && spawnerProfile->getIDSZ(IDSZ_SKILL).equals('T','E','C','H')) {
-                            pdata.pchr->addAIAlertBits(ALERTIF_CONFUSED);
+                            scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
                             pdata.pchr->setDazeTimer(pdata.pchr->getDazeTimer() + 3);
 
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Crackshot!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -748,7 +753,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
                     //Brutal Strike has chance to inflict 2 second Grog with melee CRUSH attacks
                     if(pdata.pchr->getProfile()->canBeGrogged() && powner->hasPerk(Ego::Perks::BRUTAL_STRIKE) && spawnerProfile->isMeleeWeapon() && pdata.pprt->damagetype == DAMAGE_CRUSH) {
-                        pdata.pchr->addAIAlertBits(ALERTIF_CONFUSED);
+                        scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_CONFUSED);
                         pdata.pchr->setGrogTimer(pdata.pchr->getGrogTimer() + 2);
 
                         GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
@@ -789,17 +794,17 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 }
 
                 // Notify the attacker of a scored hit
-                powner->addAIAlertBits(ALERTIF_SCOREDAHIT);
-                powner->setAILastHit(pdata.pchr->getObjRef());
+                scriptable(*powner).addAIAlertBits(ALERTIF_SCOREDAHIT);
+                scriptable(*powner).setAILastHit(pdata.pchr->getObjRef());
 
                 // Tell the weapons who the attacker hit last
                 bool meleeAttack = false;
                 const std::shared_ptr<Object> &leftHanditem = powner->getRightHandItem();
                 if (leftHanditem)
                 {
-                    leftHanditem->setAILastHit(pdata.pchr->getObjRef());
+                    scriptable(*leftHanditem).setAILastHit(pdata.pchr->getObjRef());
                     if (powner->getAILastItemUsed() == leftHanditem->getObjRef()) {
-                        leftHanditem->addAIAlertBits(ALERTIF_SCOREDAHIT);  
+                        scriptable(*leftHanditem).addAIAlertBits(ALERTIF_SCOREDAHIT);  
                         if(leftHanditem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !leftHanditem->getProfile()->isRangedWeapon()) {
                             meleeAttack = true;
                         }
@@ -809,9 +814,9 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 const std::shared_ptr<Object> &rightHandItem = powner->getRightHandItem();
                 if (rightHandItem)
                 {
-                    rightHandItem->setAILastHit(pdata.pchr->getObjRef());
+                    scriptable(*rightHandItem).setAILastHit(pdata.pchr->getObjRef());
                     if (powner->getAILastItemUsed() == rightHandItem->getObjRef()) {
-                        rightHandItem->addAIAlertBits(ALERTIF_SCOREDAHIT);  
+                        scriptable(*rightHandItem).addAIAlertBits(ALERTIF_SCOREDAHIT);  
                         if(rightHandItem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !rightHandItem->getProfile()->isRangedWeapon()) {
                             meleeAttack = true;
                         }
@@ -863,7 +868,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     modifiedDamage.base = ( modifiedDamage.base << 1 );
                     modifiedDamage.rand = ( modifiedDamage.rand << 1 ) | 1;
 
-                    pdata.pchr->addAIAlertBits(ALERTIF_HITVULNERABLE);
+                    scriptable(*pdata.pchr).addAIAlertBits(ALERTIF_HITVULNERABLE);
 
                     // Initialize for the billboard
                     GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Super Effective!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);

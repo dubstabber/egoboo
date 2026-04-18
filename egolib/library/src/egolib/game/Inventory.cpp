@@ -14,6 +14,11 @@ auto& objectHandler()
     return GameSessionContext::get().activeModule().getObjectHandler();
 }
 
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+
 ObjectRef hasStack(const std::shared_ptr<Object>& item, const IInventoryHolder& owner)
 {
     if (!item || !item->getProfile()->isStackable())
@@ -128,7 +133,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
 	if (item->isKursed() && !ignoreKurse)
 	{
 		// Flag the item as not put away.
-		item->addAIAlertBits(ALERTIF_NOTPUTAWAY);
+		scriptable(*item).addAIAlertBits(ALERTIF_NOTPUTAWAY);
 		if (owner.isPlayer()) DisplayMsg_printf("%s is sticky...", item->getName().c_str());
 		return false;
 	}
@@ -136,7 +141,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
     // too big item?
 	if (item->getProfile()->isBigItem())
 	{
-		item->addAIAlertBits(ALERTIF_NOTPUTAWAY);
+		scriptable(*item).addAIAlertBits(ALERTIF_NOTPUTAWAY);
 		if (owner.isPlayer()) DisplayMsg_printf("%s is too big to be put away...", item->getName().c_str());
 		return false;
 	}
@@ -177,7 +182,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
             // Only some were transfered,
             item->setAmmo(item->getAmmo() + pstack->getAmmo() - pstack->getAmmoMax());
             pstack->setAmmo(pstack->getAmmoMax());
-            objectHandler().get(owner.getObjRef())->addAIAlertBits(ALERTIF_TOOMUCHBAGGAGE);
+            scriptable(*objectHandler().get(owner.getObjRef())).addAIAlertBits(ALERTIF_TOOMUCHBAGGAGE);
         }
     }
     else
@@ -194,7 +199,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
         item->detatchFromHolder(true, false);
 
         // clear the dropped flag
-        item->clearAIAlertBits(ALERTIF_DROPPED);
+        scriptable(*item).clearAIAlertBits(ALERTIF_DROPPED);
 
         //Do not trigger dismount logic on putting items into inventory
         item->setDismountObject(ObjectRef::Invalid);
@@ -208,7 +213,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
         // fix the flags
 		if (item->getProfile()->isEquipment())
 		{
-			item->addAIAlertBits(ALERTIF_PUTAWAY);  // same as ALERTIF_ATLASTWAYPOINT;
+			scriptable(*item).addAIAlertBits(ALERTIF_PUTAWAY);  // same as ALERTIF_ATLASTWAYPOINT;
 		}
 
         //@todo: add in the equipment code here
@@ -251,7 +256,7 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
     {
         if(item && item->isKursed()) {
             // Flag the last found_item as not put away
-            item->addAIAlertBits(ALERTIF_NOTPUTAWAY);  // Same as ALERTIF_NOTTAKENOUT
+            scriptable(*item).addAIAlertBits(ALERTIF_NOTPUTAWAY);  // Same as ALERTIF_NOTTAKENOUT
             if ( owner.isPlayer() ) DisplayMsg_printf("%s is sticky...", item->getName().c_str());
             return false;
 
@@ -259,7 +264,7 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
 
         if(inventory_item && inventory_item->isKursed()) {
             // Flag the last found_item as not removed
-            inventory_item->addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
+            scriptable(*inventory_item).addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
             if ( owner.isPlayer() ) DisplayMsg_printf( "%s won't go out!", inventory_item->getName().c_str() );
             return false;
 
@@ -273,8 +278,8 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
         inventory_item->attachToObject(objectHandler()[owner.getObjRef()], grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
         //fix flags
-        inventory_item->clearAIAlertBits(ALERTIF_GRABBED);
-        inventory_item->addAIAlertBits(ALERTIF_TAKENOUT);
+        scriptable(*inventory_item).clearAIAlertBits(ALERTIF_GRABBED);
+        scriptable(*inventory_item).addAIAlertBits(ALERTIF_TAKENOUT);
     }
 
     //put the new item in the inventory
@@ -370,7 +375,7 @@ bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignor
             if (item->isKursed() && !ignorekurse)
             {
                 //Flag the item as not removed
-                item->addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
+                scriptable(*item).addAIAlertBits(ALERTIF_NOTTAKENOUT);  // Same as ALERTIF_NOTPUTAWAY
                 DisplayMsg_printf( "%s won't go out!", item->getName().c_str());
                 return false;
             }

@@ -39,6 +39,11 @@ GameEngine& engine()
 {
     return EngineContext::get().engine();
 }
+
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
 }
 
 namespace Ego
@@ -253,7 +258,7 @@ void ObjectPhysics::updateVelocityZ()
         _object.setJumpReady(true);
 
         if (_object.getVelocity().z() < -Ego::Physics::STOP_BOUNCING && _object.isHitReady()) {
-            _object.addAIAlertBits(ALERTIF_HITGROUND);
+            scriptable(_object).addAIAlertBits(ALERTIF_HITGROUND);
             _object.setHitReady(false);
         }
 
@@ -502,7 +507,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
 
     // tell the platform that we bumped into it
     // this is necessary for key buttons to work properly, for instance
-    platform->recordAIBump(_object.getObjRef());
+    scriptable(*platform).recordAIBump(_object.getObjRef());
 
     return true;
 }
@@ -823,7 +828,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
                                     bestMatch->getVelocity().y(),
                                     Object::DROPZVEL});
             bestMatch->setHitReady(true);
-            bestMatch->addAIAlertBits(ALERTIF_DROPPED);
+            scriptable(*bestMatch).addAIAlertBits(ALERTIF_DROPPED);
         }
     }
 
@@ -930,7 +935,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
 
         // Set the alert
         if (_object.isAlive()) {
-            _object.addAIAlertBits(ALERTIF_GRABBED);
+            scriptable(_object).addAIAlertBits(ALERTIF_GRABBED);
         }
 
         // Lore Master perk identifies everything
@@ -948,7 +953,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
         // Set the alert
         if (!holder->isItem() && holder->isAlive())
         {
-            holder->addAIAlertBits(ALERTIF_GRABBED);
+            scriptable(*holder).addAIAlertBits(ALERTIF_GRABBED);
         }
     }
 

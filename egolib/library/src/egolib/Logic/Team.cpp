@@ -28,6 +28,14 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+}
+
 Team::Team(const TEAM_REF teamID) :
     _teamID(teamID),
     _leader(),
@@ -88,7 +96,7 @@ void Team::callForHelp(const std::shared_ptr<Object> &caller)
     {
         if ( chr != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
         {
-            chr->addAIAlertBits(ALERTIF_CALLEDFORHELP);
+            scriptable(*chr).addAIAlertBits(ALERTIF_CALLEDFORHELP);
         }
     }
 }
