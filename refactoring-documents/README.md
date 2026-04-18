@@ -24,7 +24,7 @@ This directory has three kinds of documents: **reference** (how the project is s
 ## History
 
 - [`70-documentation-consolidation.md`](70-documentation-consolidation.md) — meta-record of this documentation consolidation pass (2026-04-18).
-- [`71-completed-passes-log.md`](71-completed-passes-log.md) — chronological log of the ~50 per-pass refactors from 2026-04-13 through 2026-04-17, grouped by theme (spawn/validator, runtime context wrappers, module runtime ownership, player startup, local-player session ownership, local-stats retirement, Object/ObjectGraphics encapsulation). The former per-pass documents (10–16, 20–21, 23–24, 26–31, 34–45, 47–69) are preserved in git history at their original paths.
+- [`71-completed-passes-log.md`](71-completed-passes-log.md) — chronological log of the numbered refactors from 2026-04-13 through 2026-04-18, grouped by theme (spawn/validator, runtime context wrappers, module runtime ownership, player startup, local-player session ownership, local-stats retirement, `Object`/`ObjectGraphics` encapsulation, and `Object` role extraction). The former per-pass documents (10–16, 20–21, 23–24, 26–31, 34–45, 47–69) are preserved in git history at their original paths; later passes append directly to this log.
 
 ## How to add to this directory
 

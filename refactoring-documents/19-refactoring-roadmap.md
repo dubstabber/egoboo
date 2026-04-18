@@ -5,7 +5,7 @@ Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 202
 - `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
 - `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
 - `25-entity-layer-decomposition-plan.md` (phases 1–3 complete; `Object.cpp` / `ObjectProfile.cpp` / `Particle.cpp` all split)
-- `33-maintainability-improvement-plan.md` (Tier 1.1 context-wrapper migration complete; Tier 1.2 Object-field encapsulation in-flight — see passes 52–69 in `71-completed-passes-log.md`)
+- `33-maintainability-improvement-plan.md` (Tier 1.1 context-wrapper migration complete; Tier 1.2 `Object` seam closure and role extraction in flight — see passes 72–79 in `71-completed-passes-log.md`)
 
 For the current-state snapshot that underpins this plan, read `CODEBASE-HEALTH-STATUS.md`. For the completed work that got us here, read `71-completed-passes-log.md`.
 
@@ -33,17 +33,27 @@ Passes 75 and 76 completed the remaining broad inventory/team seams, so T1.1 is 
 
 ### T1.2 Introduce `Object` role interfaces
 
-Once T1.1 lands, the public surface is small enough to extract role-based abstract interfaces without churn:
+Role extraction is now underway. The public `Object` surface is small enough to keep peeling off bounded interfaces without reopening the earlier field-access work.
+
+Landed so far:
+
+- `IInventoryHolder` — equipment, held, inventory slot access
+- `IRenderable` — render-facing surface (matrix cache, tint, model descriptor)
+- `IScriptable` — script-visible state and commands
+
+Still to land:
 
 - `IDamageable` — combat damage application surface
-- `IInventoryHolder` — equipment, held, inventory slot access
-- `IScriptable` — script-visible state and commands
-- `IRenderable` — render-facing surface (matrix cache, tint, model descriptor)
 - `IPhysical` — collision volume, orientation, bumper state
 
-Migrate callers by role. This is the SRP/ISP keystone for `Object`.
+Follow-on work inside this tier:
 
-**Risk:** Medium. Requires careful caller-by-caller migration; each role interface should land in its own pass.
+- Migrate more callers to the landed role surfaces instead of `Object`.
+- Keep `aiStateForScript()` quarantined on `Object` until `Script/script.c` no longer consumes raw `ai_state_t`.
+
+This remains the SRP/ISP keystone for `Object`.
+
+**Risk:** Medium. The pattern is established now, but the remaining caller migration still needs careful, role-by-role passes.
 
 ### T1.3 Service-interface layer over singletons
 

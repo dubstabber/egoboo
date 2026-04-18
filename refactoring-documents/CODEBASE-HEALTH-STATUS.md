@@ -13,16 +13,16 @@ Snapshot date: 2026-04-18. This document is intentionally standalone — it does
 
 ## 1. Executive Summary
 
-The codebase is in an **active, well-managed transitional state**. The original C dungeon crawler is being incrementally modernized to C++, and the completed refactoring passes (roughly fifty in-repo passes so far) have landed real structural wins:
+The codebase is in an **active, well-managed transitional state**. The original C dungeon crawler is being incrementally modernized to C++, and the completed refactoring passes (dozens of in-repo passes so far) have landed real structural wins:
 
 - The two biggest global-state boundaries — `_currentModule` and `_gameEngine` — are fully retired from active runtime code. Remaining mentions are confined to legacy comments, debug labels, and a terminology-only `update_wld` residue in three files.
 - Every historically oversized translation unit has been file-split. No file in the active tree exceeds 2,500 lines.
-- File splitting, context wrappers, and accessor encapsulation work is now progressing into the interior of the `Object` god class rather than the runtime boundary.
+- File splitting, context wrappers, and accessor encapsulation work have now progressed into early role extraction on the `Object` god class rather than stopping at the runtime boundary.
 - A native validator tool exists, content parser tests exist, and module load/spawn smoke tests exist.
 
 Core design debt that remains:
 
-- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes (52–69) are progressively moving raw field access behind accessors rather than extracting role interfaces.
+- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and role-extraction passes 77 through 79 have started peeling off `IInventoryHolder`, `IRenderable`, and `IScriptable`, but `Object` still owns too much surface.
 - Singleton access is still pervasive (~1,150 `::get()` call sites) and no service-interface or DI layer exists yet.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
@@ -85,16 +85,16 @@ Fourteen files remain over the 1k-line threshold, down from fifteen at the basel
 | File                                              |  Lines | Role                                       |
 | ------------------------------------------------- | -----: | ------------------------------------------ |
 | `egolib/vfs.c`                                    |  2,445 | Virtual file system (largest TU in tree)   |
-| `game/script_functions_systems.c`                 |  2,128 | Script dispatch (systems subset)           |
+| `game/script_functions_systems.c`                 |  2,126 | Script dispatch (systems subset)           |
 | `game/script_functions_target.c`                  |  1,776 | Script dispatch (target subset)            |
 | `game/script_functions_state.c`                   |  1,551 | Script dispatch (state subset)             |
 | `game/Physics/particle_collision.c`               |  1,480 | Particle collision                         |
 | `game/Graphics/ObjectGraphics.cpp`                |  1,459 | Object rendering                           |
-| `tests/egolib/tests/ObjectAccessors.cpp`          |  1,400 | Accessor regression tests                  |
-| `Entities/Object.hpp`                             |  1,381 | Core entity — still monolithic by interface |
+| `tests/egolib/tests/ObjectAccessors.cpp`          |  1,957 | Accessor regression tests                  |
+| `Entities/Object.hpp`                             |  1,527 | Core entity — still monolithic by interface |
 | `game/mesh.c`                                     |  1,370 | Mesh management                            |
 | `fileutil.c`                                      |  1,339 | File utilities                             |
-| `game/script_functions_spawn.c`                   |  1,181 | Script dispatch (spawn subset)             |
+| `game/script_functions_spawn.c`                   |  1,194 | Script dispatch (spawn subset)             |
 | `game/script_compile.c`                           |  1,147 | Script compiler                            |
 | `game/Physics/ObjectPhysics.cpp`                  |  1,097 | Object physics                             |
 | `Script/script.c`                                 |  1,064 | Script runtime                             |
@@ -110,7 +110,7 @@ Fourteen files remain over the 1k-line threshold, down from fifteen at the basel
 | `Entities/Particle.cpp`            |      1,447 | Five files: `Particle_{core,combat,spawn,update}.cpp` + `ParticleHandler.cpp`                                        |
 | `game/Module/Module.cpp`           |      1,225 | Seven files under `Module/`: `Module.cpp` (105) + `Module_{bootstrap,loading,spawn,spawn_plan,spawn_realization,update}.cpp` |
 
-These splits have not changed the interfaces that callers see — `Object.hpp` is still 1,381 lines and exposes a large surface. The splits made compilation and navigation tractable; the interface decomposition is still ahead.
+These splits made compilation and navigation tractable, but they did not finish the interface problem. `Object.hpp` is still 1,527 lines, and the remaining work is to continue moving callers onto the newer role interfaces instead of the concrete `Object` type.
 
 ### Deeply nested / switch-heavy regions
 
@@ -364,7 +364,7 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 | DIP adherence              | 2 / 5   |   ↗   | Context wrappers adopted; singleton abstraction not yet             |
 | Design pattern quality     | 2.5/5   |   →   | State/Iterator well done; Factory/Strategy/Observer missing         |
 | Naming consistency         | 2.5/5   |   →   | Three naming eras coexist                                            |
-| Encapsulation              | 2.5/5   |   ↗   | Object-field accessor passes 52–69 moving state behind accessors    |
+| Encapsulation              | 2.5/5   |   ↗   | Accessor closure plus early role extraction on `Object`             |
 | Error handling             |  2/5    |   →   | Three competing strategies, no documented policy                    |
 | Smart pointer discipline   | 2.5/5   |   →   | `shared_ptr` over-used, `unique_ptr` under-used                     |
 | Test coverage              |  2/5    |   ↗   | From ~1% → ~3.6%; parsers, module smoke, accessor regression tests  |
@@ -385,7 +385,7 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 
 1. **Global-state boundary eliminated.** `_currentModule` and `_gameEngine` are no longer direct dependencies from any runtime code.
 2. **File splitting is working.** Every former oversized TU has been decomposed; no active file exceeds 2,500 lines.
-3. **Encapsulation discipline is sustained.** The numbered passes demonstrate an incremental, verified approach to reducing raw field access on `Object`.
+3. **Encapsulation discipline is sustained.** The numbered passes show an incremental, verified path from raw field access toward explicit `Object` role seams.
 4. **Game state machine is clean.** The `GameState` hierarchy remains the model of how the rest of the codebase should eventually look.
 5. **Entity container is well-designed.** `ObjectHandler` with RAII iterator locking and quad-tree spatial queries is solid.
 6. **Build system makes structure visible.** Explicit per-subsystem source lists are in place even though link-level modularization is still ahead.
@@ -394,7 +394,7 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 
 ## 11. Key Weaknesses
 
-1. **`Object` is still a god class by interface.** 1,381-line header, 70+ public methods, and several broad mutable seams despite the accessor passes.
+1. **`Object` is still a god class by interface.** ~1.5k-line header, 70+ public methods, and only partial role extraction despite the accessor passes.
 2. **Singleton proliferation persists.** ~1,150 `::get()` call sites with no abstraction boundary. Context wrappers are themselves singletons.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
@@ -413,7 +413,7 @@ These items compound the refactoring progress most efficiently given the current
 
 ### Runtime and structure
 
-1. **Introduce role interfaces for `Object`** — `IDamageable`, `IInventoryHolder`, `IScriptable`, `IRenderable`, `IPhysical` — then migrate consumers. The encapsulation passes have prepared the ground for this.
+1. **Continue role-interface extraction for `Object`** — land `IDamageable` and `IPhysical`, then keep migrating consumers onto the already-landed `IInventoryHolder`, `IRenderable`, and `IScriptable` seams.
 2. **Close the remaining deliberate script bridge and alias-style handles on `Object`** — keep `aiStateForScript()` and similar handle-return seams isolated while role extraction proceeds.
 3. **Introduce a service-interface layer over singletons** — start with `AudioSystem` (smallest reach). This is the DIP keystone.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.
@@ -437,7 +437,7 @@ These items compound the refactoring progress most efficiently given the current
 - Build/run baseline (Windows cross): `doc/build-windows.md`
 - Content-validator baseline (pre-existing failures): `06-validator-baseline.md`
 - Spawn / data format contracts: `08-spawn-format-spec.md`, `09-data-format-spec.md`
-- Chronological record of completed passes 10–69 (runtime context, module ownership, player startup, local-stats retirement, `Object`/`ObjectGraphics` encapsulation): `71-completed-passes-log.md`
+- Chronological record of completed passes 10–79 (runtime context, module ownership, player startup, local-stats retirement, `Object`/`ObjectGraphics` encapsulation, and initial `Object` role extraction): `71-completed-passes-log.md`
 - Meta-record of the 2026-04-18 documentation consolidation that collapsed ~50 per-pass docs and four overlapping plans: `70-documentation-consolidation.md`
 
 The quantitative snapshots in the retired documents (17, 18, 32, 46) are preserved in git history and in `01-repository-and-build-audit.md` / the README refresh timestamps, so they remain available for trend analysis without being the active health reference.
