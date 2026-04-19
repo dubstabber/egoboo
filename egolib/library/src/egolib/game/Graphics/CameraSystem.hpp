@@ -51,7 +51,7 @@ public:
 	void updateAll( const ego_mesh_t * mesh );
 	void resetAllTargets( const ego_mesh_t * mesh );
 
-	egolib_rv renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction);
+	void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction);
 
 	/**
 	 * @brief

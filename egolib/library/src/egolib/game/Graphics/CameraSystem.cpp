@@ -93,10 +93,11 @@ void CameraSystem::resetAllTargets( const ego_mesh_t * mesh )
     }
 }
 
-egolib_rv CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction)
+void CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction)
 {
-    if ( NULL == renderFunction ) {
-        return rv_error;
+    if (!renderFunction)
+    {
+        throw idlib::argument_null_error(__FILE__, __LINE__, "renderFunction");
     }
 
     //Store main camera to restore
@@ -129,7 +130,6 @@ egolib_rv CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, st
     // reset the "global" camera pointer to whatever it was
     _mainCamera = storeMainCam;
 
-    return rv_success;
 }
 
 size_t CameraSystem::getCameraIndex(ObjectRef targetRef) const {

@@ -75,8 +75,9 @@ This remains the SRP/ISP keystone for `Object`.
 
 Three strategies still coexist: C++ exceptions (~290 throw sites, ~76 try/catch), `egolib_rv` return codes, silent failure. Deliverables:
 
-- Write `doc/error-handling-policy.md` defining: exceptions for exceptional (construction failure, invariant violation), return codes/`std::optional` for expected-failure paths at boundaries, no silent failure.
-- Retire `egolib_rv` from C++ code paths one subsystem at a time, starting with the smallest.
+- Landed: `doc/error-handling-policy.md` now defines exceptions for exceptional paths, ordinary return values for expected boundary outcomes, and a no-new-silent-failure rule.
+- Started C++ `egolib_rv` retirement with the smallest public seam: `CameraSystem::renderAll()` now treats a missing render callback as invalid input rather than returning a legacy status code.
+- Continue retiring `egolib_rv` from C++ code paths one subsystem at a time, preserving meaningful tri-state semantics where they still exist.
 
 **Risk:** Low for policy doc; medium for `egolib_rv` retirement (touches a lot of code).
 

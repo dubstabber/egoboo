@@ -534,6 +534,16 @@ Extended `ScriptTargetFunctions.cpp` with focused regressions for scriptable sel
 
 ---
 
+## Theme 8 — Error-handling policy and first C++ `egolib_rv` retirement (2026-04-19)
+
+### Pass 119 — Error-handling policy and camera render seam (2026-04-19)
+
+Started Tier 1.4 by adding `doc/error-handling-policy.md` and documenting the forward policy: exceptions for exceptional or invalid-call paths, ordinary return values for expected boundary outcomes, and no new silent failure. Retired `egolib_rv` from the smallest public C++ seam by changing `CameraSystem::renderAll()` to `void` and treating a missing render callback as `idlib::argument_null_error` instead of a legacy status return.
+
+Kept broader `gfx_rv` / tri-state graphics paths (`ObjectGraphics`, `CharacterMatrix`, and other C-era render helpers) out of scope. Acceptance for this pass is the build plus focused runtime render smoke, since `CameraSystem` construction still depends on the live graphics system and does not currently expose a lightweight unit-test seam.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
