@@ -380,6 +380,61 @@ TEST_F(ObjectAccessorFixture, TeamIntentCallForHelpPublishesCallerOnCurrentTeam)
     EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getSissy(), caller);
 }
 
+TEST_F(ObjectAccessorFixture, TeamMemberRoleSurfaceSupportsTeamMutationLeadershipAndTeamExperience)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/players/rogue.obj", 3024);
+    auto ally = makeObject(objectHandler, "mp_data/globalobjects/players/rogue.obj", 3025);
+    ASSERT_NE(object, nullptr);
+    ASSERT_NE(ally, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    Team& goodTeam = module.getTeamList()[Team::TEAM_GOOD];
+    Team& evilTeam = module.getTeamList()[Team::TEAM_EVIL];
+
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    ally->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    ally->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setItem(false);
+    object->setInvincible(false);
+    object->_isAlive = true;
+    ally->setItem(false);
+    ally->setInvincible(false);
+    ally->_isAlive = true;
+
+    ITeamMember& teamRole = *object;
+    teamRole.setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_EQ(object->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_EQ(object->getBaseTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    evilTeam.setLeader(Object::INVALID_OBJECT);
+    teamRole.becomeTeamLeader();
+    EXPECT_EQ(evilTeam.getLeader(), object);
+
+    teamRole.setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    goodTeam.setLeader(Object::INVALID_OBJECT);
+    teamRole.becomeTeamLeader();
+    teamRole.giveTeamExperience(64, XP_TEAMKILL);
+}
+
+TEST_F(ObjectAccessorFixture, WalletRoleSurfaceSupportsBoundedMoneyQueriesAndMutations)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3027);
+    ASSERT_NE(object, nullptr);
+
+    IWallet& wallet = *object;
+    wallet.giveMoney(150);
+    EXPECT_EQ(wallet.getMoney(), 150);
+
+    wallet.giveMoney(-25);
+    EXPECT_EQ(wallet.getMoney(), 125);
+
+    wallet.dropMoney(40);
+    EXPECT_EQ(wallet.getMoney(), 85);
+}
+
 TEST_F(ObjectAccessorFixture, RespawnRestoresMoraleAndClaimsLeadershipWhenUnset)
 {
     auto& objectHandler = beginActiveTestModule();

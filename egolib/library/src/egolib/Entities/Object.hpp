@@ -36,7 +36,9 @@
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
+#include "egolib/Entities/ITeamMember.hpp"
 #include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/IWallet.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
@@ -87,7 +89,9 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IPhysical,
                public IRenderable,
                public IScriptable,
+               public ITeamMember,
                public ITargetInfo,
+               public IWallet,
                public std::enable_shared_from_this<Object>
 {
 public:
@@ -176,11 +180,11 @@ public:
     **/
     const Team& getTeam() const;
 
-    void becomeTeamLeader();
+    void becomeTeamLeader() override;
 
     void callTeamForHelp();
 
-    void giveTeamExperience(int amount, XPType type) const;
+    void giveTeamExperience(int amount, XPType type) const override;
 
     TEAM_REF getTeamRef() const override { return team; }
 
@@ -1098,7 +1102,7 @@ public:
     * @brief
     *   Changes the team of this Object to another team
     **/
-    void setTeam(TEAM_REF team, bool permanent = true);
+    void setTeam(TEAM_REF team, bool permanent = true) override;
 
     /**
     * @brief
@@ -1144,13 +1148,13 @@ public:
     * @param amount
     *   The amount to add or subtract (if negative)
     **/
-    void giveMoney(int amount);
+    void giveMoney(int amount) override;
 
     /**
     * @return
     *   The amount of money (zennies) this Object currently has
     **/
-    uint16_t getMoney() const;
+    uint16_t getMoney() const override;
 
     /**
     * @brief
@@ -1160,7 +1164,7 @@ public:
     *   The amount of money to be dropped. If this is more than the max money,
     *   then all available money will be dropped
     **/
-    void dropMoney(int amount);
+    void dropMoney(int amount) override;
 
     bool canBeGrogged() const override { return getProfile() && getProfile()->canBeGrogged(); }
 

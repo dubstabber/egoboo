@@ -698,4 +698,110 @@ TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseChar
     EXPECT_TRUE(target->hasPerk(Ego::Perks::NIGHT_VISION));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5681);
+    auto target = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5682);
+    auto ally = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5683);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(ally, nullptr);
+
+    actor->setItem(false);
+    actor->setInvincible(false);
+    target->setItem(false);
+    target->setInvincible(false);
+    ally->setItem(false);
+    ally->setInvincible(false);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_TRUE(scr_JoinTargetTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    state.argument = static_cast<int>(Team::TEAM_GOOD);
+    EXPECT_TRUE(scr_JoinTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+
+    EXPECT_TRUE(scr_TargetJoinTeam(state, self));
+    EXPECT_EQ(target->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_NULL));
+    EXPECT_TRUE(scr_JoinGoodTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+
+    EXPECT_TRUE(scr_JoinEvilTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    EXPECT_TRUE(scr_JoinNullTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_NULL));
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    ally->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    EXPECT_TRUE(scr_BecomeLeader(state, self));
+    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getLeader(), actor);
+    EXPECT_TRUE(scr_IfLeaderIsAlive(state, self));
+
+    state.argument = 96;
+    state.distance = static_cast<int>(XP_TEAMKILL);
+    EXPECT_TRUE(scr_GiveExperienceToTargetTeam(state, self));
+
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    state.argument = 48;
+    EXPECT_TRUE(scr_GiveExperienceToGoodTeam(state, self));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserveClampSemantics)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5691);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5692);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->giveMoney(100);
+    target->giveMoney(40);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    state.argument = 30;
+    EXPECT_TRUE(scr_GiveMoneyToTarget(state, self));
+    EXPECT_EQ(state.argument, 30);
+    EXPECT_EQ(actor->getMoney(), 70);
+    EXPECT_EQ(target->getMoney(), 70);
+
+    state.argument = 500;
+    EXPECT_TRUE(scr_GiveMoneyToTarget(state, self));
+    EXPECT_EQ(state.argument, 70);
+    EXPECT_EQ(actor->getMoney(), 0);
+    EXPECT_EQ(target->getMoney(), 140);
+
+    target->giveMoney(-90);
+    state.argument = -200;
+    EXPECT_TRUE(scr_GiveMoneyToTarget(state, self));
+    EXPECT_EQ(state.argument, -50);
+    EXPECT_EQ(actor->getMoney(), 50);
+    EXPECT_EQ(target->getMoney(), 0);
+
+    state.argument = 15;
+    EXPECT_TRUE(scr_DropTargetMoney(state, self));
+    EXPECT_EQ(target->getMoney(), 0);
+
+    actor->giveMoney(60);
+    state.argument = 20;
+    EXPECT_TRUE(scr_DropMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), 90);
+
+    state.argument = 33;
+    EXPECT_TRUE(scr_SetMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), 33);
+}
+
 } // namespace

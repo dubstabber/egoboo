@@ -21,6 +21,21 @@ ICharacterState& characterState(Object& object)
     return object;
 }
 
+ITeamMember& teamMember(Object& object)
+{
+    return object;
+}
+
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return object;
+}
+
+IWallet& wallet(Object& object)
+{
+    return object;
+}
+
 int restockAmmoIfMatching(const std::shared_ptr<Object>& item, const IDSZ2& idsz)
 {
     if (!item || !item->getProfile()->hasTypeIDSZ(idsz))
@@ -80,16 +95,14 @@ uint8_t scr_JoinTargetTeam( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character join a different team.  Used
     /// mostly for pets
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
     returncode = false;
-    if ( objectHandler().exists( self.getTarget() ) )
+    const ITargetInfo* targetTeamInfo = tryTargetInfo(self.getTarget());
+    ITeamMember& selfTeamMember = teamMember(*pchr);
+    if ( targetTeamInfo != nullptr )
     {
-        pchr->setTeam(pself_target->getTeamRef());
+        selfTeamMember.setTeam(targetTeamInfo->getTeamRef());
         returncode = true;
     }
 
@@ -320,7 +333,7 @@ uint8_t scr_BecomeLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->becomeTeamLeader();
+    teamMember(*pchr).becomeTeamLeader();
 
     SCRIPT_FUNCTION_END();
 }
@@ -359,23 +372,26 @@ uint8_t scr_GiveMoneyToTarget( script_state_t& state, ai_state_t& self )
     /// @details This function increases the target's money, while decreasing the
     /// character's own money.  tmpargument is set to the amount transferred
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IWallet* targetWallet = tryWallet(self.getTarget());
+    IWallet& selfWallet = wallet(*pchr);
+    if (targetWallet == nullptr)
+    {
+        return false;
+    }
 
     //squash out-or-range values
-    if(state.argument < 0 && std::abs(state.argument) > pself_target->getMoney()) {
-        state.argument = -pself_target->getMoney();
+    if(state.argument < 0 && std::abs(state.argument) > targetWallet->getMoney()) {
+        state.argument = -targetWallet->getMoney();
     }
-    if(state.argument > pchr->getMoney()) {
-        state.argument = pchr->getMoney();
+    if(state.argument > selfWallet.getMoney()) {
+        state.argument = selfWallet.getMoney();
     }
 
     //Do the transfer
-    pchr->giveMoney(-state.argument);
-    pself_target->giveMoney(state.argument);
+    selfWallet.giveMoney(-state.argument);
+    targetWallet->giveMoney(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -390,7 +406,7 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( activeModule().getTeamList()[pchr->getTeamRef()].getLeader() != nullptr );
+    returncode = ( activeModule().getTeamList()[targetInfo(*pchr).getTeamRef()].getLeader() != nullptr );
 
     SCRIPT_FUNCTION_END();
 }
@@ -426,7 +442,7 @@ uint8_t scr_DropMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->dropMoney(state.argument);
+    wallet(*pchr).dropMoney(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -631,7 +647,7 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
     if(state.distance < XP_COUNT && state.distance >= 0) {
-        pchr->giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
+        teamMember(*pchr).giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
     }
 
     SCRIPT_FUNCTION_END();
@@ -1465,13 +1481,15 @@ uint8_t scr_DropTargetMoney( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function drops some of the target's money
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IWallet* targetWallet = tryWallet(self.getTarget());
+    if (targetWallet == nullptr)
+    {
+        return false;
+    }
 
-    pself_target->dropMoney(state.argument);
+    targetWallet->dropMoney(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1486,7 +1504,7 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTeam(static_cast<TEAM_REF>(state.argument));
+    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1501,9 +1519,9 @@ uint8_t scr_TargetJoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(target) {
-        target->setTeam(static_cast<TEAM_REF>(state.argument));
+    ITeamMember* targetTeamMember = tryTeamMember(self.getTarget());
+    if(targetTeamMember) {
+        targetTeamMember->setTeam(static_cast<TEAM_REF>(state.argument));
         returncode = true;
     }
     else {
@@ -1674,7 +1692,7 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1689,7 +1707,7 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTeam(static_cast<TEAM_REF>(Team::TEAM_NULL));
+    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_NULL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1704,7 +1722,7 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2050,7 +2068,8 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->giveMoney(state.argument - pchr->getMoney());
+    IWallet& selfWallet = wallet(*pchr);
+    selfWallet.giveMoney(state.argument - selfWallet.getMoney());
 
     SCRIPT_FUNCTION_END();
 }

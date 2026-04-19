@@ -520,6 +520,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by localizing the remaini
 
 Extended `ScriptSystemsFunctions.cpp` with a focused no-match regression for the localized restock path alongside the existing held-item, actor-inventory, and traversal-order coverage. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 117 — Team and wallet role seams for script systems (2026-04-19)
+
+Continued Tier 1.2 by introducing `ITeamMember` and `IWallet` as narrow policy seams on `Object`, then routing the bounded team/money helpers in `script_functions_systems.c` (`Join*Team`, `BecomeLeader`, team-XP helpers, and wallet transfer/drop/set helpers) through local role resolvers instead of direct concrete-`Object` calls. Kept module-owned leader lookup and whole-team XP policy on `GameModule::getTeamList()`, and left quest/profile/armor/class coupling out of scope.
+
+Extended `ObjectAccessors.cpp` and `ScriptSystemsFunctions.cpp` with direct regression coverage for the new team/wallet role surfaces, including team-copy/join behavior, leader publication, team-wide XP routing, wallet transfer clamping, and drop/set semantics. Build, focused accessor/script-system tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

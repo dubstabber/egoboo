@@ -151,6 +151,12 @@ inline IRenderable* tryRenderable(ObjectRef objectRef)
     return object ? static_cast<IRenderable*>(object) : nullptr;
 }
 
+inline ITeamMember* tryTeamMember(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<ITeamMember*>(object) : nullptr;
+}
+
 inline const IPhysical* tryPhysical(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
@@ -161,6 +167,12 @@ inline const ITargetInfo* tryTargetInfo(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
+inline IWallet* tryWallet(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IWallet*>(object) : nullptr;
 }
 
 inline uint32_t worldUpdateCount()
