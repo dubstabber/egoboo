@@ -20,6 +20,11 @@ IDamageable& damageable(Object& object)
 {
     return object;
 }
+
+ICharacterState& characterState(Object& object)
+{
+    return object;
+}
 }
 
 
@@ -198,11 +203,12 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     if ( pitem )
     {
         returncode = true;
+        ICharacterState& itemState = characterState(*pitem);
 
         // Cost one ammo
-        if ( pitem->getAmmo() > 1 )
+        if ( itemState.getAmmo() > 1 )
         {
-            pitem->setAmmo(pitem->getAmmo() - 1);
+            itemState.setAmmo(itemState.getAmmo() - 1);
         }
 
         // Poof the item
@@ -572,9 +578,10 @@ uint8_t scr_IncreaseAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function increases the character's ammo by 1
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( pchr->getAmmo() < pchr->getAmmoMax() )
+    ICharacterState& selfState = characterState(*pchr);
+    if ( selfState.getAmmo() < selfState.getAmmoMax() )
     {
-        pchr->setAmmo(pchr->getAmmo() + 1);
+        selfState.setAmmo(selfState.getAmmo() + 1);
     }
 
     SCRIPT_FUNCTION_END();
@@ -776,13 +783,8 @@ uint8_t scr_CostTargetMana( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->costMana(state.argument, self.getSelf());
-    }
-    else {
-        returncode = false;
-    }
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    returncode = targetState ? targetState->costMana(state.argument, self.getSelf()) : false;
 
     SCRIPT_FUNCTION_END();
 }
@@ -876,15 +878,12 @@ uint8_t scr_GiveStrengthToTarget( script_state_t& state, ai_state_t& self )
     // GiveStrengthToTarget(argument = "amount")
     // Permanently boost the target's strength
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::MIGHT, FP8_TO_FLOAT(state.argument));
+        targetState->increaseBaseAttribute(Ego::Attribute::MIGHT, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -897,15 +896,12 @@ uint8_t scr_GiveIntelligenceToTarget( script_state_t& state, ai_state_t& self )
     // GiveIntelligenceToTarget(tmpargument = "amount")
     // Permanently boost the target's intelligence
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::INTELLECT, FP8_TO_FLOAT(state.argument));
+        targetState->increaseBaseAttribute(Ego::Attribute::INTELLECT, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -918,15 +914,12 @@ uint8_t scr_GiveDexterityToTarget( script_state_t& state, ai_state_t& self )
     // GiveDexterityToTarget(tmpargument = "amount")
     // Permanently boost the target's dexterity
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::AGILITY, FP8_TO_FLOAT(state.argument));
+        targetState->increaseBaseAttribute(Ego::Attribute::AGILITY, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -940,17 +933,16 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details Permanently boost the target's life
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    std::shared_ptr<Object> healer = tryObjectShared(self.getSelf());
+    if ( targetInfo != nullptr && targetState != nullptr && damageableTarget != nullptr &&
+         healer != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
-        IDamageable& damageableTarget = *pself_target;
-        damageableTarget.heal(objectHandler()[pchr->getObjRef()], state.argument, true);
+        targetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
+        damageableTarget->heal(healer, state.argument, true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -964,16 +956,13 @@ uint8_t scr_GiveManaToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details Permanently boost the target's mana
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::MAX_MANA, FP8_TO_FLOAT(state.argument));
-        pself_target->costMana(-state.argument, ObjectRef::Invalid);
+        targetState->increaseBaseAttribute(Ego::Attribute::MAX_MANA, FP8_TO_FLOAT(state.argument));
+        targetState->costMana(-state.argument, ObjectRef::Invalid);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1043,17 +1032,18 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(!target) {
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    std::shared_ptr<Object> healer = tryObjectShared(self.getSelf());
+    if(damageableTarget == nullptr || targetState == nullptr || healer == nullptr) {
         return false;
     }
 
     returncode = false;
-    IDamageable& damageableTarget = damageable(*target);
-    if (damageableTarget.heal(objectHandler()[self.getSelf()], state.argument, false))
+    if (damageableTarget->heal(healer, state.argument, false))
     {
         returncode = true;
-        target->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
+        targetState->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
     }
 
     SCRIPT_FUNCTION_END();
@@ -1068,15 +1058,12 @@ uint8_t scr_PumpTarget( script_state_t& state, ai_state_t& self )
     /// @details This function gives some mana back to the target.
     /// Values are 8.8 fixed point
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() && state.argument > 0)
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() && state.argument > 0)
     {
-        pself_target->costMana(-state.argument, pchr->getObjRef());
+        targetState->costMana(-state.argument, pchr->getObjRef());
     }
 
     SCRIPT_FUNCTION_END();
@@ -1091,9 +1078,10 @@ uint8_t scr_CostAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function costs the character 1 point of ammo
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( pchr->getAmmo() > 0 )
+    ICharacterState& selfState = characterState(*pchr);
+    if ( selfState.getAmmo() > 0 )
     {
-        pchr->setAmmo(pchr->getAmmo() - 1);
+        selfState.setAmmo(selfState.getAmmo() - 1);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1751,17 +1739,16 @@ uint8_t scr_GrogTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function grogs the Target for a duration equal to tmpargument
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
+    Object * pself_target;
     SCRIPT_REQUIRE_TARGET( pself_target );
+    ICharacterState& targetState = characterState(*pself_target);
 
     returncode = false;
     if ( pself_target->getProfile()->canBeGrogged() )
     {
-        int timer_val = pself_target->getGrogTimer() + state.argument;
-        pself_target->setGrogTimer(std::max(0, timer_val));
+        int timer_val = targetState.getGrogTimer() + state.argument;
+        targetState.setGrogTimer(std::max(0, timer_val));
         returncode = true;
     }
 
@@ -1776,18 +1763,17 @@ uint8_t scr_DazeTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function dazes the Target for a duration equal to tmpargument
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
+    Object * pself_target;
     SCRIPT_REQUIRE_TARGET( pself_target );
+    ICharacterState& targetState = characterState(*pself_target);
 
     // Characters who manage to daze themselves are to ignore their daze immunity
     returncode = false;
     if ( pself_target->getProfile()->canBeDazed() || self.getSelf() == self.getTarget() )
     {
-        int timer_val = pself_target->getDazeTimer() + state.argument;
-        pself_target->setDazeTimer(std::max(0, timer_val));
+        int timer_val = targetState.getDazeTimer() + state.argument;
+        targetState.setDazeTimer(std::max(0, timer_val));
 
         returncode = true;
     }
@@ -2003,15 +1989,12 @@ uint8_t scr_GiveManaFlowToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently boost the target's mana flow
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::SPELL_POWER, FP8_TO_FLOAT(state.argument));
+        targetState->increaseBaseAttribute(Ego::Attribute::SPELL_POWER, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -2025,15 +2008,12 @@ uint8_t scr_GiveManaReturnToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently boost the target's mana return
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
-        pself_target->increaseBaseAttribute(Ego::Attribute::MANA_REGEN, FP8_TO_FLOAT(state.argument));
+        targetState->increaseBaseAttribute(Ego::Attribute::MANA_REGEN, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -2062,17 +2042,14 @@ uint8_t scr_DispelTargetEnchantID( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function removes all enchants from the target who match the specified RemovedByIDSZ
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
     returncode = false;
-    if ( pself_target->isAlive() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
     {
         // Check all enchants to see if they are removed
-        pself_target->removeEnchantsWithIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+        targetState->removeEnchantsWithIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
         returncode = true;
     }
 
@@ -2087,16 +2064,15 @@ uint8_t scr_KurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This makes the target kursed
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
-
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
     returncode = false;
-    if ( pself_target->isItem() && !pself_target->isKursed() )
+    if ( targetInventory != nullptr && targetInfo != nullptr && targetState != nullptr &&
+         targetInventory->isItem() && !targetInfo->isKursed() )
     {
-        pself_target->setKursed(true);
+        targetState->setKursed(true);
         returncode = true;
     }
 
@@ -2111,13 +2087,14 @@ uint8_t scr_SetTargetAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function sets the ammo of the character's current AI target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if (targetState == nullptr)
+    {
+        return false;
+    }
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    pself_target->setAmmo(std::min( state.argument, (int)pself_target->getAmmoMax() ));
+    targetState->setAmmo(std::min( state.argument, (int)targetState->getAmmoMax() ));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2136,15 +2113,15 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(!target) {
+    IDamageable* damageableSelf = tryDamageable(self.getSelf());
+    if(!target || damageableSelf == nullptr) {
         return false;
     }
-    IDamageable& damageableSelf = *pchr;
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableSelf.damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeam().toRef(), target, false, false, true);
+    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeam().toRef(), target, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2159,22 +2136,25 @@ uint8_t scr_GiveSkillToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *ptarget;
-    SCRIPT_REQUIRE_TARGET( ptarget );
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if (targetState == nullptr)
+    {
+        return false;
+    }
 
     //IDSZ to Perk
     switch(state.argument)
     {
-        case IDSZ2::caseLabel( 'A', 'W', 'E', 'P' ): ptarget->addPerk(Ego::Perks::WEAPON_PROFICIENCY); break;
-        case IDSZ2::caseLabel( 'P', 'O', 'I', 'S' ): ptarget->addPerk(Ego::Perks::POISONRY); break;
-        case IDSZ2::caseLabel( 'C', 'K', 'U', 'R' ): ptarget->addPerk(Ego::Perks::SENSE_KURSES); break;
-        case IDSZ2::caseLabel( 'R', 'E', 'A', 'D' ): ptarget->addPerk(Ego::Perks::LITERACY); break;
-        case IDSZ2::caseLabel( 'W', 'M', 'A', 'G' ): ptarget->addPerk(Ego::Perks::ARCANE_MAGIC); break;
-        case IDSZ2::caseLabel( 'H', 'M', 'A', 'G' ): ptarget->addPerk(Ego::Perks::DIVINE_MAGIC); break;
-        case IDSZ2::caseLabel( 'T', 'E', 'C', 'H' ): ptarget->addPerk(Ego::Perks::USE_TECHNOLOGICAL_ITEMS); break;
-        case IDSZ2::caseLabel( 'D', 'I', 'S', 'A' ): ptarget->addPerk(Ego::Perks::TRAP_LORE); break;
-        case IDSZ2::caseLabel( 'S', 'T', 'A', 'B' ): ptarget->addPerk(Ego::Perks::BACKSTAB); break;
-        case IDSZ2::caseLabel( 'D', 'A', 'R', 'K' ): ptarget->addPerk(Ego::Perks::NIGHT_VISION); break;
+        case IDSZ2::caseLabel( 'A', 'W', 'E', 'P' ): targetState->addPerk(Ego::Perks::WEAPON_PROFICIENCY); break;
+        case IDSZ2::caseLabel( 'P', 'O', 'I', 'S' ): targetState->addPerk(Ego::Perks::POISONRY); break;
+        case IDSZ2::caseLabel( 'C', 'K', 'U', 'R' ): targetState->addPerk(Ego::Perks::SENSE_KURSES); break;
+        case IDSZ2::caseLabel( 'R', 'E', 'A', 'D' ): targetState->addPerk(Ego::Perks::LITERACY); break;
+        case IDSZ2::caseLabel( 'W', 'M', 'A', 'G' ): targetState->addPerk(Ego::Perks::ARCANE_MAGIC); break;
+        case IDSZ2::caseLabel( 'H', 'M', 'A', 'G' ): targetState->addPerk(Ego::Perks::DIVINE_MAGIC); break;
+        case IDSZ2::caseLabel( 'T', 'E', 'C', 'H' ): targetState->addPerk(Ego::Perks::USE_TECHNOLOGICAL_ITEMS); break;
+        case IDSZ2::caseLabel( 'D', 'I', 'S', 'A' ): targetState->addPerk(Ego::Perks::TRAP_LORE); break;
+        case IDSZ2::caseLabel( 'S', 'T', 'A', 'B' ): targetState->addPerk(Ego::Perks::BACKSTAB); break;
+        case IDSZ2::caseLabel( 'D', 'A', 'R', 'K' ): targetState->addPerk(Ego::Perks::NIGHT_VISION); break;
     }
 
     SCRIPT_FUNCTION_END();

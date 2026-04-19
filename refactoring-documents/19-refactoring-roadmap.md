@@ -42,10 +42,13 @@ Landed so far:
 - `IScriptable` — script-visible state and commands
 - `IDamageable` — combat damage application surface
 - `IPhysical` — collision volume, orientation, bumper state
+- `ITargetInfo` — bounded target/self query surface for script helpers
+- `ICharacterState` — bounded mutable ammo/mana/kurse/timer/perk/attribute state
 
 Follow-on work inside this tier:
 
 - Migrate more callers to the landed role surfaces instead of `Object`.
+- Keep the remaining mixed-domain `script_functions_systems.c` helpers focused on bounded caller migration; defer money/team/quest/profile policy coupling to later passes.
 - Keep the raw `ai_state_t` bridge confined to `Ego::Script::runtimeState(...)` until `Script/script.c` no longer consumes raw script-runtime state.
 
 This remains the SRP/ISP keystone for `Object`.

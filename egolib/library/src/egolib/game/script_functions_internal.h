@@ -133,6 +133,12 @@ inline IDamageable* tryDamageable(ObjectRef objectRef)
     return object ? static_cast<IDamageable*>(object) : nullptr;
 }
 
+inline ICharacterState* tryCharacterState(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<ICharacterState*>(object) : nullptr;
+}
+
 inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

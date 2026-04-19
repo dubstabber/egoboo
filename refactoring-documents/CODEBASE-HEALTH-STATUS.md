@@ -22,7 +22,7 @@ The codebase is in an **active, well-managed transitional state**. The original 
 
 Core design debt that remains:
 
-- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and role-extraction passes 77 through 81 have now peeled off `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical`, but `Object` still owns too much surface.
+- The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and the subsequent role-extraction passes have now peeled off `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, and `ICharacterState`, but `Object` still owns too much surface.
 - Singleton access is still pervasive (~1,150 `::get()` call sites), but a service-interface layer now covers audio, perk, image, and particle services through `EngineContext`; full DI still does not exist.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
@@ -281,7 +281,7 @@ Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, 
 
 ### Encapsulation
 
-Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers, and passes 77–81 have started expressing those narrowed surfaces as explicit roles. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, the enchant/temp-attribute and inventory/team seams, and the read-only `IDamageable`/`IPhysical` role surfaces. The remaining `Object` surface is now mostly alias-style handle returns; the raw `ai_state_t` compatibility bridge has been moved into the Script subsystem as `Ego::Script::runtimeState(...)`.
+Passes 52–76 have steadily moved raw `Object` state behind accessor methods or narrow helpers, and the later role-extraction passes have started expressing those narrowed surfaces as explicit roles. Coverage now includes team, held/equipment, jump, size-transition, damage-type, player-binding flags, sparkle, attachment/platform, timers/status, appearance (skin/model/overlay/shadow), stats/ammo/gender, orientation (`ori`), bumper/CV, the `inst` graphics boundary, AI helpers/accessors, the enchant/temp-attribute and inventory/team seams, the read/query-side `ITargetInfo` surface, and the bounded mutable `ICharacterState` surface used by the split script helpers. The remaining `Object` surface is now mostly alias-style handle returns plus mixed-domain helpers; the raw `ai_state_t` compatibility bridge has been moved into the Script subsystem as `Ego::Script::runtimeState(...)`.
 
 ### Const correctness
 
@@ -419,7 +419,7 @@ These items compound the refactoring progress most efficiently given the current
 
 ### Runtime and structure
 
-1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical` instead of `Object` where only bounded role behavior is needed.
+1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, and `ICharacterState` instead of `Object` where only bounded role behavior is needed.
 2. **Close the remaining alias-style handle seams on `Object`** — keep the Script-owned `runtimeState(...)` helper confined to the legacy script runtime while role extraction proceeds.
 3. **Continue the service-interface layer over singletons** — `AudioSystem`, `PerkHandler`, `ImageManager`, `ParticleHandler`, `ProfileSystem`, logging, and the runtime-facing `egoboo_config_t` seam are landed; next is subsystem-local cleanup plus the remaining Tier 1 error-handling work.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.

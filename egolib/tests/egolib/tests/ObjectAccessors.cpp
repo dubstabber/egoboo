@@ -711,6 +711,38 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     EXPECT_FALSE(targetInfo.isStealthed());
 }
 
+TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerKursePerkAndManaState)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 30506);
+    ASSERT_NE(object, nullptr);
+
+    ICharacterState& characterState = *object;
+    object->setAmmoMax(9);
+    object->setMana(0.0f);
+
+    const float mightBefore = object->getBaseAttribute(Ego::Attribute::MIGHT);
+    const float manaBefore = object->getMana();
+
+    characterState.setAmmo(4);
+    characterState.setGrogTimer(6);
+    characterState.setDazeTimer(8);
+    characterState.setKursed(true);
+    characterState.increaseBaseAttribute(Ego::Attribute::MIGHT, 1.5f);
+
+    EXPECT_TRUE(characterState.costMana(-FLOAT_TO_FP8(1.0f), ObjectRef::Invalid));
+    characterState.addPerk(Ego::Perks::NIGHT_VISION);
+
+    EXPECT_EQ(characterState.getAmmoMax(), 9);
+    EXPECT_EQ(characterState.getAmmo(), 4);
+    EXPECT_EQ(characterState.getGrogTimer(), 6);
+    EXPECT_EQ(characterState.getDazeTimer(), 8);
+    EXPECT_TRUE(characterState.isKursed());
+    EXPECT_GT(object->getBaseAttribute(Ego::Attribute::MIGHT), mightBefore);
+    EXPECT_GT(object->getMana(), manaBefore);
+    EXPECT_TRUE(object->hasPerk(Ego::Perks::NIGHT_VISION));
+}
+
 TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)
 {
     auto& objectHandler = beginActiveTestModule();

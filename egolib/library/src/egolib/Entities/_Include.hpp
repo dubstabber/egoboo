@@ -1,6 +1,7 @@
 #pragma once
 
 #define GAME_ENTITIES_PRIVATE 1
+#include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/Enchant.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"

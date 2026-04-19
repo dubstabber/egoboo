@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 96) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 110) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -477,6 +477,12 @@ Added focused regression coverage in `ScriptActionFunctions.cpp` for script-driv
 Continued Tier 1.2 inside `script_functions_state.c` by extending the read-only `ITargetInfo` seam with self-query accessors for name-known, equipped, ammo, skin, water-tile, and stealth state, then routing the remaining bounded self-query predicates (`IfGrogged`, `IfDazed`, `IfArmorIs`, `IfNameIsKnown`, `IfKursed`, `IfOverWater`, `IfAmmoOut`, `IfEquipped`, `IfStealthed`) off concrete `Object` reads.
 
 Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with direct coverage for the widened target-info seam and the migrated self-query predicates. Build, focused accessor/script-state tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 110 — Character-state role seam for script systems (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by introducing `ICharacterState` for ammo, mana, kurse, timer, perk, attribute, and enchant-removal mutation, then routing the bounded mutable helpers (`CostTargetMana`, `IncreaseAmmo`, `CostAmmo`, `Give*ToTarget` stat helpers, `HealTarget`, `PumpTarget`, `GrogTarget`, `DazeTarget`, `DispelTargetEnchantID`, `KurseTarget`, `SetTargetAmmo`, and `GiveSkillToTarget`) through the landed role surfaces instead of ad hoc concrete-`Object` mutation. Kept quest, team, money, armor, enchant-construction, and `Script/script.c` raw-runtime work out of scope.
+
+Added `ObjectAccessors.cpp` coverage for the new `ICharacterState` seam plus `ScriptSystemsFunctions.cpp` coverage for mana/ammo/kurse mutation and attribute/timer/enchant/perk helpers. Build, the focused `ScriptSystemsFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
 ---
 

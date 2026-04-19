@@ -421,4 +421,130 @@ TEST_F(ScriptSystemsFunctionsFixture, HealSelfAndTargetUseDamageableRoleAndPrese
     EXPECT_TRUE(target->getFirstActiveEnchant()->isTerminated());
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ManaAmmoAndKurseHelpersUseCharacterStateRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5661);
+    auto manaTarget = makeObject(module, "mp_objects/follower.obj", 5662);
+    auto ammoActor = makeAmmoItem(module, 5663);
+    auto ammoTarget = makeAmmoItem(module, 5666);
+    auto itemTarget = makeInventoryItem(module, 5669);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(manaTarget, nullptr);
+    ASSERT_NE(ammoActor, nullptr);
+    ASSERT_NE(ammoTarget, nullptr);
+    ASSERT_NE(itemTarget, nullptr);
+
+    script_state_t state;
+    ai_state_t manaSelf = makeScriptSelf(actor, manaTarget);
+
+    const float manaBeforeCost = manaTarget->getMana();
+    state.argument = FLOAT_TO_FP8(1.0f);
+    EXPECT_TRUE(scr_CostTargetMana(state, manaSelf));
+    EXPECT_LT(manaTarget->getMana(), manaBeforeCost);
+
+    manaTarget->setMana(0.0f);
+    const float manaBeforePump = manaTarget->getMana();
+    state.argument = FLOAT_TO_FP8(1.0f);
+    EXPECT_TRUE(scr_PumpTarget(state, manaSelf));
+    EXPECT_GT(manaTarget->getMana(), manaBeforePump);
+
+    ammoActor->setAmmo(ammoActor->getAmmoMax() - 1);
+    ai_state_t ammoSelf = makeScriptSelf(ammoActor, ammoTarget);
+
+    EXPECT_TRUE(scr_IncreaseAmmo(state, ammoSelf));
+    EXPECT_EQ(ammoActor->getAmmo(), ammoActor->getAmmoMax());
+
+    EXPECT_TRUE(scr_CostAmmo(state, ammoSelf));
+    EXPECT_EQ(ammoActor->getAmmo(), ammoActor->getAmmoMax() - 1);
+
+    ammoTarget->setAmmo(0);
+    state.argument = ammoTarget->getAmmoMax() + 5;
+    EXPECT_TRUE(scr_SetTargetAmmo(state, ammoSelf));
+    EXPECT_EQ(ammoTarget->getAmmo(), ammoTarget->getAmmoMax());
+
+    ai_state_t kurseSelf = makeScriptSelf(actor, itemTarget);
+    state.argument = 0;
+    EXPECT_FALSE(itemTarget->isKursed());
+    EXPECT_TRUE(scr_KurseTarget(state, kurseSelf));
+    EXPECT_TRUE(itemTarget->isKursed());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseCharacterStateRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5671);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5672);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_TRUE(target->getProfile()->canBeGrogged());
+    ASSERT_TRUE(target->getProfile()->canBeDazed());
+
+    auto enchant = addHealRemovableEnchant(module, target, 5673);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(target->hasActiveEnchants());
+
+    const float mightBefore = target->getBaseAttribute(Ego::Attribute::MIGHT);
+    const float intellectBefore = target->getBaseAttribute(Ego::Attribute::INTELLECT);
+    const float agilityBefore = target->getBaseAttribute(Ego::Attribute::AGILITY);
+    const float maxLifeBefore = target->getBaseAttribute(Ego::Attribute::MAX_LIFE);
+    const float maxManaBefore = target->getBaseAttribute(Ego::Attribute::MAX_MANA);
+    const float spellPowerBefore = target->getBaseAttribute(Ego::Attribute::SPELL_POWER);
+    const float manaRegenBefore = target->getBaseAttribute(Ego::Attribute::MANA_REGEN);
+
+    target->setLife(-19.0f);
+    target->setMana(0.0f);
+
+    script_state_t state;
+    state.argument = FLOAT_TO_FP8(1.0f);
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_GiveStrengthToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::MIGHT), mightBefore);
+
+    EXPECT_TRUE(scr_GiveIntelligenceToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::INTELLECT), intellectBefore);
+
+    EXPECT_TRUE(scr_GiveDexterityToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::AGILITY), agilityBefore);
+
+    const float lifeBefore = target->getLife();
+    EXPECT_TRUE(scr_GiveLifeToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::MAX_LIFE), maxLifeBefore);
+    EXPECT_GT(target->getLife(), lifeBefore);
+
+    const float manaBefore = target->getMana();
+    EXPECT_TRUE(scr_GiveManaToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::MAX_MANA), maxManaBefore);
+    EXPECT_GT(target->getMana(), manaBefore);
+
+    EXPECT_TRUE(scr_GiveManaFlowToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::SPELL_POWER), spellPowerBefore);
+
+    EXPECT_TRUE(scr_GiveManaReturnToTarget(state, self));
+    EXPECT_GT(target->getBaseAttribute(Ego::Attribute::MANA_REGEN), manaRegenBefore);
+
+    target->setGrogTimer(1);
+    state.argument = 4;
+    EXPECT_TRUE(scr_GrogTarget(state, self));
+    EXPECT_EQ(target->getGrogTimer(), 5);
+
+    target->setDazeTimer(2);
+    state.argument = 3;
+    EXPECT_TRUE(scr_DazeTarget(state, self));
+    EXPECT_EQ(target->getDazeTimer(), 5);
+
+    state.argument = IDSZ2('H', 'E', 'A', 'L').toUint32();
+    EXPECT_TRUE(scr_DispelTargetEnchantID(state, self));
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_TRUE(target->getFirstActiveEnchant()->isTerminated());
+
+    state.argument = IDSZ2::caseLabel('D', 'A', 'R', 'K');
+    EXPECT_TRUE(scr_GiveSkillToTarget(state, self));
+    EXPECT_TRUE(target->hasPerk(Ego::Perks::NIGHT_VISION));
+}
+
 } // namespace

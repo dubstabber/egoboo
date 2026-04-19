@@ -31,6 +31,7 @@
 #include "egolib/InputControl/InputDevice.hpp"
 
 #include "egolib/Entities/IDamageable.hpp"
+#include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
@@ -81,6 +82,7 @@ enum LatchButton
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
                public IDamageable,
+               public ICharacterState,
                public IInventoryHolder,
                public IPhysical,
                public IRenderable,
@@ -530,7 +532,7 @@ public:
 
     bool isKursed() const override { return iskursed; }
 
-    void setKursed(bool kursed) { iskursed = kursed; }
+    void setKursed(bool kursed) override { iskursed = kursed; }
 
     bool isHitReady() const { return hitready; }
 
@@ -758,7 +760,7 @@ public:
     * @return
     *   true if all the requested mana was successfully consumed by the Object
     **/
-    bool costMana(int amount, const ObjectRef killer);
+    bool costMana(int amount, const ObjectRef killer) override;
 
     /**
     * @return
@@ -862,7 +864,7 @@ public:
     * @brief
     *   Permanently increases or decreases an attribute of this Object
     **/
-    void increaseBaseAttribute(const Ego::Attribute::AttributeType type, float value);
+    void increaseBaseAttribute(const Ego::Attribute::AttributeType type, float value) override;
 
     /**
     * @brief
@@ -882,13 +884,13 @@ public:
 
     bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse);
 
-    uint16_t getAmmoMax() const { return ammomax; }
+    uint16_t getAmmoMax() const override { return ammomax; }
 
     void setAmmoMax(uint16_t maxAmmo) { ammomax = maxAmmo; }
 
     uint16_t getAmmo() const override { return ammo; }
 
-    void setAmmo(uint16_t ammoCount) { ammo = ammoCount; }
+    void setAmmo(uint16_t ammoCount) override { ammo = ammoCount; }
 
     /**
     * @return
@@ -906,7 +908,7 @@ public:
     * @brief
     *   permanently adds a new Perk to this character object
     **/
-    void addPerk(Ego::Perks::PerkID perk);
+    void addPerk(Ego::Perks::PerkID perk) override;
 
     /**
     * @return
@@ -953,7 +955,7 @@ public:
     **/
     std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner);
 
-    void removeEnchantsWithIDSZ(const IDSZ2& idsz);
+    void removeEnchantsWithIDSZ(const IDSZ2& idsz) override;
 
     const std::forward_list<std::shared_ptr<Ego::Enchantment>>& getActiveEnchants() const;
 
@@ -1162,7 +1164,7 @@ public:
 
     int16_t getGrogTimer() const override { return grog_timer; }
 
-    void setGrogTimer(int16_t timer) { grog_timer = timer; }
+    void setGrogTimer(int16_t timer) override { grog_timer = timer; }
 
     int16_t getDazeTimer() const override { return daze_timer; }
 
@@ -1170,7 +1172,7 @@ public:
 
     bool hasNotFullMana() const;
 
-    void setDazeTimer(int16_t timer) { daze_timer = timer; }
+    void setDazeTimer(int16_t timer) override { daze_timer = timer; }
 
     int16_t getBoredTimer() const { return bore_timer; }
 
