@@ -430,6 +430,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by routing the already rol
 
 Also migrated the left/right-hand target setters onto `IInventoryHolder` and extended `ScriptTargetFunctions.cpp` with direct coverage pinning target-hand selection through the landed inventory-holder seam.
 
+### Pass 102 — Conservative systems-role migration (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by routing the bounded item-cost, ammo-restock, damage, kill, and heal helpers through local `IInventoryHolder` / `IDamageable` adapters instead of concrete `Object` access, while preserving the legacy owner-selection semantics in those helpers.
+
+Added `ScriptSystemsFunctions.cpp` coverage for held/inventory item costing, target-hand plus actor-inventory ammo restock ordering, bounded damage/kill/heal behavior, and `[HEAL]` enchant termination after `HealTarget()`. Build, targeted script/gameplay tests, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

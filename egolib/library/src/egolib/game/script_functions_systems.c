@@ -10,6 +10,16 @@ egoboo_config_t& config()
 {
     return EngineContext::get().config();
 }
+
+IInventoryHolder& inventoryHolder(Object& object)
+{
+    return object;
+}
+
+IDamageable& damageable(Object& object)
+{
+    return object;
+}
 }
 
 
@@ -151,17 +161,33 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( ptarget );
 
-    //first check both hands
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    std::shared_ptr<Object> pitem = ptarget->isWieldingItemIDSZ(idsz);
+    const IInventoryHolder& targetInventory = inventoryHolder(*ptarget);
+    std::shared_ptr<Object> pitem;
 
-    //need to search inventory as well?
+    const std::array<slot_t, 2> heldSlots = {SLOT_LEFT, SLOT_RIGHT};
+    for (const slot_t heldSlot : heldSlots)
+    {
+        const ObjectRef heldObjectRef = targetInventory.getHeldObject(heldSlot);
+        if (!objectHandler().exists(heldObjectRef))
+        {
+            continue;
+        }
+
+        const std::shared_ptr<Object>& heldItem = objectHandler()[heldObjectRef];
+        if (heldItem && heldItem->getProfile()->hasTypeIDSZ(idsz))
+        {
+            pitem = heldItem;
+            break;
+        }
+    }
+
     if (!pitem)
     {
-        for (const std::shared_ptr<Object>& inventoryItem : ptarget->getInventoryItems())
+        for (const std::shared_ptr<Object>& inventoryItem : targetInventory.getInventoryItems())
         {
-            //matching idsz?
-            if ( inventoryItem->getProfile()->hasTypeIDSZ(idsz) ) {
+            if (inventoryItem && inventoryItem->getProfile()->hasTypeIDSZ(idsz))
+            {
                 pitem = inventoryItem;
                 break;
             }
@@ -238,7 +264,7 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     if(!target) {
         return false;
     }
-    IDamageable& damageableTarget = *target;
+    IDamageable& damageableTarget = damageable(*target);
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
@@ -605,15 +631,17 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     SCRIPT_REQUIRE_TARGET( pself_target );
 
     int iTmp = 0;  // Amount of ammo given
+    const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
+    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
 
 	ObjectRef ichr;
-    ichr = pself_target->getHeldObject(SLOT_LEFT);
+    ichr = targetInventory.getHeldObject(SLOT_LEFT);
     iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
 
-    ichr = pself_target->getHeldObject(SLOT_RIGHT);
+    ichr = targetInventory.getHeldObject(SLOT_RIGHT);
     iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
 
-    for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
+    for (const std::shared_ptr<Object>& pitem : selfInventory.getInventoryItems())
     {
         iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
     }
@@ -640,19 +668,21 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
     SCRIPT_REQUIRE_TARGET( pself_target );
 
     int iTmp = 0;  // Amount of ammo given
+    const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
+    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
     
-    ObjectRef ichr = pself_target->getHeldObject(SLOT_LEFT);
+    ObjectRef ichr = targetInventory.getHeldObject(SLOT_LEFT);
     iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
     
     if (iTmp == 0)
     {
-        ichr = pself_target->getHeldObject(SLOT_RIGHT);
+        ichr = targetInventory.getHeldObject(SLOT_RIGHT);
         iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
     }
 
     if (iTmp == 0)
     {
-        for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
+        for (const std::shared_ptr<Object>& pitem : selfInventory.getInventoryItems())
         {
             iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
             if ( 0 != iTmp ) break;
@@ -685,7 +715,7 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 
     const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
     if(target) {
-        IDamageable& damageableTarget = *target;
+        IDamageable& damageableTarget = damageable(*target);
         damageableTarget.kill(objectHandler()[ichr], false);
     }
 
@@ -766,7 +796,7 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable& damageableSelf = *pchr;
+    IDamageable& damageableSelf = damageable(*pchr);
     damageableSelf.heal(objectHandler()[pchr->getObjRef()], state.argument, true);
 
     SCRIPT_FUNCTION_END();
@@ -1009,7 +1039,7 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
     }
 
     returncode = false;
-    IDamageable& damageableTarget = *target;
+    IDamageable& damageableTarget = damageable(*target);
     if (damageableTarget.heal(objectHandler()[self.getSelf()], state.argument, false))
     {
         returncode = true;
