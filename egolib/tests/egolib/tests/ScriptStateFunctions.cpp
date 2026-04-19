@@ -8,7 +8,9 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#define private public
 #include "egolib/Entities/_Include.hpp"
+#undef private
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -493,6 +495,87 @@ TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandReadsHolderSlotThroughInvent
     ai_state_t self = makeScriptSelf(heldItem);
 
     EXPECT_TRUE(scr_IfHeldInLeftHand(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfGroggedAndIfDazedReadTimersThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5578);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    actor->setGrogTimer(4);
+    actor->setDazeTimer(6);
+    self.alert = ALERTIF_CONFUSED;
+
+    EXPECT_TRUE(scr_IfGrogged(state, self));
+    EXPECT_TRUE(scr_IfDazed(state, self));
+
+    self.alert = 0;
+    EXPECT_FALSE(scr_IfGrogged(state, self));
+    EXPECT_FALSE(scr_IfDazed(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfArmorIsReadsSkinThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5579);
+
+    ASSERT_NE(actor, nullptr);
+
+    const SKIN_T validSkin = actor->getProfile()->isValidSkin(1) ? 1 : 0;
+    ASSERT_TRUE(actor->getProfile()->isValidSkin(validSkin));
+    ASSERT_TRUE(actor->setSkin(validSkin));
+
+    script_state_t state;
+    state.argument = validSkin;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfArmorIs(state, self));
+
+    state.argument = validSkin + 1;
+    EXPECT_FALSE(scr_IfArmorIs(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, SelfQueryPredicatesReadThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5580);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    actor->setNameKnown(true);
+    actor->setKursed(true);
+    actor->setAmmo(0);
+    actor->setEquipped(true);
+    actor->addPerk(Ego::Perks::STEALTH);
+
+    EXPECT_TRUE(scr_IfNameIsKnown(state, self));
+    EXPECT_TRUE(scr_IfKursed(state, self));
+    EXPECT_TRUE(scr_IfAmmoOut(state, self));
+    EXPECT_TRUE(scr_IfEquipped(state, self));
+    EXPECT_EQ(scr_IfOverWater(state, self), actor->isOnWaterTile());
+
+    actor->_stealth = true;
+    EXPECT_TRUE(scr_IfStealthed(state, self));
+
+    actor->_stealth = false;
+    actor->setNameKnown(false);
+    actor->setKursed(false);
+    actor->setAmmo(3);
+    actor->setEquipped(false);
+
+    EXPECT_FALSE(scr_IfNameIsKnown(state, self));
+    EXPECT_FALSE(scr_IfKursed(state, self));
+    EXPECT_FALSE(scr_IfAmmoOut(state, self));
+    EXPECT_FALSE(scr_IfEquipped(state, self));
+    EXPECT_FALSE(scr_IfStealthed(state, self));
 }
 
 TEST_F(ScriptStateFunctionsFixture, SetDamageTimePublishesThroughDamageableRole)

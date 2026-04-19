@@ -21,7 +21,11 @@ public:
     virtual bool isHurt() const = 0;
     virtual bool hasNotFullMana() const = 0;
     virtual bool isAttacking() const = 0;
+    virtual bool isNameKnown() const = 0;
     virtual bool isKursed() const = 0;
+    virtual bool isEquipped() const = 0;
+    virtual bool isOnWaterTile() const = 0;
+    virtual bool isStealthed() const = 0;
 
     virtual bool canSeeInvisible() const = 0;
     virtual bool canSeeKurses() const = 0;
@@ -38,6 +42,8 @@ public:
     virtual bool isOnSameTeam(TEAM_REF teamRef) const = 0;
     virtual bool isHatedByTeam(TEAM_REF teamRef) const = 0;
 
+    virtual uint16_t getAmmo() const = 0;
+    virtual SKIN_T getSkin() const = 0;
     virtual int16_t getGrogTimer() const = 0;
     virtual int16_t getDazeTimer() const = 0;
 };

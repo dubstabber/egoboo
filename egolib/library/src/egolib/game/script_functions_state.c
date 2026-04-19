@@ -532,7 +532,7 @@ uint8_t scr_IfGrogged( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().get(self.getSelf())->getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    returncode = targetInfo(*pchr).getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }
@@ -548,7 +548,7 @@ uint8_t scr_IfDazed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().get(self.getSelf())->getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    returncode = targetInfo(*pchr).getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }
@@ -581,7 +581,7 @@ uint8_t scr_IfArmorIs( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    tTmp = pchr->getSkin();
+    tTmp = targetInfo(*pchr).getSkin();
     returncode = ( tTmp == state.argument );
 
     SCRIPT_FUNCTION_END();
@@ -911,7 +911,7 @@ uint8_t scr_IfNameIsKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isNameKnown();
+    returncode = targetInfo(*pchr).isNameKnown();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1078,7 +1078,7 @@ uint8_t scr_IfKursed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isKursed();
+    returncode = targetInfo(*pchr).isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1093,7 +1093,7 @@ uint8_t scr_IfOverWater( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isOnWaterTile();
+    returncode = targetInfo(*pchr).isOnWaterTile();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1174,7 +1174,7 @@ uint8_t scr_IfAmmoOut( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( 0 == pchr->getAmmo() );
+    returncode = ( 0 == targetInfo(*pchr).getAmmo() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1241,7 +1241,7 @@ uint8_t scr_IfEquipped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isEquipped();
+    returncode = targetInfo(*pchr).isEquipped();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1574,7 +1574,7 @@ uint8_t scr_IfStealthed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isStealthed();
+    returncode = targetInfo(*pchr).isStealthed();
 
     SCRIPT_FUNCTION_END();
 }

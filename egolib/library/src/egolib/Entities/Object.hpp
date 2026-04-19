@@ -516,7 +516,7 @@ public:
     **/
     bool isHidden() const;
 
-    bool isNameKnown() const {return nameknown;}
+    bool isNameKnown() const override {return nameknown;}
 
     void setNameKnown(bool known) { nameknown = known; }
 
@@ -536,7 +536,7 @@ public:
 
     void setHitReady(bool ready) { hitready = ready; }
 
-    bool isEquipped() const { return isequipped; }
+    bool isEquipped() const override { return isequipped; }
 
     void setEquipped(bool equipped) { isequipped = equipped; }
 
@@ -886,7 +886,7 @@ public:
 
     void setAmmoMax(uint16_t maxAmmo) { ammomax = maxAmmo; }
 
-    uint16_t getAmmo() const { return ammo; }
+    uint16_t getAmmo() const override { return ammo; }
 
     void setAmmo(uint16_t ammoCount) { ammo = ammoCount; }
 
@@ -977,7 +977,7 @@ public:
     * @return
     *   true if the skin could be changed into the specified number or false if it fails
     **/
-    SKIN_T getSkin() const { return skin; }
+    SKIN_T getSkin() const override { return skin; }
 
     bool setSkin(const size_t skinNumber);
 
@@ -1055,7 +1055,7 @@ public:
     * @return 
     *   true if this Object is actively trying to hide from others
     **/
-    bool isStealthed() const;
+    bool isStealthed() const override;
 
     /**
     * @brief
@@ -1160,11 +1160,11 @@ public:
     **/
     void dropMoney(int amount);
 
-    int16_t getGrogTimer() const { return grog_timer; }
+    int16_t getGrogTimer() const override { return grog_timer; }
 
     void setGrogTimer(int16_t timer) { grog_timer = timer; }
 
-    int16_t getDazeTimer() const { return daze_timer; }
+    int16_t getDazeTimer() const override { return daze_timer; }
 
     bool isHurt() const;
 

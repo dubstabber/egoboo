@@ -661,29 +661,54 @@ TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getDismountObject(), ObjectRef(21));
 }
 
-TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationAndCombatStateQueries)
+TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelfQueryState)
 {
     auto& objectHandler = beginActiveTestModule();
     auto object = makeFollower(objectHandler, 30504);
     ASSERT_NE(object, nullptr);
 
     const ITargetInfo& targetInfo = *object;
+    const SKIN_T validSkin = object->getProfile()->isValidSkin(1) ? 1 : 0;
+    ASSERT_TRUE(object->getProfile()->isValidSkin(validSkin));
 
     object->inst._currentAnimation = ACTION_UA;
     object->inst._nextAnimation = ACTION_UA;
+    object->setNameKnown(true);
     object->setKursed(true);
+    object->setEquipped(true);
+    object->setAmmo(9);
+    EXPECT_TRUE(object->setSkin(validSkin));
+    object->addPerk(Ego::Perks::STEALTH);
 
     EXPECT_EQ(targetInfo.getCurrentAnimation(), ACTION_UA);
     EXPECT_TRUE(targetInfo.isAttacking());
+    EXPECT_TRUE(targetInfo.isNameKnown());
     EXPECT_TRUE(targetInfo.isKursed());
+    EXPECT_TRUE(targetInfo.isEquipped());
+    EXPECT_EQ(targetInfo.getAmmo(), 9);
+    EXPECT_EQ(targetInfo.getSkin(), validSkin);
+    EXPECT_EQ(targetInfo.isOnWaterTile(), object->isOnWaterTile());
+    object->_stealth = false;
+    EXPECT_FALSE(targetInfo.isStealthed());
+
+    object->_stealth = true;
+    EXPECT_TRUE(targetInfo.isStealthed());
 
     object->inst._currentAnimation = ACTION_DA;
     object->inst._nextAnimation = ACTION_DA;
+    object->setNameKnown(false);
     object->setKursed(false);
+    object->setEquipped(false);
+    object->setAmmo(0);
+    object->_stealth = false;
 
     EXPECT_EQ(targetInfo.getCurrentAnimation(), ACTION_DA);
     EXPECT_FALSE(targetInfo.isAttacking());
+    EXPECT_FALSE(targetInfo.isNameKnown());
     EXPECT_FALSE(targetInfo.isKursed());
+    EXPECT_FALSE(targetInfo.isEquipped());
+    EXPECT_EQ(targetInfo.getAmmo(), 0);
+    EXPECT_FALSE(targetInfo.isStealthed());
 }
 
 TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)
