@@ -3,6 +3,39 @@
 
 #include "egolib/game/script_functions_internal.h"
 
+namespace
+{
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return object;
+}
+
+const IInventoryHolder& inventoryHolder(const Object& object)
+{
+    return object;
+}
+
+std::shared_ptr<Object> heldItem(const IInventoryHolder& holder, slot_t slot)
+{
+    return objectHandler()[holder.getHeldObject(slot)];
+}
+
+bool isUsableRangedWeapon(const std::shared_ptr<Object>& item)
+{
+    return item && item->getProfile()->isRangedWeapon() && (0 == item->getAmmoMax() || 0 != item->getAmmo());
+}
+
+bool isMeleeWeapon(const std::shared_ptr<Object>& item)
+{
+    return item && !item->getProfile()->isRangedWeapon() && item->getProfile()->getWeaponAction() != ACTION_PA;
+}
+
+bool isShield(const std::shared_ptr<Object>& item)
+{
+    return item && item->getProfile()->getWeaponAction() == ACTION_PA;
+}
+}
+
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfSpawned( script_state_t& state, ai_state_t& self )
@@ -909,7 +942,7 @@ uint8_t scr_IfHoldingItemID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = (pchr->isWieldingItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)) != nullptr);
+    returncode = targetInfo(*pchr).wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -927,33 +960,26 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     state.argument = 0;
+    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
 
     // Check right hand
-    const std::shared_ptr<Object> &rightHandItem = objectHandler()[pchr->getHeldObject(SLOT_RIGHT)];
-
-    if (rightHandItem)
+    const std::shared_ptr<Object> rightHandItem = heldItem(selfInventory, SLOT_RIGHT);
+    if (isUsableRangedWeapon(rightHandItem))
     {
-        if ( rightHandItem->getProfile()->isRangedWeapon() && (0 == rightHandItem->getAmmoMax() || (0 != rightHandItem->getAmmo())))
-        {
-            state.argument = LATCHBUTTON_RIGHT;
-            returncode = true;
-        }
+        state.argument = LATCHBUTTON_RIGHT;
+        returncode = true;
     }
 
     //50% chance to check left hand even though we have already found one in our right hand
     if ( !returncode || Random::nextBool() )
     {
         // Check left hand
-        const std::shared_ptr<Object> &leftHandItem = objectHandler()[pchr->getHeldObject(SLOT_LEFT)];
-        if (leftHandItem)
+        const std::shared_ptr<Object> leftHandItem = heldItem(selfInventory, SLOT_LEFT);
+        if (isUsableRangedWeapon(leftHandItem))
         {
-            if ( leftHandItem->getProfile()->isRangedWeapon() && (0 == leftHandItem->getAmmoMax() || (0 != leftHandItem->getAmmo())))
-            {
-                state.argument = LATCHBUTTON_LEFT;
-                returncode = true;
-            }
+            state.argument = LATCHBUTTON_LEFT;
+            returncode = true;
         }
-
     }
 
     SCRIPT_FUNCTION_END();
@@ -972,20 +998,18 @@ uint8_t scr_IfHoldingMeleeWeapon( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     state.argument = 0;
+    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
 
     if ( !returncode )
     {
         // Check right hand
-        const std::shared_ptr<Object> &rightItem = pchr->getRightHandItem();
-        if (rightItem)
+        const std::shared_ptr<Object> rightItem = heldItem(selfInventory, SLOT_RIGHT);
+        if (isMeleeWeapon(rightItem))
         {
-            if ( !rightItem->getProfile()->isRangedWeapon() && rightItem->getProfile()->getWeaponAction() != ACTION_PA )
+            if ( 0 == state.argument || ( worldUpdateCount() & 1 ) )
             {
-                if ( 0 == state.argument || ( worldUpdateCount() & 1 ) )
-                {
-                    state.argument = LATCHBUTTON_RIGHT;
-                    returncode = true;
-                }
+                state.argument = LATCHBUTTON_RIGHT;
+                returncode = true;
             }
         }
     }
@@ -993,14 +1017,11 @@ uint8_t scr_IfHoldingMeleeWeapon( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // Check left hand
-        const std::shared_ptr<Object> &leftItem = pchr->getLeftHandItem();
-        if (leftItem)
+        const std::shared_ptr<Object> leftItem = heldItem(selfInventory, SLOT_LEFT);
+        if (isMeleeWeapon(leftItem))
         {
-            if ( !leftItem->getProfile()->isRangedWeapon() && leftItem->getProfile()->getWeaponAction() != ACTION_PA )
-            {
-                state.argument = LATCHBUTTON_LEFT;
-                returncode = true;
-            }
+            state.argument = LATCHBUTTON_LEFT;
+            returncode = true;
         }
     }
 
@@ -1020,32 +1041,27 @@ uint8_t scr_IfHoldingShield( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     state.argument = 0;
+    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
 
     if ( !returncode )
     {
         // Check right hand
-        const std::shared_ptr<Object> &rightItem = pchr->getRightHandItem();
-        if ( rightItem )
+        const std::shared_ptr<Object> rightItem = heldItem(selfInventory, SLOT_RIGHT);
+        if (isShield(rightItem))
         {
-            if ( rightItem->getProfile()->getWeaponAction() == ACTION_PA )
-            {
-                state.argument = LATCHBUTTON_RIGHT;
-                returncode = true;
-            }
+            state.argument = LATCHBUTTON_RIGHT;
+            returncode = true;
         }
     }
 
     if ( !returncode )
     {
         // Check left hand
-        const std::shared_ptr<Object> &leftItem = pchr->getLeftHandItem();
-        if ( leftItem )
-        {     
-            if ( leftItem->getProfile()->getWeaponAction() == ACTION_PA )
-            {
-                state.argument = LATCHBUTTON_LEFT;
-                returncode = true;
-            }
+        const std::shared_ptr<Object> leftItem = heldItem(selfInventory, SLOT_LEFT);
+        if (isShield(leftItem))
+        {
+            state.argument = LATCHBUTTON_LEFT;
+            returncode = true;
         }
     }
 
@@ -1191,10 +1207,10 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    const std::shared_ptr<Object> holder = objectHandler()[pchr->getHolderRef()];
-    if (holder)
+    IInventoryHolder* holderInventory = tryInventoryHolder(pchr->getHolderRef());
+    if (holderInventory != nullptr)
     {
-        returncode = holder->getHeldObject(SLOT_LEFT) == pchr->getObjRef();
+        returncode = holderInventory->getHeldObject(SLOT_LEFT) == pchr->getObjRef();
     }
 
     SCRIPT_FUNCTION_END();

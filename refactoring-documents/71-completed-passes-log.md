@@ -454,6 +454,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by introducing the read-on
 
 Extended `ScriptTargetFunctions.cpp` with direct coverage for the new target-query role paths across inventory-equipped item resolution, team predicates, hurt/mana checks, mount detection, and weapon classification. Build, focused script-target tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 106 — Conservative held-item role sweep (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_state.c` by routing the bounded held-item predicate block (`IfHoldingItemID`, ranged/melee/shield checks, and `IfHeldInLeftHand`) through local `ITargetInfo` / `IInventoryHolder` adapters instead of concrete `Object` hand access. Kept latch-selection semantics, ammo gating, and holder-slot behavior unchanged.
+
+Extended `ScriptStateFunctions.cpp` with direct coverage for held-item IDSZ detection, ranged ammo gating with left-hand fallback, right-hand preference for melee/shield detection, and holder-left-hand detection through the landed inventory-holder seam. Build, focused script-state tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

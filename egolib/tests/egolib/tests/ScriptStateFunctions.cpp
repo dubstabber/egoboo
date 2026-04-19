@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
@@ -130,6 +131,69 @@ protected:
         const bool began = session.beginModule(module, 47);
         EXPECT_TRUE(began);
         return session.activeModule();
+    }
+
+    std::shared_ptr<Object> makeRangedWeapon(GameModule& module, int slotBase) const
+    {
+        static const std::vector<std::string> candidates = {
+            "mp_data/globalobjects/weapons/xbow.obj",
+            "mp_data/globalobjects/weapons/lbow.obj",
+            "mp_data/globalobjects/weapons/pistol.obj"
+        };
+
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+            auto item = makeObject(module, candidates[i], slotBase + static_cast<int>(i));
+            if (item && item->getProfile()->isRangedWeapon())
+            {
+                return item;
+            }
+        }
+
+        ADD_FAILURE() << "unable to load a ranged-weapon fixture";
+        return nullptr;
+    }
+
+    std::shared_ptr<Object> makeMeleeWeapon(GameModule& module, int slotBase) const
+    {
+        static const std::vector<std::string> candidates = {
+            "mp_data/globalobjects/weapons/stiletto.obj",
+            "mp_data/globalobjects/weapons/broadsword.obj",
+            "mp_data/globalobjects/weapons/mace.obj"
+        };
+
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+            auto item = makeObject(module, candidates[i], slotBase + static_cast<int>(i));
+            if (item && !item->getProfile()->isRangedWeapon() && item->getProfile()->getWeaponAction() != ACTION_PA)
+            {
+                return item;
+            }
+        }
+
+        ADD_FAILURE() << "unable to load a melee-weapon fixture";
+        return nullptr;
+    }
+
+    std::shared_ptr<Object> makeShield(GameModule& module, int slotBase) const
+    {
+        static const std::vector<std::string> candidates = {
+            "mp_data/globalobjects/armor/atshield.obj",
+            "mp_data/globalobjects/armor/kiteshield.obj",
+            "mp_data/globalobjects/armor/rshield.obj"
+        };
+
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+            auto item = makeObject(module, candidates[i], slotBase + static_cast<int>(i));
+            if (item && item->getProfile()->getWeaponAction() == ACTION_PA)
+            {
+                return item;
+            }
+        }
+
+        ADD_FAILURE() << "unable to load a shield fixture";
+        return nullptr;
     }
 
     ai_state_t makeScriptSelf(const std::shared_ptr<Object>& selfObject) const
@@ -325,6 +389,108 @@ TEST_F(ScriptStateFunctionsFixture, IfUnarmedReadsHeldSlotsThroughInventoryHolde
 
     actor->setHeldObject(SLOT_LEFT, leftHandItem->getObjRef());
     EXPECT_FALSE(scr_IfUnarmed(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHoldingItemIDReadsHeldItemsThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5539);
+    auto item = makeMeleeWeapon(module, 5540);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->attachToObject(actor, GRIP_RIGHT));
+
+    script_state_t state;
+    state.argument = item->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfHoldingItemID(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHoldingRangedWeaponUsesHeldSlotRoleAndAmmoGate)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5543);
+    auto rightHandItem = makeRangedWeapon(module, 5544);
+    auto leftHandItem = makeRangedWeapon(module, 5547);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(rightHandItem, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+
+    rightHandItem->setAmmo(0);
+    if (leftHandItem->getAmmoMax() > 0)
+    {
+        leftHandItem->setAmmo(1);
+    }
+
+    script_state_t state;
+    state.argument = 0;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfHoldingRangedWeapon(state, self));
+    EXPECT_EQ(state.argument, LATCHBUTTON_LEFT);
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHoldingMeleeWeaponPrefersRightHandThroughInventoryRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5553);
+    auto rightHandItem = makeMeleeWeapon(module, 5554);
+    auto leftHandItem = makeMeleeWeapon(module, 5557);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(rightHandItem, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+
+    script_state_t state;
+    state.argument = 0;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfHoldingMeleeWeapon(state, self));
+    EXPECT_EQ(state.argument, LATCHBUTTON_RIGHT);
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHoldingShieldPrefersRightHandThroughInventoryRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5563);
+    auto rightHandItem = makeShield(module, 5564);
+    auto leftHandItem = makeShield(module, 5567);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(rightHandItem, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+
+    script_state_t state;
+    state.argument = 0;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfHoldingShield(state, self));
+    EXPECT_EQ(state.argument, LATCHBUTTON_RIGHT);
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandReadsHolderSlotThroughInventoryRole)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 5573);
+    auto heldItem = makeMeleeWeapon(module, 5574);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_LEFT));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(heldItem);
+
+    EXPECT_TRUE(scr_IfHeldInLeftHand(state, self));
 }
 
 TEST_F(ScriptStateFunctionsFixture, SetDamageTimePublishesThroughDamageableRole)
