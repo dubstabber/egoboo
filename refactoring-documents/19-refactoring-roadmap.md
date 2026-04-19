@@ -56,10 +56,10 @@ This remains the SRP/ISP keystone for `Object`.
 
 ~1,150 `::get()` call sites remain (see `CODEBASE-HEALTH-STATUS.md` §4). Start with the smallest-reach singleton and build the DIP seam once, then apply the pattern:
 
-- First target: `AudioSystem` (~34 internal sites + a few gameplay callers).
-- Introduce `IAudioSystem` abstract interface; route all non-audio callers through a constructor-injected or context-owned reference.
-- Keep `AudioSystem::get()` as the bootstrap seam inside `Audio/` until a DI container is defined.
-- Repeat for `ImageManager`, `ProfileSystem`, `PerkHandler`, `Log`, `egoboo_config_t` as separate passes.
+- Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`.
+- Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.
+- Keep `AudioSystem::get()`, `PerkHandler::get()`, and `ImageManager::get()` as subsystem-local bootstrap seams until a DI container is defined.
+- Repeat the pattern for `ProfileSystem`, `Log`, and `egoboo_config_t` as separate passes.
 
 **Risk:** Medium. First pass defines the pattern; later passes mostly mechanical.
 

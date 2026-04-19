@@ -1,13 +1,13 @@
 #include "egolib/Renderer/OpenGL/DefaultTexture.hpp"
 
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Renderer/OpenGL/Utilities.hpp"
-#include "egolib/Image/ImageManager.hpp"
 
 namespace Ego {
 namespace OpenGL {
 
 DefaultTexture::DefaultTexture(std::shared_ptr<RendererInfo> info, const std::string& name, idlib::texture_type type) :
-    m_name(name), m_type(type), m_image(ImageManager::get().getDefaultImage()),
+    m_name(name), m_type(type), m_image(EngineContext::get().imageManager().getDefaultImage()),
     m_sampler(idlib::texture_filter_method::nearest, idlib::texture_filter_method::nearest,
               idlib::texture_filter_method::none, idlib::texture_address_mode::repeat,
               idlib::texture_address_mode::repeat, 1.0f),

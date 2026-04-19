@@ -24,6 +24,7 @@
 #pragma once
 
 #include "egolib/Graphics/PixelFormat.hpp"
+#include "egolib/Image/IImageManager.hpp"
 #include <SDL.h>
 #undef main
 
@@ -36,7 +37,7 @@ class ImageLoader;
 /// @todo
 /// The image manager currently abstracts away the SDL_image/SDL image loading facilities.
 /// It is - in the end - just a minor improvement over the previous code, just enough to get going.
-class ImageManager : public idlib::singleton<ImageManager>
+class ImageManager : public idlib::singleton<ImageManager>, public IImageManager
 {
 private:
     using Loaders = std::vector<std::unique_ptr<ImageLoader>>;
@@ -110,34 +111,37 @@ public:
     /// @remark The default image is a checkerboard texture consisting of
     /// 8 x 8 checkers each of a width and height of 16 x 16 pixels.
     /// The x,y-the checker is black if z = x + y * 8 is odd and is white otherwise.
-	std::shared_ptr<SDL_Surface> getDefaultImage();
+	std::shared_ptr<SDL_Surface> getDefaultImage() const override;
 
     /// @brief Create a software(!) surface of the specified width, height, and pixel format.
     /// @param width, height the width and the height
     /// @param pixel_descriptor the pixel descriptor of the pixels
     /// @param pixels a pointer to the pixels
-    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height, size_t pitch, const pixel_descriptor& pixel_descriptor, void *pixels);
+    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height, size_t pitch, const pixel_descriptor& pixel_descriptor, void *pixels) const override;
 
     /// @brief Create a software(!) surface of the specified width, height, and pixel format.
     /// @param width, height the width and the height
     /// @param pixel_descriptor the pixel descriptor of the pixels
-    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height, const pixel_descriptor& pixel_descriptor);
+    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height, const pixel_descriptor& pixel_descriptor) const override;
 
     /// @brief Create a software(!) surface of the specified width and height.
     /// The pixel format is <c>Ego::pixel_format::R8G8B8A8</c>.
     /// @param width, height the width and the height
     /// @return a pointer to the surface on success, a null pointer on failure
-    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height);
+    std::shared_ptr<SDL_Surface> createImage(size_t width, size_t height) const;
 
     /// @brief Save pixels to a BMP file.
     /// @param pixels the pixels to save
     /// @param pathname the pathname (relative or absolute path, filename, and extension) to save the image to
-    void save_as_bmp(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname);
+    void save_as_bmp(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname) const;
 
     /// @brief Save pixels to a PNG file.
     /// @param pixels the pixels to save
     /// @param pathname the pathname (relative or absolute path, filename, and extension) to save the image to
-    void save_as_png(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname);
+    void save_as_png(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname) const override;
+
+    bool imageExistsWithKnownExtension(const std::string& basename) const override;
+    std::shared_ptr<SDL_Surface> loadImageWithKnownExtension(const std::string& basename, std::string* resolvedPath = nullptr) const override;
 };
 
 } // namespace Ego

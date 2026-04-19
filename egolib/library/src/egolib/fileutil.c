@@ -28,8 +28,7 @@
 #include "egolib/strutil.h"
 #include "egolib/platform.h"
 #include "egolib/egoboo_setup.h"
-#include "egolib/Image/ImageManager.hpp"
-#include "egolib/Image/ImageLoader.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/_math.h"
 // includes for egoboo constants
 #include "egolib/Graphics/ModelDescriptor.hpp"                    // for ACTION_* constants
@@ -1283,18 +1282,7 @@ bool vfs_get_next_bool(ReadContext& ctxt) {
 //--------------------------------------------------------------------------------------------
 bool ego_texture_exists_vfs(const std::string &filename)
 {
-    // Try all different formats.
-    for (const auto& loader : Ego::ImageManager::get())
-    {
-        for (const auto& extension : loader.getExtensions()) {
-            // Build the full file name.
-            std::string fullFilename = filename + extension;
-            if (vfs_exists(fullFilename)) {
-                return true;
-            }
-        }
-    }
-    return false;
+    return EngineContext::get().imageManager().imageExistsWithKnownExtension(filename);
 }
 
 //--------------------------------------------------------------------------------------------

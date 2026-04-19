@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -35,12 +36,24 @@ private:
     Ego::Perks::Perk _perk;
 };
 
+class StubImageManager : public Ego::IImageManager
+{
+public:
+    std::shared_ptr<SDL_Surface> getDefaultImage() const override { return nullptr; }
+    std::shared_ptr<SDL_Surface> createImage(size_t, size_t, size_t, const Ego::pixel_descriptor&, void*) const override { return nullptr; }
+    std::shared_ptr<SDL_Surface> createImage(size_t, size_t, const Ego::pixel_descriptor&) const override { return nullptr; }
+    void save_as_png(const std::shared_ptr<SDL_Surface>&, const std::string&) const override {}
+    bool imageExistsWithKnownExtension(const std::string&) const override { return false; }
+    std::shared_ptr<SDL_Surface> loadImageWithKnownExtension(const std::string&, std::string*) const override { return nullptr; }
+};
+
 class EngineContextFixture : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearImageManager();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
@@ -48,6 +61,7 @@ protected:
     void TearDown() override
     {
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearImageManager();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
@@ -170,6 +184,14 @@ TEST_F(EngineContextFixture, PerkHandlerThrowsWhenNoPerkHandlerIsInstalled)
     EXPECT_THROW(context.perkHandler(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ImageManagerThrowsWhenNoImageManagerIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, InstallPerkHandlerPublishesInstalledPerkHandler)
 {
     EngineContext& context = EngineContext::get();
@@ -179,6 +201,17 @@ TEST_F(EngineContextFixture, InstallPerkHandlerPublishesInstalledPerkHandler)
 
     EXPECT_EQ(context.tryPerkHandler(), &perkHandler);
     EXPECT_EQ(&context.perkHandler(), &perkHandler);
+}
+
+TEST_F(EngineContextFixture, InstallImageManagerPublishesInstalledImageManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubImageManager imageManager;
+    context.installImageManager(imageManager);
+
+    EXPECT_EQ(context.tryImageManager(), &imageManager);
+    EXPECT_EQ(&context.imageManager(), &imageManager);
 }
 
 TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
@@ -191,6 +224,18 @@ TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
 
     EXPECT_THROW(context.installPerkHandler(second), std::logic_error);
     EXPECT_EQ(context.tryPerkHandler(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallImageManagerRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubImageManager first;
+    StubImageManager second;
+    context.installImageManager(first);
+
+    EXPECT_THROW(context.installImageManager(second), std::logic_error);
+    EXPECT_EQ(context.tryImageManager(), &first);
 }
 
 TEST_F(EngineContextFixture, ClearPerkHandlerRemovesInstalledPerkHandler)
@@ -206,6 +251,19 @@ TEST_F(EngineContextFixture, ClearPerkHandlerRemovesInstalledPerkHandler)
     EXPECT_THROW(context.perkHandler(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ClearImageManagerRemovesInstalledImageManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubImageManager imageManager;
+    context.installImageManager(imageManager);
+
+    context.clearImageManager();
+
+    EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)
 {
     EngineContext& context = EngineContext::get();
@@ -219,6 +277,21 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryPerkHandler(), nullptr);
     EXPECT_THROW(context.perkHandler(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledImageManager)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubImageManager imageManager;
+    context.installImageManager(imageManager);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_THROW(context.imageManager(), std::logic_error);
 }
 
 } // namespace

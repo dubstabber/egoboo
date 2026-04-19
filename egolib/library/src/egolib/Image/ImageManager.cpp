@@ -186,7 +186,7 @@ ImageManager::Iterator ImageManager::end() const
     return Iterator(loaders.end());
 }
 
-std::shared_ptr<SDL_Surface> ImageManager::getDefaultImage()
+std::shared_ptr<SDL_Surface> ImageManager::getDefaultImage() const
 {
     /// Create a surface of 8 x 8 blocks each of 16 x 16 pixels.
     const auto& pixelFormatDescriptor = pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>();
@@ -216,7 +216,7 @@ std::shared_ptr<SDL_Surface> ImageManager::getDefaultImage()
     return surface;
 }
 
-std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height, size_t pitch, const pixel_descriptor& pixel_descriptor, void *pixels)
+std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height, size_t pitch, const pixel_descriptor& pixel_descriptor, void *pixels) const
 {
     SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(pixels,
                                                     width,
@@ -236,7 +236,7 @@ std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t heig
     return std::shared_ptr<SDL_Surface>(surface, [](SDL_Surface *surface) { SDL_FreeSurface(surface); });
 }
 
-std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height, const pixel_descriptor& pixel_descriptor)
+std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height, const pixel_descriptor& pixel_descriptor) const
 {
     SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height,
                                                 pixel_descriptor.get_color_depth().depth(),
@@ -253,18 +253,80 @@ std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t heig
     return std::shared_ptr<SDL_Surface>(surface, [](SDL_Surface *surface) { SDL_FreeSurface(surface); });
 }
 
-std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height)
+std::shared_ptr<SDL_Surface> ImageManager::createImage(size_t width, size_t height) const
 {
     return createImage(width, height, pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>());
 }
 
-void ImageManager::save_as_bmp(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname)
+void ImageManager::save_as_bmp(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname) const
 {
     SDL_SaveBMP_RW(pixels.get(), vfs_openRWopsWrite(pathname.c_str()), 1);
 }
-void ImageManager::save_as_png(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname)
+void ImageManager::save_as_png(const std::shared_ptr<SDL_Surface>& pixels, const std::string& pathname) const
 {
     IMG_SavePNG_RW(pixels.get(), vfs_openRWopsWrite(pathname.c_str()), 1);
+}
+
+bool ImageManager::imageExistsWithKnownExtension(const std::string& basename) const
+{
+    for (const auto& loader : loaders)
+    {
+        for (const auto& extension : loader->getExtensions())
+        {
+            if (vfs_exists(basename + extension))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+std::shared_ptr<SDL_Surface> ImageManager::loadImageWithKnownExtension(const std::string& basename, std::string* resolvedPath) const
+{
+    if (resolvedPath)
+    {
+        resolvedPath->clear();
+    }
+
+    for (const auto& loader : loaders)
+    {
+        for (const auto& extension : loader->getExtensions())
+        {
+            const std::string fullFilename = basename + extension;
+            vfs_FILE* file = vfs_openRead(fullFilename);
+            if (!file)
+            {
+                continue;
+            }
+
+            std::shared_ptr<SDL_Surface> surface = nullptr;
+            try
+            {
+                surface = loader->load(file);
+            }
+            catch (...)
+            {
+                vfs_close(file);
+                continue;
+            }
+
+            vfs_close(file);
+            if (!surface)
+            {
+                continue;
+            }
+
+            if (resolvedPath)
+            {
+                *resolvedPath = fullFilename;
+            }
+            return surface;
+        }
+    }
+
+    return nullptr;
 }
 } // namespace Ego
 

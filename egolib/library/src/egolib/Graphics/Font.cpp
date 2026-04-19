@@ -28,8 +28,8 @@
 #include "egolib/Graphics/FontManager.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
 #include "egolib/Core/System.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Renderer/Renderer.hpp"
-#include "egolib/Image/ImageManager.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/vfs.h"
@@ -521,7 +521,7 @@ std::shared_ptr<SDL_Surface> Font::layoutToTexture(const std::string &text, cons
 
     auto colorByte = Colour3b(colour);
 
-    auto surf = ImageManager::get().createImage(surfWidth, surfHeight, pfd);
+    auto surf = EngineContext::get().imageManager().createImage(surfWidth, surfHeight, pfd);
     idlib::fill(surf.get(), Colour4b(colorByte, 0));
     SDL::setBlendMode(surf.get(), SDL::BlendMode::NoBlending);
 
@@ -571,7 +571,7 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
     auto pfd = pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>();
 
     while (currentMaxSize <= maxTextureSize) {
-        atlas = ImageManager::get().createImage(currentMaxSize, currentMaxSize, pfd);
+        atlas = EngineContext::get().imageManager().createImage(currentMaxSize, currentMaxSize, pfd);
         idlib::fill(atlas.get(), Colour4b(Colour3b::white(), 0));
         SDL::setBlendMode(atlas.get(), SDL::BlendMode::NoBlending);
 

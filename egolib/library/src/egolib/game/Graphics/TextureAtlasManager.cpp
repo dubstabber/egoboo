@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/game/graphic.h" //only for MESH_IMG_COUNT constant
@@ -64,7 +65,7 @@ void TextureAtlasManager::decimate(const std::shared_ptr<const Ego::Texture>& so
 
             // Create the destination surface.
             const auto& pfd = pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>();
-            auto targetImage = ImageManager::get().createImage(rectangle.w, rectangle.h, pfd);
+            auto targetImage = EngineContext::get().imageManager().createImage(rectangle.w, rectangle.h, pfd);
             if (!targetImage) {
                 continue;
             }

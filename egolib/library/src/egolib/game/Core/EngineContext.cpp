@@ -1,6 +1,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
@@ -12,6 +13,7 @@ namespace
 std::unique_ptr<GameEngine> activeEngine;
 IAudioSystem* activeAudioSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
+Ego::IImageManager* activeImageManager = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -37,6 +39,7 @@ void EngineContext::clearEngine()
 {
     clearAudioSystem();
     clearPerkHandler();
+    clearImageManager();
     activeEngine.reset();
 }
 
@@ -196,6 +199,50 @@ const Ego::Perks::IPerkHandler& EngineContext::perkHandler() const
         throw std::logic_error("no active perk handler");
     }
     return *currentPerkHandler;
+}
+
+void EngineContext::installImageManager(Ego::IImageManager& imageManager)
+{
+    if (activeImageManager)
+    {
+        throw std::logic_error("image manager already installed");
+    }
+    activeImageManager = &imageManager;
+}
+
+void EngineContext::clearImageManager()
+{
+    activeImageManager = nullptr;
+}
+
+Ego::IImageManager* EngineContext::tryImageManager()
+{
+    return activeImageManager;
+}
+
+const Ego::IImageManager* EngineContext::tryImageManager() const
+{
+    return activeImageManager;
+}
+
+Ego::IImageManager& EngineContext::imageManager()
+{
+    Ego::IImageManager* currentImageManager = tryImageManager();
+    if (!currentImageManager)
+    {
+        throw std::logic_error("no active image manager");
+    }
+    return *currentImageManager;
+}
+
+const Ego::IImageManager& EngineContext::imageManager() const
+{
+    const Ego::IImageManager* currentImageManager = tryImageManager();
+    if (!currentImageManager)
+    {
+        throw std::logic_error("no active image manager");
+    }
+    return *currentImageManager;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

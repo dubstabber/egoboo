@@ -1,6 +1,7 @@
 #pragma once
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "idlib/non_copyable.hpp"
 
@@ -48,6 +49,15 @@ public:
 
     Ego::Perks::IPerkHandler& perkHandler();
     const Ego::Perks::IPerkHandler& perkHandler() const;
+
+    void installImageManager(Ego::IImageManager& imageManager);
+    void clearImageManager();
+
+    Ego::IImageManager* tryImageManager();
+    const Ego::IImageManager* tryImageManager() const;
+
+    Ego::IImageManager& imageManager();
+    const Ego::IImageManager& imageManager() const;
 
     uint32_t renderedFrameCount() const;
 

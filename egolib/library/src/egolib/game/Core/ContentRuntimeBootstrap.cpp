@@ -47,6 +47,7 @@ ContentRuntimeBootstrap::ContentRuntimeBootstrap(const Options& options) :
     if (_options.initializeImageManager)
     {
         Ego::ImageManager::initialize();
+        EngineContext::get().installImageManager(Ego::ImageManager::get());
         _imageManagerInitialized = true;
     }
 
@@ -79,6 +80,7 @@ ContentRuntimeBootstrap::~ContentRuntimeBootstrap()
 
     if (_imageManagerInitialized)
     {
+        EngineContext::get().clearImageManager();
         Ego::ImageManager::uninitialize();
     }
 

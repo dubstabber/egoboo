@@ -1,5 +1,6 @@
 #include "egolib/App.hpp"
 
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Graphics/TextureManager.hpp"
@@ -16,6 +17,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     GraphicsSystem::initialize();
     // Initialize the image manager.
     ImageManager::initialize();
+    EngineContext::get().installImageManager(ImageManager::get());
     // Initialize the renderer.
     Renderer::initialize();
     // Initialize the texture manager.
@@ -69,6 +71,7 @@ AppImpl::~AppImpl()
     // Uninitialize the renderer.
     Renderer::uninitialize();
     // Uninitialize the image manager.
+    EngineContext::get().clearImageManager();
     ImageManager::uninitialize();
     // Uninitialize the graphics system.
     GraphicsSystem::uninitialize();

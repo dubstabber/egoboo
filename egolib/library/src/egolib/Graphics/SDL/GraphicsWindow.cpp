@@ -1,8 +1,8 @@
 #include "egolib/Graphics/SDL/GraphicsWindow.hpp"
 
 #include "egolib/egoboo_setup.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
-#include "egolib/Image/ImageManager.hpp"
 #include "egolib/Extensions/ogl_extensions.h"
 
 namespace Ego { namespace SDL {
@@ -349,7 +349,7 @@ std::shared_ptr<SDL_Surface> GraphicsWindow::getContents() const
     {
         auto pixel_format = Ego::SDL::getPixelFormat(surface);
         auto pixel_descriptor = Ego::pixel_descriptor::get(pixel_format);
-        return ImageManager::get().createImage((size_t)surface->w, (size_t)surface->h, (size_t)surface->pitch, pixel_descriptor, surface->pixels);
+        return EngineContext::get().imageManager().createImage((size_t)surface->w, (size_t)surface->h, (size_t)surface->pitch, pixel_descriptor, surface->pixels);
     }
     catch (...)
     {

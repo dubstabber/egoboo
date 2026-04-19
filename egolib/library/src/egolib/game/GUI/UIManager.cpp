@@ -23,6 +23,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/UIManager.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -165,7 +166,7 @@ bool UIManager::dumpScreenshot() {
     try
     {
         auto screenshot = GraphicsSystem::get().window->getContents();
-        ImageManager::get().save_as_png(screenshot, file);
+        EngineContext::get().imageManager().save_as_png(screenshot, file);
     }
     catch (...)
     {

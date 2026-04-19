@@ -23,8 +23,7 @@
 #include "egolib/_math.h"
 #include "egolib/fileutil.h"
 #include "egolib/Graphics/TextureManager.hpp"
-#include "egolib/Image/ImageManager.hpp"
-#include "egolib/Image/ImageLoader.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 /**
  * @brief
@@ -48,40 +47,9 @@ static bool ego_texture_load_vfs(std::shared_ptr<Ego::Texture> texture, const ch
     // Get rid of any old data.
     texture->release();
 
-    // Load the image.
-    bool retval = false;
-
-    // Try all different formats.
-    for (const auto& loader : Ego::ImageManager::get()) {
-        for (const auto& extension : loader.getExtensions()) {
-            texture->release();
-            // Build the full file name.
-            std::string fullFilename = filename + extension;
-            // Open the file.
-            vfs_FILE *file = vfs_openRead(fullFilename);
-            if (!file) {
-                continue;
-            }
-            // Stream the surface.
-            std::shared_ptr<SDL_Surface> surface = nullptr;
-            try {
-                surface = loader.load(file);
-            } catch (...) {
-                vfs_close(file);
-                continue;
-            }
-            vfs_close(file);
-            if (!surface) {
-                continue;
-            }
-            // Create the texture from the surface.
-            retval = texture->load(fullFilename, surface);
-            if (retval) {
-                goto End;
-            }
-        }
-    }
-End:
+    std::string fullFilename;
+    std::shared_ptr<SDL_Surface> surface = EngineContext::get().imageManager().loadImageWithKnownExtension(filename, &fullFilename);
+    const bool retval = surface && texture->load(fullFilename, surface);
     if (!retval) {
         auto resolved = vfs_resolveReadFilename(filename);
         Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load texture file ", "`", resolved.second, "`", Log::EndOfEntry);

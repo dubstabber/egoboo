@@ -477,9 +477,6 @@ void GameEngine::uninitialize()
     // Uninitialize the GFX system.
     GFX::uninitialize();
 
-    // Uninitialize the image manager.
-    Ego::ImageManager::uninitialize();
-
 	// Uninitialize the input system.
 	Ego::Input::InputSystem::uninitialize();
 
