@@ -495,6 +495,42 @@ TEST_F(ScriptSystemsFunctionsFixture, UnkurseTargetUsesCharacterStateRoleAndPres
     EXPECT_TRUE(itemTarget->isKursed());
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, UnkurseTargetInventoryUsesRoleLookupsAndPreservesActorPocketBehavior)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5674);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5675);
+    auto leftHeldItem = makeInventoryItem(module, 5676);
+    auto rightHeldItem = makeInventoryItem(module, 5679);
+    auto actorPocketItem = makeInventoryItem(module, 5682);
+    auto targetPocketItem = makeInventoryItem(module, 5685);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(leftHeldItem, nullptr);
+    ASSERT_NE(rightHeldItem, nullptr);
+    ASSERT_NE(actorPocketItem, nullptr);
+    ASSERT_NE(targetPocketItem, nullptr);
+    ASSERT_TRUE(leftHeldItem->attachToObject(target, GRIP_LEFT));
+    ASSERT_TRUE(rightHeldItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(Inventory::add_item(*actor, actorPocketItem, actor->getFirstFreeInventorySlot(), true));
+    ASSERT_TRUE(Inventory::add_item(*target, targetPocketItem, target->getFirstFreeInventorySlot(), true));
+
+    leftHeldItem->setKursed(true);
+    rightHeldItem->setKursed(true);
+    actorPocketItem->setKursed(true);
+    targetPocketItem->setKursed(true);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_UnkurseTargetInventory(state, self));
+    EXPECT_FALSE(leftHeldItem->isKursed());
+    EXPECT_FALSE(rightHeldItem->isKursed());
+    EXPECT_FALSE(actorPocketItem->isKursed());
+    EXPECT_TRUE(targetPocketItem->isKursed());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, AddBlipAllEnemiesPublishesAndResetsEnemySense)
 {
     auto& module = beginActiveTestModule();

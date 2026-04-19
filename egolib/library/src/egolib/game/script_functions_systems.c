@@ -1311,28 +1311,32 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function unkurses all items held and in the pockets of the target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-	ObjectRef ichr;
-    ichr = pself_target->getHeldObject(SLOT_LEFT);
-    if ( objectHandler().exists( ichr ) )
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
     {
-        objectHandler().get(ichr)->setKursed(false);
+        return false;
     }
 
-    ichr = pself_target->getHeldObject(SLOT_RIGHT);
-    if ( objectHandler().exists( ichr ) )
+    ICharacterState* heldItemState = tryCharacterState(targetInventory->getHeldObject(SLOT_LEFT));
+    if (heldItemState != nullptr)
     {
-        objectHandler().get(ichr)->setKursed(false);
+        heldItemState->setKursed(false);
     }
 
-    for (const std::shared_ptr<Object>& pitem : pchr->getInventoryItems())
+    heldItemState = tryCharacterState(targetInventory->getHeldObject(SLOT_RIGHT));
+    if (heldItemState != nullptr)
     {
-        pitem->setKursed(false);
+        heldItemState->setKursed(false);
+    }
+
+    for (const std::shared_ptr<Object>& pitem : inventoryHolder(*pchr).getInventoryItems())
+    {
+        if (pitem != nullptr)
+        {
+            characterState(*pitem).setKursed(false);
+        }
     }
 
     SCRIPT_FUNCTION_END();

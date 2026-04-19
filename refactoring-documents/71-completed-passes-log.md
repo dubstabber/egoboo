@@ -490,6 +490,12 @@ Continued Tier 1.2 with a narrow `script_functions_systems.c` follow-on: routed 
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for unkurse failure semantics, enemy-sense publication/reset, and target-attributed self-damage. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 112 — Conservative inventory-state cleanup (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by routing `UnkurseTargetInventory` through the landed `IInventoryHolder` and `ICharacterState` seams instead of direct concrete-`Object` handling. Kept the current mixed semantics intact: target held items are uncursed, while the pocket loop still operates on the actor inventory rather than retconning the helper's legacy behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused regression pinning the preserved actor-pocket behavior alongside the target-held-item cleanup. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
