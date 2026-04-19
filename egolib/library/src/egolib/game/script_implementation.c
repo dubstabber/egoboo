@@ -582,29 +582,3 @@ bool FlashObject( Object * pchr, uint8_t value )
 	pchr->flash(value);
 	return true;
 }
-
-//--------------------------------------------------------------------------------------------
-int RestockAmmo( const ObjectRef character, const IDSZ2& idsz )
-{
-    /// @author ZZ
-    /// @details This function restocks the characters ammo, if it needs ammo and if
-    ///    either its parent or type idsz match the given idsz.  This
-    ///    function returns the amount of ammo given.
-
-    const std::shared_ptr<Object> &pchr = objectHandler()[character];
-    if(!pchr) {
-        return 0;
-    }
-
-    int amount = 0;
-    if (pchr->getProfile()->hasTypeIDSZ(idsz))
-    {
-        if (pchr->getAmmo() < pchr->getAmmoMax())
-        {
-            amount = pchr->getAmmoMax() - pchr->getAmmo();
-            pchr->setAmmo(pchr->getAmmoMax());
-        }
-    }
-
-    return amount;
-}

@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 110) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 116) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -513,6 +513,12 @@ Extended `ConfigReadMostly.cpp` with focused regressions covering installed-conf
 Continued Tier 1.2 inside `script_functions_state.c` by routing `scr_IfBackstabbed()` through the landed `IScriptable::getAILastAttacker()` seam instead of reading the raw attacker ref from `ai_state_t`. Kept the existing behind-angle, physical-damage, and terminated-attacker semantics unchanged while avoiding any new role widening.
 
 Extended `ScriptStateFunctions.cpp` with focused regressions covering the scriptable last-attacker source of truth plus missing/terminated attacker failure behavior. Build, the focused script-state test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 116 — Inventory/ammo leaf closure for script systems (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by localizing the remaining single-use ammo-restock helper and routing the bounded inventory/ammo leaf helpers (`CostTargetItemID`, `RestockTargetAmmoIDAll`, `RestockTargetAmmoIDFirst`) through the landed `IInventoryHolder` and `ICharacterState` seams instead of bouncing back through a shared raw-`ObjectRef` helper in `script_implementation.c`. Kept the legacy traversal and mixed semantics intact: target hands are still checked before target or actor inventory exactly as before, and the actor-pocket vs target-hand behavior remains unchanged.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused no-match regression for the localized restock path alongside the existing held-item, actor-inventory, and traversal-order coverage. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
 ---
 

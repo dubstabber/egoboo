@@ -20,6 +20,24 @@ ICharacterState& characterState(Object& object)
 {
     return object;
 }
+
+int restockAmmoIfMatching(const std::shared_ptr<Object>& item, const IDSZ2& idsz)
+{
+    if (!item || !item->getProfile()->hasTypeIDSZ(idsz))
+    {
+        return 0;
+    }
+
+    ICharacterState& itemState = characterState(*item);
+    if (itemState.getAmmo() >= itemState.getAmmoMax())
+    {
+        return 0;
+    }
+
+    const int amount = itemState.getAmmoMax() - itemState.getAmmo();
+    itemState.setAmmo(itemState.getAmmoMax());
+    return amount;
+}
 }
 
 
@@ -637,17 +655,14 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     int iTmp = 0;  // Amount of ammo given
     const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
     const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
+    const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
-	ObjectRef ichr;
-    ichr = targetInventory.getHeldObject(SLOT_LEFT);
-    iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
-
-    ichr = targetInventory.getHeldObject(SLOT_RIGHT);
-    iTmp += RestockAmmo( ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_LEFT)), idsz);
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_RIGHT)), idsz);
 
     for (const std::shared_ptr<Object>& pitem : selfInventory.getInventoryItems())
     {
-        iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
+        iTmp += restockAmmoIfMatching(pitem, idsz);
     }
 
     state.argument = iTmp;
@@ -674,21 +689,20 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
     int iTmp = 0;  // Amount of ammo given
     const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
     const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
-    
-    ObjectRef ichr = targetInventory.getHeldObject(SLOT_LEFT);
-    iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-    
+    const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
+
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_LEFT)), idsz);
+
     if (iTmp == 0)
     {
-        ichr = targetInventory.getHeldObject(SLOT_RIGHT);
-        iTmp += RestockAmmo(ichr, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+        iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_RIGHT)), idsz);
     }
 
     if (iTmp == 0)
     {
         for (const std::shared_ptr<Object>& pitem : selfInventory.getInventoryItems())
         {
-            iTmp += RestockAmmo( pitem->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument) );
+            iTmp += restockAmmoIfMatching(pitem, idsz);
             if ( 0 != iTmp ) break;
         }
     }

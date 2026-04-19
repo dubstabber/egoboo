@@ -166,11 +166,6 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
 /// @details This function sets an object's lighting
 bool FlashObject( Object * pchr, Uint8 value );
 
-/// @details This function restocks the characters ammo, if it needs ammo and if
-///    either its parent or type idsz match the given idsz.  This
-///    function returns the amount of ammo given.
-int RestockAmmo(const ObjectRef character, const IDSZ2& idsz);
-
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
