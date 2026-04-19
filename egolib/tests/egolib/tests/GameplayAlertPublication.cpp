@@ -186,6 +186,16 @@ protected:
         return nullptr;
     }
 
+    std::shared_ptr<Object> makeLongbowWeapon(GameModule& module, int slot) const
+    {
+        auto weapon = makeObject(module, "mp_data/globalobjects/weapons/lbow.obj", slot);
+        if (!weapon)
+        {
+            ADD_FAILURE() << "unable to load a longbow fixture";
+        }
+        return weapon;
+    }
+
     std::shared_ptr<Object> makeCrushableOccupant(GameModule& module, int slotBase) const
     {
         auto occupant = makeObject(module, "mp_objects/follower.obj", slotBase);
@@ -305,6 +315,27 @@ TEST_F(GameplayAlertPublicationFixture, CharacterSwipePublishesThrownAlertOnSpaw
     }
 
     EXPECT_TRUE(foundThrownCopy);
+}
+
+TEST_F(GameplayAlertPublicationFixture, LongbowLatchAttackPreservesKursedHeldItemGate)
+{
+    auto& module = beginActiveTestModule();
+    auto actorAllowed = makeObject(module, "mp_data/globalobjects/players/archadventurer.obj", 5439);
+    auto actorBlocked = makeObject(module, "mp_data/globalobjects/players/archadventurer.obj", 5440);
+    auto allowedWeapon = makeLongbowWeapon(module, 5441);
+    auto blockedWeapon = makeLongbowWeapon(module, 5442);
+
+    ASSERT_NE(actorAllowed, nullptr);
+    ASSERT_NE(actorBlocked, nullptr);
+    ASSERT_NE(allowedWeapon, nullptr);
+    ASSERT_NE(blockedWeapon, nullptr);
+    ASSERT_TRUE(allowedWeapon->attachToObject(actorAllowed, GRIP_LEFT));
+    ASSERT_TRUE(blockedWeapon->attachToObject(actorBlocked, GRIP_LEFT));
+
+    EXPECT_TRUE(chr_do_latch_attack(actorAllowed.get(), SLOT_LEFT));
+
+    blockedWeapon->setKursed(true);
+    EXPECT_FALSE(chr_do_latch_attack(actorBlocked.get(), SLOT_LEFT));
 }
 
 TEST_F(GameplayAlertPublicationFixture, KursedPutawayPublishesNotPutAwayAlert)

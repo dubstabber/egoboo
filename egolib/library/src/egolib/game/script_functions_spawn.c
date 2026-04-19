@@ -55,6 +55,11 @@ void publishImmediatePoof(IScriptable& target)
 {
     target.setAIPoofTime(worldUpdateCount());
 }
+
+std::shared_ptr<Object> heldObject(const Object& holder, slot_t slot)
+{
+    return tryObjectShared(holder.getHeldObject(slot));
+}
 }
 
 
@@ -69,7 +74,7 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // This funtion drops the character's in hand items/riders
-    const std::shared_ptr<Object> &leftItem = pchr->getLeftHandItem();
+    const std::shared_ptr<Object> leftItem = heldObject(*pchr, SLOT_LEFT);
     if (leftItem)
     {
         leftItem->detatchFromHolder(true, true);
@@ -83,7 +88,7 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
         }
     }
 
-    const std::shared_ptr<Object> &rightItem = pchr->getRightHandItem();
+    const std::shared_ptr<Object> rightItem = heldObject(*pchr, SLOT_RIGHT);
     if (rightItem)
     {
         rightItem->detatchFromHolder(true, true);
@@ -477,7 +482,13 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    EngineContext::get().particleHandler().spawnPoof(pchr->toSharedPointer());
+    const std::shared_ptr<Object> selfObject = tryObjectShared(self.getSelf());
+    if (selfObject == nullptr)
+    {
+        return false;
+    }
+
+    EngineContext::get().particleHandler().spawnPoof(selfObject);
 
     SCRIPT_FUNCTION_END();
 }

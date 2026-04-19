@@ -121,7 +121,8 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     // Don't allow users with kursed weapon in the other hand to use longbows
     if ( allowedtoattack && ACTION_IS_TYPE( action, L ) )
     {
-        const std::shared_ptr<Object> &offhandItem = which_slot == SLOT_LEFT ? pchr->getLeftHandItem() : pchr->getRightHandItem();
+        const ObjectRef offhandItemRef = which_slot == SLOT_LEFT ? pchr->getHeldObject(SLOT_LEFT) : pchr->getHeldObject(SLOT_RIGHT);
+        const std::shared_ptr<Object> offhandItem = module.getObjectHandler().exists(offhandItemRef) ? module.getObjectHandler()[offhandItemRef] : nullptr;
         if(offhandItem && offhandItem->isKursed()) allowedtoattack = false;
     }
 

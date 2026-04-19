@@ -338,6 +338,46 @@ TEST_F(ScriptStateFunctionsFixture, PoofTargetPublishesImmediatePoofTimeAndRetar
     EXPECT_EQ(self.getTarget(), actor->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookups)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5530);
+    auto leftItem = makeMeleeWeapon(module, 5531);
+    auto rightItem = makeShield(module, 5534);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_DropWeapons(state, self));
+    EXPECT_EQ(actor->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(actor->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
+    EXPECT_EQ(leftItem->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(rightItem->getHolderRef(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/ranger.obj", 5538);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_GT(actor->getProfile()->getParticlePoofAmount(), 0);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    IParticleHandler& particleHandler = EngineContext::get().particleHandler();
+    const size_t particleCountBefore = particleHandler.getCount();
+
+    EXPECT_TRUE(scr_SpawnPoof(state, self));
+    EXPECT_GT(particleHandler.getCount(), particleCountBefore);
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();
