@@ -7,6 +7,9 @@ class IPhysical
 public:
     virtual ~IPhysical() = default;
 
+    virtual float getPosX() const = 0;
+    virtual float getPosY() const = 0;
+
     virtual const bumper_t& getInitialBump() const = 0;
     virtual const bumper_t& getCurrentBump() const = 0;
     virtual const bumper_t& getSavedBump() const = 0;

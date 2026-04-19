@@ -13,6 +13,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #undef private
 #include "egolib/Script/script.h"
@@ -385,6 +386,71 @@ TEST_F(ScriptTargetFunctionsFixture, MountAndWeaponQueriesUseTargetInfoRoleSurfa
 
     self.setTarget(weapon->getObjRef());
     EXPECT_TRUE(scr_IfTargetIsAWeapon(state, self));
+}
+
+TEST_F(ScriptTargetFunctionsFixture, TargetQuestQueryReadsThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5351);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5352);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[0]));
+
+    const IDSZ2 questId('T', 'Q', 'S', 'T');
+    module.getPlayer(target->getPlayerNumber())->getQuestLog().setQuestProgress(questId, 7);
+
+    script_state_t state;
+    state.argument = questId.toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_IfTargetHasQuest(state, self));
+    EXPECT_EQ(state.distance, 7);
+}
+
+TEST_F(ScriptTargetFunctionsFixture, TargetOwnerPredicateReadsThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5361);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5362);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    self.owner = target->getObjRef();
+
+    EXPECT_TRUE(scr_IfTargetIsOwner(state, self));
+
+    self.owner = actor->getObjRef();
+    EXPECT_FALSE(scr_IfTargetIsOwner(state, self));
+}
+
+TEST_F(ScriptTargetFunctionsFixture, FacingQueriesReadThroughPhysicalRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5371, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto target = makeObject(module, "mp_objects/follower.obj", 5372, Ego::Vector3f(128.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->setFacingZ(FACE_EAST);
+    target->setFacingZ(FACE_WEST);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_IfFacingTarget(state, self));
+    EXPECT_TRUE(scr_IfTargetIsFacingSelf(state, self));
+
+    target->setPosition(Ego::Vector3f(64.0f, 128.0f, 0.0f));
+    target->setFacingZ(FACE_SOUTH);
+
+    EXPECT_FALSE(scr_IfFacingTarget(state, self));
+    EXPECT_FALSE(scr_IfTargetIsFacingSelf(state, self));
 }
 
 } // namespace

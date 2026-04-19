@@ -494,7 +494,7 @@ public:
     **/
     bool isPlayer() const {return islocalplayer;}
 
-    PLA_REF getPlayerNumber() const { return is_which_player; }
+    PLA_REF getPlayerNumber() const override { return is_which_player; }
 
     void setPlayerNumber(PLA_REF playerNumber) { is_which_player = playerNumber; }
 
@@ -639,6 +639,10 @@ public:
     int16_t getResizeTimeRemaining() const { return fat_goto_time; }
 
     void setResizeTimeRemaining(int16_t remaining) { fat_goto_time = remaining; }
+
+    float getPosX() const override { return Ego::Physics::Collidable::getPosX(); }
+
+    float getPosY() const override { return Ego::Physics::Collidable::getPosY(); }
 
     const bumper_t& getInitialBump() const override { return bump_stt; }
 

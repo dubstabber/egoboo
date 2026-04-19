@@ -8,6 +8,7 @@ public:
     virtual ~ITargetInfo() = default;
 
     virtual ObjectRef getHolderRef() const = 0;
+    virtual PLA_REF getPlayerNumber() const = 0;
 
     virtual bool isAlive() const = 0;
     virtual bool isPlayer() const = 0;

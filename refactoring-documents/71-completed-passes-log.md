@@ -460,6 +460,12 @@ Continued Tier 1.2 inside `script_functions_state.c` by routing the bounded held
 
 Extended `ScriptStateFunctions.cpp` with direct coverage for held-item IDSZ detection, ranged ammo gating with left-hand fallback, right-hand preference for melee/shield detection, and holder-left-hand detection through the landed inventory-holder seam. Build, focused script-state tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 107 — Conservative target-query role completion (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_target.c` by extending the read-only query seams with target-player and physical-position accessors, then routing the remaining bounded target quest/owner/facing predicates through `ITargetInfo` and `IPhysical` instead of concrete `Object` reads. Kept team-leader/sissy lookups and all mutation-heavy script helpers out of scope.
+
+Extended `ScriptTargetFunctions.cpp` with direct coverage for target quest lookup, owner detection, and facing predicates through the landed target-info and physical seams. Build, focused script-target tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

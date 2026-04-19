@@ -1158,9 +1158,13 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const IPhysical* physicalTarget = tryPhysical(self.getTarget());
+    if (physicalTarget == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pchr->isFacingLocation(pself_target->getPosX(), pself_target->getPosY());
+    returncode = pchr->isFacingLocation(physicalTarget->getPosX(), physicalTarget->getPosY());
 
     SCRIPT_FUNCTION_END();
 }
@@ -1698,17 +1702,19 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the Target has the unfinIshed quest specified in tmpargument
     /// and sets tmpdistance to the Quest Level of the specified quest.
 
-    Object * pself_target = nullptr;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
     returncode = false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    if(pself_target->isPlayer()) {
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(pself_target->getPlayerNumber());
+    if(targetInfo->isPlayer()) {
+        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(targetInfo->getPlayerNumber());
 
         // only find active quests
         if(player->getQuestLog().hasActiveQuest(idsz)) {
@@ -1728,13 +1734,15 @@ uint8_t scr_IfTargetIsOwner( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function proceeds only if the Target is the character's owner
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->isAlive() && self.owner == self.getTarget() );
+    returncode = ( targetInfo->isAlive() && self.owner == self.getTarget() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1796,12 +1804,15 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const IPhysical* physicalTarget = tryPhysical(self.getTarget());
+    if (physicalTarget == nullptr)
+    {
+        return false;
+    }
 
 	FACING_T sTmp = 0;
-    sTmp = FACING_T(vec_to_facing( pchr->getPosX() - pself_target->getPosX() , pchr->getPosY() - pself_target->getPosY() ));
-    sTmp -= FACING_T(pself_target->getFacingZ());
+    sTmp = FACING_T(vec_to_facing( pchr->getPosX() - physicalTarget->getPosX() , pchr->getPosY() - physicalTarget->getPosY() ));
+    sTmp -= FACING_T(physicalTarget->getFacingZ());
     returncode = ( sTmp > 55535 || sTmp < 10000 );
 
     SCRIPT_FUNCTION_END();
