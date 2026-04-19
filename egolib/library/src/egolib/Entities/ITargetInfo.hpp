@@ -41,9 +41,12 @@ public:
 
     virtual bool isOnSameTeam(TEAM_REF teamRef) const = 0;
     virtual bool isHatedByTeam(TEAM_REF teamRef) const = 0;
+    virtual TEAM_REF getTeamRef() const = 0;
 
     virtual uint16_t getAmmo() const = 0;
     virtual SKIN_T getSkin() const = 0;
+    virtual bool canBeGrogged() const = 0;
+    virtual bool canBeDazed() const = 0;
     virtual int16_t getGrogTimer() const = 0;
     virtual int16_t getDazeTimer() const = 0;
 };

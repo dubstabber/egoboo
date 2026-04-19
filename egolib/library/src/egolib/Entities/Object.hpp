@@ -182,7 +182,7 @@ public:
 
     void giveTeamExperience(int amount, XPType type) const;
 
-    TEAM_REF getTeamRef() const { return team; }
+    TEAM_REF getTeamRef() const override { return team; }
 
     void setTeamRef(TEAM_REF teamRef) { team = teamRef; }
 
@@ -1161,6 +1161,10 @@ public:
     *   then all available money will be dropped
     **/
     void dropMoney(int amount);
+
+    bool canBeGrogged() const override { return getProfile() && getProfile()->canBeGrogged(); }
+
+    bool canBeDazed() const override { return getProfile() && getProfile()->canBeDazed(); }
 
     int16_t getGrogTimer() const override { return grog_timer; }
 

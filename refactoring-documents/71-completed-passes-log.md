@@ -496,6 +496,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by routing `UnkurseTarget
 
 Extended `ScriptSystemsFunctions.cpp` with a focused regression pinning the preserved actor-pocket behavior alongside the target-held-item cleanup. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 113 — Conservative systems-query role sweep (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by widening the read-only `ITargetInfo` seam with team and grog/daze susceptibility queries, then routing `AddBlipAllEnemies`, `TargetDamageSelf`, `GrogTarget`, and `DazeTarget` off concrete target-object reads where those helpers only needed bounded query data plus the already-landed mutable role surfaces. Kept `IDamageable::damage(...)` attribution unchanged by preserving the existing shared attacker-object lookup while moving attacker-team reads onto the role seam.
+
+Extended `ObjectAccessors.cpp` and the existing focused script-systems coverage to pin the widened target-info surface and the migrated enemy-sense, target-damage, and grog/daze helper behavior. Build, the focused script-systems / accessor test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

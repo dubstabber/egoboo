@@ -1740,15 +1740,18 @@ uint8_t scr_GrogTarget( script_state_t& state, ai_state_t& self )
     /// @details This function grogs the Target for a duration equal to tmpargument
 
     SCRIPT_FUNCTION_BEGIN();
-    Object * pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    ICharacterState& targetState = characterState(*pself_target);
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if (targetInfo == nullptr || targetState == nullptr)
+    {
+        return false;
+    }
 
     returncode = false;
-    if ( pself_target->getProfile()->canBeGrogged() )
+    if ( targetInfo->canBeGrogged() )
     {
-        int timer_val = targetState.getGrogTimer() + state.argument;
-        targetState.setGrogTimer(std::max(0, timer_val));
+        int timer_val = targetState->getGrogTimer() + state.argument;
+        targetState->setGrogTimer(std::max(0, timer_val));
         returncode = true;
     }
 
@@ -1764,16 +1767,19 @@ uint8_t scr_DazeTarget( script_state_t& state, ai_state_t& self )
     /// @details This function dazes the Target for a duration equal to tmpargument
 
     SCRIPT_FUNCTION_BEGIN();
-    Object * pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    ICharacterState& targetState = characterState(*pself_target);
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if (targetInfo == nullptr || targetState == nullptr)
+    {
+        return false;
+    }
 
     // Characters who manage to daze themselves are to ignore their daze immunity
     returncode = false;
-    if ( pself_target->getProfile()->canBeDazed() || self.getSelf() == self.getTarget() )
+    if ( targetInfo->canBeDazed() || self.getSelf() == self.getTarget() )
     {
-        int timer_val = targetState.getDazeTimer() + state.argument;
-        targetState.setDazeTimer(std::max(0, timer_val));
+        int timer_val = targetState->getDazeTimer() + state.argument;
+        targetState->setDazeTimer(std::max(0, timer_val));
 
         returncode = true;
     }
@@ -1945,10 +1951,9 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    const std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
-    if (targetInfo != nullptr && target != nullptr)
+    if (targetInfo != nullptr)
     {
-        GameSessionContext::get().publishEnemySense(EnemySenseState(target->getTeamRef(), state.argument));
+        GameSessionContext::get().publishEnemySense(EnemySenseState(targetInfo->getTeamRef(), state.argument));
     }
     else
     {
@@ -2125,7 +2130,7 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeamRef(), target, false, false, true);
+    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), targetInfo->getTeamRef(), target, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }

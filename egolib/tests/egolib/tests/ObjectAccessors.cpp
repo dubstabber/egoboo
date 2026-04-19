@@ -673,6 +673,7 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
 
     object->inst._currentAnimation = ACTION_UA;
     object->inst._nextAnimation = ACTION_UA;
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     object->setNameKnown(true);
     object->setKursed(true);
     object->setEquipped(true);
@@ -685,8 +686,11 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     EXPECT_TRUE(targetInfo.isNameKnown());
     EXPECT_TRUE(targetInfo.isKursed());
     EXPECT_TRUE(targetInfo.isEquipped());
+    EXPECT_EQ(targetInfo.getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
     EXPECT_EQ(targetInfo.getAmmo(), 9);
     EXPECT_EQ(targetInfo.getSkin(), validSkin);
+    EXPECT_TRUE(targetInfo.canBeGrogged());
+    EXPECT_TRUE(targetInfo.canBeDazed());
     EXPECT_EQ(targetInfo.isOnWaterTile(), object->isOnWaterTile());
     object->_stealth = false;
     EXPECT_FALSE(targetInfo.isStealthed());
