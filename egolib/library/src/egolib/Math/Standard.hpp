@@ -121,7 +121,7 @@ struct Validate<float> {
     void operator()(const char *file, int line, float object) const {
         if (idlib::is_bad(object)) {
             auto e = Log::Entry::create(Log::Level::Error, file, line, "invalid floating point value", Log::EndOfEntry);
-            Log::get() << e;
+            Log::activeTarget() << e;
             throw std::runtime_error(e.getText());
         }
     }
@@ -433,5 +433,4 @@ void dump_matrix(const Ego::Matrix4f4f& a);
 
 /// @todo Remove this.
 float fvec3_decompose(const Ego::Vector3f& src, const Ego::Vector3f& vnrm, Ego::Vector3f& vpara, Ego::Vector3f& vperp);
-
 

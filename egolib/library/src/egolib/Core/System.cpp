@@ -55,19 +55,19 @@ SystemService::SystemService(const std::string& binaryPath) {
     EngineContext::get().installLogTarget(Log::get());
 
     // Say hello.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo Engine ", VERSION, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo Engine ", VERSION, Log::EndOfEntry);
 
     // Load "setup.txt" and download "setup.txt" into the Egoboo configuration.
     Setup::begin();
     Setup::download(egoboo_config_t::get());
 
     // Initialize SDL timer.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
-                                     SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
+                                              SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
     SDL_Init(SDL_INIT_TIMER);
     // Initialize SDL events.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL events ", 
-                                     SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL events ",
+                                              SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
     SDL_Init(SDL_INIT_EVENTS);
 }
 
@@ -90,7 +90,7 @@ SystemService::SystemService(const std::string& binaryPath, const std::string& e
     EngineContext::get().installLogTarget(Log::get());
     
     // Say hello.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo engine ", VERSION, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo engine ", VERSION, Log::EndOfEntry);
 
     // Load "setup.txt".
     Setup::begin();
@@ -99,24 +99,24 @@ SystemService::SystemService(const std::string& binaryPath, const std::string& e
     Setup::download(egoboo_config_t::get());
 
     // Initialize SDL timer.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
-                                     SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
+                                              SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
     SDL_Init(SDL_INIT_TIMER);
     // Initialize SDL events.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL events ",
-                                     SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL events ",
+                                              SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
     SDL_Init(SDL_INIT_EVENTS);
 }
 
 SystemService::~SystemService() {
     // Uninitialize SDL.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "uninitializing SDL ",
-                                     SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "uninitializing SDL ",
+                                              SDL_MAJOR_VERSION, ".", SDL_MINOR_VERSION, ".", SDL_PATCHLEVEL, Log::EndOfEntry);
     SDL_Quit();
     // Save "setup.txt".
     Setup::end();
     // Say bye.
-    Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "exiting Egoboo engine ", VERSION, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "exiting Egoboo engine ", VERSION, Log::EndOfEntry);
     // Uninitialize logging.
     EngineContext::get().clearLogTarget();
     Log::uninitialize();
@@ -142,11 +142,11 @@ uint32_t SystemService::getTicks() {
 
 VideoService::VideoService()
 {
-    Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL video", Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL video", Log::EndOfEntry);
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize SDL video: ", SDL_GetError(), Log::EndOfEntry);
-        Log::get() << e;
+        Log::activeTarget() << e;
         throw idlib::environment_error(__FILE__, __LINE__, "[SDL]", e.getText());
     }
 }
@@ -158,11 +158,11 @@ VideoService::~VideoService()
 
 AudioService::AudioService()
 {
-    Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL audio", Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL audio", Log::EndOfEntry);
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize SDL audio: ", SDL_GetError(), Log::EndOfEntry);
-        Log::get() << e;
+        Log::activeTarget() << e;
         throw idlib::environment_error(__FILE__, __LINE__, "[SDL]", e.getText());
     }
 }
@@ -173,34 +173,34 @@ AudioService::~AudioService() {
 
 InputService::InputService()
 {
-    Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL joystick/game controller/haptic support", Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "intializing SDL joystick/game controller/haptic support", Log::EndOfEntry);
 
     SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC);
     if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
     {
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize joystick support", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize joystick support", Log::EndOfEntry);
     }
     else
     {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "joytick support initialized", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "joytick support initialized", Log::EndOfEntry);
     }
     //
     if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
     {
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize game controller support", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize game controller support", Log::EndOfEntry);
     }
     else
     {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "game controller support initialized", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "game controller support initialized", Log::EndOfEntry);
     }
     //
     if (SDL_WasInit(SDL_INIT_HAPTIC) == 0)
     {
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize haptic support", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize haptic support", Log::EndOfEntry);
     }
     else
     {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "haptic support initialized", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "haptic support initialized", Log::EndOfEntry);
     }
 }
 

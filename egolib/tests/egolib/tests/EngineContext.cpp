@@ -5,6 +5,7 @@
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Log/Target.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Renderer/DeferredTexture.hpp"
@@ -331,6 +332,8 @@ TEST_F(EngineContextFixture, LogTargetThrowsWhenNoLogTargetIsInstalled)
 
     EXPECT_EQ(context.tryLogTarget(), nullptr);
     EXPECT_THROW(context.logTarget(), std::logic_error);
+    EXPECT_EQ(Log::tryActiveTarget(), nullptr);
+    EXPECT_THROW(Log::activeTarget(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, InstallPerkHandlerPublishesInstalledPerkHandler)
@@ -386,6 +389,8 @@ TEST_F(EngineContextFixture, InstallLogTargetPublishesInstalledLogTarget)
 
     EXPECT_EQ(context.tryLogTarget(), &logTarget);
     EXPECT_EQ(&context.logTarget(), &logTarget);
+    EXPECT_EQ(Log::tryActiveTarget(), &logTarget);
+    EXPECT_EQ(&Log::activeTarget(), &logTarget);
 }
 
 TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
@@ -511,6 +516,8 @@ TEST_F(EngineContextFixture, ClearLogTargetRemovesInstalledLogTarget)
 
     EXPECT_EQ(context.tryLogTarget(), nullptr);
     EXPECT_THROW(context.logTarget(), std::logic_error);
+    EXPECT_EQ(Log::tryActiveTarget(), nullptr);
+    EXPECT_THROW(Log::activeTarget(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)

@@ -138,13 +138,14 @@ Raw `::get()` singleton calls still number approximately **1,150** across the co
 
 Engine-published service seams landed so far:
 
-- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookup.
+- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, and `IProfileSystem` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookup.
+- Runtime logging now routes through the installed `EngineContext` log target outside the `Log` subsystem's bootstrap/lifecycle code.
 
 Dominant direct singletons still reachable outside the session/engine wrappers:
 
-- `ProfileSystem::get()` — profile loading and caching (hundreds of total reach-ins)
-- `Log::get()` and `egoboo_config_t::get()` — broad cross-cutting reach
+- `egoboo_config_t::get()` — broad cross-cutting reach
 - `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, and `ParticleHandler::get()` remain as subsystem-local bootstrap seams inside their own implementations
+- `ProfileSystem::get()` and `Log::get()` remain as subsystem-local lifecycle/bootstrap seams inside their own implementations
 
 ### Smart pointer distribution
 
@@ -419,7 +420,7 @@ These items compound the refactoring progress most efficiently given the current
 
 1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical` instead of `Object` where only bounded role behavior is needed.
 2. **Close the remaining alias-style handle seams on `Object`** — keep the Script-owned `runtimeState(...)` helper confined to the legacy script runtime while role extraction proceeds.
-3. **Continue the service-interface layer over singletons** — `AudioSystem`, `PerkHandler`, `ImageManager`, and `ParticleHandler` are landed; next are `ProfileSystem`, then `Log`, then `egoboo_config_t`.
+3. **Continue the service-interface layer over singletons** — `AudioSystem`, `PerkHandler`, `ImageManager`, `ParticleHandler`, and `ProfileSystem` are landed, and logging now routes through the installed engine log target; next is `egoboo_config_t`.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.
 
 ### Build and cross-platform

@@ -382,6 +382,12 @@ Completed the fifth T1.3 service-interface pass by finishing the already-landed 
 
 Kept `ProfileSystem::get()` as a subsystem-local lifecycle seam inside `Profiles/`, specifically for teardown paths like `ObjectProfile` destruction that can run after `EngineContext::clearProfileSystem()`. Build, targeted test coverage, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 94 — Engine-routed log target cleanup (2026-04-19)
+
+Completed the sixth T1.3 singleton/service cleanup without introducing a new interface type. Added `Log::tryActiveTarget()` / `activeTarget()` so runtime code prefers the installed `EngineContext` log target and otherwise falls back to the default logging target, while preserving `Log::get()` as the logging subsystem's bootstrap/lifecycle seam.
+
+Migrated the remaining non-subsystem `Log::get()` callers in `Core/System.cpp`, `Math/Standard.hpp`, `fileutil.h`, and `Profiles/_AbstractProfileSystem.hpp` onto the new routing helper. Extended `EngineContext` regression coverage to pin the new helper's no-target, installed-target, and clear-target behavior. Build, targeted tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

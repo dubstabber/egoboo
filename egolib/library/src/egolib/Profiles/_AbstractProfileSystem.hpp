@@ -147,7 +147,7 @@ public:
     {
         if(isLoaded(override))
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "loaded over existing profile", Log::EndOfEntry);
+			Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "loaded over existing profile", Log::EndOfEntry);
         }
 
         RefType ref = InvalidRef;

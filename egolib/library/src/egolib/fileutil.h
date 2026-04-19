@@ -114,8 +114,8 @@ public:
         auto it = enumDescriptor.find(name);
         if (it == enumDescriptor.end())
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", get_file_name(), "`", ":", "`", name, "`",
-                                             " is not an element of enum ", "`", enumDescriptor.getName(), "`", Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", get_file_name(), "`", ":", "`", name, "`",
+                                                      " is not an element of enum ", "`", enumDescriptor.getName(), "`", Log::EndOfEntry);
             return defaultValue;
         }
         return it->second;

@@ -61,4 +61,23 @@ namespace Log {
 	 */
 	Target& get();
 
+	/**
+	 * @brief
+	 *  Try to get the active log target.
+	 * @return
+	 *  the engine-published log target when installed, otherwise the default target,
+	 *  or @a nullptr when no target is available
+	 */
+	Target* tryActiveTarget();
+
+	/**
+	 * @brief
+	 *  Get the active log target.
+	 * @return
+	 *  the engine-published log target when installed, otherwise the default target
+	 * @throw std::logic_error
+	 *  if no log target is available
+	 */
+	Target& activeTarget();
+
 } // namespace Log

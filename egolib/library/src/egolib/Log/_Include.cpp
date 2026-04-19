@@ -24,6 +24,7 @@
 
 #include "egolib/Log/DefaultTarget.hpp"
 #include "egolib/Log/ConsoleColor.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Log {
 
@@ -58,6 +59,20 @@ Target& get() {
 		throw std::logic_error("logging system is not initialized");
 	}
 	return *g_target;
+}
+
+Target* tryActiveTarget() {
+	if (auto* logTarget = EngineContext::get().tryLogTarget()) {
+		return logTarget;
+	}
+	return g_target.get();
+}
+
+Target& activeTarget() {
+	if (auto* logTarget = tryActiveTarget()) {
+		return *logTarget;
+	}
+	return get();
 }
 
 } // namespace Log
