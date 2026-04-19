@@ -37,6 +37,7 @@
 #include "egolib/game/mesh.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/FileFormats/Globals.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 
@@ -136,7 +137,7 @@ void TileListV2::render(ego_mesh_t& mesh, const std::vector<ClippingEntry>& tile
 		Index1D tmp_itile = lst_vals[i].getTileIndex();
 
 		gfx_rv render_rv = render_fan(mesh, tmp_itile);
-		if (egoboo_config_t::get().debug_developerMode_enable.getValue() && gfx_error == render_rv)
+		if (EngineContext::get().config().debug_developerMode_enable.getValue() && gfx_error == render_rv)
 		{
 			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error rendering tile ", tmp_itile.i(), Log::EndOfEntry);
 		}
@@ -193,7 +194,7 @@ gfx_rv TileListV2::render_fan(ego_mesh_t& mesh, const Index1D& i) {
         }
     }
 
-    if (egoboo_config_t::get().debug_mesh_renderNormals.getValue()) {
+    if (EngineContext::get().config().debug_mesh_renderNormals.getValue()) {
         TileRenderer::invalidate();
         auto& renderer = Renderer::get();
         renderer.getTextureUnit().setActivated(nullptr);

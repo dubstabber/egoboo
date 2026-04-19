@@ -23,7 +23,7 @@ std::pair<GraphicsWindow *, GraphicsContext *> CreateWindowAndContext()
 {
     GraphicsWindow *window = nullptr;
     GraphicsContext *context = nullptr;
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
     auto& graphicsSystem = Ego::GraphicsSystemNew::get();
 
     window = graphicsSystem.createWindow();

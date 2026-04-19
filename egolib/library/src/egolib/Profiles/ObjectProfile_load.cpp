@@ -693,7 +693,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     }
 
     // Fix lighting if need be
-    if (profile->_uniformLit && egoboo_config_t::get().graphic_gouraudShading_enable.getValue())
+    if (profile->_uniformLit && EngineContext::get().config().graphic_gouraudShading_enable.getValue())
     {
         profile->getModel()->makeEquallyLit();
     }

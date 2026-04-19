@@ -1,42 +1,43 @@
 #include "egolib/Renderer/RendererInfo.hpp"
 
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/egoboo_setup.h"
 
 namespace Ego {
 
 RendererInfo::RendererInfo()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
 
     try
     {
         m_connections.push_back(configuration.graphic_anisotropy_enable.ValueChanged.subscribe([this]()
             { 
-                auto& configuration = egoboo_config_t::get();
+                auto& configuration = EngineContext::get().config();
                 m_isAnisotropyDesired = configuration.graphic_anisotropy_enable.getValue();
                 AnisotropyDesiredChanged(); 
             }));
         m_connections.push_back(configuration.graphic_anisotropy_levels.ValueChanged.subscribe([this]()
             {
-                auto& configuration = egoboo_config_t::get();
+                auto& configuration = EngineContext::get().config();
                 m_desiredAnisotropy = configuration.graphic_anisotropy_levels.getValue();
                 DesiredAnisotropyChanged();
             }));
         m_connections.push_back(configuration.graphic_textureFilter_minFilter.ValueChanged.subscribe([this]()
         { 
-            auto& configuration = egoboo_config_t::get();
+            auto& configuration = EngineContext::get().config();
             m_desiredMinimizationFilter = configuration.graphic_textureFilter_minFilter.getValue();
             DesiredMinimizationFilterChanged(); 
         }));
         m_connections.push_back(configuration.graphic_textureFilter_magFilter.ValueChanged.subscribe([this]()
         { 
-            auto& configuration = egoboo_config_t::get();
+            auto& configuration = EngineContext::get().config();
             m_desiredMaximizationFilter = configuration.graphic_textureFilter_magFilter.getValue();
             DesiredMaximizationFilterChanged(); 
         }));
         m_connections.push_back(configuration.graphic_textureFilter_mipMapFilter.ValueChanged.subscribe([this]()
         { 
-            auto& configuration = egoboo_config_t::get();
+            auto& configuration = EngineContext::get().config();
             m_desiredMipMapFilter = configuration.graphic_textureFilter_mipMapFilter.getValue();
             DesiredMipMapFilterChanged(); 
         }));

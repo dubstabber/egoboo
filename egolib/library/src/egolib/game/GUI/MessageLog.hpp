@@ -36,7 +36,6 @@ public:
     void addMessage(const std::string &message);
 
 private:
-    static constexpr uint32_t MESSAGE_DURATION_MS = 3000;       //How many milliseconds a message should be rendered before it is removed
     static constexpr uint32_t MESSAGE_FADE_TIME_MS = 700;       //How many milliseconds it takes to fade away completely
 
     struct Message {
@@ -50,6 +49,9 @@ private:
         std::string text;
         uint32_t lifeTime;
     };
+
+    uint32_t messageDurationTicks() const;
+    size_t messageLimit() const;
 
     std::list<Message> _messages;
 };

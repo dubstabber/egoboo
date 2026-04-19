@@ -400,6 +400,18 @@ Started the `egoboo_config_t` Tier 1.3 seam by extending `EngineContext` with in
 
 Kept non-game lightweight runtimes working by letting `ContentRuntimeBootstrap` conditionally publish the singleton-backed config only when no system-owned config is already installed, then moved its Gouraud-shading setup tweak onto `EngineContext::get().config()`. Added `EngineContext` regressions covering config install, double-install rejection, clear, throw-when-missing, and the requirement that `clearEngine()` must not clear the installed config.
 
+### Pass 97 — Read-mostly config caller migration (2026-04-19)
+
+Continued the `egoboo_config_t` Tier 1.3 seam by migrating the first read-mostly render/content caller cluster onto `EngineContext::get().config()`: SDL window/context setup, renderer-info subscriptions, deferred HD-texture selection, heightmap/debug render toggles, object-profile Gouraud-light fixup, module unlock developer gate, and fog/water module environment toggles.
+
+Added focused regression coverage for installed-config reads and updates in `ConfigReadMostly.cpp`, including `RendererInfo` subscription behavior plus fog/water toggle checks. Kept `ContentParsers`, `ModuleLoadSmoke`, and the `test.mod` validator as the acceptance bar for the content-loading side of the pass.
+
+### Pass 98 — Game-state / GUI read-mostly config migration (2026-04-19)
+
+Continued the `egoboo_config_t` Tier 1.3 seam by migrating the remaining read-mostly game-state / GUI callers onto `EngineContext::get().config()`: `PlayingState`, `MapEditorState`, `MainMenuState`, and `MessageLog` no longer reach directly for `egoboo_config_t::get()` for debug gating, cursor/grab settings, status-bar visibility, or HUD message timing / limits.
+
+Extended `ConfigReadMostly.cpp` with focused `MessageLog` coverage that pins installed-config reads and updates for HUD message duration and simultaneous-message limits without widening the runtime-facing GUI API.
+
 ---
 
 ## Files touched most by this pass log

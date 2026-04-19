@@ -27,6 +27,7 @@
 #include "egolib/game/GameStates/SelectPlayersState.hpp"
 #include "egolib/game/GameStates/OptionsScreen.hpp"
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/GUI/Button.hpp"
@@ -123,7 +124,7 @@ MainMenuState::MainMenuState() :
 
     yOffset -= newGameButton->getHeight() + 10;
     
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue())
+    if (EngineContext::get().config().debug_developerMode_enable.getValue())
     {
         auto debugButton = std::make_shared<Ego::GUI::Button>("Debug", SDLK_UNKNOWN);
         debugButton->setPosition({ 20, yOffset });

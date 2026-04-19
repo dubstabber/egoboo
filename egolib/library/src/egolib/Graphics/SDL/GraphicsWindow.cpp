@@ -9,7 +9,7 @@ namespace Ego { namespace SDL {
 
 static void UploadColorBufferSettings()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
     int depth = configuration.graphic_colorBuffer_bitDepth.getValue();
     // (1) Shall not above 32 nor below 0.
     if (depth < 0 || depth > 32) depth = 32;
@@ -28,21 +28,21 @@ static void UploadColorBufferSettings()
 
 static void UploadDepthBufferSettings()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
     int depth = configuration.graphic_depthBuffer_bitDepth.getValue();
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depth);
 }
 
 static void UploadStencilBufferSettings()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
     int depth = configuration.graphic_stencilBuffer_bitDepth.getValue();
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, depth);
 }
 
 static void UploadAccumulationBufferSettings()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = EngineContext::get().config();
     configuration.graphic_accumulationBuffer_bitDepth;
     int depth = configuration.graphic_colorBuffer_bitDepth.getValue();
     int redDepth = depth / 4,
@@ -59,7 +59,7 @@ static void UploadAccumulationBufferSettings()
 GraphicsWindow::GraphicsWindow()
     : Ego::GraphicsWindow(), window(nullptr)
 {
-    auto& config = egoboo_config_t::get();
+    auto& config = EngineContext::get().config();
     // (2) Color, depth, and accumulation buffer depth.
     UploadColorBufferSettings();
     UploadDepthBufferSettings();

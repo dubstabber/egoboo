@@ -1,4 +1,5 @@
 #include "egolib/game/Module/Water.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 
 water_instance_layer_t::water_instance_layer_t() :
@@ -103,7 +104,7 @@ void water_instance_t::upload(const wawalite_water_t& source)
     make(source);
 
     // Allow slow machines to ignore the fancy stuff
-    if (!egoboo_config_t::get().graphic_twoLayerWater_enable.getValue() && _layer_count > 1)
+    if (!EngineContext::get().config().graphic_twoLayerWater_enable.getValue() && _layer_count > 1)
     {
         int iTmp = source.layer[0].light_add;
         iTmp = (source.layer[1].light_add * iTmp * idlib::fraction<float, 1, 255>()) + iTmp;
@@ -139,7 +140,7 @@ float water_instance_t::get_level() const
 {
     float level = _layers[0].get_level();
 
-    if (egoboo_config_t::get().graphic_twoLayerWater_enable.getValue())
+    if (EngineContext::get().config().graphic_twoLayerWater_enable.getValue())
     {
         for (size_t i = 1; i < (size_t)MAXWATERLAYER; ++i)
         {

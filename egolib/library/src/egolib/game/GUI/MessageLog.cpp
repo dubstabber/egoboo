@@ -21,6 +21,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/font_bmp.h"
 
 namespace Ego {
@@ -28,6 +29,16 @@ namespace GUI {
 
 MessageLog::MessageLog() :
     _messages() {}
+
+uint32_t MessageLog::messageDurationTicks() const
+{
+    return EngineContext::get().config().hud_messageDuration.getValue() * 10;
+}
+
+size_t MessageLog::messageLimit() const
+{
+    return static_cast<size_t>(EngineContext::get().config().hud_simultaneousMessages_max.getValue());
+}
 
 void MessageLog::draw(DrawingContext& drawingContext) {
     float yOffset = getY();
@@ -43,10 +54,10 @@ void MessageLog::draw(DrawingContext& drawingContext) {
 
 void MessageLog::addMessage(const std::string &message) {
     //Insert new message at the back
-    _messages.emplace_back(message, Core::System::get().getSystemService().getTicks() + egoboo_config_t::get().hud_messageDuration.getValue() * 10);
+    _messages.emplace_back(message, Core::System::get().getSystemService().getTicks() + messageDurationTicks());
 
     //Remove oldest messages if we have too many (FIFO)
-    while (_messages.size() > egoboo_config_t::get().hud_simultaneousMessages_max.getValue()) {
+    while (_messages.size() > messageLimit()) {
         _messages.pop_front();
     }
 }

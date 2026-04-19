@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/HeightmapRenderPass.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/Graphics/RenderPasses.hpp"
 
@@ -11,7 +12,7 @@ HeightmapRenderPass::HeightmapRenderPass() :
 
 void HeightmapRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    if (egoboo_config_t::get().debug_mesh_renderHeightMap.getValue())
+    if (EngineContext::get().config().debug_mesh_renderHeightMap.getValue())
     {
         // restart the mesh texture code
         TileRenderer::invalidate();

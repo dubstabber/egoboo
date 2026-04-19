@@ -1,8 +1,9 @@
 #include "egolib/game/Module/Fog.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 void fog_instance_t::upload(const wawalite_fog_t& source)
 {
-    _on = source.found && egoboo_config_t::get().graphic_fog_enable.getValue();
+    _on = source.found && EngineContext::get().config().graphic_fog_enable.getValue();
     _top = source.top;
     _bottom = source.bottom;
 

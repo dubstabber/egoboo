@@ -56,7 +56,7 @@ PlayingState::PlayingState() :
     _statusList()
 {
     //For debug only
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue())
+    if (EngineContext::get().config().debug_developerMode_enable.getValue())
     {
         auto debugWindow = std::make_shared<Ego::GUI::InternalDebugWindow>("CurrentModule");
         debugWindow->addWatchVariable("Passages", []{
@@ -175,8 +175,8 @@ void PlayingState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void PlayingState::beginState()
 {
     // in-game settings
-    Ego::GraphicsSystemNew::get().setCursorVisibility(egoboo_config_t::get().debug_hideMouse.getValue());
-    Ego::GraphicsSystem::get().window->grab_enabled(egoboo_config_t::get().debug_grabMouse.getValue());
+    Ego::GraphicsSystemNew::get().setCursorVisibility(EngineContext::get().config().debug_hideMouse.getValue());
+    Ego::GraphicsSystem::get().window->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
 }
 
 bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e)
@@ -198,7 +198,7 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
 
         //Cheat debug button to win a module
         case SDLK_F9:
-            if (egoboo_config_t::get().debug_developerMode_enable.getValue())
+            if (EngineContext::get().config().debug_developerMode_enable.getValue())
             {
                 GameModule& activeModule = GameSessionContext::get().activeModule();
                 for(const std::shared_ptr<Object> &object : activeModule.getObjectHandler().iterator())
@@ -244,7 +244,7 @@ const std::shared_ptr<Ego::GUI::MiniMap>& PlayingState::getMiniMap() const
 void PlayingState::addStatusMonitor(const std::shared_ptr<Object> &object)
 {
     //Disabled by configuration?
-    if(!egoboo_config_t::get().hud_displayStatusBars.getValue()) {
+    if(!EngineContext::get().config().hud_displayStatusBars.getValue()) {
         return;
     }
 

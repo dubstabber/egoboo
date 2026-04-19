@@ -42,7 +42,7 @@ GraphicsContext::GraphicsContext(GraphicsWindow *window) :
             (const char *)glewGetErrorString(err), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to initialize GLEW");
     }
-    auto& config = egoboo_config_t::get();
+    auto& config = EngineContext::get().config();
 
     // (1) Multisample antialiasing.
     // The GL_MULTISAMPLE/GL_MULTISAMPLE_ARB superseed GL_POINT_SMOOTH, GL_LINE_SMOOTH, and GL_POLYGON_SMOOTH.
