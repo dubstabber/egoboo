@@ -139,6 +139,12 @@ inline ICharacterState* tryCharacterState(ObjectRef objectRef)
     return object ? static_cast<ICharacterState*>(object) : nullptr;
 }
 
+inline IAppearanceProfile* tryAppearanceProfile(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IAppearanceProfile*>(object) : nullptr;
+}
+
 inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

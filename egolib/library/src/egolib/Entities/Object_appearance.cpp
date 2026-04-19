@@ -42,6 +42,32 @@ bool Object::setSkin(const size_t skinNumber)
     return true;
 }
 
+uint16_t Object::getSkinCost(size_t skinNumber) const
+{
+    return getProfile()->getSkinInfo(skinNumber).cost;
+}
+
+bool Object::isCurrentSkinDressy() const
+{
+    return getProfile()->getSkinInfo(getSkin()).dressy;
+}
+
+bool Object::hasIntellectDamageParticle() const
+{
+    const auto& profile = getProfile();
+    for (LocalParticleProfileRef iTmp(0); iTmp.get() < MAX_PIP_PER_PROFILE; ++iTmp)
+    {
+        const std::shared_ptr<ParticleProfile>& particleProfile =
+            EngineContext::get().profileSystem().getParticleProfile(profile->getParticleProfile(iTmp));
+        if (particleProfile && particleProfile->_intellectDamageBonus)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool Object::isOnWaterTile() const
 {
     return 0 != activeModule().getMeshPointer()->test_fx(getTile(), MAPFX_WATER);

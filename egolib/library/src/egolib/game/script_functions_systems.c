@@ -21,6 +21,11 @@ ICharacterState& characterState(Object& object)
     return object;
 }
 
+IAppearanceProfile& appearanceProfile(Object& object)
+{
+    return object;
+}
+
 ITeamMember& teamMember(Object& object)
 {
     return object;
@@ -81,13 +86,15 @@ uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
     /// @details This function returns the cost of the desired skin upgrade, setting
     /// tmpx to the price
 
-    Object *ptarget;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( ptarget );
+    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
+    if (targetAppearance == nullptr)
+    {
+        return false;
+    }
 
-    int value = ptarget->getProfile()->getSkinInfo(Ego::Script::Interpreter::safeCast<size_t>(state.argument)).cost;
+    int value = targetAppearance->getSkinCost(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
 
     if ( value > 0 )
     {
@@ -367,14 +374,17 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
     /// as tmpargument and the new type as tmpx
 
     int iTmp;
-    Object * pself_target;
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
+    if (targetAppearance == nullptr)
+    {
+        return false;
+    }
 
-    iTmp = pself_target->getSkin();
-    state.x = pself_target->setSkin(state.argument);
+    iTmp = targetAppearance->getSkin();
+    state.x = targetAppearance->setSkin(state.argument);
 
     state.argument = iTmp;  // The character's old armor
 
@@ -909,9 +919,10 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     state.x = state.argument;
-    iTmp = pchr->getSkin();
-    pchr->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
-    state.x = pchr->getSkin();
+    IAppearanceProfile& selfAppearance = appearanceProfile(*pchr);
+    iTmp = selfAppearance.getSkin();
+    selfAppearance.setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    state.x = selfAppearance.getSkin();
     state.argument = iTmp;  // The character's old armor
 
     SCRIPT_FUNCTION_END();
@@ -1669,32 +1680,31 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
     /// skin tmpx is set to amount needed after trade-in ( 0 for pass ).
 
     int iTmp;
-    Object * pself_target;
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
+    IWallet* targetWallet = tryWallet(self.getTarget());
+    if (targetAppearance == nullptr || targetWallet == nullptr)
+    {
+        return false;
+    }
 
-    if ( !objectHandler().exists( self.getTarget() ) ) return false;
-
-    pself_target = objectHandler().get( self.getTarget() );
-
-
-    iTmp = pself_target->getProfile()->getSkinInfo(state.argument).cost;
+    iTmp = targetAppearance->getSkinCost(static_cast<size_t>(state.argument));
     state.y = iTmp;                                       // Cost of new skin
 
-    iTmp -= pself_target->getProfile()->getSkinInfo(pself_target->getSkin()).cost;     // Refund for old skin
+    iTmp -= targetAppearance->getSkinCost(targetAppearance->getSkin());     // Refund for old skin
 
-    if ( iTmp > pself_target->getMoney() )
+    if ( iTmp > targetWallet->getMoney() )
     {
         // Not enough.
-        state.x = iTmp - pself_target->getMoney();        // Amount needed
+        state.x = iTmp - targetWallet->getMoney();        // Amount needed
         returncode = false;
     }
     else
     {
         // Pay for it.  Cost may be negative after refund.
-        pself_target->giveMoney(-iTmp);
+        targetWallet->giveMoney(-iTmp);
         state.x = 0;
         returncode = true;
     }

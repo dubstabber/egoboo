@@ -11,6 +11,11 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
+IAppearanceProfile& appearanceProfile(Object& object)
+{
+    return object;
+}
+
 const ITargetInfo& targetInfo(const Object& object)
 {
     return object;
@@ -1039,7 +1044,7 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ppro->getSkinInfo(pchr->getSkin()).dressy;
+    returncode = appearanceProfile(*pchr).isCurrentSkinDressy();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1687,18 +1692,7 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    for (LocalParticleProfileRef iTmp(0); iTmp.get() < MAX_PIP_PER_PROFILE; ++iTmp)
-    {
-        std::shared_ptr<ParticleProfile> ppip = EngineContext::get().profileSystem().getParticleProfile(pchr->getProfile()->getParticleProfile(iTmp));
-        if (!ppip) continue;
-
-        if (ppip->_intellectDamageBonus)
-        {
-            returncode = true;
-            break;
-        }
-    }
+    returncode = appearanceProfile(*pchr).hasIntellectDamageParticle();
 
     SCRIPT_FUNCTION_END();
 }

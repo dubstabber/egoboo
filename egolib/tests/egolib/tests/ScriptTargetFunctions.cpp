@@ -611,4 +611,29 @@ TEST_F(ScriptTargetFunctionsFixture, FacingQueriesReadThroughPhysicalRole)
     EXPECT_FALSE(scr_IfTargetIsFacingSelf(state, self));
 }
 
+TEST_F(ScriptTargetFunctionsFixture, DressyAndSpellPredicatesPreserveActorProfileSemantics)
+{
+    auto& module = beginActiveTestModule();
+    auto healer = makeObject(module, "mp_data/globalobjects/players/healer.obj", 5381);
+    auto rogue = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5382);
+
+    ASSERT_NE(healer, nullptr);
+    ASSERT_NE(rogue, nullptr);
+    ASSERT_TRUE(healer->setSkin(0));
+    ASSERT_TRUE(rogue->setSkin(2));
+    rogue->getProfile()->_skinInfo[2].dressy = false;
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(healer, rogue);
+
+    EXPECT_TRUE(scr_IfTargetIsDressedUp(state, self));
+    EXPECT_TRUE(scr_IfTargetIsASpell(state, self));
+
+    self.setSelf(rogue->getObjRef());
+    self.setTarget(healer->getObjRef());
+
+    EXPECT_FALSE(scr_IfTargetIsDressedUp(state, self));
+    EXPECT_FALSE(scr_IfTargetIsASpell(state, self));
+}
+
 } // namespace

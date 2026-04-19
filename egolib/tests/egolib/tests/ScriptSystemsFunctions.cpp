@@ -909,4 +909,61 @@ TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserve
     EXPECT_EQ(actor->getMoney(), 33);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ArmorHelpersUseAppearanceProfileSeamAndPreserveLegacyOutputs)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5701);
+    auto target = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5702);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_TRUE(actor->setSkin(0));
+    ASSERT_TRUE(target->setSkin(0));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    state.argument = 2;
+    EXPECT_TRUE(scr_GetTargetArmorPrice(state, self));
+    EXPECT_EQ(state.x, target->getProfile()->getSkinInfo(2).cost);
+
+    state.argument = 2;
+    EXPECT_TRUE(scr_ChangeTargetArmor(state, self));
+    EXPECT_EQ(state.argument, 0);
+    EXPECT_EQ(state.x, 1);
+    EXPECT_EQ(target->getSkin(), 2);
+
+    state.argument = 3;
+    EXPECT_TRUE(scr_ChangeArmor(state, self));
+    EXPECT_EQ(state.argument, 0);
+    EXPECT_EQ(state.x, 3);
+    EXPECT_EQ(actor->getSkin(), 3);
+
+    ASSERT_TRUE(target->setSkin(3));
+    target->giveMoney(-static_cast<int>(target->getMoney()));
+    state.argument = 0;
+    EXPECT_TRUE(scr_TargetPayForArmor(state, self));
+    EXPECT_EQ(state.y, target->getProfile()->getSkinInfo(0).cost);
+    EXPECT_EQ(state.x, 0);
+    EXPECT_EQ(target->getMoney(), 995);
+
+    ASSERT_TRUE(target->setSkin(1));
+    target->giveMoney(-static_cast<int>(target->getMoney()));
+    target->giveMoney(600);
+    state.argument = 2;
+    EXPECT_TRUE(scr_TargetPayForArmor(state, self));
+    EXPECT_EQ(state.y, target->getProfile()->getSkinInfo(2).cost);
+    EXPECT_EQ(state.x, 0);
+    EXPECT_EQ(target->getMoney(), 50);
+
+    ASSERT_TRUE(target->setSkin(0));
+    target->giveMoney(-static_cast<int>(target->getMoney()));
+    target->giveMoney(100);
+    state.argument = 3;
+    EXPECT_FALSE(scr_TargetPayForArmor(state, self));
+    EXPECT_EQ(state.y, target->getProfile()->getSkinInfo(3).cost);
+    EXPECT_EQ(state.x, 895);
+    EXPECT_EQ(target->getMoney(), 100);
+}
+
 } // namespace

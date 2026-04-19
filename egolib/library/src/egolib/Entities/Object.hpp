@@ -30,6 +30,7 @@
 #include "egolib/Logic/Team.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 
+#include "egolib/Entities/IAppearanceProfile.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
@@ -83,6 +84,7 @@ enum LatchButton
 
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
+               public IAppearanceProfile,
                public IDamageable,
                public ICharacterState,
                public IInventoryHolder,
@@ -985,7 +987,13 @@ public:
     **/
     SKIN_T getSkin() const override { return skin; }
 
-    bool setSkin(const size_t skinNumber);
+    bool setSkin(const size_t skinNumber) override;
+
+    uint16_t getSkinCost(size_t skinNumber) const override;
+
+    bool isCurrentSkinDressy() const override;
+
+    bool hasIntellectDamageParticle() const override;
 
     SKIN_T getBaseSkin() const { return skin_stt; }
 

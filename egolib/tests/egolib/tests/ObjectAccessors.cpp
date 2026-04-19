@@ -4,8 +4,8 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #define private public
 #include "egolib/Entities/_Include.hpp"
-#undef private
 #include "egolib/Profiles/_Include.hpp"
+#undef private
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -1283,6 +1283,30 @@ TEST_F(ObjectAccessorFixture, AppearanceAndProfileAccessorsRoundTripSelectedStat
 
     EXPECT_TRUE(object->setSkin(validSkin));
     EXPECT_EQ(object->getSkin(), validSkin);
+}
+
+TEST_F(ObjectAccessorFixture, AppearanceProfileRoleSurfaceExposesSkinPricingDressinessAndSpellQueries)
+{
+    auto dressySpellObject = makeObject(_objectHandler, "mp_data/globalobjects/players/healer.obj", 3091);
+    auto plainObject = makeObject(_objectHandler, "mp_data/globalobjects/players/rogue.obj", 3092);
+    ASSERT_NE(dressySpellObject, nullptr);
+    ASSERT_NE(plainObject, nullptr);
+
+    IAppearanceProfile& appearance = *dressySpellObject;
+    const IAppearanceProfile& constAppearance = *dressySpellObject;
+    const IAppearanceProfile& constPlainAppearance = *plainObject;
+
+    ASSERT_TRUE(appearance.setSkin(0));
+    EXPECT_EQ(constAppearance.getSkin(), dressySpellObject->getSkin());
+    EXPECT_EQ(constAppearance.getSkinCost(0), dressySpellObject->getProfile()->getSkinInfo(0).cost);
+    EXPECT_TRUE(constAppearance.isCurrentSkinDressy());
+    EXPECT_TRUE(constAppearance.hasIntellectDamageParticle());
+    EXPECT_FALSE(appearance.setSkin(9999));
+
+    ASSERT_TRUE(plainObject->setSkin(2));
+    plainObject->getProfile()->_skinInfo[2].dressy = false;
+    EXPECT_FALSE(constPlainAppearance.isCurrentSkinDressy());
+    EXPECT_FALSE(constPlainAppearance.hasIntellectDamageParticle());
 }
 
 TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
