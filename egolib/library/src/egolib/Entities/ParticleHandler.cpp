@@ -67,7 +67,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle
     )
 {
     if(!EngineContext::get().profileSystem().isLoaded(iprofile)) {
-		Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid profile reference ", iprofile, Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid profile reference ", iprofile, Log::EndOfEntry);
         return Ego::Particle::INVALID_PARTICLE;
     }
 
@@ -118,7 +118,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
         GameModule* module = tryActiveModule();
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
         const std::string spawnProfileName = EngineContext::get().profileSystem().isLoaded(spawnProfile) ? EngineContext::get().profileSystem().getProfile(spawnProfile)->getPathname() : "INVALID";
-        Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
                                          ", spawn origin == ", spawnOrigin.get(), " (`", spawnOriginName, "`), spawn profile == ", spawnProfile, " (`", spawnProfileName, "`)",
                                          Log::EndOfEntry);
 
@@ -149,7 +149,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler().get(spawnOrigin)->getName() : "INVALID";
         const std::string particleProfileName = EngineContext::get().profileSystem().isParticleProfileLoaded(particleProfile) ? EngineContext::get().profileSystem().getParticleProfile(particleProfile)->_name : "INVALID";
         const std::string spawnProfileName = EngineContext::get().profileSystem().isLoaded(spawnProfile) ? EngineContext::get().profileSystem().getProfile(spawnProfile)->getPathname().c_str() : "INVALID";
-        Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
                                          "owner == ", spawnOrigin, " (`", spawnOriginName, "`), "
                                          "spawn profile == ", spawnProfile, " (`", spawnProfileName, "`), ",
                                          "particle profile == ", REF_TO_INT(particleProfile), " (`", particleProfileName, "`)",

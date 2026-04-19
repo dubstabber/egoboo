@@ -21,6 +21,7 @@
 /// @brief Combat mechanics — attack execution and damage particle spawning
 
 #include "egolib/game/game_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #define THROWFIX            30.0f                    ///< To correct thrown velocities
 #define MINTHROWVELOCITY    15.0f
@@ -567,13 +568,13 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                     }
                     else
                     {
-                        Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn attack particle for ", "`", weaponProfile->getClassName(), "`", Log::EndOfEntry);
+                        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn attack particle for ", "`", weaponProfile->getClassName(), "`", Log::EndOfEntry);
                     }
                 }
             }
             else
             {
-                Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "invalid attack particle ", "`", weaponProfile->getClassName(), "`", Log::EndOfEntry);
+                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "invalid attack particle ", "`", weaponProfile->getClassName(), "`", Log::EndOfEntry);
             }
         }
         else

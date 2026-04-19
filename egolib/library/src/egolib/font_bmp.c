@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/font_bmp.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Graphics/TextureManager.hpp"
 
@@ -72,7 +73,7 @@ void font_bmp_load_vfs( const std::string& szBitmap, const char* szSpacing )
 	if (fontTexture->isDefault())
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "`", szBitmap, "`", ": ", "unable to load file", Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw std::runtime_error(e.getText());
     }
 
@@ -82,7 +83,7 @@ void font_bmp_load_vfs( const std::string& szBitmap, const char* szSpacing )
     if ( 0 == xsize || 0 == ysize )
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "`", szBitmap, "`", ": ", "bad font size ", "(", xsize, ", ", ysize, ")", Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw std::runtime_error(e.getText());
     }
 

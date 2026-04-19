@@ -21,6 +21,7 @@
 /// @brief Internal planning helpers for spawn.txt realization.
 
 #include "egolib/game/Module/Module_spawn_plan.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Log/_Include.hpp"
 #include "egolib/game/Module/module_spawn.h"
@@ -100,7 +101,7 @@ SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
     {
         if (plan.entries.size() >= OBJECTS_MAX)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                              "too many objects in file ", "`", "mp_data/spawn,txt", "`",
                                              ". Maximum number of objects is ", OBJECTS_MAX, Log::EndOfEntry);
             break;
@@ -108,7 +109,7 @@ SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
 
         if (entry.slot >= INVALID_PRO_REF)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                              "invalid slot ", entry.slot, " for ", "`", entry.spawn_comment, "`",
                                              " in file ", "`", "mp_data/spawn,txt", "`", Log::EndOfEntry);
             continue;
@@ -133,7 +134,7 @@ SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
         const ObjectProfileRef profileSlot = reserveDynamicSlot(spawnName, plan.reservedSlots, isSlotLoaded);
         if (profileSlot == ObjectProfileRef::Invalid)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                              "unable to acquire free dynamic slot for object ",
                                              spawnName, ". All slots in use?", Log::EndOfEntry);
         }

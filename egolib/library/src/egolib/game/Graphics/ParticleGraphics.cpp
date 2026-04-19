@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/lighting.h"
@@ -59,7 +60,7 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << pprt->getParticleID() << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 
@@ -354,7 +355,7 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "nullptr == particle" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 
@@ -414,7 +415,7 @@ gfx_rv ParticleGraphics::update(::Camera& camera, const ParticleRef particle, ui
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << particle << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 

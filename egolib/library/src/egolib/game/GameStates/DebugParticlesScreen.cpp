@@ -65,7 +65,7 @@ DebugParticlesScreen::DebugParticlesScreen()
     {
         if(particle->getProfileID() == INVALID_PIP_REF || !EngineContext::get().profileSystem().isParticleProfileLoaded(particle->getProfileID())) {
             invalidParticles++;
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid particle with particle profile reference ", particle->getProfileID(), " and spawner object profile reference ", particle->getSpawnerProfile());
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid particle with particle profile reference ", particle->getProfileID(), " and spawner object profile reference ", particle->getSpawnerProfile());
             continue;
         }
 

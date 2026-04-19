@@ -21,6 +21,7 @@
 /// @brief Internal live spawn realization helpers for spawn.txt entries.
 
 #include "egolib/game/Module/Module_spawn_realization.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Log/_Include.hpp"
@@ -190,7 +191,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
 
     if (spawnInfo.attach != ATTACH_NONE && !parent)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "failed to spawn ", "`", spawnInfo.spawn_name, "`",
                                          " due to missing parent", Log::EndOfEntry);
         return nullptr;
@@ -204,7 +205,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
     std::shared_ptr<Object> object = ops.spawnObject(spawnInfo);
     if (!object)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "unable to spawn ", "`", spawnInfo.spawn_name, "`",
                                          Log::EndOfEntry);
         return nullptr;

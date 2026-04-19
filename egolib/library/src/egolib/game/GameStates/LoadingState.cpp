@@ -189,7 +189,7 @@ void LoadingState::loadModuleData()
         setProgressText("Initializing module linking... ", 20);
         if (!link_build_vfs("mp_data/link.txt", LinkList))
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to initialize module linking", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to initialize module linking", Log::EndOfEntry);
         }
         // initialize the collision system
         setProgressText("Beautifying graphics...", 40);
@@ -204,7 +204,7 @@ void LoadingState::loadModuleData()
         if(!_playersToLoad.empty()) {
             setProgressText("Loading players...", 50);
             if(!loadPlayers()) {
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load players", Log::EndOfEntry);
+                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load players", Log::EndOfEntry);
                 endState();
                 return;
             }
@@ -213,7 +213,7 @@ void LoadingState::loadModuleData()
         // try to start a new module
         setProgressText("Loading module data...", 60);
         if(!GameSessionContext::get().beginModule(_loadModule)) {
-    		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load module", Log::EndOfEntry);
+    		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load module", Log::EndOfEntry);
             endState();
             return;
         }
@@ -262,7 +262,7 @@ void LoadingState::loadModuleData()
     catch (const idlib::exception& ex)
     {
         //Display a sensible error so that players understand why it failed
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "module loading error (", ex.to_string(), ")", Log::EndOfEntry);        
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "module loading error (", ex.to_string(), ")", Log::EndOfEntry);        
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
                                  "Module Load Error",
                                  ex.to_string().c_str(),
@@ -305,7 +305,7 @@ bool LoadingState::loadGlobalHints()
     loadGameTips(ctxt, _globalGameTips);
     if(_globalGameTips.empty())
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load the global game ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load the global game ",
                                          "tips and hints from file ", "`", pathname, "`", Log::EndOfEntry);
     }
     return !_globalGameTips.empty();
@@ -328,7 +328,7 @@ bool LoadingState::loadLocalModuleHints()
     loadGameTips(ctxt, _localGameTips);
     if (_localGameTips.empty())
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load locl game tips"
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load locl game tips"
                                          " and hints from file ", "`", pathname, "`", Log::EndOfEntry);
     }
     return !_localGameTips.empty();

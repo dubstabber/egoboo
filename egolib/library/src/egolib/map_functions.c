@@ -21,6 +21,7 @@
 /// @brief mpd functionality ported from cartman and EgoMap
 
 #include "egolib/map_functions.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/Mesh/Info.hpp"
 
@@ -158,7 +159,7 @@ void map_generate_fan_type_data( map_t& mesh )
 	try {
 		ary = new uint8_t[mesh._mem.tiles.size()];
 	} catch (...) {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to allocate a temporary array", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to allocate a temporary array", Log::EndOfEntry);
 		throw;
 	}
 

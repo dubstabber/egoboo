@@ -21,6 +21,7 @@
 /// @brief World-render orchestration helpers for the graphics shell
 
 #include "egolib/game/graphic_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -407,7 +408,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid entity list size" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 

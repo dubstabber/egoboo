@@ -43,7 +43,7 @@ MeshStats g_meshStats;
 
 static void warnNumberOfVertices(const char *file, int line, size_t numberOfVertices)
 {
-    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                      "mesh has too many vertices - ", numberOfVertices,
                                      " number of vertices requested, but maximum number of vertices is ",
                                      MAP_VERTICES_MAX);
@@ -89,7 +89,7 @@ void tile_mem_t::computeVertexIndices(const tile_dictionary_t& dict)
 	}
 
 	if (vertexIndex != _info.getVertexCount()) {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "wrong number of vertices: received ",
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "wrong number of vertices: received ",
                                          vertexIndex, ", expected ", _info.getVertexCount(), Log::EndOfEntry);
 	}
 }
@@ -166,7 +166,7 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 	{
         Log::Entry entry(Log::Level::Error, __FILE__, __LINE__);
 	    entry << "unable to load mesh of module `" << moduleName << "`" << Log::EndOfEntry;
-        Log::get() << entry;
+        EngineContext::get().logTarget() << entry;
 		throw idlib::runtime_error(__FILE__, __LINE__, entry.getText());
 	}
 	// Create the mesh from map.
@@ -175,7 +175,7 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 	{
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to convert mesh of module ", "`",
                                     moduleName, "`", Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
 		throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
 	}
 	mesh->finalize();

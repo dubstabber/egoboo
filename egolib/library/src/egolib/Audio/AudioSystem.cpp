@@ -117,7 +117,7 @@ AudioSystem::AudioSystem() :
 
     if (is_audio_disabled_by_environment())
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "audio disabled by EGOBOO_DISABLE_AUDIO",
                                          Log::EndOfEntry);
         return;
@@ -127,14 +127,14 @@ AudioSystem::AudioSystem() :
     if (egoboo_config_t::get().sound_effects_enable.getValue() || egoboo_config_t::get().sound_music_enable.getValue())
     {
         const SDL_version* link_version = Mix_Linked_Version();
-		Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer audio service version ",
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer audio service version ",
                                          link_version->major, ".", link_version->minor, ".", link_version->patch, Log::EndOfEntry);
         if (Mix_OpenAudio(egoboo_config_t::get().sound_highQuality_enable.getValue() ? MIX_HIGH_QUALITY : MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, egoboo_config_t::get().sound_outputBuffer_size.getValue()) < 0)
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize SDL mixer audio service version ",
                                         link_version->major, ".", link_version->minor, ".", link_version->patch, ": ", Mix_GetError(),
                                         Log::EndOfEntry);
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
             throw std::runtime_error(e.getText());
         }
         else
@@ -143,11 +143,11 @@ AudioSystem::AudioSystem() :
             Mix_AllocateChannels(egoboo_config_t::get().sound_channel_count.getValue());
 
             // Check if we can load OGG Vorbis music (this is non-fatal, game runs fine without music).
-            Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer OGG audio services", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer OGG audio services", Log::EndOfEntry);
 
             if (!Mix_Init(MIX_INIT_OGG))
             {
-				Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize SDL mixer OGG audio service: ", Mix_GetError(), Log::EndOfEntry);
+				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize SDL mixer OGG audio service: ", Mix_GetError(), Log::EndOfEntry);
             }
         }
     }
@@ -176,7 +176,7 @@ void AudioSystem::loadGlobalSounds()
         _globalSounds[i] = loadSound(std::string("mp_data/") + wavenames[i]);
         if (_globalSounds[i] == INVALID_SOUND_ID)
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "global sound ",
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "global sound ",
                                              "`", wavenames[i], "`", " not loaded", Log::EndOfEntry);
         }
     }
@@ -228,7 +228,7 @@ void AudioSystem::download(egoboo_config_t& cfg)
         }
         else
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to start audio system: ", Mix_GetError(), Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to start audio system: ", Mix_GetError(), Log::EndOfEntry);
         }
     }
 
@@ -280,7 +280,7 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
     // Valid filename?
     if (fileName.empty())
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "sound file name is empty", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "sound file name is empty", Log::EndOfEntry);
         return INVALID_SOUND_ID;
     }
 
@@ -312,7 +312,7 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
     {
         // there is an error only if the file exists and can't be loaded
         if (fileExists) {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load sound file ", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load sound file ", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
         }
 
         return INVALID_SOUND_ID;
@@ -339,7 +339,7 @@ MusicID AudioSystem::loadMusic(const std::string &fileName)
 
     if (!loadedMusic)
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load music file", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load music file", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
         return INVALID_SOUND_ID;
     }
 
@@ -377,14 +377,14 @@ void AudioSystem::playMusic(const std::string& songName, const uint16_t fadetime
     //Get the actual music data from the name of the song
     const auto& result = _musicLoaded.find(songName);
     if(result == _musicLoaded.end()) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
                                          "song name ", "`", songName, "`", " does not exist", Log::EndOfEntry);        
         return;
     }
 
     // Mix_FadeOutMusic(fadetime);      // Stops the game too
     if (Mix_FadeInMusic(result->second, -1, fadetime) == -1) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
                                          Mix_GetError(), Log::EndOfEntry);
     }
 }

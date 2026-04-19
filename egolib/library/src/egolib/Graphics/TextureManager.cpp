@@ -52,7 +52,7 @@ static bool ego_texture_load_vfs(std::shared_ptr<Ego::Texture> texture, const ch
     const bool retval = surface && texture->load(fullFilename, surface);
     if (!retval) {
         auto resolved = vfs_resolveReadFilename(filename);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load texture file ", "`", resolved.second, "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load texture file ", "`", resolved.second, "`", Log::EndOfEntry);
     }
 
     return retval;

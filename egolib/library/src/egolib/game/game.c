@@ -306,7 +306,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Unknown escape character
                 default:
                     result << '%' << c;
-                    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unknown escape character ",
+                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unknown escape character ",
                                                      "`", c, "`", Log::EndOfEntry);
                 break;
             }

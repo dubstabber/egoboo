@@ -22,6 +22,7 @@
 /// @author Michael Heilmann
 
 #include "egolib/Image/ImageManager.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Image/ImageLoader_SDL.hpp"
@@ -78,7 +79,7 @@ void ImageManager::registerImageLoaders()
 {
     if (egoboo_config_t::get().debug_sdlImage_enable.getValue())
     {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image ", SDL_IMAGE_MAJOR_VERSION, ".", SDL_IMAGE_MINOR_VERSION, ".", SDL_IMAGE_PATCHLEVEL, Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image ", SDL_IMAGE_MAJOR_VERSION, ".", SDL_IMAGE_MINOR_VERSION, ".", SDL_IMAGE_PATCHLEVEL, Log::EndOfEntry);
         // JPG support is optional.
         if ((IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG) == IMG_INIT_JPG)
         {
@@ -93,7 +94,7 @@ void ImageManager::registerImageLoaders()
         {
             auto e = Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "[image manager]: SDL_image does not "
                                         "support PNG file format: ", SDL_GetError(), Log::EndOfLine);
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
             throw idlib::environment_error(__FILE__, __LINE__, "font manager", e.getText());
         }
         // WEBP support is optional and available in SDL_image 1.2.11 or higher.
@@ -123,7 +124,7 @@ void ImageManager::registerImageLoaders()
     }
     else
     {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image disable by ", egoboo_config_t::get().debug_sdlImage_enable.getName(), " = false in `setup.txt` "
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image disable by ", egoboo_config_t::get().debug_sdlImage_enable.getName(), " = false in `setup.txt` "
                                          " - using SDL -  only support for .bmp files", Log::EndOfEntry);
     }
     // These loaders are natively supported with SDL.

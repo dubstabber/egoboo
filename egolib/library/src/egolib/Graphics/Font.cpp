@@ -615,7 +615,7 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
         if (fits)
             break;
 
-        Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to fit atlas into a texture of size ", currentMaxSize, ", trying texture of size ", currentMaxSize * 2, " instead", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to fit atlas into a texture of size ", currentMaxSize, ", trying texture of size ", currentMaxSize * 2, " instead", Log::EndOfEntry);
         currentMaxSize <<= 1;
         pos.clear();
         atlas = nullptr;
@@ -625,7 +625,7 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                     "unable to fit a atlas into a texture of size ", maxTextureSize,
                                     Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw idlib::environment_error(__FILE__, __LINE__, "font atlas", e.getText());
     }
 

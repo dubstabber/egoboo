@@ -138,7 +138,7 @@ void TileListV2::render(ego_mesh_t& mesh, const std::vector<ClippingEntry>& tile
 		gfx_rv render_rv = render_fan(mesh, tmp_itile);
 		if (egoboo_config_t::get().debug_developerMode_enable.getValue() && gfx_error == render_rv)
 		{
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error rendering tile ", tmp_itile.i(), Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error rendering tile ", tmp_itile.i(), Log::EndOfEntry);
 		}
 	}
 

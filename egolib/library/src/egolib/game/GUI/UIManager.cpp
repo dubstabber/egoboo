@@ -55,7 +55,7 @@ UIManager::UIManager() :
     for (int i = 0; i < _fonts.size(); ++i) {
         if (!_fonts[i]) {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "UI manager is missing font with ID ", i, Log::EndOfEntry);
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
             throw std::runtime_error(e.getText());
         }
     }

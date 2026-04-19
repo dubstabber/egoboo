@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/FileFormats/map_tile_dictionary.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/FileFormats/MapTileDefinitionsDictionary.hpp"
 
 #include "egolib/fileutil.h"
@@ -54,7 +55,7 @@ bool tile_dictionary_load_vfs( const std::string& filename, tile_dictionary_t& d
 
     if ( definition_count > MAP_FAN_TYPE_MAX )
     {
-		Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "tile dictionary has too many tile definitions - received ", definition_count, ", expected at most ", MAP_FAN_TYPE_MAX, Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "tile dictionary has too many tile definitions - received ", definition_count, ", expected at most ", MAP_FAN_TYPE_MAX, Log::EndOfEntry);
         return false;
     }
 

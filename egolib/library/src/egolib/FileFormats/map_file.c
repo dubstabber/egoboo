@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/FileFormats/map_file.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/FileFormats/map_file-v1.h"
 #include "egolib/FileFormats/map_file-v2.h"
 #include "egolib/FileFormats/map_file-v3.h"
@@ -104,21 +105,21 @@ bool map_info_t::validate() const
 {
     if (_vertexCount > MAP_VERTICES_MAX)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many vertices - received ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many vertices - received ",
                                          _vertexCount, ", allowed ", MAP_VERTICES_MAX);
         return false;
     }
 
     if (_tileCountX > MAP_TILE_MAX_X)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many files in the x direction",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many files in the x direction",
                                          " - received ", _tileCountX, ", allowed ", MAP_TILE_MAX_X);
         return false;
     }
 
     if (_tileCountY > MAP_TILE_MAX_Y)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many tiles in the y direction ",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "too many tiles in the y direction ",
                                          " - received ", _tileCountY, ", allowed ", MAP_TILE_MAX_Y);
         return false;
     }
@@ -126,7 +127,7 @@ bool map_info_t::validate() const
     uint32_t tileCount = _tileCountX * _tileCountY;
     if (tileCount >= MAP_TILE_MAX)
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "mesh is too large - received ", tileCount, " vertices, expected not more than ", MAP_TILE_MAX, " vertices", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "mesh is too large - received ", tileCount, " vertices, expected not more than ", MAP_TILE_MAX, " vertices", Log::EndOfEntry);
         return false;
     }
 
@@ -196,12 +197,12 @@ bool map_t::load(vfs_FILE& file)
     {
         if (mapVersion <= 0)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unknown map type!", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unknown map type!", Log::EndOfEntry);
             goto Fail;
         }
         else if (mapVersion > CURRENT_MAP_VERSION_NUMBER)
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "file version ", mapVersion, " is "
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "file version ", mapVersion, " is "
                                              "greater than highest known file version ", CURRENT_MAP_VERSION_NUMBER,
                                              Log::EndOfEntry);
             validate = true;
@@ -220,7 +221,7 @@ bool map_t::load(vfs_FILE& file)
         // Allocate the mesh memory.
         if (!setInfo(loc_info))
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize map", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize map", Log::EndOfEntry);
             goto Fail;
         }
 
@@ -297,7 +298,7 @@ bool map_t::load(const std::string& name)
     vfs_FILE *file = vfs_openRead(name.c_str());
     if (!file)
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to find map file", "`", name, "`", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to find map file", "`", name, "`", Log::EndOfEntry);
         goto Fail;
     }
 

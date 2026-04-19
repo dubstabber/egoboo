@@ -591,7 +591,7 @@ void script_state_t::onVariableNotDefinedError(uint8_t variableIndex)
     auto variableName = getVariableName(variableIndex);
     Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
     e << "variable " << variableName << "/" << (uint16_t)variableIndex << " not defined" << Log::EndOfEntry;
-    Log::get() << e;
+    EngineContext::get().logTarget() << e;
     throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
 }
 
@@ -685,7 +685,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
             }
             else
             {
-                Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                                  script_error_model, " class name == `", script_error_classname,
                                                  "`: divide by zero", Log::EndOfEntry);
             }
@@ -699,14 +699,14 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
             }
             else
             {
-                Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                                  script_error_model, " class name == `", script_error_classname,
                                                  "`: modulo by zero", Log::EndOfEntry);
             }
             break;
 
         default:
-            Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                              script_error_model, " class name == `", script_error_classname,
                                              "`: unknown opcode", Log::EndOfEntry);
             break;

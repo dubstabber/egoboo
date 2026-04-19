@@ -20,6 +20,7 @@
 /// @brief Routines for reading and writing <tt>"controls.txt"</tt>.
 
 #include "egolib/InputControl/ControlSettingsFile.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 #include "egolib/Log/_Include.hpp"
 
@@ -68,7 +69,7 @@ bool input_settings_save_vfs( const std::string& filename )
     vfs_FILE* filewrite = vfs_openWrite( filename );
     if ( NULL == filewrite )
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save input settings to file ", "`", filename, "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save input settings to file ", "`", filename, "`", Log::EndOfEntry);
         return false;
     }
 

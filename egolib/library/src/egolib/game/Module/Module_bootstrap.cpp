@@ -52,7 +52,7 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
     _pitsTeleport(false),
     _pitsTeleportPos()
 {
-    Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
+    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 
     initializeModuleRuntime();
     initializeModuleTeamsAndTextures();
@@ -107,7 +107,7 @@ void GameModule::loadModuleEnvironment()
         _damageTile.upload(wavalite->damagetile);
     }
     else {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
     }
     upload_wawalite(_fog, _weatherState, _animatedTilesState);
 }

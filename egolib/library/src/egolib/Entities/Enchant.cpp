@@ -122,7 +122,7 @@ Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfi
             case EnchantProfile::ADDMANA: type = Ego::Attribute::MAX_MANA; break;
             case EnchantProfile::ADDLIFE: type = Ego::Attribute::MAX_LIFE; break;
             case EnchantProfile::ADDSTRENGTH: type = Ego::Attribute::MIGHT; break;
-            case EnchantProfile::ADDWISDOM: Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "spawned enchant with deprecated ADDWISDOM", Log::EndOfEntry); continue;
+            case EnchantProfile::ADDWISDOM: EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "spawned enchant with deprecated ADDWISDOM", Log::EndOfEntry); continue;
             case EnchantProfile::ADDINTELLIGENCE: type = Ego::Attribute::INTELLECT; break;
             case EnchantProfile::ADDDEXTERITY: type = Ego::Attribute::AGILITY; break;
             case EnchantProfile::ADDSLASHRESIST: type = Ego::Attribute::SLASH_RESIST; break;
@@ -291,7 +291,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
 {
     //Invalid target?
     if( target->isTerminated() || (!target->isAlive() && !_enchantProfile->_target._stay) ) {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to apply enchant: invalid target", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to apply enchant: invalid target", Log::EndOfEntry);
         requestTerminate();
         return;
     }
@@ -299,7 +299,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     //Already added to a target?
     if(_target.lock()) {
         auto e = Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to apply enchant: target locked", Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw std::logic_error(e.getText());
     }
 
@@ -317,7 +317,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
         }
         else {
             // No weapons to pick, make it fail
-			Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enachant: target has no valid items in hand", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enachant: target has no valid items in hand", Log::EndOfEntry);
             requestTerminate();
             return;
         }
@@ -329,7 +329,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // Check damage type, 90% damage resistance is enough to resist the enchant
     if (_enchantProfile->required_damagetype < DAMAGE_COUNT) {
         if (target->getDamageReduction(_enchantProfile->required_damagetype) >= 0.90f) {
-			Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enchant: target is immune to enchant", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enchant: target is immune to enchant", Log::EndOfEntry);
             requestTerminate();
             return;
         }
@@ -338,7 +338,7 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // Check if target has the required damage type we need
     if (_enchantProfile->require_damagetarget_damagetype < DAMAGE_COUNT) {
         if (target->getDamageTargetType() != _enchantProfile->require_damagetarget_damagetype) {
-			Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enchant: target has wrong damage type", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to apply enchant: target has wrong damage type", Log::EndOfEntry);
             requestTerminate();
             return;
         }

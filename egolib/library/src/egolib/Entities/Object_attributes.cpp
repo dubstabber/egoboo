@@ -176,13 +176,13 @@ float Object::getMana() const
 std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner)
 {
     if (enchantProfile >= ENCHANTPROFILES_MAX) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
         return nullptr;
     }
     const std::shared_ptr<EnchantProfile> &enchantmentProfile = EngineContext::get().profileSystem().getEnchantProfile(enchantProfile);
 
     if(!EngineContext::get().profileSystem().isLoaded(spawnerProfile)) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
         return nullptr;
     }
 
@@ -295,7 +295,7 @@ void Object::setLife(const float value)
 void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
 {
     if(!EngineContext::get().profileSystem().isLoaded(profileID)) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
         return;
     }
 

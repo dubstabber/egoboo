@@ -51,7 +51,7 @@ bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
 
         if(!vfs_exists(filename)) {
             if(psp_info.slot > MAX_IMPORT_PER_PLAYER * MAX_PLAYER) {
-				Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", filename, "`", " does not exist", Log::EndOfEntry);
+				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", filename, "`", " does not exist", Log::EndOfEntry);
             }
 
             return false;

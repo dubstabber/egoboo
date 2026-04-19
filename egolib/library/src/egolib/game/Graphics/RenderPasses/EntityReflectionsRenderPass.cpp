@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/_Include.hpp"
@@ -21,7 +22,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
     auto mesh = tl.getMesh();
     if (!mesh)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "tile list not attached to a mesh - skipping pass", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "tile list not attached to a mesh - skipping pass", Log::EndOfEntry);
         return;
     }
 

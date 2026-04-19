@@ -435,4 +435,3 @@ void dump_matrix(const Ego::Matrix4f4f& a);
 float fvec3_decompose(const Ego::Vector3f& src, const Ego::Vector3f& vnrm, Ego::Vector3f& vpara, Ego::Vector3f& vperp);
 
 
-

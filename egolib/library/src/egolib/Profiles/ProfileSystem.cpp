@@ -156,11 +156,11 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
         // The data file wasn't found
         if (required)
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", pathName, "`", " was not found. Do you attempt to override a global object?", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", pathName, "`", " was not found. Do you attempt to override a global object?", Log::EndOfEntry);
         }
         else if (required && slot_override > 4 * MAX_IMPORT_PER_PLAYER)
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open file ", "`", pathName, "`", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open file ", "`", pathName, "`", Log::EndOfEntry);
         }
 
         return ObjectProfileRef::Invalid;
@@ -178,14 +178,14 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "object slot ", ObjectProfileRef(SPELLBOOK), " is a special "
                                         "reserved slot number and can not be used by ", "`", pathName, "`", Log::EndOfEntry);
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
 			throw std::runtime_error(e.getText());
         }
         else if (required && GameSessionContext::get().overrideSlots())
         {
             Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
             e << "object slot " << SPELLBOOK << " is already used by " << _profilesLoaded[iobj.get()]->getPathname() << " and cannot be used by " << pathName << Log::EndOfEntry;
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
 			throw std::runtime_error(e.getText());
         }
         else
@@ -200,7 +200,7 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
     {
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
         e << "failed to load " << pathName << " into slot number " << iobj << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return ObjectProfileRef::Invalid;
     }
 
@@ -236,7 +236,7 @@ void ProfileSystem::loadModuleProfiles()
         }
         else
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`", Log::EndOfEntry);
         }
         ctxt->nextData();
     }
@@ -362,7 +362,7 @@ void ProfileSystem::loadGlobalParticleProfiles()
         if (INVALID_PIP_REF == ParticleProfileSystem.load(profile.first, profile.second))
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "data file ", "`", profile.first, "`", " was not found", Log::EndOfEntry);
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
             throw std::runtime_error(e.getText());
         }
     }

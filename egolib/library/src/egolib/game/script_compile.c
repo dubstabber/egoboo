@@ -192,7 +192,7 @@ size_t parser_state_t::load_one_line( size_t read, script_info_t& script )
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
 		e << "compilation error - tab character used to define spacing will cause an error `"
 		  << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-		Log::get() << e;
+		EngineContext::get().logTarget() << e;
     }
 
     // scan to the beginning of the next line
@@ -368,7 +368,7 @@ Ego::Script::PDLToken line_scanner_state_t::scanWhiteSpaces()
             {
                 Ego::Script::CLogEntry e(Log::Level::Warning, __FILE__, __LINE__, __FUNCTION__, getLocation());
                 e << "tabulator character in source file" << Log::EndOfEntry;
-                Log::get() << e;
+                EngineContext::get().logTarget() << e;
             }
             numberOfWhiteSpaces++;
             next();
@@ -580,7 +580,7 @@ Ego::Script::PDLToken parser_state_t::parse_indention(script_info_t& script, lin
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
         e << "invalid indention - number of spaces must be even - \n"
           << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         _error = true;
     }
 
@@ -590,7 +590,7 @@ Ego::Script::PDLToken parser_state_t::parse_indention(script_info_t& script, lin
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
         e << "invalid indention - too many spaces - \n"
           << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         _error = true;
         indent = 15;
     }
@@ -667,7 +667,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
                 Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, token.get_start_location());
                 e << "failed to load object " << token.get_lexeme() << " - \n"
                     << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-                Log::get() << e;
+                EngineContext::get().logTarget() << e;
             }
             token.category(Ego::Script::PDLTokenKind::Constant);
         }
@@ -679,7 +679,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             // Emit a warning that the string is empty.
             Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, token.get_start_location());
             e << "empty string literal\n" << Log::EndOfEntry;
-            Log::get() << e;
+            EngineContext::get().logTarget() << e;
         }
         return token;
     } else if (state.isOperator()) {
@@ -783,7 +783,7 @@ void parser_state_t::raise(bool raiseException, Log::Level level, const Ego::Scr
         e << ", ";
     }
     e << "received " << "`" << toString(received.category()) << "`" << Log::EndOfEntry;
-    Log::get() << e;
+    EngineContext::get().logTarget() << e;
     if (raiseException)
     {
         throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::syntactical, received.get_start_location(), e.getText());
@@ -1103,7 +1103,7 @@ egolib_rv load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, Ob
 	if (rv_success != load_ai_script_vfs0(ps, loadname, ppro, script)) {
 		Log::Entry e(Log::Level::Info, __FILE__, __LINE__, __FUNCTION__);
 		e << "unable to load script file `" << loadname << "` - loading default script `" << "mp_data/script.txt" << "` instead" << Log::EndOfEntry;
-		Log::get() << e;
+		EngineContext::get().logTarget() << e;
 		if (rv_success != load_ai_script_vfs0(ps, "mp_data/script.txt", ppro, script)) {
 			return rv_fail;
 		}

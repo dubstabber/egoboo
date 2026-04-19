@@ -21,6 +21,7 @@
 /// @brief Character export/import and save management
 
 #include "egolib/game/game_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 //--------------------------------------------------------------------------------------------
 egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local )
@@ -78,7 +79,7 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
         vfs_removeDirectoryAndContents( todir.c_str() );
         if ( !vfs_mkdir( todir ) )
         {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create object directory ", "`", todir, "`", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create object directory ", "`", todir, "`", Log::EndOfEntry);
             return rv_error;
         }
     }
@@ -88,7 +89,7 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
 
     // Build the DATA.TXT file
     if(!ObjectProfile::exportCharacterToFile(todir + "/data.txt", object.get())) {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save ", "`", todir, "/data.txt`", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save ", "`", todir, "/data.txt`", Log::EndOfEntry);
         return rv_error;
     }
 
@@ -254,7 +255,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
     // make sure the directory exists
     if ( !vfs_mkdir( "/import" ) )
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create import folder: ", vfs_getError(), Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create import folder: ", vfs_getError(), Log::EndOfEntry);
         return rv_error;
     }
     vfs_add_mount_point( fs_getUserDirectory(), Ego::FsPath("import"), Ego::VfsPath("mp_import"), 1 );
@@ -272,7 +273,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
         if ( !vfs_copyDirectory( import_ptr->srcDir.c_str(), import_ptr->dstDir.c_str() ) )
         {
             retval = rv_error;
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import character ",
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import character ",
                                              "from ", "`", import_ptr->srcDir, "`", " to ", "`", import_ptr->dstDir, "`", "(",
                                              vfs_getError(), ")");
         }
@@ -295,7 +296,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
                 if ( !vfs_copyDirectory( tmp_src_dir.c_str(), tmp_dst_dir.c_str() ) )
                 {
                     retval = rv_error;
-					Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import inventory item from ",
+					EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import inventory item from ",
                                                      "`", tmp_src_dir, "` to `", tmp_dst_dir, "`: ", vfs_getError());
                 }
             }

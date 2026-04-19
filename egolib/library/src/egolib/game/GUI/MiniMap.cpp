@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/MiniMap.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Logic/Team.hpp"
@@ -51,7 +52,7 @@ MiniMap::MiniMap() :
     if (ego_texture_exists_vfs("mp_data/plan")) {
         _minimapTexture = std::make_shared<DeferredTexture>("mp_data/plan");
     } else {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load file ", "`", "mp_data/plan", "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load file ", "`", "mp_data/plan", "`", Log::EndOfEntry);
     }
 }
 

@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/egoboo_setup.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/_math.h"
 #include "game/Graphics/Camera.hpp"
@@ -182,7 +183,7 @@ bool Setup::begin() {
         // Revert to default configuration.
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
         e << "unable to load setup file `" << file->getFileName() << "` - reverting to default configuration" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         started = true;
         try {
             file = std::make_shared<ConfigFile>(fileName);
@@ -191,13 +192,13 @@ bool Setup::begin() {
         // If reverting to default configuration failed:
         if (!file) {
             // Fail.
-            Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to revert to default "
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to revert to default "
                                              "configuration", Log::EndOfEntry);
             return false;
         }
         started = true;
     } else {
-        Log::get() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "setup file ", "`", file->getFileName(), "`",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "setup file ", "`", file->getFileName(), "`",
                                          " loaded", Log::EndOfEntry);
         started = true;
     }
@@ -210,7 +211,7 @@ bool Setup::end() {
         file = nullptr;
         return true;
     } else {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save setup file ", "`",
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save setup file ", "`",
                                          file->getFileName(), "`", Log::EndOfEntry);
         file = nullptr;
         return false;
@@ -221,7 +222,7 @@ bool Setup::download(egoboo_config_t& cfg) {
     if (!file) {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "setup file `" << fileName << "` not loaded" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw std::logic_error(e.getText());
     }
     cfg.load(file);
@@ -232,7 +233,7 @@ bool Setup::upload(egoboo_config_t& cfg) {
     if (!file) {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "setup file `" << fileName << " not loaded" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw std::logic_error(e.getText());
     }
     cfg.store(file);

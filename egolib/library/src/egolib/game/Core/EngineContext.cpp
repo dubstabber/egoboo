@@ -4,6 +4,7 @@
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
+#include "egolib/Log/Target.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
@@ -18,6 +19,7 @@ Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
+Log::Target* activeLogTarget = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -337,6 +339,50 @@ const IProfileSystem& EngineContext::profileSystem() const
         throw std::logic_error("no active profile system");
     }
     return *currentProfileSystem;
+}
+
+void EngineContext::installLogTarget(Log::Target& logTarget)
+{
+    if (activeLogTarget)
+    {
+        throw std::logic_error("log target already installed");
+    }
+    activeLogTarget = &logTarget;
+}
+
+void EngineContext::clearLogTarget()
+{
+    activeLogTarget = nullptr;
+}
+
+Log::Target* EngineContext::tryLogTarget()
+{
+    return activeLogTarget;
+}
+
+const Log::Target* EngineContext::tryLogTarget() const
+{
+    return activeLogTarget;
+}
+
+Log::Target& EngineContext::logTarget()
+{
+    Log::Target* currentLogTarget = tryLogTarget();
+    if (!currentLogTarget)
+    {
+        throw std::logic_error("no active log target");
+    }
+    return *currentLogTarget;
+}
+
+const Log::Target& EngineContext::logTarget() const
+{
+    const Log::Target* currentLogTarget = tryLogTarget();
+    if (!currentLogTarget)
+    {
+        throw std::logic_error("no active log target");
+    }
+    return *currentLogTarget;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

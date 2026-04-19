@@ -12,6 +12,7 @@
 
 class GameEngine;
 class PlayingState;
+namespace Log { struct Target; }
 namespace Ego { namespace GUI { class UIManager; } }
 
 class EngineContext : private idlib::non_copyable
@@ -78,6 +79,15 @@ public:
 
     IProfileSystem& profileSystem();
     const IProfileSystem& profileSystem() const;
+
+    void installLogTarget(Log::Target& logTarget);
+    void clearLogTarget();
+
+    Log::Target* tryLogTarget();
+    const Log::Target* tryLogTarget() const;
+
+    Log::Target& logTarget();
+    const Log::Target& logTarget() const;
 
     uint32_t renderedFrameCount() const;
 

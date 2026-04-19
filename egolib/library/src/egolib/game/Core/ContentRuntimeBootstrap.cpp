@@ -31,6 +31,7 @@ ContentRuntimeBootstrap::ContentRuntimeBootstrap(const Options& options) :
     if (_options.initializeLogging)
     {
         Log::initialize(_options.logPath, _options.logLevel);
+        EngineContext::get().installLogTarget(Log::get());
         _loggingInitialized = true;
     }
 
@@ -98,6 +99,7 @@ ContentRuntimeBootstrap::~ContentRuntimeBootstrap()
 
     if (_loggingInitialized)
     {
+        EngineContext::get().clearLogTarget();
         Log::uninitialize();
     }
 }

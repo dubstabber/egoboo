@@ -54,7 +54,7 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `"<< object.getObjRef() << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
     const auto& pmd2 = object.getModelDescriptor()->getMD2();
@@ -205,7 +205,7 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid mad `" << object.getObjRef() << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 

@@ -19,6 +19,7 @@
 
 #include "egolib/Core/System.hpp"
 #include "egolib/egoboo_setup.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Core {
@@ -51,6 +52,7 @@ SystemService::SystemService(const std::string& binaryPath) {
 
     // Initialize logging.
     Log::initialize("/debug/log.txt", Log::Level::Debug);
+    EngineContext::get().installLogTarget(Log::get());
 
     // Say hello.
     Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo Engine ", VERSION, Log::EndOfEntry);
@@ -85,6 +87,7 @@ SystemService::SystemService(const std::string& binaryPath, const std::string& e
     
     // Initialize logging.
     Log::initialize("/debug/log.txt", Log::Level::Debug);
+    EngineContext::get().installLogTarget(Log::get());
     
     // Say hello.
     Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo engine ", VERSION, Log::EndOfEntry);
@@ -115,6 +118,7 @@ SystemService::~SystemService() {
     // Say bye.
     Log::get() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "exiting Egoboo engine ", VERSION, Log::EndOfEntry);
     // Uninitialize logging.
+    EngineContext::get().clearLogTarget();
     Log::uninitialize();
     // Remove search paths.
     /*

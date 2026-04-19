@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/FileFormats/wawalite_file.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/Log/_Include.hpp"
@@ -466,7 +467,7 @@ bool wawalite_data_write(const std::string& filename,const wawalite_data_t *prof
                                                });
     if (!filewrite)
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to write file ",
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to write file ",
                                          "`", filename, "`", Log::EndOfEntry);
         return false;
     }

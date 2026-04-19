@@ -1758,7 +1758,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "deprecated script function ", "`", "EnableListenSkill", "`", " by class `", pchr->getProfile()->getClassName(), "`", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "deprecated script function ", "`", "EnableListenSkill", "`", " by class `", pchr->getProfile()->getClassName(), "`", Log::EndOfEntry);
     }
 
     returncode = false;

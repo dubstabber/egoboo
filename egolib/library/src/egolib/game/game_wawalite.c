@@ -53,7 +53,7 @@ void Upload::upload_light_data(const wawalite_data_t& data)
     }
     else
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "directional light vector is 0", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "directional light vector is 0", Log::EndOfEntry);
     }
 
     //make_lighttable( pdata->light_x, pdata->light_y, pdata->light_z, pdata->light_a );
@@ -153,7 +153,7 @@ bool wawalite_finalize(wawalite_data_t *data)
         {
             if(weather_name != "none")
             {
-				Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load weather type ", "`", weather_name, "`", "/", "`", prt_file, "`", " from wawalite.txt", Log::EndOfEntry);
+				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to load weather type ", "`", weather_name, "`", "/", "`", prt_file, "`", " from wawalite.txt", Log::EndOfEntry);
             }
             data->weather.part_gpip = LocalParticleProfileRef::Invalid;
             data->weather.weather_name = "*NONE*";

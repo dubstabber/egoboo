@@ -73,7 +73,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     {
         if (profile.get() > getImportAmount() * MAX_IMPORT_PER_PLAYER)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "attempt to spawn object from an invalid object profile ", "`", profile, "`", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "attempt to spawn object from an invalid object profile ", "`", profile, "`", Log::EndOfEntry);
         }
         return Object::INVALID_OBJECT;
     }
@@ -84,7 +84,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // allocate a new character
     std::shared_ptr<Object> pchr = getObjectHandler().insert(profile, override);
     if (!pchr) {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn character", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn character", Log::EndOfEntry);
         return Object::INVALID_OBJECT;
     }
 
@@ -351,7 +351,7 @@ void GameModule::spawnAllObjects()
                 // no, give a warning if it is useful
                 if (import_object)
                 {
-                    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                                      "the object ", "`", spawnInfo.spawn_comment, "`", " in slot ",
                                                      spawnInfo.slot, " in file ", "`", "mp_data/spawn,txt", "`",
                                                      "does not exist on this machine", Log::EndOfEntry);

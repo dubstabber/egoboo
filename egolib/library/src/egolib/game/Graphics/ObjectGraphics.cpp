@@ -444,7 +444,7 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     // make sure we have valid data
     if (_vertexList.size() != pmd2->getVertexCount())
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance vertex data does not match its md2", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance vertex data does not match its md2", Log::EndOfEntry);
         return gfx_error;
     }
 
@@ -511,7 +511,7 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     const auto& frameList = pmd2->getFrames();
     if ( _targetFrameIndex >= frameList.size() || _sourceFrameIndex >= frameList.size() )
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance frame is outside "
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance frame is outside "
                                          "the range of its MD2", Log::EndOfEntry);
         return gfx_error;
     }
@@ -935,7 +935,7 @@ void ObjectGraphics::assertFrameIndex(int frameIndex) const {
     if (frameIndex > getModelDescriptor()->getMD2()->getFrames().size()) {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "invalid frame ", frameIndex, "/", 
                                     getModelDescriptor()->getMD2()->getFrames().size(), Log::EndOfEntry);
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
     }
 }
@@ -1177,7 +1177,7 @@ bool ObjectGraphics::applyPublishedInterpolationStep()
 
     if ( _animationProgressInteger > 4 )
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid ilip", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid ilip", Log::EndOfEntry);
         _animationProgressInteger = 0;
         return false;
     }

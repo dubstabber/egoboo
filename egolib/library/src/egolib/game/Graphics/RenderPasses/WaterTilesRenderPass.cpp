@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
@@ -92,7 +93,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "unknown tile type `" << type << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
     float offu = water._layers[layer]._tx[XX];               // Texture offsets

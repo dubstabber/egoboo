@@ -130,13 +130,13 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
 
     if ( !returncode )
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry);
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry);
     }
     else
     {
         // was the child spawned in a "safe" spot?
         if (!pchild->hasSafePosition()) {
-			Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself (no safe location)", Log::EndOfEntry);
+			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself (no safe location)", Log::EndOfEntry);
             pchild->requestTerminate();
         }
         else
@@ -564,7 +564,7 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     std::shared_ptr<Object> pchild = activeModule().spawnObject( pos, pchr->getProfileID(), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid );
     if (pchild == nullptr)
     {
-		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry );
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry );
         returncode = false;
     }
     else
@@ -965,7 +965,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
     if ( !returncode )
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", "/", "`", pchr->getProfile()->getClassName(), "`", " failed to spawn "
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", "/", "`", pchr->getProfile()->getClassName(), "`", " failed to spawn "
                                          "profile index ", state.argument, Log::EndOfEntry);
     }
     else

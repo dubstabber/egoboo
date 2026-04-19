@@ -127,7 +127,7 @@ GraphicsWindow::GraphicsWindow()
                               320, 240, windowFlags);
     if (nullptr == window)
     {
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                          "unable to create SDL window: ",
                                          SDL_GetError(), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL window");
@@ -137,7 +137,7 @@ GraphicsWindow::GraphicsWindow()
     {
         SDL_DestroyWindow(window);
         window = nullptr;
-        Log::get() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                          "unable to create SDL window: ",
                                          SDL_GetError(), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL window");
@@ -234,7 +234,7 @@ void GraphicsWindow::update()
     {
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
         e << "unable to get display index" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
     }
     displayIndex = newDisplayIndex;
     SDL_Event event;

@@ -354,35 +354,35 @@ void DebugObjectLoadingState::loadObjectData()
     {
         std::string out = std::string("Ego::Exception: ") + ex.to_string();
         singleThreadRedrawHack(out);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
                                          "... ", out, Log::EndOfEntry);
     }
     catch (std::exception &ex)
     {
         std::string out = std::string("std::exception: ") + ex.what();
         singleThreadRedrawHack(out);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
                                          "... ", out, Log::EndOfEntry);
     }
     catch (std::string &ex)
     {
         std::string out = std::string("std::string: ") + ex;
         singleThreadRedrawHack(out);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
                                          "... ", out, Log::EndOfEntry);
     }
     catch (char *ex)
     {
         std::string out = std::string("C string: ") + ex;
         singleThreadRedrawHack(out);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
                                          "... ", out, Log::EndOfEntry);
     }
     catch (...)
     {
         std::string out = "unknown error";
         singleThreadRedrawHack(out);
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
                                          "... ", out, Log::EndOfEntry);
     }
     _toLoad.pop_front();

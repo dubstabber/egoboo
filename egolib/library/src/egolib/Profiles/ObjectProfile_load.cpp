@@ -21,6 +21,7 @@
 /// @brief ObjectProfile loading and parsing helpers.
 
 #include "egolib/Profiles/ObjectProfile_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
@@ -75,14 +76,14 @@ void ObjectProfile::loadTextures(const std::string &folderPath)
     if (_texturesLoaded.empty())
     {
         _texturesLoaded[0] = Ego::DeferredTexture("mp_data/waterlow");
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object is missing a skin ", "`", getPathname(), "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object is missing a skin ", "`", getPathname(), "`", Log::EndOfEntry);
     }
 
     // If we didn't get a icon, set it to the NULL icon
     if (_iconsLoaded.empty())
     {
         _iconsLoaded[0] = Ego::DeferredTexture("mp_data/nullicon");
-        Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "object is missing an icon ", "`", getPathname(), "`", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "object is missing an icon ", "`", getPathname(), "`", Log::EndOfEntry);
     }
 }
 
@@ -561,7 +562,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
                 }
                 else
                 {
-                    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath ,"`", ": ", "unknown [PERK] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
+                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath ,"`", ": ", "unknown [PERK] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
                 }
             }
             break;
@@ -578,7 +579,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
                 }
                 else
                 {
-                    Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath, "`", ": unknown [POOL] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
+                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath, "`", ": unknown [POOL] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
                 }
             }
             break;
@@ -597,7 +598,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             case IDSZ2::caseLabel('J', 'O', 'U', 'S'): _startingPerks[Ego::Perks::JOUSTING] = true; break;
 
             default:
-                Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", filePath, "`: ", "unknown IDSZ ", "`", idsz.toString(), "`", Log::EndOfEntry);
+                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", filePath, "`: ", "unknown IDSZ ", "`", idsz.toString(), "`", Log::EndOfEntry);
             break;
         }
     }
@@ -609,7 +610,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     // Assert the reference is valid.
     if (!ref)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid profile reference ", ref, Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid profile reference ", ref, Log::EndOfEntry);
         return nullptr;
     }
 
@@ -630,7 +631,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         }
         catch (const std::runtime_error &ex)
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load model ", "`", folderPath, "`", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load model ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;
         }
 
@@ -681,13 +682,13 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     {
         if (!profile->loadDataFile(folderPath + "/data.txt"))
         {
-            Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;
         }
     }
     catch (const std::runtime_error &ex)
     {
-        Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to parse ", "`", folderPath, "/data.txt", "`", ": ", ex.what(), Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to parse ", "`", folderPath, "/data.txt", "`", ": ", ex.what(), Log::EndOfEntry);
         return nullptr;
     }
 

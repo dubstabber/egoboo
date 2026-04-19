@@ -67,7 +67,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << iprt << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 
@@ -134,7 +134,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << iprt << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 
@@ -252,7 +252,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt)
     if(!pprt || pprt->isTerminated()) {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << iprt << "`" << Log::EndOfEntry;
-        Log::get() << e;
+        EngineContext::get().logTarget() << e;
         return gfx_error;
     }
 
