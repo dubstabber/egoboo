@@ -8,6 +8,7 @@
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
+#include "egolib/Entities/ITargetInfo.hpp"
 #include "egolib/Entities/Particle.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"
 #include "egolib/Entities/Object.hpp"

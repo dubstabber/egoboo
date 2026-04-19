@@ -216,13 +216,13 @@ uint8_t scr_IfTargetHasID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->getProfile()->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
     }
-    else {
-        returncode = false;
-    }
+
+    returncode = targetInfo->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
 
     SCRIPT_FUNCTION_END();
@@ -239,20 +239,26 @@ uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    Object *pself_target;
-    SCRIPT_REQUIRE_TARGET(pself_target);
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInfo == nullptr || targetInventory == nullptr)
+    {
+        return false;
+    }
 
     //Assume nothing is found
     returncode = false;
 
+    const IDSZ2 itemId = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
+
     //Check hands
-    if (nullptr != pself_target->isWieldingItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument))) {
+    if (targetInfo->wieldsItemIDSZ(itemId)) {
         returncode = true;
     }
 
     //Check inventory
     if (!returncode) {
-        if (ObjectRef::Invalid != Inventory::findItem(pself_target->getObjRef(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), false)) {
+        if (ObjectRef::Invalid != Inventory::findItem(*targetInventory, itemId, false)) {
             returncode = true;
         }
     }
@@ -270,13 +276,15 @@ uint8_t scr_IfTargetHoldingItemID( script_state_t& state, ai_state_t& self )
     /// hands.  It also sets tmpargument to the proper latch button to press
     /// to use that item
 
-    Object *pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET(pself_target);
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = (pself_target->isWieldingItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)) != nullptr);
+    returncode = targetInfo->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -289,13 +297,15 @@ uint8_t scr_IfTargetHasSkillID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if ID matches tmpargument
 
-    Object *pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = targetInfo->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -327,28 +337,31 @@ uint8_t scr_IfTargetCanOpenStuff( script_state_t& state, ai_state_t& self )
     /// Used by chests and buttons and such so only "smart" creatures can operate
     /// them
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
     returncode = false;
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if ( pself_target->isMount() )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInfo == nullptr || targetInventory == nullptr)
     {
-        const std::shared_ptr<Object> &rider = pself_target->getLeftHandItem();
+        return false;
+    }
 
-        if (rider)
+    if ( targetInfo->isMount() )
+    {
+        const ITargetInfo* rider = tryTargetInfo(targetInventory->getHeldObject(SLOT_LEFT));
+
+        if (rider != nullptr)
         {
             // can the rider open stuff
-            returncode = rider->getProfile()->canOpenStuff();
+            returncode = rider->canOpenStuff();
         }
     }
 
     if ( !returncode )
     {
         // if a rider can't openstuff, can the target openstuff?
-        returncode = pself_target->getProfile()->canOpenStuff();
+        returncode = targetInfo->canOpenStuff();
     }
 
     SCRIPT_FUNCTION_END();
@@ -385,13 +398,15 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is on another team
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->isAlive() &&  pself_target->getTeam() != pchr->getTeam() );
+    returncode = ( targetInfo->isAlive() && !targetInfo->isOnSameTeam(pchr->getTeamRef()) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -404,13 +419,16 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is on an enemy team
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    if (targetInfo == nullptr || damageableTarget == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->isAlive() && pchr->getTeam().hatesTeam(pself_target->getTeam()) && !pself_target->isInvincible() );
+    returncode = ( targetInfo->isAlive() && targetInfo->isHatedByTeam(pchr->getTeamRef()) && !damageableTarget->isInvincible() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -526,13 +544,15 @@ uint8_t scr_IfTargetHasVulnerabilityID( script_state_t& state, ai_state_t& self 
     /// @author ZZ
     /// @details This function proceeds if the target is vulnerable to the given IDSZ.
     
-    Object *pself_target;
-    
     SCRIPT_FUNCTION_BEGIN();
-    
-    SCRIPT_REQUIRE_TARGET(pself_target);
-    
-    returncode = pself_target->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
+
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
+
+    returncode = targetInfo->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -545,14 +565,15 @@ uint8_t scr_IfTargetIsHurt( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes only if the target is hurt and alive
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    if (!pself_target->isAlive() || pself_target->getLife() > pself_target->getAttribute(Ego::Attribute::MAX_LIFE) - 1.0f)
-        returncode = false;
+    returncode = targetInfo->isHurt();
 
     SCRIPT_FUNCTION_END();
 }
@@ -565,13 +586,15 @@ uint8_t scr_IfTargetIsAPlayer( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is controlled by a human ( may not be local )
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isPlayer();
+    returncode = targetInfo->isPlayer();
 
     SCRIPT_FUNCTION_END();
 }
@@ -586,10 +609,13 @@ uint8_t scr_IfTargetIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isAlive();
+    returncode = targetInfo->isAlive();
 
     SCRIPT_FUNCTION_END();
 }
@@ -619,10 +645,13 @@ uint8_t scr_IfTargetIsMale( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->getGender() == Gender::Male );
+    returncode = ( targetInfo->getGender() == Gender::Male );
 
     SCRIPT_FUNCTION_END();
 }
@@ -635,13 +664,15 @@ uint8_t scr_IfTargetIsFemale( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is female
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->getGender() == Gender::Female );
+    returncode = ( targetInfo->getGender() == Gender::Female );
 
     SCRIPT_FUNCTION_END();
 }
@@ -808,13 +839,15 @@ uint8_t scr_IfTargetHasSpecialID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character has a special IDSZ ( in data.txt )
 
-    Object *pself_target;
-    
     SCRIPT_FUNCTION_BEGIN();
-    
-    SCRIPT_REQUIRE_TARGET(pself_target);
 
-    returncode = pself_target->getProfile()->getIDSZ(IDSZ_SPECIAL) == Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
+
+    returncode = targetInfo->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -828,13 +861,15 @@ uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the number of updates before the
     /// character is ungrogged, proceeding if the number is greater than 0
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    state.argument = pself_target->getGrogTimer();
+    state.argument = targetInfo->getGrogTimer();
 
     returncode = ( 0 != state.argument );
 
@@ -850,13 +885,15 @@ uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the number of updates before the
     /// character is undazed, proceeding if the number is greater than 0
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    state.argument = pself_target->getDazeTimer();
+    state.argument = targetInfo->getDazeTimer();
 
     returncode = ( 0 != state.argument );
 
@@ -873,13 +910,13 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->getTeam() == pchr->getTeam();
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
     }
-    else {
-        returncode = false;
-    }
+
+    returncode = targetInfo->isOnSameTeam(pchr->getTeamRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -894,13 +931,13 @@ uint8_t scr_IfTargetHasAnyID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->getProfile()->hasIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
     }
-    else {
-        returncode = false;
-    }
+
+    returncode = targetInfo->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1029,7 +1066,13 @@ uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	auto iitem = Inventory::findItem( self.getTarget(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
+
+	auto iitem = Inventory::findItem(*targetInventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
 
     returncode = objectHandler().exists(iitem);
 
@@ -1155,18 +1198,20 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is riding a mount
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
     returncode = false;
 
-    ObjectRef ichr = pself_target->getHolderRef();
-    if ( objectHandler().exists( ichr ) )
+    const ITargetInfo* holderInfo = tryTargetInfo(targetInfo->getHolderRef());
+    if ( holderInfo != nullptr )
     {
-        returncode = objectHandler().get(ichr)->isMount();
+        returncode = holderInfo->isMount();
     }
 
     SCRIPT_FUNCTION_END();
@@ -1289,13 +1334,15 @@ uint8_t scr_IfTargetCanSeeInvisible( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target can see invisible
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->canSeeInvisible();
+    returncode = targetInfo->canSeeInvisible();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1411,10 +1458,13 @@ uint8_t scr_IfTargetIsFlying( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isFlying();
+    returncode = targetInfo->isFlying();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1468,13 +1518,15 @@ uint8_t scr_IfTargetIsAMount( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes if the Target is a mountable character
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isMount();
+    returncode = targetInfo->isMount();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1487,13 +1539,15 @@ uint8_t scr_IfTargetIsAPlatform( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes if the Target is a platform character
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isPlatform();
+    returncode = targetInfo->isPlatform();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1532,16 +1586,15 @@ uint8_t scr_IfTargetHasNotFullMana( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function passes only if the Target is not at max mana and alive
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    if (!pself_target->isAlive() || pself_target->getMana() > pself_target->getAttribute(Ego::Attribute::MAX_MANA) - 1.0f)
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
     {
-        returncode = false;
+        return false;
     }
+
+    returncode = targetInfo->hasNotFullMana();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1578,13 +1631,13 @@ uint8_t scr_IfTargetIsAWeapon( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->getProfile()->isRangedWeapon() || target->getProfile()->hasIDSZ(IDSZ2('X', 'W', 'E', 'P'));
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
     }
-    else {
-        returncode = false;
-    }
+
+    returncode = targetInfo->isWeapon();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1694,13 +1747,15 @@ uint8_t scr_IfTargetCanSeeKurses( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Proceeds if the target can see kursed stuff.
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->getAttribute(Ego::Attribute::SENSE_KURSES) > 0 );
+    returncode = targetInfo->canSeeKurses();
 
     SCRIPT_FUNCTION_END();
 }

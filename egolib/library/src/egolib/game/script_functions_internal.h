@@ -145,6 +145,12 @@ inline IRenderable* tryRenderable(ObjectRef objectRef)
     return object ? static_cast<IRenderable*>(object) : nullptr;
 }
 
+inline const ITargetInfo* tryTargetInfo(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
 inline uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();

@@ -173,6 +173,16 @@ float Object::getMana() const
     return _currentMana;
 }
 
+bool Object::isHurt() const
+{
+    return isAlive() && getLife() <= getAttribute(Ego::Attribute::MAX_LIFE) - 1.0f;
+}
+
+bool Object::hasNotFullMana() const
+{
+    return isAlive() && getMana() <= getAttribute(Ego::Attribute::MAX_MANA) - 1.0f;
+}
+
 std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner)
 {
     if (enchantProfile >= ENCHANTPROFILES_MAX) {
@@ -275,6 +285,51 @@ void Object::clearTempAttribute(const Ego::Attribute::AttributeType type)
 bool Object::isFlying() const
 {
     return getAttribute(Ego::Attribute::FLY_TO_HEIGHT) > 0.0f;
+}
+
+bool Object::canSeeKurses() const
+{
+    return getAttribute(Ego::Attribute::SENSE_KURSES) > 0.0f;
+}
+
+bool Object::canOpenStuff() const
+{
+    return getProfile()->canOpenStuff();
+}
+
+bool Object::isWeapon() const
+{
+    return getProfile()->isRangedWeapon() || getProfile()->hasIDSZ(IDSZ2('X', 'W', 'E', 'P'));
+}
+
+bool Object::hasTypeIDSZ(const IDSZ2& idsz) const
+{
+    return getProfile()->hasTypeIDSZ(idsz);
+}
+
+bool Object::hasAnyIDSZ(const IDSZ2& idsz) const
+{
+    return getProfile()->hasIDSZ(idsz);
+}
+
+bool Object::matchesSpecialIDSZ(const IDSZ2& idsz) const
+{
+    return getProfile()->getIDSZ(IDSZ_SPECIAL) == idsz;
+}
+
+bool Object::matchesVulnerabilityIDSZ(const IDSZ2& idsz) const
+{
+    return getProfile()->getIDSZ(IDSZ_VULNERABILITY) == idsz;
+}
+
+bool Object::isOnSameTeam(TEAM_REF teamRef) const
+{
+    return VALID_TEAM_RANGE(teamRef) && VALID_TEAM_RANGE(getTeamRef()) && getTeamRef() == teamRef;
+}
+
+bool Object::isHatedByTeam(TEAM_REF teamRef) const
+{
+    return VALID_TEAM_RANGE(teamRef) && VALID_TEAM_RANGE(getTeamRef()) && team_hates_team(teamRef, getTeamRef());
 }
 
 std::shared_ptr<Ego::Enchantment> Object::getLastEnchantmentSpawned() const

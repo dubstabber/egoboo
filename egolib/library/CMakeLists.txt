@@ -72,6 +72,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/IPhysical.hpp
     src/egolib/Entities/IRenderable.hpp
     src/egolib/Entities/IScriptable.hpp
+    src/egolib/Entities/ITargetInfo.hpp
     src/egolib/Entities/_Include.hpp
     src/egolib/Entities/Object_attributes.cpp
     src/egolib/Entities/Object_combat.cpp

@@ -448,6 +448,12 @@ Continued Tier 1.2 by adding shared `ObjectRef` to role-resolver helpers in the 
 
 Extended `ScriptStateFunctions.cpp` and `ScriptTargetFunctions.cpp` with coverage for renderable invisibility, inventory-holder unarmed/rider targeting, and the resolver-backed role paths. Build, targeted script tests, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 105 — Conservative target-query role sweep (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_target.c` by introducing the read-only `ITargetInfo` seam for target-query helpers and migrating the bounded target ID, team, status, mount/platform, visibility, timer, and weapon predicates off ad hoc concrete-`Object` reads. Kept quest, spell, facing-geometry, and raw script-runtime work out of scope.
+
+Extended `ScriptTargetFunctions.cpp` with direct coverage for the new target-query role paths across inventory-equipped item resolution, team predicates, hurt/mana checks, mount detection, and weapon classification. Build, focused script-target tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -230,6 +230,11 @@ const std::shared_ptr<Object>& Object::isWieldingItemIDSZ(const IDSZ2& idsz) con
     return INVALID_OBJECT;
 }
 
+bool Object::wieldsItemIDSZ(const IDSZ2& idsz) const
+{
+    return isWieldingItemIDSZ(idsz) != nullptr;
+}
+
 const std::shared_ptr<Object>& Object::getHolder() const
 {
     return activeModule().getObjectHandler()[getHolderRef()];

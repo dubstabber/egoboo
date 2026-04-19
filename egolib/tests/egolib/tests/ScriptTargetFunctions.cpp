@@ -275,4 +275,116 @@ TEST_F(ScriptTargetFunctionsFixture, IfTargetKilledReturnsFalseForLiveTargetAndT
     EXPECT_TRUE(scr_IfTargetKilled(state, self));
 }
 
+TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesReadThroughRoleSurface)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5333);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5334);
+    auto heldWeapon = makeObject(module, "mp_data/globalobjects/weapons/sword.obj", 5335);
+    auto inventoryWeapon = makeObject(module, "mp_data/globalobjects/weapons/sword.obj", 5336);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(heldWeapon, nullptr);
+    ASSERT_NE(inventoryWeapon, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    target->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setLocalPlayer(true);
+    target->setPlayerNumber(0);
+    target->setGender(Gender::Female);
+    target->setPlatform(true);
+    target->setBaseAttribute(Ego::Attribute::MAX_LIFE, 200.0f);
+    target->setBaseAttribute(Ego::Attribute::MAX_MANA, 200.0f);
+    target->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 1.0f);
+    target->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 1.0f);
+    target->setLife(1.0f);
+    target->setMana(0.0f);
+    target->setGrogTimer(7);
+    target->setDazeTimer(9);
+    target->setHeldObject(SLOT_LEFT, heldWeapon->getObjRef());
+    inventoryWeapon->setEquipped(true);
+    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon, target->getFirstFreeInventorySlot(), true));
+
+    const IDSZ2 targetTypeId = target->getProfile()->getIDSZ(IDSZ_TYPE);
+    const IDSZ2 heldWeaponTypeId = heldWeapon->getProfile()->getIDSZ(IDSZ_TYPE);
+    const IDSZ2 specialId = target->getProfile()->getIDSZ(IDSZ_SPECIAL);
+    const IDSZ2 vulnerabilityId = target->getProfile()->getIDSZ(IDSZ_VULNERABILITY);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    state.argument = targetTypeId.toUint32();
+    EXPECT_TRUE(scr_IfTargetHasID(state, self));
+
+    state.argument = heldWeaponTypeId.toUint32();
+    EXPECT_TRUE(scr_IfTargetHasItemID(state, self));
+    EXPECT_TRUE(scr_IfTargetHoldingItemID(state, self));
+    EXPECT_TRUE(scr_IfTargetHasItemIDEquipped(state, self));
+
+    state.argument = target->getProfile()->getIDSZ(IDSZ_SKILL).toUint32();
+    EXPECT_EQ(scr_IfTargetHasSkillID(state, self), target->hasSkillIDSZ(target->getProfile()->getIDSZ(IDSZ_SKILL)));
+
+    state.argument = specialId.toUint32();
+    EXPECT_EQ(scr_IfTargetHasSpecialID(state, self), target->getProfile()->getIDSZ(IDSZ_SPECIAL) == specialId);
+
+    state.argument = vulnerabilityId.toUint32();
+    EXPECT_EQ(scr_IfTargetHasVulnerabilityID(state, self), target->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == vulnerabilityId);
+
+    state.argument = target->getProfile()->getIDSZ(IDSZ_PARENT).toUint32();
+    EXPECT_EQ(scr_IfTargetHasAnyID(state, self), target->getProfile()->hasIDSZ(target->getProfile()->getIDSZ(IDSZ_PARENT)));
+
+    EXPECT_TRUE(scr_IfTargetIsOnOtherTeam(state, self));
+    EXPECT_TRUE(scr_IfTargetIsOnHatedTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnSameTeam(state, self));
+    EXPECT_TRUE(scr_IfTargetIsHurt(state, self));
+    EXPECT_TRUE(scr_IfTargetIsAPlayer(state, self));
+    EXPECT_TRUE(scr_IfTargetIsAlive(state, self));
+    EXPECT_FALSE(scr_IfTargetIsMale(state, self));
+    EXPECT_TRUE(scr_IfTargetIsFemale(state, self));
+    EXPECT_TRUE(scr_IfTargetCanSeeInvisible(state, self));
+    EXPECT_TRUE(scr_IfTargetCanSeeKurses(state, self));
+    EXPECT_TRUE(scr_IfTargetHasNotFullMana(state, self));
+    EXPECT_TRUE(scr_IfTargetIsFlying(state, self) == target->isFlying());
+    EXPECT_TRUE(scr_IfTargetIsAPlatform(state, self));
+
+    EXPECT_TRUE(scr_GetTargetGrogTime(state, self));
+    EXPECT_EQ(state.argument, 7);
+
+    EXPECT_TRUE(scr_GetTargetDazeTime(state, self));
+    EXPECT_EQ(state.argument, 9);
+}
+
+TEST_F(ScriptTargetFunctionsFixture, MountAndWeaponQueriesUseTargetInfoRoleSurface)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5341);
+    auto mount = makeObject(module, "mp_data/globalobjects/magic/mount.obj", 5342);
+    auto rider = makeObject(module, "mp_objects/follower.obj", 5343);
+    auto weapon = makeObject(module, "mp_data/globalobjects/weapons/sword.obj", 5344);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(mount, nullptr);
+    ASSERT_NE(rider, nullptr);
+    ASSERT_NE(weapon, nullptr);
+
+    mount->setHeldObject(SLOT_LEFT, rider->getObjRef());
+    rider->setHolderRef(mount->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, rider);
+
+    EXPECT_TRUE(scr_IfTargetIsMounted(state, self));
+
+    self.setTarget(mount->getObjRef());
+    EXPECT_TRUE(scr_IfTargetIsAMount(state, self));
+    EXPECT_EQ(scr_IfTargetCanOpenStuff(state, self),
+              rider->getProfile()->canOpenStuff() || mount->getProfile()->canOpenStuff());
+
+    self.setTarget(weapon->getObjRef());
+    EXPECT_TRUE(scr_IfTargetIsAWeapon(state, self));
+}
+
 } // namespace

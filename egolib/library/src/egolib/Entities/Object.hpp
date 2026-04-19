@@ -35,6 +35,7 @@
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
+#include "egolib/Entities/ITargetInfo.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
@@ -84,6 +85,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IPhysical,
                public IRenderable,
                public IScriptable,
+               public ITargetInfo,
                public std::enable_shared_from_this<Object>
 {
 public:
@@ -908,6 +910,12 @@ public:
     **/
     bool canSeeInvisible() const { return getAttribute(Ego::Attribute::SEE_INVISIBLE) > 0.0f; }
 
+    bool canSeeKurses() const;
+
+    bool canOpenStuff() const;
+
+    bool isWeapon() const;
+
     /**
     * @return
     *   The logic update frame when the rally bonus ends
@@ -1097,6 +1105,20 @@ public:
     **/
     bool hasSkillIDSZ(const IDSZ2& whichskill) const;
 
+    bool hasTypeIDSZ(const IDSZ2& idsz) const;
+
+    bool hasAnyIDSZ(const IDSZ2& idsz) const;
+
+    bool matchesSpecialIDSZ(const IDSZ2& idsz) const;
+
+    bool matchesVulnerabilityIDSZ(const IDSZ2& idsz) const;
+
+    bool wieldsItemIDSZ(const IDSZ2& idsz) const;
+
+    bool isOnSameTeam(TEAM_REF teamRef) const;
+
+    bool isHatedByTeam(TEAM_REF teamRef) const;
+
     /**
     * @brief 
     *   This function drops all keys ( [KEYA] to [KEYZ] ) that are in a character's
@@ -1139,6 +1161,10 @@ public:
     void setGrogTimer(int16_t timer) { grog_timer = timer; }
 
     int16_t getDazeTimer() const { return daze_timer; }
+
+    bool isHurt() const;
+
+    bool hasNotFullMana() const;
 
     void setDazeTimer(int16_t timer) { daze_timer = timer; }
 
