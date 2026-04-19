@@ -409,7 +409,7 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
 
 gfx_rv ParticleGraphics::update(::Camera& camera, const ParticleRef particle, uint8_t trans, bool do_lighting)
 {
-    const auto& pprt = ParticleHandler::get()[particle];
+    const auto& pprt = EngineContext::get().particleHandler()[particle];
     if (!pprt)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);

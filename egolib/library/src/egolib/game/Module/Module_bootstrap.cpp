@@ -142,7 +142,7 @@ void GameModule::finalizeModuleInitialization()
 GameModule::~GameModule()
 {
     //free all particles
-    ParticleHandler::get().clear();
+    EngineContext::get().particleHandler().clear();
 
     //Free all profiles loaded by the module
     ProfileSystem::get().reset();

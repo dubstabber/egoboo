@@ -322,6 +322,7 @@ bool GameEngine::initialize()
 
 	// Initialize the particle handler.
 	ParticleHandler::initialize();
+    EngineContext::get().installParticleHandler(ParticleHandler::get());
 
 	// Initialize the console.
 	auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { Ego::GraphicsSystem::get().window->drawable_size()(0),
@@ -465,6 +466,7 @@ void GameEngine::uninitialize()
     Ego::Core::Console::uninitialize();
 
 	// Uninitialize the particle handler.
+    EngineContext::get().clearParticleHandler();
 	ParticleHandler::uninitialize();
 
     // Uninitialize the audio system.

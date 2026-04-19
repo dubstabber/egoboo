@@ -98,7 +98,7 @@ bool config_synch(egoboo_config_t& cfg, bool fromFile,bool toFile)
 bool config_download(egoboo_config_t& cfg)
 {
     // Download configuration.
-    ParticleHandler::get().download(cfg);
+    EngineContext::get().particleHandler().download(cfg);
     AudioSystem::get().download(cfg);
 
     /// @todo Fix old-style download.
@@ -116,7 +116,7 @@ bool config_upload(egoboo_config_t& cfg)
 
     // Upload configuration.
     AudioSystem::get().upload(cfg);
-    ParticleHandler::get().upload(cfg);
+    EngineContext::get().particleHandler().upload(cfg);
     Ego::Renderer::get().upload(cfg);
 
     return true;

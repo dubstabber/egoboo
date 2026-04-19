@@ -10,6 +10,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Module/Module.hpp"
@@ -49,10 +50,12 @@ protected:
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         AudioSystem::initialize();
         ParticleHandler::initialize();
+        EngineContext::get().installParticleHandler(ParticleHandler::get());
     }
 
     static void TearDownTestSuite()
     {
+        EngineContext::get().clearParticleHandler();
         ParticleHandler::uninitialize();
         AudioSystem::uninitialize();
         s_runtime.reset();
@@ -174,7 +177,7 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker
     defender->setAILastAttacker(ObjectRef::Invalid);
     defender->clearAIAlertBits(ALERTIF_BLOCKED);
 
-    ParticleHandler::get().spawnDefencePing(defender, attacker);
+    EngineContext::get().particleHandler().spawnDefencePing(defender, attacker);
 
     EXPECT_TRUE(defender->hasAnyAIAlertBits(ALERTIF_BLOCKED));
     EXPECT_EQ(defender->getAILastAttacker(), attacker->getObjRef());
@@ -192,7 +195,7 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerIsMiss
     defender->setAILastAttacker(ObjectRef(77));
     defender->clearAIAlertBits(ALERTIF_BLOCKED);
 
-    ParticleHandler::get().spawnDefencePing(defender, nullptr);
+    EngineContext::get().particleHandler().spawnDefencePing(defender, nullptr);
 
     EXPECT_TRUE(defender->hasAnyAIAlertBits(ALERTIF_BLOCKED));
     EXPECT_EQ(defender->getAILastAttacker(), ObjectRef::Invalid);

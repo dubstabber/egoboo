@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/EntityList.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -17,7 +18,7 @@ void EntityList::clear() {
 
     set.clear();
     auto& objectHandler = GameSessionContext::get().objectHandler();
-    auto& particleHandler = ParticleHandler::get();
+    auto& particleHandler = EngineContext::get().particleHandler();
     for (auto& entry : list) {
         if (ParticleRef::Invalid == entry.iprt && ObjectRef::Invalid != entry.iobj) {
             auto obj = objectHandler.get(entry.iobj);
@@ -106,9 +107,9 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
             ParticleRef iprt = list[i].iprt;
 
             if (do_reflect) {
-                vtmp = ParticleHandler::get()[iprt]->inst.pos - cam.getPosition();
+                vtmp = EngineContext::get().particleHandler()[iprt]->inst.pos - cam.getPosition();
             } else {
-                vtmp = ParticleHandler::get()[iprt]->inst.ref_pos - cam.getPosition();
+                vtmp = EngineContext::get().particleHandler()[iprt]->inst.ref_pos - cam.getPosition();
             }
         } else {
             continue;

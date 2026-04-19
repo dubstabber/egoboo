@@ -1,6 +1,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -14,6 +15,7 @@ std::unique_ptr<GameEngine> activeEngine;
 IAudioSystem* activeAudioSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
+IParticleHandler* activeParticleHandler = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -40,6 +42,7 @@ void EngineContext::clearEngine()
     clearAudioSystem();
     clearPerkHandler();
     clearImageManager();
+    clearParticleHandler();
     activeEngine.reset();
 }
 
@@ -243,6 +246,50 @@ const Ego::IImageManager& EngineContext::imageManager() const
         throw std::logic_error("no active image manager");
     }
     return *currentImageManager;
+}
+
+void EngineContext::installParticleHandler(IParticleHandler& particleHandler)
+{
+    if (activeParticleHandler)
+    {
+        throw std::logic_error("particle handler already installed");
+    }
+    activeParticleHandler = &particleHandler;
+}
+
+void EngineContext::clearParticleHandler()
+{
+    activeParticleHandler = nullptr;
+}
+
+IParticleHandler* EngineContext::tryParticleHandler()
+{
+    return activeParticleHandler;
+}
+
+const IParticleHandler* EngineContext::tryParticleHandler() const
+{
+    return activeParticleHandler;
+}
+
+IParticleHandler& EngineContext::particleHandler()
+{
+    IParticleHandler* currentParticleHandler = tryParticleHandler();
+    if (!currentParticleHandler)
+    {
+        throw std::logic_error("no active particle handler");
+    }
+    return *currentParticleHandler;
+}
+
+const IParticleHandler& EngineContext::particleHandler() const
+{
+    const IParticleHandler* currentParticleHandler = tryParticleHandler();
+    if (!currentParticleHandler)
+    {
+        throw std::logic_error("no active particle handler");
+    }
+    return *currentParticleHandler;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

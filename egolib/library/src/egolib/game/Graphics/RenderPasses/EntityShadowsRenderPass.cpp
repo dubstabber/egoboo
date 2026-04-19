@@ -102,7 +102,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     float x = pchr->getMatrix()(0, 3); ///< @todo MH: This should be the x/y position of the model.
     float y = pchr->getMatrix()(1, 3); ///<           Use a more self-descriptive method to describe this.
 
-    std::shared_ptr<const Texture> texture = ParticleHandler::get().getLightParticleTexture();
+    std::shared_ptr<const Texture> texture = EngineContext::get().particleHandler().getLightParticleTexture();
 
     float size = pchr->getShadowSize() * height_factor;
 
@@ -182,7 +182,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
 
     alpha *= 0.3f;
 
-    std::shared_ptr<const  Texture> texture = ParticleHandler::get().getLightParticleTexture();
+    std::shared_ptr<const  Texture> texture = EngineContext::get().particleHandler().getLightParticleTexture();
 
     float   alpha_umbra, alpha_penumbra;
     alpha_umbra = alpha_penumbra = alpha;

@@ -262,7 +262,7 @@ void Object::dropMoney(int amount)
         amount -= count * vals[cnt];
 
         for (size_t i = 0; i < count; i++) {
-            ParticleHandler::get().spawnGlobalParticle(pos, ATK_FRONT, LocalParticleProfileRef(pips[cnt]), i);
+            EngineContext::get().particleHandler().spawnGlobalParticle(pos, ATK_FRONT, LocalParticleProfileRef(pips[cnt]), i);
         }
     }
 }

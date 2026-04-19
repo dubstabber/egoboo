@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/DebugParticlesScreen.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/GUI/Button.hpp"
@@ -47,7 +48,7 @@ DebugParticlesScreen::DebugParticlesScreen()
     title->setPosition({ 10, 10 });
     addComponent(title);
 
-    auto usage = std::make_shared<Ego::GUI::Label>("Particle used: " + std::to_string(ParticleHandler::get().getCount()) + "/" + std::to_string(ParticleHandler::get().getDisplayLimit()));
+    auto usage = std::make_shared<Ego::GUI::Label>("Particle used: " + std::to_string(EngineContext::get().particleHandler().getCount()) + "/" + std::to_string(EngineContext::get().particleHandler().getDisplayLimit()));
     usage->setPosition({ 10, title->getY() + title->getHeight() });
     addComponent(usage);
 
@@ -60,7 +61,7 @@ DebugParticlesScreen::DebugParticlesScreen()
     std::unordered_map<PIP_REF, size_t> usageCount;
     std::unordered_map<PIP_REF, size_t> terminatedCount;
     size_t invalidParticles = 0;
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         if(particle->getProfileID() == INVALID_PIP_REF || !ProfileSystem::get().ParticleProfileSystem.isLoaded(particle->getProfileID())) {
             invalidParticles++;

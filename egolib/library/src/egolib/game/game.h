@@ -22,6 +22,7 @@
 #pragma once
 
 #include "egolib/game/egoboo.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Shop.hpp"

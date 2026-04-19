@@ -240,12 +240,12 @@ void ParticleHandler::setDisplayLimit(size_t displayLimit)
     _maxParticles = Ego::Math::constrain<size_t>(displayLimit, 256, PARTICLES_MAX);
 }
 
-void ParticleHandler::lock()
+void ParticleHandler::lockParticles()
 {
     _semaphoreLock++;
 }
 
-void ParticleHandler::unlock()
+void ParticleHandler::unlockParticles()
 {
     if(_semaphoreLock == 0) {
         throw std::logic_error("ParticleHandler::unlock() without prior lock()");
@@ -321,8 +321,8 @@ void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
     Facing facing_z = object->getFacingZ();
     for (int cnt = 0; cnt < object->getProfile()->getParticlePoofAmount(); cnt++)
     {
-        ParticleHandler::get().spawnParticle(object->getOldPosition(), facing_z, object->getProfile()->getSlotNumber(), object->getProfile()->getParticlePoofProfile(),
-                                             ObjectRef::Invalid, GRIP_LAST, object->getTeamRef(), poofOwner(scriptableObject), ParticleRef::Invalid, cnt);
+        spawnParticle(object->getOldPosition(), facing_z, object->getProfile()->getSlotNumber(), object->getProfile()->getParticlePoofProfile(),
+                      ObjectRef::Invalid, GRIP_LAST, object->getTeamRef(), poofOwner(scriptableObject), ParticleRef::Invalid, cnt);
 
         facing_z += Facing(object->getProfile()->getParticlePoofFacingAdd());
     }

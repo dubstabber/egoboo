@@ -256,7 +256,7 @@ void Object::update()
         if (!inwater)
         {
             // Splash
-            ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
+            EngineContext::get().particleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
 
             if ( activeModule().getWater()._is_water )
             {
@@ -294,7 +294,7 @@ void Object::update()
 
                     if ( 0 == ( (worldUpdateCount() + getObjRef().get()) & ripand ))
                     {
-                        ParticleHandler::get().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
+                        EngineContext::get().particleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
                     }
                 }
             }

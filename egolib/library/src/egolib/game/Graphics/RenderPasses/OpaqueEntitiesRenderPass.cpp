@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/graphic_prt.h"
@@ -38,7 +39,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
                     ObjectGraphicsRenderer::render_solid(camera, *object);
                 }
             }
-            else if (ObjectRef::Invalid == el.get(i).iobj && ParticleHandler::get()[el.get(i).iprt] != nullptr)
+            else if (ObjectRef::Invalid == el.get(i).iobj && EngineContext::get().particleHandler()[el.get(i).iprt] != nullptr)
             {
                 // draw draw front and back faces of polygons
                 renderer.setCullingMode(idlib::culling_mode::none);

@@ -248,7 +248,7 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
         ichr = pchr->getHeldObject(SLOT_LEFT);
     }
 
-    std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), 
+    std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), 
                                                    Facing(uint16_t(pchr->getFacingZ())), 
                                                    ObjectProfileRef(pchr->getProfileID()),
                                                    LocalParticleProfileRef(state.argument), self.getSelf(),
@@ -336,7 +336,7 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
 		iself = iholder;
     }
 
-    returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
+    returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), self.getSelf(),
                                                                       state.distance, pchr->getTeamRef(), iself, ParticleRef::Invalid, 0,
                                                                       ObjectRef::Invalid);
@@ -368,7 +368,7 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
 				Ego::Script::Interpreter::safeCast<float>(state.distance)
             );
 
-        returncode = nullptr != ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
+        returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                                           LocalParticleProfileRef(state.argument),
                                                                           ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr,
                                                                           ParticleRef::Invalid, 0, ObjectRef::Invalid);
@@ -441,7 +441,7 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ParticleHandler::get().spawnPoof(pchr->toSharedPointer());
+    EngineContext::get().particleHandler().spawnPoof(pchr->toSharedPointer());
 
     SCRIPT_FUNCTION_END();
 }
@@ -482,7 +482,7 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
         ichr = pchr->getHolderRef();
     }
 
-    std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), 
+    std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), 
                                                                                         ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument), self.getSelf(),
                                                                                         state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid, 0,
                                                                                         ObjectRef::Invalid);
@@ -515,7 +515,7 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
         ichr = pchr->getHolderRef();
     }
 
-    returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), Facing(Ego::Math::clipBits<16>( state.turn )),
+    returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), Facing(Ego::Math::clipBits<16>( state.turn )),
                                                                       ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument),
                                                                       self.getSelf(), state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                                       0, ObjectRef::Invalid);
@@ -540,7 +540,7 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
         ichr = pchr->getHolderRef();
     }
 
-    returncode = nullptr != ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
+    returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), ichr,
                                                                       state.distance, pchr->getTeamRef(), ichr, ParticleRef::Invalid, 0,
                                                                       ObjectRef::Invalid);
@@ -651,7 +651,7 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
                 Ego::Script::Interpreter::safeCast<float>(state.distance)
             );
 
-        particle = ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
+        particle = EngineContext::get().particleHandler().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                              LocalParticleProfileRef(state.argument),
                                                              ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                              0, ObjectRef::Invalid);
@@ -834,7 +834,7 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 				float(state.distance)
             );
 
-        particle = ParticleHandler::get().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
+        particle = EngineContext::get().particleHandler().spawnLocalParticle(vtmp, idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                              LocalParticleProfileRef(state.argument),
                                                              ObjectRef::Invalid, 0, pchr->getTeamRef(), ichr, ParticleRef::Invalid,
                                                              0, ObjectRef::Invalid);
@@ -879,7 +879,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         Facing facing_z = pchr->getFacingZ();
         for (int cnt = 0; cnt < pchr->getProfile()->getParticlePoofAmount(); cnt++)
         {
-            auto poofParticle = ParticleHandler::get().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
+            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
                                                                      ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), scriptable(*pchr).getAIOwner(), ParticleRef::Invalid, cnt);
 
             // set some values

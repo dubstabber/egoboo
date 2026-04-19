@@ -277,7 +277,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     // Particle attachments
     for (uint8_t tnc = 0; tnc < ppro->getAttachedParticleAmount(); tnc++)
     {
-        ParticleHandler::get().spawnParticle(pchr->getPosition(), pchr->getFacingZ(), ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
+        EngineContext::get().particleHandler().spawnParticle(pchr->getPosition(), pchr->getFacingZ(), ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
                                              pchr->getObjRef(), GRIP_LAST + tnc, pchr->getTeamRef(), pchr->getObjRef(), ParticleRef::Invalid, tnc);
     }
 

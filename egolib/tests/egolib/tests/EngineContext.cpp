@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
@@ -47,6 +48,71 @@ public:
     std::shared_ptr<SDL_Surface> loadImageWithKnownExtension(const std::string&, std::string*) const override { return nullptr; }
 };
 
+class StubParticleHandler : public IParticleHandler
+{
+public:
+    void updateAllParticles() override {}
+    void download(egoboo_config_t&) override {}
+    void upload(egoboo_config_t&) override {}
+    size_t getDisplayLimit() const override { return 0; }
+    void setDisplayLimit(size_t) override {}
+    void clear() override {}
+    const std::shared_ptr<Ego::Particle>& operator[](ParticleRef) override { return _invalidParticle; }
+    std::shared_ptr<Ego::Particle> spawnLocalParticle(const Ego::Vector3f&,
+                                                      const Facing&,
+                                                      ObjectProfileRef,
+                                                      const LocalParticleProfileRef&,
+                                                      ObjectRef,
+                                                      uint16_t,
+                                                      TEAM_REF,
+                                                      ObjectRef,
+                                                      ParticleRef,
+                                                      int,
+                                                      ObjectRef) override
+    {
+        return nullptr;
+    }
+    std::shared_ptr<Ego::Particle> spawnParticle(const Ego::Vector3f&,
+                                                 const Facing&,
+                                                 ObjectProfileRef,
+                                                 PIP_REF,
+                                                 ObjectRef,
+                                                 uint16_t,
+                                                 TEAM_REF,
+                                                 ObjectRef,
+                                                 ParticleRef,
+                                                 int,
+                                                 ObjectRef,
+                                                 bool) override
+    {
+        return nullptr;
+    }
+    std::shared_ptr<Ego::Particle> spawnGlobalParticle(const Ego::Vector3f&,
+                                                       const Facing&,
+                                                       const LocalParticleProfileRef&,
+                                                       int,
+                                                       bool) override
+    {
+        return nullptr;
+    }
+    size_t getCount() const override { return 0; }
+    size_t getFreeCount() const override { return 0; }
+    std::shared_ptr<const Ego::Texture> getLightParticleTexture() override { return nullptr; }
+    std::shared_ptr<const Ego::Texture> getTransparentParticleTexture() override { return nullptr; }
+    void spawnPoof(const std::shared_ptr<Object>&) override {}
+    void spawnDefencePing(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&) override {}
+
+protected:
+    ParticleList::const_iterator beginActiveParticles() override { return _particles.cbegin(); }
+    ParticleList::const_iterator endActiveParticles() override { return _particles.cend(); }
+    void lockParticles() override {}
+    void unlockParticles() override {}
+
+private:
+    ParticleList _particles;
+    std::shared_ptr<Ego::Particle> _invalidParticle;
+};
+
 class EngineContextFixture : public ::testing::Test
 {
 protected:
@@ -54,6 +120,7 @@ protected:
     {
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearImageManager();
+        EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
@@ -62,6 +129,7 @@ protected:
     {
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearImageManager();
+        EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearEngine();
     }
@@ -192,6 +260,14 @@ TEST_F(EngineContextFixture, ImageManagerThrowsWhenNoImageManagerIsInstalled)
     EXPECT_THROW(context.imageManager(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ParticleHandlerThrowsWhenNoParticleHandlerIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryParticleHandler(), nullptr);
+    EXPECT_THROW(context.particleHandler(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, InstallPerkHandlerPublishesInstalledPerkHandler)
 {
     EngineContext& context = EngineContext::get();
@@ -212,6 +288,17 @@ TEST_F(EngineContextFixture, InstallImageManagerPublishesInstalledImageManager)
 
     EXPECT_EQ(context.tryImageManager(), &imageManager);
     EXPECT_EQ(&context.imageManager(), &imageManager);
+}
+
+TEST_F(EngineContextFixture, InstallParticleHandlerPublishesInstalledParticleHandler)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubParticleHandler particleHandler;
+    context.installParticleHandler(particleHandler);
+
+    EXPECT_EQ(context.tryParticleHandler(), &particleHandler);
+    EXPECT_EQ(&context.particleHandler(), &particleHandler);
 }
 
 TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
@@ -238,6 +325,18 @@ TEST_F(EngineContextFixture, InstallImageManagerRejectsDoubleInstall)
     EXPECT_EQ(context.tryImageManager(), &first);
 }
 
+TEST_F(EngineContextFixture, InstallParticleHandlerRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubParticleHandler first;
+    StubParticleHandler second;
+    context.installParticleHandler(first);
+
+    EXPECT_THROW(context.installParticleHandler(second), std::logic_error);
+    EXPECT_EQ(context.tryParticleHandler(), &first);
+}
+
 TEST_F(EngineContextFixture, ClearPerkHandlerRemovesInstalledPerkHandler)
 {
     EngineContext& context = EngineContext::get();
@@ -262,6 +361,19 @@ TEST_F(EngineContextFixture, ClearImageManagerRemovesInstalledImageManager)
 
     EXPECT_EQ(context.tryImageManager(), nullptr);
     EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearParticleHandlerRemovesInstalledParticleHandler)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubParticleHandler particleHandler;
+    context.installParticleHandler(particleHandler);
+
+    context.clearParticleHandler();
+
+    EXPECT_EQ(context.tryParticleHandler(), nullptr);
+    EXPECT_THROW(context.particleHandler(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)
@@ -292,6 +404,21 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledImageManager)
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryImageManager(), nullptr);
     EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledParticleHandler)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubParticleHandler particleHandler;
+    context.installParticleHandler(particleHandler);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryParticleHandler(), nullptr);
+    EXPECT_THROW(context.particleHandler(), std::logic_error);
 }
 
 } // namespace

@@ -11,6 +11,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #undef private
@@ -51,10 +52,12 @@ protected:
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         AudioSystem::initialize();
         ParticleHandler::initialize();
+        EngineContext::get().installParticleHandler(ParticleHandler::get());
     }
 
     static void TearDownTestSuite()
     {
+        EngineContext::get().clearParticleHandler();
         ParticleHandler::uninitialize();
         AudioSystem::uninitialize();
         s_runtime.reset();

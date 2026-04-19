@@ -26,64 +26,12 @@
 #endif
 
 #include "egolib/game/egoboo.h"
+#include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Entities/Particle.hpp"
 
-class ParticleHandler : public idlib::singleton<ParticleHandler>
+class ParticleHandler : public IParticleHandler,
+                        public idlib::singleton<ParticleHandler>
 {
-public:
-
-    /**
-    * @brief A completely recursive loop safe container for accessing instances of in-game objects
-    **/
-    class ParticleIterator
-    {
-    public:
-
-        inline std::vector<std::shared_ptr<Ego::Particle>>::const_iterator cbegin() const 
-        {
-            return ParticleHandler::get()._activeParticles.cbegin();
-        }
-
-        inline std::vector<std::shared_ptr<Ego::Particle>>::const_iterator cend() const 
-        {
-            return ParticleHandler::get()._activeParticles.cend();
-        }
-
-        inline std::vector<std::shared_ptr<Ego::Particle>>::iterator begin()
-        {
-            return ParticleHandler::get()._activeParticles.begin();
-        }
-
-        inline std::vector<std::shared_ptr<Ego::Particle>>::iterator end()
-        {
-            return ParticleHandler::get()._activeParticles.end();
-        }   
-
-        ~ParticleIterator()
-        {
-            //Free the ParticleHandler lock
-            ParticleHandler::get().unlock();
-        }
-
-        // Copy constructor
-        ParticleIterator(const ParticleIterator &other)
-        {
-            ParticleHandler::get().lock();
-        }
-        
-        // Disable copy assignment operator
-        ParticleIterator& operator=(const ParticleIterator&) = delete;
-    
-    private:
-        ParticleIterator()
-        {
-            // Ensure the ParticleHandler is locked as long as we are in existance.
-            ParticleHandler::get().lock();
-        }
-
-        friend class ParticleHandler;
-    };
-
 public:
     ParticleHandler() :
         _maxParticles(0),
@@ -92,29 +40,21 @@ public:
         _unusedPool(),
         _activeParticles(),
         _particleMap(),
-        
         _transparentParticleTexture("mp_data/globalparticles/particle_trans"),
         _lightParticleTexture("mp_data/globalparticles/particle_light")
     {
-		setDisplayLimit(egoboo_config_t::get().graphic_simultaneousParticles_max.getValue());
+        setDisplayLimit(egoboo_config_t::get().graphic_simultaneousParticles_max.getValue());
     }
-
-    /**
-    * @brief
-    *   Return a safe iterator that guarantees no changes will be made to the list
-    *   as long as the iterator is alive
-    **/
-    ParticleIterator iterator() const { return ParticleIterator(); }
 
     /**
     * @brief
     *   Updates all particles and free particles that have been marked as terminated
     **/
-    void updateAllParticles();
+    void updateAllParticles() override;
 
-    void download(egoboo_config_t& cfg);
+    void download(egoboo_config_t& cfg) override;
 
-    void upload(egoboo_config_t& cfg);
+    void upload(egoboo_config_t& cfg) override;
 
     /**
      * @brief
@@ -122,7 +62,7 @@ public:
      * @return
      *  the display limit for particles
      */
-    size_t getDisplayLimit() const;
+    size_t getDisplayLimit() const override;
 
     /**
      * @brief
@@ -130,38 +70,37 @@ public:
      * @param displayLimit
      *  the display limit for particles
      */
-    void setDisplayLimit(size_t displayLimit);
+    void setDisplayLimit(size_t displayLimit) override;
 
     /**
     * @brief
     *   Resets and clears the particle handler, freeing all allocated Particle memory from the game
     **/
-    void clear();
+    void clear() override;
 
     /**
      * @brief
      *  Same as spawnParticle() except that it uses LocalParticleProfileRef instead of a PIP_REF
      *  Ideally we would like to remove this function as it is simply a wrapper
      */
-    std::shared_ptr<Ego::Particle> spawnLocalParticle
-        (
-            const Ego::Vector3f& position,
-            const Facing& facing,
-            ObjectProfileRef iprofile,
-            const LocalParticleProfileRef& pip_index,
-            const ObjectRef chr_attach,
-            uint16_t vrt_offset,
-            const TEAM_REF team,
-            const ObjectRef chr_origin,
-            const ParticleRef prt_origin,
-            int multispawn,
-            const ObjectRef oldtarget
-        );
+    std::shared_ptr<Ego::Particle> spawnLocalParticle(
+        const Ego::Vector3f& position,
+        const Facing& facing,
+        ObjectProfileRef iprofile,
+        const LocalParticleProfileRef& pip_index,
+        const ObjectRef chr_attach,
+        uint16_t vrt_offset,
+        const TEAM_REF team,
+        const ObjectRef chr_origin,
+        const ParticleRef prt_origin,
+        int multispawn,
+        const ObjectRef oldtarget) override;
+
     /**
      * @brief Get a pointer to the particle for a specified particle reference.
      * @return a pointer to the referenced particle if it was found, the null pointer otherwise
      */
-    const std::shared_ptr<Ego::Particle>& operator[] (const ParticleRef index);
+    const std::shared_ptr<Ego::Particle>& operator[](const ParticleRef index) override;
 
     /**
      * @brief
@@ -194,10 +133,18 @@ public:
      * @return
      *   The Particle object that was spawned or nullptr if it failed.
      */
-    std::shared_ptr<Ego::Particle> spawnParticle(const Ego::Vector3f& spawnPos, const Facing& spawnFacing, const ObjectProfileRef spawnProfile,
-                                                 const PIP_REF particleProfile, const ObjectRef spawnAttach, uint16_t vrt_offset, const TEAM_REF spawnTeam,
-                                                 const ObjectRef spawnOrigin, const ParticleRef spawnParticleOrigin = ParticleRef::Invalid, const int multispawn = 0,
-                                                 const ObjectRef spawnTarget = ObjectRef::Invalid, const bool onlyOverWater = false);
+    std::shared_ptr<Ego::Particle> spawnParticle(const Ego::Vector3f& spawnPos,
+                                                 const Facing& spawnFacing,
+                                                 const ObjectProfileRef spawnProfile,
+                                                 const PIP_REF particleProfile,
+                                                 const ObjectRef spawnAttach,
+                                                 uint16_t vrt_offset,
+                                                 const TEAM_REF spawnTeam,
+                                                 const ObjectRef spawnOrigin,
+                                                 const ParticleRef spawnParticleOrigin = ParticleRef::Invalid,
+                                                 const int multispawn = 0,
+                                                 const ObjectRef spawnTarget = ObjectRef::Invalid,
+                                                 const bool onlyOverWater = false) override;
 
     /**
     * @brief
@@ -205,34 +152,52 @@ public:
     * @return
     *   The Particle object that was spawned or nullptr if it failed.
     **/
-    std::shared_ptr<Ego::Particle> spawnGlobalParticle(const Ego::Vector3f& spawnPos, const Facing& spawnFacing, const LocalParticleProfileRef& pip_index,
-                                                       int multispawn, const bool onlyOverWater = false);
+    std::shared_ptr<Ego::Particle> spawnGlobalParticle(const Ego::Vector3f& spawnPos,
+                                                       const Facing& spawnFacing,
+                                                       const LocalParticleProfileRef& pip_index,
+                                                       int multispawn,
+                                                       const bool onlyOverWater = false) override;
 
     /**
     * @brief
     *   Get number of particles that have been allocated for use
     **/
-    size_t getCount() const {return _activeParticles.size() + _pendingParticles.size();}
+    size_t getCount() const override
+    {
+        return _activeParticles.size() + _pendingParticles.size();
+    }
 
     /**
     * @brief
     *   Get number of unused particles
     **/
-    size_t getFreeCount() const { return std::min(_maxParticles, _maxParticles - getCount()); }
+    size_t getFreeCount() const override
+    {
+        return std::min(_maxParticles, _maxParticles - getCount());
+    }
 
-    std::shared_ptr<const Ego::Texture> getLightParticleTexture();
-    std::shared_ptr<const Ego::Texture> getTransparentParticleTexture();
+    std::shared_ptr<const Ego::Texture> getLightParticleTexture() override;
+    std::shared_ptr<const Ego::Texture> getTransparentParticleTexture() override;
 
-    void spawnPoof(const std::shared_ptr<Object> &object);
+    void spawnPoof(const std::shared_ptr<Object>& object) override;
 
-    void spawnDefencePing(const std::shared_ptr<Object> &object, const std::shared_ptr<Object> &attacker);
+    void spawnDefencePing(const std::shared_ptr<Object>& object, const std::shared_ptr<Object>& attacker) override;
 
 private:
     std::shared_ptr<Ego::Particle> getFreeParticle(bool force);
 
-    void lock();
+    ParticleList::const_iterator beginActiveParticles() override
+    {
+        return _activeParticles.cbegin();
+    }
 
-    void unlock();
+    ParticleList::const_iterator endActiveParticles() override
+    {
+        return _activeParticles.cend();
+    }
+
+    void lockParticles() override;
+    void unlockParticles() override;
 
 private:
     static constexpr uint8_t DEFENDTIME = 24;   ///< Invincibility time after blocking an attack

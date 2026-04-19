@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/Extensions/ogl_extensions.h"

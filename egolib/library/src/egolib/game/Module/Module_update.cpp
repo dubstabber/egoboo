@@ -103,7 +103,7 @@ void GameModule::updatePits()
         _pitsClock = PIT_CLOCK_RATE;
 
         // Kill any particles that fell in a pit, if they die in water...
-        for (const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator()) {
+        for (const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
             if (particle->getPosZ() < PITDEPTH && particle->getProfile()->end_water)
             {
                 particle->requestTerminate();
@@ -219,7 +219,7 @@ void GameModule::updateDamageTiles()
             damageable.setDamageTimer(DAMAGETILETIME);
 
             if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
-                ParticleHandler::get().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);
+                EngineContext::get().particleHandler().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);
             }
         }
     }
@@ -272,7 +272,7 @@ void GameModule::updateModuleSimulation()
     chr_pressure_tests  = 0;
 
     updateAllObjects();
-    ParticleHandler::get().updateAllParticles();
+    EngineContext::get().particleHandler().updateAllParticles();
     MainLoop::move_all_objects();
     Ego::Physics::CollisionSystem::get().update();
 }

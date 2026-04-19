@@ -17,6 +17,7 @@
 //*
 //********************************************************************************************
 #include "CollisionSystem.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 
@@ -61,7 +62,7 @@ void CollisionSystem::update()
     {
         object->phys.clear();
     }
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         particle->phys.clear();
     }
@@ -167,7 +168,7 @@ void CollisionSystem::update()
     }
 
     // accumulate the accumulators
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         float tmpx, tmpy;
         bool position_updated = false;
@@ -334,7 +335,7 @@ void CollisionSystem::updateObjectCollisions()
 void CollisionSystem::updateParticleCollisions()
 {
     //Check collisions with particles
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         if(!particle->canCollide()) {
             continue;

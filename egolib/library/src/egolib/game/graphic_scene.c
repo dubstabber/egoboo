@@ -267,7 +267,7 @@ gfx_rv gfx_make_dynalist(dynalist_t& dyl, Camera& cam)
 
     dynalist_t::init(dyl);
 
-    for (const std::shared_ptr<Ego::Particle>& particle : ParticleHandler::get().iterator())
+    for (const std::shared_ptr<Ego::Particle>& particle : EngineContext::get().particleHandler().iterator())
     {
         if (particle->isTerminated()) continue;
 
@@ -391,7 +391,7 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam)
         el.add(cam, *object.get());
     }
 
-    for (const std::shared_ptr<Ego::Particle>& particle : ParticleHandler::get().iterator())
+    for (const std::shared_ptr<Ego::Particle>& particle : EngineContext::get().particleHandler().iterator())
     {
         el.add(cam, *particle.get());
     }

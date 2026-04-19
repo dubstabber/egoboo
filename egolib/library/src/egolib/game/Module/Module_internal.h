@@ -29,6 +29,7 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Logic/TreasureTables.hpp"
 
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/game.h"

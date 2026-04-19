@@ -23,6 +23,7 @@
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/Enchant.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
@@ -233,11 +234,11 @@ void Enchantment::update()
             Facing facing = target->getFacingZ();
             for (uint8_t i = 0; i < _enchantProfile->contspawn._amount; ++i)
             {
-                ParticleHandler::get().spawnLocalParticle(target->getPosition(), facing, ObjectProfileRef(_spawnerProfileID), _enchantProfile->contspawn._lpip,
-                                                          ObjectRef::Invalid, GRIP_LAST, 
-                                                          owner != nullptr ? owner->getTeam().toRef() : static_cast<TEAM_REF>(Team::TEAM_DAMAGE), 
-                                                          owner != nullptr ? owner->getObjRef() : ObjectRef::Invalid,
-                                                          ParticleRef::Invalid, i, ObjectRef::Invalid);
+                EngineContext::get().particleHandler().spawnLocalParticle(target->getPosition(), facing, ObjectProfileRef(_spawnerProfileID), _enchantProfile->contspawn._lpip,
+                                                                          ObjectRef::Invalid, GRIP_LAST,
+                                                                          owner != nullptr ? owner->getTeam().toRef() : static_cast<TEAM_REF>(Team::TEAM_DAMAGE),
+                                                                          owner != nullptr ? owner->getObjRef() : ObjectRef::Invalid,
+                                                                          ParticleRef::Invalid, i, ObjectRef::Invalid);
 
                 facing += Facing(_enchantProfile->contspawn._facingAdd);
             }

@@ -7,7 +7,7 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 - `32-project-health-and-solid-assessment.md` (2026-04-16 SOLID/design assessment)
 - `46-cross-platform-and-third-party-independence-status.md` (2026-04-17 portability snapshot)
 
-Snapshot date: 2026-04-18. This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+Snapshot date: 2026-04-19. This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
 ---
 
@@ -23,7 +23,7 @@ The codebase is in an **active, well-managed transitional state**. The original 
 Core design debt that remains:
 
 - The `Object` class is still monolithic by interface even after its implementation was split across seven `.cpp` files. Encapsulation passes 52 through 76 closed most broad mutable seams, and role-extraction passes 77 through 81 have now peeled off `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical`, but `Object` still owns too much surface.
-- Singleton access is still pervasive (~1,150 `::get()` call sites) and no service-interface or DI layer exists yet.
+- Singleton access is still pervasive (~1,150 `::get()` call sites), but a service-interface layer now covers audio, perk, image, and particle services through `EngineContext`; full DI still does not exist.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
 
@@ -134,13 +134,17 @@ This is the largest single structural win since the baseline.
 
 ### Singleton and service-locator access
 
-Raw `::get()` singleton calls still number approximately **1,150** across the codebase — roughly flat vs. the baseline's 1,239 because the context-wrapper passes funneled callers through `EngineContext::get()` and `GameSessionContext::get()` rather than eliminating the singleton pattern. Those wrappers are themselves singletons and will remain the primary boundary until a service-interface / DI layer replaces them (plan item T2.3).
+Raw `::get()` singleton calls still number approximately **1,150** across the codebase — roughly flat vs. the baseline's 1,239 because the context-wrapper passes funneled callers through `EngineContext::get()` and `GameSessionContext::get()` rather than eliminating the singleton pattern. Those wrappers are themselves singletons and remain the primary boundary while the service-interface layer is widened one runtime-owned singleton at a time.
+
+Engine-published service seams landed so far:
+
+- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookup.
 
 Dominant direct singletons still reachable outside the session/engine wrappers:
 
-- `AudioSystem::get()` — ~34 call sites inside the audio subsystem alone, plus scattered gameplay callers
 - `ProfileSystem::get()` — profile loading and caching (hundreds of total reach-ins)
-- `PerkHandler::get()`, `ImageManager::get()`, `Log::get()`, `egoboo_config_t::get()`, `ParticleHandler::get()`
+- `Log::get()` and `egoboo_config_t::get()` — broad cross-cutting reach
+- `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, and `ParticleHandler::get()` remain as subsystem-local bootstrap seams inside their own implementations
 
 ### Smart pointer distribution
 
@@ -244,8 +248,8 @@ Directory-level subsystem map (by line count, large to small):
 | SRP       | 2 / 5 |   ↗   | `Object` header still 1,381 lines; file splits landed but interface not decomposed.                   |
 | OCP       | 2.5/5 |   →   | `GameState` hierarchy is exemplary; script dispatch and damage systems still closed to extension.     |
 | LSP       |  3/5  |   →   | Shallow entity hierarchies avoid substitution problems by avoiding specialization altogether.          |
-| ISP       |  2/5  |   →   | `Object`, `GameEngine`, and `ProfileSystem` are still fat interfaces. No role interfaces exist yet.   |
-| DIP       | 2 / 5 |   ↗   | Context wrappers are adopted; singleton abstraction layer is not.                                      |
+| ISP       |  2/5  |   ↗   | `Object` role extraction is underway, but `GameEngine` and `ProfileSystem` still expose fat interfaces. |
+| DIP       | 2 / 5 |   ↗   | Context wrappers are adopted and four service seams are landed; broader singleton abstraction remains incomplete. |
 
 ### Patterns used well
 
@@ -257,7 +261,7 @@ Directory-level subsystem map (by line count, large to small):
 
 ### Patterns misapplied
 
-- **Singleton as service locator.** Still ~1,150 `::get()` calls. No testing seam.
+- **Singleton as service locator.** Still ~1,150 `::get()` calls, even though audio/perk/image/particle now have `EngineContext` testing seams.
 - **God object.** `Object` remains the primary SRP / ISP offender.
 - **Anemic domain model.** `ObjectProfile` is still data + bolted-on parsing / export.
 
@@ -395,7 +399,7 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 ## 11. Key Weaknesses
 
 1. **`Object` is still a god class by interface.** ~1.5k-line header, 70+ public methods, and only partial role extraction despite the accessor passes.
-2. **Singleton proliferation persists.** ~1,150 `::get()` call sites with no abstraction boundary. Context wrappers are themselves singletons.
+2. **Singleton proliferation persists.** ~1,150 `::get()` call sites remain. Audio/perk/image/particle now have abstraction boundaries, but the broader codebase still leans on singleton lookup.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
 5. **Error handling is inconsistent.** Exceptions, `egolib_rv`, and silent failure coexist without policy.
@@ -415,7 +419,7 @@ These items compound the refactoring progress most efficiently given the current
 
 1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, and `IPhysical` instead of `Object` where only bounded role behavior is needed.
 2. **Close the remaining alias-style handle seams on `Object`** — keep the Script-owned `runtimeState(...)` helper confined to the legacy script runtime while role extraction proceeds.
-3. **Introduce a service-interface layer over singletons** — start with `AudioSystem` (smallest reach). This is the DIP keystone.
+3. **Continue the service-interface layer over singletons** — `AudioSystem`, `PerkHandler`, `ImageManager`, and `ParticleHandler` are landed; next are `ProfileSystem`, then `Log`, then `egoboo_config_t`.
 4. **Document an error-handling policy** and start retiring `egolib_rv` from C++ code paths.
 
 ### Build and cross-platform

@@ -41,7 +41,7 @@ void MainLoop::move_all_objects()
     chr_stoppedby_tests = 0;
 
     // move every particle
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         if(particle->isTerminated()) {
             continue;
@@ -371,7 +371,7 @@ void show_magic_status( int statindex )
 //--------------------------------------------------------------------------------------------
 void disaffirm_attached_particles(ObjectRef objectRef) {
     GameModule& module = activeModule();
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator()) {
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
         if (!particle->isTerminated() && particle->getAttachedObjectID() == objectRef) {
             particle->requestTerminate();
         }
@@ -385,7 +385,7 @@ void disaffirm_attached_particles(ObjectRef objectRef) {
 
 int number_of_attached_particles(ObjectRef objectRef) {
     int cnt = 0;
-    for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator()) {
+    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
 		if (particle->isAttached() && !particle->isTerminated() && particle->getAttachedObject()->getObjRef() == objectRef) {
             cnt++;
         }
@@ -408,7 +408,7 @@ int reaffirm_attached_particles(ObjectRef objectRef) {
 
     int number_added = 0;
     for (int attempts = 0; attempts < amount && number_attached < amount; ++attempts) {
-        std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnParticle(
+        std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnParticle(
 			object->getPosition(), idlib::canonicalize(object->getFacingZ()), object->getProfile()->getSlotNumber(),
 			object->getProfile()->getAttachedParticleProfile(), objectRef, GRIP_LAST + number_attached,
 			object->getTeam().toRef(), objectRef, ParticleRef::Invalid, number_attached);

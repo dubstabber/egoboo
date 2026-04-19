@@ -154,7 +154,7 @@ float draw_debug(float y)
         std::ostringstream os;
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-6!!!");
 
-        os.str(std::string()); os << "~~FREEPRT: " << ParticleHandler::get().getFreeCount();
+        os.str(std::string()); os << "~~FREEPRT: " << EngineContext::get().particleHandler().getFreeCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
         os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - activeModule().getObjectHandler().getObjectCount();

@@ -81,7 +81,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
                 // set the default particle blending
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
                 ParticleRef iprt = el.get(i).iprt;
-                Index1D itile = ParticleHandler::get()[iprt]->getTile();
+                Index1D itile = EngineContext::get().particleHandler()[iprt]->getTile();
 
                 if (mesh->grid_is_valid(itile) && (0 != mesh->test_fx(itile, MAPFX_REFLECTIVE)))
                 {

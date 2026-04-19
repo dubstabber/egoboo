@@ -401,7 +401,7 @@ gfx_rv GFX::update_particle_instances(Camera& camera)
     // assume the best
     gfx_rv retval = gfx_success;
 
-    for (const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+    for (const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
     {
         if (particle->isTerminated()) continue;
 

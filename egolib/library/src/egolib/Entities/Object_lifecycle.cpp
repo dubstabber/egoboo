@@ -218,7 +218,7 @@ void Object::respawn()
 
     const std::shared_ptr<ObjectProfile>& profile = getProfile();
 
-    ParticleHandler::get().spawnPoof(this->toSharedPointer());
+    EngineContext::get().particleHandler().spawnPoof(this->toSharedPointer());
     disaffirm_attached_particles(getObjRef());
 
     for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {

@@ -420,7 +420,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                 {
                     // make the weapon's holder the owner of the attack particle?
                     // will this mess up wands?
-                    std::shared_ptr<Ego::Particle> particle = ParticleHandler::get().spawnParticle(pweapon->getPosition(),
+                    std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnParticle(pweapon->getPosition(),
                         idlib::canonicalize(pchr->getFacingZ()), weaponProfile->getSlotNumber(),
                         attackParticle, weaponProfile->hasAttachParticleToWeapon() ? iweapon : ObjectRef::Invalid,
                         spawn_vrt_offset, pholder->getTeam().toRef(), iholder);

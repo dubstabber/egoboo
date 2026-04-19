@@ -1,6 +1,6 @@
 # Refactoring Roadmap
 
-Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-04-18. Supersedes and replaces:
+Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-04-19. Supersedes and replaces:
 
 - `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
 - `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
@@ -54,12 +54,13 @@ This remains the SRP/ISP keystone for `Object`.
 
 ### T1.3 Service-interface layer over singletons
 
-~1,150 `::get()` call sites remain (see `CODEBASE-HEALTH-STATUS.md` §4). Start with the smallest-reach singleton and build the DIP seam once, then apply the pattern:
+~1,150 `::get()` call sites remain (see `CODEBASE-HEALTH-STATUS.md` §4). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
 
-- Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`.
+- Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`.
 - Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.
-- Keep `AudioSystem::get()`, `PerkHandler::get()`, and `ImageManager::get()` as subsystem-local bootstrap seams until a DI container is defined.
-- Repeat the pattern for `ProfileSystem`, `Log`, and `egoboo_config_t` as separate passes.
+- `ParticleHandler` was taken as the next safe small-reach seam ahead of the broader profile/log/config passes; runtime ownership now publishes it through `GameEngine`, while `ParticleHandler::get()` stays as a subsystem-local bootstrap seam.
+- Keep `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, and `ParticleHandler::get()` as subsystem-local bootstrap seams until a DI container is defined.
+- Next separate passes: `ProfileSystem`, `Log`, and `egoboo_config_t`.
 
 **Risk:** Medium. First pass defines the pattern; later passes mostly mechanical.
 

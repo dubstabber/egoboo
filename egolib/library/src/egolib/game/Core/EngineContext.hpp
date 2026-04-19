@@ -1,6 +1,7 @@
 #pragma once
 
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "idlib/non_copyable.hpp"
@@ -58,6 +59,15 @@ public:
 
     Ego::IImageManager& imageManager();
     const Ego::IImageManager& imageManager() const;
+
+    void installParticleHandler(IParticleHandler& particleHandler);
+    void clearParticleHandler();
+
+    IParticleHandler* tryParticleHandler();
+    const IParticleHandler* tryParticleHandler() const;
+
+    IParticleHandler& particleHandler();
+    const IParticleHandler& particleHandler() const;
 
     uint32_t renderedFrameCount() const;
 

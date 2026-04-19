@@ -320,7 +320,7 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     pchr_a = activeModule().getObjectHandler().get( ichr_a );
 
     // make sure that B is valid
-    const std::shared_ptr<Ego::Particle> &pprt_b = ParticleHandler::get()[iprt_b];
+    const std::shared_ptr<Ego::Particle> &pprt_b = EngineContext::get().particleHandler()[iprt_b];
     if ( !pprt_b || pprt_b->isTerminated() ) return false;
 
     //Already attached to a platform?
@@ -642,7 +642,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
         // Tell the players that the attack was somehow deflected
         if (0 == constDamageableCharacter.getDamageTimer())
         {
-            ParticleHandler::get().spawnDefencePing(pdata.pchr->toSharedPointer(), activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
+            EngineContext::get().particleHandler().spawnDefencePing(pdata.pchr->toSharedPointer(), activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
             if(using_shield) {
                 GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Blocked!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
             }
@@ -809,7 +809,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             GFX::get().getBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Disintegrated!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 6, Ego::Graphics::Billboard::Flags::All);
 
                             //Disintegrate effect
-                            ParticleHandler::get().spawnGlobalParticle(pdata.pchr->getPosition(), ATK_FRONT, LocalParticleProfileRef(PIP_DISINTEGRATE_START), 0);
+                            EngineContext::get().particleHandler().spawnGlobalParticle(pdata.pchr->getPosition(), ATK_FRONT, LocalParticleProfileRef(PIP_DISINTEGRATE_START), 0);
                         }
                     }
                 }
@@ -1020,9 +1020,9 @@ bool do_chr_prt_collision_init( const ObjectRef ichr, const ParticleRef iprt, ch
 
     *pdata = chr_prt_collision_data_t();
 
-    if ( !ParticleHandler::get()[iprt] ) return false;
+    if ( !EngineContext::get().particleHandler()[iprt] ) return false;
     pdata->iprt = iprt;
-    pdata->pprt = ParticleHandler::get()[iprt];
+    pdata->pprt = EngineContext::get().particleHandler()[iprt];
 
     // make sure that it is on
     if ( !activeModule().getObjectHandler().exists( ichr ) ) return false;
@@ -1357,7 +1357,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
     /// @author ZZ
     /// @details This function is for catching characters on fire and such
 
-    const std::shared_ptr<Ego::Particle> &pprt = ParticleHandler::get()[particle];
+    const std::shared_ptr<Ego::Particle> &pprt = EngineContext::get().particleHandler()[particle];
     if(!pprt || pprt->isTerminated()) {
         return 0;
     }
@@ -1447,7 +1447,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                 }
 
                 // determine if some of the vertex sites are already occupied
-                for(const std::shared_ptr<Ego::Particle> &particle : ParticleHandler::get().iterator())
+                for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
                 {
                     if(particle->isTerminated()) continue;
 
@@ -1478,7 +1478,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                         }
 
                         std::shared_ptr<Ego::Particle> bs_part = 
-                            ParticleHandler::get().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(physicalCharacter.getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
+                            EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(physicalCharacter.getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
                                                                       character, bestvertex + 1, pprt->team, pprt->owner_ref, particle, cnt, character);
 
                         if (bs_part)
