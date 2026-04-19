@@ -45,10 +45,12 @@ protected:
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         AudioSystem::initialize();
+        EngineContext::get().installAudioSystem(AudioSystem::get());
     }
 
     static void TearDownTestSuite()
     {
+        EngineContext::get().clearAudioSystem();
         AudioSystem::uninitialize();
         s_runtime.reset();
     }

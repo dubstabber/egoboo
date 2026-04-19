@@ -22,12 +22,18 @@
 /// @author Johan Jansen
 
 #include "egolib/game/Module/Passage.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/mesh.h"
 #include "egolib/Entities/_Include.hpp"
 
 namespace
 {
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 void publishCrushedAlert(IScriptable& object)
 {
     object.addAIAlertBits(ALERTIF_CRUSHED);
@@ -227,7 +233,7 @@ bool Passage::checkPassageMusic(const std::shared_ptr<Object> &pchr) const
     }
 
     // character is inside, start music track
-    AudioSystem::get().playMusic(_music);
+    audioSystem().playMusic(_music);
     return true;
 }
 

@@ -37,6 +37,11 @@ GameModule& activeModule()
     return GameSessionContext::get().activeModule();
 }
 
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();
@@ -635,7 +640,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
                     // Attacker broke the block and batters away the shield
                     // Time to raise shield again = 40/50 (0.8 seconds)
                     pdata.pchr->setReloadTimer(pdata.pchr->getReloadTimer() + 40);
-                    AudioSystem::get().playSound(pdata.pchr->getPosition(), AudioSystem::get().getGlobalSound(GSND_SHIELDBLOCK));
+                    audioSystem().playSound(pdata.pchr->getPosition(), audioSystem().getGlobalSound(GSND_SHIELDBLOCK));
                 }
             }
         }
@@ -779,7 +784,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                         pdata.pchr->setGrogTimer(pdata.pchr->getGrogTimer() + 2);
 
                         GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
-                        AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
+                        audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                     }
                 }
 
@@ -845,7 +850,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             damageableCharacter.damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team,
                                                        activeModule().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
                             GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
-                            AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
+                            audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                         }
                     }
                 }                
@@ -857,7 +862,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                         //Gain +0.25 damage per Agility
                         modifiedDamage.base += FLOAT_TO_FP8(powner->getAttribute(Ego::Attribute::AGILITY) * 0.25f);
                         GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Deadly Strike", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
-                        AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
+                        audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                     }
                 }
             }
@@ -892,7 +897,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     modifiedDamage.base += modifiedDamage.rand;
                     modifiedDamage.rand = 0;
                     GFX::get().getBillboardSystem().makeBillboard(powner->getObjRef(), "Critical Hit!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
-                    AudioSystem::get().playSound(powner->getPosition(), AudioSystem::get().getGlobalSound(GSND_CRITICAL_HIT));
+                    audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                 }
             }
 
@@ -1300,7 +1305,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
             cn_data.pprt->addCollision(activeModule().getObjectHandler()[cn_data.pchr->getObjRef()]);
 
             //Play sound effect
-            AudioSystem::get().playSound(cn_data.pchr->getPosition(), AudioSystem::get().getGlobalSound(GSND_DODGE));
+            audioSystem().playSound(cn_data.pchr->getPosition(), audioSystem().getGlobalSound(GSND_DODGE));
 
             // Initialize for the billboard
             GFX::get().getBillboardSystem().makeBillboard( cn_data.pchr->getObjRef(), "Dodged!", Ego::Colour4f::white(), Ego::Colour4f(1.0f, 0.6f, 0.0f, 1.0f), 3, Ego::Graphics::Billboard::Flags::All);

@@ -25,10 +25,15 @@ public:
     void playMusic(const std::string&, uint16_t = 0) override {}
     void stopMusic() override {}
     void fadeAllSounds() override {}
+    int playSound(const Ego::Vector3f&, SoundID) override { return 0; }
+    void playSoundLooped(SoundID, ObjectRef) override {}
+    size_t stopObjectLoopingSounds(ObjectRef, SoundID = -1) override { return 0; }
     int playSoundFull(SoundID) override { return 0; }
     SoundID getGlobalSound(GlobalSound) const override { return 0; }
+    void setMaxHearingDistance(float) override {}
     void setMusicVolume(int) override {}
     void setSoundEffectVolume(int) override {}
+    void update() override {}
 };
 
 class StubPerkHandler : public Ego::Perks::IPerkHandler

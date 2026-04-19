@@ -24,6 +24,11 @@
 
 namespace
 {
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
                        const std::shared_ptr<Object>& attacker, bool setDamageTime)
 {
@@ -141,10 +146,10 @@ void GameModule::updatePits()
 
                     // Play sound effect
                     if (pchr->isPlayer()) {
-                        AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_PITFALL));
+                        audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_PITFALL));
                     }
                     else {
-                        AudioSystem::get().playSound(pchr->getPosition(), AudioSystem::get().getGlobalSound(GSND_PITFALL));
+                        audioSystem().playSound(pchr->getPosition(), audioSystem().getGlobalSound(GSND_PITFALL));
                     }
 
                     // Do some damage (same as damage tile)
@@ -248,7 +253,7 @@ void GameModule::updateModuleServices()
     _gameObjects.updateQuadTree(0.0f, 0.0f, _mesh->_info.getTileCountX() * Info<float>::Grid::Size(),
                                             _mesh->_info.getTileCountY() * Info<float>::Grid::Size());
 
-    AudioSystem::get().update();
+    audioSystem().update();
     GFX::get().getBillboardSystem().update();
     _animatedTilesState.update();
     getWater().update();

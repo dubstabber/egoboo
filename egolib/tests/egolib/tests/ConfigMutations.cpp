@@ -19,6 +19,9 @@ public:
     void playMusic(const std::string&, uint16_t = 0) override {}
     void stopMusic() override {}
     void fadeAllSounds() override {}
+    int playSound(const Ego::Vector3f&, SoundID) override { return 0; }
+    void playSoundLooped(SoundID, ObjectRef) override {}
+    size_t stopObjectLoopingSounds(ObjectRef, SoundID = -1) override { return 0; }
     int playSoundFull(SoundID soundID) override
     {
         playedSounds.push_back(soundID);
@@ -27,6 +30,10 @@ public:
     SoundID getGlobalSound(GlobalSound id) const override
     {
         return 1000 + static_cast<SoundID>(id);
+    }
+    void setMaxHearingDistance(float value) override
+    {
+        maxHearingDistance = value;
     }
     void setMusicVolume(int value) override
     {
@@ -39,7 +46,10 @@ public:
 
     int musicVolume = -1;
     int soundEffectVolume = -1;
+    float maxHearingDistance = -1.0f;
     std::vector<SoundID> playedSounds;
+
+    void update() override {}
 };
 
 class InstalledConfigMutationFixture : public ::testing::Test

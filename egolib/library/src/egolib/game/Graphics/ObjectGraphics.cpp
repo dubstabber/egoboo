@@ -20,6 +20,11 @@ egoboo_config_t& config()
     return EngineContext::get().config();
 }
 
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 struct TintRenderState
 {
     int alpha;
@@ -1049,7 +1054,7 @@ bool ObjectGraphics::handleAnimationFX() const
     //Do footfall sound effect
     if (config().sound_footfallEffects_enable.getValue() && HAS_SOME_BITS(framefx, MADFX_FOOTFALL))
     {
-        AudioSystem::get().playSound(_object.getPosition(), _object.getProfile()->getFootFallSound());
+        audioSystem().playSound(_object.getPosition(), _object.getProfile()->getFootFallSound());
     }
 
     return true;

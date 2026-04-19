@@ -466,6 +466,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by extending the read-only
 
 Extended `ScriptTargetFunctions.cpp` with direct coverage for target quest lookup, owner detection, and facing predicates through the landed target-info and physical seams. Build, focused script-target tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 108 — Gameplay audio service migration (2026-04-19)
+
+Continued Tier 1.3 by widening `IAudioSystem` with the runtime-facing spatial, looped-sound, hearing-distance, and per-frame update operations, then migrating gameplay/runtime callers onto the installed `EngineContext` audio service. Kept audio bootstrap, config upload/download, global sound loading, and profile-time sound asset loading on `AudioSystem::get()` as subsystem-local lifecycle seams.
+
+Added focused regression coverage in `ScriptActionFunctions.cpp` for script-driven sound/music routing and `GameSessionContext::quitModule()` fade-all behavior through the installed audio seam. Build, targeted script-action tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -26,6 +26,14 @@
 namespace Ego
 {
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 prt_environment_t::prt_environment_t() :
     twist(0),
     floor_level(0.0f),
@@ -237,14 +245,14 @@ void Particle::playSound(int8_t sound)
     //If we were spawned by an Object, then use that Object's sound pool
     const std::shared_ptr<ObjectProfile> &profile = EngineContext::get().profileSystem().getProfile(_spawnerProfile);
     if (profile) {
-        AudioSystem::get().playSound(getPosition(), profile->getSoundID(sound));
+        audioSystem().playSound(getPosition(), profile->getSoundID(sound));
     }
 
     //Else we are a global particle and use global particle sounds
     else if (sound >= 0 && sound < GSND_COUNT)
     {
         GlobalSound globalSound = static_cast<GlobalSound>(sound);
-        AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(globalSound));
+        audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(globalSound));
     }
 }
 

@@ -31,6 +31,14 @@
 namespace Ego
 {
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, const std::shared_ptr<Object> &owner) :
     _isTerminated(false),
     _enchantProfile(enchantmentProfile),
@@ -524,7 +532,7 @@ void Enchantment::playEndSound() const
     std::shared_ptr<Object> target = _target.lock();
     if(target) {
         const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(_spawnerProfileID);
-        AudioSystem::get().playSound(target->getPosition(), spawnerProfile->getSoundID(getProfile()->endsound_index));
+        audioSystem().playSound(target->getPosition(), spawnerProfile->getSoundID(getProfile()->endsound_index));
     }
 }
 

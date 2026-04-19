@@ -30,6 +30,11 @@ egoboo_config_t& config()
     return EngineContext::get().config();
 }
 
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+
 void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
 {
     if (listener.getAITarget() == targetRef)
@@ -395,7 +400,7 @@ void Object::checkLevelUp()
                 if(!player->hasUnspentLevel()) {
                     player->setLevelUpIndicator(true);
                     DisplayMsg_printf("%s gained a level!!!", getName().c_str());
-                    AudioSystem::get().playSoundFull(AudioSystem::get().getGlobalSound(GSND_LEVELUP));
+                    audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_LEVELUP));
                 }
                 return;
             }
@@ -440,7 +445,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
             _currentLife = getAttribute(Ego::Attribute::MAX_LIFE);
             GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Too Silly to Die", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
             DisplayMsg_printf("%s decided not to die after all!", getName(false, true, true).c_str());
-            AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_DRUMS));
+            audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_DRUMS));
             return;
         }
     }
@@ -455,7 +460,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
             _currentLife = getAttribute(Ego::Attribute::MAX_LIFE);
             GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Guardian Angel", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
             DisplayMsg_printf("%s was saved by a Guardian Angel!", getName(false, true, true).c_str());
-            AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_ANGEL_CHOIR));
+            audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_ANGEL_CHOIR));
             return;
         }
     }
@@ -521,7 +526,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
             //Mercenary Perk gives +1 Zenny per kill (if this is the first time we died)
             if(actualKiller->hasPerk(Ego::Perks::MERCENARY) && !_hasBeenKilled) {
                 actualKiller->giveMoney(1);
-                AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_COINGET));
+                audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_COINGET));
             }
 
             //Crusader Perk regains 1 mana per Undead kill

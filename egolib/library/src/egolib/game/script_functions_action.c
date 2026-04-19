@@ -3,6 +3,14 @@
 
 #include "egolib/game/script_functions_internal.h"
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_DoAction( script_state_t& state, ai_state_t& self )
@@ -154,7 +162,7 @@ uint8_t scr_PlaySound( script_state_t& state, ai_state_t& self )
 
     if ( pchr->getOldPosition()[kZ] > PITNOSOUND )
     {
-        AudioSystem::get().playSound(pchr->getOldPosition(), ppro->getSoundID(state.argument));
+        audioSystem().playSound(pchr->getOldPosition(), ppro->getSoundID(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -374,13 +382,13 @@ uint8_t scr_PlaySoundLooped( script_state_t& state, ai_state_t& self )
     if ( INVALID_SOUND_ID == sound )
     {
         // Stop existing sound loop (if any)
-        AudioSystem::get().stopObjectLoopingSounds(self.getSelf());
+        audioSystem().stopObjectLoopingSounds(self.getSelf());
     }
     else
     {
         // check whatever might be playing on the channel now
         //ZF> TODO: check if character is already playing a looped sound first!
-        AudioSystem::get().playSoundLooped(sound, self.getSelf());
+        audioSystem().playSoundLooped(sound, self.getSelf());
     }
 
     SCRIPT_FUNCTION_END();
@@ -396,7 +404,7 @@ uint8_t scr_StopSound( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    AudioSystem::get().stopObjectLoopingSounds(self.getSelf(), ppro->getSoundID(state.argument));
+    audioSystem().stopObjectLoopingSounds(self.getSelf(), ppro->getSoundID(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -460,7 +468,7 @@ uint8_t scr_PlaySoundVolume( script_state_t& state, ai_state_t& self )
 
     if ( state.distance > 0 )
     {
-        int channel = AudioSystem::get().playSound(pchr->getOldPosition(), ppro->getSoundID(Ego::Script::Interpreter::safeCast<int>(state.argument)));
+        int channel = audioSystem().playSound(pchr->getOldPosition(), ppro->getSoundID(Ego::Script::Interpreter::safeCast<int>(state.argument)));
 
         if ( channel != INVALID_SOUND_CHANNEL )
         {
@@ -584,7 +592,7 @@ uint8_t scr_PlayFullSound( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    AudioSystem::get().playSoundFull(ppro->getSoundID(state.argument));
+    audioSystem().playSoundFull(ppro->getSoundID(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -652,7 +660,7 @@ uint8_t scr_PlayMusic( script_state_t& state, ai_state_t& self )
     int fadeTime = state.distance;
     if(fadeTime < 0) fadeTime = 0;
 
-    AudioSystem::get().playMusic(state.argument, fadeTime);
+    audioSystem().playMusic(state.argument, fadeTime);
 
     SCRIPT_FUNCTION_END();
 }
@@ -687,7 +695,7 @@ uint8_t scr_StopMusic( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    AudioSystem::get().stopMusic();
+    audioSystem().stopMusic();
 
     SCRIPT_FUNCTION_END();
 }

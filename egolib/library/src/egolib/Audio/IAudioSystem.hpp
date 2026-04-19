@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+
+#include "egolib/integrations/math.hpp"
+#include "egolib/typedef.h"
 
 typedef int MusicID;
 typedef int SoundID;
@@ -40,8 +44,13 @@ public:
     virtual void playMusic(const std::string& songName, uint16_t fadetime = 0) = 0;
     virtual void stopMusic() = 0;
     virtual void fadeAllSounds() = 0;
+    virtual int playSound(const Ego::Vector3f& position, SoundID soundID) = 0;
+    virtual void playSoundLooped(SoundID soundID, ObjectRef ownerRef) = 0;
+    virtual size_t stopObjectLoopingSounds(ObjectRef ownerRef, SoundID soundID = -1) = 0;
     virtual int playSoundFull(SoundID soundID) = 0;
     virtual SoundID getGlobalSound(GlobalSound id) const = 0;
+    virtual void setMaxHearingDistance(float distance) = 0;
     virtual void setMusicVolume(int value) = 0;
     virtual void setSoundEffectVolume(int value) = 0;
+    virtual void update() = 0;
 };

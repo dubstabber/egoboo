@@ -51,6 +51,7 @@ protected:
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         AudioSystem::initialize();
+        EngineContext::get().installAudioSystem(AudioSystem::get());
         ParticleHandler::initialize();
         EngineContext::get().installParticleHandler(ParticleHandler::get());
     }
@@ -59,6 +60,7 @@ protected:
     {
         EngineContext::get().clearParticleHandler();
         ParticleHandler::uninitialize();
+        EngineContext::get().clearAudioSystem();
         AudioSystem::uninitialize();
         s_runtime.reset();
     }

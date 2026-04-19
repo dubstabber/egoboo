@@ -20,6 +20,7 @@
 /// @file egolib/game/game_loop.c
 /// @brief Main game loop, player input, stat display, particles, and messaging
 
+#include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/game/game_internal.h"
 
 int chr_stoppedby_tests = 0;
@@ -30,6 +31,11 @@ namespace
 egoboo_config_t& config()
 {
     return EngineContext::get().config();
+}
+
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
 }
 
 IScriptable& scriptable(Object& object)
@@ -71,7 +77,7 @@ void MainLoop::updateLocalStats()
     GameSessionContext& session = GameSessionContext::get();
     const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
     const LocalPlayerPerceptionState localPlayerPerception = collectLocalPlayerPerception(module.getPlayerList());
-    AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
+    audioSystem().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
 
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
     {
@@ -87,7 +93,7 @@ void MainLoop::updateLocalStats()
 
         //Do they have the listening perk? (+100% hearing distance)
         if (pchr->hasPerk(Ego::Perks::PERCEPTIVE)) {
-            AudioSystem::get().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE*2);
+            audioSystem().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE*2);
         }
     }
 

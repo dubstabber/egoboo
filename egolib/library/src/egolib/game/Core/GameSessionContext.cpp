@@ -1,7 +1,6 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 
-#include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/egoboo_setup.h"
@@ -231,7 +230,7 @@ void GameSessionContext::quitModule()
     game_reset_players();
     reset_end_text();
 
-    AudioSystem::get().fadeAllSounds();
+    EngineContext::get().audioSystem().fadeAllSounds();
 
     setup_clear_module_vfs_paths();
 }

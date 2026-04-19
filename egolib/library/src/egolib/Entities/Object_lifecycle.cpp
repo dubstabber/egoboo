@@ -23,6 +23,14 @@
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     ai(),
     gender(Gender::Male),
@@ -208,7 +216,7 @@ void Object::removeFromGame(Object* obj)
         rightItem->detatchFromHolder(true, false);
     }
 
-    AudioSystem::get().stopObjectLoopingSounds(objRef);
+    audioSystem().stopObjectLoopingSounds(objRef);
 }
 
 void Object::respawn()

@@ -23,6 +23,14 @@
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 {
     ObjectRef holder = getHolderRef();
@@ -389,7 +397,7 @@ void Object::updateLatchButtons()
                 jumpnumber--;
             }
 
-            AudioSystem::get().playSound(getPosition(), profile->getJumpSound());
+            audioSystem().playSound(getPosition(), profile->getJumpSound());
         } else if (0 != jumpnumber && !isFlying()) {
             if (1 != getAttribute(Ego::Attribute::NUMBER_OF_JUMPS) || jumpready) {
                 if (!hasPerk(Ego::Perks::STALKER)) {
@@ -416,7 +424,7 @@ void Object::updateLatchButtons()
                     inst.playAction(ACTION_JA, true);
                 }
 
-                AudioSystem::get().playSound(getPosition(), profile->getJumpSound());
+                audioSystem().playSound(getPosition(), profile->getJumpSound());
             }
         }
     }

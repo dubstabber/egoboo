@@ -23,6 +23,14 @@
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+IAudioSystem& audioSystem()
+{
+    return EngineContext::get().audioSystem();
+}
+}
+
 float Object::getBaseAttribute(const Ego::Attribute::AttributeType type) const
 {
     IDLIB_DEBUG_ASSERT(type < _baseAttribute.size() && type != Ego::Attribute::NR_OF_PRIMARY_ATTRIBUTES);
@@ -542,7 +550,7 @@ void Object::deactivateStealth()
     _stealth = false;
 
     GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Revealed!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
-    AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_STEALTH_END));
+    audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH_END));
     setAlpha(0xFF);
 }
 
@@ -611,7 +619,7 @@ bool Object::activateStealth()
         //We can't stealth while an enemy is nearby
         if(isPlayer()) {
             GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Hide Failed!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
-            AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_STEALTH_END));
+            audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH_END));
         }
         return false;
     }
@@ -620,7 +628,7 @@ bool Object::activateStealth()
     _stealth = true;
     setAlpha(0);
     GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Hidden!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
-    AudioSystem::get().playSound(getPosition(), AudioSystem::get().getGlobalSound(GSND_STEALTH));
+    audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH));
 
     return true;
 }
