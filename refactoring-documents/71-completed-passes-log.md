@@ -502,6 +502,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by widening the read-only
 
 Extended `ObjectAccessors.cpp` and the existing focused script-systems coverage to pin the widened target-info surface and the migrated enemy-sense, target-damage, and grog/daze helper behavior. Build, the focused script-systems / accessor test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 114 — Subsystem-local config seam cleanup (2026-04-19)
+
+Finished the remaining Tier 1.3 config cleanup inside subsystem-local runtime code by replacing `egoboo_config_t::get()` reads in `AudioSystem.cpp` and `ImageManager.cpp` with the installed `EngineContext` config seam, while preserving `Core/System.cpp` and `ContentRuntimeBootstrap.cpp` as the explicit config-ownership edges. Moved the `ParticleHandler` constructor out of the header and onto the same installed-config seam so particle display-limit initialization no longer reaches for the singleton config directly.
+
+Extended `ConfigReadMostly.cpp` with focused regressions covering installed-config image-loader registration and particle display-limit initialization. Build, focused config/engine-context tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

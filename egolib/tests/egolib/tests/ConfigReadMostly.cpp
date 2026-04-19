@@ -1,5 +1,9 @@
 #include "gtest/gtest.h"
 
+#include "egolib/Entities/_Include.hpp"
+#include "egolib/Image/ImageLoader.hpp"
+#include "egolib/Image/ImageManager.hpp"
+#include "egolib/Log/Target.hpp"
 #define private public
 #include "egolib/game/GUI/MessageLog.hpp"
 #undef private
@@ -30,6 +34,15 @@ public:
     std::string toString() const override { return "stub"; }
 };
 
+class StubLogTarget : public Log::Target
+{
+public:
+    using Log::Target::Target;
+
+protected:
+    void writev(Log::Level, const char*, va_list) override {}
+};
+
 class InstalledConfigFixture : public ::testing::Test
 {
 protected:
@@ -38,6 +51,10 @@ protected:
     void SetUp() override
     {
         auto& context = EngineContext::get();
+        if (context.tryLogTarget())
+        {
+            context.clearLogTarget();
+        }
         if (context.tryConfig())
         {
             context.clearConfig();
@@ -47,6 +64,10 @@ protected:
     void TearDown() override
     {
         auto& context = EngineContext::get();
+        if (context.tryLogTarget())
+        {
+            context.clearLogTarget();
+        }
         if (context.tryConfig())
         {
             context.clearConfig();
@@ -56,6 +77,11 @@ protected:
     void installConfig()
     {
         EngineContext::get().installConfig(config);
+    }
+
+    void installLogTarget(Log::Target& logTarget)
+    {
+        EngineContext::get().installLogTarget(logTarget);
     }
 };
 
@@ -215,6 +241,44 @@ TEST_F(InstalledConfigFixture, MessageLogReadsInstalledConfigForDurationAndLimit
 
     EXPECT_EQ(messageLog.messageDurationTicks(), 1250u);
     EXPECT_EQ(messageLog.messageLimit(), 3u);
+}
+
+TEST_F(InstalledConfigFixture, ImageManagerDisablesSDLImageLoadersFromInstalledConfig)
+{
+    config.debug_sdlImage_enable.setValue(false);
+    installConfig();
+    StubLogTarget logTarget;
+    installLogTarget(logTarget);
+
+    Ego::ImageManager::initialize();
+    auto& imageManager = Ego::ImageManager::get();
+    bool supportsBmp = false;
+    bool supportsPng = false;
+    size_t loaderCount = 0;
+
+    for (auto it = imageManager.begin(); it != imageManager.end(); ++it)
+    {
+        const auto extensions = (*it).getExtensions();
+        supportsBmp = supportsBmp || extensions.end() != extensions.find(".bmp");
+        supportsPng = supportsPng || extensions.end() != extensions.find(".png");
+        ++loaderCount;
+    }
+
+    EXPECT_TRUE(supportsBmp);
+    EXPECT_FALSE(supportsPng);
+    EXPECT_EQ(loaderCount, 1u);
+
+    Ego::ImageManager::uninitialize();
+}
+
+TEST_F(InstalledConfigFixture, ParticleHandlerReadsInstalledDisplayLimitOnConstruction)
+{
+    config.graphic_simultaneousParticles_max.setValue(777);
+    installConfig();
+
+    ParticleHandler particleHandler;
+
+    EXPECT_EQ(particleHandler.getDisplayLimit(), 777u);
 }
 
 TEST_F(InstalledConfigFixture, ScriptDifficultyReadUsesInstalledConfig)

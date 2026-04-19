@@ -29,6 +29,11 @@
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 GameModule* tryActiveModule()
 {
     return GameSessionContext::get().tryActiveModule();
@@ -49,6 +54,19 @@ void publishBlockedAlert(IScriptable& object, ObjectRef attackerRef)
     object.addAIAlertBits(ALERTIF_BLOCKED);
     object.setAILastAttacker(attackerRef);
 }
+}
+
+ParticleHandler::ParticleHandler() :
+    _maxParticles(0),
+    _semaphoreLock(0),
+    _totalParticlesSpawned(0),
+    _unusedPool(),
+    _activeParticles(),
+    _particleMap(),
+    _transparentParticleTexture("mp_data/globalparticles/particle_trans"),
+    _lightParticleTexture("mp_data/globalparticles/particle_light")
+{
+    setDisplayLimit(config().graphic_simultaneousParticles_max.getValue());
 }
 
 std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle

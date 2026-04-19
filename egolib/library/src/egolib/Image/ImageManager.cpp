@@ -33,6 +33,14 @@
 
 namespace Ego {
 
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 ImageManager::Iterator::Iterator(const ImageManager::Loaders::const_iterator& inner) :
     m_inner(inner)
 {}
@@ -77,7 +85,7 @@ ImageManager::Iterator::reference ImageManager::Iterator::operator->() const
 
 void ImageManager::registerImageLoaders()
 {
-    if (egoboo_config_t::get().debug_sdlImage_enable.getValue())
+    if (config().debug_sdlImage_enable.getValue())
     {
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image ", SDL_IMAGE_MAJOR_VERSION, ".", SDL_IMAGE_MINOR_VERSION, ".", SDL_IMAGE_PATCHLEVEL, Log::EndOfEntry);
         // JPG support is optional.
@@ -124,7 +132,7 @@ void ImageManager::registerImageLoaders()
     }
     else
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image disable by ", egoboo_config_t::get().debug_sdlImage_enable.getName(), " = false in `setup.txt` "
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[image manager]: SDL_image disable by ", config().debug_sdlImage_enable.getName(), " = false in `setup.txt` "
                                          " - using SDL -  only support for .bmp files", Log::EndOfEntry);
     }
     // These loaders are natively supported with SDL.

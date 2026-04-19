@@ -33,18 +33,7 @@ class ParticleHandler : public IParticleHandler,
                         public idlib::singleton<ParticleHandler>
 {
 public:
-    ParticleHandler() :
-        _maxParticles(0),
-        _semaphoreLock(0),
-        _totalParticlesSpawned(0),
-        _unusedPool(),
-        _activeParticles(),
-        _particleMap(),
-        _transparentParticleTexture("mp_data/globalparticles/particle_trans"),
-        _lightParticleTexture("mp_data/globalparticles/particle_light")
-    {
-        setDisplayLimit(egoboo_config_t::get().graphic_simultaneousParticles_max.getValue());
-    }
+    ParticleHandler();
 
     /**
     * @brief
