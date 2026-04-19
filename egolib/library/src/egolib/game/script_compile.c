@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/script_compile.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/egoboo.h"
 #include "egolib/Script/CLogEntry.hpp"
@@ -631,7 +632,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             // Invalid profile as default.
             token.setValue(INVALID_PRO_REF);
             // Convert reference to slot number.
-            for (const auto& element : ProfileSystem::get().getLoadedProfiles())
+            for (const auto& element : EngineContext::get().profileSystem().getLoadedProfiles())
             {
                 const auto& profile = element.second;
                 if (profile == nullptr) continue;
@@ -644,7 +645,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             }
 
             // Do we need to load the object?
-            if (!ProfileSystem::get().isLoaded((PRO_REF)token.getValue()))
+            if (!EngineContext::get().profileSystem().isLoaded((PRO_REF)token.getValue()))
             {
                 auto loadName = "mp_objects/" + token.get_lexeme();
 
@@ -652,16 +653,16 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
                 for (PRO_REF ipro = MAX_IMPORT_PER_PLAYER * 4; ipro < INVALID_PRO_REF; ipro++)
                 {
                     //skip loaded profiles
-                    if (ProfileSystem::get().isLoaded(ipro)) continue;
+                    if (EngineContext::get().profileSystem().isLoaded(ipro)) continue;
 
                     //found a free slot
-                    token.setValue(ProfileSystem::get().loadOneProfile(loadName, REF_TO_INT(ipro)).get());
+                    token.setValue(EngineContext::get().profileSystem().loadOneProfile(loadName, REF_TO_INT(ipro)).get());
                     if (token.getValue() == ipro) break;
                 }
             }
 
             // Failed to load object!
-            if (!ProfileSystem::get().isLoaded((PRO_REF)token.getValue()))
+            if (!EngineContext::get().profileSystem().isLoaded((PRO_REF)token.getValue()))
             {
                 Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, token.get_start_location());
                 e << "failed to load object " << token.get_lexeme() << " - \n"

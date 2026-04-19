@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
@@ -55,13 +56,13 @@ protected:
 
     void SetUp() override
     {
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
     }
 
     std::shared_ptr<ModuleProfile> mountTestModule()
     {
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (module && module->getFolderName() == "test.mod")
             {
@@ -163,12 +164,12 @@ TEST_F(ModuleSpawnPlanningFixture, ActivateSpawnLoadObjectLoadsMountedProfileInt
     ASSERT_NE(module, nullptr);
 
     spawn_file_info_t entry = makeSpawnEntry(90, "follower.obj");
-    ASSERT_FALSE(ProfileSystem::get().isLoaded(ObjectProfileRef(90)));
+    ASSERT_FALSE(EngineContext::get().profileSystem().isLoaded(ObjectProfileRef(90)));
 
     EXPECT_TRUE(activate_spawn_file_load_object(entry));
-    EXPECT_TRUE(ProfileSystem::get().isLoaded(ObjectProfileRef(90)));
+    EXPECT_TRUE(EngineContext::get().profileSystem().isLoaded(ObjectProfileRef(90)));
 
-    const auto& profile = ProfileSystem::get().getProfile(ObjectProfileRef(90));
+    const auto& profile = EngineContext::get().profileSystem().getProfile(ObjectProfileRef(90));
     ASSERT_NE(profile, nullptr);
     EXPECT_EQ(profile->getPathname(), "mp_objects/follower.obj");
 }
@@ -181,7 +182,7 @@ TEST_F(ModuleSpawnPlanningFixture, ActivateSpawnLoadObjectReturnsFalseWhenProfil
     spawn_file_info_t entry = makeSpawnEntry(91, "missing-profile.obj");
 
     EXPECT_FALSE(activate_spawn_file_load_object(entry));
-    EXPECT_FALSE(ProfileSystem::get().isLoaded(ObjectProfileRef(91)));
+    EXPECT_FALSE(EngineContext::get().profileSystem().isLoaded(ObjectProfileRef(91)));
     EXPECT_EQ(entry.slot, 91);
 }
 
@@ -190,13 +191,13 @@ TEST_F(ModuleSpawnPlanningFixture, ActivateSpawnLoadObjectIsNoOpWhenSlotIsAlread
     auto module = mountTestModule();
     ASSERT_NE(module, nullptr);
 
-    ASSERT_EQ(ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", 92), ObjectProfileRef(92));
+    ASSERT_EQ(EngineContext::get().profileSystem().loadOneProfile("mp_objects/follower.obj", 92), ObjectProfileRef(92));
 
     spawn_file_info_t entry = makeSpawnEntry(92, "bumper.obj");
 
     EXPECT_FALSE(activate_spawn_file_load_object(entry));
 
-    const auto& profile = ProfileSystem::get().getProfile(ObjectProfileRef(92));
+    const auto& profile = EngineContext::get().profileSystem().getProfile(ObjectProfileRef(92));
     ASSERT_NE(profile, nullptr);
     EXPECT_EQ(profile->getPathname(), "mp_objects/follower.obj");
 }

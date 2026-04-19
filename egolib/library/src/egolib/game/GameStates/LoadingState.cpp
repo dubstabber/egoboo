@@ -195,7 +195,7 @@ void LoadingState::loadModuleData()
         setProgressText("Beautifying graphics...", 40);
 
         // Reset all loaded "profiles" in the "profile system".
-        ProfileSystem::get().reset();
+        EngineContext::get().profileSystem().reset();
 
         // do some graphics initialization
         gfx_system_make_enviro();

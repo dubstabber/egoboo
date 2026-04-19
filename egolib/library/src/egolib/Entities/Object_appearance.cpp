@@ -21,6 +21,7 @@
 /// @brief Appearance, visibility, and collision-facing Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 bool Object::setSkin(const size_t skinNumber)
 {
@@ -117,7 +118,7 @@ std::string Object::getName(bool prefixArticle, bool prefixDefinite, bool capita
         }
     } else {
         if (getProfile()->getSpellEffectType() != ObjectProfile::NO_SKIN_OVERRIDE) {
-            result = ProfileSystem::get().getProfile(SPELLBOOK)->getClassName();
+            result = EngineContext::get().profileSystem().getProfile(SPELLBOOK)->getClassName();
         } else {
             result = getProfile()->getClassName();
         }
@@ -308,7 +309,7 @@ std::shared_ptr<const Ego::Texture> Object::getIcon() const
     if (getProfile()->getSpellEffectType() == ObjectProfile::NO_SKIN_OVERRIDE) {
         return getProfile()->getIcon(skin).get_ptr();
     } else {
-        return ProfileSystem::get().getSpellBookIcon(getProfile()->getSpellEffectType()).get_ptr();
+        return EngineContext::get().profileSystem().getSpellBookIcon(getProfile()->getSpellEffectType()).get_ptr();
     }
 }
 

@@ -523,7 +523,7 @@ void Enchantment::playEndSound() const
 {
     std::shared_ptr<Object> target = _target.lock();
     if(target) {
-        const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(_spawnerProfileID);
+        const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(_spawnerProfileID);
         AudioSystem::get().playSound(target->getPosition(), spawnerProfile->getSoundID(getProfile()->endsound_index));
     }
 }

@@ -4,6 +4,7 @@
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -16,6 +17,7 @@ IAudioSystem* activeAudioSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
+IProfileSystem* activeProfileSystem = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -43,6 +45,7 @@ void EngineContext::clearEngine()
     clearPerkHandler();
     clearImageManager();
     clearParticleHandler();
+    clearProfileSystem();
     activeEngine.reset();
 }
 
@@ -290,6 +293,50 @@ const IParticleHandler& EngineContext::particleHandler() const
         throw std::logic_error("no active particle handler");
     }
     return *currentParticleHandler;
+}
+
+void EngineContext::installProfileSystem(IProfileSystem& profileSystem)
+{
+    if (activeProfileSystem)
+    {
+        throw std::logic_error("profile system already installed");
+    }
+    activeProfileSystem = &profileSystem;
+}
+
+void EngineContext::clearProfileSystem()
+{
+    activeProfileSystem = nullptr;
+}
+
+IProfileSystem* EngineContext::tryProfileSystem()
+{
+    return activeProfileSystem;
+}
+
+const IProfileSystem* EngineContext::tryProfileSystem() const
+{
+    return activeProfileSystem;
+}
+
+IProfileSystem& EngineContext::profileSystem()
+{
+    IProfileSystem* currentProfileSystem = tryProfileSystem();
+    if (!currentProfileSystem)
+    {
+        throw std::logic_error("no active profile system");
+    }
+    return *currentProfileSystem;
+}
+
+const IProfileSystem& EngineContext::profileSystem() const
+{
+    const IProfileSystem* currentProfileSystem = tryProfileSystem();
+    if (!currentProfileSystem)
+    {
+        throw std::logic_error("no active profile system");
+    }
+    return *currentProfileSystem;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

@@ -100,7 +100,7 @@ DebugModuleLoadingState::DebugModuleLoadingState() :
     _moduleList(),
     _toLoad()
 {
-    const auto &playerList = ProfileSystem::get().getSavedPlayers();
+    const auto &playerList = EngineContext::get().profileSystem().getSavedPlayers();
     if (!playerList.empty()) _playersToLoad.emplace_back(playerList[0]->getProfile()->getPathname());
     
     const int SCREEN_WIDTH = uiManager().getScreenWidth();
@@ -110,7 +110,7 @@ DebugModuleLoadingState::DebugModuleLoadingState() :
     _scrollableList->setPosition({ 8, 8 });
     _scrollableList->setSize({ SCREEN_WIDTH - 16, SCREEN_HEIGHT - 56 });
     
-    for (const auto &loadModule : ProfileSystem::get().getModuleProfiles())
+    for (const auto &loadModule : EngineContext::get().profileSystem().getModuleProfiles())
     {
         std::shared_ptr<ModuleGUIContainer> module = std::make_shared<ModuleGUIContainer>(loadModule);
         if (loadModule->getImportAmount()) module->setButtonEnabled(!_playersToLoad.empty());
@@ -253,7 +253,7 @@ void DebugModuleLoadingState::loadModuleData()
         singleThreadRedrawHack("Beautifying graphics...");
 
         // Reset all "profiles" in the "profile system".
-        ProfileSystem::get().reset();
+        EngineContext::get().profileSystem().reset();
 
         // do some graphics initialization
         //make_lightdirectionlookup();

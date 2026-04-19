@@ -383,11 +383,11 @@ bool GameEngine::initialize()
 
     // Load all modules
     renderPreloadText("Loading modules...");
-    ProfileSystem::get().loadModuleProfiles();
+    EngineContext::get().profileSystem().loadModuleProfiles();
 
     // Check savegame folder
     renderPreloadText("Loading save games...");
-    ProfileSystem::get().loadAllSavedCharacters("mp_players");
+    EngineContext::get().profileSystem().loadAllSavedCharacters("mp_players");
 
     // clear out the import and remote directories
     renderPreloadText("Finished!");

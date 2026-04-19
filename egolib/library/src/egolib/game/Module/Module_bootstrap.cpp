@@ -21,6 +21,7 @@
 /// @brief GameModule construction, teardown, and bootstrap phases.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint32_t seed) :
     _moduleProfile(profile),
@@ -94,7 +95,7 @@ void GameModule::initializeSharedModuleAssets()
 {
     // Load shared runtime assets that module content depends on.
     AudioSystem::get().loadGlobalSounds();
-    ProfileSystem::get().loadGlobalParticleProfiles();
+    EngineContext::get().profileSystem().loadGlobalParticleProfiles();
 }
 
 void GameModule::loadModuleEnvironment()
@@ -145,7 +146,7 @@ GameModule::~GameModule()
     EngineContext::get().particleHandler().clear();
 
     //Free all profiles loaded by the module
-    ProfileSystem::get().reset();
+    EngineContext::get().profileSystem().reset();
 
     //Free all textures
     gfx_system_release_all_graphics();

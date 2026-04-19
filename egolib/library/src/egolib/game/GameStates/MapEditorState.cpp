@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/MapEditorState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -146,7 +147,7 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
     game_quit_module();
 
     // Reset all loaded "profiles" in the "profile system".
-    ProfileSystem::get().reset();
+    EngineContext::get().profileSystem().reset();
 
     // do some graphics initialization
     gfx_system_make_enviro();

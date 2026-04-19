@@ -2,6 +2,7 @@
 /// @brief Target selection, target property queries, and order management
 
 #include "egolib/game/script_functions_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 
 //--------------------------------------------------------------------------------------------
@@ -1582,7 +1583,7 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
     returncode = false;
     for (LocalParticleProfileRef iTmp(0); iTmp.get() < MAX_PIP_PER_PROFILE; ++iTmp)
     {
-        std::shared_ptr<ParticleProfile> ppip = ProfileSystem::get().ParticleProfileSystem.get_ptr(pchr->getProfile()->getParticleProfile(iTmp));
+        std::shared_ptr<ParticleProfile> ppip = EngineContext::get().profileSystem().getParticleProfile(pchr->getProfile()->getParticleProfile(iTmp));
         if (!ppip) continue;
 
         if (ppip->_intellectDamageBonus)

@@ -21,6 +21,7 @@
 /// @brief Particle damage application and destruction helpers.
 
 #include "egolib/Entities/Particle_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego
 {
@@ -54,8 +55,8 @@ void Particle::updateAttachedDamage()
     bool skewered_by_arrow = getProfile()->hasBit(DAMFX_ARRO);
 
     // 2) the character is vulnerable to this damage type
-    bool has_vulnie = (attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == ProfileSystem::get().getProfile(_spawnerProfile)->getIDSZ(IDSZ_TYPE) ||
-                       attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == ProfileSystem::get().getProfile(_spawnerProfile)->getIDSZ(IDSZ_PARENT));
+    bool has_vulnie = (attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == EngineContext::get().profileSystem().getProfile(_spawnerProfile)->getIDSZ(IDSZ_TYPE) ||
+                       attachedObject->getProfile()->getIDSZ(IDSZ_VULNERABILITY) == EngineContext::get().profileSystem().getProfile(_spawnerProfile)->getIDSZ(IDSZ_PARENT));
 
     // 3) the character is "lit on fire" by the particle damage type
     bool is_immolated_by = (damagetype < DAMAGE_COUNT && constDamageable.getReaffirmDamageType() == damagetype);

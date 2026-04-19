@@ -1,4 +1,5 @@
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/MapEditorState.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
 #include "egolib/game/GUI/Button.hpp"
@@ -29,7 +30,7 @@ MapEditorSelectModuleState::MapEditorSelectModuleState() :
     scrollableList->setPosition(Point2f(8, 8));
     scrollableList->setSize(Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 56));
 
-    for (const auto &loadModule : ProfileSystem::get().getModuleProfiles())
+    for (const auto &loadModule : EngineContext::get().profileSystem().getModuleProfiles())
     {
     	const std::string folderName = loadModule->getPath().substr(loadModule->getPath().find_last_of('/') + 1);
 

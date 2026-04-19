@@ -21,6 +21,7 @@
 /// @brief Lifecycle-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     ai(),
@@ -104,7 +105,7 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     _terminateRequested(false),
     _objRef(objRef),
     _profileID(proRef),
-    _profile(ProfileSystem::get().getProfile(_profileID)),
+    _profile(EngineContext::get().profileSystem().getProfile(_profileID)),
     _showStatus(false),
     _isAlive(true),
     _name("*NONE*"),

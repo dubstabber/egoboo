@@ -21,6 +21,7 @@
 /// @brief GameModule spawn, player-join, and spawn-file realization helpers.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Module/Module_player_startup.hpp"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/Module_spawn_realization.hpp"
@@ -67,7 +68,7 @@ void GameModule::removeShopOwner(ObjectRef owner)
 std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
                                                 const Facing& facing, const std::string &name, const ObjectRef override)
 {
-    const std::shared_ptr<ObjectProfile> &ppro = ProfileSystem::get().getProfile(profile);
+    const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(profile);
     if (!ppro)
     {
         if (profile.get() > getImportAmount() * MAX_IMPORT_PER_PLAYER)
@@ -334,14 +335,14 @@ void GameModule::spawnAllObjects()
         treasureTables,
         [](ObjectProfileRef profileSlot)
         {
-            return ProfileSystem::get().isLoaded(profileSlot);
+            return EngineContext::get().profileSystem().isLoaded(profileSlot);
         });
 
     std::shared_ptr<Object> parent = nullptr;
     for (auto& spawnInfo : spawnPlan.entries)
     {
         // If nothing is already in that slot, try to load it.
-        if (!ProfileSystem::get().isLoaded(spawnInfo.slot))
+        if (!EngineContext::get().profileSystem().isLoaded(spawnInfo.slot))
         {
             bool import_object = spawnInfo.slot > (getImportAmount() * MAX_IMPORT_PER_PLAYER);
 
@@ -385,7 +386,7 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     state.importData = &import_data;
     state.isProfileLoaded = [](ObjectProfileRef profile)
     {
-        return ProfileSystem::get().isLoaded(profile);
+        return EngineContext::get().profileSystem().isLoaded(profile);
     };
 
     module_spawn_realization::SpawnRealizationOps ops;

@@ -68,8 +68,8 @@ protected:
             GameSessionContext::get().quitModule();
         }
 
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
         setup_init_module_vfs_paths("mp_modules/test.mod");
         GameSessionContext::get().publishLocalPlayerPerception(LocalPlayerPerceptionState{});
     }
@@ -86,7 +86,7 @@ protected:
 
     std::shared_ptr<ModuleProfile> findTestModule() const
     {
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (module && module->getFolderName() == "test.mod")
             {
@@ -99,12 +99,12 @@ protected:
 
     ObjectProfileRef loadFollowerProfile(int slot) const
     {
-        return ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", slot);
+        return EngineContext::get().profileSystem().loadOneProfile("mp_objects/follower.obj", slot);
     }
 
     ObjectProfileRef loadProfile(const std::string& profilePath, int slot) const
     {
-        return ProfileSystem::get().loadOneProfile(profilePath, slot);
+        return EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
     }
 
     std::shared_ptr<Object> makeFollower(ObjectHandler& objectHandler, int slot) const

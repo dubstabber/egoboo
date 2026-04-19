@@ -21,6 +21,7 @@
 /// @brief Particle creation, initialization, and attachment helpers.
 
 #include "egolib/Entities/Particle_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego
 {
@@ -122,8 +123,8 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     //Load particle profile
     _spawnerProfile = spawnProfile.get();
     _particleProfileID = particleProfile;
-    assert(ProfileSystem::get().ParticleProfileSystem.isLoaded(_particleProfileID));
-    _particleProfile = ProfileSystem::get().ParticleProfileSystem.get_ptr(_particleProfileID);
+    assert(EngineContext::get().profileSystem().isParticleProfileLoaded(_particleProfileID));
+    _particleProfile = EngineContext::get().profileSystem().getParticleProfile(_particleProfileID);
     assert(_particleProfile != nullptr); //"Tried to spawn particle with invalid PIP_REF"
 
     team = spawnTeam;
@@ -480,6 +481,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
 
     // some code to track all allocated particles, where they came from, how long they are going to last,
     // what they are being used for...
+    const auto& spawnerProfile = EngineContext::get().profileSystem().getProfile(_spawnerProfile);
     log_debug( "spawn_one_particle() - spawned a particle %d\n"
         "\tupdate == %d, remaining life == %d\n"
         "\towner == %d (\"%s\")\n"
@@ -492,7 +494,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
         loc_chr_origin, activeModule().getObjectHandler().exists( loc_chr_origin ) ? activeModule().getObjectHandler().get(loc_chr_origin)->Name : "INVALID",
         _particleProfileID, getProfile()->getName().c_str(),
         getProfile()->comment,
-        _spawnerProfile, ProfileSystem::get().isValidProfileID(_spawnerProfile) ? ProfileSystem::get().getProfile(_spawnerProfile)->getPathname().c_str() : "INVALID");
+        _spawnerProfile, spawnerProfile ? spawnerProfile->getPathname().c_str() : "INVALID");
 #endif
 
     //Attach ourselves to an Object if needed

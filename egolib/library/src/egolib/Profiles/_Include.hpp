@@ -1,6 +1,7 @@
 #pragma once
 
 #define EGOLIB_PROFILES_PRIVATE 1
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Profiles/EnchantProfile.hpp"
 #include "egolib/Profiles/EnchantProfileWriter.hpp"
 #include "egolib/Profiles/GenderProfile.hpp"

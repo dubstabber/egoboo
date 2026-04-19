@@ -2,6 +2,7 @@
 /// @brief Passages, quests, commerce, teams, combat, enchantment, inventory, stats, and environment
 
 #include "egolib/game/script_functions_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 
 //--------------------------------------------------------------------------------------------
@@ -1253,7 +1254,7 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
 
     /// @details This function polymorphs a character permanently so that it can be exported properly
     /// A character turned into a frog with this function will also export as a frog!
-    if(ProfileSystem::get().isLoaded(profileID)) 
+    if(EngineContext::get().profileSystem().isLoaded(profileID)) 
     {
         //Change the object
         pchr->polymorphObject(ObjectProfileRef(profileID), 0);

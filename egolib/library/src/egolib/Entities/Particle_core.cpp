@@ -21,6 +21,7 @@
 /// @brief Core Particle helpers, queries, and physics wrappers.
 
 #include "egolib/Entities/Particle_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego
 {
@@ -234,7 +235,7 @@ void Particle::playSound(int8_t sound)
     }
 
     //If we were spawned by an Object, then use that Object's sound pool
-    const std::shared_ptr<ObjectProfile> &profile = ProfileSystem::get().getProfile(_spawnerProfile);
+    const std::shared_ptr<ObjectProfile> &profile = EngineContext::get().profileSystem().getProfile(_spawnerProfile);
     if (profile) {
         AudioSystem::get().playSound(getPosition(), profile->getSoundID(sound));
     }
@@ -325,7 +326,7 @@ bool Particle::canCollide() const
     // Make this optional? Is there any reason to fail if the particle has no profile reference?
     if (getProfile()->spawnenchant)
     {
-        if(ProfileSystem::get().EnchantProfileSystem.isLoaded(ProfileSystem::get().getProfile(getSpawnerProfile())->getEnchantRef())) {
+        if(EngineContext::get().profileSystem().isEnchantProfileLoaded(EngineContext::get().profileSystem().getProfile(getSpawnerProfile())->getEnchantRef())) {
             return true;
         }
     }

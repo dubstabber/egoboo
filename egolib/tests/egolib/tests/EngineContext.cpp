@@ -5,6 +5,8 @@
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/Renderer/DeferredTexture.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 
@@ -113,6 +115,39 @@ private:
     std::shared_ptr<Ego::Particle> _invalidParticle;
 };
 
+class StubProfileSystem : public IProfileSystem
+{
+public:
+    void reset() override {}
+    bool isLoaded(PRO_REF) const override { return false; }
+    bool isLoaded(ObjectProfileRef) const override { return false; }
+    ObjectProfileRef loadOneProfile(const std::string&, int) override { return ObjectProfileRef::Invalid; }
+    const std::shared_ptr<ObjectProfile>& getProfile(PRO_REF) const override { return _objectProfile; }
+    const std::shared_ptr<ObjectProfile>& getProfile(ObjectProfileRef) const override { return _objectProfile; }
+    const std::unordered_map<PRO_REF, std::shared_ptr<ObjectProfile>>& getLoadedProfiles() const override { return _loadedProfiles; }
+    const Ego::DeferredTexture& getSpellBookIcon(size_t) const override { return _spellbookIcon; }
+    void loadModuleProfiles() override {}
+    const std::vector<std::shared_ptr<ModuleProfile>>& getModuleProfiles() const override { return _moduleProfiles; }
+    void loadAllSavedCharacters(const std::string&) override {}
+    const std::vector<std::shared_ptr<LoadPlayerElement>>& getSavedPlayers() const override { return _savedPlayers; }
+    void loadGlobalParticleProfiles() override {}
+    bool isParticleProfileLoaded(PIP_REF) const override { return false; }
+    const std::shared_ptr<ParticleProfile>& getParticleProfile(PIP_REF) const override { return _particleProfile; }
+    PIP_REF loadParticleProfile(const std::string&, PIP_REF) override { return INVALID_PIP_REF; }
+    bool isEnchantProfileLoaded(EVE_REF) const override { return false; }
+    const std::shared_ptr<EnchantProfile>& getEnchantProfile(EVE_REF) const override { return _enchantProfile; }
+    EVE_REF loadEnchantProfile(const std::string&, EVE_REF) override { return INVALID_EVE_REF; }
+
+private:
+    Ego::DeferredTexture _spellbookIcon;
+    std::shared_ptr<ObjectProfile> _objectProfile;
+    std::shared_ptr<ParticleProfile> _particleProfile;
+    std::shared_ptr<EnchantProfile> _enchantProfile;
+    std::unordered_map<PRO_REF, std::shared_ptr<ObjectProfile>> _loadedProfiles;
+    std::vector<std::shared_ptr<ModuleProfile>> _moduleProfiles;
+    std::vector<std::shared_ptr<LoadPlayerElement>> _savedPlayers;
+};
+
 class EngineContextFixture : public ::testing::Test
 {
 protected:
@@ -122,6 +157,7 @@ protected:
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
+        EngineContext::get().clearProfileSystem();
         EngineContext::get().clearEngine();
     }
 
@@ -131,6 +167,7 @@ protected:
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
+        EngineContext::get().clearProfileSystem();
         EngineContext::get().clearEngine();
     }
 };
@@ -260,6 +297,14 @@ TEST_F(EngineContextFixture, ImageManagerThrowsWhenNoImageManagerIsInstalled)
     EXPECT_THROW(context.imageManager(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ProfileSystemThrowsWhenNoProfileSystemIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryProfileSystem(), nullptr);
+    EXPECT_THROW(context.profileSystem(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, ParticleHandlerThrowsWhenNoParticleHandlerIsInstalled)
 {
     EngineContext& context = EngineContext::get();
@@ -301,6 +346,17 @@ TEST_F(EngineContextFixture, InstallParticleHandlerPublishesInstalledParticleHan
     EXPECT_EQ(&context.particleHandler(), &particleHandler);
 }
 
+TEST_F(EngineContextFixture, InstallProfileSystemPublishesInstalledProfileSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubProfileSystem profileSystem;
+    context.installProfileSystem(profileSystem);
+
+    EXPECT_EQ(context.tryProfileSystem(), &profileSystem);
+    EXPECT_EQ(&context.profileSystem(), &profileSystem);
+}
+
 TEST_F(EngineContextFixture, InstallPerkHandlerRejectsDoubleInstall)
 {
     EngineContext& context = EngineContext::get();
@@ -335,6 +391,18 @@ TEST_F(EngineContextFixture, InstallParticleHandlerRejectsDoubleInstall)
 
     EXPECT_THROW(context.installParticleHandler(second), std::logic_error);
     EXPECT_EQ(context.tryParticleHandler(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallProfileSystemRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubProfileSystem first;
+    StubProfileSystem second;
+    context.installProfileSystem(first);
+
+    EXPECT_THROW(context.installProfileSystem(second), std::logic_error);
+    EXPECT_EQ(context.tryProfileSystem(), &first);
 }
 
 TEST_F(EngineContextFixture, ClearPerkHandlerRemovesInstalledPerkHandler)
@@ -374,6 +442,19 @@ TEST_F(EngineContextFixture, ClearParticleHandlerRemovesInstalledParticleHandler
 
     EXPECT_EQ(context.tryParticleHandler(), nullptr);
     EXPECT_THROW(context.particleHandler(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearProfileSystemRemovesInstalledProfileSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubProfileSystem profileSystem;
+    context.installProfileSystem(profileSystem);
+
+    context.clearProfileSystem();
+
+    EXPECT_EQ(context.tryProfileSystem(), nullptr);
+    EXPECT_THROW(context.profileSystem(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledPerkHandler)
@@ -419,6 +500,21 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledParticleHandler)
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryParticleHandler(), nullptr);
     EXPECT_THROW(context.particleHandler(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledProfileSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubProfileSystem profileSystem;
+    context.installProfileSystem(profileSystem);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryProfileSystem(), nullptr);
+    EXPECT_THROW(context.profileSystem(), std::logic_error);
 }
 
 } // namespace

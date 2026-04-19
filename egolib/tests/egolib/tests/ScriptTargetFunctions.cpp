@@ -71,8 +71,8 @@ protected:
             session.quitModule();
         }
 
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
         setup_init_module_vfs_paths("mp_modules/test.mod");
         session.publishLocalPlayerPerception(LocalPlayerPerceptionState{});
     }
@@ -90,7 +90,7 @@ protected:
 
     std::shared_ptr<ModuleProfile> findTestModule() const
     {
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (module && module->getFolderName() == "test.mod")
             {
@@ -103,7 +103,7 @@ protected:
 
     ObjectProfileRef loadProfile(const std::string& profilePath, int slot) const
     {
-        return ProfileSystem::get().loadOneProfile(profilePath, slot);
+        return EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
     }
 
     std::shared_ptr<Object> makeObject(GameModule& module, const std::string& profilePath, int slot,

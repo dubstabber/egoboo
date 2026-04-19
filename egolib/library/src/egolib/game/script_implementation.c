@@ -26,6 +26,7 @@
 /// The functions below will then be replaced with stub calls to the "real" functions.
 
 #include "egolib/game/script_implementation.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/egolib.h"
 
@@ -484,7 +485,7 @@ uint8_t _display_message( const ObjectRef ichr, const PRO_REF iprofile, const in
     /// @author ZZ
     /// @details This function sticks a message_offset in the display queue and sets its timer
 
-    const std::shared_ptr<ObjectProfile> &ppro = ProfileSystem::get().getProfile(iprofile);
+    const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(iprofile);
     if ( !ppro->isValidMessageID(message) ) return false;
 
     std::string text = expandEscapeCodes(objectHandler()[ichr], *pstate, ppro->getMessage(message));

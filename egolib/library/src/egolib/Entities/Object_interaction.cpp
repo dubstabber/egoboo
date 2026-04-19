@@ -21,6 +21,7 @@
 /// @brief Holder, inventory, and latch-input Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
 {
@@ -162,7 +163,7 @@ int Object::getPrice() const
         iskin = skin;
     }
 
-    std::shared_ptr<ObjectProfile> profile = ProfileSystem::get().getProfile(slotNumber);
+    std::shared_ptr<ObjectProfile> profile = EngineContext::get().profileSystem().getProfile(slotNumber);
     if (!profile) {
         return 0;
     }

@@ -22,6 +22,7 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/ParticleHandler.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -65,13 +66,13 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle
         const ObjectRef oldtarget
     )
 {
-    if(!ProfileSystem::get().isLoaded(iprofile)) {
+    if(!EngineContext::get().profileSystem().isLoaded(iprofile)) {
 		Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid profile reference ", iprofile, Log::EndOfEntry);
         return Ego::Particle::INVALID_PARTICLE;
     }
 
     //Local character pip
-    PIP_REF ipip = ProfileSystem::get().getProfile(iprofile)->getParticleProfile(pip_index); 
+    PIP_REF ipip = EngineContext::get().profileSystem().getProfile(iprofile)->getParticleProfile(pip_index); 
 
     return spawnParticle(pos, facing, iprofile, ipip, chr_attach, vrt_offset, team, chr_origin, prt_origin, multispawn, oldtarget);
 }
@@ -110,13 +111,13 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
                                                               const PIP_REF particleProfile, const ObjectRef spawnAttach, uint16_t vrt_offset, const TEAM_REF spawnTeam,
                                                               const ObjectRef spawnOrigin, const ParticleRef spawnParticleOrigin, const int multispawn, const ObjectRef spawnTarget, const bool onlyOverWater)
 {
-    const std::shared_ptr<ParticleProfile> &ppip = ProfileSystem::get().ParticleProfileSystem.get_ptr(particleProfile);
+    const std::shared_ptr<ParticleProfile> &ppip = EngineContext::get().profileSystem().getParticleProfile(particleProfile);
 
     if (!ppip)
     {
         GameModule* module = tryActiveModule();
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
-        const std::string spawnProfileName = ProfileSystem::get().isLoaded(spawnProfile) ? ProfileSystem::get().getProfile(spawnProfile)->getPathname() : "INVALID";
+        const std::string spawnProfileName = EngineContext::get().profileSystem().isLoaded(spawnProfile) ? EngineContext::get().profileSystem().getProfile(spawnProfile)->getPathname() : "INVALID";
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
                                          ", spawn origin == ", spawnOrigin.get(), " (`", spawnOriginName, "`), spawn profile == ", spawnProfile, " (`", spawnProfileName, "`)",
                                          Log::EndOfEntry);
@@ -146,8 +147,8 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
     if(!particle) {
         GameModule* module = tryActiveModule();
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler().get(spawnOrigin)->getName() : "INVALID";
-        const std::string particleProfileName = LOADED_PIP(particleProfile) ? ProfileSystem::get().ParticleProfileSystem.get_ptr(particleProfile)->_name : "INVALID";
-        const std::string spawnProfileName = ProfileSystem::get().isLoaded(spawnProfile) ? ProfileSystem::get().getProfile(spawnProfile)->getPathname().c_str() : "INVALID";
+        const std::string particleProfileName = EngineContext::get().profileSystem().isParticleProfileLoaded(particleProfile) ? EngineContext::get().profileSystem().getParticleProfile(particleProfile)->_name : "INVALID";
+        const std::string spawnProfileName = EngineContext::get().profileSystem().isLoaded(spawnProfile) ? EngineContext::get().profileSystem().getProfile(spawnProfile)->getPathname().c_str() : "INVALID";
         Log::get() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
                                          "owner == ", spawnOrigin, " (`", spawnOriginName, "`), "
                                          "spawn profile == ", spawnProfile, " (`", spawnProfileName, "`), ",

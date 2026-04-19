@@ -4,6 +4,7 @@
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "idlib/non_copyable.hpp"
 
 #include <cstdint>
@@ -68,6 +69,15 @@ public:
 
     IParticleHandler& particleHandler();
     const IParticleHandler& particleHandler() const;
+
+    void installProfileSystem(IProfileSystem& profileSystem);
+    void clearProfileSystem();
+
+    IProfileSystem* tryProfileSystem();
+    const IProfileSystem* tryProfileSystem() const;
+
+    IProfileSystem& profileSystem();
+    const IProfileSystem& profileSystem() const;
 
     uint32_t renderedFrameCount() const;
 

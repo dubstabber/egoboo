@@ -18,6 +18,7 @@
 //********************************************************************************************
 
 #include "egolib/egolib.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/script_compile.h"
@@ -39,7 +40,7 @@ bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
 
     //Is it already loaded?
     ipro = ( PRO_REF )psp_info.slot;
-    if (ProfileSystem::get().isLoaded(ipro)) return false;
+    if (EngineContext::get().profileSystem().isLoaded(ipro)) return false;
 
     // do the loading
     if ( CSTR_END != psp_info.spawn_comment[0] )
@@ -56,10 +57,10 @@ bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
             return false;
         }
 
-        psp_info.slot = ProfileSystem::get().loadOneProfile(filename, psp_info.slot).get();
+        psp_info.slot = EngineContext::get().profileSystem().loadOneProfile(filename, psp_info.slot).get();
     }
 
-    return ProfileSystem::get().isLoaded((PRO_REF)psp_info.slot);
+    return EngineContext::get().profileSystem().isLoaded((PRO_REF)psp_info.slot);
 }
 
 void convert_spawn_file_load_name(spawn_file_info_t& psp_info, const Ego::TreasureTables &treasureTables)
@@ -79,7 +80,7 @@ void game_load_profile_ai()
     // ensure that the script parser exists
     parser_state_t& ps = parser_state_t::get();
 
-    for (const auto &element : ProfileSystem::get().getLoadedProfiles())
+    for (const auto &element : EngineContext::get().profileSystem().getLoadedProfiles())
     {
         const std::shared_ptr<ObjectProfile> &profile = element.second;
 

@@ -21,6 +21,7 @@
 /// @brief Attributes, team, stealth, and enchantment Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 float Object::getBaseAttribute(const Ego::Attribute::AttributeType type) const
 {
@@ -178,9 +179,9 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
         Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
         return nullptr;
     }
-    const std::shared_ptr<EnchantProfile> &enchantmentProfile = ProfileSystem::get().EnchantProfileSystem.get_ptr(enchantProfile);
+    const std::shared_ptr<EnchantProfile> &enchantmentProfile = EngineContext::get().profileSystem().getEnchantProfile(enchantProfile);
 
-    if(!ProfileSystem::get().isLoaded(spawnerProfile)) {
+    if(!EngineContext::get().profileSystem().isLoaded(spawnerProfile)) {
         Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
         return nullptr;
     }
@@ -293,13 +294,13 @@ void Object::setLife(const float value)
 
 void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
 {
-    if(!ProfileSystem::get().isLoaded(profileID)) {
+    if(!EngineContext::get().profileSystem().isLoaded(profileID)) {
         Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
         return;
     }
 
     _profileID = profileID;
-    _profile = ProfileSystem::get().getProfile(_profileID);
+    _profile = EngineContext::get().profileSystem().getProfile(_profileID);
 
     //Exit stealth if we change form
     deactivateStealth();

@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/Script/script.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/AI/AStar.hpp"
 #include "egolib/Script/IRuntimeStatistics.hpp"
@@ -204,7 +205,7 @@ void scr_run_chr_script(Object *pchr)
     script_error_model = pchr->getProfileID();
     if (script_error_model != ObjectProfileRef::Invalid)
     {
-        script_error_classname = ProfileSystem::get().getProfile(script_error_model)->getClassName().c_str();
+        script_error_classname = EngineContext::get().profileSystem().getProfile(script_error_model)->getClassName().c_str();
     }
 
     if (debug_scripts && debug_script_file)

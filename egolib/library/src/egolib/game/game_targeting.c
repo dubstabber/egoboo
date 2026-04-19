@@ -21,6 +21,7 @@
 /// @brief AI targeting — target finding and validation for characters and particles
 
 #include "egolib/game/game_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -41,8 +42,8 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 
     facing = idlib::canonicalize(facing);
 
-    if ( !LOADED_PIP( particletype ) ) return ObjectRef::Invalid;
-    ppip = ProfileSystem::get().ParticleProfileSystem.get_ptr( particletype );
+    if ( !EngineContext::get().profileSystem().isParticleProfileLoaded( particletype ) ) return ObjectRef::Invalid;
+    ppip = EngineContext::get().profileSystem().getParticleProfile( particletype );
 
     for(const std::shared_ptr<Object> &pchr : module.getObjectHandler().iterator())
     {

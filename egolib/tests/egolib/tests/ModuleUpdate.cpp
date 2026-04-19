@@ -69,8 +69,8 @@ protected:
             session.quitModule();
         }
 
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
         session.publishLocalPlayerPerception(LocalPlayerPerceptionState{});
     }
 
@@ -87,7 +87,7 @@ protected:
 
     std::shared_ptr<ModuleProfile> findTestModule() const
     {
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (module && module->getFolderName() == "test.mod")
             {
@@ -100,13 +100,13 @@ protected:
 
     ObjectProfileRef loadFollowerProfile(int slot) const
     {
-        return ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", slot);
+        return EngineContext::get().profileSystem().loadOneProfile("mp_objects/follower.obj", slot);
     }
 
     std::shared_ptr<Object> makeObject(GameModule& module, const std::string& profilePath, int slot,
                                        const Ego::Vector3f& position = Ego::Vector3f(64.0f, 64.0f, 0.0f)) const
     {
-        const ObjectProfileRef profile = ProfileSystem::get().loadOneProfile(profilePath, slot);
+        const ObjectProfileRef profile = EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
         EXPECT_NE(profile, ObjectProfileRef::Invalid);
         if (profile == ObjectProfileRef::Invalid)
         {

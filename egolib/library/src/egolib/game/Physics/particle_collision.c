@@ -17,6 +17,7 @@
 //*
 //********************************************************************************************
 #include "egolib/game/Physics/particle_collision.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/physics.h"
@@ -663,7 +664,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     IScriptable& scriptableCharacter = scriptable(*pdata.pchr);
 
     //Get the Profile of the Object that spawned this particle (i.e the weapon itself, not the holder)
-    const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pdata.pprt->getSpawnerProfile());
+    const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(pdata.pprt->getSpawnerProfile());
     if(spawnerProfile != nullptr) { //global particles do not have a spawner profile, so this is possible
         // Check all enchants to see if they are removed
         for(const std::shared_ptr<Ego::Enchantment> &enchant : pdata.pchr->getActiveEnchants()) {
@@ -1384,7 +1385,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
         // Spawn new enchantments
         if (ppip->spawnenchant) 
         {
-            const std::shared_ptr<ObjectProfile> &spawnerProfile = ProfileSystem::get().getProfile(pprt->getSpawnerProfile());
+            const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(pprt->getSpawnerProfile());
             pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), activeModule().getObjectHandler()[pprt->owner_ref], Object::INVALID_OBJECT);
         }
 

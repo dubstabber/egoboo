@@ -315,6 +315,7 @@ set(EGOLIB_PROFILES_SOURCES
     src/egolib/Profiles/EnchantProfileWriter.cpp
     src/egolib/Profiles/EnchantProfileWriter.hpp
     src/egolib/Profiles/GenderProfile.hpp
+    src/egolib/Profiles/IProfileSystem.hpp
     src/egolib/Profiles/_Include.hpp
     src/egolib/Profiles/LocalParticleProfileRef.cpp
     src/egolib/Profiles/LocalParticleProfileRef.hpp

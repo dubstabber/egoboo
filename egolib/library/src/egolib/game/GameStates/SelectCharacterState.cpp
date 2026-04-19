@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/SelectCharacterState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/SelectModuleState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -88,7 +89,7 @@ SelectCharacterState::SelectCharacterState(std::shared_ptr<LoadPlayerElement> &s
 	scrollableList->setPosition(playersLabel->getPosition() + Ego::Vector2f(20, playersLabel->getHeight() + 20));
 
 	//Make a button for each loadable character
-    for (const std::shared_ptr<LoadPlayerElement> &character : ProfileSystem::get().getSavedPlayers())
+    for (const std::shared_ptr<LoadPlayerElement> &character : EngineContext::get().profileSystem().getSavedPlayers())
 	{
 		auto characterButton = std::make_shared<Ego::GUI::IconButton>(character->getName(), character->getIcon());
         characterButton->setSize({ 200, 40 });

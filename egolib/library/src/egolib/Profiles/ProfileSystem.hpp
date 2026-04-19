@@ -26,6 +26,7 @@
 
 #include "egolib/typedef.h"
 #include "egolib/Profiles/LocalParticleProfileRef.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 
 //Forward declarations
 class ObjectProfile;
@@ -57,7 +58,7 @@ struct pro_import_t
 #include "egolib/Profiles/EnchantProfile.hpp"
 #include "egolib/Profiles/ParticleProfile.hpp"
 
-class ProfileSystem : public idlib::singleton<ProfileSystem> {
+class ProfileSystem : public idlib::singleton<ProfileSystem>, public IProfileSystem {
 protected:
     friend idlib::default_new_functor<ProfileSystem>;
     friend idlib::default_delete_functor<ProfileSystem>;
@@ -74,20 +75,20 @@ public:
      * @brief
      *  Reset all profile systems to state (conceptually) equivalent to their states directly after their initialization.
      */
-    void reset();
+    void reset() override;
 
     /// @{
     /// @brief Get if an object profile reference was loaded.
     /// @param ref the object profile reference
     /// @return @a true if the specified object profile reference was loaded, @a false otherwise
-    bool isLoaded(PRO_REF ref) const;
-    bool isLoaded(ObjectProfileRef ref) const;
+    bool isLoaded(PRO_REF ref) const override;
+    bool isLoaded(ObjectProfileRef ref) const override;
     /// @}
 
     /**
      *  @details This function loads one object and returns the object slot
      */
-    ObjectProfileRef loadOneProfile(const std::string &folderPath, int slot_override = -1);
+    ObjectProfileRef loadOneProfile(const std::string &folderPath, int slot_override = -1) override;
 
     /**
      * @brief Loads only the slot number from data.txt
@@ -99,30 +100,30 @@ public:
     /// @brief Get the object profile of a profile reference.
     /// @param ref the object profile reference
     /// @return a pointer to the profile or a null pointer
-    const std::shared_ptr<ObjectProfile>& getProfile(PRO_REF ref) const;
-    const std::shared_ptr<ObjectProfile>& getProfile(ObjectProfileRef ref) const;
+    const std::shared_ptr<ObjectProfile>& getProfile(PRO_REF ref) const override;
+    const std::shared_ptr<ObjectProfile>& getProfile(ObjectProfileRef ref) const override;
     ///@}
 
     const std::shared_ptr<ObjectProfile>& getProfile(const std::string& name) const;
 
-    const Ego::DeferredTexture& getSpellBookIcon(size_t index) const;
+    const Ego::DeferredTexture& getSpellBookIcon(size_t index) const override;
 
     /**
      * Get map of all profiles loaded
      */
-    inline const std::unordered_map<PRO_REF, std::shared_ptr<ObjectProfile>>& getLoadedProfiles() const {
+    inline const std::unordered_map<PRO_REF, std::shared_ptr<ObjectProfile>>& getLoadedProfiles() const override {
         return _profilesLoaded;
     }
 
     /**
      * @brief Scans the module folder and loads all ModuleProfiles (needs only to be done once)
      */
-    void loadModuleProfiles();
+    void loadModuleProfiles() override;
 
     /**
      * @return list of all ModuleProfiles currently loaded
      */
-    const std::vector<std::shared_ptr<ModuleProfile>>& getModuleProfiles() const {
+    const std::vector<std::shared_ptr<ModuleProfile>>& getModuleProfiles() const override {
         return _moduleProfilesLoaded;
     }
 
@@ -132,9 +133,9 @@ public:
      * @brief
      *  Reload list of all possible characters we might load.
      */
-    void loadAllSavedCharacters(const std::string &saveGameDirectory);
+    void loadAllSavedCharacters(const std::string &saveGameDirectory) override;
 
-    const std::vector<std::shared_ptr<LoadPlayerElement>>& getSavedPlayers() const {
+    const std::vector<std::shared_ptr<LoadPlayerElement>>& getSavedPlayers() const override {
         return _loadPlayerList;
     }
 
@@ -142,7 +143,37 @@ public:
      * @brief
      *  This reads in global particles (e.g. money).
      */
-    void loadGlobalParticleProfiles();
+    void loadGlobalParticleProfiles() override;
+
+    bool isParticleProfileLoaded(PIP_REF ref) const override
+    {
+        return ParticleProfileSystem.isLoaded(ref);
+    }
+
+    const std::shared_ptr<ParticleProfile>& getParticleProfile(PIP_REF ref) const override
+    {
+        return ParticleProfileSystem.get_ptr(ref);
+    }
+
+    PIP_REF loadParticleProfile(const std::string& pathname, PIP_REF overrideRef) override
+    {
+        return ParticleProfileSystem.load(pathname, overrideRef);
+    }
+
+    bool isEnchantProfileLoaded(EVE_REF ref) const override
+    {
+        return EnchantProfileSystem.isLoaded(ref);
+    }
+
+    const std::shared_ptr<EnchantProfile>& getEnchantProfile(EVE_REF ref) const override
+    {
+        return EnchantProfileSystem.get_ptr(ref);
+    }
+
+    EVE_REF loadEnchantProfile(const std::string& pathname, EVE_REF overrideRef) override
+    {
+        return EnchantProfileSystem.load(pathname, overrideRef);
+    }
 
 private:
     std::unordered_map<PRO_REF, std::shared_ptr<ObjectProfile>> _profilesLoaded; //Maps slot numbers to ObjectProfiles
@@ -160,4 +191,3 @@ inline bool LOADED_PIP(PIP_REF ref) {
 
 // TODO: Remove this.
 extern pro_import_t import_data;
-

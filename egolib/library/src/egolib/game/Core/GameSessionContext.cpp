@@ -1,4 +1,5 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Profiles/_Include.hpp"
@@ -226,7 +227,7 @@ void GameSessionContext::quitModule()
 
     scripting_system_end();
 
-    ProfileSystem::get().reset();
+    EngineContext::get().profileSystem().reset();
     game_reset_players();
     reset_end_text();
 

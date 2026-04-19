@@ -2,6 +2,7 @@
 /// @brief Character/particle spawning, destruction, and lifecycle management
 
 #include "egolib/game/script_functions_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
@@ -867,7 +868,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
 
     PIP_REF ipip = ppro->getParticlePoofProfile();
     if ( INVALID_PIP_REF == ipip) return false;
-    const std::shared_ptr<ParticleProfile> &ppip = ProfileSystem::get().ParticleProfileSystem.get_ptr(ipip);
+    const std::shared_ptr<ParticleProfile> &ppip = EngineContext::get().profileSystem().getParticleProfile(ipip);
 
     returncode = false;
     if (ppip != nullptr)

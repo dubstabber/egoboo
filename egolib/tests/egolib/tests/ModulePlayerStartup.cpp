@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
@@ -75,8 +76,8 @@ protected:
         }
         game_reset_players();
         vfs_removeDirectoryAndContents(kQuestTestRoot);
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
     }
 
     void TearDown() override
@@ -94,7 +95,7 @@ protected:
     std::shared_ptr<Object> makeFollower(ObjectHandler& objectHandler, int slot) const
     {
         setup_init_module_vfs_paths("mp_modules/test.mod");
-        const ObjectProfileRef profile = ProfileSystem::get().loadOneProfile("mp_objects/follower.obj", slot);
+        const ObjectProfileRef profile = EngineContext::get().profileSystem().loadOneProfile("mp_objects/follower.obj", slot);
         EXPECT_NE(profile, ObjectProfileRef::Invalid);
         if (profile == ObjectProfileRef::Invalid)
         {
@@ -114,7 +115,7 @@ protected:
         EXPECT_TRUE(vfs_exists((profilePath + "/naming.txt").c_str()));
         EXPECT_TRUE(vfs_exists((profilePath + "/tris.md2").c_str()));
 
-        return ProfileSystem::get().loadOneProfile(profilePath, slot);
+        return EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
     }
 
     void writeQuestFile(const std::string& profilePath, const IDSZ2& idsz, int progress) const

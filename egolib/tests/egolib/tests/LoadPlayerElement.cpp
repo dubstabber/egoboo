@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
@@ -55,8 +56,8 @@ protected:
     void SetUp() override
     {
         vfs_removeDirectoryAndContents(kQuestTestRoot);
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
         setup_init_module_vfs_paths("mp_modules/test.mod");
     }
 
@@ -73,14 +74,14 @@ protected:
         EXPECT_TRUE(vfs_exists((profilePath + "/data.txt").c_str()));
         EXPECT_TRUE(vfs_exists((profilePath + "/naming.txt").c_str()));
 
-        const ObjectProfileRef profileRef = ProfileSystem::get().loadOneProfile(profilePath, slot);
+        const ObjectProfileRef profileRef = EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
         EXPECT_NE(profileRef, ObjectProfileRef::Invalid);
         if (profileRef == ObjectProfileRef::Invalid)
         {
             return nullptr;
         }
 
-        return ProfileSystem::get().getProfile(profileRef);
+        return EngineContext::get().profileSystem().getProfile(profileRef);
     }
 };
 

@@ -19,6 +19,7 @@
 /// Phase C of the refactoring plan (document 19).
 
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/FileFormats/map_file.h"
@@ -73,7 +74,7 @@ protected:
 
         s_runtime = std::make_unique<ContentRuntimeBootstrap>(opts);
 
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().loadModuleProfiles();
     }
 
     static void TearDownTestSuite()
@@ -83,7 +84,7 @@ protected:
 
     static std::shared_ptr<ModuleProfile> findModule(const std::string& dirName)
     {
-        for (const auto& mod : ProfileSystem::get().getModuleProfiles())
+        for (const auto& mod : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (mod && mod->getFolderName() == dirName)
             {

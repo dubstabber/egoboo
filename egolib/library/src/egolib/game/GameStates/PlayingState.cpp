@@ -117,7 +117,7 @@ PlayingState::~PlayingState()
         export_all_players(false);
 
         //Reload list of loadable characters
-        ProfileSystem::get().loadAllSavedCharacters("mp_players");
+        EngineContext::get().profileSystem().loadAllSavedCharacters("mp_players");
     }
 
     //Stop music

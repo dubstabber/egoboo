@@ -21,13 +21,14 @@
 /// @brief GameModule content-loading helpers and debug load reporting.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 void GameModule::loadProfiles()
 {
     OverrideSlotsScope moduleSlotOverride(overrideSlots());
 
     //Load the spell book profile
-    ProfileSystem::get().loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
+    EngineContext::get().profileSystem().loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
 
     // Clear the import slots...
     import_data.slot_lst.fill(INVALID_PRO_REF);
@@ -57,7 +58,7 @@ void GameModule::loadProfiles()
                 import_data.slot = cnt;
 
                 // load it
-                import_data.slot_lst[cnt] = ProfileSystem::get().loadOneProfile(importPath).get();
+                import_data.slot_lst[cnt] = EngineContext::get().profileSystem().loadOneProfile(importPath).get();
                 import_data.max_slot      = std::max(import_data.max_slot, cnt);
             }
         }
@@ -150,14 +151,14 @@ void GameModule::logSlotUsage(const std::string& savename)
         vfs_printf(hFileWrite, "Slot usage for objects in last module loaded...\n");
 
         ObjectProfileRef lastSlotNumber(0);
-        for (const auto &element : ProfileSystem::get().getLoadedProfiles())
+        for (const auto &element : EngineContext::get().profileSystem().getLoadedProfiles())
         {
             const std::shared_ptr<ObjectProfile> &profile = element.second;
 
             //ZF> ugh, import objects are currently handled in a weird special way.
             for (ObjectProfileRef i = lastSlotNumber; i < profile->getSlotNumber() && i <= ObjectProfileRef(36); ++i)
             {
-                if (!ProfileSystem::get().isLoaded(i))
+                if (!EngineContext::get().profileSystem().isLoaded(i))
                 {
                     vfs_printf(hFileWrite, "%3" PRIuZ " %32s.\n", i.get(), "Slot reserved for import players");
                 }

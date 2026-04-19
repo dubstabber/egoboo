@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/graphic_mad.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/lighting.h"
@@ -725,7 +726,7 @@ void ObjectGraphicsRenderer::draw_chr_grips( Object * pchr )
 
     if ( !ACTIVE_PCHR( pchr ) ) return;
 
-    const std::shared_ptr<ObjectProfile> &profile = ProfileSystem::get().getProfile(pchr->profile_ref);
+    const std::shared_ptr<ObjectProfile> &profile = EngineContext::get().profileSystem().getProfile(pchr->profile_ref);
 
     pmad = chr_get_pmad( GET_INDEX_PCHR( pchr ) );
     if ( NULL == pmad ) return;

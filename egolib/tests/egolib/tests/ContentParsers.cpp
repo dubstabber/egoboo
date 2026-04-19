@@ -11,6 +11,7 @@
 /// to the content validator tool.
 
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/FileFormats/map_file.h"
@@ -59,7 +60,7 @@ protected:
         s_runtime = std::make_unique<ContentRuntimeBootstrap>(opts);
 
         // Discover modules so that test.mod is reachable.
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().loadModuleProfiles();
     }
 
     static void TearDownTestSuite()
@@ -70,7 +71,7 @@ protected:
     /// Helper: find the ModuleProfile for a given module directory name.
     static std::shared_ptr<ModuleProfile> findModule(const std::string& dirName)
     {
-        for (const auto& mod : ProfileSystem::get().getModuleProfiles())
+        for (const auto& mod : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (mod && mod->getFolderName() == dirName)
             {

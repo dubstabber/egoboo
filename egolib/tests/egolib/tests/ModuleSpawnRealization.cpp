@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
@@ -57,8 +58,8 @@ protected:
 
     void SetUp() override
     {
-        ProfileSystem::get().reset();
-        ProfileSystem::get().loadModuleProfiles();
+        EngineContext::get().profileSystem().reset();
+        EngineContext::get().profileSystem().loadModuleProfiles();
         mountTestModule();
         import_list_t::init(_importList);
         _importData.slot = -1;
@@ -69,7 +70,7 @@ protected:
 
     std::shared_ptr<ModuleProfile> mountTestModule()
     {
-        for (const auto& module : ProfileSystem::get().getModuleProfiles())
+        for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
         {
             if (module && module->getFolderName() == "test.mod")
             {
@@ -82,7 +83,7 @@ protected:
 
     ObjectProfileRef loadProfile(const std::string& objectName, int slot)
     {
-        return ProfileSystem::get().loadOneProfile("mp_objects/" + objectName, slot);
+        return EngineContext::get().profileSystem().loadOneProfile("mp_objects/" + objectName, slot);
     }
 
     std::shared_ptr<Object> makeObject(const std::string& objectName, int slot)
@@ -100,7 +101,7 @@ protected:
         state.playerAmount = MAX_PLAYER;
         state.isProfileLoaded = [](ObjectProfileRef profile)
         {
-            return ProfileSystem::get().isLoaded(profile);
+            return EngineContext::get().profileSystem().isLoaded(profile);
         };
         return state;
     }

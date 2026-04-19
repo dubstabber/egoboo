@@ -19,6 +19,7 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/ObjectHandler.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Entities/Object.hpp"
 
@@ -99,7 +100,7 @@ bool ObjectHandler::exists(ObjectRef ref) const {
 std::shared_ptr<Object> ObjectHandler::insert(ObjectProfileRef profileRef, ObjectRef overrideRef)
 {
 	// Make sure the profile is valid.
-	if (!ProfileSystem::get().isLoaded(profileRef)) {
+	if (!EngineContext::get().profileSystem().isLoaded(profileRef)) {
 		Log::get() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "tried to spawn object with invalid profile reference ", profileRef, Log::EndOfEntry);
 		return nullptr;
 	}

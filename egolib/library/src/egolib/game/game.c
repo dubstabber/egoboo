@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/game_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 EndText g_endText;
 
@@ -64,7 +65,7 @@ void game_load_module_profiles( const std::string& modname )
 
     while (ctxt->hasData()) {
         auto searchResult = ctxt->getData();
-        ProfileSystem::get().loadOneProfile(searchResult.string());
+        EngineContext::get().profileSystem().loadOneProfile(searchResult.string());
         ctxt->nextData();
     }
     delete ctxt;
