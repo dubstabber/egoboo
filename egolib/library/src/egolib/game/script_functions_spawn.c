@@ -11,6 +11,11 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
+IDamageable& damageable(Object& object)
+{
+    return object;
+}
+
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
 {
     child.setAIPassage(self.passage);
@@ -460,7 +465,7 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
 
     if (ObjectRef::Invalid != self.child)
     {
-        objectHandler()[self.child]->setAIStateValue(state.argument);
+        scriptable(*objectHandler()[self.child]).setAIStateValue(state.argument);
     }
 
     SCRIPT_FUNCTION_END();
@@ -800,7 +805,7 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
+    damageable(*pchr).setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1134,7 +1139,7 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setInvincible(true);
+    damageable(*pchr).setInvincible(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1149,7 +1154,7 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setInvincible(false);
+    damageable(*pchr).setInvincible(false);
 
     SCRIPT_FUNCTION_END();
 }

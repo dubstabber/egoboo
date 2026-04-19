@@ -388,6 +388,12 @@ Completed the sixth T1.3 singleton/service cleanup without introducing a new int
 
 Migrated the remaining non-subsystem `Log::get()` callers in `Core/System.cpp`, `Math/Standard.hpp`, `fileutil.h`, and `Profiles/_AbstractProfileSystem.hpp` onto the new routing helper. Extended `EngineContext` regression coverage to pin the new helper's no-target, installed-target, and clear-target behavior. Build, targeted tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 95 — Script helper role sweep (2026-04-19)
+
+Continued T1.2 inside the legacy script helper layer by migrating role-pure state, holder-alert, and invictus/damage-timer helpers in `script_functions_spawn.c` and `script_functions_state.c` onto `IScriptable` / `IDamageable`. Added the missing `IDamageable::setInvincible(...)` write-side seam so invictus helpers no longer need the concrete `Object` type.
+
+Added `ScriptStateFunctions.cpp` coverage for state publication, child-state/content publication, holder-blocked target propagation, damage-timer publication, and invictus toggling. Kept `Script/script.c` untouched and preserved `Ego::Script::runtimeState(...)` as the only raw script-runtime bridge.
+
 ---
 
 ## Files touched most by this pass log

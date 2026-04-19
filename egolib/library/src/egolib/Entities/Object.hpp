@@ -524,7 +524,7 @@ public:
 
     bool isInvincible() const override {return invictus;}
 
-    void setInvincible(bool invincible) { invictus = invincible; }
+    void setInvincible(bool invincible) override { invictus = invincible; }
 
     bool isKursed() const { return iskursed; }
 

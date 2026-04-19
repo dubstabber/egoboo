@@ -3,6 +3,13 @@
 
 #include "egolib/game/script_functions_internal.h"
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+}
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -213,7 +220,7 @@ uint8_t scr_SetState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setAIStateValue(state.argument);
+    scriptable(*pchr).setAIStateValue(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1365,11 +1372,12 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     if ( objectHandler().exists( iattached ) )
     {
-        BIT_FIELD bits = objectHandler().get(iattached)->getAIAlertBits();
+        IScriptable& attached = scriptable(*objectHandler().get(iattached));
+        BIT_FIELD bits = attached.getAIAlertBits();
 
         if ( HAS_SOME_BITS( bits, ALERTIF_BLOCKED ) )
         {
-            auto iLastAttacker = objectHandler().get(iattached)->getAILastAttacker();
+            auto iLastAttacker = attached.getAILastAttacker();
 
             if ( objectHandler().exists(iLastAttacker) )
             {

@@ -14,6 +14,7 @@ public:
     virtual ObjectRef getObjRef() const = 0;
     virtual bool isAlive() const = 0;
     virtual bool isInvincible() const = 0;
+    virtual void setInvincible(bool invincible) = 0;
 
     virtual uint8_t getDamageTimer() const = 0;
     virtual void setDamageTimer(uint8_t timer) = 0;
