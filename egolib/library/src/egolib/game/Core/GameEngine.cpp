@@ -35,6 +35,14 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
 
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 //Declaration of class constants
 const uint32_t GameEngine::GAME_TARGET_FPS;
 const uint32_t GameEngine::GAME_TARGET_UPS;
@@ -510,7 +518,7 @@ void GameEngine::pollEvents()
     while (SDL_PollEvent(&event))
     {
         // Console has first say in events.
-        if (egoboo_config_t::get().debug_developerMode_enable.getValue())
+        if (config().debug_developerMode_enable.getValue())
         {
             if (!Ego::Core::Console::get().handle_event(&event))
             {

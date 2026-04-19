@@ -42,6 +42,11 @@ namespace
 {
 using namespace gfx_internal;
 
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 float draw_fps(float y)
 {
     parser_state_t& ps = parser_state_t::get();
@@ -51,7 +56,7 @@ float draw_fps(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "SCRIPT ERROR ( see \"/debug/log.txt\" )", 0, 1.0f);
     }
 
-    if (egoboo_config_t::get().hud_displayFramesPerSecond.getValue())
+    if (config().hud_displayFramesPerSecond.getValue())
     {
         std::ostringstream os;
         os.setf(std::ios_base::fixed, std::ios_base::floatfield);
@@ -60,7 +65,7 @@ float draw_fps(float y)
            << engine().getFrameSkip() << " update lag";
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0.0f, 1.0f);
 
-        if (egoboo_config_t::get().debug_developerMode_enable.getValue())
+        if (config().debug_developerMode_enable.getValue())
         {
             /** @todo This should be made available through the GUI. Too much information just to print out things on screen. */
         }
@@ -105,7 +110,7 @@ float draw_help(float y)
 
 float draw_debug(float y)
 {
-    if (!egoboo_config_t::get().debug_developerMode_enable.getValue())
+    if (!config().debug_developerMode_enable.getValue())
     {
         return y;
     }
@@ -244,7 +249,7 @@ float draw_game_status(float y)
     {
         if (GameSessionContext::get().allLocalPlayersDead() || activeModule().canRespawnAnyTime())
         {
-            if (activeModule().isRespawnValid() && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
+            if (activeModule().isRespawnValid() && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
             {
                 y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "PRESS SPACE TO RESPAWN");
             }

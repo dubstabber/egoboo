@@ -27,6 +27,11 @@ int chr_pressure_tests = 0;
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 IScriptable& scriptable(Object& object)
 {
     return object;
@@ -117,13 +122,13 @@ void MainLoop::readPlayerInput()
         if (Ego::Input::InputSystem::get().isKeyDown(SDLK_SPACE)
             && (session.allLocalPlayersDead() || module.canRespawnAnyTime())
             && module.isRespawnValid()
-            && egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
+            && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
         {
             respawnRequested = true;
         }
 
         // Let players respawn
-        if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
+        if (config().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
         {
             if (!pchr->isAlive() && 0 == session.respawnCooldown())
             {
@@ -136,7 +141,7 @@ void MainLoop::readPlayerInput()
                 pchr->setExperience(pchr->getExperience() * EXPKEEP);
 
                 //Also lose some gold in non-easy modes
-                if (egoboo_config_t::get().game_difficulty.getValue() > Ego::GameDifficulty::Easy) {
+                if (config().game_difficulty.getValue() > Ego::GameDifficulty::Easy) {
                     pchr->giveMoney(-pchr->getMoney() * EXPKEEP);
                 }
             }
@@ -165,7 +170,7 @@ void MainLoop::check_stats()
         return;
 
     // Show map cheat
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_m) && Ego::Input::InputSystem::get().isKeyDown(SDLK_LSHIFT))
+    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_m) && Ego::Input::InputSystem::get().isKeyDown(SDLK_LSHIFT))
     {
         std::shared_ptr<PlayingState> playingState = activePlayingState();
         playingState->getMiniMap()->setVisible(true);
@@ -174,7 +179,7 @@ void MainLoop::check_stats()
     }
 
     // XP CHEAT
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue() &&
+    if (config().debug_developerMode_enable.getValue() &&
         Ego::Input::InputSystem::get().isKeyDown(SDLK_x))
     {
         PLA_REF docheat = INVALID_PLA_REF;
@@ -199,7 +204,7 @@ void MainLoop::check_stats()
     }
 
     // LIFE CHEAT
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_z))
+    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_z))
     {
         PLA_REF docheat = INVALID_PLA_REF;
 

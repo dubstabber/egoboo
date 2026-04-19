@@ -23,6 +23,14 @@
 #include "egolib/game/Module/Module_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint32_t seed) :
     _moduleProfile(profile),
     _gameObjects(),
@@ -131,7 +139,7 @@ void GameModule::loadModuleContent()
 void GameModule::finalizeModuleInitialization()
 {
     // log debug info for every object loaded into the module
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue()) {
+    if (config().debug_developerMode_enable.getValue()) {
         logSlotUsage("/debug/slotused.txt");
     }
 

@@ -412,6 +412,12 @@ Continued the `egoboo_config_t` Tier 1.3 seam by migrating the remaining read-mo
 
 Extended `ConfigReadMostly.cpp` with focused `MessageLog` coverage that pins installed-config reads and updates for HUD message duration and simultaneous-message limits without widening the runtime-facing GUI API.
 
+### Pass 99 — Gameplay / render read-mostly config migration (2026-04-19)
+
+Continued the `egoboo_config_t` Tier 1.3 seam by migrating the remaining non-subsystem gameplay, render, script, engine-event, and module-finalization readers onto `EngineContext::get().config()`: combat difficulty/feedback gates, respawn and HUD/debug checks, fog-script toggles, footfall FX gating, script-visible difficulty reads, console-event gating, and module slot-usage debug logging no longer reach directly for `egoboo_config_t::get()`.
+
+Extended `ConfigReadMostly.cpp` and `ScriptStateFunctions.cpp` with focused coverage for installed-config difficulty reads and fog-script toggle behavior. Subsystem-local bootstrap/lifecycle seams and the write-heavy audio/video options screens remain deferred.
+
 ---
 
 ## Files touched most by this pass log

@@ -26,6 +26,14 @@
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/Module_spawn_realization.hpp"
 
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 ObjectRef GameModule::getShopOwner(const float x, const float y)
 {
     // Loop through every passage.
@@ -195,11 +203,11 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     if (ppro->isItem())
     {
         uint16_t kursechance = ppro->getKurseChance();
-        if (egoboo_config_t::get().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
+        if (config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
         {
             kursechance *= 2.0f;  // Hard mode doubles chance for Kurses
         }
-        if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Normal && kursechance != 100)
+        if (config().game_difficulty.getValue() < Ego::GameDifficulty::Normal && kursechance != 100)
         {
             kursechance *= 0.5f;  // Easy mode halves chance for Kurses
         }
@@ -249,7 +257,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     pchr->setSkin(pchr->getBaseSkin());
 
     // override the default behavior for an "easy" game
-    if (egoboo_config_t::get().game_difficulty.getValue() < Ego::GameDifficulty::Normal)
+    if (config().game_difficulty.getValue() < Ego::GameDifficulty::Normal)
     {
         pchr->setLife(pchr->getAttribute(Ego::Attribute::MAX_LIFE));
         pchr->setMana(pchr->getAttribute(Ego::Attribute::MAX_MANA));

@@ -4,6 +4,14 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
@@ -1069,7 +1077,7 @@ uint8_t scr_SetFogLevel( script_state_t& state, ai_state_t& self )
     fTmp = ( Ego::Script::Interpreter::safeCast<float>(state.argument) / 10.0f ) - fog._top;
     fog._top += fTmp;
     fog._distance += fTmp;
-    fog._on = egoboo_config_t::get().graphic_fog_enable.getValue();
+    fog._on = config().graphic_fog_enable.getValue();
 	if (fog._distance < 1.0f)  fog._on = false;
 
     SCRIPT_FUNCTION_END();
@@ -1129,7 +1137,7 @@ uint8_t scr_SetFogBottomLevel( script_state_t& state, ai_state_t& self )
 	fTmp = (state.argument / 10.0f) - fog._bottom;
     fog._bottom += fTmp;
     fog._distance -= fTmp;
-    fog._on = egoboo_config_t::get().graphic_fog_enable.getValue();
+    fog._on = config().graphic_fog_enable.getValue();
 	if (fog._distance < 1.0f)  fog._on = false;
 
     SCRIPT_FUNCTION_END();

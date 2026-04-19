@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h" //only for character_swipe()
@@ -14,6 +15,10 @@ static constexpr float FLIP_TOLERANCE = 0.25f * 0.5f;
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
 
 struct TintRenderState
 {
@@ -1042,7 +1047,7 @@ bool ObjectGraphics::handleAnimationFX() const
     }
 
     //Do footfall sound effect
-    if (egoboo_config_t::get().sound_footfallEffects_enable.getValue() && HAS_SOME_BITS(framefx, MADFX_FOOTFALL))
+    if (config().sound_footfallEffects_enable.getValue() && HAS_SOME_BITS(framefx, MADFX_FOOTFALL))
     {
         AudioSystem::get().playSound(_object.getPosition(), _object.getProfile()->getFootFallSound());
     }

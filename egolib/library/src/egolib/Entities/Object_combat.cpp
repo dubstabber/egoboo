@@ -21,9 +21,15 @@
 /// @brief Combat- and progression-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
 {
     if (listener.getAITarget() == targetRef)
@@ -36,7 +42,7 @@ void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
 int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
                    const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
 {
-    bool do_feedback = (Ego::FeedbackType::None != egoboo_config_t::get().hud_feedback.getValue());
+    bool do_feedback = (Ego::FeedbackType::None != config().hud_feedback.getValue());
 
     // Simply ignore damaging invincible targets.
     if(invictus && !ignoreInvictus)
@@ -147,13 +153,13 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
         if ( 0 == damage_timer || ignoreInvictus )
         {
             // Normal mode reduces damage dealt by monsters with 30%!
-            if (egoboo_config_t::get().game_difficulty.getValue() == Ego::GameDifficulty::Normal && isPlayer())
+            if (config().game_difficulty.getValue() == Ego::GameDifficulty::Normal && isPlayer())
             {
                 actual_damage *= 0.70f;
             }
 
             // Easy mode deals 25% extra actual damage by players and 50% less to players
-            if (attacker && egoboo_config_t::get().game_difficulty.getValue() <= Ego::GameDifficulty::Easy)
+            if (attacker && config().game_difficulty.getValue() <= Ego::GameDifficulty::Easy)
             {
                 if ( attacker->isPlayer()  && !isPlayer() ) actual_damage *= 1.25f;
                 if ( !attacker->isPlayer() &&  isPlayer() ) actual_damage *= 0.5f;
@@ -584,11 +590,11 @@ void Object::giveExperience(const int amount, const XPType xptype, const bool ov
         newamount *= 1.00f + intadd;
 
         // Apply XP bonus/penality depending on game difficulty
-        if (egoboo_config_t::get().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
+        if (config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
         {
             newamount *= 1.20f; // 20% extra on hard
         }
-        else if (egoboo_config_t::get().game_difficulty.getValue() >= Ego::GameDifficulty::Normal)
+        else if (config().game_difficulty.getValue() >= Ego::GameDifficulty::Normal)
         {
             newamount *= 1.10f; // 10% extra on normal
         }
@@ -624,7 +630,7 @@ bool Object::costMana(int amount, const ObjectRef killer)
         {
             _currentLife -= FP8_TO_FLOAT(manaDebt);
 
-            if (_currentLife <= 0 && egoboo_config_t::get().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
+            if (_currentLife <= 0 && config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
             {
                 kill(pkiller != nullptr ? pkiller : activeModule().getObjectHandler()[this->getObjRef()], false);
             }

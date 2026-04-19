@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/graphic_prt.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/game.h"
@@ -30,6 +31,14 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Graphics/VertexFormat.hpp"
+
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
 
 float ParticleGraphicsRenderer::CALCULATE_PRT_U0(const Ego::Texture& texture, int CNT) {
     float w = texture.getSourceWidth();
@@ -492,7 +501,7 @@ void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Partic
     //if ( 50 != loc_ppip->vel_hrz_pair.base ) return;
 
     // draw the object bounding box as a part of the graphics debug mode F7
-    if ((egoboo_config_t::get().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7)))
+    if ((config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7)))
     {
         // copy the bounding volume
         oct_bb_t tmp_bb = particle->prt_max_cv;

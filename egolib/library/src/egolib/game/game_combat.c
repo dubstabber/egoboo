@@ -29,6 +29,11 @@
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 IScriptable& scriptable(Object& object)
 {
     return object;
@@ -124,7 +129,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     {
         // This character can't use this iweapon
         pweapon->setReloadTimer(ONESECOND);
-        if (pchr->getShowStatus() || egoboo_config_t::get().debug_developerMode_enable.getValue())
+        if (pchr->getShowStatus() || config().debug_developerMode_enable.getValue())
         {
             // Tell the player that they can't use this iweapon
             DisplayMsg_printf("%s can't use this item...", pchr->getName(false, true, true).c_str());

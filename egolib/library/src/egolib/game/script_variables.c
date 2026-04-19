@@ -2,12 +2,18 @@
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Script/script.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
 namespace
 {
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+
 GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
@@ -487,7 +493,7 @@ int32_t load_VARTARGETARMOR(script_state_t& scriptState, ai_state_t& aiState, Ob
 
 int32_t load_VARDIFFICULTY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return static_cast<uint32_t>(egoboo_config_t::get().game_difficulty.getValue());
+    return static_cast<uint32_t>(config().game_difficulty.getValue());
 }
 
 int32_t load_VARTIMEHOURS(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)

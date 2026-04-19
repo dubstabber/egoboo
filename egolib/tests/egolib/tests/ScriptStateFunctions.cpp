@@ -249,4 +249,37 @@ TEST_F(ScriptStateFunctionsFixture, EnableAndDisableInvictusUseDamageableRole)
     EXPECT_FALSE(actor->isInvincible());
 }
 
+TEST_F(ScriptStateFunctionsFixture, SetFogFunctionsRespectInstalledConfigToggle)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5561);
+
+    ASSERT_NE(actor, nullptr);
+
+    auto& config = EngineContext::get().config();
+    const bool previousFogEnabled = config.graphic_fog_enable.getValue();
+    auto& fog = GameSessionContext::get().fog();
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    state.argument = 30;
+    fog._top = 0.0f;
+    fog._bottom = 0.0f;
+    fog._distance = 10.0f;
+
+    config.graphic_fog_enable.setValue(false);
+    EXPECT_TRUE(scr_SetFogLevel(state, self));
+    EXPECT_FALSE(fog._on);
+
+    config.graphic_fog_enable.setValue(true);
+    EXPECT_TRUE(scr_SetFogLevel(state, self));
+    EXPECT_TRUE(fog._on);
+
+    state.argument = 10;
+    EXPECT_TRUE(scr_SetFogBottomLevel(state, self));
+    EXPECT_TRUE(fog._on);
+
+    config.graphic_fog_enable.setValue(previousFogEnabled);
+}
+
 } // namespace

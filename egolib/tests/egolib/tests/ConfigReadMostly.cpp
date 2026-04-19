@@ -4,11 +4,13 @@
 #include "egolib/game/GUI/MessageLog.hpp"
 #undef private
 #include "egolib/Renderer/RendererInfo.hpp"
+#include "egolib/Script/script.h"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Module/Fog.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
+#include "egolib/game/script_variables.h"
 
 #include <string>
 
@@ -213,6 +215,22 @@ TEST_F(InstalledConfigFixture, MessageLogReadsInstalledConfigForDurationAndLimit
 
     EXPECT_EQ(messageLog.messageDurationTicks(), 1250u);
     EXPECT_EQ(messageLog.messageLimit(), 3u);
+}
+
+TEST_F(InstalledConfigFixture, ScriptDifficultyReadUsesInstalledConfig)
+{
+    installConfig();
+
+    script_state_t scriptState{};
+    ai_state_t aiState{};
+
+    config.game_difficulty.setValue(Ego::GameDifficulty::Hard);
+    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, nullptr, nullptr, nullptr, nullptr),
+              static_cast<uint32_t>(Ego::GameDifficulty::Hard));
+
+    config.game_difficulty.setValue(Ego::GameDifficulty::Easy);
+    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, nullptr, nullptr, nullptr, nullptr),
+              static_cast<uint32_t>(Ego::GameDifficulty::Easy));
 }
 
 } // namespace

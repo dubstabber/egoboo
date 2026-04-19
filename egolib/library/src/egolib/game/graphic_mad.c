@@ -31,6 +31,15 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Graphics/DefaultMd2ModelRenderer.hpp"
 
+namespace
+{
+[[maybe_unused]]
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
+
 struct Md2VertexBuffer {
     static void render(GLenum mode, size_t start, size_t length) {
         auto& md2ModelRenderer = GFX::get().getMd2ModelRenderer();
@@ -584,7 +593,7 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
     static constexpr bool drawCharacter = true;
     
     // Draw the object bounding box as a part of the graphics debug mode F7.
-    if (egoboo_config_t::get().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7))
+    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7))
     {
         Ego::Renderer::get().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
