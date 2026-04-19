@@ -360,10 +360,60 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThro
     EXPECT_EQ(self.getTarget(), attacker->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, IfBackstabbedReadsLastAttackerThroughScriptableRole)
+{
+    auto& module = beginActiveTestModule();
+    auto victim = makeObject(module, "mp_objects/follower.obj", 5590);
+    auto staleAiAttacker = makeObject(module, "mp_objects/follower.obj", 5591);
+    auto backstabber = makeObject(module, "mp_objects/follower.obj", 5592);
+
+    ASSERT_NE(victim, nullptr);
+    ASSERT_NE(staleAiAttacker, nullptr);
+    ASSERT_NE(backstabber, nullptr);
+
+    backstabber->addPerk(Ego::Perks::BACKSTAB);
+    victim->setAILastAttacker(backstabber->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(victim);
+    self.alert = ALERTIF_ATTACKED;
+    self.directionlast = ATK_BEHIND;
+    self.damagetypelast = DamageType::DAMAGE_SLASH;
+    self.setLastAttacker(staleAiAttacker->getObjRef());
+
+    EXPECT_TRUE(scr_IfBackstabbed(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfBackstabbedFailsWhenScriptableLastAttackerIsMissingOrTerminated)
+{
+    auto& module = beginActiveTestModule();
+    auto victim = makeObject(module, "mp_objects/follower.obj", 5593);
+    auto attacker = makeObject(module, "mp_objects/follower.obj", 5594);
+
+    ASSERT_NE(victim, nullptr);
+    ASSERT_NE(attacker, nullptr);
+
+    attacker->addPerk(Ego::Perks::BACKSTAB);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(victim);
+    self.alert = ALERTIF_ATTACKED;
+    self.directionlast = ATK_BEHIND;
+    self.damagetypelast = DamageType::DAMAGE_SLASH;
+    self.setLastAttacker(attacker->getObjRef());
+
+    victim->setAILastAttacker(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_IfBackstabbed(state, self));
+
+    victim->setAILastAttacker(attacker->getObjRef());
+    attacker->requestTerminate();
+    EXPECT_FALSE(scr_IfBackstabbed(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfInvisibleReadsAlphaThroughRenderableRole)
 {
     auto& module = beginActiveTestModule();
-    auto actor = makeObject(module, "mp_objects/follower.obj", 5536);
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5595);
 
     ASSERT_NE(actor, nullptr);
 
@@ -380,8 +430,8 @@ TEST_F(ScriptStateFunctionsFixture, IfInvisibleReadsAlphaThroughRenderableRole)
 TEST_F(ScriptStateFunctionsFixture, IfUnarmedReadsHeldSlotsThroughInventoryHolderRole)
 {
     auto& module = beginActiveTestModule();
-    auto actor = makeObject(module, "mp_objects/follower.obj", 5537);
-    auto leftHandItem = makeObject(module, "mp_objects/follower.obj", 5538);
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5596);
+    auto leftHandItem = makeObject(module, "mp_objects/follower.obj", 5597);
 
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(leftHandItem, nullptr);

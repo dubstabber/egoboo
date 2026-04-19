@@ -1472,7 +1472,8 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
     if ( HAS_SOME_BITS( self.alert, ALERTIF_ATTACKED ) )
     {
         //Who is the dirty backstabber?
-        Object *pLastAttacker = objectHandler().get( self.getLastAttacker() );
+        const ObjectRef lastAttackerRef = static_cast<const IScriptable&>(*pchr).getAILastAttacker();
+        Object *pLastAttacker = objectHandler().get(lastAttackerRef);
         if (!pLastAttacker || pLastAttacker->isTerminated()) return false;
 
         //Only if hit from behind

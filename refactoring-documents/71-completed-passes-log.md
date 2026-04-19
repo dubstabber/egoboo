@@ -508,6 +508,12 @@ Finished the remaining Tier 1.3 config cleanup inside subsystem-local runtime co
 
 Extended `ConfigReadMostly.cpp` with focused regressions covering installed-config image-loader registration and particle display-limit initialization. Build, focused config/engine-context tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 115 — Backstab last-attacker role closure (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_state.c` by routing `scr_IfBackstabbed()` through the landed `IScriptable::getAILastAttacker()` seam instead of reading the raw attacker ref from `ai_state_t`. Kept the existing behind-angle, physical-damage, and terminated-attacker semantics unchanged while avoiding any new role widening.
+
+Extended `ScriptStateFunctions.cpp` with focused regressions covering the scriptable last-attacker source of truth plus missing/terminated attacker failure behavior. Build, the focused script-state test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
