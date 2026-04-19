@@ -163,11 +163,10 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
-        std::shared_ptr<Object> sissy = pchr->getTeam().getSissy();
-
-        if ( sissy )
+        const ObjectRef sissyRef = pchr->getTeam().getSissyRef();
+        if ( objectHandler().exists(sissyRef) )
         {
-            self.setTarget(sissy->getObjRef());
+            self.setTarget(sissyRef);
         }
         else
         {
@@ -446,11 +445,10 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
-        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->getTeamRef()].getLeader();
-
-        if ( leader )
+        const ObjectRef leaderRef = activeModule().getTeamList()[pchr->getTeamRef()].getLeaderRef();
+        if ( objectHandler().exists(leaderRef) )
         {
-            IScriptable* scriptableLeader = tryScriptable(leader->getObjRef());
+            IScriptable* scriptableLeader = tryScriptable(leaderRef);
             if (scriptableLeader == nullptr)
             {
                 return false;
@@ -509,10 +507,10 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     returncode = false;
     if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
     {
-        const std::shared_ptr<Object> &leader = activeModule().getTeamList()[pchr->getTeamRef()].getLeader();
-        if ( leader )
+        const ObjectRef leaderRef = activeModule().getTeamList()[pchr->getTeamRef()].getLeaderRef();
+        if ( objectHandler().exists(leaderRef) )
         {
-            self.setTarget(leader->getObjRef());
+            self.setTarget(leaderRef);
             returncode = true;
         }
     }
@@ -951,13 +949,15 @@ uint8_t scr_IfTargetIsDefending( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the target is holding up a shield or similar
     /// defense
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ACTION_IS_TYPE( pself_target->getCurrentAnimation(), P );
+    returncode = ACTION_IS_TYPE(targetInfo->getCurrentAnimation(), P);
 
     SCRIPT_FUNCTION_END();
 }
@@ -970,13 +970,15 @@ uint8_t scr_IfTargetIsAttacking( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is doing an attack action
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isAttacking();
+    returncode = targetInfo->isAttacking();
 
     SCRIPT_FUNCTION_END();
 }
@@ -989,13 +991,15 @@ uint8_t scr_IfTargetIsKursed( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is kursed
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = pself_target->isKursed();
+    returncode = targetInfo->isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1153,8 +1157,6 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is more or less facing its
     /// target
-
-    Object *  pself_target;
 
     SCRIPT_FUNCTION_BEGIN();
 
@@ -1319,13 +1321,16 @@ uint8_t scr_IfTargetIsSneaking( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is doing ACTION_WA or ACTION_DA
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    if (targetInfo == nullptr)
+    {
+        return false;
+    }
 
-    returncode = ( pself_target->getCurrentAnimation() == ACTION_DA || pself_target->getCurrentAnimation() == ACTION_WA );
+    const ModelAction currentAnimation = targetInfo->getCurrentAnimation();
+    returncode = ( currentAnimation == ACTION_DA || currentAnimation == ACTION_WA );
 
     SCRIPT_FUNCTION_END();
 }

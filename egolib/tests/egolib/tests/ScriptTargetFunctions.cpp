@@ -358,6 +358,104 @@ TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesReadThroughRoleSurface)
     EXPECT_EQ(state.argument, 9);
 }
 
+TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5337);
+    auto leader = makeObject(module, "mp_objects/follower.obj", 5338);
+    auto sissy = makeObject(module, "mp_objects/follower.obj", 5339);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5340);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leader, nullptr);
+    ASSERT_NE(sissy, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    constexpr TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_GOOD);
+    actor->setTeamRef(teamRef);
+    actor->setBaseTeamRef(teamRef);
+    leader->setTeamRef(teamRef);
+    leader->setBaseTeamRef(teamRef);
+    sissy->setTeamRef(teamRef);
+    sissy->setBaseTeamRef(teamRef);
+
+    auto& team = module.getTeamList()[teamRef];
+    team.setLeader(leader);
+    team.callForHelp(sissy);
+
+    IScriptable& scriptableLeader = *leader;
+    scriptableLeader.setAITarget(target->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    EXPECT_TRUE(scr_SetTargetToLeader(state, self));
+    EXPECT_EQ(self.getTarget(), leader->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_SetTargetToTargetOfLeader(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_SetTargetToWhoeverCalledForHelp(state, self));
+    EXPECT_EQ(self.getTarget(), sissy->getObjRef());
+
+    team.setLeader(nullptr);
+    team._sissy.reset();
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetToLeader(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetToTargetOfLeader(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetToWhoeverCalledForHelp(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptTargetFunctionsFixture, TargetAnimationPredicatesReadThroughRoleSurface)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5345);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5346);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    target->inst._currentAnimation = ACTION_PA;
+    target->inst._nextAnimation = ACTION_PA;
+    EXPECT_TRUE(scr_IfTargetIsDefending(state, self));
+
+    target->inst._currentAnimation = ACTION_UA;
+    target->inst._nextAnimation = ACTION_UA;
+    EXPECT_TRUE(scr_IfTargetIsAttacking(state, self));
+
+    target->setKursed(true);
+    EXPECT_TRUE(scr_IfTargetIsKursed(state, self));
+
+    target->inst._currentAnimation = ACTION_DA;
+    target->inst._nextAnimation = ACTION_DA;
+    EXPECT_TRUE(scr_IfTargetIsSneaking(state, self));
+
+    target->inst._currentAnimation = ACTION_WA;
+    target->inst._nextAnimation = ACTION_WA;
+    EXPECT_TRUE(scr_IfTargetIsSneaking(state, self));
+
+    target->inst._currentAnimation = ACTION_MG;
+    target->inst._nextAnimation = ACTION_MG;
+    target->setKursed(false);
+    EXPECT_FALSE(scr_IfTargetIsDefending(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAttacking(state, self));
+    EXPECT_FALSE(scr_IfTargetIsKursed(state, self));
+    EXPECT_FALSE(scr_IfTargetIsSneaking(state, self));
+}
+
 TEST_F(ScriptTargetFunctionsFixture, MountAndWeaponQueriesUseTargetInfoRoleSurface)
 {
     auto& module = beginActiveTestModule();

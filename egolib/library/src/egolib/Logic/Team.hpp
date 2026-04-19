@@ -52,6 +52,8 @@ public:
     **/
 	std::shared_ptr<Object> getLeader() const;
 
+    ObjectRef getLeaderRef() const;
+
     /**
     * @brief
     *   Change the leader of this team
@@ -76,6 +78,8 @@ public:
     *   called or the caller has died.
     **/
     std::shared_ptr<Object> getSissy() const;
+
+    ObjectRef getSissyRef() const;
 
     /**
     * @brief

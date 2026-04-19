@@ -659,6 +659,31 @@ TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getDismountObject(), ObjectRef(21));
 }
 
+TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationAndCombatStateQueries)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 30504);
+    ASSERT_NE(object, nullptr);
+
+    const ITargetInfo& targetInfo = *object;
+
+    object->inst._currentAnimation = ACTION_UA;
+    object->inst._nextAnimation = ACTION_UA;
+    object->setKursed(true);
+
+    EXPECT_EQ(targetInfo.getCurrentAnimation(), ACTION_UA);
+    EXPECT_TRUE(targetInfo.isAttacking());
+    EXPECT_TRUE(targetInfo.isKursed());
+
+    object->inst._currentAnimation = ACTION_DA;
+    object->inst._nextAnimation = ACTION_DA;
+    object->setKursed(false);
+
+    EXPECT_EQ(targetInfo.getCurrentAnimation(), ACTION_DA);
+    EXPECT_FALSE(targetInfo.isAttacking());
+    EXPECT_FALSE(targetInfo.isKursed());
+}
+
 TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)
 {
     auto& objectHandler = beginActiveTestModule();

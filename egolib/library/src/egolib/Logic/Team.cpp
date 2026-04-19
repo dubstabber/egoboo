@@ -82,6 +82,12 @@ std::shared_ptr<Object> Team::getLeader() const
 	return _leader.lock();
 }
 
+ObjectRef Team::getLeaderRef() const
+{
+    const std::shared_ptr<Object> leader = _leader.lock();
+    return leader ? leader->getObjRef() : ObjectRef::Invalid;
+}
+
 void Team::setLeader(const std::shared_ptr<Object> &object)
 {
 	_leader = object;
@@ -104,6 +110,12 @@ void Team::callForHelp(const std::shared_ptr<Object> &caller)
 std::shared_ptr<Object> Team::getSissy() const
 {
     return _sissy.lock();
+}
+
+ObjectRef Team::getSissyRef() const
+{
+    const std::shared_ptr<Object> sissy = _sissy.lock();
+    return sissy ? sissy->getObjRef() : ObjectRef::Invalid;
 }
 
 void Team::makeAlliance(const Team &other)

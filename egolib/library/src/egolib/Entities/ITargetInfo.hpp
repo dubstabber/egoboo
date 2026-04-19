@@ -13,12 +13,15 @@ public:
     virtual bool isAlive() const = 0;
     virtual bool isPlayer() const = 0;
     virtual Gender getGender() const = 0;
+    virtual ModelAction getCurrentAnimation() const = 0;
 
     virtual bool isMount() const = 0;
     virtual bool isPlatform() const = 0;
     virtual bool isFlying() const = 0;
     virtual bool isHurt() const = 0;
     virtual bool hasNotFullMana() const = 0;
+    virtual bool isAttacking() const = 0;
+    virtual bool isKursed() const = 0;
 
     virtual bool canSeeInvisible() const = 0;
     virtual bool canSeeKurses() const = 0;

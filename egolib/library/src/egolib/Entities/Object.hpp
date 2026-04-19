@@ -370,7 +370,7 @@ public:
 
     void setActionLooped(bool val) { inst.setActionLooped(val); }
 
-    ModelAction getCurrentAnimation() const { return inst.getCurrentAnimation(); }
+    ModelAction getCurrentAnimation() const override { return inst.getCurrentAnimation(); }
 
     void setAnimationSpeed(float rate) { inst.setAnimationSpeed(rate); }
 
@@ -487,7 +487,7 @@ public:
     /**
     * @return true if this Object is currently doing an attack animation
     **/
-    bool isAttacking() const;
+    bool isAttacking() const override;
 
     /**
     * @return true if this Object is controlled by a player
@@ -528,7 +528,7 @@ public:
 
     void setInvincible(bool invincible) override { invictus = invincible; }
 
-    bool isKursed() const { return iskursed; }
+    bool isKursed() const override { return iskursed; }
 
     void setKursed(bool kursed) { iskursed = kursed; }
 
