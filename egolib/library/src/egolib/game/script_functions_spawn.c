@@ -11,11 +11,6 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-IDamageable& damageable(Object& object)
-{
-    return object;
-}
-
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
 {
     child.setAIPassage(self.passage);
@@ -34,25 +29,25 @@ void publishCleanedUpState(IScriptable& listener)
 
 bool trySetChildState(ObjectRef childRef, int stateValue)
 {
-    Object* child = objectHandler().get(childRef);
+    IScriptable* child = tryScriptable(childRef);
     if (child == nullptr)
     {
         return false;
     }
 
-    scriptable(*child).setAIStateValue(stateValue);
+    child->setAIStateValue(stateValue);
     return true;
 }
 
 bool trySetChildContent(ObjectRef childRef, int contentValue)
 {
-    Object* child = objectHandler().get(childRef);
+    IScriptable* child = tryScriptable(childRef);
     if (child == nullptr)
     {
         return false;
     }
 
-    scriptable(*child).setAIContent(contentValue);
+    child->setAIContent(contentValue);
     return true;
 }
 
@@ -437,14 +432,16 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes the target from the game, failing if the
     /// target is a player
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
     returncode = false;
-    if (!pself_target->isPlayer())             //Do not poof players
+    if (!targetInventory->isPlayer())             //Do not poof players
     {
         returncode = true;
         if ( self.getTarget() == self.getSelf() )
@@ -455,8 +452,14 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         else
         {
             // Poof others now
-            publishImmediatePoof(scriptable(*pself_target));
-            SET_TARGET(self.getSelf(), pself_target );
+            IScriptable* targetScriptable = tryScriptable(self.getTarget());
+            if (targetScriptable == nullptr)
+            {
+                return false;
+            }
+
+            publishImmediatePoof(*targetScriptable);
+            self.setTarget(self.getSelf());
         }
     }
 
@@ -829,7 +832,13 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    damageable(*pchr).setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
+    IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    if (selfDamageable == nullptr)
+    {
+        return false;
+    }
+
+    selfDamageable->setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1154,7 +1163,13 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    damageable(*pchr).setInvincible(true);
+    IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    if (selfDamageable == nullptr)
+    {
+        return false;
+    }
+
+    selfDamageable->setInvincible(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1169,7 +1184,13 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    damageable(*pchr).setInvincible(false);
+    IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    if (selfDamageable == nullptr)
+    {
+        return false;
+    }
+
+    selfDamageable->setInvincible(false);
 
     SCRIPT_FUNCTION_END();
 }

@@ -192,6 +192,25 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToTargetHandsReadsThroughInventory
     EXPECT_EQ(self.getTarget(), rightHandItem->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToRiderReadsThroughInventoryHolderRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5309);
+    auto rider = makeObject(module, "mp_objects/follower.obj", 5310);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(rider, nullptr);
+
+    IInventoryHolder& inventoryHolder = *actor;
+    inventoryHolder.setHeldObject(SLOT_LEFT, rider->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    EXPECT_TRUE(scr_SetTargetToRider(state, self));
+    EXPECT_EQ(self.getTarget(), rider->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();

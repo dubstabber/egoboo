@@ -3,14 +3,6 @@
 
 #include "egolib/game/script_functions_internal.h"
 
-namespace
-{
-IScriptable& scriptable(Object& object)
-{
-    return object;
-}
-}
-
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfSpawned( script_state_t& state, ai_state_t& self )
@@ -220,7 +212,12 @@ uint8_t scr_SetState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    scriptable(*pchr).setAIStateValue(state.argument);
+    IScriptable* selfScriptable = tryScriptable(self.getSelf());
+    if (selfScriptable == nullptr)
+    {
+        return false;
+    }
+    selfScriptable->setAIStateValue(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -533,7 +530,8 @@ uint8_t scr_IfInvisible( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->getAlpha() <= INVISIBLE;
+    IRenderable* selfRenderable = tryRenderable(self.getSelf());
+    returncode = selfRenderable != nullptr && selfRenderable->getAlpha() <= INVISIBLE;
 
     SCRIPT_FUNCTION_END();
 }
@@ -566,7 +564,14 @@ uint8_t scr_IfUnarmed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( !objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) && !objectHandler().exists( pchr->getHeldObject(SLOT_RIGHT) ) );
+    IInventoryHolder* selfInventory = tryInventoryHolder(self.getSelf());
+    if (selfInventory == nullptr)
+    {
+        return false;
+    }
+
+    returncode = ( !objectHandler().exists(selfInventory->getHeldObject(SLOT_LEFT))
+                && !objectHandler().exists(selfInventory->getHeldObject(SLOT_RIGHT)) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1370,14 +1375,14 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     ObjectRef iattached = pchr->getHolderRef();
 
-    if ( objectHandler().exists( iattached ) )
+    IScriptable* attached = tryScriptable(iattached);
+    if (attached != nullptr)
     {
-        IScriptable& attached = scriptable(*objectHandler().get(iattached));
-        BIT_FIELD bits = attached.getAIAlertBits();
+        BIT_FIELD bits = attached->getAIAlertBits();
 
         if ( HAS_SOME_BITS( bits, ALERTIF_BLOCKED ) )
         {
-            auto iLastAttacker = attached.getAILastAttacker();
+            auto iLastAttacker = attached->getAILastAttacker();
 
             if ( objectHandler().exists(iLastAttacker) )
             {

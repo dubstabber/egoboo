@@ -292,6 +292,41 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThro
     EXPECT_EQ(self.getTarget(), attacker->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, IfInvisibleReadsAlphaThroughRenderableRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5536);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    actor->setAlpha(INVISIBLE);
+    EXPECT_TRUE(scr_IfInvisible(state, self));
+
+    actor->setAlpha(INVISIBLE + 1);
+    EXPECT_FALSE(scr_IfInvisible(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfUnarmedReadsHeldSlotsThroughInventoryHolderRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5537);
+    auto leftHandItem = makeObject(module, "mp_objects/follower.obj", 5538);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfUnarmed(state, self));
+
+    actor->setHeldObject(SLOT_LEFT, leftHandItem->getObjRef());
+    EXPECT_FALSE(scr_IfUnarmed(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, SetDamageTimePublishesThroughDamageableRole)
 {
     auto& module = beginActiveTestModule();

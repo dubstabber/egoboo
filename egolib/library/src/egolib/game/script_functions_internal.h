@@ -111,6 +111,40 @@ inline auto& objectHandler()
     return activeModule().getObjectHandler();
 }
 
+inline Object* tryObject(ObjectRef objectRef)
+{
+    return objectHandler().exists(objectRef) ? objectHandler().get(objectRef) : nullptr;
+}
+
+inline std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
+{
+    return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
+}
+
+inline IScriptable* tryScriptable(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IScriptable*>(object) : nullptr;
+}
+
+inline IDamageable* tryDamageable(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IDamageable*>(object) : nullptr;
+}
+
+inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IInventoryHolder*>(object) : nullptr;
+}
+
+inline IRenderable* tryRenderable(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IRenderable*>(object) : nullptr;
+}
+
 inline uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();

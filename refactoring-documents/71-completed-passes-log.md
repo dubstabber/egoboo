@@ -442,6 +442,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by routing the remaining ro
 
 Extended `ScriptStateFunctions.cpp` with direct regressions for self-poof deferral, immediate non-self poof publication plus retargeting, and missing-child failure behavior for child-state/content helpers. Build, targeted script-state tests, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 104 — Conservative script-role resolver sweep (2026-04-19)
+
+Continued Tier 1.2 by adding shared `ObjectRef` to role-resolver helpers in the split script-function infrastructure and migrating the next bounded target/state/spawn/systems helpers onto existing `IScriptable`, `IDamageable`, `IInventoryHolder`, and `IRenderable` seams. Kept `Script/script.c`, enchant-removal flows, mana/stat economics, and other non-role domains out of scope.
+
+Extended `ScriptStateFunctions.cpp` and `ScriptTargetFunctions.cpp` with coverage for renderable invisibility, inventory-holder unarmed/rider targeting, and the resolver-backed role paths. Build, targeted script tests, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

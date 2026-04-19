@@ -4,24 +4,6 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
-namespace
-{
-const IDamageable& damageable(const Object& object)
-{
-    return object;
-}
-
-IScriptable& scriptable(Object& object)
-{
-    return object;
-}
-
-const IInventoryHolder& inventoryHolder(const Object& object)
-{
-    return object;
-}
-}
-
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
 {
@@ -30,15 +12,16 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character's target from last update was
     /// killed during this update
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    const IDamageable& damageableTarget = damageable(*pself_target);
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    if (damageableTarget == nullptr)
+    {
+        return false;
+    }
 
     // Proceed only if the character's target has just died or is already dead
-    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !damageableTarget.isAlive() );
+    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !damageableTarget->isAlive() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -77,17 +60,19 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to the item in the target's left hand,
     /// failing if the target has no left hand item
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
-    auto ichr = inventoryHolder(*pself_target).getHeldObject(SLOT_LEFT);
+    auto ichr = targetInventory->getHeldObject(SLOT_LEFT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
-        SET_TARGET( ichr, pself_target );
+        self.setTarget(ichr);
         returncode = true;
     }
 
@@ -103,17 +88,19 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
     /// @details This function sets the target to the item in the target's right hand,
     /// failing if the target has no right hand item
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
-    auto ichr = inventoryHolder(*pself_target).getHeldObject(SLOT_RIGHT);
+    auto ichr = targetInventory->getHeldObject(SLOT_RIGHT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
-        SET_TARGET( ichr, pself_target );
+        self.setTarget(ichr);
         returncode = true;
     }
 
@@ -445,8 +432,13 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
         if ( leader )
         {
-            const IScriptable& scriptableLeader = scriptable(*leader);
-            auto itarget = scriptableLeader.getAITarget();
+            IScriptable* scriptableLeader = tryScriptable(leader->getObjRef());
+            if (scriptableLeader == nullptr)
+            {
+                return false;
+            }
+
+            auto itarget = scriptableLeader->getAITarget();
 
             if ( objectHandler().exists( itarget ) )
             {
@@ -680,9 +672,16 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) )
+    IInventoryHolder* selfInventory = tryInventoryHolder(self.getSelf());
+    if (selfInventory == nullptr)
     {
-        self.setTarget(pchr->getHeldObject(SLOT_LEFT));
+        return false;
+    }
+
+    const ObjectRef riderRef = selfInventory->getHeldObject(SLOT_LEFT);
+    if ( objectHandler().exists(riderRef) )
+    {
+        self.setTarget(riderRef);
     }
     else
     {
@@ -1182,14 +1181,15 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
     /// @details This function issues an order to the given target
     /// Be careful in using this, always checking IDSZ first
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    IScriptable& scriptableTarget = scriptable(*pself_target);
+    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
+    if (scriptableTarget == nullptr)
+    {
+        return false;
+    }
 
-    returncode = scriptableTarget.addAIOrder(state.argument, 0);
+    returncode = scriptableTarget->addAIOrder(state.argument, 0);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1427,14 +1427,15 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets tmpargument to the state of the target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = scriptable(*pself_target);
+    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
+    if (scriptableTarget == nullptr)
+    {
+        return false;
+    }
 
-    state.argument = scriptableTarget.getAIStateValue();
+    state.argument = scriptableTarget->getAIStateValue();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1446,14 +1447,15 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
     // tmpargument = GetTargetContent()
     // This sets tmpargument to the current Target's content value
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = scriptable(*pself_target);
+    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
+    if (scriptableTarget == nullptr)
+    {
+        return false;
+    }
 
-    state.argument = scriptableTarget.getAIContent();
+    state.argument = scriptableTarget->getAIContent();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1621,14 +1623,15 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function gets the last type of damage for the Target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = scriptable(*pself_target);
+    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
+    if (scriptableTarget == nullptr)
+    {
+        return false;
+    }
 
-    state.argument = scriptableTarget.getAILastDamageType();
+    state.argument = scriptableTarget->getAILastDamageType();
 
     SCRIPT_FUNCTION_END();
 }

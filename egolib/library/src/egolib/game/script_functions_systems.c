@@ -260,17 +260,18 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(!target) {
+    std::shared_ptr<Object> attacker = tryObjectShared(self.getSelf());
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    if (attacker == nullptr || damageableTarget == nullptr)
+    {
         return false;
     }
-    IDamageable& damageableTarget = damageable(*target);
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableTarget.damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()),
-                            pchr->getTeamRef(), objectHandler()[self.getSelf()], false, false, true);
+    damageableTarget->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()),
+                             pchr->getTeamRef(), attacker, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -713,11 +714,14 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
         ichr = pchr->getHolderRef();
     }
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(target) {
-        IDamageable& damageableTarget = damageable(*target);
-        damageableTarget.kill(objectHandler()[ichr], false);
+    std::shared_ptr<Object> killer = tryObjectShared(ichr);
+    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    if (killer == nullptr || damageableTarget == nullptr)
+    {
+        return false;
     }
+
+    damageableTarget->kill(killer, false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -796,8 +800,14 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable& damageableSelf = damageable(*pchr);
-    damageableSelf.heal(objectHandler()[pchr->getObjRef()], state.argument, true);
+    std::shared_ptr<Object> selfObject = tryObjectShared(self.getSelf());
+    IDamageable* damageableSelf = tryDamageable(self.getSelf());
+    if (selfObject == nullptr || damageableSelf == nullptr)
+    {
+        return false;
+    }
+
+    damageableSelf->heal(selfObject, state.argument, true);
 
     SCRIPT_FUNCTION_END();
 }
