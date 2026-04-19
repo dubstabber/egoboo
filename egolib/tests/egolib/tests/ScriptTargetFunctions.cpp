@@ -214,6 +214,64 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToRiderReadsThroughInventoryHolder
     EXPECT_EQ(self.getTarget(), rider->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SelfTargetSelectionReadsThroughScriptableRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5313);
+    auto attacker = makeObject(module, "mp_objects/follower.obj", 5314);
+    auto bumped = makeObject(module, "mp_objects/follower.obj", 5315);
+    auto hit = makeObject(module, "mp_objects/follower.obj", 5316);
+    auto lastItemUsed = makeObject(module, "mp_objects/follower.obj", 5317);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(attacker, nullptr);
+    ASSERT_NE(bumped, nullptr);
+    ASSERT_NE(hit, nullptr);
+    ASSERT_NE(lastItemUsed, nullptr);
+
+    IScriptable& scriptableActor = *actor;
+    scriptableActor.setAILastAttacker(attacker->getObjRef());
+    ASSERT_TRUE(scriptableActor.recordAIBump(bumped->getObjRef()));
+    scriptableActor.setAILastHit(hit->getObjRef());
+    scriptableActor.setAILastItemUsed(lastItemUsed->getObjRef());
+
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+    script_state_t state;
+
+    EXPECT_TRUE(scr_SetTargetToWhoeverAttacked(state, self));
+    EXPECT_EQ(self.getTarget(), attacker->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_SetTargetToWhoeverBumped(state, self));
+    EXPECT_EQ(self.getTarget(), bumped->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_SetTargetToWhoeverWasHit(state, self));
+    EXPECT_EQ(self.getTarget(), hit->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_SetTargetToLastItemUsed(state, self));
+    EXPECT_EQ(self.getTarget(), lastItemUsed->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverIsHoldingReadsThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5318);
+    auto holder = makeObject(module, "mp_objects/follower.obj", 5319);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(holder, nullptr);
+
+    actor->setHolderRef(holder->getObjRef());
+
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+    script_state_t state;
+
+    EXPECT_TRUE(scr_SetTargetToWhoeverIsHolding(state, self));
+    EXPECT_EQ(self.getTarget(), holder->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();

@@ -4,6 +4,24 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return object;
+}
+
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
+}
+
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
 {
@@ -117,9 +135,10 @@ uint8_t scr_SetTargetToWhoeverAttacked( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.getLastAttacker() ) )
+    const ObjectRef attackerRef = scriptable(*pchr).getAILastAttacker();
+    if ( objectHandler().exists(attackerRef) )
     {
-        self.setTarget(self.getLastAttacker());
+        self.setTarget(attackerRef);
     }
     else
     {
@@ -139,9 +158,10 @@ uint8_t scr_SetTargetToWhoeverBumped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.getBumped() ) )
+    const ObjectRef bumpedRef = scriptable(*pchr).getAIBumped();
+    if ( objectHandler().exists(bumpedRef) )
     {
-        self.setTarget(self.getBumped());
+        self.setTarget(bumpedRef);
     }
     else
     {
@@ -161,9 +181,10 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
+    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef sissyRef = pchr->getTeam().getSissyRef();
+        const ObjectRef sissyRef = activeModule().getTeamList()[teamRef].getSissyRef();
         if ( objectHandler().exists(sissyRef) )
         {
             self.setTarget(sissyRef);
@@ -377,9 +398,10 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
+    const ObjectRef holderRef = targetInfo(*pchr).getHolderRef();
+    if ( objectHandler().exists(holderRef) )
     {
-        self.setTarget(pchr->getHolderRef());
+        self.setTarget(holderRef);
     }
     else
     {
@@ -443,9 +465,10 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
+    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef leaderRef = activeModule().getTeamList()[pchr->getTeamRef()].getLeaderRef();
+        const ObjectRef leaderRef = activeModule().getTeamList()[teamRef].getLeaderRef();
         if ( objectHandler().exists(leaderRef) )
         {
             IScriptable* scriptableLeader = tryScriptable(leaderRef);
@@ -505,9 +528,10 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if ( VALID_TEAM_RANGE( pchr->getTeamRef() ) )
+    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef leaderRef = activeModule().getTeamList()[pchr->getTeamRef()].getLeaderRef();
+        const ObjectRef leaderRef = activeModule().getTeamList()[teamRef].getLeaderRef();
         if ( objectHandler().exists(leaderRef) )
         {
             self.setTarget(leaderRef);
@@ -792,9 +816,10 @@ uint8_t scr_SetTargetToWhoeverWasHit( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.hitlast ) )
+    const ObjectRef lastHitRef = scriptable(*pchr).getAILastHit();
+    if ( objectHandler().exists(lastHitRef) )
     {
-        self.setTarget(self.hitlast);
+        self.setTarget(lastHitRef);
     }
     else
     {
@@ -1618,9 +1643,10 @@ uint8_t scr_SetTargetToLastItemUsed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( self.lastitemused != self.getSelf() && objectHandler().exists( self.lastitemused ) )
+    const ObjectRef lastItemUsedRef = scriptable(*pchr).getAILastItemUsed();
+    if ( lastItemUsedRef != self.getSelf() && objectHandler().exists(lastItemUsedRef) )
     {
-        self.setTarget(self.lastitemused);
+        self.setTarget(lastItemUsedRef);
     }
     else
     {
@@ -1815,8 +1841,10 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
         return false;
     }
 
+    const IPhysical& selfPhysical = physical(*pchr);
 	FACING_T sTmp = 0;
-    sTmp = FACING_T(vec_to_facing( pchr->getPosX() - physicalTarget->getPosX() , pchr->getPosY() - physicalTarget->getPosY() ));
+    sTmp = FACING_T(vec_to_facing(selfPhysical.getPosX() - physicalTarget->getPosX(),
+                                  selfPhysical.getPosY() - physicalTarget->getPosY()));
     sTmp -= FACING_T(physicalTarget->getFacingZ());
     returncode = ( sTmp > 55535 || sTmp < 10000 );
 

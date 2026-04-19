@@ -526,6 +526,12 @@ Continued Tier 1.2 by introducing `ITeamMember` and `IWallet` as narrow policy s
 
 Extended `ObjectAccessors.cpp` and `ScriptSystemsFunctions.cpp` with direct regression coverage for the new team/wallet role surfaces, including team-copy/join behavior, leader publication, team-wide XP routing, wallet transfer clamping, and drop/set semantics. Build, focused accessor/script-system tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 118 — Conservative target-helper role closure (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_target.c` by routing the remaining bounded self-target selection helpers (`WhoeverAttacked`, `WhoeverBumped`, `WhoeverWasHit`, `LastItemUsed`, holder reads, and team-backed leader/sissy selection) through the landed `IScriptable`, `ITargetInfo`, and `IPhysical` seams instead of concrete-`Object` or raw AI-state reads. Kept quest/profile/armor-policy helpers and `Script/script.c` out of scope.
+
+Extended `ScriptTargetFunctions.cpp` with focused regressions for scriptable self-state target selection and holder resolution through the target-info seam. Build, the focused script-target test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
