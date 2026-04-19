@@ -376,6 +376,12 @@ Reworked particle iteration into an interface-owned RAII iterator bound to the i
 
 Added five `EngineContext` regression tests covering particle-service install, double-install rejection, clear, throw-when-missing, and `clearEngine()` cascade behavior. Build, targeted test coverage, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 93 — Engine-published profile service cleanup (2026-04-19)
+
+Completed the fifth T1.3 service-interface pass by finishing the already-landed `IProfileSystem` seam. Migrated the validator and the remaining non-lifecycle profile-loading callers in `ObjectProfile_load.cpp` from `ProfileSystem::get()` to `EngineContext::get().profileSystem()`, and removed the last dead `LOADED_PIP(...)` singleton-style helper from `ProfileSystem.hpp`.
+
+Kept `ProfileSystem::get()` as a subsystem-local lifecycle seam inside `Profiles/`, specifically for teardown paths like `ObjectProfile` destruction that can run after `EngineContext::clearProfileSystem()`. Build, targeted test coverage, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

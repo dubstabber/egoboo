@@ -635,7 +635,8 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         }
 
         // Load the enchantment for this profile (optional)
-        profile->_ieve = ProfileSystem::get().EnchantProfileSystem.load(folderPath + "/enchant.txt", static_cast<EVE_REF>(ref.get()));
+        profile->_ieve = EngineContext::get().profileSystem().loadEnchantProfile(folderPath + "/enchant.txt",
+                                                                                static_cast<EVE_REF>(ref.get()));
 
         // Load the messages for this profile, do this before loading the AI script
         // to ensure any dynamic loaded messages get loaded last (optional)
@@ -645,7 +646,8 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         for (LocalParticleProfileRef cnt(0); cnt.get() < 30; ++cnt) //TODO: find better way of listing files
         {
             const std::string particleName = folderPath + "/part" + std::to_string(cnt.get()) + ".txt";
-            PIP_REF particleProfile = ProfileSystem::get().ParticleProfileSystem.load(particleName.c_str(), INVALID_PIP_REF);
+            PIP_REF particleProfile = EngineContext::get().profileSystem().loadParticleProfile(particleName.c_str(),
+                                                                                               INVALID_PIP_REF);
 
             // Make sure it's referenced properly
             if (particleProfile != INVALID_PIP_REF)

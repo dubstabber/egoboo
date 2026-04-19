@@ -3,6 +3,7 @@
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Image/ImageManager.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Logic/PerkHandler.hpp"
@@ -1431,10 +1432,10 @@ int main(int argc, char** argv)
             bootstrapOptions.logLevel = Log::Level::Warning;
             ContentRuntimeBootstrap runtime(bootstrapOptions);
 
-            ProfileSystem::get().loadModuleProfiles();
+            EngineContext::get().profileSystem().loadModuleProfiles();
 
             std::vector<std::shared_ptr<ModuleProfile>> selectedModules;
-            for (const auto& module : ProfileSystem::get().getModuleProfiles())
+            for (const auto& module : EngineContext::get().profileSystem().getModuleProfiles())
             {
                 if (module && matchesModuleFilter(*module, options))
                 {

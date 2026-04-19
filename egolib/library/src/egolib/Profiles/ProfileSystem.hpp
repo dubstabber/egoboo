@@ -185,9 +185,4 @@ private:
 };
 
 // TODO: Remove this.
-inline bool LOADED_PIP(PIP_REF ref) {
-    return ProfileSystem::get().ParticleProfileSystem.isLoaded(ref);
-}
-
-// TODO: Remove this.
 extern pro_import_t import_data;
