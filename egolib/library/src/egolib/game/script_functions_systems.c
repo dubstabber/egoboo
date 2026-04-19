@@ -36,6 +36,23 @@ IWallet& wallet(Object& object)
     return object;
 }
 
+std::shared_ptr<Ego::Player> targetPlayer(const ITargetInfo& target)
+{
+    if (!target.isPlayer())
+    {
+        return nullptr;
+    }
+
+    const size_t playerIndex = target.getPlayerNumber();
+    const auto& playerList = activeModule().getPlayerList();
+    if (playerIndex >= playerList.size())
+    {
+        return nullptr;
+    }
+
+    return playerList[playerIndex];
+}
+
 int restockAmmoIfMatching(const std::shared_ptr<Object>& item, const IDSZ2& idsz)
 {
     if (!item || !item->getProfile()->hasTypeIDSZ(idsz))
@@ -186,20 +203,21 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     /// that item.
     /// For one use keys and such
 
-    Object *ptarget;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( ptarget );
+    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    const IInventoryHolder& targetInventory = inventoryHolder(*ptarget);
     std::shared_ptr<Object> pitem;
 
     const std::array<slot_t, 2> heldSlots = {SLOT_LEFT, SLOT_RIGHT};
     for (const slot_t heldSlot : heldSlots)
     {
-        const ObjectRef heldObjectRef = targetInventory.getHeldObject(heldSlot);
+        const ObjectRef heldObjectRef = targetInventory->getHeldObject(heldSlot);
         if (!objectHandler().exists(heldObjectRef))
         {
             continue;
@@ -215,7 +233,7 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
 
     if (!pitem)
     {
-        for (const std::shared_ptr<Object>& inventoryItem : targetInventory.getInventoryItems())
+        for (const std::shared_ptr<Object>& inventoryItem : targetInventory->getInventoryItems())
         {
             if (inventoryItem && inventoryItem->getProfile()->hasTypeIDSZ(idsz))
             {
@@ -662,19 +680,20 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     /// @details This function restocks the ammo of every item the character is holding,
     /// if the item matches the ID given ( parent or child type )
 
-    Object *pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
     int iTmp = 0;  // Amount of ammo given
-    const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
     const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
-    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_LEFT)), idsz);
-    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_RIGHT)), idsz);
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory->getHeldObject(SLOT_LEFT)), idsz);
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory->getHeldObject(SLOT_RIGHT)), idsz);
 
     for (const std::shared_ptr<Object>& pitem : selfInventory.getInventoryItems())
     {
@@ -696,22 +715,23 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
     /// @details This function restocks the ammo of the first item the character is holding,
     /// if the item matches the ID given ( parent or child type )
 
-    Object *pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
+    if (targetInventory == nullptr)
+    {
+        return false;
+    }
 
     int iTmp = 0;  // Amount of ammo given
-    const IInventoryHolder& targetInventory = inventoryHolder(*pself_target);
     const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
-    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_LEFT)), idsz);
+    iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory->getHeldObject(SLOT_LEFT)), idsz);
 
     if (iTmp == 0)
     {
-        iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory.getHeldObject(SLOT_RIGHT)), idsz);
+        iTmp += restockAmmoIfMatching(tryObjectShared(targetInventory->getHeldObject(SLOT_RIGHT)), idsz);
     }
 
     if (iTmp == 0)
@@ -1867,18 +1887,23 @@ uint8_t scr_AddQuest( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function adds a quest idsz set in tmpargument into the targets quest.txt to 0
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    if (target == nullptr)
+    {
+        return false;
+    }
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
     returncode = false;
-    if(pself_target->isPlayer()) {
-        auto& questLog = activeModule().getPlayer(pself_target->getPlayerNumber())->getQuestLog();
-        if(!questLog.hasActiveQuest(idsz) && !questLog.isBeaten(idsz)) {
+    std::shared_ptr<Ego::Player> player = targetPlayer(*target);
+    if (player != nullptr)
+    {
+        auto& questLog = player->getQuestLog();
+        if (!questLog.hasActiveQuest(idsz) && !questLog.isBeaten(idsz))
+        {
             questLog.setQuestProgress(idsz, std::max(state.distance, 0));
             returncode = true;
         }
@@ -1921,19 +1946,22 @@ uint8_t scr_SetQuestLevel( script_state_t& state, ai_state_t& self )
     /// @details This function modifies the quest level for a specific quest IDSZ
     /// tmpargument specifies quest idsz (tmpargument) and the adjustment (tmpdistance, which may be negative)
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    if (target == nullptr)
+    {
+        return false;
+    }
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
     returncode = false;
-    if ( pself_target->isPlayer() && 0 != state.distance )
+    if (0 != state.distance)
     {
-        const std::shared_ptr<Ego::Player> &player = activeModule().getPlayer(pself_target->getPlayerNumber());
-        if(player->getQuestLog().hasActiveQuest(idsz)) {
+        std::shared_ptr<Ego::Player> player = targetPlayer(*target);
+        if (player != nullptr && player->getQuestLog().hasActiveQuest(idsz))
+        {
             player->getQuestLog().setQuestProgress(idsz, player->getQuestLog()[idsz] + state.distance);
             returncode = true;
         }

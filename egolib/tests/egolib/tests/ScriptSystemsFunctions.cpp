@@ -14,6 +14,8 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Inventory.hpp"
+#include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -275,6 +277,32 @@ TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDPoofsInventoryItemWhenOwne
     EXPECT_EQ(actor->getInventoryItem(0), nullptr);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, InventoryRoleHelpersReturnFalseWhenTargetIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5615);
+
+    ASSERT_NE(actor, nullptr);
+
+    const uint32_t sentinelType = IDSZ2('T', 'E', 'S', 'T').toUint32();
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(ObjectRef::Invalid);
+
+    state.argument = sentinelType;
+    EXPECT_FALSE(scr_CostTargetItemID(state, self));
+    EXPECT_EQ(state.argument, sentinelType);
+
+    state.argument = sentinelType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDAll(state, self));
+    EXPECT_EQ(state.argument, sentinelType);
+
+    state.argument = sentinelType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDFirst(state, self));
+    EXPECT_EQ(state.argument, sentinelType);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllUsesTargetHandsAndActorInventory)
 {
     auto& module = beginActiveTestModule();
@@ -389,6 +417,83 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDFirstReturnsFalseWhenNo
     EXPECT_EQ(leftItem->getAmmo(), leftItem->getAmmoMax() - 1);
     EXPECT_EQ(rightItem->getAmmo(), rightItem->getAmmoMax() - 2);
     EXPECT_EQ(inventoryItem->getAmmo(), inventoryItem->getAmmoMax() - 3);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, QuestHelpersResolvePlayersThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5651);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5652);
+    auto nonPlayerTarget = makeObject(module, "mp_objects/follower.obj", 5653);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(nonPlayerTarget, nullptr);
+    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[0]));
+
+    const IDSZ2 questId('T', 'Q', 'S', 'T');
+    auto& questLog = module.getPlayer(target->getPlayerNumber())->getQuestLog();
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nonPlayerTarget);
+
+    state.argument = questId.toUint32();
+    state.distance = 3;
+    EXPECT_FALSE(scr_AddQuest(state, self));
+    EXPECT_EQ(questLog[questId], Ego::QuestLog::QUEST_NONE);
+
+    self.setTarget(target->getObjRef());
+    EXPECT_TRUE(scr_AddQuest(state, self));
+    EXPECT_EQ(questLog[questId], 3);
+
+    state.distance = 8;
+    EXPECT_FALSE(scr_AddQuest(state, self));
+    EXPECT_EQ(questLog[questId], 3);
+
+    questLog.setQuestProgress(questId, Ego::QuestLog::QUEST_BEATEN);
+    state.distance = 5;
+    EXPECT_FALSE(scr_AddQuest(state, self));
+    EXPECT_EQ(questLog[questId], Ego::QuestLog::QUEST_BEATEN);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, SetQuestLevelResolvesPlayersThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5661);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5662);
+    auto nonPlayerTarget = makeObject(module, "mp_objects/follower.obj", 5663);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(nonPlayerTarget, nullptr);
+    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[1]));
+
+    const IDSZ2 questId('L', 'V', 'L', 'Q');
+    auto& questLog = module.getPlayer(target->getPlayerNumber())->getQuestLog();
+    questLog.setQuestProgress(questId, 4);
+
+    script_state_t state;
+    state.argument = questId.toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    state.distance = 0;
+    EXPECT_FALSE(scr_SetQuestLevel(state, self));
+    EXPECT_EQ(questLog[questId], 4);
+
+    state.distance = -2;
+    EXPECT_TRUE(scr_SetQuestLevel(state, self));
+    EXPECT_EQ(questLog[questId], 2);
+
+    self.setTarget(nonPlayerTarget->getObjRef());
+    state.distance = 5;
+    EXPECT_FALSE(scr_SetQuestLevel(state, self));
+    EXPECT_EQ(questLog[questId], 2);
+
+    self.setTarget(target->getObjRef());
+    questLog.setQuestProgress(questId, Ego::QuestLog::QUEST_NONE);
+    state.distance = 3;
+    EXPECT_FALSE(scr_SetQuestLevel(state, self));
+    EXPECT_EQ(questLog[questId], Ego::QuestLog::QUEST_NONE);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
