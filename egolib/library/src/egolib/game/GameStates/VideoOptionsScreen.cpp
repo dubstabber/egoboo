@@ -22,10 +22,16 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
+#include "egolib/game/GameStates/OptionsConfigActions.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
+
+namespace
+{
+namespace Actions = Ego::GameStates::Internal::OptionsConfigActions;
+}
 
 VideoOptionsScreen::VideoOptionsScreen() :
     _resolutionList(std::make_shared<Ego::GUI::ScrollableList>())
@@ -79,13 +85,15 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            return egoboo_config_t::get().graphic_fullscreen.getValue() ? "Enabled" : "Disabled"; 
+            return Actions::fullscreenLabel();
         },
 
         //Change option effect
         []{
-            egoboo_config_t::get().graphic_fullscreen.setValue(!egoboo_config_t::get().graphic_fullscreen.getValue());
-            SDL_SetWindowFullscreen(Ego::GraphicsSystem::get().window->get(), egoboo_config_t::get().graphic_fullscreen.getValue() ? SDL_WINDOW_FULLSCREEN : 0);
+            Actions::toggleFullscreen([](bool enabled)
+            {
+                SDL_SetWindowFullscreen(Ego::GraphicsSystem::get().window->get(), enabled ? SDL_WINDOW_FULLSCREEN : 0);
+            });
         }
     );
 
@@ -95,23 +103,12 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            if(!egoboo_config_t::get().graphic_shadows_enable.getValue()) return "Off";
-            return egoboo_config_t::get().graphic_shadows_highQuality_enable.getValue() ? "High" : "Low";
+            return Actions::shadowsLabel();
         },
 
         //Change option effect
         []{
-            if(!egoboo_config_t::get().graphic_shadows_enable.getValue()) {
-                egoboo_config_t::get().graphic_shadows_enable.setValue(true);
-                egoboo_config_t::get().graphic_shadows_highQuality_enable.setValue(false);
-            }
-            else if(!egoboo_config_t::get().graphic_shadows_highQuality_enable.getValue()) {
-                egoboo_config_t::get().graphic_shadows_highQuality_enable.setValue(true);
-            }
-            else {
-                egoboo_config_t::get().graphic_shadows_enable.setValue(false);
-                egoboo_config_t::get().graphic_shadows_highQuality_enable.setValue(false);
-            }
+            Actions::cycleShadows();
         }
     );
 
@@ -121,34 +118,12 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            if(egoboo_config_t::get().graphic_textureFilter_mipMapFilter.getValue() == idlib::texture_filter_method::linear) return "High";
-            if(egoboo_config_t::get().graphic_textureFilter_minFilter.getValue() == idlib::texture_filter_method::linear) return "Medium";
-            if(egoboo_config_t::get().graphic_textureFilter_minFilter.getValue() == idlib::texture_filter_method::nearest) return "Low";
-            return "Unknown";
+            return Actions::textureQualityLabel();
         },
 
         //Change option effect
         []{
-            //Medium (Trilinear filtering)
-            if(egoboo_config_t::get().graphic_textureFilter_minFilter.getValue() == idlib::texture_filter_method::nearest) {
-                egoboo_config_t::get().graphic_textureFilter_minFilter.setValue(idlib::texture_filter_method::linear);
-                egoboo_config_t::get().graphic_textureFilter_magFilter.setValue(idlib::texture_filter_method::linear);
-                egoboo_config_t::get().graphic_textureFilter_mipMapFilter.setValue(idlib::texture_filter_method::none);
-            }
-
-            //High (Trilinear mipmap filtering)
-            else if(egoboo_config_t::get().graphic_textureFilter_mipMapFilter.getValue() == idlib::texture_filter_method::none) {
-                egoboo_config_t::get().graphic_textureFilter_minFilter.setValue(idlib::texture_filter_method::linear);
-                egoboo_config_t::get().graphic_textureFilter_magFilter.setValue(idlib::texture_filter_method::linear);
-                egoboo_config_t::get().graphic_textureFilter_mipMapFilter.setValue(idlib::texture_filter_method::linear);
-            }
-
-            //Low - linear filtering filtering
-            else {
-                egoboo_config_t::get().graphic_textureFilter_minFilter.setValue(idlib::texture_filter_method::nearest);
-                egoboo_config_t::get().graphic_textureFilter_magFilter.setValue(idlib::texture_filter_method::nearest);
-                egoboo_config_t::get().graphic_textureFilter_mipMapFilter.setValue(idlib::texture_filter_method::none);
-            }
+            Actions::cycleTextureQuality();
         }
     );
 
@@ -158,32 +133,16 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            if(!egoboo_config_t::get().graphic_anisotropy_enable.getValue() || 
-                egoboo_config_t::get().graphic_anisotropy_levels.getValue() <= 0) {
-                return std::string("Disabled");
-            }
-            
-            return std::string("x") + std::to_string(static_cast<int>(egoboo_config_t::get().graphic_anisotropy_levels.getValue()));
+            return Actions::anisotropyLabel();
         },
 
         //Change option effect
         []{
-            if(!egoboo_config_t::get().graphic_anisotropy_enable.getValue()) {
-                egoboo_config_t::get().graphic_anisotropy_enable.setValue(true);
-                egoboo_config_t::get().graphic_anisotropy_levels.setValue(1.0f);
-            }
-            else {
-                egoboo_config_t::get().graphic_anisotropy_levels.setValue((static_cast<int>(egoboo_config_t::get().graphic_anisotropy_levels.getValue()) << 1));
-
-                if(egoboo_config_t::get().graphic_anisotropy_levels.getValue() > egoboo_config_t::get().graphic_anisotropy_levels.getMaxValue()) {
-                    egoboo_config_t::get().graphic_anisotropy_levels.setValue(0.0f);
-                    egoboo_config_t::get().graphic_anisotropy_enable.setValue(false);
-                }
-            }           
+            Actions::cycleAnisotropy();
         },
 
         //Only enable button if option is supported by graphics card
-        egoboo_config_t::get().graphic_anisotropy_levels.getMaxValue() > 0
+        Actions::anisotropySupported()
     );
 
     //Anti-Aliasing
@@ -192,12 +151,12 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            return egoboo_config_t::get().graphic_antialiasing.getValue() ? "Enabled" : "Disabled";
+            return Actions::antiAliasingLabel();
         },
 
         //Change option effect
         []{
-            egoboo_config_t::get().graphic_antialiasing.setValue(!egoboo_config_t::get().graphic_antialiasing.getValue());
+            Actions::toggleAntiAliasing();
         }
     );
 
@@ -207,12 +166,12 @@ VideoOptionsScreen::VideoOptionsScreen() :
         
         //String description of current state
         []{ 
-            return egoboo_config_t::get().graphic_hd_textures_enable.getValue() ? "Enabled" : "Disabled";
+            return Actions::hdTexturesLabel();
         },
 
         //Change option effect
         []{
-            egoboo_config_t::get().graphic_hd_textures_enable.setValue(!egoboo_config_t::get().graphic_hd_textures_enable.getValue());
+            Actions::toggleHDTextures();
         }
     );    
 
@@ -225,7 +184,10 @@ VideoOptionsScreen::VideoOptionsScreen() :
         endState();
 
         // save the setup file
-        Ego::Setup::upload(egoboo_config_t::get());
+        Actions::saveConfig([](egoboo_config_t& config)
+        {
+            Ego::Setup::upload(config);
+        });
     });
     addComponent(backButton);
 
@@ -280,10 +242,7 @@ void VideoOptionsScreen::addResolutionButton(int width, int height)
     resolutionButton->setOnClickFunction(
         [width, height, resolutionButton, this]
         {
-
-            // Set new resolution requested.
-            egoboo_config_t::get().graphic_resolution_horizontal.setValue(width);
-            egoboo_config_t::get().graphic_resolution_vertical.setValue(height);
+            Actions::selectResolution(width, height);
 
             // Enable all resolution buttons except the one we just selected.
             for(const auto& button : _resolutionList->iterator())
@@ -296,8 +255,7 @@ void VideoOptionsScreen::addResolutionButton(int width, int height)
     _resolutionList->addComponent(resolutionButton);
 
     //If this is our current resolution then make it greyed out
-    if (egoboo_config_t::get().graphic_resolution_horizontal.getValue() == width &&
-        egoboo_config_t::get().graphic_resolution_vertical.getValue() == height)
+    if (Actions::isResolutionSelected(width, height))
     {
         resolutionButton->setEnabled(false);
     }

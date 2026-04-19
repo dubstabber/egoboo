@@ -60,9 +60,9 @@ This remains the SRP/ISP keystone for `Object`.
 - Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.
 - `ParticleHandler` was taken as the next safe small-reach seam ahead of the broader profile/log/config passes; runtime ownership now publishes it through `GameEngine`, while `ParticleHandler::get()` stays as a subsystem-local bootstrap seam.
 - `ProfileSystem` is now published through `EngineContext`, with validator and profile-loading callers migrated onto the installed `IProfileSystem` seam while `ProfileSystem::get()` remains a subsystem-local lifecycle seam inside `Profiles/`.
-- `egoboo_config_t` is now published through `EngineContext` for system/bootstrap lifecycle, module-load sync, and lightweight content-bootstrap paths; broad direct config caller migration is still pending.
+- `egoboo_config_t` is now published through `EngineContext` for system/bootstrap lifecycle, module-load sync, lightweight content-bootstrap paths, read-mostly runtime callers, and the former write-heavy audio/video options flow.
 - Keep `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, `ParticleHandler::get()`, `ProfileSystem::get()`, `Log::get()`, and `egoboo_config_t::get()` as subsystem-local bootstrap or lifecycle seams until a DI container is defined or each caller cluster has been migrated.
-- Follow-on config work should stay bounded by caller cluster, starting with read-mostly slices before the write-heavy options screens.
+- Follow-on config work is now limited to subsystem-local cleanup around audio/image/particle bootstrap and lifecycle edges rather than broad caller migration.
 
 **Risk:** Medium. First pass defines the pattern; later passes mostly mechanical.
 

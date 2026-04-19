@@ -1,5 +1,14 @@
 #include "egolib/Graphics/SDL/Utilities.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/egoboo_setup.h"
+
+namespace
+{
+egoboo_config_t& config()
+{
+    return EngineContext::get().config();
+}
+}
 
 Requirement::Requirement()
 {}
@@ -9,19 +18,19 @@ Requirement::~Requirement()
 
 AliasingRequirement::AliasingRequirement()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     m_oldValue = configuration.graphic_antialiasing.getValue();
 }
 
 void AliasingRequirement::reset()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     configuration.graphic_antialiasing.setValue(m_oldValue);
 }
 
 bool AliasingRequirement::relax()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     if (configuration.graphic_antialiasing.getValue() == 0) return false;
     configuration.graphic_antialiasing.setValue(configuration.graphic_antialiasing.getValue() - 1);
     return true;
@@ -29,19 +38,19 @@ bool AliasingRequirement::relax()
 
 FullscreenRequirement::FullscreenRequirement()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     m_oldValue = configuration.graphic_fullscreen.getValue();
 }
 
 void FullscreenRequirement::reset()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     configuration.graphic_fullscreen.setValue(m_oldValue);
 }
 
 bool FullscreenRequirement::relax()
 {
-    auto& configuration = egoboo_config_t::get();
+    auto& configuration = config();
     if (!configuration.graphic_fullscreen.getValue()) return false;
     configuration.graphic_fullscreen.setValue(false);
     return true;

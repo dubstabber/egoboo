@@ -418,6 +418,12 @@ Continued the `egoboo_config_t` Tier 1.3 seam by migrating the remaining non-sub
 
 Extended `ConfigReadMostly.cpp` and `ScriptStateFunctions.cpp` with focused coverage for installed-config difficulty reads and fog-script toggle behavior. Subsystem-local bootstrap/lifecycle seams and the write-heavy audio/video options screens remain deferred.
 
+### Pass 100 — Write-heavy config seam closure (2026-04-19)
+
+Finished the cross-cutting `egoboo_config_t` Tier 1.3 migration by routing the write-heavy audio/video options flow and SDL graphics fallback requirements through `EngineContext::get().config()`. Extracted the option mutation/label logic into internal `OptionsConfigActions` helpers so screen behavior stays testable without constructing the full UI stack, while preserving live side effects like audio-volume updates, channel allocation, fullscreen toggles, and setup-file saves.
+
+Added focused regression coverage in `ConfigMutations.cpp` for installed-config audio/video option mutations, save callbacks, resolution selection, and SDL aliasing/fullscreen requirement reset-relax behavior. Remaining direct `egoboo_config_t::get()` callers are now confined to subsystem-local bootstrap/lifecycle or singleton-definition code (`AudioSystem`, `ImageManager`, `ParticleHandler`, `Core::System`, `ContentRuntimeBootstrap`, `egoboo_setup.c`).
+
 ---
 
 ## Files touched most by this pass log

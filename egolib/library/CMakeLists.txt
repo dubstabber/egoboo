@@ -521,6 +521,8 @@ set(EGOLIB_GAME_GAMESTATES_SOURCES
     src/egolib/game/GameStates/MapEditorSelectModuleState.hpp
     src/egolib/game/GameStates/MapEditorState.cpp
     src/egolib/game/GameStates/MapEditorState.hpp
+    src/egolib/game/GameStates/OptionsConfigActions.cpp
+    src/egolib/game/GameStates/OptionsConfigActions.hpp
     src/egolib/game/GameStates/OptionsScreen.cpp
     src/egolib/game/GameStates/OptionsScreen.hpp
     src/egolib/game/GameStates/PlayingState.cpp

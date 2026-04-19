@@ -23,6 +23,7 @@
 
 #include "egolib/game/GameStates/AudioOptionsScreen.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GameStates/OptionsConfigActions.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
@@ -30,10 +31,7 @@
 
 namespace
 {
-IAudioSystem& audioSystem()
-{
-    return EngineContext::get().audioSystem();
-}
+namespace Actions = Ego::GameStates::Internal::OptionsConfigActions;
 }
 
 AudioOptionsScreen::AudioOptionsScreen()
@@ -63,11 +61,9 @@ AudioOptionsScreen::AudioOptionsScreen()
     musicVolumeSlider->setOnChangeFunction(
         [](int value)
     {
-        egoboo_config_t::get().sound_music_volume.setValue(value);
-        egoboo_config_t::get().sound_music_enable.setValue(value > 0);
-        audioSystem().setMusicVolume(value);
+        Actions::applyMusicVolume(value);
     });
-    musicVolumeSlider->setValue(egoboo_config_t::get().sound_music_volume.getValue());
+    musicVolumeSlider->setValue(Actions::musicVolume());
     addComponent(musicVolumeSlider);
     yPos += musicVolumeSlider->getHeight() + 20;
 
@@ -83,12 +79,9 @@ AudioOptionsScreen::AudioOptionsScreen()
     soundEffectVolumeSlider->setOnChangeFunction(
         [](int value)
     {
-        egoboo_config_t::get().sound_effects_volume.setValue(value);
-        egoboo_config_t::get().sound_effects_enable.setValue(value > 0);
-        audioSystem().setSoundEffectVolume(value);
-        audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_BUTTON_CLICK));
+        Actions::applySoundEffectVolume(value);
     });
-    soundEffectVolumeSlider->setValue(egoboo_config_t::get().sound_effects_volume.getValue());
+    soundEffectVolumeSlider->setValue(Actions::soundEffectVolume());
     addComponent(soundEffectVolumeSlider);
     yPos += soundEffectVolumeSlider->getHeight() + 20;
 
@@ -102,11 +95,13 @@ AudioOptionsScreen::AudioOptionsScreen()
     soundChannelsSlider->setSize({ std::min(200, SCREEN_WIDTH / 3), 30 });
     soundChannelsSlider->setPosition({ xPos, yPos });
     soundChannelsSlider->setOnChangeFunction(
-        [](int value) { 
-        egoboo_config_t::get().sound_channel_count.setValue(value);
-        Mix_AllocateChannels(egoboo_config_t::get().sound_channel_count.getValue());
+        [](int value) {
+        Actions::applySoundChannelCount(value, [](int channelCount)
+        {
+            Mix_AllocateChannels(channelCount);
+        });
     });
-    soundChannelsSlider->setValue(egoboo_config_t::get().sound_channel_count.getValue());
+    soundChannelsSlider->setValue(Actions::soundChannelCount());
     addComponent(soundChannelsSlider);
     yPos += soundChannelsSlider->getHeight() + 20;
 
@@ -116,13 +111,13 @@ AudioOptionsScreen::AudioOptionsScreen()
     addComponent(footstepLabel);
     yPos += footstepLabel->getHeight() + 5;
 
-    auto footstepButton = std::make_shared<Ego::GUI::Button>(egoboo_config_t::get().sound_footfallEffects_enable.getValue() ? "Yes" : "No");
+    auto footstepButton = std::make_shared<Ego::GUI::Button>(Actions::footstepEffectsLabel());
     footstepButton->setPosition({ xPos + footstepLabel->getWidth() + 10, footstepLabel->getY() });
     footstepButton->setSize({ 100, 30 });
     _connections.push_back(footstepButton->Clicked.subscribe(
     [footstepButton]{
-        egoboo_config_t::get().sound_footfallEffects_enable.setValue(!egoboo_config_t::get().sound_footfallEffects_enable.getValue());
-        footstepButton->setText(egoboo_config_t::get().sound_footfallEffects_enable.getValue() ? "Yes" : "No");
+        Actions::toggleFootstepEffects();
+        footstepButton->setText(Actions::footstepEffectsLabel());
     }));
     addComponent(footstepButton);
 
@@ -135,7 +130,10 @@ AudioOptionsScreen::AudioOptionsScreen()
         endState();
 
         // Save the setup file
-        Ego::Setup::upload(egoboo_config_t::get());
+        Actions::saveConfig([](egoboo_config_t& config)
+        {
+            Ego::Setup::upload(config);
+        });
     }));
     addComponent(backButton);
 
