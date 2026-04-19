@@ -176,6 +176,23 @@ TEST_F(ScriptStateFunctionsFixture, SetChildStatePublishesStateThroughScriptable
     EXPECT_EQ(child->getAIStateValue(), 42);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SetChildStateFailsWithoutChild)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5516);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.argument = 99;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = ObjectRef::Invalid;
+    const int previousStateValue = actor->getAIStateValue();
+
+    EXPECT_FALSE(scr_SetChildState(state, self));
+    EXPECT_EQ(actor->getAIStateValue(), previousStateValue);
+}
+
 TEST_F(ScriptStateFunctionsFixture, SetChildContentPublishesContentThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();
@@ -192,6 +209,65 @@ TEST_F(ScriptStateFunctionsFixture, SetChildContentPublishesContentThroughScript
 
     EXPECT_TRUE(scr_SetChildContent(state, self));
     EXPECT_EQ(child->getAIContent(), 43);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SetChildContentFailsWithoutChild)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5526);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.argument = 98;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = ObjectRef::Invalid;
+    const int previousContentValue = actor->getAIContent();
+
+    EXPECT_FALSE(scr_SetChildContent(state, self));
+    EXPECT_EQ(actor->getAIContent(), previousContentValue);
+}
+
+TEST_F(ScriptStateFunctionsFixture, PoofTargetDefersSelfPoofByOneUpdate)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5527);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(actor->getObjRef());
+
+    const int32_t previousTargetPoofTime = actor->getAIPoofTime();
+    const auto updateCount = static_cast<int32_t>(GameSessionContext::get().worldUpdateCount());
+
+    EXPECT_TRUE(scr_PoofTarget(state, self));
+    EXPECT_EQ(self.poof_time, updateCount + 1);
+    EXPECT_EQ(actor->getAIPoofTime(), previousTargetPoofTime);
+    EXPECT_EQ(self.getTarget(), actor->getObjRef());
+}
+
+TEST_F(ScriptStateFunctionsFixture, PoofTargetPublishesImmediatePoofTimeAndRetargetsToSelf)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5528);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5529);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    const int32_t previousSelfPoofTime = self.poof_time;
+    const auto updateCount = static_cast<int32_t>(GameSessionContext::get().worldUpdateCount());
+
+    EXPECT_TRUE(scr_PoofTarget(state, self));
+    EXPECT_EQ(target->getAIPoofTime(), updateCount);
+    EXPECT_EQ(self.poof_time, previousSelfPoofTime);
+    EXPECT_EQ(self.getTarget(), actor->getObjRef());
 }
 
 TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThroughScriptableRole)

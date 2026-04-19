@@ -436,6 +436,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by routing the bounded it
 
 Added `ScriptSystemsFunctions.cpp` coverage for held/inventory item costing, target-hand plus actor-inventory ammo restock ordering, bounded damage/kill/heal behavior, and `[HEAL]` enchant termination after `HealTarget()`. Build, targeted script/gameplay tests, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 103 — Conservative spawn-helper role migration (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by routing the remaining role-pure child-state, child-content, and target-poof publication helpers through the existing `IScriptable` seam instead of ad hoc concrete `Object` handling. Kept `Script/script.c` and the Script-owned raw-runtime bridge untouched.
+
+Extended `ScriptStateFunctions.cpp` with direct regressions for self-poof deferral, immediate non-self poof publication plus retargeting, and missing-child failure behavior for child-state/content helpers. Build, targeted script-state tests, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

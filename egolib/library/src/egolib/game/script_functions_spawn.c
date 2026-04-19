@@ -31,6 +31,35 @@ void publishCleanedUpState(IScriptable& listener)
 {
     listener.addAIAlertBits(ALERTIF_CLEANEDUP);
 }
+
+bool trySetChildState(ObjectRef childRef, int stateValue)
+{
+    Object* child = objectHandler().get(childRef);
+    if (child == nullptr)
+    {
+        return false;
+    }
+
+    scriptable(*child).setAIStateValue(stateValue);
+    return true;
+}
+
+bool trySetChildContent(ObjectRef childRef, int contentValue)
+{
+    Object* child = objectHandler().get(childRef);
+    if (child == nullptr)
+    {
+        return false;
+    }
+
+    scriptable(*child).setAIContent(contentValue);
+    return true;
+}
+
+void publishImmediatePoof(IScriptable& target)
+{
+    target.setAIPoofTime(worldUpdateCount());
+}
 }
 
 
@@ -426,9 +455,7 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         else
         {
             // Poof others now
-            IScriptable& scriptableTarget = scriptable(*pself_target);
-            scriptableTarget.setAIPoofTime(worldUpdateCount());
-
+            publishImmediatePoof(scriptable(*pself_target));
             SET_TARGET(self.getSelf(), pself_target );
         }
     }
@@ -463,10 +490,7 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if (ObjectRef::Invalid != self.child)
-    {
-        scriptable(*objectHandler()[self.child]).setAIStateValue(state.argument);
-    }
+    returncode = trySetChildState(self.child, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1115,16 +1139,7 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    Object *child = objectHandler().get(self.child);
-    if (nullptr == child)
-    {
-        returncode = false;
-    }
-    else
-    {
-        IScriptable& scriptableChild = scriptable(*child);
-        scriptableChild.setAIContent(state.argument);
-    }
+    returncode = trySetChildContent(self.child, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
