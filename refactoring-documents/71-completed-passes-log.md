@@ -424,6 +424,12 @@ Finished the cross-cutting `egoboo_config_t` Tier 1.3 migration by routing the w
 
 Added focused regression coverage in `ConfigMutations.cpp` for installed-config audio/video option mutations, save callbacks, resolution selection, and SDL aliasing/fullscreen requirement reset-relax behavior. Remaining direct `egoboo_config_t::get()` callers are now confined to subsystem-local bootstrap/lifecycle or singleton-definition code (`AudioSystem`, `ImageManager`, `ParticleHandler`, `Core::System`, `ContentRuntimeBootstrap`, `egoboo_setup.c`).
 
+### Pass 101 — Conservative target-role migration (2026-04-19)
+
+Continued Tier 1.2 inside `script_functions_target.c` by routing the already role-pure target order/state/damage helpers through local `IScriptable` / `IDamageable` casts instead of ad hoc concrete `Object` use, while keeping `Script/script.c` and the Script-owned raw-runtime bridge untouched.
+
+Also migrated the left/right-hand target setters onto `IInventoryHolder` and extended `ScriptTargetFunctions.cpp` with direct coverage pinning target-hand selection through the landed inventory-holder seam.
+
 ---
 
 ## Files touched most by this pass log

@@ -4,6 +4,23 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+const IDamageable& damageable(const Object& object)
+{
+    return object;
+}
+
+IScriptable& scriptable(Object& object)
+{
+    return object;
+}
+
+const IInventoryHolder& inventoryHolder(const Object& object)
+{
+    return object;
+}
+}
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
@@ -18,7 +35,7 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
-    const IDamageable& damageableTarget = *pself_target;
+    const IDamageable& damageableTarget = damageable(*pself_target);
 
     // Proceed only if the character's target has just died or is already dead
     returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !damageableTarget.isAlive() );
@@ -66,7 +83,7 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    auto ichr = pself_target->getHeldObject(SLOT_LEFT);
+    auto ichr = inventoryHolder(*pself_target).getHeldObject(SLOT_LEFT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
@@ -92,7 +109,7 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
 
     SCRIPT_REQUIRE_TARGET( pself_target );
 
-    auto ichr = pself_target->getHeldObject(SLOT_RIGHT);
+    auto ichr = inventoryHolder(*pself_target).getHeldObject(SLOT_RIGHT);
     returncode = false;
     if ( objectHandler().exists( ichr ) )
     {
@@ -428,7 +445,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
         if ( leader )
         {
-            const IScriptable& scriptableLeader = *leader;
+            const IScriptable& scriptableLeader = scriptable(*leader);
             auto itarget = scriptableLeader.getAITarget();
 
             if ( objectHandler().exists( itarget ) )
@@ -1170,7 +1187,7 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
-    IScriptable& scriptableTarget = *pself_target;
+    IScriptable& scriptableTarget = scriptable(*pself_target);
 
     returncode = scriptableTarget.addAIOrder(state.argument, 0);
 
@@ -1415,7 +1432,7 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = *pself_target;
+    const IScriptable& scriptableTarget = scriptable(*pself_target);
 
     state.argument = scriptableTarget.getAIStateValue();
 
@@ -1434,7 +1451,7 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = *pself_target;
+    const IScriptable& scriptableTarget = scriptable(*pself_target);
 
     state.argument = scriptableTarget.getAIContent();
 
@@ -1609,7 +1626,7 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SCRIPT_REQUIRE_TARGET( pself_target );
-    const IScriptable& scriptableTarget = *pself_target;
+    const IScriptable& scriptableTarget = scriptable(*pself_target);
 
     state.argument = scriptableTarget.getAILastDamageType();
 

@@ -164,6 +164,34 @@ TEST_F(ScriptTargetFunctionsFixture, OrderTargetPublishesOrderThroughScriptableR
     EXPECT_EQ(Ego::Script::runtimeState(*target).order_counter, 0);
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToTargetHandsReadsThroughInventoryHolderRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5305);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5306);
+    auto leftHandItem = makeObject(module, "mp_objects/follower.obj", 5307);
+    auto rightHandItem = makeObject(module, "mp_objects/follower.obj", 5308);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+    ASSERT_NE(rightHandItem, nullptr);
+
+    IInventoryHolder& inventoryHolder = *target;
+    inventoryHolder.setHeldObject(SLOT_LEFT, leftHandItem->getObjRef());
+    inventoryHolder.setHeldObject(SLOT_RIGHT, rightHandItem->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_SetTargetToTargetLeftHand(state, self));
+    EXPECT_EQ(self.getTarget(), leftHandItem->getObjRef());
+
+    self.setTarget(target->getObjRef());
+    EXPECT_TRUE(scr_SetTargetToTargetRightHand(state, self));
+    EXPECT_EQ(self.getTarget(), rightHandItem->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();
