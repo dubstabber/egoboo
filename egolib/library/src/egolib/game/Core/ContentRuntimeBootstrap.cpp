@@ -35,9 +35,15 @@ ContentRuntimeBootstrap::ContentRuntimeBootstrap(const Options& options) :
         _loggingInitialized = true;
     }
 
+    if (!EngineContext::get().tryConfig())
+    {
+        EngineContext::get().installConfig(egoboo_config_t::get());
+        _configInstalled = true;
+    }
+
     if (_options.configureLightweightProfileLoading)
     {
-        egoboo_config_t::get().graphic_gouraudShading_enable.setValue(false);
+        EngineContext::get().config().graphic_gouraudShading_enable.setValue(false);
     }
 
     if (_options.seedRandom)
@@ -101,5 +107,10 @@ ContentRuntimeBootstrap::~ContentRuntimeBootstrap()
     {
         EngineContext::get().clearLogTarget();
         Log::uninitialize();
+    }
+
+    if (_configInstalled)
+    {
+        EngineContext::get().clearConfig();
     }
 }

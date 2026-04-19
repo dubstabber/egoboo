@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 92) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 96) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -393,6 +393,12 @@ Migrated the remaining non-subsystem `Log::get()` callers in `Core/System.cpp`, 
 Continued T1.2 inside the legacy script helper layer by migrating role-pure state, holder-alert, and invictus/damage-timer helpers in `script_functions_spawn.c` and `script_functions_state.c` onto `IScriptable` / `IDamageable`. Added the missing `IDamageable::setInvincible(...)` write-side seam so invictus helpers no longer need the concrete `Object` type.
 
 Added `ScriptStateFunctions.cpp` coverage for state publication, child-state/content publication, holder-blocked target propagation, damage-timer publication, and invictus toggling. Kept `Script/script.c` untouched and preserved `Ego::Script::runtimeState(...)` as the only raw script-runtime bridge.
+
+### Pass 96 — Engine-published config bootstrap seam (2026-04-19)
+
+Started the `egoboo_config_t` Tier 1.3 seam by extending `EngineContext` with install/clear/try/throwing config accessors and publishing the active config from `Core::System`. Migrated bootstrap/lifecycle callers in `GameEngine`, `LoadingState`, and `MapEditorState` onto the installed config seam instead of reaching directly for `egoboo_config_t::get()`.
+
+Kept non-game lightweight runtimes working by letting `ContentRuntimeBootstrap` conditionally publish the singleton-backed config only when no system-owned config is already installed, then moved its Gouraud-shading setup tweak onto `EngineContext::get().config()`. Added `EngineContext` regressions covering config install, double-install rejection, clear, throw-when-missing, and the requirement that `clearEngine()` must not clear the installed config.
 
 ---
 

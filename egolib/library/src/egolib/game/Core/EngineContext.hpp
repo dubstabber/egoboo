@@ -12,6 +12,7 @@
 
 class GameEngine;
 class PlayingState;
+struct egoboo_config_t;
 namespace Log { struct Target; }
 namespace Ego { namespace GUI { class UIManager; } }
 
@@ -79,6 +80,15 @@ public:
 
     IProfileSystem& profileSystem();
     const IProfileSystem& profileSystem() const;
+
+    void installConfig(egoboo_config_t& config);
+    void clearConfig();
+
+    egoboo_config_t* tryConfig();
+    const egoboo_config_t* tryConfig() const;
+
+    egoboo_config_t& config();
+    const egoboo_config_t& config() const;
 
     void installLogTarget(Log::Target& logTarget);
     void clearLogTarget();

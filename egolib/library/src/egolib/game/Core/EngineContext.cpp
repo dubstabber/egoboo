@@ -6,6 +6,7 @@
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Log/Target.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -19,6 +20,7 @@ Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
+egoboo_config_t* activeConfig = nullptr;
 Log::Target* activeLogTarget = nullptr;
 }
 
@@ -339,6 +341,50 @@ const IProfileSystem& EngineContext::profileSystem() const
         throw std::logic_error("no active profile system");
     }
     return *currentProfileSystem;
+}
+
+void EngineContext::installConfig(egoboo_config_t& config)
+{
+    if (activeConfig)
+    {
+        throw std::logic_error("config already installed");
+    }
+    activeConfig = &config;
+}
+
+void EngineContext::clearConfig()
+{
+    activeConfig = nullptr;
+}
+
+egoboo_config_t* EngineContext::tryConfig()
+{
+    return activeConfig;
+}
+
+const egoboo_config_t* EngineContext::tryConfig() const
+{
+    return activeConfig;
+}
+
+egoboo_config_t& EngineContext::config()
+{
+    egoboo_config_t* currentConfig = tryConfig();
+    if (!currentConfig)
+    {
+        throw std::logic_error("no active config");
+    }
+    return *currentConfig;
+}
+
+const egoboo_config_t& EngineContext::config() const
+{
+    const egoboo_config_t* currentConfig = tryConfig();
+    if (!currentConfig)
+    {
+        throw std::logic_error("no active config");
+    }
+    return *currentConfig;
 }
 
 void EngineContext::installLogTarget(Log::Target& logTarget)

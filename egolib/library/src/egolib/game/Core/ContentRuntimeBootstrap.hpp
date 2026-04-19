@@ -33,6 +33,7 @@ public:
 
 private:
     Options _options;
+    bool _configInstalled = false;
     bool _baseVfsPathsInitialized = false;
     bool _loggingInitialized = false;
     bool _imageManagerInitialized = false;

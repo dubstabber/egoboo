@@ -165,6 +165,7 @@ protected:
     void SetUp() override
     {
         EngineContext::get().clearLogTarget();
+        EngineContext::get().clearConfig();
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
@@ -176,6 +177,7 @@ protected:
     void TearDown() override
     {
         EngineContext::get().clearLogTarget();
+        EngineContext::get().clearConfig();
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
@@ -318,6 +320,14 @@ TEST_F(EngineContextFixture, ProfileSystemThrowsWhenNoProfileSystemIsInstalled)
     EXPECT_THROW(context.profileSystem(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ConfigThrowsWhenNoConfigIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryConfig(), nullptr);
+    EXPECT_THROW(context.config(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, ParticleHandlerThrowsWhenNoParticleHandlerIsInstalled)
 {
     EngineContext& context = EngineContext::get();
@@ -380,6 +390,17 @@ TEST_F(EngineContextFixture, InstallProfileSystemPublishesInstalledProfileSystem
     EXPECT_EQ(&context.profileSystem(), &profileSystem);
 }
 
+TEST_F(EngineContextFixture, InstallConfigPublishesInstalledConfig)
+{
+    EngineContext& context = EngineContext::get();
+
+    egoboo_config_t config;
+    context.installConfig(config);
+
+    EXPECT_EQ(context.tryConfig(), &config);
+    EXPECT_EQ(&context.config(), &config);
+}
+
 TEST_F(EngineContextFixture, InstallLogTargetPublishesInstalledLogTarget)
 {
     EngineContext& context = EngineContext::get();
@@ -439,6 +460,18 @@ TEST_F(EngineContextFixture, InstallProfileSystemRejectsDoubleInstall)
 
     EXPECT_THROW(context.installProfileSystem(second), std::logic_error);
     EXPECT_EQ(context.tryProfileSystem(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallConfigRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    egoboo_config_t first;
+    egoboo_config_t second;
+    context.installConfig(first);
+
+    EXPECT_THROW(context.installConfig(second), std::logic_error);
+    EXPECT_EQ(context.tryConfig(), &first);
 }
 
 TEST_F(EngineContextFixture, InstallLogTargetRejectsDoubleInstall)
@@ -503,6 +536,19 @@ TEST_F(EngineContextFixture, ClearProfileSystemRemovesInstalledProfileSystem)
 
     EXPECT_EQ(context.tryProfileSystem(), nullptr);
     EXPECT_THROW(context.profileSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearConfigRemovesInstalledConfig)
+{
+    EngineContext& context = EngineContext::get();
+
+    egoboo_config_t config;
+    context.installConfig(config);
+
+    context.clearConfig();
+
+    EXPECT_EQ(context.tryConfig(), nullptr);
+    EXPECT_THROW(context.config(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearLogTargetRemovesInstalledLogTarget)
@@ -578,6 +624,21 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledProfileSystem)
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryProfileSystem(), nullptr);
     EXPECT_THROW(context.profileSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineKeepsInstalledConfig)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    egoboo_config_t config;
+    context.installConfig(config);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryConfig(), &config);
+    EXPECT_EQ(&context.config(), &config);
 }
 
 TEST_F(EngineContextFixture, ClearEngineKeepsInstalledLogTarget)

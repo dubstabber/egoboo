@@ -296,7 +296,7 @@ bool GameEngine::initialize()
     Ego::Input::InputSystem::initialize();
 
     // renderer options
-    gfx_config_t::download(gfx, egoboo_config_t::get());
+    gfx_config_t::download(gfx, EngineContext::get().config());
 
     // <<<
     /* ********************************************************************************** */
@@ -306,7 +306,7 @@ bool GameEngine::initialize()
 
 	// camera options
 	CameraSystem::initialize();
-	CameraSystem::get().getCameraOptions().turnMode = egoboo_config_t::get().camera_control.getValue();
+	CameraSystem::get().getCameraOptions().turnMode = EngineContext::get().config().camera_control.getValue();
 
 
     // Subscribe to window events.
@@ -368,7 +368,7 @@ bool GameEngine::initialize()
     // do this after the ego_init_SDL() and gfx_system_init_OpenGL() in case the config values are clamped
     // to valid values
     renderPreloadText("Configurating game data...");
-    config_synch(egoboo_config_t::get(), false, false);
+    config_synch(EngineContext::get().config(), false, false);
 
     // load input
     input_settings_load_vfs("/controls.txt");
@@ -446,7 +446,7 @@ void GameEngine::uninitialize()
     GameSessionContext::get().quitModule();
 
     // synchronize the config values with the various game subsystems
-    config_synch(egoboo_config_t::get(), true, true);
+    config_synch(EngineContext::get().config(), true, true);
 
     // delete all the graphics allocated by SDL and OpenGL
     gfx_system_release_all_graphics();

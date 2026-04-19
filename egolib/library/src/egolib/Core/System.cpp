@@ -53,13 +53,14 @@ SystemService::SystemService(const std::string& binaryPath) {
     // Initialize logging.
     Log::initialize("/debug/log.txt", Log::Level::Debug);
     EngineContext::get().installLogTarget(Log::get());
+    EngineContext::get().installConfig(egoboo_config_t::get());
 
     // Say hello.
     Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo Engine ", VERSION, Log::EndOfEntry);
 
     // Load "setup.txt" and download "setup.txt" into the Egoboo configuration.
     Setup::begin();
-    Setup::download(egoboo_config_t::get());
+    Setup::download(EngineContext::get().config());
 
     // Initialize SDL timer.
     Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
@@ -88,6 +89,7 @@ SystemService::SystemService(const std::string& binaryPath, const std::string& e
     // Initialize logging.
     Log::initialize("/debug/log.txt", Log::Level::Debug);
     EngineContext::get().installLogTarget(Log::get());
+    EngineContext::get().installConfig(egoboo_config_t::get());
     
     // Say hello.
     Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "starting Egoboo engine ", VERSION, Log::EndOfEntry);
@@ -96,7 +98,7 @@ SystemService::SystemService(const std::string& binaryPath, const std::string& e
     Setup::begin();
 
     // Load "setup.txt" and download "setup.txt" into the Egoboo configuration.
-    Setup::download(egoboo_config_t::get());
+    Setup::download(EngineContext::get().config());
 
     // Initialize SDL timer.
     Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "initialize SDL timer ",
@@ -115,6 +117,7 @@ SystemService::~SystemService() {
     SDL_Quit();
     // Save "setup.txt".
     Setup::end();
+    EngineContext::get().clearConfig();
     // Say bye.
     Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "exiting Egoboo engine ", VERSION, Log::EndOfEntry);
     // Uninitialize logging.

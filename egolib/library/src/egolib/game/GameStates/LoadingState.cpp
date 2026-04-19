@@ -229,7 +229,7 @@ void LoadingState::loadModuleData()
         audioSystem().stopMusic();
 
         // make sure the per-module configuration settings are correct
-        config_synch(egoboo_config_t::get(), true, false);
+        config_synch(EngineContext::get().config(), true, false);
 
         // Complete!
         setProgressText("Finished!", 100);
