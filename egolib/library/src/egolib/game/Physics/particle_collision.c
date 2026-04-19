@@ -55,6 +55,36 @@ IScriptable& scriptable(Object& object)
 {
     return object;
 }
+
+bool usedHeldItemForBlock(const Object& character, const IScriptable& scriptableCharacter, slot_t slot, ObjectRef& usedItem)
+{
+    usedItem = character.getHeldObject(slot);
+    return activeModule().getObjectHandler().exists(usedItem) && scriptableCharacter.getAILastItemUsed() == usedItem;
+}
+
+void publishScoredHit(IScriptable& attacker, ObjectRef targetRef)
+{
+    attacker.addAIAlertBits(ALERTIF_SCOREDAHIT);
+    attacker.setAILastHit(targetRef);
+}
+
+bool publishWeaponScoredHit(const std::shared_ptr<Object>& weapon, ObjectRef targetRef, ObjectRef lastUsedItem)
+{
+    if (!weapon)
+    {
+        return false;
+    }
+
+    IScriptable& scriptableWeapon = scriptable(*weapon);
+    scriptableWeapon.setAILastHit(targetRef);
+    if (lastUsedItem != weapon->getObjRef())
+    {
+        return false;
+    }
+
+    scriptableWeapon.addAIAlertBits(ALERTIF_SCOREDAHIT);
+    return weapon->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !weapon->getProfile()->isRangedWeapon();
+}
 }
 
 //Private functions
@@ -561,21 +591,13 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
             // Check right hand for a shield
             if ( !using_shield )
             {
-                item = pdata.pchr->getHeldObject(SLOT_RIGHT);
-                if ( activeModule().getObjectHandler().exists( item ) && scriptableCharacter.getAILastItemUsed() == item )
-                {
-                    using_shield = true;
-                }
+                using_shield = usedHeldItemForBlock(*pdata.pchr, scriptableCharacter, SLOT_RIGHT, item);
             }
 
             // Check left hand for a shield
             if ( !using_shield )
             {
-                item = pdata.pchr->getHeldObject(SLOT_LEFT);
-                if ( activeModule().getObjectHandler().exists( item ) && scriptableCharacter.getAILastItemUsed() == item )
-                {
-                    using_shield = true;
-                }
+                using_shield = usedHeldItemForBlock(*pdata.pchr, scriptableCharacter, SLOT_LEFT, item);
             }
 
             // Now we have the block rating and know the enemy
@@ -793,36 +815,15 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 }
 
                 // Notify the attacker of a scored hit
-                scriptableOwner.addAIAlertBits(ALERTIF_SCOREDAHIT);
-                scriptableOwner.setAILastHit(pdata.pchr->getObjRef());
+                publishScoredHit(scriptableOwner, pdata.pchr->getObjRef());
 
                 // Tell the weapons who the attacker hit last
                 bool meleeAttack = false;
                 const std::shared_ptr<Object> &leftHanditem = powner->getRightHandItem();
-                if (leftHanditem)
-                {
-                    IScriptable& scriptableLeftHandItem = scriptable(*leftHanditem);
-                    scriptableLeftHandItem.setAILastHit(pdata.pchr->getObjRef());
-                    if (scriptableOwner.getAILastItemUsed() == leftHanditem->getObjRef()) {
-                        scriptableLeftHandItem.addAIAlertBits(ALERTIF_SCOREDAHIT);  
-                        if(leftHanditem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !leftHanditem->getProfile()->isRangedWeapon()) {
-                            meleeAttack = true;
-                        }
-                    } 
-                }
+                meleeAttack = publishWeaponScoredHit(leftHanditem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
                 const std::shared_ptr<Object> &rightHandItem = powner->getRightHandItem();
-                if (rightHandItem)
-                {
-                    IScriptable& scriptableRightHandItem = scriptable(*rightHandItem);
-                    scriptableRightHandItem.setAILastHit(pdata.pchr->getObjRef());
-                    if (scriptableOwner.getAILastItemUsed() == rightHandItem->getObjRef()) {
-                        scriptableRightHandItem.addAIAlertBits(ALERTIF_SCOREDAHIT);  
-                        if(rightHandItem->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !rightHandItem->getProfile()->isRangedWeapon()) {
-                            meleeAttack = true;
-                        }
-                    } 
-                }
+                meleeAttack = publishWeaponScoredHit(rightHandItem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
                 //Unarmed attack?
                 if (scriptableOwner.getAILastItemUsed() == powner->getObjRef()) {

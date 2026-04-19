@@ -32,6 +32,27 @@ IScriptable& scriptable(Object& object)
 {
     return object;
 }
+
+void publishUsedAlert(IScriptable& object)
+{
+    object.addAIAlertBits(ALERTIF_USED);
+}
+
+void publishLastItemUsed(IScriptable& object, ObjectRef itemRef)
+{
+    object.setAILastItemUsed(itemRef);
+}
+
+void publishAttackUse(IScriptable& attacker, ObjectRef itemRef, IScriptable& usedObject)
+{
+    publishLastItemUsed(attacker, itemRef);
+    publishUsedAlert(usedObject);
+}
+
+void publishThrownAlert(IScriptable& object)
+{
+    object.addAIAlertBits(ALERTIF_THROWN);
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -115,7 +136,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
         allowedtoattack = false;
         if ( 0 == pweapon->getReloadTimer() )
         {
-            scriptableWeapon.addAIAlertBits(ALERTIF_USED);
+            publishUsedAlert(scriptableWeapon);
         }
     }
 
@@ -143,8 +164,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                         const ModelAction action = pmount->getProfile()->getModel()->randomizeAction(ACTION_UA);
                         pmount->playAction(action, false);
                         IScriptable& scriptableMount = scriptable(*pmount);
-                        scriptableMount.addAIAlertBits(ALERTIF_USED);
-                        scriptableCharacter.setAILastItemUsed(pmount->getObjRef());
+                        publishAttackUse(scriptableCharacter, pmount->getObjRef(), scriptableMount);
 
                         retval = true;
                     }
@@ -235,14 +255,14 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                 }
 
                 // let everyone know what we did
-                scriptableCharacter.setAILastItemUsed(iweapon);
+                publishLastItemUsed(scriptableCharacter, iweapon);
 
                 /// @note ZF@> why should there any reason the weapon should NOT be alerted when it is used?
                 // grab the MADFX_* flags for this action
 //                BIT_FIELD action_madfx = getProfile()->getModel()->getActionFX(action);
 //                if ( iweapon == ichr || HAS_NO_BITS( action, MADFX_ACTLEFT | MADFX_ACTRIGHT ) )
                 {
-                    scriptableWeapon.addAIAlertBits(ALERTIF_USED);
+                    publishUsedAlert(scriptableWeapon);
                 }
 
                 retval = true;
@@ -323,7 +343,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             IScriptable& scriptableThrown = scriptable(*pthrown);
             pthrown->setKursed(false);
             pthrown->setAmmo(1);
-            scriptableThrown.addAIAlertBits(ALERTIF_THROWN);
+            publishThrownAlert(scriptableThrown);
 
             // deterimine the throw velocity
             float velocity = MINTHROWVELOCITY;

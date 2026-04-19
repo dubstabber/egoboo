@@ -181,6 +181,24 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker
     EXPECT_EQ(defender->getDamageTimer(), ParticleHandler::DEFENDTIME);
 }
 
+TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerIsMissing)
+{
+    beginActiveTestModule();
+    auto& session = GameSessionContext::get();
+    auto defender = makeFollower(session.objectHandler(), 4108);
+    ASSERT_NE(defender, nullptr);
+
+    defender->setDamageTimer(0);
+    defender->setAILastAttacker(ObjectRef(77));
+    defender->clearAIAlertBits(ALERTIF_BLOCKED);
+
+    ParticleHandler::get().spawnDefencePing(defender, nullptr);
+
+    EXPECT_TRUE(defender->hasAnyAIAlertBits(ALERTIF_BLOCKED));
+    EXPECT_EQ(defender->getAILastAttacker(), ObjectRef::Invalid);
+    EXPECT_EQ(defender->getDamageTimer(), ParticleHandler::DEFENDTIME);
+}
+
 TEST_F(ModuleUpdateFixture, ReaffirmAttachedParticlesPublishesReaffirmedAlert)
 {
     auto& module = beginActiveTestModule();

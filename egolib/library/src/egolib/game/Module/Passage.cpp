@@ -28,9 +28,9 @@
 
 namespace
 {
-IScriptable& scriptable(Object& object)
+void publishCrushedAlert(IScriptable& object)
 {
-    return object;
+    object.addAIAlertBits(ALERTIF_CRUSHED);
 }
 }
 
@@ -118,7 +118,7 @@ bool Passage::close()
 
         // Crush any unfortunate characters
         for(const std::shared_ptr<Object> &character : crushedCharacters) {
-            scriptable(*character).addAIAlertBits(ALERTIF_CRUSHED);
+            publishCrushedAlert(*character);
         }
     }
 
