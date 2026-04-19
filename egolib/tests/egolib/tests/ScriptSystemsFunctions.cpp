@@ -471,6 +471,88 @@ TEST_F(ScriptSystemsFunctionsFixture, ManaAmmoAndKurseHelpersUseCharacterStateRo
     EXPECT_TRUE(itemTarget->isKursed());
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, UnkurseTargetUsesCharacterStateRoleAndPreservesMissingTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5670);
+    auto itemTarget = makeInventoryItem(module, 5671);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(itemTarget, nullptr);
+
+    itemTarget->setKursed(true);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, itemTarget);
+
+    EXPECT_TRUE(scr_UnkurseTarget(state, self));
+    EXPECT_FALSE(itemTarget->isKursed());
+
+    itemTarget->setKursed(true);
+    self.setTarget(ObjectRef::Invalid);
+
+    EXPECT_FALSE(scr_UnkurseTarget(state, self));
+    EXPECT_TRUE(itemTarget->isKursed());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, AddBlipAllEnemiesPublishesAndResetsEnemySense)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5674);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5675);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    script_state_t state;
+    state.argument = IDSZ2('U', 'N', 'D', 'E').toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_AddBlipAllEnemies(state, self));
+    const EnemySenseState& published = GameSessionContext::get().enemySense();
+    EXPECT_EQ(published.team, target->getTeamRef());
+    EXPECT_EQ(published.idsz, IDSZ2('U', 'N', 'D', 'E'));
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_AddBlipAllEnemies(state, self));
+    const EnemySenseState& reset = GameSessionContext::get().enemySense();
+    EXPECT_EQ(reset.team, static_cast<TEAM_REF>(Team::TEAM_MAX));
+    EXPECT_EQ(reset.idsz, IDSZ2::None);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, TargetDamageSelfUsesTargetDamageTypeAttribution)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5676);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5677);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    actor->setAILastAttacker(ObjectRef::Invalid);
+    actor->setAILastDamageType(DamageType::DAMAGE_DIRECT);
+
+    auto& config = EngineContext::get().config();
+    const auto previousFeedback = config.hud_feedback.getValue();
+    config.hud_feedback.setValue(Ego::FeedbackType::None);
+
+    script_state_t state;
+    state.argument = 512;
+    state.distance = static_cast<int>(DamageType::DAMAGE_FIRE);
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    const float lifeBefore = actor->getLife();
+    EXPECT_TRUE(scr_TargetDamageSelf(state, self));
+    EXPECT_LT(actor->getLife(), lifeBefore);
+    EXPECT_EQ(actor->getAILastDamageType(), DamageType::DAMAGE_FIRE);
+
+    config.hud_feedback.setValue(previousFeedback);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseCharacterStateRole)
 {
     auto& module = beginActiveTestModule();

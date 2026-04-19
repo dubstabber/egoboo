@@ -484,6 +484,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by introducing `ICharacte
 
 Added `ObjectAccessors.cpp` coverage for the new `ICharacterState` seam plus `ScriptSystemsFunctions.cpp` coverage for mana/ammo/kurse mutation and attribute/timer/enchant/perk helpers. Build, the focused `ScriptSystemsFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 111 — Conservative systems-role follow-on (2026-04-19)
+
+Continued Tier 1.2 with a narrow `script_functions_systems.c` follow-on: routed `UnkurseTarget` through `ICharacterState`, kept `AddBlipAllEnemies` on conservative target-resolution helpers while avoiding direct team-object reads, and rewired `TargetDamageSelf` onto the existing target-query and damageable seams without changing attacker attribution.
+
+Extended `ScriptSystemsFunctions.cpp` with focused regressions for unkurse failure semantics, enemy-sense publication/reset, and target-attributed self-damage. Build, the focused script-systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

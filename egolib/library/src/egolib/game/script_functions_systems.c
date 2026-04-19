@@ -16,11 +16,6 @@ IInventoryHolder& inventoryHolder(Object& object)
     return object;
 }
 
-IDamageable& damageable(Object& object)
-{
-    return object;
-}
-
 ICharacterState& characterState(Object& object)
 {
     return object;
@@ -595,13 +590,14 @@ uint8_t scr_UnkurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function unkurses the target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if (targetState == nullptr)
+    {
+        return false;
+    }
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    pself_target->setKursed(false);
+    targetState->setKursed(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1944,9 +1940,11 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.getTarget() ) )
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    const std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
+    if (targetInfo != nullptr && target != nullptr)
     {
-        GameSessionContext::get().publishEnemySense(EnemySenseState(objectHandler()[self.getTarget()]->getTeam().toRef(), state.argument));
+        GameSessionContext::get().publishEnemySense(EnemySenseState(target->getTeamRef(), state.argument));
     }
     else
     {
@@ -2112,16 +2110,18 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
+    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
     IDamageable* damageableSelf = tryDamageable(self.getSelf());
-    if(!target || damageableSelf == nullptr) {
+    if (targetInfo == nullptr || target == nullptr || damageableSelf == nullptr)
+    {
         return false;
     }
 
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeam().toRef(), target, false, false, true);
+    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), target->getTeamRef(), target, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
