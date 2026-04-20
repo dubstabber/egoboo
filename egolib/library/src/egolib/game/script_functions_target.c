@@ -184,7 +184,7 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
     const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef sissyRef = activeModule().getTeamList()[teamRef].getSissyRef();
+        const ObjectRef sissyRef = activeModule().getTeamCallerForHelpRef(teamRef);
         if ( objectHandler().exists(sissyRef) )
         {
             self.setTarget(sissyRef);
@@ -468,7 +468,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
     const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef leaderRef = activeModule().getTeamList()[teamRef].getLeaderRef();
+        const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
         if ( objectHandler().exists(leaderRef) )
         {
             IScriptable* scriptableLeader = tryScriptable(leaderRef);
@@ -531,7 +531,7 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
-        const ObjectRef leaderRef = activeModule().getTeamList()[teamRef].getLeaderRef();
+        const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
         if ( objectHandler().exists(leaderRef) )
         {
             self.setTarget(leaderRef);

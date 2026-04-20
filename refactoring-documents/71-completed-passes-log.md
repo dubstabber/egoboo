@@ -554,6 +554,12 @@ Continued Tier 1.2 by introducing `IEnchantable` as a narrow `Object` role for e
 
 Repaired the stale enchant accessor fixture to use a valid enchant-backed object and extended accessor/script-system coverage to pin add/disenchant publication, last-spawned tracking, boost-value mutation, and target/child/all disenchant semantics. Build, focused enchant tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 122 — Module-owned team helper closure (2026-04-20)
+
+Continued Tier 1.2 by adding narrow `GameModule` team helpers for leader lookup, call-for-help lookup, and team-XP publication, then routing the remaining script-helper `activeModule().getTeamList()` reads in `script_functions_systems.c` and `script_functions_target.c` through that seam instead of direct module-team indexing.
+
+Extended focused script-system and script-target coverage to pin leader-alive behavior, team-owned leader/sissy ref lookup, and `Team::TEAM_GOOD` XP publication through the new module seam. Build, focused script tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

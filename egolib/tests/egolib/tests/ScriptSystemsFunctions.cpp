@@ -950,14 +950,21 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
     EXPECT_TRUE(scr_BecomeLeader(state, self));
     EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getLeader(), actor);
     EXPECT_TRUE(scr_IfLeaderIsAlive(state, self));
+    EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), actor->getObjRef());
 
     state.argument = 96;
     state.distance = static_cast<int>(XP_TEAMKILL);
     EXPECT_TRUE(scr_GiveExperienceToTargetTeam(state, self));
 
     target->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    const int goodTeamXpBefore = actor->getExperience();
     state.argument = 48;
     EXPECT_TRUE(scr_GiveExperienceToGoodTeam(state, self));
+    EXPECT_GT(actor->getExperience(), goodTeamXpBefore);
+
+    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    EXPECT_FALSE(scr_IfLeaderIsAlive(state, self));
+    EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserveClampSemantics)

@@ -434,7 +434,7 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( activeModule().getTeamList()[targetInfo(*pchr).getTeamRef()].getLeader() != nullptr );
+    returncode = ( activeModule().getTeamLeaderRef(targetInfo(*pchr).getTeamRef()) != ObjectRef::Invalid );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1784,8 +1784,9 @@ uint8_t scr_GiveExperienceToGoodTeam( script_state_t& state, ai_state_t& self )
 
     if(state.distance < XP_COUNT)
     {
-
-        activeModule().getTeamList()[Team::TEAM_GOOD].giveTeamExperience(state.argument, static_cast<XPType>(state.distance) );
+        activeModule().giveTeamExperience(static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                                          state.argument,
+                                          static_cast<XPType>(state.distance));
     }
 
 

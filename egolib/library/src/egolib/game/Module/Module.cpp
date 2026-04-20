@@ -77,6 +77,36 @@ bool GameModule::isInside(const float x, const float y) const
     return x >= 0 && x < _mesh->_tmem._edge_x && y >= 0 && y < _mesh->_tmem._edge_y;
 }
 
+ObjectRef GameModule::getTeamLeaderRef(TEAM_REF teamRef) const
+{
+    if (!VALID_TEAM_RANGE(teamRef))
+    {
+        return ObjectRef::Invalid;
+    }
+
+    return _teamList[teamRef].getLeaderRef();
+}
+
+ObjectRef GameModule::getTeamCallerForHelpRef(TEAM_REF teamRef) const
+{
+    if (!VALID_TEAM_RANGE(teamRef))
+    {
+        return ObjectRef::Invalid;
+    }
+
+    return _teamList[teamRef].getSissyRef();
+}
+
+void GameModule::giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const
+{
+    if (!VALID_TEAM_RANGE(teamRef))
+    {
+        return;
+    }
+
+    _teamList[teamRef].giveTeamExperience(amount, type);
+}
+
 std::shared_ptr<const Ego::Texture> GameModule::getTileTexture(const size_t index)
 {
     if (index >= _tileTextures.size()) return nullptr;

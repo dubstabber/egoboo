@@ -156,6 +156,12 @@ public:
     **/
     std::vector<Team>& getTeamList() {return _teamList;}
 
+    ObjectRef getTeamLeaderRef(TEAM_REF teamRef) const;
+
+    ObjectRef getTeamCallerForHelpRef(TEAM_REF teamRef) const;
+
+    void giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const;
+
     /**
     * @return
     *   Get the ObjectHandler associated with this Module instance
