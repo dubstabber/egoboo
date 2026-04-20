@@ -14,6 +14,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 
 #include "TestEnvironment.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
@@ -27,6 +28,41 @@
 
 #include <cstdlib>
 #include <memory>
+#include <vector>
+
+namespace
+{
+class RecordingAudioSystem : public IAudioSystem
+{
+public:
+    SoundID loadSound(const std::string& fileName) override
+    {
+        loadedSoundPaths.push_back(fileName);
+        return -1;
+    }
+
+    void playMusic(MusicID, uint16_t = 0) override {}
+    void playMusic(const std::string&, uint16_t = 0) override {}
+    void stopMusic() override {}
+    void fadeAllSounds() override {}
+    int playSound(const Ego::Vector3f&, SoundID) override { return 0; }
+    void playSoundLooped(SoundID, ObjectRef) override {}
+    size_t stopObjectLoopingSounds(ObjectRef, SoundID = -1) override { return 0; }
+    int playSoundFull(SoundID) override { return 0; }
+    SoundID getGlobalSound(GlobalSound) const override { return 0; }
+    void setMaxHearingDistance(float) override {}
+    void setMusicVolume(int) override {}
+    void setSoundEffectVolume(int) override {}
+    void update() override {}
+
+    void reset()
+    {
+        loadedSoundPaths.clear();
+    }
+
+    std::vector<std::string> loadedSoundPaths;
+};
+}
 
 // ---------------------------------------------------------------------------
 // Shared test fixture that bootstraps VFS and minimal runtime services.
@@ -36,6 +72,7 @@ class ContentParserFixture : public ::testing::Test
 {
 protected:
     static std::unique_ptr<ContentRuntimeBootstrap> s_runtime;
+    static std::unique_ptr<RecordingAudioSystem> s_audioSystem;
 
     static void SetUpTestSuite()
     {
@@ -58,6 +95,8 @@ protected:
         opts.logLevel       = Log::Level::Warning;
 
         s_runtime = std::make_unique<ContentRuntimeBootstrap>(opts);
+        s_audioSystem = std::make_unique<RecordingAudioSystem>();
+        EngineContext::get().installAudioSystem(*s_audioSystem);
 
         // Discover modules so that test.mod is reachable.
         EngineContext::get().profileSystem().loadModuleProfiles();
@@ -65,6 +104,8 @@ protected:
 
     static void TearDownTestSuite()
     {
+        EngineContext::get().clearAudioSystem();
+        s_audioSystem.reset();
         s_runtime.reset();
     }
 
@@ -89,6 +130,7 @@ protected:
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ContentParserFixture::s_runtime;
+std::unique_ptr<RecordingAudioSystem> ContentParserFixture::s_audioSystem;
 
 // ===========================================================================
 //  spawn.txt parser tests
@@ -256,6 +298,20 @@ TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoads)
     auto profile = ObjectProfile::loadFromFile(
         "mp_objects/follower.obj", ObjectProfileRef(37), true);
     ASSERT_NE(profile, nullptr) << "follower.obj failed to load";
+}
+
+TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoadsNonLightweightWithInstalledAudioService)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    s_audioSystem->reset();
+    auto profile = ObjectProfile::loadFromFile(
+        "mp_objects/follower.obj", ObjectProfileRef(37), false);
+    ASSERT_NE(profile, nullptr) << "follower.obj failed to load in full mode";
+    ASSERT_FALSE(s_audioSystem->loadedSoundPaths.empty());
+    EXPECT_EQ(s_audioSystem->loadedSoundPaths.front(), "mp_objects/follower.obj/sound0");
 }
 
 TEST_F(ObjectProfileParserTest, TestModFollowerClassName)

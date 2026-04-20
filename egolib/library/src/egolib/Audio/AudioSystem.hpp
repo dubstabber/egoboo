@@ -133,7 +133,7 @@ public:
     **/
     void playMusic(const std::string& songName, const uint16_t fadetime = 0) override;
 
-    SoundID loadSound(const std::string &fileName);
+    SoundID loadSound(const std::string &fileName) override;
 
     /// @author ZF
     /// @details This function loads all of the music sounds

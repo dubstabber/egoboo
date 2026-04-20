@@ -15,6 +15,7 @@ namespace Actions = Ego::GameStates::Internal::OptionsConfigActions;
 class StubAudioSystem : public IAudioSystem
 {
 public:
+    SoundID loadSound(const std::string&) override { return -1; }
     void playMusic(MusicID, uint16_t = 0) override {}
     void playMusic(const std::string&, uint16_t = 0) override {}
     void stopMusic() override {}

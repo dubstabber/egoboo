@@ -40,6 +40,7 @@ class IAudioSystem
 public:
     virtual ~IAudioSystem() = default;
 
+    virtual SoundID loadSound(const std::string& fileName) = 0;
     virtual void playMusic(MusicID musicID, uint16_t fadetime = 0) = 0;
     virtual void playMusic(const std::string& songName, uint16_t fadetime = 0) = 0;
     virtual void stopMusic() = 0;

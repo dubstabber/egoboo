@@ -25,6 +25,38 @@
 
 namespace
 {
+struct ObjectProfileRuntimeServices
+{
+    Log::Target& logTarget;
+    Ego::Perks::IPerkHandler& perkHandler;
+    IProfileSystem& profileSystem;
+    const egoboo_config_t& config;
+    IAudioSystem* audioSystem;
+};
+
+ObjectProfileRuntimeServices objectProfileRuntimeServices(bool includeAudio = false)
+{
+    auto& context = EngineContext::get();
+    return {
+        context.logTarget(),
+        context.perkHandler(),
+        context.profileSystem(),
+        context.config(),
+        includeAudio ? context.tryAudioSystem() : nullptr
+    };
+}
+
+std::string normalizePerkName(std::string perkName)
+{
+    std::replace(perkName.begin(), perkName.end(), '_', ' ');
+    return perkName;
+}
+
+SoundID tryLoadProfileSound(const ObjectProfileRuntimeServices& services, const std::string& soundName)
+{
+    return services.audioSystem ? services.audioSystem->loadSound(soundName) : INVALID_SOUND_ID;
+}
+
 ObjectProfileRef vfs_get_next_object_profile_ref(ReadContext& ctxt)
 {
     int number = vfs_get_next_int(ctxt);
@@ -39,6 +71,8 @@ ObjectProfileRef vfs_get_next_object_profile_ref(ReadContext& ctxt)
 
 void ObjectProfile::loadTextures(const std::string &folderPath)
 {
+    const auto services = objectProfileRuntimeServices();
+
     //Clear texture references
     _texturesLoaded.clear();
     _iconsLoaded.clear();
@@ -76,14 +110,14 @@ void ObjectProfile::loadTextures(const std::string &folderPath)
     if (_texturesLoaded.empty())
     {
         _texturesLoaded[0] = Ego::DeferredTexture("mp_data/waterlow");
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object is missing a skin ", "`", getPathname(), "`", Log::EndOfEntry);
+        services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object is missing a skin ", "`", getPathname(), "`", Log::EndOfEntry);
     }
 
     // If we didn't get a icon, set it to the NULL icon
     if (_iconsLoaded.empty())
     {
         _iconsLoaded[0] = Ego::DeferredTexture("mp_data/nullicon");
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "object is missing an icon ", "`", getPathname(), "`", Log::EndOfEntry);
+        services.logTarget << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "object is missing an icon ", "`", getPathname(), "`", Log::EndOfEntry);
     }
 }
 
@@ -108,6 +142,8 @@ void ObjectProfile::loadAllMessages(const std::string &filePath)
 
 bool ObjectProfile::loadDataFile(const std::string &filePath)
 {
+    const auto services = objectProfileRuntimeServices();
+
     // Open the file
     ReadContext ctxt(filePath);
 
@@ -553,16 +589,15 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             //Perks known
             case IDSZ2::caseLabel( 'P', 'E', 'R', 'K' ):
             {
-                std::string perkName = ctxt.readName();
-                std::replace(perkName.begin(), perkName.end(), '_', ' '); //replace underscore with spaces
-                Ego::Perks::PerkID id = EngineContext::get().perkHandler().fromString(perkName);
+                const std::string perkName = normalizePerkName(ctxt.readName());
+                Ego::Perks::PerkID id = services.perkHandler.fromString(perkName);
                 if(id != Ego::Perks::NR_OF_PERKS)
                 {
                     _startingPerks[id] = true;
                 }
                 else
                 {
-                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath ,"`", ": ", "unknown [PERK] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
+                    services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath ,"`", ": ", "unknown [PERK] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
                 }
             }
             break;
@@ -570,16 +605,15 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             //Perk Pool (perks that we can learn in the future)
             case IDSZ2::caseLabel( 'P', 'O', 'O', 'L' ):
             {
-                std::string perkName = ctxt.readOldString();
-                std::replace(perkName.begin(), perkName.end(), '_', ' '); //replace underscore with spaces
-                Ego::Perks::PerkID id = EngineContext::get().perkHandler().fromString(perkName);
+                const std::string perkName = normalizePerkName(ctxt.readOldString());
+                Ego::Perks::PerkID id = services.perkHandler.fromString(perkName);
                 if(id != Ego::Perks::NR_OF_PERKS)
                 {
                     _perkPool[id] = true;
                 }
                 else
                 {
-                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath, "`", ": unknown [POOL] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
+                    services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "in file ", "`", filePath, "`", ": unknown [POOL] perk ", "`", perkName, "`", " parsed", Log::EndOfEntry);
                 }
             }
             break;
@@ -598,7 +632,7 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
             case IDSZ2::caseLabel('J', 'O', 'U', 'S'): _startingPerks[Ego::Perks::JOUSTING] = true; break;
 
             default:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", filePath, "`: ", "unknown IDSZ ", "`", idsz.toString(), "`", Log::EndOfEntry);
+                services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", filePath, "`: ", "unknown IDSZ ", "`", idsz.toString(), "`", Log::EndOfEntry);
             break;
         }
     }
@@ -607,10 +641,12 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
 
 std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& folderPath, ObjectProfileRef ref, bool lightWeight)
 {
+    const auto services = objectProfileRuntimeServices(!lightWeight);
+
     // Assert the reference is valid.
     if (!ref)
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid profile reference ", ref, Log::EndOfEntry);
+        services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid profile reference ", ref, Log::EndOfEntry);
         return nullptr;
     }
 
@@ -631,13 +667,13 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         }
         catch (const std::runtime_error &ex)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load model ", "`", folderPath, "`", Log::EndOfEntry);
+            services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load model ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;
         }
 
         // Load the enchantment for this profile (optional)
-        profile->_ieve = EngineContext::get().profileSystem().loadEnchantProfile(folderPath + "/enchant.txt",
-                                                                                static_cast<EVE_REF>(ref.get()));
+        profile->_ieve = services.profileSystem.loadEnchantProfile(folderPath + "/enchant.txt",
+                                                                   static_cast<EVE_REF>(ref.get()));
 
         // Load the messages for this profile, do this before loading the AI script
         // to ensure any dynamic loaded messages get loaded last (optional)
@@ -647,8 +683,8 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         for (LocalParticleProfileRef cnt(0); cnt.get() < 30; ++cnt) //TODO: find better way of listing files
         {
             const std::string particleName = folderPath + "/part" + std::to_string(cnt.get()) + ".txt";
-            PIP_REF particleProfile = EngineContext::get().profileSystem().loadParticleProfile(particleName.c_str(),
-                                                                                               INVALID_PIP_REF);
+            PIP_REF particleProfile = services.profileSystem.loadParticleProfile(particleName.c_str(),
+                                                                                INVALID_PIP_REF);
 
             // Make sure it's referenced properly
             if (particleProfile != INVALID_PIP_REF)
@@ -661,7 +697,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         for (size_t cnt = 0; cnt < 30; cnt++) //TODO: make better search than just 30 (list files?)
         {
             const std::string soundName = folderPath + "/sound" + std::to_string(cnt);
-            SoundID soundID = AudioSystem::get().loadSound(soundName);
+            SoundID soundID = tryLoadProfileSound(services, soundName);
 
             if (soundID != INVALID_SOUND_ID)
             {
@@ -682,18 +718,18 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     {
         if (!profile->loadDataFile(folderPath + "/data.txt"))
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
+            services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;
         }
     }
     catch (const std::runtime_error &ex)
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to parse ", "`", folderPath, "/data.txt", "`", ": ", ex.what(), Log::EndOfEntry);
+        services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to parse ", "`", folderPath, "/data.txt", "`", ": ", ex.what(), Log::EndOfEntry);
         return nullptr;
     }
 
     // Fix lighting if need be
-    if (profile->_uniformLit && EngineContext::get().config().graphic_gouraudShading_enable.getValue())
+    if (profile->_uniformLit && services.config.graphic_gouraudShading_enable.getValue())
     {
         profile->getModel()->makeEquallyLit();
     }

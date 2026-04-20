@@ -75,6 +75,11 @@ public:
         playedMusicIds.push_back({musicID, fadeTime});
     }
 
+    SoundID loadSound(const std::string&) override
+    {
+        return INVALID_SOUND_ID;
+    }
+
     void playMusic(const std::string& songName, uint16_t fadeTime = 0) override
     {
         playedSongNames.push_back({songName, fadeTime});

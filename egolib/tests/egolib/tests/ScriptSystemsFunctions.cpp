@@ -1004,6 +1004,37 @@ TEST_F(ScriptSystemsFunctionsFixture, GiveSkillToTargetPreservesLegacyUnknownSki
     EXPECT_FALSE(target->hasPerk(Ego::Perks::TRAP_LORE));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ExportCharacterWritesPerkAndPoolNamesThroughInstalledPerkService)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/zombor.obj", 5675);
+
+    ASSERT_NE(actor, nullptr);
+    actor->addPerk(Ego::Perks::NIGHT_VISION);
+
+    const std::string exportPath = "/debug/exported-zombor-data.txt";
+    ASSERT_TRUE(ObjectProfile::exportCharacterToFile(exportPath, actor.get()));
+
+    std::string exported;
+    vfs_readEntireFile(exportPath, [&exported](size_t length, const char* bytes)
+    {
+        exported.assign(bytes, length);
+    });
+
+    const std::string masteredBaseline = ": [PERK] Weapon_Proficiency";
+    const std::string masteredAdded = ": [PERK] Night_Vision";
+    const std::string firstPoolEntry = ": [POOL] Toughness";
+    const auto baselinePos = exported.find(masteredBaseline);
+    const auto addedPos = exported.find(masteredAdded);
+    const auto poolPos = exported.find(firstPoolEntry);
+
+    EXPECT_NE(baselinePos, std::string::npos);
+    EXPECT_NE(addedPos, std::string::npos);
+    EXPECT_NE(poolPos, std::string::npos);
+    EXPECT_LT(baselinePos, addedPos);
+    EXPECT_LT(addedPos, poolPos);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, EnchantLifecycleHelpersUseEnchantableRole)
 {
     auto& module = beginActiveTestModule();
