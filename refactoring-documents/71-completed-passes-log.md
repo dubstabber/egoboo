@@ -542,6 +542,12 @@ Started Tier 1.4 by adding `doc/error-handling-policy.md` and documenting the fo
 
 Kept broader `gfx_rv` / tri-state graphics paths (`ObjectGraphics`, `CharacterMatrix`, and other C-era render helpers) out of scope. Acceptance for this pass is the build plus focused runtime render smoke, since `CameraSystem` construction still depends on the live graphics system and does not currently expose a lightweight unit-test seam.
 
+### Pass 120 — Conservative appearance-profile caller sweep (2026-04-20)
+
+Returned to Tier 1.2 by removing the remaining file-local `IAppearanceProfile` wrapper helpers from `script_functions_systems.c` and `script_functions_target.c`, routing the bounded armor/appearance helpers through the already-landed appearance seam without widening `Object` or touching `Script/script.c`.
+
+Preserved current script-visible behavior exactly, including the legacy actor-profile semantics in `scr_IfTargetIsDressedUp()` and `scr_IfTargetIsASpell()`. Acceptance for this pass is the build, the focused `ScriptSystemsFunctions` / `ScriptTargetFunctions` coverage for armor and appearance helpers, and the `test.mod` validator smoke.
+
 ---
 
 ## Files touched most by this pass log

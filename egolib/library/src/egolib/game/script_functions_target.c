@@ -11,11 +11,6 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-IAppearanceProfile& appearanceProfile(Object& object)
-{
-    return object;
-}
-
 const ITargetInfo& targetInfo(const Object& object)
 {
     return object;
@@ -1044,7 +1039,7 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = appearanceProfile(*pchr).isCurrentSkinDressy();
+    returncode = static_cast<IAppearanceProfile&>(*pchr).isCurrentSkinDressy();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1692,7 +1687,7 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = appearanceProfile(*pchr).hasIntellectDamageParticle();
+    returncode = static_cast<IAppearanceProfile&>(*pchr).hasIntellectDamageParticle();
 
     SCRIPT_FUNCTION_END();
 }

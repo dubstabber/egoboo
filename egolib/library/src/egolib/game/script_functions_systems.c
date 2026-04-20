@@ -21,11 +21,6 @@ ICharacterState& characterState(Object& object)
     return object;
 }
 
-IAppearanceProfile& appearanceProfile(Object& object)
-{
-    return object;
-}
-
 ITeamMember& teamMember(Object& object)
 {
     return object;
@@ -919,7 +914,7 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     state.x = state.argument;
-    IAppearanceProfile& selfAppearance = appearanceProfile(*pchr);
+    IAppearanceProfile& selfAppearance = static_cast<IAppearanceProfile&>(*pchr);
     iTmp = selfAppearance.getSkin();
     selfAppearance.setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
     state.x = selfAppearance.getSkin();
