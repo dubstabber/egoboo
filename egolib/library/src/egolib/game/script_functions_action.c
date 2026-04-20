@@ -10,6 +10,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+Ego::GUI::UIManager* tryUIManager()
+{
+    return EngineContext::get().tryUIManager();
+}
+
 IAnimationControl& animationControl(Object& object)
 {
     return static_cast<IAnimationControl&>(object);
@@ -28,6 +33,20 @@ ITeamMember& teamMember(Object& object)
 const ITargetInfo& targetInfo(const Object& object)
 {
     return static_cast<const ITargetInfo&>(object);
+}
+
+std::shared_ptr<Ego::Graphics::Billboard> tryMakeBillboard(ObjectRef objectRef,
+                                                           const std::string& text,
+                                                           const Ego::Colour4f& textColor,
+                                                           const Ego::Colour4f& tint,
+                                                           int lifetime)
+{
+    return GFX::get().getBillboardSystem().makeBillboard(objectRef,
+                                                         text,
+                                                         textColor,
+                                                         tint,
+                                                         lifetime,
+                                                         Ego::Graphics::Billboard::Flags::Fade);
 }
 }
 
@@ -788,7 +807,13 @@ uint8_t scr_TakePicture( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = engine().getUIManager()->dumpScreenshot();
+    Ego::GUI::UIManager* uiManager = tryUIManager();
+    if (uiManager == nullptr)
+    {
+        return false;
+    }
+
+    returncode = uiManager->dumpScreenshot();
 
     SCRIPT_FUNCTION_END();
 }
@@ -952,7 +977,11 @@ uint8_t scr_DrawBillboard( script_state_t& state, ai_state_t& self )
         case COLOR_BLUE:    tint = &tint_blue;    break;
     }
 
-    returncode = NULL != GFX::get().getBillboardSystem().makeBillboard(self.getSelf(), ppro->getMessage(state.argument).c_str(), text_color, *tint, state.distance, Ego::Graphics::Billboard::Flags::Fade);
+    returncode = nullptr != tryMakeBillboard(self.getSelf(),
+                                             ppro->getMessage(state.argument),
+                                             text_color,
+                                             *tint,
+                                             state.distance);
 
     SCRIPT_FUNCTION_END();
 }

@@ -596,6 +596,12 @@ Continued Tier 1.2 inside `script_functions_action.c` by introducing `IVisualCon
 
 Extended `ObjectAccessors.cpp` and `ScriptActionFunctions.cpp` with focused coverage for visual-role parity plus script-visible shift clamping, name/ammo flag publication, sparkle semantics, and the `test.mod` validator smoke.
 
+### Pass 129 — Action presentation helper follow-on (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_action.c` by routing the remaining bounded screenshot and billboard helpers through file-local presentation helpers, replacing the direct `engine().getUIManager()` dereference with the installed `EngineContext` UI seam and isolating billboard creation behind a local helper without introducing a broader graphics-service pass.
+
+Extended `ScriptActionFunctions.cpp` with focused coverage for missing-UI screenshot failure and invalid-message billboard rejection. Build, focused action tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

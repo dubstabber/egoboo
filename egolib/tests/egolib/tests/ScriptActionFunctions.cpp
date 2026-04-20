@@ -666,6 +666,35 @@ TEST_F(ScriptActionFunctionsFixture, FlashTargetAndBlackTargetUseVisualRoleAndPr
     EXPECT_FALSE(scr_BlackTarget(state, self));
 }
 
+TEST_F(ScriptActionFunctionsFixture, TakePictureReturnsFalseWithoutInstalledUIManager)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5768);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_EQ(EngineContext::get().tryUIManager(), nullptr);
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+
+    EXPECT_FALSE(scr_TakePicture(state, self));
+}
+
+TEST_F(ScriptActionFunctionsFixture, DrawBillboardRejectsInvalidMessageBeforeTouchingGraphics)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5769);
+    ASSERT_NE(actor, nullptr);
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+    state.argument = 9999;
+    state.distance = 4;
+    state.turn = 3;
+
+    ASSERT_FALSE(actor->getProfile()->isValidMessageID(state.argument));
+    EXPECT_FALSE(scr_DrawBillboard(state, self));
+}
+
 TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRejectsInvalidArguments)
 {
     auto& module = beginActiveTestModule();
