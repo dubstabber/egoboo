@@ -906,6 +906,32 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     EXPECT_TRUE(object->hasPerk(Ego::Perks::NIGHT_VISION));
 }
 
+TEST_F(ObjectAccessorFixture, VisualControlRoleSurfaceSupportsShiftFlagAndRenderStateMutation)
+{
+    auto object = makeFollower(30507);
+    ASSERT_NE(object, nullptr);
+
+    IVisualControl& visual = *object;
+
+    visual.setRedShift(2);
+    visual.setGreenShift(4);
+    visual.setBlueShift(6);
+    visual.setLight(111);
+    visual.setAlpha(143);
+    visual.setNameKnown(true);
+    visual.setAmmoKnown(true);
+    visual.setSparkle(7);
+
+    EXPECT_FLOAT_EQ(object->getBaseAttribute(Ego::Attribute::RED_SHIFT), 2.0f);
+    EXPECT_FLOAT_EQ(object->getBaseAttribute(Ego::Attribute::GREEN_SHIFT), 4.0f);
+    EXPECT_FLOAT_EQ(object->getBaseAttribute(Ego::Attribute::BLUE_SHIFT), 6.0f);
+    EXPECT_EQ(object->getLight(), 111);
+    EXPECT_EQ(object->getAlpha(), 143);
+    EXPECT_TRUE(object->isNameKnown());
+    EXPECT_TRUE(object->isAmmoKnown());
+    EXPECT_EQ(object->getSparkle(), 7);
+}
+
 TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)
 {
     auto& objectHandler = beginActiveTestModule();

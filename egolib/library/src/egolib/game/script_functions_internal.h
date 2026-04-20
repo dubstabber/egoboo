@@ -181,6 +181,12 @@ inline ITeamMember* tryTeamMember(ObjectRef objectRef)
     return object ? static_cast<ITeamMember*>(object) : nullptr;
 }
 
+inline IVisualControl* tryVisualControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IVisualControl*>(object) : nullptr;
+}
+
 inline const IPhysical* tryPhysical(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

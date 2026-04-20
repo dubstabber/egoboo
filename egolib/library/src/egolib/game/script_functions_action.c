@@ -15,6 +15,11 @@ IAnimationControl& animationControl(Object& object)
     return static_cast<IAnimationControl&>(object);
 }
 
+IVisualControl& visualControl(Object& object)
+{
+    return static_cast<IVisualControl&>(object);
+}
+
 ITeamMember& teamMember(Object& object)
 {
     return static_cast<ITeamMember&>(object);
@@ -211,7 +216,7 @@ uint8_t scr_SetRedShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBaseAttribute(Ego::Attribute::RED_SHIFT, Ego::Math::constrain(state.argument, 0, 6));
+    visualControl(*pchr).setRedShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -227,7 +232,7 @@ uint8_t scr_SetGreenShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBaseAttribute(Ego::Attribute::GREEN_SHIFT, Ego::Math::constrain(state.argument, 0, 6));
+    visualControl(*pchr).setGreenShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -243,7 +248,7 @@ uint8_t scr_SetBlueShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBaseAttribute(Ego::Attribute::BLUE_SHIFT, Ego::Math::constrain(state.argument, 0, 6));
+    visualControl(*pchr).setBlueShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -259,7 +264,7 @@ uint8_t scr_SetLight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setLight(state.argument);
+    visualControl(*pchr).setLight(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -275,7 +280,7 @@ uint8_t scr_SetAlpha( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setAlpha(state.argument);
+    visualControl(*pchr).setAlpha(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -342,7 +347,7 @@ uint8_t scr_MakeNameKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setNameKnown(true);
+    visualControl(*pchr).setNameKnown(true);
     //           pchr->icon = true;
 
     SCRIPT_FUNCTION_END();
@@ -374,7 +379,7 @@ uint8_t scr_MakeAmmoKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setAmmoKnown(true);
+    visualControl(*pchr).setAmmoKnown(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -518,7 +523,7 @@ uint8_t scr_MakeSimilarNamesKnown( script_state_t& state, ai_state_t& self )
 
         if ( sTmp )
         {
-            object->setNameKnown(true);
+            visualControl(*object).setNameKnown(true);
         }
     }
 
@@ -567,11 +572,11 @@ uint8_t scr_SparkleIcon( script_state_t& state, ai_state_t& self )
     {
         if ( state.argument < -1 )
         {
-            pchr->setSparkle(NOSPARKLE);
+            visualControl(*pchr).setSparkle(NOSPARKLE);
         }
         else
         {
-            pchr->setSparkle(state.argument % COLOR_MAX);
+            visualControl(*pchr).setSparkle(state.argument % COLOR_MAX);
         }
     }
 
@@ -588,7 +593,7 @@ uint8_t scr_UnsparkleIcon( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setSparkle(NOSPARKLE);
+    visualControl(*pchr).setSparkle(NOSPARKLE);
 
     SCRIPT_FUNCTION_END();
 }
@@ -764,7 +769,7 @@ uint8_t scr_MakeNameUnknown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setNameKnown(false);
+    visualControl(*pchr).setNameKnown(false);
 
     SCRIPT_FUNCTION_END();
 }

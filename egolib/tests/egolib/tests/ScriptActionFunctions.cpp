@@ -564,6 +564,80 @@ TEST_F(ScriptActionFunctionsFixture, CorrectActionForHandUsesAttachmentSlotBands
     EXPECT_LE(state.argument, ACTION_DA + 3);
 }
 
+TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSparkleSemantics)
+{
+    constexpr int blueSparkle = 4;
+    constexpr int colorMax = 6;
+
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5763);
+    auto peer = makeObject(module, "mp_objects/follower.obj", 5764);
+    auto other = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5765);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(peer, nullptr);
+    ASSERT_NE(other, nullptr);
+
+    actor->setNameKnown(false);
+    actor->setAmmoKnown(false);
+    actor->setSparkle(3);
+    peer->setNameKnown(false);
+    other->setNameKnown(false);
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+
+    state.argument = -4;
+    EXPECT_TRUE(scr_SetRedShift(state, self));
+    EXPECT_FLOAT_EQ(actor->getBaseAttribute(Ego::Attribute::RED_SHIFT), 0.0f);
+
+    state.argument = 99;
+    EXPECT_TRUE(scr_SetGreenShift(state, self));
+    EXPECT_FLOAT_EQ(actor->getBaseAttribute(Ego::Attribute::GREEN_SHIFT), 6.0f);
+
+    state.argument = 5;
+    EXPECT_TRUE(scr_SetBlueShift(state, self));
+    EXPECT_FLOAT_EQ(actor->getBaseAttribute(Ego::Attribute::BLUE_SHIFT), 5.0f);
+
+    state.argument = 117;
+    EXPECT_TRUE(scr_SetLight(state, self));
+    EXPECT_EQ(actor->getLight(), 117);
+
+    state.argument = 149;
+    EXPECT_TRUE(scr_SetAlpha(state, self));
+    EXPECT_EQ(actor->getAlpha(), 149);
+
+    EXPECT_TRUE(scr_MakeNameKnown(state, self));
+    EXPECT_TRUE(actor->isNameKnown());
+
+    EXPECT_TRUE(scr_MakeAmmoKnown(state, self));
+    EXPECT_TRUE(actor->isAmmoKnown());
+
+    state.argument = -4;
+    EXPECT_TRUE(scr_SparkleIcon(state, self));
+    EXPECT_EQ(actor->getSparkle(), NOSPARKLE);
+
+    state.argument = -1;
+    EXPECT_TRUE(scr_SparkleIcon(state, self));
+    EXPECT_EQ(actor->getSparkle(), NOSPARKLE);
+
+    state.argument = blueSparkle;
+    EXPECT_TRUE(scr_SparkleIcon(state, self));
+    EXPECT_EQ(actor->getSparkle(), blueSparkle);
+
+    state.argument = colorMax;
+    EXPECT_TRUE(scr_SparkleIcon(state, self));
+    EXPECT_EQ(actor->getSparkle(), blueSparkle);
+
+    EXPECT_TRUE(scr_UnsparkleIcon(state, self));
+    EXPECT_EQ(actor->getSparkle(), NOSPARKLE);
+
+    EXPECT_TRUE(scr_MakeNameUnknown(state, self));
+    EXPECT_FALSE(actor->isNameKnown());
+
+    EXPECT_TRUE(scr_MakeSimilarNamesKnown(state, self));
+    EXPECT_FALSE(other->isNameKnown());
+}
+
 TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRejectsInvalidArguments)
 {
     auto& module = beginActiveTestModule();

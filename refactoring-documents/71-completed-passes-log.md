@@ -590,6 +590,12 @@ Continued Tier 1.2 inside `script_functions_action.c` by introducing `IAnimation
 
 Extended `ObjectAccessors.cpp` and `ScriptActionFunctions.cpp` with focused coverage for animation-role parity, team call-for-help publication, holder/attachment role queries, action-start success/blocking behavior, dead-target rejection, interpolation reset, hand-band action correction, and direct-player versus holder-player charge-bar routing. Build, focused action/accessor tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 128 — Action visual/identity role sweep (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_action.c` by introducing `IVisualControl` for bounded shift/light/alpha/name/ammo/sparkle mutation, then routing the remaining non-UI visual/identity helpers off direct concrete-`Object` writes. Kept billboard, screenshot, charge-bar, and flash-helper seams out of scope.
+
+Extended `ObjectAccessors.cpp` and `ScriptActionFunctions.cpp` with focused coverage for visual-role parity plus script-visible shift clamping, name/ammo flag publication, sparkle semantics, and the `test.mod` validator smoke.
+
 ---
 
 ## Files touched most by this pass log

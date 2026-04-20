@@ -15,6 +15,7 @@
 #include "egolib/Entities/IScriptable.hpp"
 #include "egolib/Entities/ITeamMember.hpp"
 #include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/IVisualControl.hpp"
 #include "egolib/Entities/IWallet.hpp"
 #include "egolib/Entities/Particle.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"

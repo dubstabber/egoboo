@@ -42,6 +42,7 @@
 #include "egolib/Entities/IScriptable.hpp"
 #include "egolib/Entities/ITeamMember.hpp"
 #include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/IVisualControl.hpp"
 #include "egolib/Entities/IWallet.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
@@ -99,6 +100,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IScriptable,
                public ITeamMember,
                public ITargetInfo,
+               public IVisualControl,
                public IWallet,
                public std::enable_shared_from_this<Object>
 {
@@ -322,7 +324,7 @@ public:
     * @brief Sets the transparency for this Object
     * @param alpha Transparency level between 0 (fully transparent) and 255 (fully opaque)
     **/
-    void setAlpha(const int alpha);
+    void setAlpha(const int alpha) override;
 
     /**
     * @brief Sets the shininess of this Object
@@ -334,7 +336,7 @@ public:
     * @brief Sets the transparency for this Object
     * @param light Transparency level between 0 (fully transparent) and 255 (fully opaque)
     */
-    void setLight(const int light);
+    void setLight(const int light) override;
 
     uint8_t getAlpha() const { return inst.getAlpha(); }
 
@@ -535,11 +537,11 @@ public:
 
     bool isNameKnown() const override {return nameknown;}
 
-    void setNameKnown(bool known) { nameknown = known; }
+    void setNameKnown(bool known) override { nameknown = known; }
 
     bool isAmmoKnown() const { return ammoknown; }
 
-    void setAmmoKnown(bool known) { ammoknown = known; }
+    void setAmmoKnown(bool known) override { ammoknown = known; }
 
     bool isInvincible() const override {return invictus;}
 
@@ -569,7 +571,7 @@ public:
 
     uint8_t getSparkle() const { return sparkle; }
 
-    void setSparkle(uint8_t sparkleValue) { sparkle = sparkleValue; }
+    void setSparkle(uint8_t sparkleValue) override { sparkle = sparkleValue; }
 
     /**
     * @brief
@@ -874,6 +876,21 @@ public:
     *   Get base value for the specified attribute (without applying effects from Enchants and Perks)
     **/
     float getBaseAttribute(const Ego::Attribute::AttributeType type) const;
+
+    void setRedShift(int value) override
+    {
+        setBaseAttribute(Ego::Attribute::RED_SHIFT, value);
+    }
+
+    void setGreenShift(int value) override
+    {
+        setBaseAttribute(Ego::Attribute::GREEN_SHIFT, value);
+    }
+
+    void setBlueShift(int value) override
+    {
+        setBaseAttribute(Ego::Attribute::BLUE_SHIFT, value);
+    }
 
     /**
     * @brief
