@@ -519,11 +519,10 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     bool         needs_update = false;
 
     // recursively make sure that any mount matrices are updated
-    const std::shared_ptr<Object> &holder = pchr->getHolder();
-
-    if (holder)
+    const ObjectRef holderRef = pchr->getHolderRef();
+    if (objectHandler().exists(holderRef))
     {
-        egolib_rv attached_update = chr_update_matrix(holder.get(), true);
+        egolib_rv attached_update = chr_update_matrix(objectHandler().get(holderRef), true);
 
         // if this fails, we should probably do something...
         if ( rv_error == attached_update )

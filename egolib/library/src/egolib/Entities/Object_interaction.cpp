@@ -197,7 +197,7 @@ bool Object::isBeingHeld() const
         return true;
     }
 
-    const std::shared_ptr<Object>& holder = getHolder();
+    const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[getHolderRef()];
     if (holder && !holder->isTerminated()) {
         return true;
     }
@@ -241,11 +241,6 @@ const std::shared_ptr<Object>& Object::isWieldingItemIDSZ(const IDSZ2& idsz) con
 bool Object::wieldsItemIDSZ(const IDSZ2& idsz) const
 {
     return isWieldingItemIDSZ(idsz) != nullptr;
-}
-
-const std::shared_ptr<Object>& Object::getHolder() const
-{
-    return activeModule().getObjectHandler()[getHolderRef()];
 }
 
 void Object::dropMoney(int amount)

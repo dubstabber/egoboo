@@ -23,6 +23,7 @@
 
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/lighting.h"
@@ -719,7 +720,7 @@ void ObjectGraphicsRenderer::_draw_one_grip_raw(const Object& object, int slot)
 
 void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object>& pchr)
 {
-    const auto& pholder = pchr->getHolder();
+    const auto& pholder = GameSessionContext::get().activeModule().getObjectHandler()[pchr->getHolderRef()];
     if (!pholder || pholder->isTerminated()) return;
 
     draw_one_grip(*pholder, pchr->getAttachmentSlot());

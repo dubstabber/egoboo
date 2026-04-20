@@ -676,8 +676,9 @@ void Object::setTeam(TEAM_REF team_new, bool permanent)
 
     if(permanent) {
         //Set the team of our mount as well
-        if(isBeingHeld() && getHolder()->isMount()) {
-            getHolder()->setTeam(team_new, false);
+        const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[getHolderRef()];
+        if (holder && holder->isMount()) {
+            holder->setTeam(team_new, false);
         }
 
         //Switch team of whatever we are holding as well

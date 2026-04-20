@@ -44,6 +44,11 @@ IScriptable& scriptable(Object& object)
 {
     return object;
 }
+
+const std::shared_ptr<Object>& objectByRef(ObjectRef objectRef)
+{
+    return activeModule().getObjectHandler()[objectRef];
+}
 }
 
 namespace Ego
@@ -64,7 +69,7 @@ ObjectPhysics::ObjectPhysics(Object &object) :
 
 void ObjectPhysics::keepItemsWithHolder()
 {
-    const std::shared_ptr<Object> &holder = _object.getHolder();
+    const std::shared_ptr<Object>& holder = objectByRef(_object.getHolderRef());
     if (holder)
     {
         // Keep in hand weapons with iattached
@@ -206,7 +211,7 @@ void ObjectPhysics::updateHillslide()
     if(isTouchingGround()) {
 
         //Can the character slide on this floor?
-        if (floorIsSlippy() && !_object.getAttachedPlatform())
+        if (floorIsSlippy() && !objectByRef(_object.getAttachedPlatformRef()))
         {
             //Make characters slide down hills
             if(!g_meshLookupTables.twist_flat[floorTwist]) {
@@ -320,7 +325,7 @@ void ObjectPhysics::updatePhysics()
 float ObjectPhysics::recalculateGroundElevation()
 {
     //Standing on a platform?
-    const std::shared_ptr<Object> &platform = _object.getAttachedPlatform();
+    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
     if (platform) {
         return platform->getPosZ() + platform->getMinCollisionVolume()._maxs[OCT_Z];
     }
@@ -466,8 +471,9 @@ void ObjectPhysics::updateFacing()
 void ObjectPhysics::detachFromPlatform()
 {
     // adjust the platform weight, if necessary
-    if(_object.getAttachedPlatform()) {
-        _object.getAttachedPlatform()->adjustHoldingWeight(-static_cast<int>(_object.phys.weight));
+    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
+    if (platform) {
+        platform->adjustHoldingWeight(-static_cast<int>(_object.phys.weight));
     }
 
     // undo the attachment
@@ -515,7 +521,7 @@ bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
 
 void ObjectPhysics::updatePlatformPhysics()
 {
-    const std::shared_ptr<Object> &platform = _object.getAttachedPlatform();
+    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
     if(!platform) {
         return;
     }

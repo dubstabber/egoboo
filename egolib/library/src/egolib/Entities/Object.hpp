@@ -255,22 +255,6 @@ public:
 
     /**
     * @brief
-    *   Get the Object that is holding this Object
-    *   or nullptr if this Object is not being held.
-    *   This can also be the mount if the Object is actually 
-    *   riding the Holder.
-    **/
-    const std::shared_ptr<Object>& getHolder() const;
-
-    /**
-    * @brief
-    *   Get the platform this object is attached to
-    *   or nullptr if not attached
-    **/
-    const std::shared_ptr<Object>& getAttachedPlatform() const;
-
-    /**
-    * @brief
     *   This function returns true if this Object is inside another Objects inventory
     * @return
     *   true if inside another existing Object's inventory
@@ -280,6 +264,8 @@ public:
     ObjectRef getHolderRef() const { return attachedto; }
 
     void setHolderRef(ObjectRef holderRef) { attachedto = holderRef; }
+
+    ObjectRef getAttachedPlatformRef() const { return onwhichplatform_ref; }
 
     slot_t getAttachmentSlot() const { return inwhich_slot; }
 

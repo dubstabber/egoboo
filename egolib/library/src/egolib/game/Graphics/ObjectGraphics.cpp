@@ -25,6 +25,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+const std::shared_ptr<Object>& attachmentObject(ObjectRef objectRef)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
+}
+
 struct TintRenderState
 {
     int alpha;
@@ -1298,13 +1303,18 @@ bool ObjectGraphics::applyMountedAnimationRatePolicy()
         return false;
     }
 
-    if (_object.getHolder()->isScenery()) {
+    const std::shared_ptr<Object>& holder = attachmentObject(_object.getHolderRef());
+    if (!holder) {
+        return false;
+    }
+
+    if (holder->isScenery()) {
         //This is a special case to make animation while in the Pot (which is actually a "mount") look better
         _animationRate = 0.0f;
     }
     else {
         // just copy the rate from the mount
-        _animationRate = _object.getHolder()->getAnimationSpeed();
+        _animationRate = holder->getAnimationSpeed();
     }
 
     return true;

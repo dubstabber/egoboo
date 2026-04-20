@@ -520,6 +520,7 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     ASSERT_NE(object, nullptr);
 
     EXPECT_EQ(object->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAttachedPlatformRef(), ObjectRef::Invalid);
     EXPECT_EQ(object->getAttachmentSlot(), SLOT_LEFT);
     EXPECT_EQ(object->getInventoryHolderRef(), ObjectRef::Invalid);
     EXPECT_FALSE(object->isPlatform());
@@ -527,6 +528,7 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_EQ(object->getHoldingWeight(), 0);
 
     object->setHolderRef(ObjectRef(41));
+    object->onwhichplatform_ref = ObjectRef(43);
     object->setAttachmentSlot(SLOT_RIGHT);
     object->setInventoryHolderRef(ObjectRef(42));
     object->setPlatform(true);
@@ -535,11 +537,26 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     object->adjustHoldingWeight(5);
 
     EXPECT_EQ(object->getHolderRef(), ObjectRef(41));
+    EXPECT_EQ(object->getAttachedPlatformRef(), ObjectRef(43));
     EXPECT_EQ(object->getAttachmentSlot(), SLOT_RIGHT);
     EXPECT_EQ(object->getInventoryHolderRef(), ObjectRef(42));
     EXPECT_TRUE(object->isPlatform());
     EXPECT_TRUE(object->canUsePlatforms());
     EXPECT_EQ(object->getHoldingWeight(), 12);
+}
+
+TEST_F(ObjectAccessorFixture, MissingHolderAndPlatformRefsRemainNullLikeThroughRuntimeLookups)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3045);
+    ASSERT_NE(object, nullptr);
+
+    object->setHolderRef(ObjectRef(41));
+    object->onwhichplatform_ref = ObjectRef(42);
+
+    EXPECT_FALSE(objectHandler[object->getHolderRef()]);
+    EXPECT_FALSE(objectHandler[object->getAttachedPlatformRef()]);
+    EXPECT_FALSE(object->isBeingHeld());
 }
 
 TEST_F(ObjectAccessorFixture, PhysicsForwardersClampDesiredVelocityAndExposeGroundContactState)

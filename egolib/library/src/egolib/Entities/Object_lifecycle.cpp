@@ -231,7 +231,7 @@ void Object::respawn()
     disaffirm_attached_particles(getObjRef());
 
     for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {
-        if (object->getAttachedPlatform().get() == this) {
+        if (object && object->getAttachedPlatformRef() == getObjRef()) {
             object->detachFromPlatform();
         }
     }
@@ -365,11 +365,6 @@ bool Object::canCollide() const
     }
 
     return true;
-}
-
-const std::shared_ptr<Object>& Object::getAttachedPlatform() const
-{
-    return activeModule().getObjectHandler()[onwhichplatform_ref];
 }
 
 uint16_t Object::getMoney() const
