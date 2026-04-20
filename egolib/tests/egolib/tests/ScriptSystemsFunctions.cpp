@@ -1116,6 +1116,70 @@ TEST_F(ScriptSystemsFunctionsFixture, ArmorHelpersUseAppearanceProfileSeamAndPre
     EXPECT_EQ(target->getMoney(), 100);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, BecomeSpellUsesEnchantableAndMorphRolesAndResetsScriptState)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/book.obj", 5703);
+
+    ASSERT_NE(actor, nullptr);
+
+    const auto enchant = addHealRemovableEnchant(module, actor, 5704);
+    ASSERT_NE(enchant, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    const ObjectProfileRef spellProfile = loadProfile("mp_data/globalobjects/players/rogue.obj", 5706);
+    ASSERT_NE(spellProfile, ObjectProfileRef::Invalid);
+    self.content = spellProfile.get();
+    self.state = 41;
+
+    const ObjectProfileRef previousBaseModel = actor->getBaseModelRef();
+
+    EXPECT_TRUE(scr_BecomeSpell(state, self));
+    EXPECT_TRUE(enchant->isTerminated());
+    if (actor->getFirstActiveEnchant() != nullptr)
+    {
+        EXPECT_TRUE(actor->getFirstActiveEnchant()->isTerminated());
+    }
+    EXPECT_EQ(actor->getProfileID(), spellProfile);
+    EXPECT_EQ(actor->getBaseModelRef(), previousBaseModel);
+    EXPECT_EQ(self.content, 0);
+    EXPECT_EQ(self.state, 0);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, BecomeSpellbookUsesEnchantableMorphAndAnimationRoles)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/magic/summonspellii.obj", 5707);
+
+    ASSERT_NE(actor, nullptr);
+
+    const auto enchant = addHealRemovableEnchant(module, actor, 5708);
+    ASSERT_NE(enchant, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.state = 17;
+    self.content = 99;
+
+    const ObjectProfileRef previousProfile = actor->getProfileID();
+    const ObjectProfileRef previousBaseModel = actor->getBaseModelRef();
+    const SKIN_T previousSpellEffectSkin = actor->getProfile()->getSpellEffectType();
+
+    EXPECT_TRUE(scr_BecomeSpellbook(state, self));
+    EXPECT_TRUE(enchant->isTerminated());
+    if (actor->getFirstActiveEnchant() != nullptr)
+    {
+        EXPECT_TRUE(actor->getFirstActiveEnchant()->isTerminated());
+    }
+    EXPECT_EQ(actor->getProfileID(), ObjectProfileRef(SPELLBOOK));
+    EXPECT_EQ(actor->getBaseModelRef(), previousBaseModel);
+    EXPECT_EQ(actor->getSkin(), previousSpellEffectSkin);
+    EXPECT_EQ(self.content, REF_TO_INT(previousProfile.get()));
+    EXPECT_EQ(self.state, 0);
+    EXPECT_EQ(actor->getCurrentAnimation(), ACTION_JB);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassUsesMorphControlAndPublishesBaseModel)
 {
     auto& module = beginActiveTestModule();

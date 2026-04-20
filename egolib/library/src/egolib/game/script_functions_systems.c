@@ -16,6 +16,11 @@ IInventoryHolder& inventoryHolder(Object& object)
     return object;
 }
 
+IAnimationControl& animationControl(Object& object)
+{
+    return object;
+}
+
 ICharacterState& characterState(Object& object)
 {
     return object;
@@ -44,6 +49,33 @@ IWallet& wallet(Object& object)
 IMorphControl& morphControl(Object& object)
 {
     return object;
+}
+
+void becomeSpell(IEnchantable& selfEnchantable,
+                 IMorphControl& selfMorph,
+                 ObjectProfileRef spellProfile,
+                 ai_state_t& self)
+{
+    selfEnchantable.disenchant();
+    selfMorph.polymorphObject(spellProfile, 0);
+    self.content = 0;
+    self.state = 0;
+}
+
+void becomeSpellbook(IEnchantable& selfEnchantable,
+                     IMorphControl& selfMorph,
+                     IAnimationControl& selfAnimation,
+                     ObjectProfileRef oldProfile,
+                     SKIN_T spellEffectSkin,
+                     ai_state_t& self)
+{
+    selfEnchantable.disenchant();
+    selfMorph.polymorphObject(ObjectProfileRef(SPELLBOOK), spellEffectSkin);
+    self.state = 0;
+    self.content = REF_TO_INT(oldProfile.get());
+
+    const ModelAction droppedAction = selfAnimation.resolveModelAction(ACTION_JB);
+    selfAnimation.startAnimation(droppedAction, false, true);
 }
 
 bool itemMatchesType(ObjectRef itemRef, const IDSZ2& idsz)
@@ -547,13 +579,7 @@ uint8_t scr_BecomeSpell( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    // change the spellbook to a spell effect
-    pchr->disenchant();
-    pchr->polymorphObject(ObjectProfileRef(self.content), 0);
-
-    // set the spell effect parameters
-    self.content = 0;
-    self.state = 0;
+    becomeSpell(enchantable(*pchr), morphControl(*pchr), ObjectProfileRef(self.content), self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -571,21 +597,12 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    // convert the spell effect to a spellbook
-    ObjectProfileRef old_profile = pchr->getProfileID();
-    pchr->disenchant();
-    pchr->polymorphObject(ObjectProfileRef(SPELLBOOK), ppro->getSpellEffectType());
-
-    // Reset the spellbook state so it doesn't burn up
-    self.state = 0;
-    self.content = REF_TO_INT( old_profile.get() );
-
-    // set the spellbook animations
-    // Do dropped animation
-    if (rv_success == pchr->startAnimation(pchr->getProfile()->getModel()->getAction(ACTION_JB), false, true))
-    {
-        returncode = true;
-    }
+    becomeSpellbook(enchantable(*pchr),
+                    morphControl(*pchr),
+                    animationControl(*pchr),
+                    pchr->getProfileID(),
+                    ppro->getSpellEffectType(),
+                    self);
 
     SCRIPT_FUNCTION_END();
 }
