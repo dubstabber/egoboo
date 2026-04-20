@@ -939,7 +939,7 @@ public:
     * @return
     *   true if this Object has mastered the specified perk. Returns always true for NR_OF_PERKS
     **/
-    bool hasPerk(Ego::Perks::PerkID perk) const;
+    bool hasPerk(Ego::Perks::PerkID perk) const override;
 
     /**
     * @brief

@@ -1488,8 +1488,12 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
     {
         //Who is the dirty backstabber?
         const ObjectRef lastAttackerRef = scriptable(*pchr).getAILastAttacker();
-        Object* pLastAttacker = tryObject(lastAttackerRef);
-        if (!pLastAttacker || pLastAttacker->isTerminated()) return false;
+        const IInventoryHolder* lastAttackerHolder = tryInventoryHolder(lastAttackerRef);
+        const ICharacterState* lastAttackerState = tryCharacterState(lastAttackerRef);
+        if (lastAttackerHolder == nullptr || lastAttackerState == nullptr || lastAttackerHolder->isTerminated())
+        {
+            return false;
+        }
 
         //Only if hit from behind
         // (8192 / (2^16-1)) * 360 ~ 45 degrees
@@ -1497,7 +1501,7 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
         if ( self.directionlast >= (ATK_BEHIND - tolerance) && self.directionlast < (ATK_BEHIND + tolerance) )
         {
             //And require the backstab skill
-            if (pLastAttacker->hasPerk(Ego::Perks::BACKSTAB) )
+            if (lastAttackerState->hasPerk(Ego::Perks::BACKSTAB))
             {
                 //Finally we require it to be physical damage!
                 if (DamageType_isPhysical(self.damagetypelast))

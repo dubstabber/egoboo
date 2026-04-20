@@ -925,6 +925,7 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     characterState.increaseBaseAttribute(Ego::Attribute::MIGHT, 1.5f);
 
     EXPECT_TRUE(characterState.costMana(-FLOAT_TO_FP8(1.0f), ObjectRef::Invalid));
+    EXPECT_FALSE(characterState.hasPerk(Ego::Perks::NIGHT_VISION));
     characterState.addPerk(Ego::Perks::NIGHT_VISION);
 
     EXPECT_FLOAT_EQ(characterState.getLife(), object->getLife());
@@ -940,6 +941,7 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     EXPECT_TRUE(characterState.isKursed());
     EXPECT_GT(object->getBaseAttribute(Ego::Attribute::MIGHT), mightBefore);
     EXPECT_GT(object->getMana(), manaBefore);
+    EXPECT_TRUE(characterState.hasPerk(Ego::Perks::NIGHT_VISION));
     EXPECT_TRUE(object->hasPerk(Ego::Perks::NIGHT_VISION));
 }
 

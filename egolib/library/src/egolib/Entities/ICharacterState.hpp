@@ -30,5 +30,6 @@ public:
     virtual void setKursed(bool kursed) = 0;
 
     virtual void removeEnchantsWithIDSZ(const IDSZ2& idsz) = 0;
+    virtual bool hasPerk(Ego::Perks::PerkID perk) const = 0;
     virtual void addPerk(Ego::Perks::PerkID perk) = 0;
 };
