@@ -15,6 +15,11 @@ const IInventoryHolder& inventoryHolder(const Object& object)
     return object;
 }
 
+const IScriptable& scriptable(const Object& object)
+{
+    return object;
+}
+
 std::shared_ptr<Object> heldItem(const IInventoryHolder& holder, slot_t slot)
 {
     return objectHandler()[holder.getHeldObject(slot)];
@@ -409,7 +414,7 @@ uint8_t scr_IfSitting( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().exists( pchr->getHolderRef() );
+    returncode = objectHandler().exists(targetInfo(*pchr).getHolderRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -577,12 +582,9 @@ uint8_t scr_IfArmorIs( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's skin type equals tmpargument
 
-    int tTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    tTmp = targetInfo(*pchr).getSkin();
-    returncode = ( tTmp == state.argument );
+    returncode = targetInfo(*pchr).getSkin() == state.argument;
 
     SCRIPT_FUNCTION_END();
 }
@@ -1207,10 +1209,11 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    IInventoryHolder* holderInventory = tryInventoryHolder(pchr->getHolderRef());
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    IInventoryHolder* holderInventory = tryInventoryHolder(selfTargetInfo.getHolderRef());
     if (holderInventory != nullptr)
     {
-        returncode = holderInventory->getHeldObject(SLOT_LEFT) == pchr->getObjRef();
+        returncode = holderInventory->getHeldObject(SLOT_LEFT) == self.getSelf();
     }
 
     SCRIPT_FUNCTION_END();
@@ -1389,7 +1392,7 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef iattached = pchr->getHolderRef();
+    const ObjectRef iattached = targetInfo(*pchr).getHolderRef();
 
     IScriptable* attached = tryScriptable(iattached);
     if (attached != nullptr)
@@ -1472,8 +1475,8 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
     if ( HAS_SOME_BITS( self.alert, ALERTIF_ATTACKED ) )
     {
         //Who is the dirty backstabber?
-        const ObjectRef lastAttackerRef = static_cast<const IScriptable&>(*pchr).getAILastAttacker();
-        Object *pLastAttacker = objectHandler().get(lastAttackerRef);
+        const ObjectRef lastAttackerRef = scriptable(*pchr).getAILastAttacker();
+        Object* pLastAttacker = tryObject(lastAttackerRef);
         if (!pLastAttacker || pLastAttacker->isTerminated()) return false;
 
         //Only if hit from behind

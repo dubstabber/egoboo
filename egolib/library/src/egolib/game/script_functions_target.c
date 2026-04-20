@@ -20,6 +20,14 @@ const IPhysical& physical(const Object& object)
 {
     return object;
 }
+
+bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
+{
+    FACING_T facing = FACING_T(vec_to_facing(targetPhysical.getPosX() - selfPhysical.getPosX(),
+                                             targetPhysical.getPosY() - selfPhysical.getPosY()));
+    facing -= FACING_T(selfPhysical.getFacingZ());
+    return facing > 55535 || facing < 10000;
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -135,7 +143,8 @@ uint8_t scr_SetTargetToWhoeverAttacked( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef attackerRef = scriptable(*pchr).getAILastAttacker();
+    const IScriptable& selfScriptable = scriptable(*pchr);
+    const ObjectRef attackerRef = selfScriptable.getAILastAttacker();
     if ( objectHandler().exists(attackerRef) )
     {
         self.setTarget(attackerRef);
@@ -158,7 +167,8 @@ uint8_t scr_SetTargetToWhoeverBumped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef bumpedRef = scriptable(*pchr).getAIBumped();
+    const IScriptable& selfScriptable = scriptable(*pchr);
+    const ObjectRef bumpedRef = selfScriptable.getAIBumped();
     if ( objectHandler().exists(bumpedRef) )
     {
         self.setTarget(bumpedRef);
@@ -181,7 +191,8 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
         const ObjectRef sissyRef = activeModule().getTeamCallerForHelpRef(teamRef);
@@ -398,7 +409,8 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef holderRef = targetInfo(*pchr).getHolderRef();
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    const ObjectRef holderRef = selfTargetInfo.getHolderRef();
     if ( objectHandler().exists(holderRef) )
     {
         self.setTarget(holderRef);
@@ -421,13 +433,14 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = ( targetInfo->isAlive() && !targetInfo->isOnSameTeam(pchr->getTeamRef()) );
+    const TEAM_REF selfTeamRef = targetInfo(*pchr).getTeamRef();
+    returncode = ( target->isAlive() && !target->isOnSameTeam(selfTeamRef) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -442,14 +455,15 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    if (targetInfo == nullptr || damageableTarget == nullptr)
+    if (target == nullptr || damageableTarget == nullptr)
     {
         return false;
     }
 
-    returncode = ( targetInfo->isAlive() && targetInfo->isHatedByTeam(pchr->getTeamRef()) && !damageableTarget->isInvincible() );
+    const TEAM_REF selfTeamRef = targetInfo(*pchr).getTeamRef();
+    returncode = ( target->isAlive() && target->isHatedByTeam(selfTeamRef) && !damageableTarget->isInvincible() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -465,7 +479,8 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
         const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
@@ -477,7 +492,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
                 return false;
             }
 
-            auto itarget = scriptableLeader->getAITarget();
+            const ObjectRef itarget = scriptableLeader->getAITarget();
 
             if ( objectHandler().exists( itarget ) )
             {
@@ -528,7 +543,8 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    const TEAM_REF teamRef = targetInfo(*pchr).getTeamRef();
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
     if ( VALID_TEAM_RANGE(teamRef) )
     {
         const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
@@ -1191,7 +1207,8 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = pchr->isFacingLocation(physicalTarget->getPosX(), physicalTarget->getPosY());
+    const IPhysical& selfPhysical = physical(*pchr);
+    returncode = isFacing(selfPhysical, *physicalTarget);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1831,11 +1848,7 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
     }
 
     const IPhysical& selfPhysical = physical(*pchr);
-	FACING_T sTmp = 0;
-    sTmp = FACING_T(vec_to_facing(selfPhysical.getPosX() - physicalTarget->getPosX(),
-                                  selfPhysical.getPosY() - physicalTarget->getPosY()));
-    sTmp -= FACING_T(physicalTarget->getFacingZ());
-    returncode = ( sTmp > 55535 || sTmp < 10000 );
+    returncode = isFacing(*physicalTarget, selfPhysical);
 
     SCRIPT_FUNCTION_END();
 }

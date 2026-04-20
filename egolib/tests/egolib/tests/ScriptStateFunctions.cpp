@@ -400,6 +400,35 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThro
     EXPECT_EQ(self.getTarget(), attacker->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedFailsWithoutBlockedAlertOrLastAttacker)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55310);
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55311);
+    auto attacker = makeObject(module, "mp_objects/follower.obj", 55312);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(attacker, nullptr);
+
+    actor->setHolderRef(holder->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_IfHolderBlocked(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+
+    holder->setAIAlertBits(ALERTIF_BLOCKED);
+    EXPECT_FALSE(scr_IfHolderBlocked(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+
+    holder->setAILastAttacker(attacker->getObjRef());
+    attacker->requestTerminate();
+    EXPECT_FALSE(scr_IfHolderBlocked(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfBackstabbedReadsLastAttackerThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();
@@ -585,6 +614,26 @@ TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandReadsHolderSlotThroughInvent
     ai_state_t self = makeScriptSelf(heldItem);
 
     EXPECT_TRUE(scr_IfHeldInLeftHand(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandFailsWithoutMatchingLeftHandHolder)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55730);
+    auto heldItem = makeMeleeWeapon(module, 55731);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+
+    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_RIGHT));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(heldItem);
+
+    EXPECT_FALSE(scr_IfHeldInLeftHand(state, self));
+
+    heldItem->detatchFromHolder(true, false);
+    EXPECT_FALSE(scr_IfHeldInLeftHand(state, self));
 }
 
 TEST_F(ScriptStateFunctionsFixture, IfGroggedAndIfDazedReadTimersThroughTargetInfoRole)

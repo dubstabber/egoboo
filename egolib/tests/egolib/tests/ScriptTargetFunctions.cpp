@@ -254,6 +254,20 @@ TEST_F(ScriptTargetFunctionsFixture, SelfTargetSelectionReadsThroughScriptableRo
     EXPECT_EQ(self.getTarget(), lastItemUsed->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverAttackedFailsWhenScriptableRefIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53120);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverAttacked(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
 TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverIsHoldingReadsThroughTargetInfoRole)
 {
     auto& module = beginActiveTestModule();
@@ -270,6 +284,20 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverIsHoldingReadsThroughTarg
 
     EXPECT_TRUE(scr_SetTargetToWhoeverIsHolding(state, self));
     EXPECT_EQ(self.getTarget(), holder->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverIsHoldingFailsWithoutHolder)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53121);
+
+    ASSERT_NE(actor, nullptr);
+
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+    script_state_t state;
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverIsHolding(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)

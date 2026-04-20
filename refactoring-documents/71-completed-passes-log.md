@@ -560,6 +560,12 @@ Continued Tier 1.2 by adding narrow `GameModule` team helpers for leader lookup,
 
 Extended focused script-system and script-target coverage to pin leader-alive behavior, team-owned leader/sissy ref lookup, and `Team::TEAM_GOOD` XP publication through the new module seam. Build, focused script tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 123 — Residual target/state role cleanup (2026-04-20)
+
+Continued Tier 1.2 by routing the remaining actor-side query reads in `script_functions_target.c` and `script_functions_state.c` through the landed `IScriptable`, `ITargetInfo`, `IPhysical`, and `IInventoryHolder` seams instead of concrete `Object` reads. Unified the target-facing predicates around a shared read-only facing helper and kept the existing missing-ref, missing-holder, and missing-leader failure behavior intact.
+
+Extended focused script-target and script-state coverage with deterministic failure cases for missing attacker refs, missing holders, missing holder-block alerts, and non-left-hand holder attachment. Build, the full `ScriptTargetFunctionsFixture` / `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
