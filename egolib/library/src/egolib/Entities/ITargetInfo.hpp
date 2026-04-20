@@ -8,9 +8,11 @@ public:
     virtual ~ITargetInfo() = default;
 
     virtual ObjectRef getHolderRef() const = 0;
+    virtual slot_t getAttachmentSlot() const = 0;
     virtual PLA_REF getPlayerNumber() const = 0;
 
     virtual bool isAlive() const = 0;
+    virtual bool isBeingHeld() const = 0;
     virtual bool isPlayer() const = 0;
     virtual Gender getGender() const = 0;
     virtual ModelAction getCurrentAnimation() const = 0;

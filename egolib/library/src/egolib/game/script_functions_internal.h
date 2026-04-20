@@ -127,6 +127,12 @@ inline IScriptable* tryScriptable(ObjectRef objectRef)
     return object ? static_cast<IScriptable*>(object) : nullptr;
 }
 
+inline IAnimationControl* tryAnimationControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IAnimationControl*>(object) : nullptr;
+}
+
 inline IDamageable* tryDamageable(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

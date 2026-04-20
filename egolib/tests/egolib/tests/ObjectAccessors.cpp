@@ -436,6 +436,8 @@ TEST_F(ObjectAccessorFixture, TeamMemberRoleSurfaceSupportsTeamMutationLeadershi
     teamRole.setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     goodTeam.setLeader(Object::INVALID_OBJECT);
     teamRole.becomeTeamLeader();
+    teamRole.callTeamForHelp();
+    EXPECT_EQ(goodTeam.getSissy(), object);
     teamRole.giveTeamExperience(64, XP_TEAMKILL);
 }
 
@@ -543,6 +545,25 @@ TEST_F(ObjectAccessorFixture, AttachmentAndPlatformAccessorsRoundTripSelectedSta
     EXPECT_TRUE(object->isPlatform());
     EXPECT_TRUE(object->canUsePlatforms());
     EXPECT_EQ(object->getHoldingWeight(), 12);
+}
+
+TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAttachmentAndHeldStateQueries)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 3046);
+    auto object = makeFollower(objectHandler, 3047);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(object, nullptr);
+
+    holder->setHeldObject(SLOT_RIGHT, object->getObjRef());
+    object->setHolderRef(holder->getObjRef());
+    object->setAttachmentSlot(SLOT_RIGHT);
+
+    const ITargetInfo& target = *object;
+
+    EXPECT_EQ(target.getHolderRef(), holder->getObjRef());
+    EXPECT_EQ(target.getAttachmentSlot(), SLOT_RIGHT);
+    EXPECT_TRUE(target.isBeingHeld());
 }
 
 TEST_F(ObjectAccessorFixture, MissingHolderAndPlatformRefsRemainNullLikeThroughRuntimeLookups)
@@ -1022,6 +1043,45 @@ TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMut
     EXPECT_FLOAT_EQ(object->getPosX(), 96.0f);
     EXPECT_FLOAT_EQ(object->getPosY(), 96.0f);
     EXPECT_EQ(object->getFacingZ(), Facing(1234));
+}
+
+TEST_F(ObjectAccessorFixture, AnimationControlRoleSurfaceSupportsActionResolutionAndAnimationMutation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 30517);
+    ASSERT_NE(object, nullptr);
+
+    IAnimationControl& animation = *object;
+
+    const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
+    const ModelAction nextAction = findValidAction(object, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
+    ASSERT_NE(currentAction, ACTION_COUNT);
+    ASSERT_NE(nextAction, ACTION_COUNT);
+
+    EXPECT_EQ(animation.resolveModelAction(static_cast<int>(nextAction)), nextAction);
+
+    const auto& model = object->inst.getModelDescriptor();
+    const int currentLastFrame = model->getLastFrame(currentAction);
+    const int nextFirstFrame = model->getFirstFrame(nextAction);
+
+    object->inst._currentAnimation = currentAction;
+    object->inst._nextAnimation = ACTION_WB;
+    object->inst._canBeInterrupted = false;
+    object->inst._sourceFrameIndex = model->getFirstFrame(currentAction);
+    object->inst._targetFrameIndex = currentLastFrame;
+    object->inst._animationProgressInteger = 3;
+    object->inst._animationProgress = 0.75f;
+
+    EXPECT_TRUE(animation.startAnimation(nextAction, true, true));
+    animation.setActionKeep(true);
+    animation.removeInterpolation();
+
+    EXPECT_EQ(object->getCurrentAnimation(), nextAction);
+    EXPECT_TRUE(object->inst._freezeAtLastFrame);
+    EXPECT_EQ(object->inst._sourceFrameIndex, nextFirstFrame);
+    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
+    EXPECT_EQ(object->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)

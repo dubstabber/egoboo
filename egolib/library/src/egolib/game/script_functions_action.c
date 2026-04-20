@@ -9,6 +9,21 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+IAnimationControl& animationControl(Object& object)
+{
+    return static_cast<IAnimationControl&>(object);
+}
+
+ITeamMember& teamMember(Object& object)
+{
+    return static_cast<ITeamMember&>(object);
+}
+
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return static_cast<const ITargetInfo&>(object);
+}
 }
 
 
@@ -23,10 +38,11 @@ uint8_t scr_DoAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ModelAction action = pchr->getProfile()->getModel()->getAction( state.argument );
+    IAnimationControl& selfAnimation = animationControl(*pchr);
+    const ModelAction action = selfAnimation.resolveModelAction(state.argument);
 
     returncode = false;
-    if ( rv_success == pchr->startAnimation(action, false, false) )
+    if ( rv_success == selfAnimation.startAnimation(action, false, false) )
     {
         returncode = true;
     }
@@ -45,7 +61,7 @@ uint8_t scr_KeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setActionKeep(true);
+    animationControl(*pchr).setActionKeep(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -63,18 +79,14 @@ uint8_t scr_TargetDoAction( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if ( objectHandler().exists( self.getTarget() ) )
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
+    if ( target != nullptr && targetAnimation != nullptr && target->isAlive() )
     {
-        Object * pself_target = objectHandler().get( self.getTarget() );
-
-        if ( pself_target->isAlive() )
+        const ModelAction action = targetAnimation->resolveModelAction(state.argument);
+        if ( rv_success == targetAnimation->startAnimation(action, false, false) )
         {
-            ModelAction action = pself_target->getProfile()->getModel()->getAction( state.argument );
-
-            if ( rv_success == pself_target->startAnimation(action, false, false) )
-            {
-                returncode = true;
-            }
+            returncode = true;
         }
     }
 
@@ -92,10 +104,11 @@ uint8_t scr_DoActionOverride( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ModelAction action = pchr->getProfile()->getModel()->getAction(state.argument);
+    IAnimationControl& selfAnimation = animationControl(*pchr);
+    const ModelAction action = selfAnimation.resolveModelAction(state.argument);
 
     returncode = false;
-    if ( rv_success == pchr->startAnimation(action, false, true) )
+    if ( rv_success == selfAnimation.startAnimation(action, false, true) )
     {
         returncode = true;
     }
@@ -129,7 +142,7 @@ uint8_t scr_CallForHelp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->callTeamForHelp();
+    teamMember(*pchr).callTeamForHelp();
 
     SCRIPT_FUNCTION_END();
 }
@@ -144,7 +157,7 @@ uint8_t scr_UnkeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setActionKeep(false);
+    animationControl(*pchr).setActionKeep(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -424,13 +437,11 @@ uint8_t scr_ChildDoActionOverride( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if ( objectHandler().exists( self.child ) )
+    IAnimationControl* childAnimation = tryAnimationControl(self.child);
+    if ( childAnimation != nullptr )
     {
-        Object * pchild = objectHandler().get( self.child );
-
-        ModelAction action = pchild->getProfile()->getModel()->getAction(state.argument);
-
-        if ( rv_success == pchild->startAnimation(action, false, true) )
+        const ModelAction action = childAnimation->resolveModelAction(state.argument);
+        if ( rv_success == childAnimation->startAnimation(action, false, true) )
         {
             returncode = true;
         }
@@ -525,9 +536,10 @@ uint8_t scr_CorrectActionForHand( script_state_t& state, ai_state_t& self )
     /// USAGE:  wizards casting spells
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
+    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    if ( objectHandler().exists(selfTargetInfo.getHolderRef()) )
     {
-        if ( pchr->getAttachmentSlot() == SLOT_LEFT )
+        if ( selfTargetInfo.getAttachmentSlot() == SLOT_LEFT )
         {
             // A or B
             state.argument += Random::next(1);
@@ -611,16 +623,14 @@ uint8_t scr_TargetDoActionSetFrame( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if ( objectHandler().exists( self.getTarget() ) )
+    IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
+    if ( targetAnimation != nullptr )
     {
-        Object * pself_target = objectHandler().get( self.getTarget() );
-
-        ModelAction action = pself_target->getProfile()->getModel()->getAction(state.argument );
-
-        if ( rv_success == pself_target->startAnimation(action, false, true) )
+        const ModelAction action = targetAnimation->resolveModelAction(state.argument);
+        if ( rv_success == targetAnimation->startAnimation(action, false, true) )
         {
             // remove the interpolation
-            pself_target->removeInterpolation();
+            targetAnimation->removeInterpolation();
 
             returncode = true;
         }
@@ -949,13 +959,14 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     SCRIPT_FUNCTION_BEGIN();
 
     //We ourselves must be a player or our holder must be one
-    std::shared_ptr<Object> object = objectHandler()[pchr->getObjRef()];
-    if(!object->isPlayer() && object->isBeingHeld()) {
-        object = objectHandler()[pchr->getHolderRef()];
+    const ITargetInfo* chargeTarget = &targetInfo(*pchr);
+    if (!chargeTarget->isPlayer() && chargeTarget->isBeingHeld())
+    {
+        chargeTarget = tryTargetInfo(chargeTarget->getHolderRef());
     }
 
     //Only do this for players
-    if(!object->isPlayer()) {
+    if (chargeTarget == nullptr || !chargeTarget->isPlayer()) {
         returncode = false;
     }
 
@@ -968,7 +979,7 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     else {        
         returncode = true;
 
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(object->getPlayerNumber());
+        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(chargeTarget->getPlayerNumber());
         player->setChargeBar(state.argument, state.distance, state.turn);
     }
 

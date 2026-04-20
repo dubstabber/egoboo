@@ -46,6 +46,7 @@ Landed so far:
 - `ICharacterState` — bounded mutable ammo/mana/kurse/timer/perk/attribute state
 - `ITeamMember` — team mutation, leadership, team-wide XP publication
 - `IWallet` — bounded money query and mutation
+- `IAnimationControl` — bounded script-facing action resolution and animation control
 
 Follow-on work inside this tier:
 

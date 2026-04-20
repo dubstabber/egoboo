@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 116) completed between 2026-04-13 and 2026-04-19. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 127) completed between 2026-04-13 and 2026-04-20. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -583,6 +583,12 @@ Extended `ScriptMovementFunctions.cpp` with focused characterization coverage fo
 Closed the remaining holder/platform alias-style `Object` handle returns by adding `getAttachedPlatformRef()`, removing the public `getHolder()` / `getAttachedPlatform()` shared-pointer accessors, and migrating the bounded matrix, physics, render, and lifecycle callers onto ref-based lookups instead of direct handle returns.
 
 Extended `ObjectAccessors.cpp` with focused coverage for the new platform-ref accessor plus missing holder/platform refs staying null-like through runtime lookups. Build, the focused accessor test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 127 — Conservative action-helper role migration (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_action.c` by introducing `IAnimationControl` for bounded action resolution and animation control, extending the existing team/target query roles with the small helper surface that action scripts still needed, and routing the conservative action/control helpers off concrete `Object` use. Kept flash/color/light/sparkle/name-known mutation, billboard/UI, and broader action-file cleanup out of scope.
+
+Extended `ObjectAccessors.cpp` and `ScriptActionFunctions.cpp` with focused coverage for animation-role parity, team call-for-help publication, holder/attachment role queries, action-start success/blocking behavior, dead-target rejection, interpolation reset, hand-band action correction, and direct-player versus holder-player charge-bar routing. Build, focused action/accessor tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
 ---
 

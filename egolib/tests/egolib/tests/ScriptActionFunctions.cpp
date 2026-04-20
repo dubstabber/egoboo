@@ -13,9 +13,11 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #undef private
+#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -179,6 +181,7 @@ protected:
         s_runtime = std::make_unique<ContentRuntimeBootstrap>(opts);
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
+        EngineContext::get().setEngine(std::make_unique<GameEngine>());
         AudioSystem::initialize();
         ParticleHandler::initialize();
         EngineContext::get().installParticleHandler(ParticleHandler::get());
@@ -189,6 +192,7 @@ protected:
         EngineContext::get().clearParticleHandler();
         ParticleHandler::uninitialize();
         AudioSystem::uninitialize();
+        EngineContext::get().clearEngine();
         s_runtime.reset();
     }
 
@@ -326,6 +330,27 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptActionFunctionsFixture::s_runtime;
 
+ModelAction findValidAction(const std::shared_ptr<Object>& object,
+                            std::initializer_list<ModelAction> candidates,
+                            ModelAction excluded = ACTION_COUNT)
+{
+    const auto& model = object->inst.getModelDescriptor();
+    if (!model)
+    {
+        return ACTION_COUNT;
+    }
+
+    for (const ModelAction action : candidates)
+    {
+        if (action != excluded && model->isActionValid(action))
+        {
+            return action;
+        }
+    }
+
+    return ACTION_COUNT;
+}
+
 TEST_F(ScriptActionFunctionsFixture, PlaySoundUsesInstalledAudioSystemOnlyAbovePitNoSoundPlane)
 {
     auto& module = beginActiveTestModule();
@@ -420,6 +445,168 @@ TEST_F(ScriptActionFunctionsFixture, QuitModuleFadesInstalledAudioSystem)
 
     EXPECT_FALSE(session.hasActiveModule());
     EXPECT_EQ(audioSystem.fadeAllCalls, 1);
+}
+
+TEST_F(ScriptActionFunctionsFixture, DoActionUsesAnimationRoleForSuccessAndBlockedState)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5731);
+    ASSERT_NE(actor, nullptr);
+
+    const ModelAction action = findValidAction(actor, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC});
+    ASSERT_NE(action, ACTION_COUNT);
+
+    script_state_t state;
+    state.argument = static_cast<int>(action);
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_DoAction(state, self));
+    EXPECT_EQ(actor->getCurrentAnimation(), action);
+
+    actor->inst._canBeInterrupted = false;
+    state.argument = static_cast<int>(findValidAction(actor, {ACTION_DA, ACTION_DB, ACTION_DC, ACTION_WA, ACTION_WB}, action));
+    ASSERT_NE(state.argument, ACTION_COUNT);
+    EXPECT_FALSE(scr_DoAction(state, self));
+}
+
+TEST_F(ScriptActionFunctionsFixture, TargetAndChildActionHelpersUseAnimationRoleAndPreserveDeadTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5741);
+    auto target = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5742);
+    auto child = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5743);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(child, nullptr);
+
+    const ModelAction targetAction = findValidAction(target, {ACTION_WA, ACTION_WB, ACTION_DA, ACTION_DB});
+    const ModelAction childAction = findValidAction(child, {ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB});
+    ASSERT_NE(targetAction, ACTION_COUNT);
+    ASSERT_NE(childAction, ACTION_COUNT);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    state.argument = static_cast<int>(targetAction);
+    EXPECT_TRUE(scr_TargetDoAction(state, self));
+    EXPECT_EQ(target->getCurrentAnimation(), targetAction);
+
+    target->_isAlive = false;
+    EXPECT_FALSE(scr_TargetDoAction(state, self));
+    target->_isAlive = true;
+
+    self.child = child->getObjRef();
+    state.argument = static_cast<int>(childAction);
+    EXPECT_TRUE(scr_ChildDoActionOverride(state, self));
+    EXPECT_EQ(child->getCurrentAnimation(), childAction);
+}
+
+TEST_F(ScriptActionFunctionsFixture, TargetDoActionSetFrameSnapsInterpolationToFirstFrame)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5751);
+    auto target = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5752);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    const ModelAction currentAction = findValidAction(target, {ACTION_WC, ACTION_WA, ACTION_DB, ACTION_DC});
+    const ModelAction nextAction = findValidAction(target, {ACTION_DA, ACTION_DB, ACTION_DC, ACTION_WA}, currentAction);
+    ASSERT_NE(currentAction, ACTION_COUNT);
+    ASSERT_NE(nextAction, ACTION_COUNT);
+
+    const auto& model = target->inst.getModelDescriptor();
+    target->inst._currentAnimation = currentAction;
+    target->inst._nextAnimation = ACTION_WB;
+    target->inst._canBeInterrupted = false;
+    target->inst._sourceFrameIndex = model->getFirstFrame(currentAction);
+    target->inst._targetFrameIndex = model->getLastFrame(currentAction);
+    target->inst._animationProgressInteger = 3;
+    target->inst._animationProgress = 0.75f;
+
+    script_state_t state;
+    state.argument = static_cast<int>(nextAction);
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_TargetDoActionSetFrame(state, self));
+    EXPECT_EQ(target->getCurrentAnimation(), nextAction);
+    EXPECT_EQ(target->inst._sourceFrameIndex, model->getFirstFrame(nextAction));
+    EXPECT_EQ(target->inst._targetFrameIndex, model->getFirstFrame(nextAction));
+    EXPECT_EQ(target->inst._animationProgressInteger, 0);
+    EXPECT_FLOAT_EQ(target->inst._animationProgress, 0.0f);
+}
+
+TEST_F(ScriptActionFunctionsFixture, CorrectActionForHandUsesAttachmentSlotBands)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5761);
+    auto actor = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5762);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(actor, nullptr);
+
+    holder->setHeldObject(SLOT_LEFT, actor->getObjRef());
+    actor->setHolderRef(holder->getObjRef());
+
+    script_state_t state;
+    state.argument = ACTION_DA;
+    ai_state_t self = makeScriptSelf(actor);
+
+    actor->setAttachmentSlot(SLOT_LEFT);
+    EXPECT_TRUE(scr_CorrectActionForHand(state, self));
+    EXPECT_GE(state.argument, ACTION_DA);
+    EXPECT_LE(state.argument, ACTION_DA + 1);
+
+    state.argument = ACTION_DA;
+    actor->setAttachmentSlot(SLOT_RIGHT);
+    EXPECT_TRUE(scr_CorrectActionForHand(state, self));
+    EXPECT_GE(state.argument, ACTION_DA + 2);
+    EXPECT_LE(state.argument, ACTION_DA + 3);
+}
+
+TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRejectsInvalidArguments)
+{
+    auto& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5771);
+    auto heldItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 5772);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+
+    player->setHeldObject(SLOT_LEFT, heldItem->getObjRef());
+    heldItem->setHolderRef(player->getObjRef());
+    heldItem->setAttachmentSlot(SLOT_LEFT);
+
+    script_state_t playerState;
+    playerState.argument = 4;
+    playerState.distance = 10;
+    playerState.turn = 3;
+    ai_state_t playerSelf = makeScriptSelf(player);
+
+    EXPECT_TRUE(scr_DisplayCharge(playerState, playerSelf));
+    const std::shared_ptr<Ego::Player>& playerEntry = module.getPlayer(player->getPlayerNumber());
+    ASSERT_NE(playerEntry, nullptr);
+    EXPECT_EQ(playerEntry->getBarCurrentCharge(), 4u);
+    EXPECT_EQ(playerEntry->getBarMaxCharge(), 10u);
+    EXPECT_EQ(playerEntry->getBarPipWidth(), 3u);
+
+    script_state_t heldState;
+    heldState.argument = 6;
+    heldState.distance = 12;
+    heldState.turn = 5;
+    ai_state_t heldSelf = makeScriptSelf(heldItem);
+
+    EXPECT_TRUE(scr_DisplayCharge(heldState, heldSelf));
+    EXPECT_EQ(playerEntry->getBarCurrentCharge(), 6u);
+    EXPECT_EQ(playerEntry->getBarMaxCharge(), 12u);
+    EXPECT_EQ(playerEntry->getBarPipWidth(), 5u);
+
+    script_state_t invalidState;
+    invalidState.argument = -1;
+    invalidState.distance = 0;
+    ai_state_t invalidSelf = makeScriptSelf(player);
+
+    EXPECT_FALSE(scr_DisplayCharge(invalidState, invalidSelf));
 }
 
 } // namespace

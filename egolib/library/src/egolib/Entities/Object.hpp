@@ -30,6 +30,7 @@
 #include "egolib/Logic/Team.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
 
+#include "egolib/Entities/IAnimationControl.hpp"
 #include "egolib/Entities/IAppearanceProfile.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
@@ -86,6 +87,7 @@ enum LatchButton : uint8_t
 
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
+               public IAnimationControl,
                public IAppearanceProfile,
                public IDamageable,
                public ICharacterState,
@@ -196,7 +198,7 @@ public:
 
     void becomeTeamLeader() override;
 
-    void callTeamForHelp();
+    void callTeamForHelp() override;
 
     void giveTeamExperience(int amount, XPType type) const override;
 
@@ -251,7 +253,7 @@ public:
     * @return
     *   true if held by another existing Object that is not marked for removal
     **/
-    bool isBeingHeld() const;
+    bool isBeingHeld() const override;
 
     /**
     * @brief
@@ -267,7 +269,7 @@ public:
 
     ObjectRef getAttachedPlatformRef() const { return onwhichplatform_ref; }
 
-    slot_t getAttachmentSlot() const { return inwhich_slot; }
+    slot_t getAttachmentSlot() const override { return inwhich_slot; }
 
     void setAttachmentSlot(slot_t slot) { inwhich_slot = slot; }
 
@@ -362,7 +364,12 @@ public:
 
     bool playAction(ModelAction action, bool actionReady) { return inst.playAction(action, actionReady); }
 
-    bool startAnimation(ModelAction action, bool actionReady, bool overrideAction)
+    ModelAction resolveModelAction(int actionIndex) const override
+    {
+        return getProfile()->getModel()->getAction(actionIndex);
+    }
+
+    bool startAnimation(ModelAction action, bool actionReady, bool overrideAction) override
     {
         return inst.startAnimation(action, actionReady, overrideAction);
     }
@@ -376,7 +383,7 @@ public:
 
     bool canBeInterrupted() const { return inst.canBeInterrupted(); }
 
-    void setActionKeep(bool val) { inst.setActionKeep(val); }
+    void setActionKeep(bool val) override { inst.setActionKeep(val); }
 
     void setActionLooped(bool val) { inst.setActionLooped(val); }
 
@@ -386,7 +393,7 @@ public:
 
     float getAnimationSpeed() const { return inst.getAnimationSpeed(); }
 
-    void removeInterpolation() { inst.removeInterpolation(); }
+    void removeInterpolation() override { inst.removeInterpolation(); }
 
     void updateAnimation() { inst.updateAnimation(); }
 
