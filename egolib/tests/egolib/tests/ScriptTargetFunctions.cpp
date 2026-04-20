@@ -506,6 +506,21 @@ TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
     EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
     EXPECT_EQ(module.getTeamLeaderRef(teamRef), ObjectRef::Invalid);
     EXPECT_EQ(module.getTeamCallerForHelpRef(teamRef), ObjectRef::Invalid);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_MAX));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_MAX));
+
+    self.setTarget(target->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToLeader(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+
+    self.setTarget(target->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToTargetOfLeader(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+
+    self.setTarget(target->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToWhoeverCalledForHelp(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
 }
 
 TEST_F(ScriptTargetFunctionsFixture, TargetAnimationPredicatesReadThroughRoleSurface)

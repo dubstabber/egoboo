@@ -1159,6 +1159,10 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
     module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
     EXPECT_FALSE(scr_IfLeaderIsAlive(state, self));
     EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), ObjectRef::Invalid);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_MAX));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_MAX));
+    EXPECT_FALSE(scr_IfLeaderIsAlive(state, self));
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserveClampSemantics)

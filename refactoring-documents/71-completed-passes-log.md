@@ -658,6 +658,12 @@ Continued Tier 1.3 by removing the remaining runtime-facing `ParticleHandler::ge
 
 Extended `ModuleUpdate.cpp` with focused regressions for parent-particle owner fallback during initialization, recursive owner resolution through the installed particle service, and end-spawn routing through the installed handler. Build, targeted `ModuleUpdate` / `EngineContext` coverage, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 139 — Team-target helper closure (2026-04-20)
+
+Continued Tier 1.2 by closing the remaining direct team/leader target-selection pocket in `script_functions_target.c` and the matching leader-alive check in `script_functions_systems.c`, routing all four helpers through the existing `GameModule::getTeamLeaderRef()` / `getTeamCallerForHelpRef()` seam behind file-local resolver helpers. Preserved the legacy failure behavior: invalid teams, missing leaders/callers, and missing leader targets still fail without mutating `self.target`.
+
+Extended `ScriptTargetFunctions.cpp` and `ScriptSystemsFunctions.cpp` with focused invalid-team regressions on top of the existing leader/caller fixture coverage. Build, focused target/systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

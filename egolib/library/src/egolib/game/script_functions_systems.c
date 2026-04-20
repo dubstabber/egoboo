@@ -61,6 +61,11 @@ IMorphControl& morphControl(Object& object)
     return object;
 }
 
+ObjectRef leaderRef(const ITargetInfo& selfInfo)
+{
+    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
+}
+
 void becomeSpell(IEnchantable& selfEnchantable,
                  IMorphControl& selfMorph,
                  ObjectProfileRef spellProfile,
@@ -691,7 +696,7 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( activeModule().getTeamLeaderRef(targetInfo(*pchr).getTeamRef()) != ObjectRef::Invalid );
+    returncode = ( leaderRef(targetInfo(*pchr)) != ObjectRef::Invalid );
 
     SCRIPT_FUNCTION_END();
 }

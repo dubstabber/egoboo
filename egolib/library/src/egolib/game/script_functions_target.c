@@ -28,6 +28,39 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
     facing -= FACING_T(selfPhysical.getFacingZ());
     return facing > 55535 || facing < 10000;
 }
+
+ObjectRef leaderRef(const ITargetInfo& selfInfo)
+{
+    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
+}
+
+ObjectRef callerForHelpRef(const ITargetInfo& selfInfo)
+{
+    return activeModule().getTeamCallerForHelpRef(selfInfo.getTeamRef());
+}
+
+bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
+{
+    if (!objectHandler().exists(objectRef))
+    {
+        return false;
+    }
+
+    self.setTarget(objectRef);
+    return true;
+}
+
+ObjectRef leaderTargetRef(const ITargetInfo& selfInfo)
+{
+    const ObjectRef resolvedLeaderRef = leaderRef(selfInfo);
+    if (!objectHandler().exists(resolvedLeaderRef))
+    {
+        return ObjectRef::Invalid;
+    }
+
+    const IScriptable* leader = tryScriptable(resolvedLeaderRef);
+    return leader != nullptr ? leader->getAITarget() : ObjectRef::Invalid;
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -191,24 +224,7 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
-    if ( VALID_TEAM_RANGE(teamRef) )
-    {
-        const ObjectRef sissyRef = activeModule().getTeamCallerForHelpRef(teamRef);
-        if ( objectHandler().exists(sissyRef) )
-        {
-            self.setTarget(sissyRef);
-        }
-        else
-        {
-            returncode = false;
-        }
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, callerForHelpRef(targetInfo(*pchr)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -479,39 +495,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
-    if ( VALID_TEAM_RANGE(teamRef) )
-    {
-        const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
-        if ( objectHandler().exists(leaderRef) )
-        {
-            IScriptable* scriptableLeader = tryScriptable(leaderRef);
-            if (scriptableLeader == nullptr)
-            {
-                return false;
-            }
-
-            const ObjectRef itarget = scriptableLeader->getAITarget();
-
-            if ( objectHandler().exists( itarget ) )
-            {
-                self.setTarget( itarget );
-            }
-            else
-            {
-                returncode = false;
-            }
-        }
-        else
-        {
-            returncode = false;
-        }
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, leaderTargetRef(targetInfo(*pchr)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -542,18 +526,7 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    const TEAM_REF teamRef = selfTargetInfo.getTeamRef();
-    if ( VALID_TEAM_RANGE(teamRef) )
-    {
-        const ObjectRef leaderRef = activeModule().getTeamLeaderRef(teamRef);
-        if ( objectHandler().exists(leaderRef) )
-        {
-            self.setTarget(leaderRef);
-            returncode = true;
-        }
-    }
+    returncode = trySetResolvedTarget(self, leaderRef(targetInfo(*pchr)));
 
     SCRIPT_FUNCTION_END();
 }
