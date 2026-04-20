@@ -562,6 +562,17 @@ TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
     EXPECT_TRUE(scr_KillTarget(state, self));
     EXPECT_FALSE(killTarget->isAlive());
 
+    auto heldWeapon = makeInventoryItem(module, 5644);
+    auto weaponKillTarget = makeObject(module, "mp_objects/follower.obj", 5645);
+
+    ASSERT_NE(heldWeapon, nullptr);
+    ASSERT_NE(weaponKillTarget, nullptr);
+    ASSERT_TRUE(heldWeapon->attachToObject(actor, GRIP_RIGHT));
+
+    ai_state_t weaponSelf = makeScriptSelf(heldWeapon, weaponKillTarget);
+    EXPECT_TRUE(scr_KillTarget(state, weaponSelf));
+    EXPECT_FALSE(weaponKillTarget->isAlive());
+
     config.hud_feedback.setValue(previousFeedback);
 }
 

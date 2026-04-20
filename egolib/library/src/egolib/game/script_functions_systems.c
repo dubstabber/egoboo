@@ -58,6 +58,59 @@ std::shared_ptr<Ego::Player> targetPlayer(const ITargetInfo& target)
     return playerList[playerIndex];
 }
 
+std::shared_ptr<Object> resolvedObject(ObjectRef objectRef)
+{
+    return tryObjectShared(objectRef);
+}
+
+std::shared_ptr<Object> resolvedSelfObject(const ai_state_t& self)
+{
+    return resolvedObject(self.getSelf());
+}
+
+std::shared_ptr<Object> resolvedTargetObject(const ai_state_t& self)
+{
+    return resolvedObject(self.getTarget());
+}
+
+std::shared_ptr<Object> resolvedEnchantOwner(const ai_state_t& self)
+{
+    return resolvedObject(self.owner);
+}
+
+std::shared_ptr<Object> resolvedKillSource(const ai_state_t& self, const Object& selfObject)
+{
+    const ObjectRef holderRef = selfObject.getHolderRef();
+    if (objectHandler().exists(holderRef))
+    {
+        const std::shared_ptr<Object>& holder = objectHandler()[holderRef];
+        if (holder != nullptr && !holder->isMount())
+        {
+            return holder;
+        }
+    }
+
+    return resolvedSelfObject(self);
+}
+
+ICharacterState* resolveAliveTargetState(const ai_state_t& self)
+{
+    const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
+    ICharacterState* resolvedTargetState = tryCharacterState(self.getTarget());
+    return resolvedTargetInfo != nullptr &&
+           resolvedTargetState != nullptr &&
+           resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
+}
+
+bool resolveAliveTargetStateAndDamageable(const ai_state_t& self,
+                                          ICharacterState*& resolvedTargetState,
+                                          IDamageable*& resolvedDamageable)
+{
+    resolvedTargetState = resolveAliveTargetState(self);
+    resolvedDamageable = tryDamageable(self.getTarget());
+    return resolvedTargetState != nullptr && resolvedDamageable != nullptr;
+}
+
 int restockAmmoIfMatching(const std::shared_ptr<Object>& item, const IDSZ2& idsz)
 {
     if (!item || !item->getProfile()->hasTypeIDSZ(idsz))
@@ -317,7 +370,7 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Object> attacker = tryObjectShared(self.getSelf());
+    const std::shared_ptr<Object> attacker = resolvedSelfObject(self);
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
     if (attacker == nullptr || damageableTarget == nullptr)
     {
@@ -571,10 +624,14 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const std::shared_ptr<Object> owner = resolvedEnchantOwner(self);
+    const std::shared_ptr<Object> spawner = resolvedSelfObject(self);
     IEnchantable* targetEnchantable = tryEnchantable(self.getTarget());
-    if (targetEnchantable != nullptr) {
-        returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(),
-                                                   objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
+    if (targetEnchantable != nullptr && owner != nullptr && spawner != nullptr) {
+        returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
+                                                   pchr->getProfileID().get(),
+                                                   owner,
+                                                   spawner) != nullptr;
     }
     else {
         returncode = false;
@@ -595,10 +652,14 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const std::shared_ptr<Object> owner = resolvedEnchantOwner(self);
+    const std::shared_ptr<Object> spawner = resolvedSelfObject(self);
     IEnchantable* childEnchantable = tryEnchantable(self.child);
-    if (childEnchantable != nullptr) {
-        returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(),
-                                                  objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
+    if (childEnchantable != nullptr && owner != nullptr && spawner != nullptr) {
+        returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
+                                                  pchr->getProfileID().get(),
+                                                  owner,
+                                                  spawner) != nullptr;
     }
     else {
         returncode = false;
@@ -771,15 +832,7 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	ObjectRef ichr = self.getSelf();
-
-    //Weapons don't kill people, people kill people...
-    if ( objectHandler().exists( pchr->getHolderRef() ) && !objectHandler().get(pchr->getHolderRef())->isMount() )
-    {
-        ichr = pchr->getHolderRef();
-    }
-
-    std::shared_ptr<Object> killer = tryObjectShared(ichr);
+    const std::shared_ptr<Object> killer = resolvedKillSource(self, *pchr);
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
     if (killer == nullptr || damageableTarget == nullptr)
     {
@@ -860,7 +913,7 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Object> selfObject = tryObjectShared(self.getSelf());
+    const std::shared_ptr<Object> selfObject = resolvedSelfObject(self);
     IDamageable* damageableSelf = tryDamageable(self.getSelf());
     if (selfObject == nullptr || damageableSelf == nullptr)
     {
@@ -938,11 +991,9 @@ uint8_t scr_GiveStrengthToTarget( script_state_t& state, ai_state_t& self )
     // Permanently boost the target's strength
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::MIGHT, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MIGHT, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -956,11 +1007,9 @@ uint8_t scr_GiveIntelligenceToTarget( script_state_t& state, ai_state_t& self )
     // Permanently boost the target's intelligence
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::INTELLECT, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::INTELLECT, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -974,11 +1023,9 @@ uint8_t scr_GiveDexterityToTarget( script_state_t& state, ai_state_t& self )
     // Permanently boost the target's dexterity
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::AGILITY, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::AGILITY, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -993,15 +1040,14 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's life
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    std::shared_ptr<Object> healer = tryObjectShared(self.getSelf());
-    if ( targetInfo != nullptr && targetState != nullptr && damageableTarget != nullptr &&
-         healer != nullptr && targetInfo->isAlive() )
+    ICharacterState* resolvedTargetState = nullptr;
+    IDamageable* resolvedDamageable = nullptr;
+    const std::shared_ptr<Object> healer = resolvedSelfObject(self);
+    if ( resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable) &&
+         healer != nullptr )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
-        damageableTarget->heal(healer, state.argument, true);
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
+        resolvedDamageable->heal(healer, state.argument, true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1016,12 +1062,10 @@ uint8_t scr_GiveManaToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's mana
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::MAX_MANA, FP8_TO_FLOAT(state.argument));
-        targetState->costMana(-state.argument, ObjectRef::Invalid);
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_MANA, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->costMana(-state.argument, ObjectRef::Invalid);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1093,7 +1137,7 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
 
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
     ICharacterState* targetState = tryCharacterState(self.getTarget());
-    std::shared_ptr<Object> healer = tryObjectShared(self.getSelf());
+    const std::shared_ptr<Object> healer = resolvedSelfObject(self);
     if(damageableTarget == nullptr || targetState == nullptr || healer == nullptr) {
         return false;
     }
@@ -1118,11 +1162,10 @@ uint8_t scr_PumpTarget( script_state_t& state, ai_state_t& self )
     /// Values are 8.8 fixed point
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() && state.argument > 0)
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self);
+         resolvedTargetState != nullptr && state.argument > 0)
     {
-        targetState->costMana(-state.argument, pchr->getObjRef());
+        resolvedTargetState->costMana(-state.argument, pchr->getObjRef());
     }
 
     SCRIPT_FUNCTION_END();
@@ -2067,11 +2110,9 @@ uint8_t scr_GiveManaFlowToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's mana flow
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::SPELL_POWER, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::SPELL_POWER, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -2086,11 +2127,9 @@ uint8_t scr_GiveManaReturnToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's mana return
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
-        targetState->increaseBaseAttribute(Ego::Attribute::MANA_REGEN, FP8_TO_FLOAT(state.argument));
+        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MANA_REGEN, FP8_TO_FLOAT(state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -2122,12 +2161,10 @@ uint8_t scr_DispelTargetEnchantID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
     returncode = false;
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if ( targetInfo != nullptr && targetState != nullptr && targetInfo->isAlive() )
+    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
         // Check all enchants to see if they are removed
-        targetState->removeEnchantsWithIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+        resolvedTargetState->removeEnchantsWithIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
         returncode = true;
     }
 
@@ -2191,7 +2228,7 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
+    const std::shared_ptr<Object> target = resolvedTargetObject(self);
     IDamageable* damageableSelf = tryDamageable(self.getSelf());
     if (targetInfo == nullptr || target == nullptr || damageableSelf == nullptr)
     {

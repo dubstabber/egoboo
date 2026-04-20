@@ -602,6 +602,12 @@ Continued Tier 1.2 inside `script_functions_action.c` by routing the remaining b
 
 Extended `ScriptActionFunctions.cpp` with focused coverage for missing-UI screenshot failure and invalid-message billboard rejection. Build, focused action tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 130 — Residual systems-role sweep (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by centralizing the remaining role-pure target/self/owner object resolution behind file-local helpers, then migrating the bounded damage/heal/enchant/stat helpers off repeated ad hoc `ObjectRef` lookups while preserving the legacy success/failure semantics that still hang off `SCRIPT_FUNCTION_BEGIN()`.
+
+Extended `ScriptSystemsFunctions.cpp` with a held-weapon `KillTarget` regression that pins the supported kill path when the script self is a wielded item. Build, focused systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
