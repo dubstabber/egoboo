@@ -313,4 +313,34 @@ TEST_F(ScriptMovementFunctionsFixture, ReloadAndShadowHelpersRoundTripThroughMov
     EXPECT_EQ(actor->getShadowSize(), static_cast<uint32_t>(9.0f * actor->getFat()));
 }
 
+TEST_F(ScriptMovementFunctionsFixture, SetFramePublishesEncodedDaAnimationFrame)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/monsters/zombi.obj", 5610);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(actor->inst.getModelDescriptor(), nullptr);
+    ASSERT_TRUE(actor->inst.getModelDescriptor()->isActionValid(ACTION_DA));
+
+    const auto& model = actor->inst.getModelDescriptor();
+    const int firstFrame = model->getFirstFrame(ACTION_DA);
+    const int lastFrame = model->getLastFrame(ACTION_DA);
+    const int frameAlong = std::min(1, std::max(0, lastFrame - firstFrame));
+    constexpr int interpolationStep = 2;
+
+    actor->inst._sourceFrameIndex = firstFrame;
+    actor->inst._targetFrameIndex = lastFrame;
+    actor->inst._animationProgressInteger = 3;
+    actor->inst._animationProgress = 0.75f;
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+    state.argument = (frameAlong << 2) | interpolationStep;
+
+    EXPECT_TRUE(scr_SetFrame(state, self));
+    EXPECT_EQ(actor->getCurrentAnimation(), ACTION_DA);
+    EXPECT_EQ(actor->inst._targetFrameIndex, std::min(firstFrame + frameAlong, lastFrame));
+    EXPECT_EQ(actor->inst._animationProgressInteger, interpolationStep);
+    EXPECT_FLOAT_EQ(actor->inst._animationProgress, 0.5f);
+}
+
 } // namespace

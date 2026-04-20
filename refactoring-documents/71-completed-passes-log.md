@@ -572,6 +572,12 @@ Continued Tier 1.2 by introducing `IMovementControl` as a narrow write-side `Obj
 
 Extended `ObjectAccessors.cpp` and added focused `ScriptMovementFunctions.cpp` coverage for movement-role parity, turn-mode and latch publication, teleport success/missing-target failure, target-velocity clamp behavior, reload timers, and shadow/fly-height mutation. Build, the focused movement/accessor tests, and the `test.mod` validator are the acceptance bar for this pass.
 
+### Pass 125 — Movement animation-frame helper closure (2026-04-20)
+
+Continued Tier 1.2 with the smallest remaining `script_functions_movement.c` follow-on by extracting the encoded-frame behavior behind a file-local helper and routing `scr_SetFrame()` through that seam instead of carrying inline animation bookkeeping. Kept `IMovementControl`, waypoint storage, `ai_state_t` speed scaling, and broader action-helper cleanup out of scope.
+
+Extended `ScriptMovementFunctions.cpp` with focused characterization coverage for the encoded `ACTION_DA` frame publication path, pinning the published target frame plus interpolation-step bookkeeping. Build, the focused movement test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

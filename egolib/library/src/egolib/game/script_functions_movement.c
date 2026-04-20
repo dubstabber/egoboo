@@ -14,6 +14,20 @@ const IPhysical& physical(const Object& object)
 {
     return object;
 }
+
+bool setEncodedFrame(Object& object, int encodedFrame)
+{
+    const uint16_t interpolationStep = encodedFrame & 3;
+    const int frameAlong = encodedFrame >> 2;
+
+    const ModelAction action = object.getProfile()->getModel()->getAction(ACTION_DA);
+    if (!object.setAction(action, true, true))
+    {
+        return false;
+    }
+
+    return object.setFrameFull(frameAlong, interpolationStep);
+}
 }
 
 
@@ -515,21 +529,7 @@ uint8_t scr_SetFrame( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    uint16_t ilip   = state.argument & 3;
-    int frame_along = state.argument >> 2;
-
-    // resolve the requested action to a action that is valid for this model (if possible)
-    const ModelAction action = pchr->getProfile()->getModel()->getAction(ACTION_DA);
-
-    // set the action
-    if (pchr->setAction(action, true, true)) {
-        
-        // the action is set. now set the frame info.
-        returncode = pchr->setFrameFull(frame_along, ilip);
-    }
-    else {
-        returncode = false;
-    }
+    returncode = setEncodedFrame(*pchr, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
