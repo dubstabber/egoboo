@@ -47,6 +47,7 @@ Landed so far:
 - `ITeamMember` — team mutation, leadership, team-wide XP publication
 - `IWallet` — bounded money query and mutation
 - `IAnimationControl` — bounded script-facing action resolution and animation control
+- `ILifecycleControl` — bounded respawn, detach, drop, crush/item, threshold, and stealth control
 
 Follow-on work inside this tier:
 

@@ -620,6 +620,12 @@ Continued Tier 1.2 by widening `ICharacterState` with a read-only `hasPerk(...)`
 
 Extended `ObjectAccessors.cpp` to pin the new perk-query role surface while keeping the existing focused `ScriptStateFunctions.cpp` backstab regressions as the behavior lock. Build, the focused `ObjectAccessors` / `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 133 — Spawn lifecycle role seam (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by introducing `ILifecycleControl` for bounded respawn, detach, drop, crush/item, damage-threshold, and stealth control, then routing the lifecycle-pure spawn helpers off direct concrete-`Object` use. Added `Object::respawnInPlace()` for the in-place target-respawn path and kept the broader morph/size and child post-spawn initialization flows out of scope.
+
+Also rewired `scr_IdentifyTarget()` onto the landed `ICharacterState`, `ITargetInfo`, and `IVisualControl` seams instead of direct target-object access, preserving the legacy ammo-known, name-known, and usage-known semantics. Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused lifecycle-role coverage for respawn-in-place, key/item drops, self/target respawn, target identification, bounded mutation helpers, and stealth entry/exit behavior. Build, the focused `ObjectAccessors` / `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

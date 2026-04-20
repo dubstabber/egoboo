@@ -395,6 +395,34 @@ TEST_F(ScriptStateFunctionsFixture, GoPoofUsesPlayerImmunityAndPublishesSelfPoof
     EXPECT_EQ(playerSelf.poof_time, previousPlayerPoofTime);
 }
 
+TEST_F(ScriptStateFunctionsFixture, RespawnHelpersUseLifecycleRoleAndPreserveTargetPosition)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55293);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55294);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->kill(nullptr, true);
+    target->kill(nullptr, true);
+    const Ego::Vector3f targetPositionBeforeRespawn(88.0f, 44.0f, 3.0f);
+    target->setPosition(targetPositionBeforeRespawn);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_RespawnCharacter(state, self));
+    EXPECT_TRUE(actor->isAlive());
+
+    EXPECT_TRUE(scr_RespawnTarget(state, self));
+    EXPECT_TRUE(target->isAlive());
+    EXPECT_FLOAT_EQ(target->getPosition().x(), targetPositionBeforeRespawn.x());
+    EXPECT_FLOAT_EQ(target->getPosition().y(), targetPositionBeforeRespawn.y());
+    EXPECT_FLOAT_EQ(target->getPosition().z(), targetPositionBeforeRespawn.z());
+}
+
 TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookups)
 {
     auto& module = beginActiveTestModule();
@@ -416,6 +444,47 @@ TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookup
     EXPECT_EQ(actor->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
     EXPECT_EQ(leftItem->getHolderRef(), ObjectRef::Invalid);
     EXPECT_EQ(rightItem->getHolderRef(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptStateFunctionsFixture, LifecycleMutationHelpersUseRoleLookups)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55305);
+    auto leftItem = makeMeleeWeapon(module, 55306);
+    auto rightItem = makeShield(module, 55309);
+    auto keyItem = makeObject(module, "mp_data/globalobjects/items/keya.obj", 55312);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+    ASSERT_NE(keyItem, nullptr);
+    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), keyItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_DropItems(state, self));
+    EXPECT_EQ(actor->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(actor->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
+
+    actor->setItem(true);
+    EXPECT_TRUE(scr_NotAnItem(state, self));
+    EXPECT_FALSE(actor->isItem());
+
+    EXPECT_TRUE(scr_MakeCrushValid(state, self));
+    EXPECT_TRUE(actor->canBeCrushed());
+
+    EXPECT_TRUE(scr_MakeCrushInvalid(state, self));
+    EXPECT_FALSE(actor->canBeCrushed());
+
+    state.argument = 9;
+    EXPECT_TRUE(scr_SetDamageThreshold(state, self));
+    EXPECT_EQ(actor->getDamageThreshold(), 9);
+
+    EXPECT_TRUE(scr_DropKeys(state, self));
+    EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptStateFunctionsFixture, DetachFromHolderRequiresLiveHolderRef)
@@ -495,6 +564,59 @@ TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadL
     EXPECT_EQ(aliveTeammate->getAITimer(), 0u);
     EXPECT_EQ(deadTeammate->getAITimer(), updateCount + 2);
     EXPECT_EQ(outsider->getAITimer(), 0u);
+}
+
+TEST_F(ScriptStateFunctionsFixture, IdentifyAndTargetKeyDropUseRoleLookups)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55385);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55386);
+    auto keyItem = makeObject(module, "mp_data/globalobjects/items/keya.obj", 55387);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(keyItem, nullptr);
+    ASSERT_TRUE(Inventory::add_item(target->getObjRef(), keyItem->getObjRef(), target->getFirstFreeInventorySlot(), true));
+
+    target->setAmmoMax(4);
+    target->setAmmoKnown(false);
+    target->setNameKnown(false);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_IdentifyTarget(state, self));
+    EXPECT_TRUE(target->isAmmoKnown());
+    EXPECT_TRUE(target->isNameKnown());
+
+    EXPECT_TRUE(scr_DropTargetKeys(state, self));
+    EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptStateFunctionsFixture, StealthHelpersUseLifecycleRoleAndPreserveEntryExitSemantics)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55388);
+
+    ASSERT_NE(actor, nullptr);
+
+    actor->addPerk(Ego::Perks::STEALTH);
+    actor->_stealthTimer = 0;
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_EnableStealth(state, self));
+    EXPECT_TRUE(actor->isStealthed());
+
+    EXPECT_FALSE(scr_EnableStealth(state, self));
+    EXPECT_TRUE(actor->isStealthed());
+
+    EXPECT_TRUE(scr_DisableStealth(state, self));
+    EXPECT_FALSE(actor->isStealthed());
+
+    EXPECT_FALSE(scr_DisableStealth(state, self));
 }
 
 TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThroughScriptableRole)

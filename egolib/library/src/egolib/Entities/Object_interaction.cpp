@@ -31,7 +31,7 @@ IAudioSystem& audioSystem()
 }
 }
 
-bool Object::detatchFromHolder(const bool ignoreKurse, const bool doShop)
+bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
 {
     ObjectRef holder = getHolderRef();
     const std::shared_ptr<Object>& pholder = activeModule().getObjectHandler()[holder];

@@ -295,6 +295,13 @@ void Object::respawn()
     }
 }
 
+void Object::respawnInPlace()
+{
+    const Ego::Vector3f savedPosition = getPosition();
+    respawn();
+    setPosition(savedPosition);
+}
+
 size_t Object::getInventoryMaxItems() const
 {
     return _inventory.getMaxItems();

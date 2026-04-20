@@ -458,6 +458,92 @@ TEST_F(ObjectAccessorFixture, WalletRoleSurfaceSupportsBoundedMoneyQueriesAndMut
     EXPECT_EQ(wallet.getMoney(), 85);
 }
 
+TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsRespawnInPlaceAndBoundedStateMutation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3601);
+    ASSERT_NE(object, nullptr);
+
+    GameModule& module = GameSessionContext::get().activeModule();
+    Team& goodTeam = module.getTeamList()[Team::TEAM_GOOD];
+    ILifecycleControl& lifecycle = *object;
+
+    lifecycle.setItem(true);
+    lifecycle.setCanBeCrushed(true);
+    lifecycle.setDamageThreshold(7);
+
+    EXPECT_TRUE(object->isItem());
+    EXPECT_TRUE(object->canBeCrushed());
+    EXPECT_EQ(object->getDamageThreshold(), 7);
+
+    object->addPerk(Ego::Perks::STEALTH);
+    object->_stealthTimer = 0;
+    object->setAlpha(12);
+
+    EXPECT_TRUE(lifecycle.activateStealth());
+    EXPECT_TRUE(object->isStealthed());
+
+    lifecycle.deactivateStealth();
+    EXPECT_FALSE(object->isStealthed());
+    EXPECT_EQ(object->getAlpha(), 0xFF);
+
+    object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->_isAlive = false;
+    object->setInvincible(false);
+    object->setPosition(Ego::Vector3f(91.0f, 37.0f, 5.0f));
+    goodTeam.setLeader(Object::INVALID_OBJECT);
+    const auto moraleBefore = goodTeam.getMorale();
+    const Ego::Vector3f positionBeforeRespawn = object->getPosition();
+
+    lifecycle.respawnInPlace();
+
+    EXPECT_TRUE(object->isAlive());
+    EXPECT_FLOAT_EQ(object->getPosition().x(), positionBeforeRespawn.x());
+    EXPECT_FLOAT_EQ(object->getPosition().y(), positionBeforeRespawn.y());
+    EXPECT_FLOAT_EQ(object->getPosition().z(), positionBeforeRespawn.z());
+    EXPECT_EQ(goodTeam.getMorale(), moraleBefore + 1);
+    EXPECT_EQ(goodTeam.getLeader(), object);
+    EXPECT_FALSE(object->canBeCrushed());
+}
+
+TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsKeyAndInventoryDrops)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto actor = makeFollower(objectHandler, 3602);
+    auto leftItem = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 3603);
+    auto rightItem = makeObject(objectHandler, "mp_data/globalobjects/armor/atshield.obj", 3604);
+    auto packItem = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 3605);
+    auto keyItem = makeObject(objectHandler, "mp_data/globalobjects/items/keya.obj", 3606);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+    ASSERT_NE(packItem, nullptr);
+    ASSERT_NE(keyItem, nullptr);
+    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), packItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
+    ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), keyItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
+
+    ILifecycleControl& lifecycle = *actor;
+
+    lifecycle.dropKeys();
+
+    EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
+    ASSERT_EQ(actor->getInventoryItems().size(), 1u);
+    EXPECT_EQ(actor->getInventoryItems().front()->getObjRef(), packItem->getObjRef());
+
+    lifecycle.dropAllItems();
+
+    EXPECT_EQ(actor->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(actor->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
+    EXPECT_EQ(leftItem->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(rightItem->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(packItem->getInventoryHolderRef(), ObjectRef::Invalid);
+    EXPECT_TRUE(actor->getInventoryItems().empty());
+}
+
 TEST_F(ObjectAccessorFixture, RespawnRestoresMoraleAndClaimsLeadershipWhenUnset)
 {
     auto& objectHandler = beginActiveTestModule();

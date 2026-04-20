@@ -71,6 +71,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/IEnchantable.hpp
     src/egolib/Entities/IInventoryHolder.hpp
     src/egolib/Entities/IMovementControl.hpp
+    src/egolib/Entities/ILifecycleControl.hpp
     src/egolib/Entities/IPhysical.hpp
     src/egolib/Entities/IRenderable.hpp
     src/egolib/Entities/IScriptable.hpp

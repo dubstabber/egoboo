@@ -21,6 +21,11 @@ const IInventoryHolder& inventoryHolder(const Object& object)
     return object;
 }
 
+ILifecycleControl& lifecycleControl(Object& object)
+{
+    return object;
+}
+
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
 {
     child.setAIPassage(self.passage);
@@ -89,15 +94,16 @@ bool trySetSelfPoofTime(ai_state_t& self, bool isPlayer, uint32_t updateOffset =
     return true;
 }
 
-bool tryDetachSelfFromHolder(Object& object)
+bool tryDetachSelfFromHolder(ObjectRef objectRef)
 {
-    if (!objectHandler().exists(targetInfo(object).getHolderRef()))
+    const ITargetInfo* selfInfo = tryTargetInfo(objectRef);
+    ILifecycleControl* lifecycle = tryLifecycleControl(objectRef);
+    if (selfInfo == nullptr || lifecycle == nullptr || !objectHandler().exists(selfInfo->getHolderRef()))
     {
         return false;
     }
 
-    object.detatchFromHolder(true, true);
-    return true;
+    return lifecycle->detachFromHolder(true, true);
 }
 
 bool trySetTargetToChild(ai_state_t& self)
@@ -173,7 +179,7 @@ void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMo
         return;
     }
 
-    item->detatchFromHolder(true, true);
+    item->detachFromHolder(true, true);
     if (holderIsMount)
     {
         applyDismountVelocity(*item);
@@ -227,7 +233,7 @@ uint8_t scr_DropKeys( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->dropKeys();
+    lifecycleControl(*pchr).dropKeys();
 
     SCRIPT_FUNCTION_END();
 }
@@ -295,7 +301,7 @@ uint8_t scr_RespawnCharacter( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->respawn();
+    lifecycleControl(*pchr).respawn();
 
     SCRIPT_FUNCTION_END();
 }
@@ -312,7 +318,7 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = tryDetachSelfFromHolder(*pchr);
+    returncode = tryDetachSelfFromHolder(self.getSelf());
 
     SCRIPT_FUNCTION_END();
 }
@@ -499,7 +505,7 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setCanBeCrushed(true);
+    lifecycleControl(*pchr).setCanBeCrushed(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -797,7 +803,7 @@ uint8_t scr_DropItems( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->dropAllItems();
+    lifecycleControl(*pchr).dropAllItems();
 
     SCRIPT_FUNCTION_END();
 }
@@ -812,11 +818,13 @@ uint8_t scr_RespawnTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	Object *pself_target;
-    SCRIPT_REQUIRE_TARGET( pself_target );
-	Ego::Vector3f save_pos = pself_target->getPosition();
-    pself_target->respawn();
-    pself_target->setPosition(save_pos);
+    ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
+    if (targetLifecycle == nullptr)
+    {
+        return false;
+    }
+
+    targetLifecycle->respawnInPlace();
 
     SCRIPT_FUNCTION_END();
 }
@@ -832,7 +840,7 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setItem(false);
+    lifecycleControl(*pchr).setItem(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -863,13 +871,22 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    const ITargetInfo* targetInfoRole = tryTargetInfo(self.getTarget());
+    IVisualControl* targetVisual = tryVisualControl(self.getTarget());
+    if (targetState == nullptr || targetInfoRole == nullptr || targetVisual == nullptr)
+    {
+        return false;
+    }
+
     returncode = false;
-	ObjectRef ichr = self.getTarget();
-    if ( objectHandler().get(ichr)->getAmmoMax() != 0 )  objectHandler().get(ichr)->setAmmoKnown(true);
+    if (targetState->getAmmoMax() != 0)
+    {
+        targetVisual->setAmmoKnown(true);
+    }
 
-
-    returncode = !objectHandler().get(ichr)->isNameKnown();
-    objectHandler().get(ichr)->setNameKnown(true);
+    returncode = !targetInfoRole->isNameKnown();
+    targetVisual->setNameKnown(true);
     ppro->makeUsageKnown();
 
     SCRIPT_FUNCTION_END();
@@ -883,13 +900,15 @@ uint8_t scr_DropTargetKeys( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the Target drops keys in inventory (Not inhand)
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
+    if (targetLifecycle == nullptr)
+    {
+        return false;
+    }
 
-    pself_target->dropKeys();
+    targetLifecycle->dropKeys();
 
     SCRIPT_FUNCTION_END();
 }
@@ -904,7 +923,7 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setCanBeCrushed(false);
+    lifecycleControl(*pchr).setCanBeCrushed(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1176,8 +1195,11 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    int v = (int)state.argument;
-    if ( v > 0 ) pchr->setDamageThreshold(v);
+    const int v = state.argument;
+    if (v > 0)
+    {
+        lifecycleControl(*pchr).setDamageThreshold(v);
+    }
 
     SCRIPT_FUNCTION_END();
 }
@@ -1287,11 +1309,11 @@ uint8_t scr_EnableStealth( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if(pchr->isStealthed()) {
+    if (targetInfo(*pchr).isStealthed()) {
         returncode = false;
     }
     else {
-        returncode = pchr->activateStealth();
+        returncode = lifecycleControl(*pchr).activateStealth();
     }
 
     SCRIPT_FUNCTION_END();
@@ -1307,8 +1329,8 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = pchr->isStealthed();
-    pchr->deactivateStealth();
+    returncode = targetInfo(*pchr).isStealthed();
+    lifecycleControl(*pchr).deactivateStealth();
 
     SCRIPT_FUNCTION_END();
 }

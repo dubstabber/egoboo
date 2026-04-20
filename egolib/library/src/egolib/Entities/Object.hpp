@@ -37,6 +37,7 @@
 #include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IItemInfo.hpp"
+#include "egolib/Entities/ILifecycleControl.hpp"
 #include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
@@ -96,6 +97,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IEnchantable,
                public IInventoryHolder,
                public IItemInfo,
+               public ILifecycleControl,
                public IMovementControl,
                public IPhysical,
                public IRenderable,
@@ -235,7 +237,9 @@ public:
     *   Respawns a Object, bringing it back to life and moving it to its initial position and state.
     *   Does nothing if character is already alive.
     **/
-    void respawn();
+    void respawn() override;
+
+    void respawnInPlace() override;
 
     /**
     * @brief
@@ -561,7 +565,7 @@ public:
 
     void setEquipped(bool equipped) { isequipped = equipped; }
 
-    void setItem(bool item) { isitem = item; }
+    void setItem(bool item) override { isitem = item; }
 
     bool isShopItem() const { return isshopitem; }
 
@@ -569,7 +573,7 @@ public:
 
     bool canBeCrushed() const { return canbecrushed; }
 
-    void setCanBeCrushed(bool crushable) { canbecrushed = crushable; }
+    void setCanBeCrushed(bool crushable) override { canbecrushed = crushable; }
 
     uint8_t getSparkle() const { return sparkle; }
 
@@ -609,7 +613,12 @@ public:
     * @return
     *   true if the detach was successful (could fail because of a kurse for example)
     **/
-    bool detatchFromHolder(const bool ignoreKurse, const bool doShop);
+    bool detachFromHolder(const bool ignoreKurse, const bool doShop) override;
+
+    bool detatchFromHolder(const bool ignoreKurse, const bool doShop)
+    {
+        return detachFromHolder(ignoreKurse, doShop);
+    }
 
     /**
     * @return
@@ -1102,7 +1111,7 @@ public:
 
     SFP8_T getDamageThreshold() const { return damage_threshold; }
 
-    void setDamageThreshold(SFP8_T threshold) { damage_threshold = threshold; }
+    void setDamageThreshold(SFP8_T threshold) override { damage_threshold = threshold; }
 
     /**
     * @return 
@@ -1119,13 +1128,13 @@ public:
     * @return
     *   true if this object is now stealthed from other Objects
     **/
-    bool activateStealth();
+    bool activateStealth() override;
 
     /**
     * @brief
     *   This ends the stealth effect on this Object and reveals it to everyone else
     **/
-    void deactivateStealth();
+    void deactivateStealth() override;
 
     /**
     * @return
