@@ -1672,6 +1672,38 @@ TEST_F(ObjectAccessorFixture, AppearanceProfileRoleSurfaceExposesSkinPricingDres
     EXPECT_FALSE(constPlainAppearance.hasIntellectDamageParticle());
 }
 
+TEST_F(ObjectAccessorFixture, MorphControlRoleSurfaceSupportsMorphAndResizeState)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeObject(objectHandler, "mp_data/globalobjects/players/rogue.obj", 3093);
+    auto target = makeObject(objectHandler, "mp_data/globalobjects/players/healer.obj", 3094);
+    ASSERT_NE(object, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    IMorphControl& morphControl = *object;
+    const IMorphControl& targetMorphControl = *target;
+
+    morphControl.setTargetFat(2.25f);
+    morphControl.setResizeTimeRemaining(33);
+    EXPECT_FLOAT_EQ(morphControl.getTargetFat(), 2.25f);
+    EXPECT_EQ(morphControl.getResizeTimeRemaining(), 33);
+
+    const ObjectProfileRef objectBaseModelBefore = object->getBaseModelRef();
+    const ObjectProfileRef targetBaseModel = targetMorphControl.getBaseModelRef();
+    const SKIN_T targetSkin = targetMorphControl.getSkin();
+    const float targetFat = targetMorphControl.getFat();
+
+    morphControl.polymorphObject(targetBaseModel, targetSkin);
+    morphControl.setTargetFat(targetFat);
+    morphControl.setResizeTimeRemaining(Object::SIZETIME);
+
+    EXPECT_EQ(object->getBaseModelRef(), objectBaseModelBefore);
+    EXPECT_EQ(object->getProfileID(), targetBaseModel);
+    EXPECT_EQ(object->getSkin(), targetSkin);
+    EXPECT_FLOAT_EQ(object->getTargetFat(), targetFat);
+    EXPECT_EQ(object->getResizeTimeRemaining(), Object::SIZETIME);
+}
+
 TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(310);

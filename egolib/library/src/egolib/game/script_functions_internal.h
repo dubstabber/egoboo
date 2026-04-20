@@ -169,6 +169,12 @@ inline ILifecycleControl* tryLifecycleControl(ObjectRef objectRef)
     return object ? static_cast<ILifecycleControl*>(object) : nullptr;
 }
 
+inline IMorphControl* tryMorphControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IMorphControl*>(object) : nullptr;
+}
+
 inline const IItemInfo* tryItemInfo(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

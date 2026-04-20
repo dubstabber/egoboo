@@ -594,6 +594,61 @@ TEST_F(ScriptStateFunctionsFixture, IdentifyAndTargetKeyDropUseRoleLookups)
     EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
 }
 
+TEST_F(ScriptStateFunctionsFixture, MorphToTargetUsesMorphControlRoleAndPreservesMissingTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55390);
+    auto target = makeObject(module, "mp_data/globalobjects/players/healer.obj", 55391);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    const ObjectProfileRef actorBaseModelBefore = actor->getBaseModelRef();
+    actor->setResizeTimeRemaining(7);
+    target->setTargetFat(1.75f);
+    const ObjectProfileRef targetBaseModel = target->getBaseModelRef();
+    const SKIN_T targetSkin = target->getSkin();
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_MorphToTarget(state, self));
+    EXPECT_EQ(actor->getProfileID(), targetBaseModel);
+    EXPECT_EQ(actor->getBaseModelRef(), actorBaseModelBefore);
+    EXPECT_EQ(actor->getSkin(), targetSkin);
+    EXPECT_FLOAT_EQ(actor->getTargetFat(), target->getFat());
+    EXPECT_EQ(actor->getResizeTimeRemaining(), Object::SIZETIME);
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_MorphToTarget(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, SetTargetSizeUsesMorphControlRoleAndPreservesMissingTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55392);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55393);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    target->setTargetFat(2.0f);
+    target->setResizeTimeRemaining(5);
+
+    script_state_t state;
+    state.argument = 150;
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_SetTargetSize(state, self));
+    EXPECT_FLOAT_EQ(target->getTargetFat(), 3.0f);
+    EXPECT_EQ(target->getResizeTimeRemaining(), 5 + Object::SIZETIME);
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetSize(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, StealthHelpersUseLifecycleRoleAndPreserveEntryExitSemantics)
 {
     auto& module = beginActiveTestModule();

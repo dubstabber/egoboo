@@ -38,6 +38,7 @@
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IItemInfo.hpp"
 #include "egolib/Entities/ILifecycleControl.hpp"
+#include "egolib/Entities/IMorphControl.hpp"
 #include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
@@ -98,6 +99,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IInventoryHolder,
                public IItemInfo,
                public ILifecycleControl,
+               public IMorphControl,
                public IMovementControl,
                public IPhysical,
                public IRenderable,
@@ -662,13 +664,13 @@ public:
 
     void setFatRaw(float currentFat) { fat = currentFat; }
 
-    float getTargetFat() const { return fat_goto; }
+    float getTargetFat() const override { return fat_goto; }
 
-    void setTargetFat(float fat) { fat_goto = fat; }
+    void setTargetFat(float fat) override { fat_goto = fat; }
 
-    int16_t getResizeTimeRemaining() const { return fat_goto_time; }
+    int16_t getResizeTimeRemaining() const override { return fat_goto_time; }
 
-    void setResizeTimeRemaining(int16_t remaining) { fat_goto_time = remaining; }
+    void setResizeTimeRemaining(int16_t remaining) override { fat_goto_time = remaining; }
 
     float getPosX() const override { return Ego::Physics::Collidable::getPosX(); }
 
@@ -1047,7 +1049,7 @@ public:
 
     void setBaseSkin(SKIN_T skinNumber) { skin_stt = skinNumber; }
 
-    ObjectProfileRef getBaseModelRef() const { return basemodel_ref; }
+    ObjectProfileRef getBaseModelRef() const override { return basemodel_ref; }
 
     void setBaseModelRef(ObjectProfileRef profileRef) { basemodel_ref = profileRef; }
 
@@ -1091,7 +1093,7 @@ public:
     * @brief
     *   Changes this Object into a different type. This effect is reversible (base profile is not changed)
     **/
-    void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin);
+    void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin) override;
 
     ObjectProfileRef getProfileID() const {return _profileID;}
 

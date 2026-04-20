@@ -626,6 +626,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by introducing `ILifecycleC
 
 Also rewired `scr_IdentifyTarget()` onto the landed `ICharacterState`, `ITargetInfo`, and `IVisualControl` seams instead of direct target-object access, preserving the legacy ammo-known, name-known, and usage-known semantics. Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused lifecycle-role coverage for respawn-in-place, key/item drops, self/target respawn, target identification, bounded mutation helpers, and stealth entry/exit behavior. Build, the focused `ObjectAccessors` / `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 134 — Spawn morph/resize role follow-on (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by introducing `IMorphControl` for bounded base-model, polymorph, fat-target, and resize-timer control, then routing `scr_MorphToTarget()` and `scr_SetTargetSize()` off direct concrete-`Object` mutation while preserving their legacy missing-target and resize semantics.
+
+Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused morph/resize coverage for role-surface parity, target-driven morphing, target-size scaling, and missing-target failure behavior. Build, the focused `ObjectAccessors` / `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

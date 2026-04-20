@@ -1213,19 +1213,20 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     /// @details This morphs the character into the target
     /// Also set size and keeps the previous AI type
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMorphControl* selfMorph = tryMorphControl(self.getSelf());
+    IMorphControl* targetMorph = tryMorphControl(self.getTarget());
+    if (selfMorph == nullptr || targetMorph == nullptr)
+    {
+        return false;
+    }
 
-    if ( !objectHandler().exists( self.getTarget() ) ) return false;
-
-    pchr->polymorphObject(pself_target->getBaseModelRef(), pself_target->getSkin());
+    selfMorph->polymorphObject(targetMorph->getBaseModelRef(), targetMorph->getSkin());
 
     // let the resizing take some time
-    pchr->setTargetFat(pself_target->getFat());
-    pchr->setResizeTimeRemaining(Object::SIZETIME);
+    selfMorph->setTargetFat(targetMorph->getFat());
+    selfMorph->setResizeTimeRemaining(Object::SIZETIME);
 
     // change back to our original AI (keep our old AI script)
 //    pself->type      = ProList.lst[pchr->basemodel_ref].iai;      //TODO: this no longer works (is it even needed?)
@@ -1287,14 +1288,16 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This changes the AI target's size
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMorphControl* targetMorph = tryMorphControl(self.getTarget());
+    if (targetMorph == nullptr)
+    {
+        return false;
+    }
 
-    pself_target->setTargetFat(pself_target->getTargetFat() * state.argument / 100.0f);
-    pself_target->setResizeTimeRemaining(pself_target->getResizeTimeRemaining() + Object::SIZETIME);
+    targetMorph->setTargetFat(targetMorph->getTargetFat() * state.argument / 100.0f);
+    targetMorph->setResizeTimeRemaining(targetMorph->getResizeTimeRemaining() + Object::SIZETIME);
 
     SCRIPT_FUNCTION_END();
 }

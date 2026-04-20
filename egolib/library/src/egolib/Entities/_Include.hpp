@@ -10,6 +10,7 @@
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IItemInfo.hpp"
 #include "egolib/Entities/ILifecycleControl.hpp"
+#include "egolib/Entities/IMorphControl.hpp"
 #include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Entities/IPhysical.hpp"
