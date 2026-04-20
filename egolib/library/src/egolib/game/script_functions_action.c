@@ -194,13 +194,15 @@ uint8_t scr_FlashTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the target flash
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IVisualControl* targetVisual = tryVisualControl(self.getTarget());
+    if (targetVisual == nullptr)
+    {
+        return false;
+    }
 
-    FlashObject( pself_target, 255 );
+    targetVisual->flash(255);
 
     SCRIPT_FUNCTION_END();
 }
@@ -293,13 +295,15 @@ uint8_t scr_BlackTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details  The opposite of FlashTarget, causing the target to turn black
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IVisualControl* targetVisual = tryVisualControl(self.getTarget());
+    if (targetVisual == nullptr)
+    {
+        return false;
+    }
 
-    FlashObject( pself_target, 0 );
+    targetVisual->flash(0);
 
     SCRIPT_FUNCTION_END();
 }

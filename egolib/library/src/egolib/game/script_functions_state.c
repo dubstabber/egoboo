@@ -20,6 +20,11 @@ const IScriptable& scriptable(const Object& object)
     return object;
 }
 
+IVisualControl& visualControl(Object& object)
+{
+    return object;
+}
+
 std::shared_ptr<Object> heldItem(const IInventoryHolder& holder, slot_t slot)
 {
     return objectHandler()[holder.getHeldObject(slot)];
@@ -1260,7 +1265,7 @@ uint8_t scr_FlashVariable( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    FlashObject( pchr, state.argument );
+    visualControl(*pchr).flash(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1277,7 +1282,7 @@ uint8_t scr_FlashVariableHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
+    visualControl(*pchr).flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
 
     SCRIPT_FUNCTION_END();
 }

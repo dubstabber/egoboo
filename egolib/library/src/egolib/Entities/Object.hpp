@@ -417,9 +417,9 @@ public:
 
     void updateLighting() { inst.updateLighting(); }
 
-    void flash(uint8_t value) { inst.flash(value); }
+    void flash(uint8_t value) override { inst.flash(value); }
 
-    void flashVariableHeight(uint8_t valueLow, int16_t low, uint8_t valueHigh, int16_t high)
+    void flashVariableHeight(uint8_t valueLow, int16_t low, uint8_t valueHigh, int16_t high) override
     {
         inst.flashVariableHeight(valueLow, low, valueHigh, high);
     }

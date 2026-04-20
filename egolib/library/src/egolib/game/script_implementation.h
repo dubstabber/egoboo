@@ -163,12 +163,5 @@ Uint8 FindTileInPassage( const int x0, const int y0, const int tiletype, const i
 ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz, bool find_ranged, bool use_line_of_sight );
 
 /// @author ZZ
-/// @details This function sets an object's lighting
-bool FlashObject( Object * pchr, Uint8 value );
-
-//--------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------
-
-/// @author ZZ
 /// @details This function sticks a message_offset in the display queue and sets its timer
 Uint8 _display_message( const ObjectRef ichr, const PRO_REF iprofile, const int message, script_state_t * pstate );

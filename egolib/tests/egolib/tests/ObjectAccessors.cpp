@@ -930,6 +930,27 @@ TEST_F(ObjectAccessorFixture, VisualControlRoleSurfaceSupportsShiftFlagAndRender
     EXPECT_TRUE(object->isNameKnown());
     EXPECT_TRUE(object->isAmmoKnown());
     EXPECT_EQ(object->getSparkle(), 7);
+
+    ASSERT_GE(object->getVertexCount(), 3u);
+    object->inst._vertexList[0].pos[ZZ] = 5.0f;
+    object->inst._vertexList[1].pos[ZZ] = 15.0f;
+    object->inst._vertexList[2].pos[ZZ] = 25.0f;
+
+    const int flashedLight = static_cast<int>(255 * idlib::fraction<float, 1, 255>());
+    visual.flash(255);
+    EXPECT_EQ(object->getAmbientColour(), flashedLight);
+    EXPECT_EQ(object->getVertex(0).color_dir, flashedLight);
+
+    visual.flashVariableHeight(0, 10, 100, 20);
+    EXPECT_FLOAT_EQ(object->getVertex(0).col[RR], 0.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(0).col[GG], 0.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(0).col[BB], 0.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(1).col[RR], 50.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(1).col[GG], 50.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(1).col[BB], 50.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(2).col[RR], 100.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(2).col[GG], 100.0f);
+    EXPECT_FLOAT_EQ(object->getVertex(2).col[BB], 100.0f);
 }
 
 TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesAndCalls)

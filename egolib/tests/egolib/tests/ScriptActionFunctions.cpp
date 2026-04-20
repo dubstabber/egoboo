@@ -638,6 +638,34 @@ TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSp
     EXPECT_FALSE(other->isNameKnown());
 }
 
+TEST_F(ScriptActionFunctionsFixture, FlashTargetAndBlackTargetUseVisualRoleAndPreserveMissingTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5766);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5767);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_FALSE(target->inst._vertexList.empty());
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+    script_state_t state;
+
+    const int flashedLight = static_cast<int>(255 * idlib::fraction<float, 1, 255>());
+
+    EXPECT_TRUE(scr_FlashTarget(state, self));
+    EXPECT_EQ(target->getAmbientColour(), flashedLight);
+    EXPECT_EQ(target->getVertex(0).color_dir, flashedLight);
+
+    EXPECT_TRUE(scr_BlackTarget(state, self));
+    EXPECT_EQ(target->getAmbientColour(), 0);
+    EXPECT_EQ(target->getVertex(0).color_dir, 0);
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_FlashTarget(state, self));
+    EXPECT_FALSE(scr_BlackTarget(state, self));
+}
+
 TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRejectsInvalidArguments)
 {
     auto& module = beginActiveTestModule();

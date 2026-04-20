@@ -732,6 +732,46 @@ TEST_F(ScriptStateFunctionsFixture, SetDamageTimePublishesThroughDamageableRole)
     EXPECT_EQ(actor->getDamageTimer(), 255);
 }
 
+TEST_F(ScriptStateFunctionsFixture, FlashVariableAndFlashVariableHeightUseVisualRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5542);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_GE(actor->getVertexCount(), 3u);
+
+    actor->inst._vertexList[0].pos[ZZ] = 5.0f;
+    actor->inst._vertexList[1].pos[ZZ] = 15.0f;
+    actor->inst._vertexList[2].pos[ZZ] = 25.0f;
+
+    const int flashedLight = static_cast<int>(255 * idlib::fraction<float, 1, 255>());
+
+    script_state_t flashState;
+    flashState.argument = 255;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_FlashVariable(flashState, self));
+    EXPECT_EQ(actor->getAmbientColour(), flashedLight);
+    EXPECT_EQ(actor->getVertex(0).color_dir, flashedLight);
+
+    script_state_t heightState;
+    heightState.turn = 0;
+    heightState.x = 10;
+    heightState.distance = 100;
+    heightState.y = 20;
+
+    EXPECT_TRUE(scr_FlashVariableHeight(heightState, self));
+    EXPECT_FLOAT_EQ(actor->getVertex(0).col[RR], 0.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(0).col[GG], 0.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(0).col[BB], 0.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(1).col[RR], 50.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(1).col[GG], 50.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(1).col[BB], 50.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(2).col[RR], 100.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(2).col[GG], 100.0f);
+    EXPECT_FLOAT_EQ(actor->getVertex(2).col[BB], 100.0f);
+}
+
 TEST_F(ScriptStateFunctionsFixture, EnableAndDisableInvictusUseDamageableRole)
 {
     auto& module = beginActiveTestModule();

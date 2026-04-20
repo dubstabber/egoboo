@@ -570,15 +570,3 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
 
     return retval;
 }
-
-//--------------------------------------------------------------------------------------------
-bool FlashObject( Object * pchr, uint8_t value )
-{
-    /// @author ZZ
-    /// @details This function sets a character's lighting
-	if (!pchr || pchr->isTerminated()) {
-		return false;
-	}
-	pchr->flash(value);
-	return true;
-}
