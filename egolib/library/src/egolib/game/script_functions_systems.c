@@ -21,6 +21,11 @@ ICharacterState& characterState(Object& object)
     return object;
 }
 
+IEnchantable& enchantable(Object& object)
+{
+    return object;
+}
+
 ITeamMember& teamMember(Object& object)
 {
     return object;
@@ -566,13 +571,14 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> target = objectHandler()[self.getTarget()];
-    if(target) {
-        returncode = target->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(), objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
-    }   
+    IEnchantable* targetEnchantable = tryEnchantable(self.getTarget());
+    if (targetEnchantable != nullptr) {
+        returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(),
+                                                   objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
+    }
     else {
         returncode = false;
-    } 
+    }
 
     SCRIPT_FUNCTION_END();
 }
@@ -589,13 +595,14 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> child = objectHandler()[self.child];
-    if(child) {
-        returncode = child->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(), objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
-    }   
+    IEnchantable* childEnchantable = tryEnchantable(self.child);
+    if (childEnchantable != nullptr) {
+        returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(), pchr->getProfileID().get(),
+                                                  objectHandler()[self.owner], objectHandler()[pchr->getObjRef()]) != nullptr;
+    }
     else {
         returncode = false;
-    } 
+    }
 
     SCRIPT_FUNCTION_END();
 }
@@ -795,7 +802,7 @@ uint8_t scr_UndoEnchant( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Ego::Enchantment> lastEnchant = pchr->getLastEnchantmentSpawned();
+    std::shared_ptr<Ego::Enchantment> lastEnchant = enchantable(*pchr).getLastEnchantmentSpawned();
     if(lastEnchant == nullptr || lastEnchant->isTerminated()) {
         returncode = false;
     }
@@ -1313,8 +1320,8 @@ uint8_t scr_SetEnchantBoostValues( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    if(pchr->hasActiveEnchants()) {
-        const std::shared_ptr<Ego::Enchantment> enchant = pchr->getFirstActiveEnchant();
+    if (enchantable(*pchr).hasActiveEnchants()) {
+        const std::shared_ptr<Ego::Enchantment> enchant = enchantable(*pchr).getFirstActiveEnchant();
         if(enchant != nullptr && !enchant->isTerminated()) {
             enchant->setBoostValues(FP8_TO_FLOAT(state.argument), FP8_TO_FLOAT(state.distance), FP8_TO_FLOAT(state.x), FP8_TO_FLOAT(state.y));
             returncode = true;            
@@ -1611,13 +1618,10 @@ uint8_t scr_DisenchantTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes all enchantments on the Target character, proceeding
     /// if there were any, failing if not
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    returncode = pself_target->disenchant();
+    IEnchantable* targetEnchantable = tryEnchantable(self.getTarget());
+    returncode = targetEnchantable ? targetEnchantable->disenchant() : false;
 
     SCRIPT_FUNCTION_END();
 }
@@ -1633,7 +1637,7 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     for(const std::shared_ptr<Object> &object : objectHandler().iterator()) {
-        object->disenchant();
+        enchantable(*object).disenchant();
     }
 
     SCRIPT_FUNCTION_END();

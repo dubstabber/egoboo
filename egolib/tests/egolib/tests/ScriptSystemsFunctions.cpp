@@ -229,6 +229,44 @@ protected:
         ADD_FAILURE() << "unable to add a [HEAL]-removable enchant fixture";
         return nullptr;
     }
+
+    std::shared_ptr<Object> makeEnchantSpawner(GameModule& module, int slotBase, ENC_REF& enchantRef) const
+    {
+        struct Candidate
+        {
+            const char* objectPath;
+            const char* enchantPath;
+        };
+
+        static const std::vector<Candidate> candidates = {
+            {"mp_data/globalobjects/weapons/stiletto.obj", "mp_data/globalobjects/weapons/stiletto.obj/enchant.txt"},
+            {"mp_data/globalobjects/potions/ppotion.obj", "mp_data/globalobjects/potions/ppotion.obj/enchant.txt"},
+            {"mp_data/globalobjects/items/mushroom.obj", "mp_data/globalobjects/items/mushroom.obj/enchant.txt"}
+        };
+
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+            auto source = makeObject(module, candidates[i].objectPath, slotBase + static_cast<int>(i));
+            if (!source)
+            {
+                continue;
+            }
+
+            const ENC_REF candidateEnchantRef = EngineContext::get().profileSystem().loadEnchantProfile(
+                candidates[i].enchantPath, INVALID_EVE_REF);
+            if (candidateEnchantRef >= ENCHANTPROFILES_MAX)
+            {
+                continue;
+            }
+
+            enchantRef = candidateEnchantRef;
+            return source;
+        }
+
+        enchantRef = ENCHANTPROFILES_MAX;
+        ADD_FAILURE() << "unable to load an enchant-capable object fixture";
+        return nullptr;
+    }
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptSystemsFunctionsFixture::s_runtime;
@@ -801,6 +839,67 @@ TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseChar
     state.argument = IDSZ2::caseLabel('D', 'A', 'R', 'K');
     EXPECT_TRUE(scr_GiveSkillToTarget(state, self));
     EXPECT_TRUE(target->hasPerk(Ego::Perks::NIGHT_VISION));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, EnchantLifecycleHelpersUseEnchantableRole)
+{
+    auto& module = beginActiveTestModule();
+    ENC_REF enchantRef = ENCHANTPROFILES_MAX;
+    auto actor = makeEnchantSpawner(module, 188, enchantRef);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5695);
+    auto child = makeObject(module, "mp_objects/follower.obj", 5696);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(child, nullptr);
+    ASSERT_LT(enchantRef, ENCHANTPROFILES_MAX);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    self.owner = actor->getObjRef();
+    self.child = child->getObjRef();
+
+    EXPECT_FALSE(target->hasActiveEnchants());
+    EXPECT_TRUE(scr_EnchantTarget(state, self));
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_EQ(actor->getLastEnchantmentSpawned(), target->getFirstActiveEnchant());
+
+    auto actorEnchant = addHealRemovableEnchant(module, actor, 5697);
+    ASSERT_NE(actorEnchant, nullptr);
+    ASSERT_TRUE(actor->hasActiveEnchants());
+
+    state.argument = FLOAT_TO_FP8(1.0f);
+    state.distance = FLOAT_TO_FP8(2.0f);
+    state.x = FLOAT_TO_FP8(3.0f);
+    state.y = FLOAT_TO_FP8(4.0f);
+    EXPECT_TRUE(scr_SetEnchantBoostValues(state, self));
+    ASSERT_NE(actor->getFirstActiveEnchant(), nullptr);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getOwnerManaSustain(), 1.0f);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getOwnerLifeSustain(), 2.0f);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getTargetManaDrain(), 3.0f);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getTargetLifeDrain(), 4.0f);
+
+    EXPECT_TRUE(scr_UndoEnchant(state, self));
+    EXPECT_TRUE(actor->getLastEnchantmentSpawned()->isTerminated());
+    EXPECT_FALSE(scr_UndoEnchant(state, self));
+
+    EXPECT_TRUE(scr_EnchantChild(state, self));
+    ASSERT_TRUE(child->hasActiveEnchants());
+
+    EXPECT_TRUE(scr_EnchantTarget(state, self));
+    ASSERT_TRUE(target->hasActiveEnchants());
+    EXPECT_TRUE(scr_DisenchantTarget(state, self));
+    EXPECT_TRUE(target->getFirstActiveEnchant()->isTerminated());
+    EXPECT_FALSE(scr_DisenchantTarget(state, self));
+
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_DisenchantTarget(state, self));
+
+    self.setTarget(target->getObjRef());
+    EXPECT_TRUE(scr_EnchantTarget(state, self));
+    EXPECT_TRUE(scr_EnchantChild(state, self));
+    EXPECT_TRUE(scr_DisenchantAll(state, self));
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)

@@ -133,6 +133,27 @@ protected:
         return objectHandler.insert(profile);
     }
 
+    std::shared_ptr<Ego::Enchantment> addEnchantFixture(const std::shared_ptr<Object>& target,
+                                                        const std::shared_ptr<Object>& spawner,
+                                                        const char* enchantPath) const
+    {
+        EXPECT_NE(target, nullptr);
+        EXPECT_NE(spawner, nullptr);
+        if (target == nullptr || spawner == nullptr)
+        {
+            return nullptr;
+        }
+
+        const ENC_REF enchantRef = EngineContext::get().profileSystem().loadEnchantProfile(enchantPath, INVALID_EVE_REF);
+        EXPECT_LT(enchantRef, ENCHANTPROFILES_MAX);
+        if (enchantRef >= ENCHANTPROFILES_MAX)
+        {
+            return nullptr;
+        }
+
+        return target->addEnchant(enchantRef, spawner->getProfileID().get(), spawner, spawner);
+    }
+
     std::shared_ptr<Object> makeFollower(int slot)
     {
         return makeFollower(_objectHandler, slot);
@@ -652,7 +673,7 @@ TEST_F(ObjectAccessorFixture, EnchantHelpersExposeReadOnlyListStateAndFrontEntry
 {
     auto& objectHandler = beginActiveTestModule();
     auto target = makeFollower(objectHandler, 345);
-    auto spawner = makeObject(objectHandler, "mp_data/globalobjects/magic/truesight.obj", 346);
+    auto spawner = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 346);
     ASSERT_NE(target, nullptr);
     ASSERT_NE(spawner, nullptr);
 
@@ -660,10 +681,7 @@ TEST_F(ObjectAccessorFixture, EnchantHelpersExposeReadOnlyListStateAndFrontEntry
     EXPECT_EQ(target->getFirstActiveEnchant(), nullptr);
     EXPECT_TRUE(target->getActiveEnchants().empty());
 
-    const auto enchant = target->addEnchant(spawner->getProfile()->getEnchantRef(),
-                                            spawner->getProfileID().get(),
-                                            spawner,
-                                            spawner);
+    const auto enchant = addEnchantFixture(target, spawner, "mp_data/globalobjects/weapons/stiletto.obj/enchant.txt");
     ASSERT_NE(enchant, nullptr);
 
     EXPECT_TRUE(target->hasActiveEnchants());
@@ -671,6 +689,36 @@ TEST_F(ObjectAccessorFixture, EnchantHelpersExposeReadOnlyListStateAndFrontEntry
     EXPECT_EQ(target->getFirstActiveEnchant(), enchant);
     EXPECT_EQ(target->getActiveEnchants().front(), enchant);
     EXPECT_EQ(spawner->getLastEnchantmentSpawned(), enchant);
+}
+
+TEST_F(ObjectAccessorFixture, EnchantableRolePublishesAddDisenchantAndLastSpawnedState)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 347);
+    auto spawner = makeObject(objectHandler, "mp_data/globalobjects/potions/ppotion.obj", 348);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(spawner, nullptr);
+
+    IEnchantable& targetEnchantable = *target;
+    IEnchantable& spawnerEnchantable = *spawner;
+
+    EXPECT_FALSE(targetEnchantable.hasActiveEnchants());
+    EXPECT_EQ(targetEnchantable.getFirstActiveEnchant(), nullptr);
+    EXPECT_EQ(spawnerEnchantable.getLastEnchantmentSpawned(), nullptr);
+
+    const auto enchant = targetEnchantable.addEnchant(EngineContext::get().profileSystem().loadEnchantProfile(
+                                                          "mp_data/globalobjects/potions/ppotion.obj/enchant.txt",
+                                                          INVALID_EVE_REF),
+                                                      spawner->getProfileID().get(),
+                                                      spawner,
+                                                      spawner);
+    ASSERT_NE(enchant, nullptr);
+
+    EXPECT_TRUE(targetEnchantable.hasActiveEnchants());
+    EXPECT_EQ(targetEnchantable.getFirstActiveEnchant(), enchant);
+    EXPECT_EQ(spawnerEnchantable.getLastEnchantmentSpawned(), enchant);
+    EXPECT_TRUE(targetEnchantable.disenchant());
+    EXPECT_TRUE(enchant->isTerminated());
 }
 
 TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedState)

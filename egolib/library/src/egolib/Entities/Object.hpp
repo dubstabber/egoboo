@@ -33,6 +33,7 @@
 #include "egolib/Entities/IAppearanceProfile.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
+#include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
@@ -87,6 +88,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IAppearanceProfile,
                public IDamageable,
                public ICharacterState,
+               public IEnchantable,
                public IInventoryHolder,
                public IPhysical,
                public IRenderable,
@@ -959,15 +961,17 @@ public:
     * @brief
     *   pointer to the enchant that was added (or nullptr if it failed)
     **/
-    std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner);
+    std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile,
+                                                 const std::shared_ptr<Object>& owner,
+                                                 const std::shared_ptr<Object>& spawner) override;
 
     void removeEnchantsWithIDSZ(const IDSZ2& idsz) override;
 
     const std::forward_list<std::shared_ptr<Ego::Enchantment>>& getActiveEnchants() const;
 
-    bool hasActiveEnchants() const;
+    bool hasActiveEnchants() const override;
 
-    std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const;
+    std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const override;
 
     void addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant);
 
@@ -975,7 +979,7 @@ public:
     * @brief
     *   Removes all enchantments from character
     **/
-    bool disenchant();
+    bool disenchant() override;
 
     /**
     * @brief
@@ -1029,7 +1033,7 @@ public:
 
     void clearTempAttribute(Ego::Attribute::AttributeType type);
 
-    std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const;
+    std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const override;
 
     const std::shared_ptr<Object>& toSharedPointer() const;
 

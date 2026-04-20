@@ -548,6 +548,12 @@ Returned to Tier 1.2 by removing the remaining file-local `IAppearanceProfile` w
 
 Preserved current script-visible behavior exactly, including the legacy actor-profile semantics in `scr_IfTargetIsDressedUp()` and `scr_IfTargetIsASpell()`. Acceptance for this pass is the build, the focused `ScriptSystemsFunctions` / `ScriptTargetFunctions` coverage for armor and appearance helpers, and the `test.mod` validator smoke.
 
+### Pass 121 — Enchantment lifecycle role seam (2026-04-20)
+
+Continued Tier 1.2 by introducing `IEnchantable` as a narrow `Object` role for enchant application, observation, and removal, then routing the bounded enchant lifecycle helpers in `script_functions_systems.c` (`EnchantTarget`, `EnchantChild`, `UndoEnchant`, `SetEnchantBoostValues`, `DisenchantTarget`, `DisenchantAll`) through that seam instead of direct concrete-`Object` calls.
+
+Repaired the stale enchant accessor fixture to use a valid enchant-backed object and extended accessor/script-system coverage to pin add/disenchant publication, last-spawned tracking, boost-value mutation, and target/child/all disenchant semantics. Build, focused enchant tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
