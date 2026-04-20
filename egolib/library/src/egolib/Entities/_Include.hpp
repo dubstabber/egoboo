@@ -7,6 +7,7 @@
 #include "egolib/Entities/Enchant.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"

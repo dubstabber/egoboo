@@ -3,6 +3,19 @@
 
 #include "egolib/game/script_functions_internal.h"
 
+namespace
+{
+IMovementControl& movementControl(Object& object)
+{
+    return object;
+}
+
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
+}
+
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfAtWaypoint( script_state_t& state, ai_state_t& self )
@@ -144,7 +157,7 @@ uint8_t scr_SetTurnModeToVelocity( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTurnMode(TURNMODE_VELOCITY);
+    movementControl(*pchr).setTurnMode(TURNMODE_VELOCITY);
 
     SCRIPT_FUNCTION_END();
 }
@@ -160,7 +173,7 @@ uint8_t scr_SetTurnModeToWatch( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTurnMode(TURNMODE_WATCH);
+    movementControl(*pchr).setTurnMode(TURNMODE_WATCH);
 
     SCRIPT_FUNCTION_END();
 }
@@ -176,7 +189,7 @@ uint8_t scr_SetTurnModeToSpin( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTurnMode(TURNMODE_SPIN);
+    movementControl(*pchr).setTurnMode(TURNMODE_SPIN);
 
     SCRIPT_FUNCTION_END();
 }
@@ -192,7 +205,7 @@ uint8_t scr_SetBumpHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBumpHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
+    movementControl(*pchr).setBumpHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -255,7 +268,7 @@ uint8_t scr_GetBumpHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = pchr->getCurrentBump().height;
+    state.argument = physical(*pchr).getCurrentBump().height;
 
     SCRIPT_FUNCTION_END();
 }
@@ -272,7 +285,7 @@ uint8_t scr_PressLatchButton( script_state_t& state, ai_state_t& self )
 
     if(state.argument >= LATCHBUTTON_LEFT && state.argument < LATCHBUTTON_RESPAWN)
     {
-        pchr->setLatchButton(static_cast<LatchButton>(state.argument), true);
+        movementControl(*pchr).setLatchButton(static_cast<LatchButton>(state.argument), true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -303,15 +316,17 @@ uint8_t scr_PressTargetLatchButton( script_state_t& state, ai_state_t& self )
     /// @details This function mimics joystick button presses for the target.
     /// For making items force their own usage and such
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    if (targetMovement == nullptr)
+    {
+        return false;
+    }
 
     if(state.argument >= LATCHBUTTON_LEFT && state.argument < LATCHBUTTON_RESPAWN)
     {
-        pself_target->setLatchButton(static_cast<LatchButton>(state.argument), true);
+        targetMovement->setLatchButton(static_cast<LatchButton>(state.argument), true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -328,12 +343,14 @@ uint8_t scr_TeleportTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
-    if(!target) {
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    if (targetMovement == nullptr)
+    {
         return false;
     }
 
-    returncode = target->teleport(Ego::Vector3f(float(state.x), float(state.y), float(state.distance)), Facing(state.turn));
+    returncode = targetMovement->teleport(Ego::Vector3f(float(state.x), float(state.y), float(state.distance)),
+                                          Facing(state.turn));
 
     SCRIPT_FUNCTION_END();
 }
@@ -348,7 +365,7 @@ uint8_t scr_SetBumpSize( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBumpWidth(Ego::Script::Interpreter::safeCast<float>(state.argument));
+    movementControl(*pchr).setBumpWidth(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -363,7 +380,7 @@ uint8_t scr_SetFlyHeight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, std::max(0, state.argument));
+    movementControl(*pchr).setFlyHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -379,7 +396,7 @@ uint8_t scr_SetTurnModeToWatchTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setTurnMode(TURNMODE_WATCHTARGET);
+    movementControl(*pchr).setTurnMode(TURNMODE_WATCHTARGET);
 
     SCRIPT_FUNCTION_END();
 }
@@ -395,17 +412,20 @@ uint8_t scr_StopTargetMovement( script_state_t& state, ai_state_t& self )
     /// sets the z velocity to 0 if the character is moving upwards.
     /// This is a special function for the IronBall object
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
-
-    pself_target->setVelocity({0.0f, 0.0f, pself_target->getVelocity().z()});
-    if (pself_target->getVelocity().z() > 0)
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    const IPhysical* targetPhysical = tryPhysical(self.getTarget());
+    if (targetMovement == nullptr || targetPhysical == nullptr)
     {
-        pself_target->setVelocity({pself_target->getVelocity().x(),
-                                   pself_target->getVelocity().y(),
+        return false;
+    }
+
+    targetMovement->setVelocity({0.0f, 0.0f, targetPhysical->getVelocity().z()});
+    if (targetPhysical->getVelocity().z() > 0)
+    {
+        targetMovement->setVelocity({targetPhysical->getVelocity().x(),
+                                   targetPhysical->getVelocity().y(),
                                    Ego::Physics::g_environment.gravity});
     }
     SCRIPT_FUNCTION_END();
@@ -470,14 +490,17 @@ uint8_t scr_AccelerateTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function changes the x and y speeds of the target
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    const IPhysical* targetPhysical = tryPhysical(self.getTarget());
+    if (targetMovement == nullptr || targetPhysical == nullptr)
+    {
+        return false;
+    }
 
-    pself_target->setVelocity(pself_target->getVelocity() +
-                              Ego::Vector3f(state.x, state.y, 0.0f));
+    targetMovement->setVelocity(targetPhysical->getVelocity() +
+                                Ego::Vector3f(state.x, state.y, 0.0f));
 
     SCRIPT_FUNCTION_END();
 }
@@ -522,7 +545,7 @@ uint8_t scr_SetReloadTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setReloadTimer(static_cast<uint16_t>(std::max(0, state.argument)));
+    movementControl(*pchr).setReloadTimer(static_cast<uint16_t>(std::max(0, state.argument)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -554,10 +577,11 @@ uint8_t scr_Teleport( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const IPhysical& selfPhysical = physical(*pchr);
     auto location = Ego::Vector3f(Ego::Script::Interpreter::safeCast<float>(state.x),
                                   Ego::Script::Interpreter::safeCast<float>(state.y),
-                                  pchr->getPosZ());
-    returncode = pchr->teleport(location, pchr->getFacingZ());
+                                  selfPhysical.getPosZ());
+    returncode = movementControl(*pchr).teleport(location, selfPhysical.getFacingZ());
 
     SCRIPT_FUNCTION_END();
 }
@@ -572,19 +596,21 @@ uint8_t scr_SetTargetReloadTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target's reload time
     /// This function stops the target from attacking for a while.
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    if (targetMovement == nullptr)
+    {
+        return false;
+    }
 
     if ( state.argument > 0 )
     {
-        pself_target->setReloadTimer(static_cast<uint16_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
+        targetMovement->setReloadTimer(static_cast<uint16_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
     }
     else
     {
-        pself_target->setReloadTimer(0);
+        targetMovement->setReloadTimer(0);
     }
 
     SCRIPT_FUNCTION_END();
@@ -600,8 +626,9 @@ uint8_t scr_SetShadowSize( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setShadowSize(state.argument * pchr->getFat());
-    pchr->setSavedShadowSize(state.argument);
+    IMovementControl& selfMovement = movementControl(*pchr);
+    selfMovement.setShadowSize(state.argument * selfMovement.getFat());
+    selfMovement.setSavedShadowSize(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -616,8 +643,9 @@ uint8_t scr_AccelerateUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setVelocity(pchr->getVelocity() +
-                      Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
+    const IPhysical& selfPhysical = physical(*pchr);
+    movementControl(*pchr).setVelocity(selfPhysical.getVelocity() +
+                                       Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
 
     SCRIPT_FUNCTION_END();
 }
@@ -630,14 +658,17 @@ uint8_t scr_AccelerateTargetUp( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the target accelerate up and down
 
-    Object * pself_target;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    SCRIPT_REQUIRE_TARGET( pself_target );
+    IMovementControl* targetMovement = tryMovementControl(self.getTarget());
+    const IPhysical* targetPhysical = tryPhysical(self.getTarget());
+    if (targetMovement == nullptr || targetPhysical == nullptr)
+    {
+        return false;
+    }
 
-    pself_target->setVelocity(pself_target->getVelocity() +
-                              Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
+    targetMovement->setVelocity(targetPhysical->getVelocity() +
+                                Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
 
     SCRIPT_FUNCTION_END();
 }

@@ -566,6 +566,12 @@ Continued Tier 1.2 by routing the remaining actor-side query reads in `script_fu
 
 Extended focused script-target and script-state coverage with deterministic failure cases for missing attacker refs, missing holders, missing holder-block alerts, and non-left-hand holder attachment. Build, the full `ScriptTargetFunctionsFixture` / `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 124 — Movement-control role seam for script helpers (2026-04-20)
+
+Continued Tier 1.2 by introducing `IMovementControl` as a narrow write-side `Object` role for turn mode, latch publication, movement velocity, teleport, bump sizing, reload/shadow mutation, and fly-height publication. Migrated the motion-pure helpers in `script_functions_movement.c` onto `IMovementControl` plus the existing read-only `IPhysical` seam instead of direct concrete-`Object` access, while leaving waypoint storage, `ai_state_t` speed scaling, and animation-frame control out of scope.
+
+Extended `ObjectAccessors.cpp` and added focused `ScriptMovementFunctions.cpp` coverage for movement-role parity, turn-mode and latch publication, teleport success/missing-target failure, target-velocity clamp behavior, reload timers, and shadow/fly-height mutation. Build, the focused movement/accessor tests, and the `test.mod` validator are the acceptance bar for this pass.
+
 ---
 
 ## Files touched most by this pass log

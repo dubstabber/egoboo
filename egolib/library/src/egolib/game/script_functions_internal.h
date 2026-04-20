@@ -157,6 +157,12 @@ inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
     return object ? static_cast<IInventoryHolder*>(object) : nullptr;
 }
 
+inline IMovementControl* tryMovementControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IMovementControl*>(object) : nullptr;
+}
+
 inline IRenderable* tryRenderable(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

@@ -35,6 +35,7 @@
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
@@ -68,7 +69,7 @@ enum turn_mode_t : uint8_t
 //--------------------------------------------------------------------------------------------
 
 /// The offsets of Bits identifying in-game actions in a Bit set.
-enum LatchButton
+enum LatchButton : uint8_t
 {
     LATCHBUTTON_LEFT      = 0,                      ///< Character button presses
     LATCHBUTTON_RIGHT     = 1,
@@ -90,6 +91,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public ICharacterState,
                public IEnchantable,
                public IInventoryHolder,
+               public IMovementControl,
                public IPhysical,
                public IRenderable,
                public IScriptable,
@@ -154,6 +156,8 @@ public:
     float getFloorElevation() const override { return _objectPhysics.getGroundElevation(); }
 
     const Ego::Vector3f& getVelocity() const override { return PhysicsData::getVelocity(); }
+
+    void setVelocity(const Ego::Vector3f& velocity) override { PhysicsData::setVelocity(velocity); }
 
     const Ego::Vector3f& getSpawnPosition() const override { return Ego::Physics::Collidable::getSpawnPosition(); }
 
@@ -580,7 +584,7 @@ public:
     * @result
     *   Success returns true, failure returns false;
     **/
-    bool teleport(const Ego::Vector3f& position, Facing facing_z);
+    bool teleport(const Ego::Vector3f& position, Facing facing_z) override;
 
     /**
     * @brief
@@ -648,7 +652,7 @@ public:
 
     void setBaseFat(float fat) { fat_stt = fat; }
 
-    float getFat() const { return fat; }
+    float getFat() const override { return fat; }
 
     void setFatRaw(float currentFat) { fat = currentFat; }
 
@@ -713,7 +717,7 @@ public:
     * @param height the new height
     * @remark The (base) height influences the character size.
     **/
-    void setBumpHeight(const float height);
+    void setBumpHeight(const float height) override;
 
     /**
     * @brief Set the (base) width of a character.
@@ -721,7 +725,7 @@ public:
     * @param width the new width
     * @remark Also modifies the shadow size.
     **/
-    void setBumpWidth(const float width);
+    void setBumpWidth(const float width) override;
 
     //TODO: should be private
     /// @author BB
@@ -890,6 +894,11 @@ public:
     **/
     void setBaseAttribute(const Ego::Attribute::AttributeType type, float value);
 
+    void setFlyHeight(float height) override
+    {
+        setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, height < 0.0f ? 0.0f : height);
+    }
+
     size_t getInventoryMaxItems() const;
 
     size_t getFirstFreeInventorySlot() const;
@@ -1027,11 +1036,11 @@ public:
 
     uint32_t getShadowSize() const { return shadow_size; }
 
-    void setShadowSize(uint32_t shadowSize) { shadow_size = shadowSize; }
+    void setShadowSize(uint32_t shadowSize) override { shadow_size = shadowSize; }
 
     uint32_t getSavedShadowSize() const { return shadow_size_save; }
 
-    void setSavedShadowSize(uint32_t shadowSize) { shadow_size_save = shadowSize; }
+    void setSavedShadowSize(uint32_t shadowSize) override { shadow_size_save = shadowSize; }
 
     bool hasTempAttribute(Ego::Attribute::AttributeType type) const;
 
@@ -1214,7 +1223,7 @@ public:
 
     uint16_t getReloadTimer() const override { return reload_timer; }
 
-    void setReloadTimer(uint16_t timer) { reload_timer = timer; }
+    void setReloadTimer(uint16_t timer) override { reload_timer = timer; }
 
     uint8_t getDamageTimer() const override { return damage_timer; }
 
@@ -1331,7 +1340,7 @@ public:
     *   true if this button should be active or false if not
     * @see enum LatchButton
     **/
-    void setLatchButton(const LatchButton latchButton, const bool pressed);
+    void setLatchButton(const LatchButton latchButton, const bool pressed) override;
 
     inline bool isAnyLatchButtonPressed() { return _inputLatchesPressed.any(); }
 
@@ -1357,7 +1366,7 @@ public:
 
     turn_mode_t getTurnMode() const { return turnmode; }
 
-    void setTurnMode(turn_mode_t mode) { turnmode = mode; }
+    void setTurnMode(turn_mode_t mode) override { turnmode = mode; }
 
     Facing getFacingZ() const override { return ori.facing_z; }
 

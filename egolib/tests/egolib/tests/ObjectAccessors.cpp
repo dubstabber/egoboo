@@ -971,6 +971,42 @@ TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrienta
     EXPECT_EQ(physical.getPreviousFacingZ(), Facing(4444));
 }
 
+TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMutation)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 30516);
+    ASSERT_NE(object, nullptr);
+
+    IMovementControl& movement = *object;
+
+    object->setPosition(64.0f, 64.0f, 0.0f);
+    movement.setTurnMode(TURNMODE_WATCHTARGET);
+    movement.setBumpHeight(15.0f);
+    movement.setBumpWidth(8.0f);
+    movement.setLatchButton(LATCHBUTTON_LEFT, true);
+    movement.setVelocity(Ego::Vector3f(4.0f, 5.0f, 6.0f));
+    movement.setReloadTimer(9);
+    movement.setShadowSize(21);
+    movement.setSavedShadowSize(7);
+    movement.setFlyHeight(11.0f);
+
+    EXPECT_EQ(object->getTurnMode(), TURNMODE_WATCHTARGET);
+    EXPECT_FLOAT_EQ(object->getCurrentBump().height, 15.0f * object->getFat());
+    EXPECT_TRUE(object->_inputLatchesPressed[LATCHBUTTON_LEFT]);
+    EXPECT_FLOAT_EQ(object->getVelocity().x(), 4.0f);
+    EXPECT_FLOAT_EQ(object->getVelocity().y(), 5.0f);
+    EXPECT_FLOAT_EQ(object->getVelocity().z(), 6.0f);
+    EXPECT_EQ(object->getReloadTimer(), 9);
+    EXPECT_EQ(object->getShadowSize(), 21u);
+    EXPECT_EQ(object->getSavedShadowSize(), 7u);
+    EXPECT_FLOAT_EQ(object->getBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT), 11.0f);
+
+    EXPECT_TRUE(movement.teleport(Ego::Vector3f(96.0f, 96.0f, 0.0f), Facing(1234)));
+    EXPECT_FLOAT_EQ(object->getPosX(), 96.0f);
+    EXPECT_FLOAT_EQ(object->getPosY(), 96.0f);
+    EXPECT_EQ(object->getFacingZ(), Facing(1234));
+}
+
 TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
 {
     auto object = makeFollower(3051);
