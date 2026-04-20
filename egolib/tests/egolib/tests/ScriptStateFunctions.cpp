@@ -296,6 +296,39 @@ TEST_F(ScriptStateFunctionsFixture, SetChildContentFailsWithoutChild)
     EXPECT_EQ(actor->getAIContent(), previousContentValue);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SetChildAmmoPublishesAmmoThroughChildCharacterState)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55261);
+    auto child = makeRangedWeapon(module, 55262);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(child, nullptr);
+
+    script_state_t state;
+    state.argument = 7;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = child->getObjRef();
+
+    EXPECT_TRUE(scr_SetChildAmmo(state, self));
+    EXPECT_EQ(child->getAmmo(), 7);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SetChildAmmoFailsWithoutChild)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55266);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.argument = 19;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = ObjectRef::Invalid;
+
+    EXPECT_FALSE(scr_SetChildAmmo(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, PoofTargetDefersSelfPoofByOneUpdate)
 {
     auto& module = beginActiveTestModule();
@@ -338,6 +371,30 @@ TEST_F(ScriptStateFunctionsFixture, PoofTargetPublishesImmediatePoofTimeAndRetar
     EXPECT_EQ(self.getTarget(), actor->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, GoPoofUsesPlayerImmunityAndPublishesSelfPoofTime)
+{
+    auto& module = beginActiveTestModule();
+    auto nonPlayer = makeObject(module, "mp_objects/follower.obj", 55291);
+    auto player = makeObject(module, "mp_data/globalobjects/players/ranger.obj", 55292);
+
+    ASSERT_NE(nonPlayer, nullptr);
+    ASSERT_NE(player, nullptr);
+
+    script_state_t state;
+    ai_state_t nonPlayerSelf = makeScriptSelf(nonPlayer);
+    ai_state_t playerSelf = makeScriptSelf(player);
+    const auto updateCount = static_cast<int32_t>(GameSessionContext::get().worldUpdateCount());
+    const int32_t previousPlayerPoofTime = playerSelf.poof_time;
+
+    player->setLocalPlayer(true);
+
+    EXPECT_TRUE(scr_GoPoof(state, nonPlayerSelf));
+    EXPECT_EQ(nonPlayerSelf.poof_time, updateCount);
+
+    EXPECT_FALSE(scr_GoPoof(state, playerSelf));
+    EXPECT_EQ(playerSelf.poof_time, previousPlayerPoofTime);
+}
+
 TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookups)
 {
     auto& module = beginActiveTestModule();
@@ -361,6 +418,25 @@ TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookup
     EXPECT_EQ(rightItem->getHolderRef(), ObjectRef::Invalid);
 }
 
+TEST_F(ScriptStateFunctionsFixture, DetachFromHolderRequiresLiveHolderRef)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55341);
+    auto heldItem = makeMeleeWeapon(module, 55342);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_LEFT));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(heldItem);
+
+    EXPECT_TRUE(scr_DetachFromHolder(state, self));
+    EXPECT_EQ(heldItem->getHolderRef(), ObjectRef::Invalid);
+
+    EXPECT_FALSE(scr_DetachFromHolder(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
 {
     auto& module = beginActiveTestModule();
@@ -376,6 +452,49 @@ TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
 
     EXPECT_TRUE(scr_SpawnPoof(state, self));
     EXPECT_GT(particleHandler.getCount(), particleCountBefore);
+}
+
+TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadListeners)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55381);
+    auto aliveTeammate = makeObject(module, "mp_objects/follower.obj", 55382);
+    auto deadTeammate = makeObject(module, "mp_objects/follower.obj", 55383);
+    auto outsider = makeObject(module, "mp_objects/follower.obj", 55384);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(aliveTeammate, nullptr);
+    ASSERT_NE(deadTeammate, nullptr);
+    ASSERT_NE(outsider, nullptr);
+
+    actor->setTeam(Team::TEAM_GOOD);
+    aliveTeammate->setTeam(Team::TEAM_GOOD);
+    deadTeammate->setTeam(Team::TEAM_GOOD);
+    outsider->setTeam(Team::TEAM_EVIL);
+    deadTeammate->kill(nullptr, true);
+
+    actor->setAIAlertBits(0);
+    aliveTeammate->setAIAlertBits(0);
+    deadTeammate->setAIAlertBits(0);
+    outsider->setAIAlertBits(0);
+    actor->setAITimer(0);
+    aliveTeammate->setAITimer(0);
+    deadTeammate->setAITimer(0);
+    outsider->setAITimer(0);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    const auto updateCount = GameSessionContext::get().worldUpdateCount();
+
+    EXPECT_TRUE(scr_CleanUp(state, self));
+    EXPECT_NE(actor->getAIAlertBits() & ALERTIF_CLEANEDUP, 0u);
+    EXPECT_NE(aliveTeammate->getAIAlertBits() & ALERTIF_CLEANEDUP, 0u);
+    EXPECT_NE(deadTeammate->getAIAlertBits() & ALERTIF_CLEANEDUP, 0u);
+    EXPECT_EQ(outsider->getAIAlertBits() & ALERTIF_CLEANEDUP, 0u);
+    EXPECT_EQ(actor->getAITimer(), 0u);
+    EXPECT_EQ(aliveTeammate->getAITimer(), 0u);
+    EXPECT_EQ(deadTeammate->getAITimer(), updateCount + 2);
+    EXPECT_EQ(outsider->getAITimer(), 0u);
 }
 
 TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThroughScriptableRole)
@@ -788,6 +907,39 @@ TEST_F(ScriptStateFunctionsFixture, EnableAndDisableInvictusUseDamageableRole)
 
     EXPECT_TRUE(scr_DisableInvictus(state, self));
     EXPECT_FALSE(actor->isInvincible());
+}
+
+TEST_F(ScriptStateFunctionsFixture, SetTargetToChildUsesChildResolutionHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55511);
+    auto child = makeObject(module, "mp_objects/follower.obj", 55512);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(child, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = child->getObjRef();
+
+    EXPECT_TRUE(scr_SetTargetToChild(state, self));
+    EXPECT_EQ(self.getTarget(), child->getObjRef());
+}
+
+TEST_F(ScriptStateFunctionsFixture, SetTargetToChildFailsWithoutChild)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55513);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = ObjectRef::Invalid;
+    self.setTarget(actor->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToChild(state, self));
+    EXPECT_EQ(self.getTarget(), actor->getObjRef());
 }
 
 TEST_F(ScriptStateFunctionsFixture, SetFogFunctionsRespectInstalledConfigToggle)

@@ -11,6 +11,16 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return object;
+}
+
+const IInventoryHolder& inventoryHolder(const Object& object)
+{
+    return object;
+}
+
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
 {
     child.setAIPassage(self.passage);
@@ -51,14 +61,123 @@ bool trySetChildContent(ObjectRef childRef, int contentValue)
     return true;
 }
 
+bool trySetChildAmmo(ObjectRef childRef, int ammoValue)
+{
+    ICharacterState* child = tryCharacterState(childRef);
+    if (child == nullptr)
+    {
+        return false;
+    }
+
+    child->setAmmo(Ego::Math::constrain(ammoValue, 0, 0xFFFF));
+    return true;
+}
+
 void publishImmediatePoof(IScriptable& target)
 {
     target.setAIPoofTime(worldUpdateCount());
 }
 
-std::shared_ptr<Object> heldObject(const Object& holder, slot_t slot)
+bool trySetSelfPoofTime(ai_state_t& self, bool isPlayer, uint32_t updateOffset = 0)
 {
-    return tryObjectShared(holder.getHeldObject(slot));
+    if (isPlayer)
+    {
+        return false;
+    }
+
+    self.poof_time = worldUpdateCount() + updateOffset;
+    return true;
+}
+
+bool tryDetachSelfFromHolder(Object& object)
+{
+    if (!objectHandler().exists(targetInfo(object).getHolderRef()))
+    {
+        return false;
+    }
+
+    object.detatchFromHolder(true, true);
+    return true;
+}
+
+bool trySetTargetToChild(ai_state_t& self)
+{
+    if (!objectHandler().exists(self.child))
+    {
+        return false;
+    }
+
+    self.setTarget(self.child);
+    return true;
+}
+
+bool trySetSelfDamageTimer(ai_state_t& self, int damageTime)
+{
+    IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    if (selfDamageable == nullptr)
+    {
+        return false;
+    }
+
+    selfDamageable->setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(damageTime, 0, 0xFFFF)));
+    return true;
+}
+
+bool trySetSelfInvincibility(ai_state_t& self, bool invincible)
+{
+    IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    if (selfDamageable == nullptr)
+    {
+        return false;
+    }
+
+    selfDamageable->setInvincible(invincible);
+    return true;
+}
+
+void publishCleanupTimerForDeadListener(const ITargetInfo& listenerInfo, IScriptable& listener)
+{
+    if (!listenerInfo.isAlive())
+    {
+        listener.setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
+    }
+}
+
+void publishCleanUpForSameTeamListener(TEAM_REF teamRef, const std::shared_ptr<Object>& listener)
+{
+    const ITargetInfo& listenerInfo = targetInfo(*listener);
+    if (teamRef != listenerInfo.getTeamRef())
+    {
+        return;
+    }
+
+    IScriptable& scriptableListener = scriptable(*listener);
+    publishCleanupTimerForDeadListener(listenerInfo, scriptableListener);
+    publishCleanedUpState(scriptableListener);
+}
+
+void applyDismountVelocity(Object& object)
+{
+    object.setVelocity({object.getVelocity().x(),
+                        object.getVelocity().y(),
+                        Object::DISMOUNTZVEL});
+    object.setJumpTimer(Object::JUMPDELAY);
+    object.movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
+}
+
+void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMount)
+{
+    std::shared_ptr<Object> item = tryObjectShared(holder.getHeldObject(slot));
+    if (!item)
+    {
+        return;
+    }
+
+    item->detatchFromHolder(true, true);
+    if (holderIsMount)
+    {
+        applyDismountVelocity(*item);
+    }
 }
 }
 
@@ -74,33 +193,9 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // This funtion drops the character's in hand items/riders
-    const std::shared_ptr<Object> leftItem = heldObject(*pchr, SLOT_LEFT);
-    if (leftItem)
-    {
-        leftItem->detatchFromHolder(true, true);
-        if ( pchr->isMount() )
-        {
-            leftItem->setVelocity({leftItem->getVelocity().x(),
-                                leftItem->getVelocity().y(),
-                                Object::DISMOUNTZVEL});
-            leftItem->setJumpTimer(Object::JUMPDELAY);
-            leftItem->movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
-        }
-    }
-
-    const std::shared_ptr<Object> rightItem = heldObject(*pchr, SLOT_RIGHT);
-    if (rightItem)
-    {
-        rightItem->detatchFromHolder(true, true);
-        if ( pchr->isMount() )
-        {
-            rightItem->setVelocity({rightItem->getVelocity().x(),
-                                 rightItem->getVelocity().y(),
-                                 Object::DISMOUNTZVEL});
-            rightItem->setJumpTimer(Object::JUMPDELAY);
-            rightItem->movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
-        }
-    }
+    const bool selfIsMount = targetInfo(*pchr).isMount();
+    dropHeldObject(inventoryHolder(*pchr), SLOT_LEFT, selfIsMount);
+    dropHeldObject(inventoryHolder(*pchr), SLOT_RIGHT, selfIsMount);
 
     SCRIPT_FUNCTION_END();
 }
@@ -116,12 +211,7 @@ uint8_t scr_GoPoof( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    if (!pchr->isPlayer())
-    {
-        returncode = true;
-        self.poof_time = worldUpdateCount();
-    }
+    returncode = trySetSelfPoofTime(self, targetInfo(*pchr).isPlayer());
 
     SCRIPT_FUNCTION_END();
 }
@@ -222,14 +312,7 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        pchr->detatchFromHolder(true, true);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = tryDetachSelfFromHolder(*pchr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -245,17 +328,10 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const TEAM_REF selfTeam = targetInfo(*pchr).getTeamRef();
     for(const std::shared_ptr<Object> &listener : objectHandler().iterator())
     {
-        if ( pchr->getTeam() != listener->getTeam() ) continue;
-
-        if ( !listener->isAlive() )
-        {
-            IScriptable& scriptableListener = scriptable(*listener);
-            scriptableListener.setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
-        }
-
-        publishCleanedUpState(*listener);
+        publishCleanUpForSameTeamListener(selfTeam, listener);
     }
 
     SCRIPT_FUNCTION_END();
@@ -452,7 +528,7 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         if ( self.getTarget() == self.getSelf() )
         {
             // Poof self later
-            self.poof_time = worldUpdateCount() + 1;
+            trySetSelfPoofTime(self, false, 1);
         }
         else
         {
@@ -771,7 +847,7 @@ uint8_t scr_SetChildAmmo( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    objectHandler().get(self.child)->setAmmo(Ego::Math::constrain( state.argument, 0, 0xFFFF ));
+    returncode = trySetChildAmmo(self.child, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -843,13 +919,7 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* selfDamageable = tryDamageable(self.getSelf());
-    if (selfDamageable == nullptr)
-    {
-        return false;
-    }
-
-    selfDamageable->setDamageTimer(static_cast<uint8_t>(Ego::Math::constrain(state.argument, 0, 0xFFFF)));
+    returncode = trySetSelfDamageTimer(self, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1091,14 +1161,7 @@ uint8_t scr_SetTargetToChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.child ) )
-    {
-        self.setTarget(self.child);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetTargetToChild(self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1174,13 +1237,7 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* selfDamageable = tryDamageable(self.getSelf());
-    if (selfDamageable == nullptr)
-    {
-        return false;
-    }
-
-    selfDamageable->setInvincible(true);
+    returncode = trySetSelfInvincibility(self, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1195,13 +1252,7 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* selfDamageable = tryDamageable(self.getSelf());
-    if (selfDamageable == nullptr)
-    {
-        return false;
-    }
-
-    selfDamageable->setInvincible(false);
+    returncode = trySetSelfInvincibility(self, false);
 
     SCRIPT_FUNCTION_END();
 }
