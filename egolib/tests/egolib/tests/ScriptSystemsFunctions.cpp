@@ -567,6 +567,85 @@ TEST_F(ScriptSystemsFunctionsFixture, SetQuestLevelResolvesPlayersThroughTargetI
     EXPECT_EQ(questLog[questId], Ego::QuestLog::QUEST_NONE);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, BeatQuestAllPlayersOnlyBeatsActiveQuests)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5664);
+    auto firstPlayer = makeObject(module, "mp_objects/follower.obj", 5665);
+    auto secondPlayer = makeObject(module, "mp_objects/follower.obj", 5666);
+    auto beatenPlayer = makeObject(module, "mp_objects/follower.obj", 5667);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(firstPlayer, nullptr);
+    ASSERT_NE(secondPlayer, nullptr);
+    ASSERT_NE(beatenPlayer, nullptr);
+    ASSERT_TRUE(module.addPlayer(firstPlayer, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(secondPlayer, Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(beatenPlayer, Ego::Input::InputDevice::DeviceList[2]));
+
+    const IDSZ2 questId('B', 'E', 'A', 'T');
+    auto& firstQuestLog = module.getPlayer(firstPlayer->getPlayerNumber())->getQuestLog();
+    auto& secondQuestLog = module.getPlayer(secondPlayer->getPlayerNumber())->getQuestLog();
+    auto& beatenQuestLog = module.getPlayer(beatenPlayer->getPlayerNumber())->getQuestLog();
+    firstQuestLog.setQuestProgress(questId, 2);
+    secondQuestLog.setQuestProgress(questId, 5);
+    beatenQuestLog.setQuestProgress(questId, Ego::QuestLog::QUEST_BEATEN);
+
+    script_state_t state;
+    state.argument = questId.toUint32();
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_BeatQuestAllPlayers(state, self));
+    EXPECT_EQ(firstQuestLog[questId], Ego::QuestLog::QUEST_BEATEN);
+    EXPECT_EQ(secondQuestLog[questId], Ego::QuestLog::QUEST_BEATEN);
+    EXPECT_EQ(beatenQuestLog[questId], Ego::QuestLog::QUEST_BEATEN);
+
+    EXPECT_FALSE(scr_BeatQuestAllPlayers(state, self));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, AddQuestAllPlayersOnlyRaisesNonBeatenQuestProgress)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5668);
+    auto lowPlayer = makeObject(module, "mp_objects/follower.obj", 5669);
+    auto highPlayer = makeObject(module, "mp_objects/follower.obj", 5670);
+    auto beatenPlayer = makeObject(module, "mp_objects/follower.obj", 5671);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(lowPlayer, nullptr);
+    ASSERT_NE(highPlayer, nullptr);
+    ASSERT_NE(beatenPlayer, nullptr);
+    ASSERT_TRUE(module.addPlayer(lowPlayer, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(highPlayer, Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(beatenPlayer, Ego::Input::InputDevice::DeviceList[2]));
+
+    const IDSZ2 questId('A', 'L', 'L', 'Q');
+    auto& lowQuestLog = module.getPlayer(lowPlayer->getPlayerNumber())->getQuestLog();
+    auto& highQuestLog = module.getPlayer(highPlayer->getPlayerNumber())->getQuestLog();
+    auto& beatenQuestLog = module.getPlayer(beatenPlayer->getPlayerNumber())->getQuestLog();
+    lowQuestLog.setQuestProgress(questId, 2);
+    highQuestLog.setQuestProgress(questId, 7);
+    beatenQuestLog.setQuestProgress(questId, Ego::QuestLog::QUEST_BEATEN);
+
+    script_state_t state;
+    state.argument = questId.toUint32();
+    state.distance = 5;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_AddQuestAllPlayers(state, self));
+    EXPECT_EQ(lowQuestLog[questId], 5);
+    EXPECT_EQ(highQuestLog[questId], 7);
+    EXPECT_EQ(beatenQuestLog[questId], Ego::QuestLog::QUEST_BEATEN);
+
+    state.distance = 4;
+    EXPECT_FALSE(scr_AddQuestAllPlayers(state, self));
+    EXPECT_EQ(lowQuestLog[questId], 5);
+    EXPECT_EQ(highQuestLog[questId], 7);
+
+    state.distance = 0;
+    EXPECT_FALSE(scr_AddQuestAllPlayers(state, self));
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
 {
     auto& module = beginActiveTestModule();
@@ -607,6 +686,28 @@ TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
     EXPECT_FALSE(weaponKillTarget->isAlive());
 
     config.hud_feedback.setValue(previousFeedback);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesResolvedTargetObject)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5646);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5647);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    state.argument = 48;
+    state.distance = static_cast<int>(XP_DIRECT);
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_GiveExperienceToTarget(state, self));
+
+    self.setTarget(target->getObjRef());
+    const uint32_t experienceBefore = target->getExperience();
+    EXPECT_TRUE(scr_GiveExperienceToTarget(state, self));
+    EXPECT_GT(target->getExperience(), experienceBefore);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, HealSelfAndTargetUseDamageableRoleAndPreserveHealEnchantCleanup)
@@ -883,6 +984,24 @@ TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseChar
     state.argument = IDSZ2::caseLabel('D', 'A', 'R', 'K');
     EXPECT_TRUE(scr_GiveSkillToTarget(state, self));
     EXPECT_TRUE(target->hasPerk(Ego::Perks::NIGHT_VISION));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, GiveSkillToTargetPreservesLegacyUnknownSkillNoOp)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5673);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5674);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_FALSE(target->hasPerk(Ego::Perks::TRAP_LORE));
+
+    script_state_t state;
+    state.argument = IDSZ2('N', 'O', 'P', 'E').toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_GiveSkillToTarget(state, self));
+    EXPECT_FALSE(target->hasPerk(Ego::Perks::TRAP_LORE));
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, EnchantLifecycleHelpersUseEnchantableRole)

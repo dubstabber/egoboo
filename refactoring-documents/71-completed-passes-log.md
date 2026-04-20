@@ -644,6 +644,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by routing `scr_BecomeSpe
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for spell conversion: enchant cleanup, morph-to-spell / morph-to-spellbook publication, script-state reset, preserved base-model behavior, and dropped-animation publication for the spellbook conversion path. Build, the focused systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 137 — Systems helper consolidation follow-on (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by centralizing the remaining quest-log, damage/heal source-resolution, appearance-payment, and skill-mapping helper flows behind file-local helpers, while keeping all public role surfaces unchanged and leaving broader handle-seam closure out of scope. Migrated `scr_AddQuest*`, `scr_BeatQuestAllPlayers`, `scr_SetQuestLevel`, `scr_GiveExperienceToTarget`, `scr_DamageTarget`, `scr_HealSelf`, `scr_HealTarget`, `scr_GiveLifeToTarget`, `scr_TargetPayForArmor`, `scr_TargetDamageSelf`, and `scr_GiveSkillToTarget` onto those local helpers.
+
+Extended `ScriptSystemsFunctions.cpp` with focused regressions for all-player quest beating/progress publication, resolved-target XP grants, and the preserved legacy no-op/success behavior for unknown skill IDSZ mappings. Build, the full `ScriptSystemsFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

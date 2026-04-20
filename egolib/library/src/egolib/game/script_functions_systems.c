@@ -11,6 +11,16 @@ egoboo_config_t& config()
     return EngineContext::get().config();
 }
 
+const IDamageable& damageableRole(const Object& object)
+{
+    return object;
+}
+
+IAppearanceProfile& appearanceProfile(Object& object)
+{
+    return object;
+}
+
 IInventoryHolder& inventoryHolder(Object& object)
 {
     return object;
@@ -124,6 +134,18 @@ std::shared_ptr<Ego::Player> targetPlayer(const ITargetInfo& target)
     return playerList[playerIndex];
 }
 
+std::shared_ptr<Ego::Player> resolvedTargetPlayer(const ai_state_t& self)
+{
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    return target != nullptr ? targetPlayer(*target) : nullptr;
+}
+
+Ego::QuestLog* resolvedTargetQuestLog(const ai_state_t& self)
+{
+    const std::shared_ptr<Ego::Player> player = resolvedTargetPlayer(self);
+    return player != nullptr ? &player->getQuestLog() : nullptr;
+}
+
 std::shared_ptr<Object> resolvedObject(ObjectRef objectRef)
 {
     return tryObjectShared(objectRef);
@@ -168,6 +190,24 @@ ICharacterState* resolveAliveTargetState(const ai_state_t& self)
            resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
 }
 
+bool resolveSourceAndDamageableTarget(const ai_state_t& self,
+                                      std::shared_ptr<Object>& source,
+                                      IDamageable*& damageableTarget)
+{
+    source = resolvedSelfObject(self);
+    damageableTarget = tryDamageable(self.getTarget());
+    return source != nullptr && damageableTarget != nullptr;
+}
+
+bool resolveSelfHealingSource(const ai_state_t& self,
+                              std::shared_ptr<Object>& selfObject,
+                              IDamageable*& damageableSelf)
+{
+    selfObject = resolvedSelfObject(self);
+    damageableSelf = tryDamageable(self.getSelf());
+    return selfObject != nullptr && damageableSelf != nullptr;
+}
+
 bool resolveAliveTargetStateAndDamageable(const ai_state_t& self,
                                           ICharacterState*& resolvedTargetState,
                                           IDamageable*& resolvedDamageable)
@@ -175,6 +215,38 @@ bool resolveAliveTargetStateAndDamageable(const ai_state_t& self,
     resolvedTargetState = resolveAliveTargetState(self);
     resolvedDamageable = tryDamageable(self.getTarget());
     return resolvedTargetState != nullptr && resolvedDamageable != nullptr;
+}
+
+bool resolveSourceAndDamageableAliveTarget(const ai_state_t& self,
+                                           std::shared_ptr<Object>& source,
+                                           ICharacterState*& resolvedTargetState,
+                                           IDamageable*& resolvedDamageable)
+{
+    source = resolvedSelfObject(self);
+    return source != nullptr &&
+           resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable);
+}
+
+bool resolveHealingTarget(const ai_state_t& self,
+                          std::shared_ptr<Object>& healer,
+                          ICharacterState*& targetState,
+                          IDamageable*& damageableTarget)
+{
+    healer = resolvedSelfObject(self);
+    targetState = tryCharacterState(self.getTarget());
+    damageableTarget = tryDamageable(self.getTarget());
+    return healer != nullptr && targetState != nullptr && damageableTarget != nullptr;
+}
+
+bool resolveRetaliationTarget(const ai_state_t& self,
+                              const ITargetInfo*& targetInfo,
+                              std::shared_ptr<Object>& targetObject,
+                              IDamageable*& damageableSelf)
+{
+    targetInfo = tryTargetInfo(self.getTarget());
+    targetObject = resolvedTargetObject(self);
+    damageableSelf = tryDamageable(self.getSelf());
+    return targetInfo != nullptr && targetObject != nullptr && damageableSelf != nullptr;
 }
 
 int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz)
@@ -194,6 +266,99 @@ int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz)
     const int amount = itemState->getAmmoMax() - itemState->getAmmo();
     itemState->setAmmo(itemState->getAmmoMax());
     return amount;
+}
+
+bool addQuestIfMissing(Ego::QuestLog& questLog, const IDSZ2& idsz, int progress)
+{
+    if (questLog.hasActiveQuest(idsz) || questLog.isBeaten(idsz))
+    {
+        return false;
+    }
+
+    questLog.setQuestProgress(idsz, std::max(progress, 0));
+    return true;
+}
+
+bool adjustActiveQuestLevel(Ego::QuestLog& questLog, const IDSZ2& idsz, int delta)
+{
+    if (delta == 0 || !questLog.hasActiveQuest(idsz))
+    {
+        return false;
+    }
+
+    questLog.setQuestProgress(idsz, questLog[idsz] + delta);
+    return true;
+}
+
+bool beatActiveQuest(Ego::QuestLog& questLog, const IDSZ2& idsz)
+{
+    if (!questLog.hasActiveQuest(idsz))
+    {
+        return false;
+    }
+
+    questLog.setQuestProgress(idsz, Ego::QuestLog::QUEST_BEATEN);
+    return true;
+}
+
+bool raiseQuestLevelIfHigher(Ego::QuestLog& questLog, const IDSZ2& idsz, int progress)
+{
+    if (progress <= 0 || questLog.isBeaten(idsz) || progress <= questLog[idsz])
+    {
+        return false;
+    }
+
+    questLog.setQuestProgress(idsz, progress);
+    return true;
+}
+
+template <typename Fn>
+bool updatePlayerQuestLogs(Fn&& fn)
+{
+    bool updated = false;
+    for (const std::shared_ptr<Ego::Player>& player : activeModule().getPlayerList())
+    {
+        if (player != nullptr && fn(player->getQuestLog()))
+        {
+            updated = true;
+        }
+    }
+
+    return updated;
+}
+
+IAppearanceProfile* resolvedTargetAppearance(const ai_state_t& self)
+{
+    return tryAppearanceProfile(self.getTarget());
+}
+
+struct AppearanceWalletTarget
+{
+    IAppearanceProfile* appearance;
+    IWallet* wallet;
+};
+
+AppearanceWalletTarget resolvedTargetAppearanceWallet(const ai_state_t& self)
+{
+    return {tryAppearanceProfile(self.getTarget()), tryWallet(self.getTarget())};
+}
+
+void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId)
+{
+    switch(skillId)
+    {
+        case IDSZ2::caseLabel( 'A', 'W', 'E', 'P' ): targetState.addPerk(Ego::Perks::WEAPON_PROFICIENCY); break;
+        case IDSZ2::caseLabel( 'P', 'O', 'I', 'S' ): targetState.addPerk(Ego::Perks::POISONRY); break;
+        case IDSZ2::caseLabel( 'C', 'K', 'U', 'R' ): targetState.addPerk(Ego::Perks::SENSE_KURSES); break;
+        case IDSZ2::caseLabel( 'R', 'E', 'A', 'D' ): targetState.addPerk(Ego::Perks::LITERACY); break;
+        case IDSZ2::caseLabel( 'W', 'M', 'A', 'G' ): targetState.addPerk(Ego::Perks::ARCANE_MAGIC); break;
+        case IDSZ2::caseLabel( 'H', 'M', 'A', 'G' ): targetState.addPerk(Ego::Perks::DIVINE_MAGIC); break;
+        case IDSZ2::caseLabel( 'T', 'E', 'C', 'H' ): targetState.addPerk(Ego::Perks::USE_TECHNOLOGICAL_ITEMS); break;
+        case IDSZ2::caseLabel( 'D', 'I', 'S', 'A' ): targetState.addPerk(Ego::Perks::TRAP_LORE); break;
+        case IDSZ2::caseLabel( 'S', 'T', 'A', 'B' ): targetState.addPerk(Ego::Perks::BACKSTAB); break;
+        case IDSZ2::caseLabel( 'D', 'A', 'R', 'K' ): targetState.addPerk(Ego::Perks::NIGHT_VISION); break;
+        default: break;
+    }
 }
 }
 
@@ -409,9 +574,9 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> attacker = resolvedSelfObject(self);
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    if (attacker == nullptr || damageableTarget == nullptr)
+    std::shared_ptr<Object> attacker;
+    IDamageable* damageableTarget = nullptr;
+    if (!resolveSourceAndDamageableTarget(self, attacker, damageableTarget))
     {
         return false;
     }
@@ -419,8 +584,8 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableTarget->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(pchr->getDamageTargetType()),
-                             pchr->getTeamRef(), attacker, false, false, true);
+    damageableTarget->damage(ATK_FRONT, tmp_damage, damageableRole(*pchr).getDamageTargetType(),
+                             targetInfo(*pchr).getTeamRef(), attacker, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -469,7 +634,7 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
+    IAppearanceProfile* targetAppearance = resolvedTargetAppearance(self);
     if (targetAppearance == nullptr)
     {
         return false;
@@ -703,7 +868,7 @@ uint8_t scr_GiveExperienceToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> &target = objectHandler()[self.getTarget()];
+    const std::shared_ptr<Object> target = resolvedTargetObject(self);
     if(!target) {
         return false;
     }
@@ -937,9 +1102,9 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> selfObject = resolvedSelfObject(self);
-    IDamageable* damageableSelf = tryDamageable(self.getSelf());
-    if (selfObject == nullptr || damageableSelf == nullptr)
+    std::shared_ptr<Object> selfObject;
+    IDamageable* damageableSelf = nullptr;
+    if (!resolveSelfHealingSource(self, selfObject, damageableSelf))
     {
         return false;
     }
@@ -998,7 +1163,7 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     state.x = state.argument;
-    IAppearanceProfile& selfAppearance = static_cast<IAppearanceProfile&>(*pchr);
+    IAppearanceProfile& selfAppearance = appearanceProfile(*pchr);
     iTmp = selfAppearance.getSkin();
     selfAppearance.setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
     state.x = selfAppearance.getSkin();
@@ -1066,9 +1231,8 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
     ICharacterState* resolvedTargetState = nullptr;
     IDamageable* resolvedDamageable = nullptr;
-    const std::shared_ptr<Object> healer = resolvedSelfObject(self);
-    if ( resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable) &&
-         healer != nullptr )
+    std::shared_ptr<Object> healer;
+    if (resolveSourceAndDamageableAliveTarget(self, healer, resolvedTargetState, resolvedDamageable))
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
         resolvedDamageable->heal(healer, state.argument, true);
@@ -1159,10 +1323,10 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    const std::shared_ptr<Object> healer = resolvedSelfObject(self);
-    if(damageableTarget == nullptr || targetState == nullptr || healer == nullptr) {
+    IDamageable* damageableTarget = nullptr;
+    ICharacterState* targetState = nullptr;
+    std::shared_ptr<Object> healer;
+    if (!resolveHealingTarget(self, healer, targetState, damageableTarget)) {
         return false;
     }
 
@@ -1751,28 +1915,27 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
-    IWallet* targetWallet = tryWallet(self.getTarget());
-    if (targetAppearance == nullptr || targetWallet == nullptr)
+    const AppearanceWalletTarget target = resolvedTargetAppearanceWallet(self);
+    if (target.appearance == nullptr || target.wallet == nullptr)
     {
         return false;
     }
 
-    iTmp = targetAppearance->getSkinCost(static_cast<size_t>(state.argument));
+    iTmp = target.appearance->getSkinCost(static_cast<size_t>(state.argument));
     state.y = iTmp;                                       // Cost of new skin
 
-    iTmp -= targetAppearance->getSkinCost(targetAppearance->getSkin());     // Refund for old skin
+    iTmp -= target.appearance->getSkinCost(target.appearance->getSkin());     // Refund for old skin
 
-    if ( iTmp > targetWallet->getMoney() )
+    if ( iTmp > target.wallet->getMoney() )
     {
         // Not enough.
-        state.x = iTmp - targetWallet->getMoney();        // Amount needed
+        state.x = iTmp - target.wallet->getMoney();        // Amount needed
         returncode = false;
     }
     else
     {
         // Pay for it.  Cost may be negative after refund.
-        targetWallet->giveMoney(-iTmp);
+        target.wallet->giveMoney(-iTmp);
         state.x = 0;
         returncode = true;
     }
@@ -1968,25 +2131,9 @@ uint8_t scr_AddQuest( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
-    if (target == nullptr)
-    {
-        return false;
-    }
-
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    returncode = false;
-    std::shared_ptr<Ego::Player> player = targetPlayer(*target);
-    if (player != nullptr)
-    {
-        auto& questLog = player->getQuestLog();
-        if (!questLog.hasActiveQuest(idsz) && !questLog.isBeaten(idsz))
-        {
-            questLog.setQuestProgress(idsz, std::max(state.distance, 0));
-            returncode = true;
-        }
-    }
+    Ego::QuestLog* questLog = resolvedTargetQuestLog(self);
+    returncode = questLog != nullptr && addQuestIfMissing(*questLog, idsz, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2004,14 +2151,7 @@ uint8_t scr_BeatQuestAllPlayers( script_state_t& state, ai_state_t& self )
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
-    returncode = false;
-    for(const std::shared_ptr<Ego::Player>& player : activeModule().getPlayerList())
-    {
-        if(player->getQuestLog().hasActiveQuest(idsz)) {
-            player->getQuestLog().setQuestProgress(idsz, Ego::QuestLog::QUEST_BEATEN);
-            returncode = true;
-        }
-    }
+    returncode = updatePlayerQuestLogs([&](Ego::QuestLog& questLog) { return beatActiveQuest(questLog, idsz); });
 
     SCRIPT_FUNCTION_END();
 }
@@ -2027,24 +2167,9 @@ uint8_t scr_SetQuestLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
-    if (target == nullptr)
-    {
-        return false;
-    }
-
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    returncode = false;
-    if (0 != state.distance)
-    {
-        std::shared_ptr<Ego::Player> player = targetPlayer(*target);
-        if (player != nullptr && player->getQuestLog().hasActiveQuest(idsz))
-        {
-            player->getQuestLog().setQuestProgress(idsz, player->getQuestLog()[idsz] + state.distance);
-            returncode = true;
-        }
-    }
+    Ego::QuestLog* questLog = resolvedTargetQuestLog(self);
+    returncode = questLog != nullptr && adjustActiveQuestLevel(*questLog, idsz, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2060,20 +2185,11 @@ uint8_t scr_AddQuestAllPlayers( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    if(state.distance > 0) {
-        const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-        for(const std::shared_ptr<Ego::Player>& player : activeModule().getPlayerList()) {
-            // Only try to add it or replace it if this one is higher
-            if(player->getQuestLog().isBeaten(idsz) || state.distance <= player->getQuestLog()[idsz]) {
-                continue;
-            }
-
-            player->getQuestLog().setQuestProgress(idsz, state.distance);
-            returncode = true;
-        }        
-    }
+    const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
+    returncode = updatePlayerQuestLogs([&](Ego::QuestLog& questLog)
+    {
+        return raiseQuestLevelIfHigher(questLog, idsz, state.distance);
+    });
 
     SCRIPT_FUNCTION_END();
 }
@@ -2253,10 +2369,10 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    const std::shared_ptr<Object> target = resolvedTargetObject(self);
-    IDamageable* damageableSelf = tryDamageable(self.getSelf());
-    if (targetInfo == nullptr || target == nullptr || damageableSelf == nullptr)
+    const ITargetInfo* targetInfo = nullptr;
+    std::shared_ptr<Object> target;
+    IDamageable* damageableSelf = nullptr;
+    if (!resolveRetaliationTarget(self, targetInfo, target, damageableSelf))
     {
         return false;
     }
@@ -2285,20 +2401,7 @@ uint8_t scr_GiveSkillToTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    //IDSZ to Perk
-    switch(state.argument)
-    {
-        case IDSZ2::caseLabel( 'A', 'W', 'E', 'P' ): targetState->addPerk(Ego::Perks::WEAPON_PROFICIENCY); break;
-        case IDSZ2::caseLabel( 'P', 'O', 'I', 'S' ): targetState->addPerk(Ego::Perks::POISONRY); break;
-        case IDSZ2::caseLabel( 'C', 'K', 'U', 'R' ): targetState->addPerk(Ego::Perks::SENSE_KURSES); break;
-        case IDSZ2::caseLabel( 'R', 'E', 'A', 'D' ): targetState->addPerk(Ego::Perks::LITERACY); break;
-        case IDSZ2::caseLabel( 'W', 'M', 'A', 'G' ): targetState->addPerk(Ego::Perks::ARCANE_MAGIC); break;
-        case IDSZ2::caseLabel( 'H', 'M', 'A', 'G' ): targetState->addPerk(Ego::Perks::DIVINE_MAGIC); break;
-        case IDSZ2::caseLabel( 'T', 'E', 'C', 'H' ): targetState->addPerk(Ego::Perks::USE_TECHNOLOGICAL_ITEMS); break;
-        case IDSZ2::caseLabel( 'D', 'I', 'S', 'A' ): targetState->addPerk(Ego::Perks::TRAP_LORE); break;
-        case IDSZ2::caseLabel( 'S', 'T', 'A', 'B' ): targetState->addPerk(Ego::Perks::BACKSTAB); break;
-        case IDSZ2::caseLabel( 'D', 'A', 'R', 'K' ): targetState->addPerk(Ego::Perks::NIGHT_VISION); break;
-    }
+    maybeAddSkillPerk(*targetState, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
