@@ -636,6 +636,9 @@ TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOp
     ASSERT_NE(inventoryItem, nullptr);
 
     IInventoryHolder& inventoryHolder = *owner;
+    owner->setHoldingWeight(9);
+
+    EXPECT_EQ(inventoryHolder.getHoldingWeight(), 9);
 
     EXPECT_TRUE(Inventory::add_item(inventoryHolder, inventoryItem, inventoryHolder.getFirstFreeInventorySlot(), true));
     EXPECT_EQ(inventoryHolder.getInventoryItem(0), inventoryItem);
@@ -777,6 +780,7 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     object->inst._currentAnimation = ACTION_UA;
     object->inst._nextAnimation = ACTION_UA;
     object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
     object->setNameKnown(true);
     object->setKursed(true);
     object->setEquipped(true);
@@ -790,6 +794,9 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     EXPECT_TRUE(targetInfo.isKursed());
     EXPECT_TRUE(targetInfo.isEquipped());
     EXPECT_EQ(targetInfo.getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(targetInfo.getBaseTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_EQ(targetInfo.getTypeIDSZ(), object->getProfile()->getIDSZ(IDSZ_TYPE));
+    EXPECT_EQ(targetInfo.getHateIDSZ(), object->getProfile()->getIDSZ(IDSZ_HATE));
     EXPECT_EQ(targetInfo.getAmmo(), 9);
     EXPECT_EQ(targetInfo.getSkin(), validSkin);
     EXPECT_TRUE(targetInfo.canBeGrogged());
@@ -827,6 +834,11 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     ICharacterState& characterState = *object;
     object->setAmmoMax(9);
     object->setMana(0.0f);
+    object->setLife(6.0f);
+    object->setExperience(42);
+    object->setExperienceLevelIndex(3);
+    object->setReloadTimer(11);
+    object->setBaseAttribute(Ego::Attribute::SPELL_POWER, 2.5f);
 
     const float mightBefore = object->getBaseAttribute(Ego::Attribute::MIGHT);
     const float manaBefore = object->getMana();
@@ -840,6 +852,12 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     EXPECT_TRUE(characterState.costMana(-FLOAT_TO_FP8(1.0f), ObjectRef::Invalid));
     characterState.addPerk(Ego::Perks::NIGHT_VISION);
 
+    EXPECT_FLOAT_EQ(characterState.getLife(), object->getLife());
+    EXPECT_FLOAT_EQ(characterState.getMana(), object->getMana());
+    EXPECT_FLOAT_EQ(characterState.getAttribute(Ego::Attribute::SPELL_POWER), object->getAttribute(Ego::Attribute::SPELL_POWER));
+    EXPECT_EQ(characterState.getExperience(), 42u);
+    EXPECT_EQ(characterState.getExperienceLevelIndex(), 3);
+    EXPECT_EQ(characterState.getReloadTimer(), 11);
     EXPECT_EQ(characterState.getAmmoMax(), 9);
     EXPECT_EQ(characterState.getAmmo(), 4);
     EXPECT_EQ(characterState.getGrogTimer(), 6);
@@ -891,7 +909,8 @@ TEST_F(ObjectAccessorFixture, DamageableRoleSurfaceSupportsBoundedCombatQueriesA
 
 TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrientationState)
 {
-    auto object = makeFollower(30503);
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 30503);
     ASSERT_NE(object, nullptr);
 
     bumper_t initialBump;
@@ -920,6 +939,9 @@ TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrienta
     object->setCurrentBump(currentBump);
     object->setLooseBump(looseBump);
     object->setCollisionVolumes(minCollisionVolume, maxCollisionVolume, slotCollisionVolumes);
+    object->setPosition(17.0f, 19.0f, 23.0f);
+    object->setSpawnPosition(Ego::Vector3f(29.0f, 31.0f, 37.0f));
+    object->setVelocity(Ego::Vector3f(41.0f, 43.0f, 47.0f));
     object->setFacingZ(Facing(1111));
     object->setMapTwistFacingX(Facing(2222));
     object->setMapTwistFacingY(Facing(3333));
@@ -931,6 +953,14 @@ TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrienta
     EXPECT_FLOAT_EQ(physical.getSavedBump().size, 11.0f);
     EXPECT_FLOAT_EQ(physical.getCurrentBump().size, 19.0f);
     EXPECT_FLOAT_EQ(physical.getLooseBump().size, 31.0f);
+    EXPECT_FLOAT_EQ(physical.getPosZ(), 23.0f);
+    EXPECT_FLOAT_EQ(physical.getVelocity().x(), 41.0f);
+    EXPECT_FLOAT_EQ(physical.getVelocity().y(), 43.0f);
+    EXPECT_FLOAT_EQ(physical.getVelocity().z(), 47.0f);
+    EXPECT_FLOAT_EQ(physical.getSpawnPosition().x(), 29.0f);
+    EXPECT_FLOAT_EQ(physical.getSpawnPosition().y(), 31.0f);
+    EXPECT_FLOAT_EQ(physical.getSpawnPosition().z(), 37.0f);
+    EXPECT_FLOAT_EQ(physical.getFloorElevation(), object->getFloorElevation());
     EXPECT_FLOAT_EQ(physical.getMinCollisionVolume()._mins[OCT_X], -1.0f);
     EXPECT_FLOAT_EQ(physical.getMaxCollisionVolume()._mins[OCT_X], 6.0f);
     EXPECT_FLOAT_EQ(physical.getSlotCollisionVolume(SLOT_LEFT)._mins[OCT_X], 11.0f);

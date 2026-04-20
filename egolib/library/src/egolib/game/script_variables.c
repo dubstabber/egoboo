@@ -18,6 +18,63 @@ GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
 }
+
+const IPhysical& physical(const Object& object)
+{
+    return object;
+}
+
+const IPhysical* tryPhysicalRole(const Object* object)
+{
+    return object ? static_cast<const IPhysical*>(object) : nullptr;
+}
+
+const ICharacterState& characterState(const Object& object)
+{
+    return object;
+}
+
+const ICharacterState* tryCharacterStateRole(const Object* object)
+{
+    return object ? static_cast<const ICharacterState*>(object) : nullptr;
+}
+
+const ITargetInfo& targetInfo(const Object& object)
+{
+    return object;
+}
+
+const ITargetInfo* tryTargetInfoRole(const Object* object)
+{
+    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
+const IWallet& wallet(const Object& object)
+{
+    return object;
+}
+
+const IWallet* tryWalletRole(const Object* object)
+{
+    return object ? static_cast<const IWallet*>(object) : nullptr;
+}
+
+const IInventoryHolder& inventoryHolder(const Object& object)
+{
+    return object;
+}
+
+int32_t distanceBetween(const IPhysical& from, const IPhysical& to)
+{
+    return std::abs(to.getPosX() - from.getPosX()) + std::abs(to.getPosY() - from.getPosY());
+}
+
+int32_t turnToward(const IPhysical& from, const IPhysical& to)
+{
+    const int32_t temporary = FACING_T(vec_to_facing(to.getPosX() - from.getPosX(),
+                                                     to.getPosY() - from.getPosY()));
+    return Ego::Math::clipBits<16>(temporary);
+}
 }
 
 int32_t load_VARTMPX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -52,17 +109,17 @@ int32_t load_VARRAND(script_state_t& scriptState, ai_state_t& aiState, Object *p
 
 int32_t load_VARSELFX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getPosX();
+    return physical(*pobject).getPosX();
 }
 
 int32_t load_VARSELFY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getPosY();
+    return physical(*pobject).getPosY();
 }
 
 int32_t load_VARSELFTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return uint16_t(pobject->getFacingZ());
+    return uint16_t(physical(*pobject).getFacingZ());
 }
 
 int32_t load_VARSELFCOUNTER(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -77,89 +134,70 @@ int32_t load_VARSELFORDER(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VARSELFMORALE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return activeModule().getTeamList()[pobject->getBaseTeamRef()].getMorale();
+    return activeModule().getTeamList()[targetInfo(*pobject).getBaseTeamRef()].getMorale();
 }
 
 int32_t load_VARSELFLIFE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return FLOAT_TO_FP8(pobject->getLife());
+    return FLOAT_TO_FP8(characterState(*pobject).getLife());
 }
 
 int32_t load_VARTARGETX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getPosX();
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : targetPhysical->getPosX();
 }
 
 int32_t load_VARTARGETY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getPosY();
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : targetPhysical->getPosY();
 }
 
 int32_t load_VARTARGETDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == ptarget)
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    if (nullptr == targetPhysical)
     {
         return 0x7FFFFFFF;
     }
-    else
-    {
-        return std::abs(ptarget->getPosX() - pobject->getPosX())
-            + std::abs(ptarget->getPosY() - pobject->getPosY());
-    }
+
+    return distanceBetween(physical(*pobject), *targetPhysical);
 }
 
 int32_t load_VARTARGETTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : uint16_t(ptarget->getFacingZ());
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : uint16_t(targetPhysical->getFacingZ());
 }
 
 int32_t load_VARLEADERX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (pleader)
-    {
-        return pleader->getPosX();
-    }
-    else
-    {
-        return pobject->getPosX();
-    }
+    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    return leaderPhysical ? leaderPhysical->getPosX() : physical(*pobject).getPosX();
 }
 
 int32_t load_VARLEADERY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (pleader)
-    {
-        return pleader->getPosY();
-    }
-    else
-    {
-        return pobject->getPosY();
-    }
+    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    return leaderPhysical ? leaderPhysical->getPosY() : physical(*pobject).getPosY();
 }
 
 int32_t load_VARLEADERDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (!pleader)
+    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    if (!leaderPhysical)
     {
         return 0x7FFFFFFF;
     }
-    else
-    {
-        return std::abs(pleader->getPosX() - pobject->getPosX())
-            + std::abs(pleader->getPosY() - pobject->getPosY());
-    }
+
+    return distanceBetween(physical(*pobject), *leaderPhysical);
 }
 
 int32_t load_VARLEADERTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (pleader)
-    {
-        return uint16_t(pleader->getFacingZ());
-    }
-    else
-    {
-        return uint16_t(pobject->getFacingZ());
-    }
+    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    return leaderPhysical ? uint16_t(leaderPhysical->getFacingZ()) : uint16_t(physical(*pobject).getFacingZ());
 }
 
 int32_t load_VARGOTOX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -168,7 +206,7 @@ int32_t load_VARGOTOX(script_state_t& scriptState, ai_state_t& aiState, Object *
 
     if (!aiState.wp_valid)
     {
-        return pobject->getPosX();
+        return physical(*pobject).getPosX();
     }
     else
     {
@@ -182,7 +220,7 @@ int32_t load_VARGOTOY(script_state_t& scriptState, ai_state_t& aiState, Object *
 
     if (!aiState.wp_valid)
     {
-        return pobject->getPosY();
+        return physical(*pobject).getPosY();
     }
     else
     {
@@ -198,24 +236,20 @@ int32_t load_VARGOTODISTANCE(script_state_t& scriptState, ai_state_t& aiState, O
     {
         return 0x7FFFFFFF;
     }
-    else
-    {
-        return std::abs(aiState.wp[kX] - pobject->getPosX())
-            + std::abs(aiState.wp[kY] - pobject->getPosY());
-    }
+
+    return std::abs(aiState.wp[kX] - physical(*pobject).getPosX())
+        + std::abs(aiState.wp[kY] - physical(*pobject).getPosY());
 }
 
 int32_t load_VARTARGETTURNTO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == ptarget)
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    if (nullptr == targetPhysical)
     {
         return 0;
     }
-    else
-    {
-        int32_t temporary = FACING_T(vec_to_facing(ptarget->getPosX() - pobject->getPosX(), ptarget->getPosY() - pobject->getPosY()));
-        return Ego::Math::clipBits<16>(temporary);
-    }
+
+    return turnToward(physical(*pobject), *targetPhysical);
 }
 
 int32_t load_VARPASSAGE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -225,94 +259,102 @@ int32_t load_VARPASSAGE(script_state_t& scriptState, ai_state_t& aiState, Object
 
 int32_t load_VARWEIGHT(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getHoldingWeight();
+    return inventoryHolder(*pobject).getHoldingWeight();
 }
 
 int32_t load_VARSELFALTITUDE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getPosZ() - pobject->getFloorElevation();
+    const IPhysical& selfPhysical = physical(*pobject);
+    return selfPhysical.getPosZ() - selfPhysical.getFloorElevation();
 }
 
 int32_t load_VARSELFID(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
+    return targetInfo(*pobject).getTypeIDSZ().toUint32();
 }
 
 int32_t load_VARSELFHATEID(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getProfile()->getIDSZ(IDSZ_HATE).toUint32();
+    return targetInfo(*pobject).getHateIDSZ().toUint32();
 }
 
 int32_t load_VARSELFMANA(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    int32_t temporary = FLOAT_TO_FP8(pobject->getMana());
-    if (pobject->getAttribute(Ego::Attribute::CHANNEL_LIFE))
+    const ICharacterState& selfState = characterState(*pobject);
+    int32_t temporary = FLOAT_TO_FP8(selfState.getMana());
+    if (selfState.getAttribute(Ego::Attribute::CHANNEL_LIFE))
     {
-        temporary += FLOAT_TO_FP8(pobject->getLife());
+        temporary += FLOAT_TO_FP8(selfState.getLife());
     }
     return temporary;
 }
 
 int32_t load_VARTARGETSTR(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getAttribute(Ego::Attribute::MIGHT));
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getAttribute(Ego::Attribute::MIGHT));
 }
 
 int32_t load_VARTARGETINT(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getAttribute(Ego::Attribute::INTELLECT));
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getAttribute(Ego::Attribute::INTELLECT));
 }
 
 int32_t load_VARTARGETDEX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getAttribute(Ego::Attribute::AGILITY));
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getAttribute(Ego::Attribute::AGILITY));
 }
 
 int32_t load_VARTARGETLIFE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getLife());
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getLife());
 }
 
 int32_t load_VARTARGETMANA(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == ptarget)
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    if (nullptr == targetState)
     {
         return 0;
     }
-    else
+
+    int32_t temporary = FLOAT_TO_FP8(targetState->getMana());
+    if (targetState->getAttribute(Ego::Attribute::CHANNEL_LIFE))
     {
-        int32_t temporary = FLOAT_TO_FP8(ptarget->getMana());
-        if (ptarget->getAttribute(Ego::Attribute::CHANNEL_LIFE))
-        {
-            temporary += FLOAT_TO_FP8(ptarget->getLife());
-        }
-        return temporary;
+        temporary += FLOAT_TO_FP8(targetState->getLife());
     }
+    return temporary;
 }
 
 int32_t load_VARTARGETSPEEDX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : std::abs(ptarget->getVelocity().x());
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : std::abs(targetPhysical->getVelocity().x());
 }
 
 int32_t load_VARTARGETSPEEDY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : std::abs(ptarget->getVelocity().y());
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : std::abs(targetPhysical->getVelocity().y());
 }
 
 int32_t load_VARTARGETSPEEDZ(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : std::abs(ptarget->getVelocity().z());
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : std::abs(targetPhysical->getVelocity().z());
 }
 
 int32_t load_VARSELFSPAWNX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getSpawnPosition()[kX];
+    return physical(*pobject).getSpawnPosition()[kX];
 }
 
 int32_t load_VARSELFSPAWNY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getSpawnPosition()[kY];
+    return physical(*pobject).getSpawnPosition()[kY];
 }
 
 int32_t load_VARSELFSTATE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -327,27 +369,28 @@ int32_t load_VARSELFCONTENT(script_state_t& scriptState, ai_state_t& aiState, Ob
 
 int32_t load_VARSELFSTR(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return FLOAT_TO_FP8(pobject->getAttribute(Ego::Attribute::MIGHT));
+    return FLOAT_TO_FP8(characterState(*pobject).getAttribute(Ego::Attribute::MIGHT));
 }
 
 int32_t load_VARSELFINT(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return FLOAT_TO_FP8(pobject->getAttribute(Ego::Attribute::INTELLECT));
+    return FLOAT_TO_FP8(characterState(*pobject).getAttribute(Ego::Attribute::INTELLECT));
 }
 
 int32_t load_VARSELFDEX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return FLOAT_TO_FP8(pobject->getAttribute(Ego::Attribute::AGILITY));
+    return FLOAT_TO_FP8(characterState(*pobject).getAttribute(Ego::Attribute::AGILITY));
 }
 
 int32_t load_VARSELFMANAFLOW(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return FLOAT_TO_FP8(pobject->getAttribute(Ego::Attribute::SPELL_POWER));
+    return FLOAT_TO_FP8(characterState(*pobject).getAttribute(Ego::Attribute::SPELL_POWER));
 }
 
 int32_t load_VARTARGETMANAFLOW(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getAttribute(Ego::Attribute::SPELL_POWER));
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getAttribute(Ego::Attribute::SPELL_POWER));
 }
 
 int32_t load_VARSELFATTACHED(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -357,12 +400,14 @@ int32_t load_VARSELFATTACHED(script_state_t& scriptState, ai_state_t& aiState, O
 
 int32_t load_VARTARGETLEVEL(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getExperienceLevelIndex();
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : targetState->getExperienceLevelIndex();
 }
 
 int32_t load_VARTARGETZ(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getPosZ();
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : targetPhysical->getPosZ();
 }
 
 int32_t load_VARSELFINDEX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -372,123 +417,129 @@ int32_t load_VARSELFINDEX(script_state_t& scriptState, ai_state_t& aiState, Obje
 
 int32_t load_VAROWNERX(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == powner) ? 0 : powner->getPosX();
+    const IPhysical* ownerPhysical = tryPhysicalRole(powner);
+    return (nullptr == ownerPhysical) ? 0 : ownerPhysical->getPosX();
 }
 
 int32_t load_VAROWNERY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == powner) ? 0 : powner->getPosY();
+    const IPhysical* ownerPhysical = tryPhysicalRole(powner);
+    return (nullptr == ownerPhysical) ? 0 : ownerPhysical->getPosY();
 }
 
 int32_t load_VAROWNERTURN(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == powner) ? 0 : uint16_t(powner->getFacingZ());
+    const IPhysical* ownerPhysical = tryPhysicalRole(powner);
+    return (nullptr == ownerPhysical) ? 0 : uint16_t(ownerPhysical->getFacingZ());
 }
 
 int32_t load_VAROWNERDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == powner)
+    const IPhysical* ownerPhysical = tryPhysicalRole(powner);
+    if (nullptr == ownerPhysical)
     {
         return 0x7FFFFFFF;
     }
-    else
-    {
-        return std::abs(powner->getPosX() - pobject->getPosX())
-            + std::abs(powner->getPosY() - pobject->getPosY());
-    }
+
+    return distanceBetween(physical(*pobject), *ownerPhysical);
 }
 
 int32_t load_VAROWNERTURNTO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == powner)
+    const IPhysical* ownerPhysical = tryPhysicalRole(powner);
+    if (nullptr == ownerPhysical)
     {
         return 0;
     }
-    else
-    {
-        int32_t temporary = FACING_T(vec_to_facing(powner->getPosX() - pobject->getPosX(), powner->getPosY() - pobject->getPosY()));
-        return Ego::Math::clipBits<16>(temporary);
-    }
+
+    return turnToward(physical(*pobject), *ownerPhysical);
 }
 
 int32_t load_VARXYTURNTO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    int32_t temporary = FACING_T(vec_to_facing(scriptState.x - pobject->getPosX(), scriptState.y - pobject->getPosY()));
+    int32_t temporary = FACING_T(vec_to_facing(scriptState.x - physical(*pobject).getPosX(),
+                                               scriptState.y - physical(*pobject).getPosY()));
     return Ego::Math::clipBits<16>(temporary);
 }
 
 int32_t load_VARSELFMONEY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getMoney();
+    return wallet(*pobject).getMoney();
 }
 
 int32_t load_VARSELFACCEL(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (pobject->getAttribute(Ego::Attribute::ACCELERATION) * 100.0f);
+    return characterState(*pobject).getAttribute(Ego::Attribute::ACCELERATION) * 100.0f;
 }
 
 int32_t load_VARTARGETEXP(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getExperience();
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : targetState->getExperience();
 }
 
 int32_t load_VARSELFAMMO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getAmmo();
+    return characterState(*pobject).getAmmo();
 }
 
 int32_t load_VARTARGETAMMO(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getAmmo();
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : targetState->getAmmo();
 }
 
 int32_t load_VARTARGETMONEY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getMoney();
+    const IWallet* targetWallet = tryWalletRole(ptarget);
+    return (nullptr == targetWallet) ? 0 : targetWallet->getMoney();
 }
 
 int32_t load_VARTARGETTURNAWAY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    if (nullptr == ptarget)
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    if (nullptr == targetPhysical)
     {
         return 0;
     }
-    else
-    {
-        int32_t temporary = FACING_T(vec_to_facing(ptarget->getPosX() - pobject->getPosX(), ptarget->getPosY() - pobject->getPosY()));
-        return Ego::Math::clipBits<16>(temporary);
-    }
+
+    return turnToward(physical(*pobject), *targetPhysical);
 }
 
 int32_t load_VARSELFLEVEL(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getExperienceLevelIndex();
+    return characterState(*pobject).getExperienceLevelIndex();
 }
 
 int32_t load_VARTARGETRELOADTIME(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getReloadTimer();
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : targetState->getReloadTimer();
 }
 
 int32_t load_VARSPAWNDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return std::abs(pobject->getSpawnPosition()[kX] - pobject->getPosX())
-        + std::abs(pobject->getSpawnPosition()[kY] - pobject->getPosY());
+    const IPhysical& selfPhysical = physical(*pobject);
+    return std::abs(selfPhysical.getSpawnPosition()[kX] - selfPhysical.getPosX())
+        + std::abs(selfPhysical.getSpawnPosition()[kY] - selfPhysical.getPosY());
 }
 
 int32_t load_VARTARGETMAXLIFE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : FLOAT_TO_FP8(ptarget->getAttribute(Ego::Attribute::MAX_LIFE));
+    const ICharacterState* targetState = tryCharacterStateRole(ptarget);
+    return (nullptr == targetState) ? 0 : FLOAT_TO_FP8(targetState->getAttribute(Ego::Attribute::MAX_LIFE));
 }
 
 int32_t load_VARTARGETTEAM(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getTeamRef();
+    const ITargetInfo* target = tryTargetInfoRole(ptarget);
+    return (nullptr == target) ? 0 : target->getTeamRef();
 }
 
 int32_t load_VARTARGETARMOR(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getSkin();
+    const ITargetInfo* target = tryTargetInfoRole(ptarget);
+    return (nullptr == target) ? 0 : target->getSkin();
 }
 
 int32_t load_VARDIFFICULTY(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
@@ -537,10 +588,11 @@ int32_t load_VARXYDISTANCE(script_state_t& scriptState, ai_state_t& aiState, Obj
 
 int32_t load_VARSELFZ(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return pobject->getPosZ();
+    return physical(*pobject).getPosZ();
 }
 
 int32_t load_VARTARGETALTITUDE(script_state_t& scriptState, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
 {
-    return (nullptr == ptarget) ? 0 : ptarget->getPosZ() - ptarget->getFloorElevation();
+    const IPhysical* targetPhysical = tryPhysicalRole(ptarget);
+    return (nullptr == targetPhysical) ? 0 : targetPhysical->getPosZ() - targetPhysical->getFloorElevation();
 }

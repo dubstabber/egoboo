@@ -9,6 +9,10 @@ public:
 
     virtual float getPosX() const = 0;
     virtual float getPosY() const = 0;
+    virtual float getPosZ() const = 0;
+    virtual float getFloorElevation() const = 0;
+    virtual const Ego::Vector3f& getVelocity() const = 0;
+    virtual const Ego::Vector3f& getSpawnPosition() const = 0;
 
     virtual const bumper_t& getInitialBump() const = 0;
     virtual const bumper_t& getCurrentBump() const = 0;

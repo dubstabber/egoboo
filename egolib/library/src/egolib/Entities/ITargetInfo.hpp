@@ -42,6 +42,9 @@ public:
     virtual bool isOnSameTeam(TEAM_REF teamRef) const = 0;
     virtual bool isHatedByTeam(TEAM_REF teamRef) const = 0;
     virtual TEAM_REF getTeamRef() const = 0;
+    virtual TEAM_REF getBaseTeamRef() const = 0;
+    virtual IDSZ2 getTypeIDSZ() const = 0;
+    virtual IDSZ2 getHateIDSZ() const = 0;
 
     virtual uint16_t getAmmo() const = 0;
     virtual SKIN_T getSkin() const = 0;

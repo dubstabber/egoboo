@@ -17,6 +17,7 @@ public:
     virtual bool isItem() const = 0;
     virtual bool isInsideInventory() const = 0;
     virtual bool isPlayer() const = 0;
+    virtual int getHoldingWeight() const = 0;
 
     virtual size_t getInventoryMaxItems() const = 0;
     virtual size_t getFirstFreeInventorySlot() const = 0;

@@ -145,11 +145,17 @@ public:
 
     bool isDontCullBackfaces() const { return getProfile()->isDontCullBackfaces(); }
 
+    float getPosZ() const override { return Ego::Physics::Collidable::getPosZ(); }
+
     /**
     * @return
     *   The elevation of the floor
     **/
-    float getFloorElevation() const { return _objectPhysics.getGroundElevation(); }
+    float getFloorElevation() const override { return _objectPhysics.getGroundElevation(); }
+
+    const Ego::Vector3f& getVelocity() const override { return PhysicsData::getVelocity(); }
+
+    const Ego::Vector3f& getSpawnPosition() const override { return Ego::Physics::Collidable::getSpawnPosition(); }
 
     void updatePhysics();
 
@@ -194,9 +200,13 @@ public:
 
     void setTeamRef(TEAM_REF teamRef) { team = teamRef; }
 
-    TEAM_REF getBaseTeamRef() const { return team_base; }
+    TEAM_REF getBaseTeamRef() const override { return team_base; }
 
     void setBaseTeamRef(TEAM_REF teamRef) { team_base = teamRef; }
+
+    IDSZ2 getTypeIDSZ() const override { return getProfile()->getIDSZ(IDSZ_TYPE); }
+
+    IDSZ2 getHateIDSZ() const override { return getProfile()->getIDSZ(IDSZ_HATE); }
 
     /**
     * @brief
@@ -283,7 +293,7 @@ public:
 
     void setCanUsePlatforms(bool enabled) { canuseplatforms = enabled; }
 
-    int getHoldingWeight() const { return holdingweight; }
+    int getHoldingWeight() const override { return holdingweight; }
 
     void setHoldingWeight(int weight) { holdingweight = weight; }
 
@@ -774,7 +784,7 @@ public:
     * @return
     *   Get current mana
     **/
-    float getMana() const;
+    float getMana() const override;
 
     /**
     * @brief
@@ -786,7 +796,7 @@ public:
     * @return
     *   current life remaining in float format
     **/
-    float getLife() const;
+    float getLife() const override;
 
     /**
     * @brief
@@ -817,7 +827,7 @@ public:
     **/
     uint8_t getExperienceLevel() const { return experiencelevel + 1; }
 
-    uint8_t getExperienceLevelIndex() const { return experiencelevel; }
+    uint8_t getExperienceLevelIndex() const override { return experiencelevel; }
 
     void setExperienceLevelIndex(uint8_t levelIndex) { experiencelevel = levelIndex; }
 
@@ -829,7 +839,7 @@ public:
 
     void setGender(Gender objectGender) { gender = objectGender; }
 
-    uint32_t getExperience() const { return experience; }
+    uint32_t getExperience() const override { return experience; }
 
     void setExperience(uint32_t value) { experience = value; }
 
@@ -860,7 +870,7 @@ public:
     *   Get total value for the specified attribute. Includes bonuses from Enchants, Perks
     *   and other active boni or penalties.
     **/
-    float getAttribute(const Ego::Attribute::AttributeType type) const;
+    float getAttribute(const Ego::Attribute::AttributeType type) const override;
 
     /**
     * @brief
@@ -922,13 +932,13 @@ public:
     * @return
     *   true if this Object can detect and see invisible objects
     **/
-    bool canSeeInvisible() const { return getAttribute(Ego::Attribute::SEE_INVISIBLE) > 0.0f; }
+    bool canSeeInvisible() const override { return getAttribute(Ego::Attribute::SEE_INVISIBLE) > 0.0f; }
 
-    bool canSeeKurses() const;
+    bool canSeeKurses() const override;
 
-    bool canOpenStuff() const;
+    bool canOpenStuff() const override;
 
-    bool isWeapon() const;
+    bool isWeapon() const override;
 
     /**
     * @return
@@ -1125,21 +1135,21 @@ public:
     * @return
     *   true if the Object has the matching skill IDSZ of a perk that matches the skill IDSZ
     **/
-    bool hasSkillIDSZ(const IDSZ2& whichskill) const;
+    bool hasSkillIDSZ(const IDSZ2& whichskill) const override;
 
-    bool hasTypeIDSZ(const IDSZ2& idsz) const;
+    bool hasTypeIDSZ(const IDSZ2& idsz) const override;
 
-    bool hasAnyIDSZ(const IDSZ2& idsz) const;
+    bool hasAnyIDSZ(const IDSZ2& idsz) const override;
 
-    bool matchesSpecialIDSZ(const IDSZ2& idsz) const;
+    bool matchesSpecialIDSZ(const IDSZ2& idsz) const override;
 
-    bool matchesVulnerabilityIDSZ(const IDSZ2& idsz) const;
+    bool matchesVulnerabilityIDSZ(const IDSZ2& idsz) const override;
 
-    bool wieldsItemIDSZ(const IDSZ2& idsz) const;
+    bool wieldsItemIDSZ(const IDSZ2& idsz) const override;
 
-    bool isOnSameTeam(TEAM_REF teamRef) const;
+    bool isOnSameTeam(TEAM_REF teamRef) const override;
 
-    bool isHatedByTeam(TEAM_REF teamRef) const;
+    bool isHatedByTeam(TEAM_REF teamRef) const override;
 
     /**
     * @brief 
@@ -1202,7 +1212,7 @@ public:
 
     void setCarefulTimer(uint8_t timer) { careful_timer = timer; }
 
-    uint16_t getReloadTimer() const { return reload_timer; }
+    uint16_t getReloadTimer() const override { return reload_timer; }
 
     void setReloadTimer(uint16_t timer) { reload_timer = timer; }
 

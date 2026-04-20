@@ -7,6 +7,13 @@ class ICharacterState
 public:
     virtual ~ICharacterState() = default;
 
+    virtual float getLife() const = 0;
+    virtual float getMana() const = 0;
+    virtual float getAttribute(Ego::Attribute::AttributeType type) const = 0;
+    virtual uint32_t getExperience() const = 0;
+    virtual uint8_t getExperienceLevelIndex() const = 0;
+    virtual uint16_t getReloadTimer() const = 0;
+
     virtual uint16_t getAmmoMax() const = 0;
     virtual uint16_t getAmmo() const = 0;
     virtual void setAmmo(uint16_t ammoCount) = 0;
