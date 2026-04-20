@@ -457,6 +457,39 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDFirstReturnsFalseWhenNo
     EXPECT_EQ(inventoryItem->getAmmo(), inventoryItem->getAmmoMax() - 3);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllReturnsFalseWhenNoHeldOrInventoryItemMatches)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5649);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5650);
+    auto leftItem = makeAmmoItem(module, 5654);
+    auto rightItem = makeAmmoItem(module, 5657);
+    auto inventoryItem = makeAmmoItem(module, 5660);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+    ASSERT_NE(inventoryItem, nullptr);
+    ASSERT_TRUE(leftItem->attachToObject(target, GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
+
+    leftItem->setAmmo(leftItem->getAmmoMax() - 1);
+    rightItem->setAmmo(rightItem->getAmmoMax() - 2);
+    inventoryItem->setAmmo(inventoryItem->getAmmoMax() - 3);
+
+    script_state_t state;
+    state.argument = IDSZ2('Z', 'Z', 'Z', 'Z').toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_FALSE(scr_RestockTargetAmmoIDAll(state, self));
+    EXPECT_EQ(state.argument, 0);
+    EXPECT_EQ(leftItem->getAmmo(), leftItem->getAmmoMax() - 1);
+    EXPECT_EQ(rightItem->getAmmo(), rightItem->getAmmoMax() - 2);
+    EXPECT_EQ(inventoryItem->getAmmo(), inventoryItem->getAmmoMax() - 3);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, QuestHelpersResolvePlayersThroughTargetInfoRole)
 {
     auto& module = beginActiveTestModule();

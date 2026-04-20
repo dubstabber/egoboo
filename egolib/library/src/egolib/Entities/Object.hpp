@@ -36,6 +36,7 @@
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IItemInfo.hpp"
 #include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IPhysical.hpp"
 #include "egolib/Entities/IRenderable.hpp"
@@ -94,6 +95,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public ICharacterState,
                public IEnchantable,
                public IInventoryHolder,
+               public IItemInfo,
                public IMovementControl,
                public IPhysical,
                public IRenderable,
@@ -913,13 +915,17 @@ public:
 
     size_t getFirstFreeInventorySlot() const;
 
-    std::shared_ptr<Object> getInventoryItem(size_t slotNumber) const;
+    ObjectRef getInventoryItemRef(size_t slotNumber) const override;
 
-    std::vector<std::shared_ptr<Object>> getInventoryItems() const;
+    std::shared_ptr<Object> getInventoryItem(size_t slotNumber) const override;
 
-    void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item);
+    std::vector<ObjectRef> getInventoryItemRefs() const override;
 
-    bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse);
+    std::vector<std::shared_ptr<Object>> getInventoryItems() const override;
+
+    void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item) override;
+
+    bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse) override;
 
     uint16_t getAmmoMax() const override { return ammomax; }
 
@@ -1157,6 +1163,15 @@ public:
     bool hasSkillIDSZ(const IDSZ2& whichskill) const override;
 
     bool hasTypeIDSZ(const IDSZ2& idsz) const override;
+
+    bool isRangedWeapon() const override { return getProfile() && getProfile()->isRangedWeapon(); }
+
+    bool isMeleeWeapon() const override
+    {
+        return getProfile() && !getProfile()->isRangedWeapon() && getProfile()->getWeaponAction() != ACTION_PA;
+    }
+
+    bool isShield() const override { return getProfile() && getProfile()->getWeaponAction() == ACTION_PA; }
 
     bool hasAnyIDSZ(const IDSZ2& idsz) const override;
 

@@ -719,6 +719,29 @@ TEST_F(ScriptStateFunctionsFixture, IfHoldingShieldPrefersRightHandThroughInvent
     EXPECT_EQ(state.argument, LATCHBUTTON_RIGHT);
 }
 
+TEST_F(ScriptStateFunctionsFixture, HoldingWeaponPredicatesReturnFalseWithoutHeldItems)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5570);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    state.argument = 77;
+    EXPECT_FALSE(scr_IfHoldingRangedWeapon(state, self));
+    EXPECT_EQ(state.argument, 0);
+
+    state.argument = 77;
+    EXPECT_FALSE(scr_IfHoldingMeleeWeapon(state, self));
+    EXPECT_EQ(state.argument, 0);
+
+    state.argument = 77;
+    EXPECT_FALSE(scr_IfHoldingShield(state, self));
+    EXPECT_EQ(state.argument, 0);
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandReadsHolderSlotThroughInventoryRole)
 {
     auto& module = beginActiveTestModule();

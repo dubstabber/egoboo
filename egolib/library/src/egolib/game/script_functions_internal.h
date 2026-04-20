@@ -163,6 +163,12 @@ inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
     return object ? static_cast<IInventoryHolder*>(object) : nullptr;
 }
 
+inline const IItemInfo* tryItemInfo(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<const IItemInfo*>(object) : nullptr;
+}
+
 inline IMovementControl* tryMovementControl(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);

@@ -25,24 +25,31 @@ IVisualControl& visualControl(Object& object)
     return object;
 }
 
-std::shared_ptr<Object> heldItem(const IInventoryHolder& holder, slot_t slot)
+ObjectRef heldItemRef(const IInventoryHolder& holder, slot_t slot)
 {
-    return objectHandler()[holder.getHeldObject(slot)];
+    return holder.getHeldObject(slot);
 }
 
-bool isUsableRangedWeapon(const std::shared_ptr<Object>& item)
+bool isUsableRangedWeapon(ObjectRef itemRef)
 {
-    return item && item->getProfile()->isRangedWeapon() && (0 == item->getAmmoMax() || 0 != item->getAmmo());
+    const IItemInfo* item = tryItemInfo(itemRef);
+    const ICharacterState* itemState = tryCharacterState(itemRef);
+    return item != nullptr &&
+           itemState != nullptr &&
+           item->isRangedWeapon() &&
+           (0 == itemState->getAmmoMax() || 0 != itemState->getAmmo());
 }
 
-bool isMeleeWeapon(const std::shared_ptr<Object>& item)
+bool isMeleeWeapon(ObjectRef itemRef)
 {
-    return item && !item->getProfile()->isRangedWeapon() && item->getProfile()->getWeaponAction() != ACTION_PA;
+    const IItemInfo* item = tryItemInfo(itemRef);
+    return item != nullptr && item->isMeleeWeapon();
 }
 
-bool isShield(const std::shared_ptr<Object>& item)
+bool isShield(ObjectRef itemRef)
 {
-    return item && item->getProfile()->getWeaponAction() == ACTION_PA;
+    const IItemInfo* item = tryItemInfo(itemRef);
+    return item != nullptr && item->isShield();
 }
 }
 
@@ -970,7 +977,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
     const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
 
     // Check right hand
-    const std::shared_ptr<Object> rightHandItem = heldItem(selfInventory, SLOT_RIGHT);
+    const ObjectRef rightHandItem = heldItemRef(selfInventory, SLOT_RIGHT);
     if (isUsableRangedWeapon(rightHandItem))
     {
         state.argument = LATCHBUTTON_RIGHT;
@@ -981,7 +988,7 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
     if ( !returncode || Random::nextBool() )
     {
         // Check left hand
-        const std::shared_ptr<Object> leftHandItem = heldItem(selfInventory, SLOT_LEFT);
+        const ObjectRef leftHandItem = heldItemRef(selfInventory, SLOT_LEFT);
         if (isUsableRangedWeapon(leftHandItem))
         {
             state.argument = LATCHBUTTON_LEFT;
@@ -1010,7 +1017,7 @@ uint8_t scr_IfHoldingMeleeWeapon( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // Check right hand
-        const std::shared_ptr<Object> rightItem = heldItem(selfInventory, SLOT_RIGHT);
+        const ObjectRef rightItem = heldItemRef(selfInventory, SLOT_RIGHT);
         if (isMeleeWeapon(rightItem))
         {
             if ( 0 == state.argument || ( worldUpdateCount() & 1 ) )
@@ -1024,7 +1031,7 @@ uint8_t scr_IfHoldingMeleeWeapon( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // Check left hand
-        const std::shared_ptr<Object> leftItem = heldItem(selfInventory, SLOT_LEFT);
+        const ObjectRef leftItem = heldItemRef(selfInventory, SLOT_LEFT);
         if (isMeleeWeapon(leftItem))
         {
             state.argument = LATCHBUTTON_LEFT;
@@ -1053,7 +1060,7 @@ uint8_t scr_IfHoldingShield( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // Check right hand
-        const std::shared_ptr<Object> rightItem = heldItem(selfInventory, SLOT_RIGHT);
+        const ObjectRef rightItem = heldItemRef(selfInventory, SLOT_RIGHT);
         if (isShield(rightItem))
         {
             state.argument = LATCHBUTTON_RIGHT;
@@ -1064,7 +1071,7 @@ uint8_t scr_IfHoldingShield( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // Check left hand
-        const std::shared_ptr<Object> leftItem = heldItem(selfInventory, SLOT_LEFT);
+        const ObjectRef leftItem = heldItemRef(selfInventory, SLOT_LEFT);
         if (isShield(leftItem))
         {
             state.argument = LATCHBUTTON_LEFT;

@@ -679,15 +679,52 @@ TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOp
     EXPECT_EQ(inventoryHolder.getHoldingWeight(), 9);
 
     EXPECT_TRUE(Inventory::add_item(inventoryHolder, inventoryItem, inventoryHolder.getFirstFreeInventorySlot(), true));
+    EXPECT_EQ(inventoryHolder.getInventoryItemRef(0), inventoryItem->getObjRef());
     EXPECT_EQ(inventoryHolder.getInventoryItem(0), inventoryItem);
+    const std::vector<ObjectRef> inventoryItemRefs = inventoryHolder.getInventoryItemRefs();
+    ASSERT_EQ(inventoryItemRefs.size(), 1u);
+    EXPECT_EQ(inventoryItemRefs.front(), inventoryItem->getObjRef());
 
     // Empty hand/slot swaps remain a stable success path through the role overload.
     EXPECT_TRUE(Inventory::swap_item(inventoryHolder, 1, SLOT_LEFT, true));
     EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(inventoryHolder.getInventoryItemRef(1), ObjectRef::Invalid);
     EXPECT_EQ(inventoryHolder.getInventoryItem(1), nullptr);
 
     EXPECT_TRUE(Inventory::remove_item(inventoryHolder, 0, true));
+    EXPECT_EQ(inventoryHolder.getInventoryItemRef(0), ObjectRef::Invalid);
     EXPECT_EQ(inventoryHolder.getInventoryItem(0), nullptr);
+}
+
+TEST_F(ObjectAccessorFixture, ItemInfoRoleSurfaceMatchesProfileBackedClassification)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto rangedWeapon = makeObject(objectHandler, "mp_data/globalobjects/weapons/xbow.obj", 3051);
+    auto meleeWeapon = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 3052);
+    auto shield = makeObject(objectHandler, "mp_data/globalobjects/armor/atshield.obj", 3053);
+    ASSERT_NE(rangedWeapon, nullptr);
+    ASSERT_NE(meleeWeapon, nullptr);
+    ASSERT_NE(shield, nullptr);
+
+    const IItemInfo& rangedInfo = *rangedWeapon;
+    const IItemInfo& meleeInfo = *meleeWeapon;
+    const IItemInfo& shieldInfo = *shield;
+
+    EXPECT_TRUE(rangedInfo.hasTypeIDSZ(rangedWeapon->getProfile()->getIDSZ(IDSZ_TYPE)));
+    EXPECT_TRUE(rangedInfo.isRangedWeapon());
+    EXPECT_FALSE(rangedInfo.isMeleeWeapon());
+    EXPECT_FALSE(rangedInfo.isShield());
+
+    EXPECT_TRUE(meleeInfo.hasTypeIDSZ(meleeWeapon->getProfile()->getIDSZ(IDSZ_TYPE)));
+    EXPECT_FALSE(meleeInfo.isRangedWeapon());
+    EXPECT_TRUE(meleeInfo.isMeleeWeapon());
+    EXPECT_FALSE(meleeInfo.isShield());
+
+    EXPECT_TRUE(shieldInfo.hasTypeIDSZ(shield->getProfile()->getIDSZ(IDSZ_TYPE)));
+    EXPECT_FALSE(shieldInfo.isRangedWeapon());
+    EXPECT_FALSE(shieldInfo.isMeleeWeapon());
+    EXPECT_TRUE(shieldInfo.isShield());
+    EXPECT_FALSE(shieldInfo.hasTypeIDSZ(IDSZ2('Z', 'Z', 'Z', 'Z')));
 }
 
 TEST_F(ObjectAccessorFixture, TempAttributeHelpersRoundTripPresenceValueAndClearing)

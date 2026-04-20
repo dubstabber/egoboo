@@ -305,9 +305,24 @@ size_t Object::getFirstFreeInventorySlot() const
     return _inventory.getFirstFreeSlotNumber();
 }
 
+ObjectRef Object::getInventoryItemRef(size_t slotNumber) const
+{
+    return _inventory.getItemID(slotNumber);
+}
+
 std::shared_ptr<Object> Object::getInventoryItem(size_t slotNumber) const
 {
     return _inventory.getItem(slotNumber);
+}
+
+std::vector<ObjectRef> Object::getInventoryItemRefs() const
+{
+    std::vector<ObjectRef> refs;
+    for (const std::shared_ptr<Object>& item : _inventory.iterate())
+    {
+        refs.push_back(item ? item->getObjRef() : ObjectRef::Invalid);
+    }
+    return refs;
 }
 
 std::vector<std::shared_ptr<Object>> Object::getInventoryItems() const

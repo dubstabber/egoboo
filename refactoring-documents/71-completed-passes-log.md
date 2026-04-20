@@ -608,6 +608,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by centralizing the remai
 
 Extended `ScriptSystemsFunctions.cpp` with a held-weapon `KillTarget` regression that pins the supported kill path when the script self is a wielded item. Build, focused systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 131 — Item-query role seam (2026-04-20)
+
+Continued Tier 1.2 by introducing read-only `IItemInfo` plus additive `IInventoryHolder` ref-based inventory accessors, then routing the bounded held-item and restock/item-cost helpers in `script_functions_state.c` and `script_functions_systems.c` off concrete inventory-item `Object` handles for classification checks. Kept attachment lifecycle, morph/class policy, quest/player flows, and combat/enchant shared-ownership attribution out of scope.
+
+Extended `ObjectAccessors.cpp`, `ScriptStateFunctions.cpp`, and `ScriptSystemsFunctions.cpp` with focused coverage for item-role parity, inventory ref accessors, missing-held-item failure behavior, and no-match restock behavior. Build, the focused accessor/state/systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
