@@ -326,7 +326,7 @@ public:
     /**
     * @brief Translate the current X, Y, Z position of this object by the specified values
     **/
-    void movePosition(const float x, const float y, const float z);
+    void movePosition(const float x, const float y, const float z) override;
 
     /**
     * @brief Sets the transparency for this Object
@@ -1275,11 +1275,11 @@ public:
 
     int getDismountTimer() const { return dismount_timer; }
 
-    void setDismountTimer(int timer) { dismount_timer = timer; }
+    void setDismountTimer(int timer) override { dismount_timer = timer; }
 
     ObjectRef getDismountObject() const { return dismount_object; }
 
-    void setDismountObject(ObjectRef objectRef) { dismount_object = objectRef; }
+    void setDismountObject(ObjectRef objectRef) override { dismount_object = objectRef; }
 
     BIT_FIELD getAIAlertBits() const override;
 
@@ -1382,7 +1382,7 @@ public:
 
     uint8_t getJumpTimer() const { return jump_timer; }
 
-    void setJumpTimer(uint8_t timer) { jump_timer = timer; }
+    void setJumpTimer(uint8_t timer) override { jump_timer = timer; }
 
     uint8_t getJumpNumber() const { return jumpnumber; }
 

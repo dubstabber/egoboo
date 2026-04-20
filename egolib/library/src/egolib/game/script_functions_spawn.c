@@ -21,7 +21,17 @@ const IInventoryHolder& inventoryHolder(const Object& object)
     return object;
 }
 
+ICharacterState& characterState(Object& object)
+{
+    return object;
+}
+
 ILifecycleControl& lifecycleControl(Object& object)
+{
+    return object;
+}
+
+IMovementControl& movementControl(Object& object)
 {
     return object;
 }
@@ -162,27 +172,43 @@ void publishCleanUpForSameTeamListener(TEAM_REF teamRef, const std::shared_ptr<O
     publishCleanedUpState(scriptableListener);
 }
 
-void applyDismountVelocity(Object& object)
+void applyDismountVelocity(IMovementControl& movement)
 {
-    object.setVelocity({object.getVelocity().x(),
-                        object.getVelocity().y(),
+    movement.setVelocity({movement.getVelocity().x(),
+                        movement.getVelocity().y(),
                         Object::DISMOUNTZVEL});
-    object.setJumpTimer(Object::JUMPDELAY);
-    object.movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
+    movement.setJumpTimer(Object::JUMPDELAY);
+    movement.movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
+}
+
+void applySpawnVelocity(IMovementControl& movement, Facing facing, int distance)
+{
+    movement.setVelocity(movement.getVelocity() +
+                         Ego::Vector3f(std::cos(facing) * distance,
+                                       std::sin(facing) * distance,
+                                       0.0f));
+}
+
+void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObjectRef)
+{
+    lifecycle.setDismountTimer(Object::PHYS_DISMOUNT_TIME);
+    lifecycle.setDismountObject(dismountObjectRef);
 }
 
 void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMount)
 {
-    std::shared_ptr<Object> item = tryObjectShared(holder.getHeldObject(slot));
-    if (!item)
+    const ObjectRef itemRef = holder.getHeldObject(slot);
+    ILifecycleControl* itemLifecycle = tryLifecycleControl(itemRef);
+    IMovementControl* itemMovement = tryMovementControl(itemRef);
+    if (itemLifecycle == nullptr || itemMovement == nullptr)
     {
         return;
     }
 
-    item->detachFromHolder(true, true);
+    itemLifecycle->detachFromHolder(true, true);
     if (holderIsMount)
     {
-        applyDismountVelocity(*item);
+        applyDismountVelocity(*itemMovement);
     }
 }
 }
@@ -274,16 +300,14 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
             self.child = pchild->getObjRef();
 
             Facing turn = pchr->getFacingZ() + ATK_BEHIND;
-            pchild->setVelocity(pchild->getVelocity() +
-                                Ego::Vector3f(std::cos(turn) * state.distance,
-                                              std::sin(turn) * state.distance,
-                                              0.0f));
+            IMovementControl& childMovement = movementControl(*pchild);
+            ICharacterState& childState = characterState(*pchild);
+            ILifecycleControl& childLifecycle = lifecycleControl(*pchild);
 
-            pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-            inheritSpawnScriptState(*pchild, self);
-
-            pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
-            pchild->setDismountObject(self.getSelf());
+            applySpawnVelocity(childMovement, turn, state.distance);
+            childState.setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
+            inheritSpawnScriptState(scriptable(*pchild), self);
+            publishSpawnDismount(childLifecycle, self.getSelf());
         }
     }
 

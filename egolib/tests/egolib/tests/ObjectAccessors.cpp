@@ -544,6 +544,21 @@ TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsKeyAndInventoryDrops)
     EXPECT_TRUE(actor->getInventoryItems().empty());
 }
 
+TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsDismountPublication)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3606);
+    ASSERT_NE(object, nullptr);
+
+    ILifecycleControl& lifecycle = *object;
+
+    lifecycle.setDismountTimer(17);
+    lifecycle.setDismountObject(ObjectRef(88));
+
+    EXPECT_EQ(object->getDismountTimer(), 17);
+    EXPECT_EQ(object->getDismountObject(), ObjectRef(88));
+}
+
 TEST_F(ObjectAccessorFixture, RespawnRestoresMoraleAndClaimsLeadershipWhenUnset)
 {
     auto& objectHandler = beginActiveTestModule();
@@ -1195,6 +1210,8 @@ TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMut
     movement.setBumpWidth(8.0f);
     movement.setLatchButton(LATCHBUTTON_LEFT, true);
     movement.setVelocity(Ego::Vector3f(4.0f, 5.0f, 6.0f));
+    movement.setJumpTimer(13);
+    movement.movePosition(1.0f, 2.0f, 3.0f);
     movement.setReloadTimer(9);
     movement.setShadowSize(21);
     movement.setSavedShadowSize(7);
@@ -1203,9 +1220,16 @@ TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMut
     EXPECT_EQ(object->getTurnMode(), TURNMODE_WATCHTARGET);
     EXPECT_FLOAT_EQ(object->getCurrentBump().height, 15.0f * object->getFat());
     EXPECT_TRUE(object->_inputLatchesPressed[LATCHBUTTON_LEFT]);
+    EXPECT_FLOAT_EQ(movement.getVelocity().x(), 4.0f);
+    EXPECT_FLOAT_EQ(movement.getVelocity().y(), 5.0f);
+    EXPECT_FLOAT_EQ(movement.getVelocity().z(), 6.0f);
     EXPECT_FLOAT_EQ(object->getVelocity().x(), 4.0f);
     EXPECT_FLOAT_EQ(object->getVelocity().y(), 5.0f);
     EXPECT_FLOAT_EQ(object->getVelocity().z(), 6.0f);
+    EXPECT_EQ(object->getJumpTimer(), 13);
+    EXPECT_FLOAT_EQ(object->getPosX(), 65.0f);
+    EXPECT_FLOAT_EQ(object->getPosY(), 66.0f);
+    EXPECT_FLOAT_EQ(object->getPosZ(), 3.0f);
     EXPECT_EQ(object->getReloadTimer(), 9);
     EXPECT_EQ(object->getShadowSize(), 21u);
     EXPECT_EQ(object->getSavedShadowSize(), 7u);

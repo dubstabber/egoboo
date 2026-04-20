@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -120,6 +122,79 @@ protected:
         }
 
         return module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    }
+
+    std::optional<Ego::Vector3f> findSpawnCharacterPosition(const std::string& profilePath,
+                                                            int slot,
+                                                            bool requireSafe,
+                                                            std::optional<Ego::Vector3f> excludedPosition = std::nullopt)
+    {
+        auto& session = GameSessionContext::get();
+        if (session.hasActiveModule())
+        {
+            session.quitModule();
+        }
+
+        auto& module = beginActiveTestModule();
+        const ObjectProfileRef profile = loadProfile(profilePath, slot);
+        EXPECT_NE(profile, ObjectProfileRef::Invalid);
+        if (profile == ObjectProfileRef::Invalid)
+        {
+            session.quitModule();
+            return std::nullopt;
+        }
+
+        const std::vector<Ego::Vector3f> candidates = {
+            Ego::Vector3f(64.0f, 64.0f, 0.0f),
+            Ego::Vector3f(96.0f, 64.0f, 0.0f),
+            Ego::Vector3f(64.0f, 96.0f, 0.0f),
+            Ego::Vector3f(128.0f, 64.0f, 0.0f),
+            Ego::Vector3f(128.0f, 96.0f, 0.0f),
+            Ego::Vector3f(160.0f, 96.0f, 0.0f),
+        };
+
+        const auto matchesCandidate = [&](const Ego::Vector3f& position) -> bool
+        {
+            if (excludedPosition.has_value() && position == *excludedPosition)
+            {
+                return false;
+            }
+
+            auto probe = module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+            if (!probe)
+            {
+                return false;
+            }
+
+            const bool matches = probe->hasSafePosition() == requireSafe;
+            probe->requestTerminate();
+            return matches;
+        };
+
+        for (const auto& position : candidates)
+        {
+            if (matchesCandidate(position))
+            {
+                session.quitModule();
+                return position;
+            }
+        }
+
+        for (int y = 32; y <= 256; y += 16)
+        {
+            for (int x = 32; x <= 256; x += 16)
+            {
+                const Ego::Vector3f position(static_cast<float>(x), static_cast<float>(y), 0.0f);
+                if (matchesCandidate(position))
+                {
+                    session.quitModule();
+                    return position;
+                }
+            }
+        }
+
+        session.quitModule();
+        return std::nullopt;
     }
 
     GameModule& beginActiveTestModule()
@@ -521,6 +596,70 @@ TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
 
     EXPECT_TRUE(scr_SpawnPoof(state, self));
     EXPECT_GT(particleHandler.getCount(), particleCountBefore);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnCharacterPublishesChildStateThroughRoleSurfaces)
+{
+    const auto actorPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55388, true);
+    ASSERT_TRUE(actorPosition.has_value());
+
+    const auto safePosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55389, true, actorPosition);
+    ASSERT_TRUE(safePosition.has_value());
+
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55388, *actorPosition);
+
+    ASSERT_NE(actor, nullptr);
+
+    actor->setFacingZ(Facing(1024));
+    actor->setKursed(true);
+
+    script_state_t state;
+    state.x = static_cast<int>(safePosition->x());
+    state.y = static_cast<int>(safePosition->y());
+    state.turn = 2048;
+    state.distance = 6;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(77);
+    self.passage = 13;
+
+    EXPECT_TRUE(scr_SpawnCharacter(state, self));
+    ASSERT_NE(self.child, ObjectRef::Invalid);
+
+    auto child = module.getObjectHandler().get(self.child);
+    ASSERT_NE(child, nullptr);
+
+    const Facing velocityFacing = actor->getFacingZ() + ATK_BEHIND;
+    EXPECT_EQ(child->getProfileID(), actor->getProfileID());
+    EXPECT_TRUE(child->isKursed());
+    EXPECT_EQ(child->getAIOwner(), self.owner);
+    EXPECT_EQ(child->getAIPassage(), self.passage);
+    EXPECT_EQ(child->getDismountTimer(), Object::PHYS_DISMOUNT_TIME);
+    EXPECT_EQ(child->getDismountObject(), actor->getObjRef());
+    EXPECT_FLOAT_EQ(child->getVelocity().x(), std::cos(velocityFacing) * state.distance);
+    EXPECT_FLOAT_EQ(child->getVelocity().y(), std::sin(velocityFacing) * state.distance);
+    EXPECT_FLOAT_EQ(child->getVelocity().z(), 0.0f);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnCharacterLeavesChildInvalidWhenSpawnedIntoUnsafeLocation)
+{
+    const auto unsafePosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55389, false);
+    ASSERT_TRUE(unsafePosition.has_value());
+
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55389);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.x = static_cast<int>(unsafePosition->x());
+    state.y = static_cast<int>(unsafePosition->y());
+
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SpawnCharacter(state, self));
+    EXPECT_EQ(self.child, ObjectRef::Invalid);
 }
 
 TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadListeners)

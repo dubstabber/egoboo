@@ -12,7 +12,10 @@ public:
 
     virtual float getFat() const = 0;
 
+    virtual const Ego::Vector3f& getVelocity() const = 0;
     virtual void setVelocity(const Ego::Vector3f& velocity) = 0;
+    virtual void setJumpTimer(uint8_t timer) = 0;
+    virtual void movePosition(float x, float y, float z) = 0;
     virtual void setTurnMode(turn_mode_t mode) = 0;
     virtual void setBumpHeight(float height) = 0;
     virtual void setBumpWidth(float width) = 0;

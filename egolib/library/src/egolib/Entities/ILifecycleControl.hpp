@@ -12,6 +12,8 @@ public:
     virtual void dropAllItems() = 0;
     virtual void respawn() = 0;
     virtual void respawnInPlace() = 0;
+    virtual void setDismountTimer(int timer) = 0;
+    virtual void setDismountObject(ObjectRef objectRef) = 0;
     virtual void setItem(bool item) = 0;
     virtual void setCanBeCrushed(bool crushable) = 0;
     virtual void setDamageThreshold(SFP8_T threshold) = 0;

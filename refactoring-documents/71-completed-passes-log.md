@@ -664,6 +664,12 @@ Continued Tier 1.2 by closing the remaining direct team/leader target-selection 
 
 Extended `ScriptTargetFunctions.cpp` and `ScriptSystemsFunctions.cpp` with focused invalid-team regressions on top of the existing leader/caller fixture coverage. Build, focused target/systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 140 — Spawn lifecycle tail closure (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by widening `IMovementControl` and `ILifecycleControl` just enough to cover the remaining child post-spawn mutation pocket, then routing `scr_SpawnCharacter()` and the held-item drop rider-buck flow off concrete write-side `Object` access for velocity, jump/move, kursed inheritance, and dismount publication. Kept `spawnObject()`, `hasSafePosition()`, `requestTerminate()`, and the local `Object::SIZETIME` compatibility use unchanged so the pass stayed bounded to the spawn-tail seam.
+
+Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused coverage for the widened movement/lifecycle role surfaces, successful child-state publication, and the preserved unsafe-position spawn behavior where the child stays invalid after termination is requested. Build, the focused accessor/state test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
