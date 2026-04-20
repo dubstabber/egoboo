@@ -26,6 +26,14 @@
 namespace Ego
 {
 
+namespace
+{
+IParticleHandler& particleHandler()
+{
+    return EngineContext::get().particleHandler();
+}
+}
+
 void Particle::updateAttachedDamage()
 {
     // this is often set to zero when the particle hits something
@@ -153,13 +161,13 @@ void Particle::destroy()
             if(_spawnerProfile == ObjectProfileRef::Invalid)
             {
                 //Global particle
-                ParticleHandler::get().spawnGlobalParticle(getOldPosition(), facingAdd, getProfile()->endspawn._lpip, tnc);
+                particleHandler().spawnGlobalParticle(getOldPosition(), facingAdd, getProfile()->endspawn._lpip, tnc);
             }
             else
             {
                 //Local particle
-                ParticleHandler::get().spawnLocalParticle(getOldPosition(), facingAdd, ObjectProfileRef(_spawnerProfile), getProfile()->endspawn._lpip,
-                                                          ObjectRef::Invalid, GRIP_LAST, team, owner_ref, _particleID, tnc, _target);
+                particleHandler().spawnLocalParticle(getOldPosition(), facingAdd, ObjectProfileRef(_spawnerProfile), getProfile()->endspawn._lpip,
+                                                     ObjectRef::Invalid, GRIP_LAST, team, owner_ref, _particleID, tnc, _target);
             }
 
             facingAdd += Facing(getProfile()->endspawn._facingAdd);

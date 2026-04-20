@@ -26,6 +26,14 @@
 namespace Ego
 {
 
+namespace
+{
+IParticleHandler& particleHandler()
+{
+    return EngineContext::get().particleHandler();
+}
+}
+
 void Particle::reset(ParticleRef ref)
 {
     //We are terminated until we are initialized()
@@ -145,9 +153,9 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     // try to get an idea of who our owner is even if we are
     // given bogus info
     ObjectRef loc_chr_origin = spawnOrigin;
-    if (!activeModule().getObjectHandler().exists(spawnOrigin) && ParticleHandler::get()[spawnParticleOrigin])
+    if (!activeModule().getObjectHandler().exists(spawnOrigin) && particleHandler()[spawnParticleOrigin])
     {
-        loc_chr_origin = ParticleHandler::get()[spawnParticleOrigin]->getOwner();
+        loc_chr_origin = particleHandler()[spawnParticleOrigin]->getOwner();
     }
     owner_ref = loc_chr_origin;
 

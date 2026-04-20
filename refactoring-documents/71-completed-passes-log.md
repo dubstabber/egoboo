@@ -650,6 +650,14 @@ Continued Tier 1.2 inside `script_functions_systems.c` by centralizing the remai
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for all-player quest beating/progress publication, resolved-target XP grants, and the preserved legacy no-op/success behavior for unknown skill IDSZ mappings. Build, the full `ScriptSystemsFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+## Theme 9 — Particle service follow-on (2026-04-20)
+
+### Pass 138 — Particle runtime service cleanup (2026-04-20)
+
+Continued Tier 1.3 by removing the remaining runtime-facing `ParticleHandler::get()` calls from `Particle_core.cpp`, `Particle_spawn.cpp`, `Particle_update.cpp`, and `Particle_combat.cpp`, routing parent-particle lookup and continuous/end-spawn behavior through the installed `EngineContext` particle service instead. Kept `ParticleHandler::get()` as the subsystem-local bootstrap/lifecycle seam in `ParticleHandler.*` and `GameEngine` install/clear ownership.
+
+Extended `ModuleUpdate.cpp` with focused regressions for parent-particle owner fallback during initialization, recursive owner resolution through the installed particle service, and end-spawn routing through the installed handler. Build, targeted `ModuleUpdate` / `EngineContext` coverage, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

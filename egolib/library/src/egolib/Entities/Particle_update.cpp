@@ -26,6 +26,14 @@
 namespace Ego
 {
 
+namespace
+{
+IParticleHandler& particleHandler()
+{
+    return EngineContext::get().particleHandler();
+}
+}
+
 void Particle::update()
 {
     //Should never happen
@@ -156,7 +164,7 @@ void Particle::updateWater()
         if (spawn_valid)
         {
             // Splash for particles is just a ripple
-            ParticleHandler::get().spawnGlobalParticle(vtmp, Facing(0), global_pip_index, 0);
+            particleHandler().spawnGlobalParticle(vtmp, Facing(0), global_pip_index, 0);
         }
 
         enviro.inwater = true;
@@ -299,11 +307,11 @@ size_t Particle::updateContinuousSpawning()
     {
         std::shared_ptr<Ego::Particle> prt_child;
         if(_spawnerProfile == ObjectProfileRef::Invalid) {
-            prt_child = ParticleHandler::get().spawnGlobalParticle(getPosition(), facingAdd, getProfile()->contspawn._lpip, tnc);
+            prt_child = particleHandler().spawnGlobalParticle(getPosition(), facingAdd, getProfile()->contspawn._lpip, tnc);
         }
         else {
-            prt_child = ParticleHandler::get().spawnLocalParticle(getPosition(), facingAdd, ObjectProfileRef(_spawnerProfile), getProfile()->contspawn._lpip,
-                                                                  ObjectRef::Invalid, GRIP_LAST, team, owner_ref, _particleID, tnc, _target);
+            prt_child = particleHandler().spawnLocalParticle(getPosition(), facingAdd, ObjectProfileRef(_spawnerProfile), getProfile()->contspawn._lpip,
+                                                             ObjectRef::Invalid, GRIP_LAST, team, owner_ref, _particleID, tnc, _target);
         }
 
         if (prt_child)

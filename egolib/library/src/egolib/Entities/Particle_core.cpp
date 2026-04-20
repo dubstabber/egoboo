@@ -32,6 +32,11 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+IParticleHandler& particleHandler()
+{
+    return EngineContext::get().particleHandler();
+}
 }
 
 prt_environment_t::prt_environment_t() :
@@ -370,7 +375,7 @@ Ego::Physics::ParticlePhysics& Particle::getParticlePhysics()
 ObjectRef Particle::getOwner(int depth)
 {
     // be careful because this can be recursive
-    if (depth > static_cast<int>(ParticleHandler::get().getCount()) - static_cast<int>(ParticleHandler::get().getFreeCount()))
+    if (depth > static_cast<int>(particleHandler().getCount()) - static_cast<int>(particleHandler().getFreeCount()))
     {
         return ObjectRef::Invalid;
     }
@@ -389,7 +394,7 @@ ObjectRef Particle::getOwner(int depth)
         // make a check for a stupid looping structure...
         // cannot be sure you could never get a loop, though
 
-        if (!ParticleHandler::get()[parent_ref])
+        if (!particleHandler()[parent_ref])
         {
             // make sure that a non valid parent_ref is marked as non-valid
             parent_ref = ParticleRef::Invalid;
@@ -402,7 +407,7 @@ ObjectRef Particle::getOwner(int depth)
             // be looping structures. I have actually seen this, so don't laugh :)
             if (_particleID != parent_ref)
             {
-                iowner = ParticleHandler::get()[parent_ref]->getOwner(depth + 1);
+                iowner = particleHandler()[parent_ref]->getOwner(depth + 1);
             }
         }
     }
