@@ -632,6 +632,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by introducing `IMorphContr
 
 Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused morph/resize coverage for role-surface parity, target-driven morphing, target-size scaling, and missing-target failure behavior. Build, the focused `ObjectAccessors` / `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 135 — Morph base-model publication seam (2026-04-20)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by widening `IMorphControl` with base-model publication and routing `scr_ChangeTargetClass()` through the morph role instead of direct concrete-`Object` mutation. Preserved the existing loaded-profile gate plus the permanent-export semantics of changing both current and base model.
+
+Extended `ObjectAccessors.cpp` and `ScriptSystemsFunctions.cpp` with focused coverage for morph-role base-model publication and `ChangeTargetClass` success/failure behavior. Build, the focused accessor/systems test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -8,6 +8,7 @@ public:
     virtual ~IMorphControl() = default;
 
     virtual ObjectProfileRef getBaseModelRef() const = 0;
+    virtual void setBaseModelRef(ObjectProfileRef profileRef) = 0;
     virtual SKIN_T getSkin() const = 0;
     virtual float getFat() const = 0;
     virtual float getTargetFat() const = 0;

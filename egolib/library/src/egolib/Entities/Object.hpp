@@ -1051,7 +1051,7 @@ public:
 
     ObjectProfileRef getBaseModelRef() const override { return basemodel_ref; }
 
-    void setBaseModelRef(ObjectProfileRef profileRef) { basemodel_ref = profileRef; }
+    void setBaseModelRef(ObjectProfileRef profileRef) override { basemodel_ref = profileRef; }
 
     bool isOverlay() const { return is_overlay; }
 

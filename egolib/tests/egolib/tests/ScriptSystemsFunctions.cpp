@@ -1116,4 +1116,43 @@ TEST_F(ScriptSystemsFunctionsFixture, ArmorHelpersUseAppearanceProfileSeamAndPre
     EXPECT_EQ(target->getMoney(), 100);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassUsesMorphControlAndPublishesBaseModel)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/healer.obj", 5703);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    const ObjectProfileRef previousProfile = actor->getProfileID();
+    const ObjectProfileRef previousBaseModel = actor->getBaseModelRef();
+    const ObjectProfileRef nextProfile = loadProfile("mp_data/globalobjects/players/rogue.obj", 5705);
+    ASSERT_NE(nextProfile, ObjectProfileRef::Invalid);
+
+    state.argument = nextProfile.get();
+    EXPECT_TRUE(scr_ChangeTargetClass(state, self));
+    EXPECT_EQ(actor->getProfileID(), nextProfile);
+    EXPECT_EQ(actor->getBaseModelRef(), nextProfile);
+
+    PRO_REF unloadedProfile = INVALID_PRO_REF;
+    for (PRO_REF candidate = 0; candidate < INVALID_PRO_REF; ++candidate)
+    {
+        if (!EngineContext::get().profileSystem().isLoaded(candidate))
+        {
+            unloadedProfile = candidate;
+            break;
+        }
+    }
+
+    ASSERT_NE(unloadedProfile, INVALID_PRO_REF);
+    state.argument = unloadedProfile;
+    EXPECT_FALSE(scr_ChangeTargetClass(state, self));
+    EXPECT_EQ(actor->getProfileID(), nextProfile);
+    EXPECT_EQ(actor->getBaseModelRef(), nextProfile);
+    EXPECT_NE(previousProfile, nextProfile);
+    EXPECT_NE(previousBaseModel, nextProfile);
+}
+
 } // namespace

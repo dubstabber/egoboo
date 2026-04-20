@@ -1692,12 +1692,17 @@ TEST_F(ObjectAccessorFixture, MorphControlRoleSurfaceSupportsMorphAndResizeState
     const ObjectProfileRef targetBaseModel = targetMorphControl.getBaseModelRef();
     const SKIN_T targetSkin = targetMorphControl.getSkin();
     const float targetFat = targetMorphControl.getFat();
+    const ObjectProfileRef publishedBaseModel = ObjectProfileRef(55);
+
+    morphControl.setBaseModelRef(publishedBaseModel);
+    EXPECT_EQ(object->getBaseModelRef(), publishedBaseModel);
 
     morphControl.polymorphObject(targetBaseModel, targetSkin);
     morphControl.setTargetFat(targetFat);
     morphControl.setResizeTimeRemaining(Object::SIZETIME);
 
-    EXPECT_EQ(object->getBaseModelRef(), objectBaseModelBefore);
+    EXPECT_NE(objectBaseModelBefore, publishedBaseModel);
+    EXPECT_EQ(object->getBaseModelRef(), publishedBaseModel);
     EXPECT_EQ(object->getProfileID(), targetBaseModel);
     EXPECT_EQ(object->getSkin(), targetSkin);
     EXPECT_FLOAT_EQ(object->getTargetFat(), targetFat);

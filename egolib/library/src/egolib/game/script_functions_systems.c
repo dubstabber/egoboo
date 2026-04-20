@@ -41,6 +41,11 @@ IWallet& wallet(Object& object)
     return object;
 }
 
+IMorphControl& morphControl(Object& object)
+{
+    return object;
+}
+
 bool itemMatchesType(ObjectRef itemRef, const IDSZ2& idsz)
 {
     const IItemInfo* item = tryItemInfo(itemRef);
@@ -1396,11 +1401,13 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
     /// A character turned into a frog with this function will also export as a frog!
     if(EngineContext::get().profileSystem().isLoaded(profileID)) 
     {
+        IMorphControl& targetMorph = morphControl(*pchr);
+
         //Change the object
-        pchr->polymorphObject(ObjectProfileRef(profileID), 0);
+        targetMorph.polymorphObject(ObjectProfileRef(profileID), 0);
 
         // set the base model to the new model, too
-        pchr->setBaseModelRef(profileID);
+        targetMorph.setBaseModelRef(profileID);
 
         returncode = true;
     }
