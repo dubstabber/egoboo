@@ -699,6 +699,26 @@ TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesReadThroughRoleSurface)
     EXPECT_EQ(state.argument, 9);
 }
 
+TEST_F(ScriptTargetFunctionsFixture, IfTargetHasItemIDEquippedFailsQuietlyWhenInventoryLookupFindsNoEquippedMatch)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53402);
+    auto target = makeObject(module, "mp_objects/follower.obj", 53403);
+    auto inventoryWeapon = makeObject(module, "mp_data/globalobjects/weapons/sword.obj", 53404);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(inventoryWeapon, nullptr);
+    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon, target->getFirstFreeInventorySlot(), true));
+
+    script_state_t state;
+    state.argument = inventoryWeapon->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_FALSE(scr_IfTargetHasItemIDEquipped(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
 {
     auto& module = beginActiveTestModule();

@@ -29,9 +29,14 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
     return facing > 55535 || facing < 10000;
 }
 
+bool isLiveTargetRef(ObjectRef objectRef)
+{
+    return tryTargetInfo(objectRef) != nullptr;
+}
+
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
-    if (!objectHandler().exists(objectRef))
+    if (!isLiveTargetRef(objectRef))
     {
         return false;
     }
@@ -1006,7 +1011,7 @@ uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
 
 	auto iitem = Inventory::findItem(*targetInventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
 
-    returncode = objectHandler().exists(iitem);
+    returncode = isLiveTargetRef(iitem);
 
     SCRIPT_FUNCTION_END();
 }

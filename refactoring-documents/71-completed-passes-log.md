@@ -778,6 +778,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by routing the remaining s
 
 Extended `ScriptTargetFunctions.cpp` with focused regressions for owner-target resolution, self-ref rejection in `SetTargetToLastItemUsed`, no-match nearest/distant/weapon search behavior, and invalid-target failure for `SetTargetToLowestTarget`. Build, the focused `ScriptTargetFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 159 — Target-query liveness seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_target.c` by replacing the last direct target-query `objectHandler().exists(...)` checks with one file-local liveness helper shared by target publication and equipped-item lookup. Routed `trySetResolvedTarget(...)` and `scr_IfTargetHasItemIDEquipped()` through that helper without widening any public `Object` or role surfaces and preserved the current quiet-failure semantics for invalid refs.
+
+Extended `ScriptTargetFunctions.cpp` with a focused regression for missing equipped-item matches staying false without mutating the current target. Build, the focused `ScriptTargetFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
