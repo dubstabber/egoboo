@@ -688,6 +688,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by routing `scr_Disenchan
 
 Extended `ScriptSystemsFunctions.cpp` by tightening the mixed-object global disenchant regression to assert that the previously enchanted object's enchantment is terminated after the sweep. Build, the focused `ScriptSystemsFunctions` test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 144 — Residual damage-attribution role closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by consolidating the remaining self-damage, kill-source, and retaliation-source attribution flows behind file-local helpers, then routing `scr_DamageTarget()`, `scr_KillTarget()`, and `scr_TargetDamageSelf()` through those helpers without widening any public role surfaces. Preserved the current combat semantics: damage type and team attribution stay unchanged, kill attribution still prefers a non-mount holder via `resolvedKillSourceRef(...)`, and the scripts still return false when the resolved source or target cannot be obtained.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused missing-target retaliation regression alongside the existing damage/kill attribution coverage. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

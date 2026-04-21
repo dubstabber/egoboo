@@ -945,6 +945,26 @@ TEST_F(ScriptSystemsFunctionsFixture, TargetDamageSelfUsesTargetDamageTypeAttrib
     config.hud_feedback.setValue(previousFeedback);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, TargetDamageSelfReturnsFalseWhenTargetIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5678);
+
+    ASSERT_NE(actor, nullptr);
+
+    actor->setAILastDamageType(DamageType::DAMAGE_DIRECT);
+
+    script_state_t state;
+    state.argument = 512;
+    state.distance = static_cast<int>(DamageType::DAMAGE_FIRE);
+    ai_state_t self = makeScriptSelf(actor);
+
+    const float lifeBefore = actor->getLife();
+    EXPECT_FALSE(scr_TargetDamageSelf(state, self));
+    EXPECT_FLOAT_EQ(actor->getLife(), lifeBefore);
+    EXPECT_EQ(actor->getAILastDamageType(), DamageType::DAMAGE_DIRECT);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseCharacterStateRole)
 {
     auto& module = beginActiveTestModule();

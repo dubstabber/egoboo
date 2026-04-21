@@ -11,11 +11,6 @@ egoboo_config_t& config()
     return EngineContext::get().config();
 }
 
-const IDamageable& damageableRole(const Object& object)
-{
-    return object;
-}
-
 IAppearanceProfile& appearanceProfile(Object& object)
 {
     return object;
@@ -64,6 +59,35 @@ IMorphControl& morphControl(Object& object)
 ObjectRef leaderRef(const ITargetInfo& selfInfo)
 {
     return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
+}
+
+struct SelfAttributedDamageSource
+{
+    DamageType damageType = DamageType::DAMAGE_DIRECT;
+    TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
+    std::shared_ptr<Object> object;
+};
+
+struct DamageSource
+{
+    TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
+    std::shared_ptr<Object> object;
+};
+
+bool resolveSelfAttributedDamageSource(const ai_state_t& self,
+                                       SelfAttributedDamageSource& source)
+{
+    const IDamageable* selfDamageable = tryDamageable(self.getSelf());
+    const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
+    source.object = tryObjectShared(self.getSelf());
+    if (selfDamageable == nullptr || selfInfo == nullptr || source.object == nullptr)
+    {
+        return false;
+    }
+
+    source.damageType = selfDamageable->getDamageTargetType();
+    source.teamRef = selfInfo->getTeamRef();
+    return true;
 }
 
 void becomeSpell(IEnchantable& selfEnchantable,
@@ -218,6 +242,19 @@ ObjectRef resolvedKillSourceRef(const ITargetInfo& selfInfo, ObjectRef selfRef)
     return selfRef;
 }
 
+bool resolveKillSource(const ai_state_t& self,
+                       std::shared_ptr<Object>& killSource)
+{
+    const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
+    if (selfInfo == nullptr)
+    {
+        return false;
+    }
+
+    killSource = tryObjectShared(resolvedKillSourceRef(*selfInfo, self.getSelf()));
+    return killSource != nullptr;
+}
+
 ICharacterState* resolveAliveTargetState(const ai_state_t& self)
 {
     const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
@@ -259,13 +296,18 @@ bool resolveHealingTarget(const ai_state_t& self,
     return targetState != nullptr && damageableTarget != nullptr;
 }
 
-bool resolveRetaliationTarget(const ai_state_t& self,
-                              const ITargetInfo*& targetInfo,
-                              IDamageable*& damageableSelf)
+bool resolveRetaliationSource(const ai_state_t& self,
+                              DamageSource& source)
 {
-    targetInfo = tryTargetInfo(self.getTarget());
-    damageableSelf = tryDamageable(self.getSelf());
-    return targetInfo != nullptr && damageableSelf != nullptr;
+    const ITargetInfo* retaliationInfo = tryTargetInfo(self.getTarget());
+    source.object = tryObjectShared(self.getTarget());
+    if (retaliationInfo == nullptr || source.object == nullptr)
+    {
+        return false;
+    }
+
+    source.teamRef = retaliationInfo->getTeamRef();
+    return true;
 }
 
 std::shared_ptr<Object> resolveEnchantSpawner(const ai_state_t& self)
@@ -581,8 +623,10 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    SelfAttributedDamageSource damageSource;
     IDamageable* damageableTarget = nullptr;
-    if (!resolveDamageableTarget(self, damageableTarget))
+    if (!resolveDamageableTarget(self, damageableTarget) ||
+        !resolveSelfAttributedDamageSource(self, damageSource))
     {
         return false;
     }
@@ -590,8 +634,8 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableTarget->damage(ATK_FRONT, tmp_damage, damageableRole(*pchr).getDamageTargetType(),
-                             targetInfo(*pchr).getTeamRef(), pchr->toSharedPointer(), false, false, true);
+    damageableTarget->damage(ATK_FRONT, tmp_damage, damageSource.damageType,
+                             damageSource.teamRef, damageSource.object, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1029,10 +1073,10 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef killerRef = resolvedKillSourceRef(targetInfo(*pchr), self.getSelf());
-    const std::shared_ptr<Object> killer = tryObjectShared(killerRef);
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    if (killer == nullptr || damageableTarget == nullptr)
+    std::shared_ptr<Object> killer;
+    IDamageable* damageableTarget = nullptr;
+    if (!resolveDamageableTarget(self, damageableTarget) ||
+        !resolveKillSource(self, killer))
     {
         return false;
     }
@@ -2370,15 +2414,10 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = nullptr;
+    DamageSource retaliationSource;
     IDamageable* damageableSelf = nullptr;
-    if (!resolveRetaliationTarget(self, targetInfo, damageableSelf))
-    {
-        return false;
-    }
-
-    const std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
-    if (target == nullptr)
+    if (!resolveSelfDamageable(self, damageableSelf) ||
+        !resolveRetaliationSource(self, retaliationSource))
     {
         return false;
     }
@@ -2386,7 +2425,8 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance), targetInfo->getTeamRef(), target, false, false, true);
+    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance),
+                           retaliationSource.teamRef, retaliationSource.object, false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
