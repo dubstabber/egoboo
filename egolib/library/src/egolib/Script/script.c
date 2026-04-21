@@ -120,6 +120,9 @@ const ai_state_t& runtimeState(const Object& object)
 } // namespace Script
 } // namespace Ego
 
+static ObjectProfileRef script_error_model = ObjectProfileRef::Invalid;
+static const char * script_error_classname = "UNKNOWN";
+
 namespace
 {
 GameModule& activeModule()
@@ -136,13 +139,180 @@ uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();
 }
+
+std::shared_ptr<Object> tryObjectShared(const ObjectRef objectRef)
+{
+    return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
 }
 
-//--------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------
+Object* tryObject(const ObjectRef objectRef)
+{
+    const std::shared_ptr<Object> object = tryObjectShared(objectRef);
+    return object.get();
+}
 
-static ObjectProfileRef script_error_model = ObjectProfileRef::Invalid;
-static const char * script_error_classname = "UNKNOWN";
+void updateScriptErrorContext(const Object& object)
+{
+    script_error_classname = "UNKNOWN";
+    script_error_model = object.getProfileID();
+    if (script_error_model != ObjectProfileRef::Invalid)
+    {
+        script_error_classname = EngineContext::get().profileSystem().getProfile(script_error_model)->getClassName().c_str();
+    }
+}
+
+void dumpDebugScriptState(vfs_FILE* scr_file, const script_info_t& script, const ai_state_t& aiState)
+{
+    vfs_printf(scr_file, "\n\n--------\n%s\n", script._name.c_str());
+    vfs_printf(scr_file, "%d - %s\n", REF_TO_INT(script_error_model.get()), script_error_classname);
+
+    // who are we related to?
+    vfs_printf(scr_file, "\tself   == %" PRIuZ "\n", aiState.getSelf().get());
+    vfs_printf(scr_file, "\ttarget == %" PRIuZ "\n", aiState.getTarget().get());
+    vfs_printf(scr_file, "\towner  == %" PRIuZ "\n", aiState.owner.get());
+    vfs_printf(scr_file, "\tchild  == %" PRIuZ "\n", aiState.child.get());
+
+    // some local storage
+    vfs_printf(scr_file, "\talert     == %x\n", aiState.alert);
+    vfs_printf(scr_file, "\tstate     == %d\n", aiState.state);
+    vfs_printf(scr_file, "\tcontent   == %d\n", aiState.content);
+    vfs_printf(scr_file, "\ttimer     == %d\n", aiState.timer);
+    vfs_printf(scr_file, "\tupdate_wld == %d\n", worldUpdateCount());
+
+    // ai memory from the last event
+    vfs_printf(scr_file, "\tdirectionlast  == %" PRId32 "\n", aiState.directionlast.get_value());
+    vfs_printf(scr_file, "\tbumped         == %" PRIuZ "\n", aiState.getBumped().get());
+    vfs_printf(scr_file, "\tlast attacker  == %" PRIuZ "\n", aiState.getLastAttacker().get());
+    vfs_printf(scr_file, "\thitlast        == %" PRIuZ "\n", aiState.hitlast.get());
+    vfs_printf(scr_file, "\tdamagetypelast == %d\n", aiState.damagetypelast);
+    vfs_printf(scr_file, "\tlastitemused   == %" PRIuZ "\n", aiState.lastitemused.get());
+    vfs_printf(scr_file, "\told target     == %" PRIuZ "\n", aiState.getOldTarget().get());
+
+    // message handling
+    vfs_printf(scr_file, "\torder == %d\n", aiState.order_value);
+    vfs_printf(scr_file, "\tcounter == %d\n", aiState.order_counter);
+
+    // waypoints
+    vfs_printf(scr_file, "\twp_tail == %d\n", aiState.wp_lst._tail);
+    vfs_printf(scr_file, "\twp_head == %d\n\n", aiState.wp_lst._head);
+}
+
+void resetInvisibleTargetToSelf(Object& object, ai_state_t& aiState)
+{
+    if (aiState.getTarget() == aiState.getSelf())
+    {
+        return;
+    }
+
+    const std::shared_ptr<Object> target = tryObjectShared(aiState.getTarget());
+    if (target != nullptr && !object.canSeeObject(target))
+    {
+        aiState.setTarget(aiState.getSelf());
+    }
+}
+
+void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
+{
+    ai_state_t::ensure_wp(aiState);
+
+    if (object.isMount() && object.getLeftHandItem())
+    {
+        // Mount (rider is held in left grip)
+        object.setDesiredVelocity(object.getLeftHandItem()->getDesiredVelocity());
+    }
+    else if (aiState.wp_valid)
+    {
+        // Normal AI
+        object.setDesiredVelocity(Ego::Vector2f(
+            (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
+            (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
+    }
+}
+
+Object* resolveLeaderForVariables(const Object& object)
+{
+    const std::shared_ptr<Object> leader = activeModule().getTeamList()[object.getTeamRef()].getLeader();
+    return leader.get();
+}
+
+struct OperandContext
+{
+    Object* self = nullptr;
+    Object* target = nullptr;
+    Object* owner = nullptr;
+    Object* leader = nullptr;
+};
+
+OperandContext makeOperandContext(const ai_state_t& aiState)
+{
+    OperandContext context;
+    context.self = tryObject(aiState.getSelf());
+    if (context.self == nullptr)
+    {
+        return context;
+    }
+
+    context.target = tryObject(aiState.getTarget());
+    context.owner = tryObject(aiState.owner);
+    context.leader = resolveLeaderForVariables(*context.self);
+    return context;
+}
+
+void pollWaypointAlerts(Object& object, ai_state_t& aiState)
+{
+    if (waypoint_list_t::empty(aiState.wp_lst))
+    {
+        return;
+    }
+
+    // let's let mounts get alert updates...
+    // imagine a mount, like a racecar, that needs to make sure that it follows X
+    // waypoints around a track or something
+
+    // mounts do not get alerts
+    // if ( objectHandler().exists(pchr->attachedto) ) return;
+
+    // is the current waypoint is not valid, try to load up the top waypoint
+    ai_state_t::ensure_wp(aiState);
+
+    bool at_waypoint = false;
+    if (aiState.wp_valid)
+    {
+        at_waypoint = (std::abs(object.getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
+                      (std::abs(object.getPosY() - aiState.wp[kY]) < WAYTHRESH);
+    }
+
+    if (!at_waypoint)
+    {
+        return;
+    }
+
+    SET_BIT(aiState.alert, ALERTIF_ATWAYPOINT);
+
+    if (waypoint_list_t::finished(aiState.wp_lst))
+    {
+        // we are now at the last waypoint
+        // if the object can be alerted to last waypoint, do it
+        // this test needs to be done because the ALERTIF_ATLASTWAYPOINT
+        // doubles for "at last waypoint" and "not put away"
+        if (!object.getProfile()->isEquipment())
+        {
+            SET_BIT(aiState.alert, ALERTIF_ATLASTWAYPOINT);
+        }
+
+        // !!!!restart the waypoint list, do not clear them!!!!
+        waypoint_list_t::reset(aiState.wp_lst);
+
+        // load the top waypoint
+        ai_state_t::get_wp(aiState);
+    }
+    else if (waypoint_list_t::advance(aiState.wp_lst))
+    {
+        // load the top waypoint
+        ai_state_t::get_wp(aiState);
+    }
+}
+}
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -201,49 +371,11 @@ void scr_run_chr_script(Object *pchr)
     aiState.setOldTarget(aiState.getTarget());
 
     // Make life easier
-    script_error_classname = "UNKNOWN";
-    script_error_model = pchr->getProfileID();
-    if (script_error_model != ObjectProfileRef::Invalid)
-    {
-        script_error_classname = EngineContext::get().profileSystem().getProfile(script_error_model)->getClassName().c_str();
-    }
+    updateScriptErrorContext(*pchr);
 
     if (debug_scripts && debug_script_file)
     {
-        vfs_FILE * scr_file = debug_script_file;
-
-        vfs_printf(scr_file, "\n\n--------\n%s\n", script._name.c_str());
-        vfs_printf(scr_file, "%d - %s\n", REF_TO_INT(script_error_model.get()), script_error_classname);
-
-        // who are we related to?
-        vfs_printf(scr_file, "\tself   == %" PRIuZ "\n", aiState.getSelf().get());
-        vfs_printf(scr_file, "\ttarget == %" PRIuZ "\n", aiState.getTarget().get());
-        vfs_printf(scr_file, "\towner  == %" PRIuZ "\n", aiState.owner.get());
-        vfs_printf(scr_file, "\tchild  == %" PRIuZ "\n", aiState.child.get());
-
-        // some local storage
-        vfs_printf(scr_file, "\talert     == %x\n", aiState.alert);
-        vfs_printf(scr_file, "\tstate     == %d\n", aiState.state);
-        vfs_printf(scr_file, "\tcontent   == %d\n", aiState.content);
-        vfs_printf(scr_file, "\ttimer     == %d\n", aiState.timer);
-        vfs_printf(scr_file, "\tupdate_wld == %d\n", worldUpdateCount());
-
-        // ai memory from the last event
-        vfs_printf(scr_file, "\tdirectionlast  == %" PRId32 "\n", aiState.directionlast.get_value());
-        vfs_printf(scr_file, "\tbumped         == %" PRIuZ "\n", aiState.getBumped().get());
-        vfs_printf(scr_file, "\tlast attacker  == %" PRIuZ "\n", aiState.getLastAttacker().get());
-        vfs_printf(scr_file, "\thitlast        == %" PRIuZ "\n", aiState.hitlast.get());
-        vfs_printf(scr_file, "\tdamagetypelast == %d\n", aiState.damagetypelast);
-        vfs_printf(scr_file, "\tlastitemused   == %" PRIuZ "\n", aiState.lastitemused.get());
-        vfs_printf(scr_file, "\told target     == %" PRIuZ "\n", aiState.getOldTarget().get());
-
-        // message handling
-        vfs_printf(scr_file, "\torder == %d\n", aiState.order_value);
-        vfs_printf(scr_file, "\tcounter == %d\n", aiState.order_counter);
-
-        // waypoints
-        vfs_printf(scr_file, "\twp_tail == %d\n", aiState.wp_lst._tail);
-        vfs_printf(scr_file, "\twp_head == %d\n\n", aiState.wp_lst._head);
+        dumpDebugScriptState(debug_script_file, script, aiState);
     }
 
     // Clear the button latches.
@@ -253,14 +385,7 @@ void scr_run_chr_script(Object *pchr)
     }
 
     // Reset the target if it can't be seen.
-    if (aiState.getTarget() != aiState.getSelf())
-    {
-        const std::shared_ptr<Object> &target = objectHandler()[aiState.getTarget()];
-        if (target && !pchr->canSeeObject(target))
-        {
-            aiState.setTarget(aiState.getSelf());
-        }
-    }
+    resetInvisibleTargetToSelf(*pchr, aiState);
 
     // Reset the script state.
     script_state_t my_state;
@@ -298,21 +423,7 @@ void scr_run_chr_script(Object *pchr)
     // Set movement latches
     if (!pchr->isPlayer())
     {
-
-        ai_state_t::ensure_wp(aiState);
-
-        if (pchr->isMount() && pchr->getLeftHandItem())
-        {
-            // Mount (rider is held in left grip)
-            pchr->setDesiredVelocity(pchr->getLeftHandItem()->getDesiredVelocity());
-        }
-        else if (aiState.wp_valid)
-        {
-            // Normal AI
-            pchr->setDesiredVelocity(Ego::Vector2f(
-                (aiState.wp[kX] - pchr->getPosX()) / Info<float>::Grid::Size(),
-                (aiState.wp[kY] - pchr->getPosY()) / Info<float>::Grid::Size()));
-        }
+        applyNonPlayerMovementLatchUpdate(*pchr, aiState);
     }
 
     // Clear alerts for next time around
@@ -600,20 +711,8 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
     /// @author ZZ
     /// @details This function does the scripted arithmetic in OPERATOR, OPERAND pscriptrs
 
-    if (!objectHandler().exists(aiState.getSelf())) return;
-    Object *pobject = objectHandler().get(aiState.getSelf());
-
-    Object *ptarget = nullptr;
-    if (objectHandler().exists(aiState.getTarget()))
-    {
-        ptarget = objectHandler().get(aiState.getTarget());
-    }
-
-    Object *powner = nullptr;
-    if (objectHandler().exists(aiState.owner))
-    {
-        powner = objectHandler().get(aiState.owner);
-    }
+    const OperandContext context = makeOperandContext(aiState);
+    if (context.self == nullptr) return;
 
     std::string varname;
 
@@ -639,8 +738,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
         // Load the variable. 
         auto variableIndex = constant.getAsInteger();
         varname = getVariableName(variableIndex);
-        auto pleader = activeModule().getTeamList()[pobject->getTeamRef()].getLeader();
-        iTmp = loadVariable(variableIndex, aiState, pobject, ptarget, powner, pleader.get());
+        iTmp = loadVariable(variableIndex, aiState, context.self, context.target, context.owner, context.leader);
     }
 
     // Now do the math
@@ -782,62 +880,13 @@ void set_alerts(const ObjectRef character)
     /// @details This function polls some alert conditions
 
     // invalid characters do not think
-    if (!objectHandler().exists(character))
+    Object* pchr = tryObject(character);
+    if (pchr == nullptr)
     {
         return;
     }
-    Object *pchr = objectHandler().get(character);
     ai_state_t& aiState = Ego::Script::runtimeState(*pchr);
-
-    if (waypoint_list_t::empty(aiState.wp_lst))
-    {
-        return;
-    }
-
-    // let's let mounts get alert updates...
-    // imagine a mount, like a racecar, that needs to make sure that it follows X
-    // waypoints around a track or something
-
-    // mounts do not get alerts
-    // if ( objectHandler().exists(pchr->attachedto) ) return;
-
-    // is the current waypoint is not valid, try to load up the top waypoint
-    ai_state_t::ensure_wp(aiState);
-
-    bool at_waypoint = false;
-    if (aiState.wp_valid)
-    {
-        at_waypoint = (std::abs(pchr->getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
-            (std::abs(pchr->getPosY() - aiState.wp[kY]) < WAYTHRESH);
-    }
-
-    if (at_waypoint)
-    {
-        SET_BIT(aiState.alert, ALERTIF_ATWAYPOINT);
-
-        if (waypoint_list_t::finished(aiState.wp_lst))
-        {
-            // we are now at the last waypoint
-            // if the object can be alerted to last waypoint, do it
-            // this test needs to be done because the ALERTIF_ATLASTWAYPOINT
-            // doubles for "at last waypoint" and "not put away"
-            if (!pchr->getProfile()->isEquipment())
-            {
-                SET_BIT(aiState.alert, ALERTIF_ATLASTWAYPOINT);
-            }
-
-            // !!!!restart the waypoint list, do not clear them!!!!
-            waypoint_list_t::reset(aiState.wp_lst);
-
-            // load the top waypoint
-            ai_state_t::get_wp(aiState);
-        }
-        else if (waypoint_list_t::advance(aiState.wp_lst))
-        {
-            // load the top waypoint
-            ai_state_t::get_wp(aiState);
-        }
-    }
+    pollWaypointAlerts(*pchr, aiState);
 }
 
 //--------------------------------------------------------------------------------------------
