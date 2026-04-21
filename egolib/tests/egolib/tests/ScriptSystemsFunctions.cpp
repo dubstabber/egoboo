@@ -571,6 +571,29 @@ TEST_F(ScriptSystemsFunctionsFixture, FollowLinkFailurePublishesExistingScaryMes
     EXPECT_EQ(messages.front(), "That's too scary for " + actor->getName());
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, FollowLinkFailureWithoutActivePlayingStateDoesNotCrash)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5609);
+
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("too-scary.mod"));
+
+    script_state_t state;
+    state.argument = messageId;
+    ai_state_t self = makeScriptSelf(actor);
+
+    FollowLinkStubState followLinkState;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+
+    EXPECT_FALSE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 1);
+    EXPECT_EQ(followLinkState.moduleName, "too-scary.mod");
+    EXPECT_TRUE(followLinkState.pushCurrentModule);
+    EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
 {
     auto& module = beginActiveTestModule();

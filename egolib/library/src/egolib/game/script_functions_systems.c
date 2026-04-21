@@ -3,6 +3,7 @@
 
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GUI/MessageLog.hpp"
 
 namespace
 {
@@ -159,7 +160,7 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void logDeprecatedEnableListenSkill(const ai_state_t& self)
+void publishDeprecatedEnableListenSkillWarning(const ai_state_t& self)
 {
     SelfScriptCompatibilityContext context;
     if (!resolveSelfScriptCompatibilityContext(self, context))
@@ -177,7 +178,14 @@ bool dispatchFollowLinkByModuleName(const std::string& moduleName)
 
 void publishFollowLinkFailureMessage(const std::string& selfName)
 {
-    DisplayMsg_printf("That's too scary for %s", selfName.c_str());
+    const std::string text = "That's too scary for " + selfName;
+    if (const std::shared_ptr<PlayingState> playingState = EngineContext::get().tryActivePlayingState())
+    {
+        playingState->getMessageLog()->addMessage(text);
+        return;
+    }
+
+    DisplayMsg_printf("%s", text.c_str());
 }
 
 bool followLinkFromMessageId(const ai_state_t& self, int messageId)
@@ -2289,7 +2297,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    logDeprecatedEnableListenSkill(self);
+    publishDeprecatedEnableListenSkillWarning(self);
     returncode = false;
 
     SCRIPT_FUNCTION_END();
