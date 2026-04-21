@@ -195,6 +195,17 @@ void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObject
     lifecycle.setDismountObject(dismountObjectRef);
 }
 
+void publishSpawnChildState(Object& child, bool inheritKurse, ai_state_t& self)
+{
+    self.child = child.getObjRef();
+
+    ICharacterState& childState = characterState(child);
+    childState.setKursed(inheritKurse);
+
+    inheritSpawnScriptState(scriptable(child), self);
+    publishSpawnDismount(lifecycleControl(child), self.getSelf());
+}
+
 void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMount)
 {
     const ObjectRef itemRef = holder.getHeldObject(slot);
@@ -297,17 +308,11 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
         }
         else
         {
-            self.child = pchild->getObjRef();
-
             Facing turn = pchr->getFacingZ() + ATK_BEHIND;
             IMovementControl& childMovement = movementControl(*pchild);
-            ICharacterState& childState = characterState(*pchild);
-            ILifecycleControl& childLifecycle = lifecycleControl(*pchild);
 
             applySpawnVelocity(childMovement, turn, state.distance);
-            childState.setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-            inheritSpawnScriptState(scriptable(*pchild), self);
-            publishSpawnDismount(childLifecycle, self.getSelf());
+            publishSpawnChildState(*pchild, pchr->isKursed(), self);  /// @note BB@> inherit this from your spawner
         }
     }
 
@@ -718,13 +723,7 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     }
     else
     {
-        self.child = pchild->getObjRef();
-
-        pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        inheritSpawnScriptState(*pchild, self);
-
-        pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
-        pchild->setDismountObject(self.getSelf());
+        publishSpawnChildState(*pchild, pchr->isKursed(), self);  /// @note BB@> inherit this from your spawner
         returncode = true;
     }
 
@@ -760,13 +759,7 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     }
     else
     {
-        self.child = pchild->getObjRef();
-
-        pchild->setKursed(pchr->isKursed());  /// @note BB@> inherit this from your spawner
-        inheritSpawnScriptState(*pchild, self);
-
-        pchild->setDismountTimer(Object::PHYS_DISMOUNT_TIME);
-        pchild->setDismountObject(self.getSelf());
+        publishSpawnChildState(*pchild, pchr->isKursed(), self);  /// @note BB@> inherit this from your spawner
         returncode = true;
     }
 

@@ -670,6 +670,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by widening `IMovementContr
 
 Extended `ObjectAccessors.cpp` and `ScriptStateFunctions.cpp` with focused coverage for the widened movement/lifecycle role surfaces, successful child-state publication, and the preserved unsafe-position spawn behavior where the child stays invalid after termination is requested. Build, the focused accessor/state test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 141 — Exact-position spawn role closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by routing `scr_SpawnCharacterXYZ()` and `scr_SpawnExactCharacterXYZ()` through the same role-based child-publication helper used by `scr_SpawnCharacter()`, covering kurse inheritance, script-owned spawn-state publication, and dismount publication without widening any public role surfaces. Kept exact-position spawn semantics unchanged: no `hasSafePosition()` gate and no injected launch velocity on the XYZ variants.
+
+Extended `ScriptStateFunctions.cpp` with focused regressions for both exact-position spawn variants, pinning requested profile/facing/position plus the shared child-state publication contract. Build, the focused `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -662,6 +662,102 @@ TEST_F(ScriptStateFunctionsFixture, SpawnCharacterLeavesChildInvalidWhenSpawnedI
     EXPECT_EQ(self.child, ObjectRef::Invalid);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SpawnCharacterXYZPublishesChildStateThroughRoleSurfaces)
+{
+    const auto actorPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55390, true);
+    ASSERT_TRUE(actorPosition.has_value());
+
+    const auto exactPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55391, true, actorPosition);
+    ASSERT_TRUE(exactPosition.has_value());
+
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55390, *actorPosition);
+
+    ASSERT_NE(actor, nullptr);
+
+    actor->setKursed(true);
+
+    script_state_t state;
+    state.x = static_cast<int>(exactPosition->x());
+    state.y = static_cast<int>(exactPosition->y());
+    state.distance = 12;
+    state.turn = 33333;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(91);
+    self.passage = 15;
+
+    EXPECT_TRUE(scr_SpawnCharacterXYZ(state, self));
+    ASSERT_NE(self.child, ObjectRef::Invalid);
+
+    auto child = module.getObjectHandler().get(self.child);
+    ASSERT_NE(child, nullptr);
+
+    EXPECT_EQ(child->getProfileID(), actor->getProfileID());
+    EXPECT_TRUE(child->isKursed());
+    EXPECT_EQ(child->getAIOwner(), self.owner);
+    EXPECT_EQ(child->getAIPassage(), self.passage);
+    EXPECT_EQ(child->getDismountTimer(), Object::PHYS_DISMOUNT_TIME);
+    EXPECT_EQ(child->getDismountObject(), actor->getObjRef());
+    EXPECT_EQ(child->getFacingZ(), Facing(Ego::Math::clipBits<16>(state.turn)));
+    EXPECT_FLOAT_EQ(child->getPosX(), static_cast<float>(state.x));
+    EXPECT_FLOAT_EQ(child->getPosY(), static_cast<float>(state.y));
+    EXPECT_FLOAT_EQ(child->getPosZ(), static_cast<float>(state.distance));
+    EXPECT_FLOAT_EQ(child->getVelocity().x(), 0.0f);
+    EXPECT_FLOAT_EQ(child->getVelocity().y(), 0.0f);
+    EXPECT_FLOAT_EQ(child->getVelocity().z(), 0.0f);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnExactCharacterXYZPublishesRequestedProfileAndChildState)
+{
+    const auto actorPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55392, true);
+    ASSERT_TRUE(actorPosition.has_value());
+
+    const auto exactPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55393, true, actorPosition);
+    ASSERT_TRUE(exactPosition.has_value());
+
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55392, *actorPosition);
+
+    ASSERT_NE(actor, nullptr);
+
+    const ObjectProfileRef requestedProfile = loadProfile("mp_data/globalobjects/players/ranger.obj", 55394);
+    ASSERT_NE(requestedProfile, ObjectProfileRef::Invalid);
+
+    actor->setKursed(true);
+
+    script_state_t state;
+    state.argument = requestedProfile.get();
+    state.x = static_cast<int>(exactPosition->x());
+    state.y = static_cast<int>(exactPosition->y());
+    state.distance = 18;
+    state.turn = 44444;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(92);
+    self.passage = 16;
+
+    EXPECT_TRUE(scr_SpawnExactCharacterXYZ(state, self));
+    ASSERT_NE(self.child, ObjectRef::Invalid);
+
+    auto child = module.getObjectHandler().get(self.child);
+    ASSERT_NE(child, nullptr);
+
+    EXPECT_EQ(child->getProfileID(), requestedProfile);
+    EXPECT_TRUE(child->isKursed());
+    EXPECT_EQ(child->getAIOwner(), self.owner);
+    EXPECT_EQ(child->getAIPassage(), self.passage);
+    EXPECT_EQ(child->getDismountTimer(), Object::PHYS_DISMOUNT_TIME);
+    EXPECT_EQ(child->getDismountObject(), actor->getObjRef());
+    EXPECT_EQ(child->getFacingZ(), Facing(Ego::Math::clipBits<16>(state.turn)));
+    EXPECT_FLOAT_EQ(child->getPosX(), static_cast<float>(state.x));
+    EXPECT_FLOAT_EQ(child->getPosY(), static_cast<float>(state.y));
+    EXPECT_FLOAT_EQ(child->getPosZ(), static_cast<float>(state.distance));
+    EXPECT_FLOAT_EQ(child->getVelocity().x(), 0.0f);
+    EXPECT_FLOAT_EQ(child->getVelocity().y(), 0.0f);
+    EXPECT_FLOAT_EQ(child->getVelocity().z(), 0.0f);
+}
+
 TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadListeners)
 {
     auto& module = beginActiveTestModule();
