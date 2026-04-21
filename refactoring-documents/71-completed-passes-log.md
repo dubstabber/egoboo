@@ -784,6 +784,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by replacing the last dire
 
 Extended `ScriptTargetFunctions.cpp` with a focused regression for missing equipped-item matches staying false without mutating the current target. Build, the focused `ScriptTargetFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 160 — Script runtime iterator seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `Script/script.c` by replacing the last direct runtime `objectHandler().iterator()` dependency in `forEachLiveRuntimeObjectRef(...)` with the session-owned object-handler seam. Kept the helper ref-yielding only, so `issue_order(...)` and `issue_special_order(...)` still publish through file-local recipient resolution without reintroducing shared-object exposure or widening any public role surface.
+
+Kept the existing focused `ScriptRuntime.cpp` coverage for same-team order publication, special-IDSZ filtering, invalid spawn refs, and invalid bump targets as the behavior lock. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -1044,7 +1044,13 @@ struct OrderRecipient
 template <typename Fn>
 void forEachLiveRuntimeObjectRef(Fn&& fn)
 {
-    for (const auto& object : objectHandler().iterator())
+    ObjectHandler* handler = GameSessionContext::get().tryObjectHandler();
+    if (handler == nullptr)
+    {
+        return;
+    }
+
+    for (const auto& object : handler->iterator())
     {
         const ObjectRef ref = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
         if (ref != ObjectRef::Invalid)
