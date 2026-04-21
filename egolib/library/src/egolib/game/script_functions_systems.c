@@ -93,6 +93,38 @@ struct SelfProfileCompatibilityData
     SelfProfileComparisonData comparison;
 };
 
+struct SelfScriptCompatibilityContext
+{
+    std::shared_ptr<ObjectProfile> profile;
+    std::string selfName;
+    std::string selfClassName;
+};
+
+bool resolveSelfScriptCompatibilityContext(const ai_state_t& self,
+                                           SelfScriptCompatibilityContext& context)
+{
+    if (!objectHandler().exists(self.getSelf()))
+    {
+        return false;
+    }
+
+    const Object* selfObject = objectHandler().get(self.getSelf());
+    if (selfObject == nullptr)
+    {
+        return false;
+    }
+
+    context.profile = selfObject->getProfile();
+    if (!context.profile)
+    {
+        return false;
+    }
+
+    context.selfName = selfObject->getName();
+    context.selfClassName = context.profile->getClassName();
+    return true;
+}
+
 bool resolveSelfProfileCompatibilityData(const Object& selfObject,
                                          SelfProfileCompatibilityData& data)
 {
@@ -111,34 +143,56 @@ bool resolveSelfProfileCompatibilityData(const Object& selfObject,
     return true;
 }
 
-void logDeprecatedEnableListenSkill(const Object& selfObject)
+void logDeprecatedScriptFunctionUse(const std::string& functionName,
+                                    const std::string& className)
 {
     EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
                                                            __FILE__,
                                                            __LINE__,
                                                            "deprecated script function ",
                                                            "`",
-                                                           "EnableListenSkill",
+                                                           functionName,
                                                            "`",
                                                            " by class `",
-                                                           selfObject.getProfile()->getClassName(),
+                                                           className,
                                                            "`",
                                                            Log::EndOfEntry);
 }
 
-bool followLinkFromMessageId(const ObjectProfile& profile,
-                             int messageId,
-                             const Object& selfObject)
+void logDeprecatedEnableListenSkill(const ai_state_t& self)
 {
-    if (!profile.isValidMessageID(messageId))
+    SelfScriptCompatibilityContext context;
+    if (!resolveSelfScriptCompatibilityContext(self, context))
+    {
+        return;
+    }
+
+    logDeprecatedScriptFunctionUse("EnableListenSkill", context.selfClassName);
+}
+
+bool dispatchFollowLinkByModuleName(const std::string& moduleName)
+{
+    return g_followLinkByModuleName(moduleName, true);
+}
+
+void publishFollowLinkFailureMessage(const std::string& selfName)
+{
+    DisplayMsg_printf("That's too scary for %s", selfName.c_str());
+}
+
+bool followLinkFromMessageId(const ai_state_t& self, int messageId)
+{
+    SelfScriptCompatibilityContext context;
+    if (!resolveSelfScriptCompatibilityContext(self, context) ||
+        !context.profile->isValidMessageID(messageId))
     {
         return false;
     }
 
-    const bool followed = g_followLinkByModuleName(profile.getMessage(messageId), true);
+    const bool followed = dispatchFollowLinkByModuleName(context.profile->getMessage(messageId));
     if (!followed)
     {
-        DisplayMsg_printf("That's too scary for %s", selfObject.getName().c_str());
+        publishFollowLinkFailureMessage(context.selfName);
     }
 
     return followed;
@@ -2235,7 +2289,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    logDeprecatedEnableListenSkill(*pchr);
+    logDeprecatedEnableListenSkill(self);
     returncode = false;
 
     SCRIPT_FUNCTION_END();
@@ -2251,7 +2305,7 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = followLinkFromMessageId(*ppro, state.argument, *pchr);
+    returncode = followLinkFromMessageId(self, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
