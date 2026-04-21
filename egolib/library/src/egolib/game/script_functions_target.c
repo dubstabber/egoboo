@@ -39,6 +39,11 @@ ObjectRef callerForHelpRef(const ITargetInfo& selfInfo)
     return activeModule().getTeamCallerForHelpRef(selfInfo.getTeamRef());
 }
 
+std::shared_ptr<Passage> resolvePassage(int passageId)
+{
+    return activeModule().getPassageByID(passageId);
+}
+
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
     if (!objectHandler().exists(objectRef))
@@ -48,6 +53,21 @@ bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 
     self.setTarget(objectRef);
     return true;
+}
+
+bool trySetTargetFromPassageOccupant(ai_state_t& self,
+                                     int passageId,
+                                     const IDSZ2& occupantIdsz,
+                                     BIT_FIELD targetingBits,
+                                     const IDSZ2& requiredItem)
+{
+    const std::shared_ptr<Passage> passage = resolvePassage(passageId);
+    return passage != nullptr &&
+           trySetResolvedTarget(self,
+                                passage->whoIsBlockingPassage(self.getSelf(),
+                                                              occupantIdsz,
+                                                              targetingBits,
+                                                              requiredItem));
 }
 
 ObjectRef leaderTargetRef(const ITargetInfo& selfInfo)
@@ -1271,19 +1291,11 @@ uint8_t scr_SetTargetToWhoeverIsInPassage( script_state_t& state, ai_state_t& se
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
-
-    returncode = false;
-    if(passage)
-    {
-        auto objRef = passage->whoIsBlockingPassage(self.getSelf(), IDSZ2::None, TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES, IDSZ2::None);
-
-        if (objectHandler().exists(objRef))
-        {
-            self.setTarget(objRef);
-            returncode = true;
-        }
-    }
+    returncode = trySetTargetFromPassageOccupant(self,
+                                                 state.argument,
+                                                 IDSZ2::None,
+                                                 TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
+                                                 IDSZ2::None);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1587,17 +1599,11 @@ uint8_t scr_SetTargetToPassageID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
-
-    returncode = false;
-    if(passage) {
-        ObjectRef objRef = passage->whoIsBlockingPassage(self.getSelf(), IDSZ2::None, TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES, state.distance);
-        if ( objectHandler().exists(objRef) )
-        {
-            self.setTarget(objRef);
-            returncode = true;
-        }
-    }
+    returncode = trySetTargetFromPassageOccupant(self,
+                                                 state.argument,
+                                                 IDSZ2::None,
+                                                 TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
+                                                 IDSZ2(state.distance));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1789,17 +1795,11 @@ uint8_t scr_SetTargetToBlahInPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
-    returncode = false;
-    if(passage) {
-        auto objRef = passage->whoIsBlockingPassage(self.getSelf(), state.turn, TARGET_SELF | state.distance, IDSZ2::None );
-
-        if ( objectHandler().exists(objRef) )
-        {
-            self.setTarget(objRef);
-            returncode = true;
-        }
-    }
+    returncode = trySetTargetFromPassageOccupant(self,
+                                                 state.argument,
+                                                 IDSZ2(state.turn),
+                                                 TARGET_SELF | state.distance,
+                                                 IDSZ2::None);
 
     SCRIPT_FUNCTION_END();
 }

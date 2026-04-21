@@ -10,6 +10,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+std::shared_ptr<Passage> resolvePassage(int passageId)
+{
+    return activeModule().getPassageByID(passageId);
+}
+
 Ego::GUI::UIManager* tryUIManager()
 {
     return EngineContext::get().tryUIManager();
@@ -677,7 +682,7 @@ uint8_t scr_ClearMusicPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
     if(passage) {
         passage->setMusic(Passage::NO_MUSIC);
     }
@@ -715,7 +720,7 @@ uint8_t scr_SetMusicPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
     if(passage) {
         passage->setMusic(state.distance);
     }

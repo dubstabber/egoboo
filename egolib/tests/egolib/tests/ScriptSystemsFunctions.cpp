@@ -19,6 +19,8 @@
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/Passage.hpp"
 #undef private
 #undef protected
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
@@ -28,7 +30,6 @@
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -374,6 +375,14 @@ protected:
         self.setSelf(selfObject ? selfObject->getObjRef() : ObjectRef::Invalid);
         self.setTarget(targetObject ? targetObject->getObjRef() : ObjectRef::Invalid);
         return self;
+    }
+
+    std::pair<std::shared_ptr<Passage>, int> addPassage(GameModule& module,
+                                                        uint8_t mask = EMPTY_BIT_FIELD) const
+    {
+        auto passage = std::make_shared<Passage>(module, 0, 0, 4, 4, mask);
+        module._passages.push_back(passage);
+        return {passage, static_cast<int>(module._passages.size() - 1)};
     }
 
     std::shared_ptr<Object> makeAmmoItem(GameModule& module, int slotBase) const
@@ -1883,6 +1892,41 @@ TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassUsesMorphControlAndPublis
     EXPECT_EQ(actor->getBaseModelRef(), nextProfile);
     EXPECT_NE(previousProfile, nextProfile);
     EXPECT_NE(previousBaseModel, nextProfile);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, PassageMutatorsPreserveExistingPassageBehavior)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5680);
+
+    ASSERT_NE(actor, nullptr);
+
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+    EXPECT_TRUE(passage->isOpen());
+
+    script_state_t state;
+    state.argument = passageId;
+    state.distance = 9;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfPassageOpen(state, self));
+    EXPECT_TRUE(scr_ClosePassage(state, self));
+    EXPECT_TRUE(passage->isOpen());
+    EXPECT_TRUE(scr_IfPassageOpen(state, self));
+    EXPECT_TRUE(scr_OpenPassage(state, self));
+    EXPECT_TRUE(passage->isOpen());
+    EXPECT_TRUE(scr_IfPassageOpen(state, self));
+
+    EXPECT_TRUE(scr_AddShopPassage(state, self));
+    EXPECT_TRUE(passage->isShop());
+    EXPECT_EQ(passage->getShopOwner(), actor->getObjRef());
+
+    state.argument = 99;
+    EXPECT_FALSE(scr_OpenPassage(state, self));
+    EXPECT_FALSE(scr_ClosePassage(state, self));
+    EXPECT_FALSE(scr_IfPassageOpen(state, self));
+    EXPECT_TRUE(scr_FlashPassage(state, self));
 }
 
 } // namespace

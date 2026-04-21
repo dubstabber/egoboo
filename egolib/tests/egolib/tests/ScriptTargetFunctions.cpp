@@ -10,11 +10,12 @@
 #define private public
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 #undef private
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -144,6 +145,14 @@ protected:
         self.setTarget(targetObject ? targetObject->getObjRef() : ObjectRef::Invalid);
         return self;
     }
+
+    std::pair<std::shared_ptr<Passage>, int> addPassage(GameModule& module,
+                                                        uint8_t mask = EMPTY_BIT_FIELD) const
+    {
+        auto passage = std::make_shared<Passage>(module, 0, 0, 4, 4, mask);
+        module._passages.push_back(passage);
+        return {passage, static_cast<int>(module._passages.size() - 1)};
+    }
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptTargetFunctionsFixture::s_runtime;
@@ -212,6 +221,103 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToRiderReadsThroughInventoryHolder
 
     EXPECT_TRUE(scr_SetTargetToRider(state, self));
     EXPECT_EQ(self.getTarget(), rider->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersSelectMatchingOccupants)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5311,
+                            Ego::Vector3f(Info<float>::Grid::Size() * 8.0f,
+                                          Info<float>::Grid::Size() * 8.0f,
+                                          0.0f));
+    auto occupant = makeObject(module, "mp_objects/follower.obj", 5312,
+                               Ego::Vector3f(Info<float>::Grid::Size() * 0.5f,
+                                             Info<float>::Grid::Size() * 0.5f,
+                                             0.0f));
+    auto heldItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 53121);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(occupant, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+
+    occupant->setTeam(actor->getTeamRef());
+    actor->setInvincible(false);
+    occupant->setInvincible(false);
+    actor->setAlpha(200);
+    actor->setLight(200);
+    occupant->setAlpha(200);
+    occupant->setLight(200);
+    static_cast<IInventoryHolder&>(*occupant).setHeldObject(SLOT_LEFT, heldItem->getObjRef());
+
+    {
+        auto objects = module.getObjectHandler().iterator();
+        (void)objects;
+    }
+
+    EXPECT_FALSE(passage->objectIsInPassage(actor));
+    EXPECT_TRUE(passage->objectIsInPassage(occupant));
+    EXPECT_TRUE(occupant->isAlive());
+    EXPECT_FALSE(occupant->isHidden());
+    EXPECT_FALSE(occupant->isBeingHeld());
+    EXPECT_FALSE(occupant->isItem());
+    EXPECT_FALSE(occupant->isInvincible());
+    EXPECT_FALSE(occupant->isScenery());
+    EXPECT_FALSE(actor->getTeam().hatesTeam(occupant->getTeam()));
+    EXPECT_TRUE(actor->canSeeObject(occupant));
+    constexpr int kPassageTargetMask = (1 << 8) | (1 << 2) | (1 << 1);
+    EXPECT_EQ(passage->whoIsBlockingPassage(actor->getObjRef(),
+                                            IDSZ2::None,
+                                            kPassageTargetMask,
+                                            IDSZ2::None),
+              occupant->getObjRef());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    state.argument = passageId;
+    EXPECT_TRUE(scr_SetTargetToWhoeverIsInPassage(state, self));
+    EXPECT_EQ(self.getTarget(), occupant->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    state.argument = passageId;
+    state.distance = static_cast<int>(heldItem->getProfile()->getIDSZ(IDSZ_TYPE).toUint32());
+    EXPECT_TRUE(scr_SetTargetToPassageID(state, self));
+    EXPECT_EQ(self.getTarget(), occupant->getObjRef());
+
+    self.setTarget(ObjectRef::Invalid);
+    state.argument = passageId;
+    state.turn = static_cast<int>(occupant->getProfile()->getIDSZ(IDSZ_TYPE).toUint32());
+    state.distance = (1 << 2);
+    EXPECT_TRUE(scr_SetTargetToBlahInPassage(state, self));
+    EXPECT_EQ(self.getTarget(), occupant->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersFailWithoutChangingTargetWhenPassageResolutionFails)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53122);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53123);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+
+    script_state_t state;
+    state.argument = 99;
+    state.distance = static_cast<int>(IDSZ2('N', 'O', 'N', 'E').toUint32());
+    state.turn = static_cast<int>(IDSZ2('N', 'O', 'N', 'E').toUint32());
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverIsInPassage(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToPassageID(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToBlahInPassage(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
 }
 
 TEST_F(ScriptTargetFunctionsFixture, SelfTargetSelectionReadsThroughScriptableRole)

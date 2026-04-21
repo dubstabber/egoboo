@@ -706,6 +706,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remainin
 
 Preserved the existing focused `ScriptSystemsFunctions.cpp` coverage for successful follow-link resolution, scary-message publication, no-active-playing-state fallback, and deprecated `EnableListenSkill` logging. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 147 — Passage helper quarantine follow-on (2026-04-21)
+
+Continued Tier 1.2 by isolating the remaining direct `activeModule().getPassageByID(...)` pockets behind file-local helpers in `script_functions_systems.c`, `script_functions_action.c`, and `script_functions_target.c`. Routed the bounded passage open/close/open-state, flash/shop/music, and passage-occupant target-selection helpers through those local seams while preserving the existing silent-failure and `returncode` behavior for invalid passage IDs.
+
+Extended `ScriptSystemsFunctions.cpp`, `ScriptActionFunctions.cpp`, and `ScriptTargetFunctions.cpp` with focused regressions covering passage open/close parity, shop-owner publication, missing-passage success/failure quirks, music assignment/clearing, and passage-based target selection. Build, the focused script-function test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

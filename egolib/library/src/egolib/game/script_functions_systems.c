@@ -16,6 +16,11 @@ egoboo_config_t& config()
 
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
+std::shared_ptr<Passage> resolvePassage(int passageId)
+{
+    return activeModule().getPassageByID(passageId);
+}
+
 IAppearanceProfile& appearanceProfile(Object& object)
 {
     return object;
@@ -624,7 +629,7 @@ uint8_t scr_OpenPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
     
     returncode = false;
     if(passage) {
@@ -647,7 +652,7 @@ uint8_t scr_ClosePassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
 
     returncode = false;
     if(passage) {
@@ -668,7 +673,7 @@ uint8_t scr_IfPassageOpen( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
 
     returncode = false;
     if(passage) {
@@ -1829,7 +1834,7 @@ uint8_t scr_FlashPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
     if(passage) {
         passage->flashColor(state.distance);
     }
@@ -2073,7 +2078,7 @@ uint8_t scr_AddShopPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Passage> passage = activeModule().getPassageByID(state.argument);
+    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
     if(passage) {
         passage->makeShop(self.getSelf());
         returncode = true;

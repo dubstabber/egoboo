@@ -12,13 +12,14 @@
 #define private public
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/Passage.hpp"
 #undef private
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
@@ -322,6 +323,14 @@ protected:
         return self;
     }
 
+    std::pair<std::shared_ptr<Passage>, int> addPassage(GameModule& module,
+                                                        uint8_t mask = EMPTY_BIT_FIELD) const
+    {
+        auto passage = std::make_shared<Passage>(module, 0, 0, 4, 4, mask);
+        module._passages.push_back(passage);
+        return {passage, static_cast<int>(module._passages.size() - 1)};
+    }
+
     void moveObjectToOldZ(const std::shared_ptr<Object>& object, float oldZ) const
     {
         ASSERT_NE(object, nullptr);
@@ -377,6 +386,46 @@ TEST_F(ScriptActionFunctionsFixture, PlaySoundUsesInstalledAudioSystemOnlyAboveP
     moveObjectToOldZ(actor, PITNOSOUND - 8.0f);
     EXPECT_TRUE(scr_PlaySound(state, self));
     EXPECT_TRUE(audioSystem.playedSounds.empty());
+}
+
+TEST_F(ScriptActionFunctionsFixture, MusicPassageHelpersUpdatePassageMusic)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5900);
+
+    ASSERT_NE(actor, nullptr);
+
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+    EXPECT_EQ(passage->_music, Passage::NO_MUSIC);
+
+    script_state_t state;
+    state.argument = passageId;
+    state.distance = 7;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SetMusicPassage(state, self));
+    EXPECT_EQ(passage->_music, 7);
+
+    EXPECT_TRUE(scr_ClearMusicPassage(state, self));
+    EXPECT_EQ(passage->_music, Passage::NO_MUSIC);
+}
+
+TEST_F(ScriptActionFunctionsFixture, MusicPassageHelpersIgnoreMissingPassagesWithoutFailing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5901);
+
+    ASSERT_NE(actor, nullptr);
+    EXPECT_EQ(module.getPassageCount(), 0);
+
+    script_state_t state;
+    state.argument = 99;
+    state.distance = 3;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SetMusicPassage(state, self));
+    EXPECT_TRUE(scr_ClearMusicPassage(state, self));
 }
 
 TEST_F(ScriptActionFunctionsFixture, PlaySoundLoopedAndStopSoundUseInstalledAudioSystem)
