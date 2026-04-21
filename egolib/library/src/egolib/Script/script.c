@@ -30,13 +30,10 @@
 #include "egolib/game/script_compile.h"
 #include "egolib/game/script_implementation.h"
 #include "egolib/game/script_functions.h"
+#include "egolib/game/script_functions_internal.h"
 #include "egolib/game/script_variables.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
-#include "egolib/game/Module/Module.hpp"
 
 
 namespace Ego {
@@ -125,38 +122,6 @@ static const char * script_error_classname = "UNKNOWN";
 
 namespace
 {
-GameModule& activeModule()
-{
-    return GameSessionContext::get().activeModule();
-}
-
-auto& objectHandler()
-{
-    return activeModule().getObjectHandler();
-}
-
-uint32_t worldUpdateCount()
-{
-    return GameSessionContext::get().worldUpdateCount();
-}
-
-std::shared_ptr<Object> tryObjectShared(const ObjectRef objectRef)
-{
-    return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
-}
-
-Object* tryObject(const ObjectRef objectRef)
-{
-    const std::shared_ptr<Object> object = tryObjectShared(objectRef);
-    return object.get();
-}
-
-const ITargetInfo* tryTargetInfo(const ObjectRef objectRef)
-{
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
-}
-
 void updateScriptErrorContext(const Object& object)
 {
     script_error_classname = "UNKNOWN";
@@ -237,7 +202,7 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
 
 ObjectRef resolveLeaderRefForVariables(const ITargetInfo& selfInfo)
 {
-    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
+    return teamLeaderRef(selfInfo);
 }
 
 Object* tryLeaderForVariables(const ITargetInfo& selfInfo)

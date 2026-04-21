@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <memory>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -9,23 +10,154 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#define protected public
 #define private public
+#include "egolib/Core/System.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Graphics/Billboard.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #undef private
+#undef protected
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/graphic.h"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
 
 namespace
 {
+
+struct GraphicsSystemAccess : Ego::GraphicsSystem
+{
+    using idlib::singleton<Ego::GraphicsSystem>::instance;
+};
+
+struct CoreSystemAccess : Ego::Core::System
+{
+    using idlib::singleton<Ego::Core::System, Ego::Core::SystemCreateFunctor>::instance;
+};
+
+class StubGraphicsWindow : public Ego::GraphicsWindow
+{
+public:
+    explicit StubGraphicsWindow(const idlib::vector_2s& size) :
+        _size(size),
+        _position(0, 0)
+    {}
+
+    void title(const std::string& title) override { _title = title; }
+    std::string title() const override { return _title; }
+    void grab_enabled(bool enabled) override { _grabEnabled = enabled; }
+    bool grab_enabled() const override { return _grabEnabled; }
+    idlib::vector_2s size() const override { return _size; }
+    void size(const idlib::vector_2s& size) override { _size = size; }
+    idlib::point_2s position() const override { return _position; }
+    void position(const idlib::point_2s& position) override { _position = position; }
+    void center() override {}
+    idlib::vector_2s drawable_size() const override { return _size; }
+    void update() override {}
+    SDL_Window* get() override { return nullptr; }
+    void setIcon(SDL_Surface*) override {}
+    int getDisplayIndex() const override { return 0; }
+    std::shared_ptr<SDL_Surface> getContents() const override { return nullptr; }
+
+private:
+    std::string _title;
+    bool _grabEnabled = false;
+    idlib::vector_2s _size;
+    idlib::point_2s _position;
+};
+
+class ScopedPlayingStateHarness
+{
+public:
+    ScopedPlayingStateHarness() :
+        _window({640, 480}),
+        _fakeCoreSystem(static_cast<Ego::Core::System*>(::operator new(sizeof(Ego::Core::System)))),
+        _fakeSystemService(static_cast<Ego::Core::SystemService*>(::operator new(sizeof(Ego::Core::SystemService)))),
+        _fakeGraphicsSystem(static_cast<Ego::GraphicsSystem*>(::operator new(sizeof(Ego::GraphicsSystem)))),
+        _fakeUiManager(static_cast<Ego::GUI::UIManager*>(::operator new(sizeof(Ego::GUI::UIManager))))
+    {
+        auto& context = EngineContext::get();
+        GameEngine& engine = context.engine();
+        _previousGameState = engine._currentGameState;
+        _previousUiManager = engine._uiManager.release();
+        engine._uiManager.reset(_fakeUiManager);
+
+        _fakeCoreSystem->systemService = _fakeSystemService;
+        _fakeCoreSystem->videoService = nullptr;
+        _fakeCoreSystem->audioService = nullptr;
+        _fakeCoreSystem->inputService = nullptr;
+        _previousCoreSystem = CoreSystemAccess::instance.exchange(_fakeCoreSystem);
+
+        _fakeGraphicsSystem->window = &_window;
+        _fakeGraphicsSystem->context = nullptr;
+        _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
+
+        engine._currentGameState = std::make_shared<PlayingState>();
+        _playingState = std::dynamic_pointer_cast<PlayingState>(engine._currentGameState);
+    }
+
+    ~ScopedPlayingStateHarness()
+    {
+        GameEngine& engine = EngineContext::get().engine();
+        engine._currentGameState = _previousGameState;
+        engine._uiManager.release();
+        if (_previousUiManager != nullptr)
+        {
+            engine._uiManager.reset(_previousUiManager);
+        }
+
+        CoreSystemAccess::instance.store(_previousCoreSystem);
+        GraphicsSystemAccess::instance.store(_previousGraphicsSystem);
+        ::operator delete(_fakeCoreSystem);
+        ::operator delete(_fakeSystemService);
+        ::operator delete(_fakeGraphicsSystem);
+        ::operator delete(_fakeUiManager);
+    }
+
+    std::vector<std::string> messageTexts() const
+    {
+        std::vector<std::string> texts;
+        if (_playingState == nullptr)
+        {
+            return texts;
+        }
+
+        for (const auto& message : _playingState->getMessageLog()->_messages)
+        {
+            texts.push_back(message.text);
+        }
+        return texts;
+    }
+
+private:
+    StubGraphicsWindow _window;
+    Ego::Core::System* _fakeCoreSystem = nullptr;
+    Ego::Core::System* _previousCoreSystem = nullptr;
+    Ego::Core::SystemService* _fakeSystemService = nullptr;
+    Ego::GraphicsSystem* _fakeGraphicsSystem = nullptr;
+    Ego::GraphicsSystem* _previousGraphicsSystem = nullptr;
+    Ego::GUI::UIManager* _fakeUiManager = nullptr;
+    Ego::GUI::UIManager* _previousUiManager = nullptr;
+    std::shared_ptr<GameState> _previousGameState;
+    std::shared_ptr<PlayingState> _playingState;
+};
 
 class StubAudioSystem : public IAudioSystem
 {
@@ -159,6 +291,105 @@ public:
     float maxHearingDistance = 0.0f;
 };
 
+class StubCameraSystem : public ICameraSystem
+{
+public:
+    void reset()
+    {
+        _cameraList.clear();
+        updateAllCalls = 0;
+        lastSetCameraCount = 0;
+    }
+
+    void setSingleTrackPosition(const Ego::Vector3f& position)
+    {
+        CameraOptions options{};
+        auto camera = std::make_shared<Camera>(options);
+        camera->_trackPos = position;
+        _cameraList = {camera};
+    }
+
+    void updateAll(const ego_mesh_t*) override
+    {
+        ++updateAllCalls;
+    }
+
+    void setNumberOfCameras(size_t numberOfCameras) override
+    {
+        lastSetCameraCount = numberOfCameras;
+    }
+
+    const std::vector<std::shared_ptr<Camera>>& getCameraList() const override
+    {
+        return _cameraList;
+    }
+
+    size_t updateAllCalls = 0;
+    size_t lastSetCameraCount = 0;
+
+private:
+    std::vector<std::shared_ptr<Camera>> _cameraList;
+};
+
+class StubBillboardSystem : public Ego::Graphics::IBillboardSystem
+{
+public:
+    struct Call
+    {
+        ObjectRef objectRef = ObjectRef::Invalid;
+        std::string text;
+        Ego::Colour4f textColor = Ego::Colour4f::white();
+        Ego::Colour4f tint = Ego::Colour4f::white();
+        int lifetime = 0;
+        BIT_FIELD flags = EMPTY_BIT_FIELD;
+        float size = 0.0f;
+
+        Call() = default;
+
+        Call(ObjectRef objectRef,
+             std::string text,
+             const Ego::Colour4f& textColor,
+             const Ego::Colour4f& tint,
+             int lifetime,
+             BIT_FIELD flags,
+             float size) :
+            objectRef(objectRef),
+            text(std::move(text)),
+            textColor(textColor),
+            tint(tint),
+            lifetime(lifetime),
+            flags(flags),
+            size(size)
+        {}
+    };
+
+    void reset() override
+    {
+        ++resetCalls;
+    }
+
+    void update() override
+    {
+        ++updateCalls;
+    }
+
+    std::shared_ptr<Ego::Graphics::Billboard> makeBillboard(ObjectRef objectRef,
+                                                            const std::string& text,
+                                                            const Ego::Colour4f& textColor,
+                                                            const Ego::Colour4f& tint,
+                                                            int lifetime_secs,
+                                                            BIT_FIELD opt_bits,
+                                                            float size) override
+    {
+        calls.emplace_back(objectRef, text, textColor, tint, lifetime_secs, opt_bits, size);
+        return std::make_shared<Ego::Graphics::Billboard>(Time::Ticks(), nullptr, size);
+    }
+
+    std::vector<Call> calls;
+    int resetCalls = 0;
+    int updateCalls = 0;
+};
+
 class ScriptActionFunctionsFixture : public ::testing::Test
 {
 protected:
@@ -206,7 +437,15 @@ protected:
     {
         auto& context = EngineContext::get();
         context.clearAudioSystem();
+        context.clearCameraSystem();
+        context.clearBillboardSystem();
         context.installAudioSystem(audioSystem);
+        context.installCameraSystem(cameraSystem);
+        context.installBillboardSystem(billboardSystem);
+        cameraSystem.reset();
+        billboardSystem.calls.clear();
+        billboardSystem.resetCalls = 0;
+        billboardSystem.updateCalls = 0;
 
         auto& session = GameSessionContext::get();
         if (session.hasActiveModule())
@@ -230,6 +469,8 @@ protected:
         }
 
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearCameraSystem();
+        EngineContext::get().clearBillboardSystem();
         setup_clear_module_vfs_paths();
     }
 
@@ -340,6 +581,8 @@ protected:
     }
 
     StubAudioSystem audioSystem;
+    StubCameraSystem cameraSystem;
+    StubBillboardSystem billboardSystem;
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptActionFunctionsFixture::s_runtime;
@@ -747,6 +990,55 @@ TEST_F(ScriptActionFunctionsFixture, DrawBillboardRejectsInvalidMessageBeforeTou
 
     ASSERT_FALSE(actor->getProfile()->isValidMessageID(state.argument));
     EXPECT_FALSE(scr_DrawBillboard(state, self));
+}
+
+TEST_F(ScriptActionFunctionsFixture, SendMessageNearUsesInstalledCameraDistanceGate)
+{
+    auto& module = beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5770);
+    ASSERT_NE(actor, nullptr);
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("near camera text"));
+    ASSERT_TRUE(actor->getProfile()->isValidMessageID(messageId));
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+    state.argument = messageId;
+
+    const size_t initialMessageCount = playingStateHarness.messageTexts().size();
+
+    cameraSystem.setSingleTrackPosition(actor->getOldPosition());
+    EXPECT_TRUE(scr_SendMessageNear(state, self));
+    const auto afterNear = playingStateHarness.messageTexts();
+    ASSERT_EQ(afterNear.size(), initialMessageCount + 1);
+    EXPECT_EQ(afterNear.back(), "Near camera text");
+
+    cameraSystem.setSingleTrackPosition(actor->getOldPosition() + Ego::Vector3f(MSGDISTANCE * 2.0f, MSGDISTANCE * 2.0f, 0.0f));
+    EXPECT_TRUE(scr_SendMessageNear(state, self));
+    EXPECT_EQ(playingStateHarness.messageTexts().size(), initialMessageCount + 1);
+}
+
+TEST_F(ScriptActionFunctionsFixture, DrawBillboardUsesInstalledBillboardSystemForValidMessages)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 57701);
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("billboard text"));
+    ASSERT_TRUE(actor->getProfile()->isValidMessageID(messageId));
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t state;
+    state.argument = messageId;
+    state.distance = 4;
+    state.turn = COLOR_GREEN;
+
+    EXPECT_TRUE(scr_DrawBillboard(state, self));
+    ASSERT_EQ(billboardSystem.calls.size(), 1u);
+    EXPECT_EQ(billboardSystem.calls.front().objectRef, actor->getObjRef());
+    EXPECT_EQ(billboardSystem.calls.front().text, "billboard text");
+    EXPECT_EQ(billboardSystem.calls.front().lifetime, 4);
+    EXPECT_EQ(billboardSystem.calls.front().flags, Ego::Graphics::Billboard::Flags::Fade);
 }
 
 TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRejectsInvalidArguments)

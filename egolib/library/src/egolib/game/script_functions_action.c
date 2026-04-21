@@ -10,9 +10,14 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
-std::shared_ptr<Passage> resolvePassage(int passageId)
+ICameraSystem& cameraSystem()
 {
-    return activeModule().getPassageByID(passageId);
+    return EngineContext::get().cameraSystem();
+}
+
+Ego::Graphics::IBillboardSystem& billboardSystem()
+{
+    return EngineContext::get().billboardSystem();
 }
 
 Ego::GUI::UIManager* tryUIManager()
@@ -46,12 +51,12 @@ std::shared_ptr<Ego::Graphics::Billboard> tryMakeBillboard(ObjectRef objectRef,
                                                            const Ego::Colour4f& tint,
                                                            int lifetime)
 {
-    return GFX::get().getBillboardSystem().makeBillboard(objectRef,
-                                                         text,
-                                                         textColor,
-                                                         tint,
-                                                         lifetime,
-                                                         Ego::Graphics::Billboard::Flags::Fade);
+    return billboardSystem().makeBillboard(objectRef,
+                                           text,
+                                           textColor,
+                                           tint,
+                                           lifetime,
+                                           Ego::Graphics::Billboard::Flags::Fade);
 }
 }
 
@@ -346,7 +351,7 @@ uint8_t scr_SendMessageNear( script_state_t& state, ai_state_t& self )
 
     // iterate over all cameras and find the minimum distance
     min_distance = -1;
-    for(std::shared_ptr<Camera> camera : CameraSystem::get().getCameraList())
+    for (const std::shared_ptr<Camera>& camera : cameraSystem().getCameraList())
     {
         iTmp = std::abs( pchr->getOldPosition()[kX] - camera->getTrackPosition()[kX] ) + std::fabs( pchr->getOldPosition()[kY] - camera->getTrackPosition()[kY] );
 
@@ -682,7 +687,7 @@ uint8_t scr_ClearMusicPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
         passage->setMusic(Passage::NO_MUSIC);
     }
@@ -720,7 +725,7 @@ uint8_t scr_SetMusicPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
         passage->setMusic(state.distance);
     }
@@ -1022,8 +1027,15 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     else {        
         returncode = true;
 
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(chargeTarget->getPlayerNumber());
-        player->setChargeBar(state.argument, state.distance, state.turn);
+        const std::shared_ptr<Ego::Player> player = tryPlayer(*chargeTarget);
+        if (player == nullptr)
+        {
+            returncode = false;
+        }
+        else
+        {
+            player->setChargeBar(state.argument, state.distance, state.turn);
+        }
     }
 
     SCRIPT_FUNCTION_END();

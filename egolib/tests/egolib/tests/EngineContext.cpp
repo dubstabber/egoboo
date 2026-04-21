@@ -11,6 +11,8 @@
 #include "egolib/Renderer/DeferredTexture.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -156,6 +158,34 @@ private:
     std::vector<std::shared_ptr<LoadPlayerElement>> _savedPlayers;
 };
 
+class StubCameraSystem : public ICameraSystem
+{
+public:
+    void updateAll(const ego_mesh_t*) override {}
+    void setNumberOfCameras(size_t) override {}
+    const std::vector<std::shared_ptr<Camera>>& getCameraList() const override { return _cameraList; }
+
+private:
+    std::vector<std::shared_ptr<Camera>> _cameraList;
+};
+
+class StubBillboardSystem : public Ego::Graphics::IBillboardSystem
+{
+public:
+    void update() override {}
+    void reset() override {}
+    std::shared_ptr<Ego::Graphics::Billboard> makeBillboard(ObjectRef,
+                                                            const std::string&,
+                                                            const Ego::Colour4f&,
+                                                            const Ego::Colour4f&,
+                                                            int,
+                                                            BIT_FIELD,
+                                                            float) override
+    {
+        return nullptr;
+    }
+};
+
 class StubLogTarget : public Log::Target
 {
 public:
@@ -177,6 +207,8 @@ protected:
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearProfileSystem();
+        EngineContext::get().clearCameraSystem();
+        EngineContext::get().clearBillboardSystem();
         EngineContext::get().clearEngine();
     }
 
@@ -189,6 +221,8 @@ protected:
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearProfileSystem();
+        EngineContext::get().clearCameraSystem();
+        EngineContext::get().clearBillboardSystem();
         EngineContext::get().clearEngine();
     }
 };
@@ -342,6 +376,22 @@ TEST_F(EngineContextFixture, ParticleHandlerThrowsWhenNoParticleHandlerIsInstall
     EXPECT_THROW(context.particleHandler(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, CameraSystemThrowsWhenNoCameraSystemIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryCameraSystem(), nullptr);
+    EXPECT_THROW(context.cameraSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, BillboardSystemThrowsWhenNoBillboardSystemIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryBillboardSystem(), nullptr);
+    EXPECT_THROW(context.billboardSystem(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, LogTargetThrowsWhenNoLogTargetIsInstalled)
 {
     EngineContext& context = EngineContext::get();
@@ -394,6 +444,28 @@ TEST_F(EngineContextFixture, InstallProfileSystemPublishesInstalledProfileSystem
 
     EXPECT_EQ(context.tryProfileSystem(), &profileSystem);
     EXPECT_EQ(&context.profileSystem(), &profileSystem);
+}
+
+TEST_F(EngineContextFixture, InstallCameraSystemPublishesInstalledCameraSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubCameraSystem cameraSystem;
+    context.installCameraSystem(cameraSystem);
+
+    EXPECT_EQ(context.tryCameraSystem(), &cameraSystem);
+    EXPECT_EQ(&context.cameraSystem(), &cameraSystem);
+}
+
+TEST_F(EngineContextFixture, InstallBillboardSystemPublishesInstalledBillboardSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubBillboardSystem billboardSystem;
+    context.installBillboardSystem(billboardSystem);
+
+    EXPECT_EQ(context.tryBillboardSystem(), &billboardSystem);
+    EXPECT_EQ(&context.billboardSystem(), &billboardSystem);
 }
 
 TEST_F(EngineContextFixture, InstallConfigPublishesInstalledConfig)
@@ -466,6 +538,30 @@ TEST_F(EngineContextFixture, InstallProfileSystemRejectsDoubleInstall)
 
     EXPECT_THROW(context.installProfileSystem(second), std::logic_error);
     EXPECT_EQ(context.tryProfileSystem(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallCameraSystemRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubCameraSystem first;
+    StubCameraSystem second;
+    context.installCameraSystem(first);
+
+    EXPECT_THROW(context.installCameraSystem(second), std::logic_error);
+    EXPECT_EQ(context.tryCameraSystem(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallBillboardSystemRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubBillboardSystem first;
+    StubBillboardSystem second;
+    context.installBillboardSystem(first);
+
+    EXPECT_THROW(context.installBillboardSystem(second), std::logic_error);
+    EXPECT_EQ(context.tryBillboardSystem(), &first);
 }
 
 TEST_F(EngineContextFixture, InstallConfigRejectsDoubleInstall)
@@ -542,6 +638,32 @@ TEST_F(EngineContextFixture, ClearProfileSystemRemovesInstalledProfileSystem)
 
     EXPECT_EQ(context.tryProfileSystem(), nullptr);
     EXPECT_THROW(context.profileSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearCameraSystemRemovesInstalledCameraSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubCameraSystem cameraSystem;
+    context.installCameraSystem(cameraSystem);
+
+    context.clearCameraSystem();
+
+    EXPECT_EQ(context.tryCameraSystem(), nullptr);
+    EXPECT_THROW(context.cameraSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearBillboardSystemRemovesInstalledBillboardSystem)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubBillboardSystem billboardSystem;
+    context.installBillboardSystem(billboardSystem);
+
+    context.clearBillboardSystem();
+
+    EXPECT_EQ(context.tryBillboardSystem(), nullptr);
+    EXPECT_THROW(context.billboardSystem(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearConfigRemovesInstalledConfig)
@@ -630,6 +752,38 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledProfileSystem)
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryProfileSystem(), nullptr);
     EXPECT_THROW(context.profileSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledCameraSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubCameraSystem cameraSystem;
+    context.installCameraSystem(cameraSystem);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryCameraSystem(), nullptr);
+    EXPECT_THROW(context.engine(), std::logic_error);
+    EXPECT_THROW(context.cameraSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledBillboardSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubBillboardSystem billboardSystem;
+    context.installBillboardSystem(billboardSystem);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryBillboardSystem(), nullptr);
+    EXPECT_THROW(context.engine(), std::logic_error);
+    EXPECT_THROW(context.billboardSystem(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineKeepsInstalledConfig)

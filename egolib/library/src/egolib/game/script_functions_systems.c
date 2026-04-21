@@ -16,11 +16,6 @@ egoboo_config_t& config()
 
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
-std::shared_ptr<Passage> resolvePassage(int passageId)
-{
-    return activeModule().getPassageByID(passageId);
-}
-
 IAppearanceProfile& appearanceProfile(Object& object)
 {
     return object;
@@ -64,11 +59,6 @@ IWallet& wallet(Object& object)
 IMorphControl& morphControl(Object& object)
 {
     return object;
-}
-
-ObjectRef leaderRef(const ITargetInfo& selfInfo)
-{
-    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
 }
 
 struct SelfAttributedDamageSource
@@ -318,33 +308,10 @@ bool consumeOrPoofItemWithLegacyInventoryPath(ObjectRef itemRef, IInventoryHolde
     return true;
 }
 
-std::shared_ptr<Ego::Player> targetPlayer(const ITargetInfo& target)
-{
-    if (!target.isPlayer())
-    {
-        return nullptr;
-    }
-
-    const size_t playerIndex = target.getPlayerNumber();
-    const auto& playerList = activeModule().getPlayerList();
-    if (playerIndex >= playerList.size())
-    {
-        return nullptr;
-    }
-
-    return playerList[playerIndex];
-}
-
-std::shared_ptr<Ego::Player> resolvedTargetPlayer(const ai_state_t& self)
-{
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
-    return target != nullptr ? targetPlayer(*target) : nullptr;
-}
-
 Ego::QuestLog* resolvedTargetQuestLog(const ai_state_t& self)
 {
-    const std::shared_ptr<Ego::Player> player = resolvedTargetPlayer(self);
-    return player != nullptr ? &player->getQuestLog() : nullptr;
+    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    return target != nullptr ? tryQuestLog(*target) : nullptr;
 }
 
 ObjectRef resolvedKillSourceRef(const ITargetInfo& selfInfo, ObjectRef selfRef)
@@ -629,7 +596,7 @@ uint8_t scr_OpenPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     
     returncode = false;
     if(passage) {
@@ -652,7 +619,7 @@ uint8_t scr_ClosePassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
 
     returncode = false;
     if(passage) {
@@ -673,7 +640,7 @@ uint8_t scr_IfPassageOpen( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
 
     returncode = false;
     if(passage) {
@@ -863,7 +830,7 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( leaderRef(targetInfo(*pchr)) != ObjectRef::Invalid );
+    returncode = ( teamLeaderRef(targetInfo(*pchr)) != ObjectRef::Invalid );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1826,7 +1793,7 @@ uint8_t scr_FlashPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
         passage->flashColor(state.distance);
     }
@@ -2070,7 +2037,7 @@ uint8_t scr_AddShopPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = resolvePassage(state.argument);
+    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
         passage->makeShop(self.getSelf());
         returncode = true;

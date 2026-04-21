@@ -205,6 +205,8 @@ public:
      AnimatedTilesState& getAnimatedTilesState() { return _animatedTilesState; }
 
     std::shared_ptr<Ego::Player>& getPlayer(size_t index);
+    std::shared_ptr<Ego::Player> tryGetPlayer(size_t index);
+    std::shared_ptr<const Ego::Player> tryGetPlayer(size_t index) const;
 
     const std::vector<std::shared_ptr<Ego::Player>>& getPlayerList() const;
 

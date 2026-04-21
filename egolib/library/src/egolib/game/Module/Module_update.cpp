@@ -29,6 +29,16 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+ICameraSystem& cameraSystem()
+{
+    return EngineContext::get().cameraSystem();
+}
+
+Ego::Graphics::IBillboardSystem& billboardSystem()
+{
+    return EngineContext::get().billboardSystem();
+}
+
 int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
                        const std::shared_ptr<Object>& attacker, bool setDamageTime)
 {
@@ -254,7 +264,7 @@ void GameModule::updateModuleServices()
                                             _mesh->_info.getTileCountY() * Info<float>::Grid::Size());
 
     audioSystem().update();
-    GFX::get().getBillboardSystem().update();
+    billboardSystem().update();
     _animatedTilesState.update();
     getWater().update();
     updateDamageTiles();
@@ -285,7 +295,7 @@ void GameModule::updateModuleSimulation()
 void GameModule::finalizeModuleUpdate()
 {
     //Camera movement
-    CameraSystem::get().updateAll(_mesh.get());
+    cameraSystem().updateAll(_mesh.get());
 
     //Increment update frame counter
     worldUpdateCount()++;

@@ -311,9 +311,11 @@ bool GameEngine::initialize()
 
     // Initialize the GFX system.
     GFX::initialize();
+    EngineContext::get().installBillboardSystem(GFX::get().getBillboardSystem());
 
 	// camera options
 	CameraSystem::initialize();
+    EngineContext::get().installCameraSystem(CameraSystem::get());
 	CameraSystem::get().getCameraOptions().turnMode = EngineContext::get().config().camera_control.getValue();
 
 
@@ -485,6 +487,8 @@ void GameEngine::uninitialize()
     unsubscribe();
     
     // Uninitialize the GFX system.
+    EngineContext::get().clearCameraSystem();
+    EngineContext::get().clearBillboardSystem();
     GFX::uninitialize();
 
 	// Uninitialize the input system.

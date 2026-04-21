@@ -5,6 +5,8 @@
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "idlib/non_copyable.hpp"
 
 #include <cstdint>
@@ -80,6 +82,24 @@ public:
 
     IProfileSystem& profileSystem();
     const IProfileSystem& profileSystem() const;
+
+    void installCameraSystem(ICameraSystem& cameraSystem);
+    void clearCameraSystem();
+
+    ICameraSystem* tryCameraSystem();
+    const ICameraSystem* tryCameraSystem() const;
+
+    ICameraSystem& cameraSystem();
+    const ICameraSystem& cameraSystem() const;
+
+    void installBillboardSystem(Ego::Graphics::IBillboardSystem& billboardSystem);
+    void clearBillboardSystem();
+
+    Ego::Graphics::IBillboardSystem* tryBillboardSystem();
+    const Ego::Graphics::IBillboardSystem* tryBillboardSystem() const;
+
+    Ego::Graphics::IBillboardSystem& billboardSystem();
+    const Ego::Graphics::IBillboardSystem& billboardSystem() const;
 
     void installConfig(egoboo_config_t& config);
     void clearConfig();

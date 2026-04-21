@@ -22,6 +22,7 @@
 #pragma once
 
 #include "egolib/game/egoboo.h"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
 
 // Forward declarations.
 class Camera;
@@ -35,7 +36,7 @@ struct Billboard;
 namespace Ego {
 namespace Graphics {
 
-class BillboardSystem
+class BillboardSystem : public IBillboardSystem
 {
 public:
     BillboardSystem();
@@ -43,8 +44,8 @@ public:
 public:
     bool render_one(Billboard& billboard, const Vector3f& cam_up, const Vector3f& cam_rgt);
     /// @brief Update all billboards in this billboard system with the time of "now".
-    void update();
-    void reset();
+    void update() override;
+    void reset() override;
     bool hasBillboard(const Object& object) const;
 
 private:
@@ -77,7 +78,7 @@ private:
 public:
     void render_all(::Camera& camera);
 
-    std::shared_ptr<Billboard> makeBillboard(ObjectRef obj_ref, const std::string& text, const Ego::Colour4f& textColor, const Ego::Colour4f& tint, int lifetime_secs, const BIT_FIELD opt_bits, const float size = 0.75f);
+    std::shared_ptr<Billboard> makeBillboard(ObjectRef obj_ref, const std::string& text, const Ego::Colour4f& textColor, const Ego::Colour4f& tint, int lifetime_secs, const BIT_FIELD opt_bits, const float size = 0.75f) override;
 };
 
 } // namespace Graphics

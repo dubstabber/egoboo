@@ -8,6 +8,8 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
 #include <stdexcept>
@@ -20,6 +22,8 @@ Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
+ICameraSystem* activeCameraSystem = nullptr;
+Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 egoboo_config_t* activeConfig = nullptr;
 Log::Target* activeLogTarget = nullptr;
 }
@@ -50,6 +54,8 @@ void EngineContext::clearEngine()
     clearImageManager();
     clearParticleHandler();
     clearProfileSystem();
+    clearCameraSystem();
+    clearBillboardSystem();
     activeEngine.reset();
 }
 
@@ -341,6 +347,94 @@ const IProfileSystem& EngineContext::profileSystem() const
         throw std::logic_error("no active profile system");
     }
     return *currentProfileSystem;
+}
+
+void EngineContext::installCameraSystem(ICameraSystem& cameraSystem)
+{
+    if (activeCameraSystem)
+    {
+        throw std::logic_error("camera system already installed");
+    }
+    activeCameraSystem = &cameraSystem;
+}
+
+void EngineContext::clearCameraSystem()
+{
+    activeCameraSystem = nullptr;
+}
+
+ICameraSystem* EngineContext::tryCameraSystem()
+{
+    return activeCameraSystem;
+}
+
+const ICameraSystem* EngineContext::tryCameraSystem() const
+{
+    return activeCameraSystem;
+}
+
+ICameraSystem& EngineContext::cameraSystem()
+{
+    ICameraSystem* currentCameraSystem = tryCameraSystem();
+    if (!currentCameraSystem)
+    {
+        throw std::logic_error("no active camera system");
+    }
+    return *currentCameraSystem;
+}
+
+const ICameraSystem& EngineContext::cameraSystem() const
+{
+    const ICameraSystem* currentCameraSystem = tryCameraSystem();
+    if (!currentCameraSystem)
+    {
+        throw std::logic_error("no active camera system");
+    }
+    return *currentCameraSystem;
+}
+
+void EngineContext::installBillboardSystem(Ego::Graphics::IBillboardSystem& billboardSystem)
+{
+    if (activeBillboardSystem)
+    {
+        throw std::logic_error("billboard system already installed");
+    }
+    activeBillboardSystem = &billboardSystem;
+}
+
+void EngineContext::clearBillboardSystem()
+{
+    activeBillboardSystem = nullptr;
+}
+
+Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem()
+{
+    return activeBillboardSystem;
+}
+
+const Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem() const
+{
+    return activeBillboardSystem;
+}
+
+Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem()
+{
+    Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
+    if (!currentBillboardSystem)
+    {
+        throw std::logic_error("no active billboard system");
+    }
+    return *currentBillboardSystem;
+}
+
+const Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem() const
+{
+    const Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
+    if (!currentBillboardSystem)
+    {
+        throw std::logic_error("no active billboard system");
+    }
+    return *currentBillboardSystem;
 }
 
 void EngineContext::installConfig(egoboo_config_t& config)

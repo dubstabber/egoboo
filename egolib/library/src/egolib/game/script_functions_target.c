@@ -29,21 +29,6 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
     return facing > 55535 || facing < 10000;
 }
 
-ObjectRef leaderRef(const ITargetInfo& selfInfo)
-{
-    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
-}
-
-ObjectRef callerForHelpRef(const ITargetInfo& selfInfo)
-{
-    return activeModule().getTeamCallerForHelpRef(selfInfo.getTeamRef());
-}
-
-std::shared_ptr<Passage> resolvePassage(int passageId)
-{
-    return activeModule().getPassageByID(passageId);
-}
-
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
     if (!objectHandler().exists(objectRef))
@@ -61,7 +46,7 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                      BIT_FIELD targetingBits,
                                      const IDSZ2& requiredItem)
 {
-    const std::shared_ptr<Passage> passage = resolvePassage(passageId);
+    const std::shared_ptr<Passage> passage = tryPassage(passageId);
     return passage != nullptr &&
            trySetResolvedTarget(self,
                                 passage->whoIsBlockingPassage(self.getSelf(),
@@ -72,7 +57,7 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
 
 ObjectRef leaderTargetRef(const ITargetInfo& selfInfo)
 {
-    const ObjectRef resolvedLeaderRef = leaderRef(selfInfo);
+    const ObjectRef resolvedLeaderRef = teamLeaderRef(selfInfo);
     if (!objectHandler().exists(resolvedLeaderRef))
     {
         return ObjectRef::Invalid;
@@ -244,7 +229,7 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, callerForHelpRef(targetInfo(*pchr)));
+    returncode = trySetResolvedTarget(self, teamCallerForHelpRef(targetInfo(*pchr)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -546,7 +531,7 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, leaderRef(targetInfo(*pchr)));
+    returncode = trySetResolvedTarget(self, teamLeaderRef(targetInfo(*pchr)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1730,7 +1715,11 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     if(targetInfo->isPlayer()) {
-        const std::shared_ptr<Ego::Player>& player = activeModule().getPlayer(targetInfo->getPlayerNumber());
+        const std::shared_ptr<Ego::Player> player = tryPlayer(*targetInfo);
+        if (player == nullptr)
+        {
+            return false;
+        }
 
         // only find active quests
         if(player->getQuestLog().hasActiveQuest(idsz)) {

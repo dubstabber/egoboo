@@ -21,6 +21,7 @@
 #pragma once
 
 #include "egolib/game/egoboo.h"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 
 // Forward declaration.
@@ -33,7 +34,7 @@ static constexpr size_t MAX_CAMERAS = MAX_LOCAL_PLAYERS;
  *  A multi-camera system consisting of 1 to @a n cameras with indices @a 0 to <tt>n-1</tt>.
  *  The camera at index @a 0 is called the "main camera".
  */
-class CameraSystem : public idlib::singleton<CameraSystem>
+class CameraSystem : public idlib::singleton<CameraSystem>, public ICameraSystem
 {
 protected:
     friend idlib::default_new_functor<CameraSystem>;
@@ -48,7 +49,7 @@ protected:
     virtual ~CameraSystem();
 
 public:
-	void updateAll( const ego_mesh_t * mesh );
+	void updateAll( const ego_mesh_t * mesh ) override;
 	void resetAllTargets( const ego_mesh_t * mesh );
 
 	void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction);
@@ -75,7 +76,7 @@ public:
 	 */
 	size_t getCameraIndex(ObjectRef targetRef) const;
 
-	inline const std::vector<std::shared_ptr<Camera>>& getCameraList() const {return _cameraList;}
+	inline const std::vector<std::shared_ptr<Camera>>& getCameraList() const override {return _cameraList;}
 
     /**
      * @brief write access to global camera options
@@ -88,7 +89,7 @@ public:
 	* @brief
 	*	Initialize camera system with the specified number of cameras
 	**/
-	void setNumberOfCameras(size_t numberOfCameras);
+	void setNumberOfCameras(size_t numberOfCameras) override;
 
 private:
 

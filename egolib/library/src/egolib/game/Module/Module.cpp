@@ -176,6 +176,16 @@ std::shared_ptr<Ego::Player>& GameModule::getPlayer(size_t index)
     return _playerList[index];
 }
 
+std::shared_ptr<Ego::Player> GameModule::tryGetPlayer(size_t index)
+{
+    return index < _playerList.size() ? _playerList[index] : nullptr;
+}
+
+std::shared_ptr<const Ego::Player> GameModule::tryGetPlayer(size_t index) const
+{
+    return index < _playerList.size() ? _playerList[index] : nullptr;
+}
+
 const std::vector<std::shared_ptr<Ego::Player>>& GameModule::getPlayerList() const
 {
     return _playerList;

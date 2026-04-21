@@ -183,7 +183,7 @@ void LoadingState::loadModuleData()
         game_quit_module();
 
         setProgressText("Calculating some math...", 10);
-        GFX::get().getBillboardSystem().reset();
+        EngineContext::get().billboardSystem().reset();
 
         // Linking system
         setProgressText("Initializing module linking... ", 20);
@@ -223,7 +223,7 @@ void LoadingState::loadModuleData()
 
         // set up the cameras *after* game_begin_module() or the player devices will not be initialized
         // and camera_system_begin() will not set up thte correct view
-        CameraSystem::get().setNumberOfCameras(GameSessionContext::get().localPlayerCount());
+        EngineContext::get().cameraSystem().setNumberOfCameras(GameSessionContext::get().localPlayerCount());
 
         // Fade out music when finished loading
         audioSystem().stopMusic();

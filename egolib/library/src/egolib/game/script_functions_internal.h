@@ -111,6 +111,31 @@ inline auto& objectHandler()
     return activeModule().getObjectHandler();
 }
 
+inline std::shared_ptr<Passage> tryPassage(int passageId)
+{
+    return activeModule().getPassageByID(passageId);
+}
+
+inline ObjectRef teamLeaderRef(TEAM_REF teamRef)
+{
+    return activeModule().getTeamLeaderRef(teamRef);
+}
+
+inline ObjectRef teamLeaderRef(const ITargetInfo& targetInfo)
+{
+    return teamLeaderRef(targetInfo.getTeamRef());
+}
+
+inline ObjectRef teamCallerForHelpRef(TEAM_REF teamRef)
+{
+    return activeModule().getTeamCallerForHelpRef(teamRef);
+}
+
+inline ObjectRef teamCallerForHelpRef(const ITargetInfo& targetInfo)
+{
+    return teamCallerForHelpRef(targetInfo.getTeamRef());
+}
+
 inline Object* tryObject(ObjectRef objectRef)
 {
     return objectHandler().exists(objectRef) ? objectHandler().get(objectRef) : nullptr;
@@ -215,6 +240,22 @@ inline const ITargetInfo* tryTargetInfo(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
+inline std::shared_ptr<Ego::Player> tryPlayer(size_t playerIndex)
+{
+    return activeModule().tryGetPlayer(playerIndex);
+}
+
+inline std::shared_ptr<Ego::Player> tryPlayer(const ITargetInfo& targetInfo)
+{
+    return targetInfo.isPlayer() ? tryPlayer(targetInfo.getPlayerNumber()) : nullptr;
+}
+
+inline Ego::QuestLog* tryQuestLog(const ITargetInfo& targetInfo)
+{
+    const std::shared_ptr<Ego::Player> player = tryPlayer(targetInfo);
+    return player ? &player->getQuestLog() : nullptr;
 }
 
 inline IWallet* tryWallet(ObjectRef objectRef)
