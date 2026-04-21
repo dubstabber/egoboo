@@ -874,6 +874,54 @@ TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAn
     EXPECT_TRUE(module._pitsKill);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ShowMapHelpersUsePlayingStateMiniMapAdapters)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5615);
+
+    ASSERT_NE(actor, nullptr);
+
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+
+    const auto minimap = playingStateHarness.playingState()->getMiniMap();
+    ASSERT_NE(minimap, nullptr);
+    EXPECT_FALSE(minimap->isVisible());
+    EXPECT_FALSE(minimap->_showPlayerPosition);
+
+    script_state_t state;
+    state.x = 64;
+    state.y = 64;
+    state.argument = 1;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_ShowMap(state, self));
+    EXPECT_TRUE(minimap->isVisible());
+
+    EXPECT_TRUE(scr_ShowYouAreHere(state, self));
+    EXPECT_TRUE(minimap->_showPlayerPosition);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, ShowMapHelpersNoOpWithoutActivePlayingState)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5617);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+
+    script_state_t state;
+    state.x = 64;
+    state.y = 64;
+    state.argument = 1;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_ShowMap(state, self));
+    EXPECT_TRUE(scr_ShowYouAreHere(state, self));
+    EXPECT_TRUE(scr_ShowBlipXY(state, self));
+    EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavior)
 {
     auto& module = beginActiveTestModule();
@@ -893,6 +941,58 @@ TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavi
 
     EXPECT_TRUE(scr_ClearEndMessage(state, self));
     EXPECT_TRUE(g_endText.getText().empty());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, AddStatPublishesStatusMonitorThroughPlayingStateAdapter)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5618);
+
+    ASSERT_NE(actor, nullptr);
+
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+    ASSERT_EQ(playingStateHarness.playingState()->getStatusCharacter(0), nullptr);
+
+    auto& config = EngineContext::get().config();
+    const bool originalShowStatusBars = config.hud_displayStatusBars.getValue();
+    config.hud_displayStatusBars.setValue(true);
+
+    actor->setShowStatus(false);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_AddStat(state, self));
+    EXPECT_TRUE(actor->getShowStatus());
+    ASSERT_NE(playingStateHarness.playingState()->getStatusCharacter(0), nullptr);
+    EXPECT_EQ(playingStateHarness.playingState()->getStatusCharacter(0), actor);
+
+    config.hud_displayStatusBars.setValue(originalShowStatusBars);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, AddStatNoOpsWithoutActivePlayingState)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5619);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+
+    auto& config = EngineContext::get().config();
+    const bool originalShowStatusBars = config.hud_displayStatusBars.getValue();
+    config.hud_displayStatusBars.setValue(true);
+
+    actor->setShowStatus(false);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_AddStat(state, self));
+    EXPECT_FALSE(actor->getShowStatus());
+    EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+
+    config.hud_displayStatusBars.setValue(originalShowStatusBars);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRoleLookups)

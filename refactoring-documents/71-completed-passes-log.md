@@ -766,6 +766,12 @@ Continued Tier 1.2 inside `Script/script.c` by replacing the remaining direct ru
 
 Kept the existing focused `ScriptRuntime.cpp` coverage for invalid actor refs, waypoint velocity publication, same-team order publication, special-IDSZ order filtering, invalid spawn refs, and invalid bump targets as the behavior lock. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 157 — Script systems object-handler seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remaining direct playing-state/minimap object-handle adapters behind file-local helpers and replacing the residual `DisenchantAll` concrete-object sweep with a ref-yielding iterator plus `IEnchantable` role lookup. Kept the ownership-bearing damage/heal/enchant APIs unchanged and preserved the current active-playing-state behavior while making the show-map and status-monitor helpers safe no-ops when no playing state is installed.
+
+Extended `ScriptSystemsFunctions.cpp` with focused coverage for `ShowMap`/`ShowYouAreHere` active-state publication, no-active-playing-state no-op behavior for the UI adapters, and `AddStat` status-monitor publication through the new helper layer. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

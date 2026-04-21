@@ -245,36 +245,65 @@ bool setActorTileType(const Object& actor, uint16_t tileType)
     return activeModule().setTileType(actor.getTile(), tileType);
 }
 
-std::shared_ptr<PlayingState> playingState()
+std::shared_ptr<PlayingState> tryPlayingState()
 {
-    return activePlayingState();
+    return EngineContext::get().tryActivePlayingState();
 }
 
-Ego::GUI::MiniMap& miniMap()
+std::shared_ptr<Ego::GUI::MiniMap> tryMiniMap()
 {
-    return *playingState()->getMiniMap();
+    const std::shared_ptr<PlayingState> state = tryPlayingState();
+    return state ? state->getMiniMap() : nullptr;
 }
 
 bool showMiniMap()
 {
-    const bool wasHidden = !miniMap().isVisible();
-    miniMap().setVisible(true);
+    const std::shared_ptr<Ego::GUI::MiniMap> minimap = tryMiniMap();
+    if (!minimap)
+    {
+        return false;
+    }
+
+    const bool wasHidden = !minimap->isVisible();
+    minimap->setVisible(true);
     return wasHidden;
 }
 
 void showMiniMapPlayerPosition()
 {
-    miniMap().setShowPlayerPosition(true);
+    if (const std::shared_ptr<Ego::GUI::MiniMap> minimap = tryMiniMap())
+    {
+        minimap->setShowPlayerPosition(true);
+    }
+}
+
+std::shared_ptr<Object> tryUiObject(ObjectRef objectRef)
+{
+    return tryObjectShared(objectRef);
 }
 
 void addMiniMapBlip(float x, float y, ObjectRef objectRef)
 {
-    miniMap().addBlip(x, y, objectHandler()[objectRef]);
+    const std::shared_ptr<Ego::GUI::MiniMap> minimap = tryMiniMap();
+    const std::shared_ptr<Object> object = tryUiObject(objectRef);
+    if (!minimap || !object)
+    {
+        return;
+    }
+
+    minimap->addBlip(x, y, object);
 }
 
 void addSelfStatusMonitor(ObjectRef objectRef)
 {
-    playingState()->addStatusMonitor(objectHandler()[objectRef]);
+    const std::shared_ptr<PlayingState> state = tryPlayingState();
+    const std::shared_ptr<Object> object = tryUiObject(objectRef);
+    if (!state || !object)
+    {
+        return;
+    }
+
+    state->addStatusMonitor(object);
 }
 
 void clearEndMessageText()
@@ -700,13 +729,19 @@ bool updatePlayerQuestLogs(Fn&& fn)
 }
 
 template <typename Fn>
-void forEachResolvedObject(Fn&& fn)
+void forEachResolvedObjectRef(Fn&& fn)
 {
-    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    ObjectHandler* handler = gameSession().tryObjectHandler();
+    if (handler == nullptr)
+    {
+        return;
+    }
+
+    for (const std::shared_ptr<Object>& object : handler->iterator())
     {
         if (object != nullptr)
         {
-            fn(*object);
+            fn(object->getObjRef());
         }
     }
 }
@@ -2241,9 +2276,12 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    forEachResolvedObject([](Object& object)
+    forEachResolvedObjectRef([](ObjectRef objectRef)
     {
-        enchantable(object).disenchant();
+        if (IEnchantable* objectEnchantable = tryEnchantable(objectRef))
+        {
+            objectEnchantable->disenchant();
+        }
     });
 
     SCRIPT_FUNCTION_END();
