@@ -17,6 +17,15 @@
 
 namespace
 {
+IMovementControl& movementControl(Object& object)
+{
+    return object;
+}
+
+const IMovementControl& movementControl(const Object& object)
+{
+    return object;
+}
 
 class ObjectAccessorFixture : public ::testing::Test
 {
@@ -708,9 +717,10 @@ TEST_F(ObjectAccessorFixture, PhysicsForwardersClampDesiredVelocityAndExposeGrou
     auto object = makeFollower(3044);
     ASSERT_NE(object, nullptr);
 
-    object->setDesiredVelocity(Ego::Vector2f(2.0f, 0.0f));
-    EXPECT_FLOAT_EQ(object->getDesiredVelocity().x(), 1.0f);
-    EXPECT_FLOAT_EQ(object->getDesiredVelocity().y(), 0.0f);
+    IMovementControl& movement = movementControl(*object);
+    movement.setDesiredVelocity(Ego::Vector2f(2.0f, 0.0f));
+    EXPECT_FLOAT_EQ(movement.getDesiredVelocity().x(), 1.0f);
+    EXPECT_FLOAT_EQ(movement.getDesiredVelocity().y(), 0.0f);
 
     object->_objectPhysics._groundElevation = object->getPosZ();
     EXPECT_TRUE(object->isTouchingGround());
@@ -1261,6 +1271,7 @@ TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMut
     movement.setBumpWidth(8.0f);
     movement.setLatchButton(LATCHBUTTON_LEFT, true);
     movement.setVelocity(Ego::Vector3f(4.0f, 5.0f, 6.0f));
+    movement.setDesiredVelocity(Ego::Vector2f(2.0f, 0.0f));
     movement.setJumpTimer(13);
     movement.movePosition(1.0f, 2.0f, 3.0f);
     movement.setReloadTimer(9);
@@ -1273,6 +1284,8 @@ TEST_F(ObjectAccessorFixture, MovementControlRoleSurfaceSupportsBoundedMotionMut
     EXPECT_TRUE(object->_inputLatchesPressed[LATCHBUTTON_LEFT]);
     EXPECT_FLOAT_EQ(movement.getVelocity().x(), 4.0f);
     EXPECT_FLOAT_EQ(movement.getVelocity().y(), 5.0f);
+    EXPECT_FLOAT_EQ(movement.getDesiredVelocity().x(), 1.0f);
+    EXPECT_FLOAT_EQ(movement.getDesiredVelocity().y(), 0.0f);
     EXPECT_FLOAT_EQ(movement.getVelocity().z(), 6.0f);
     EXPECT_FLOAT_EQ(object->getVelocity().x(), 4.0f);
     EXPECT_FLOAT_EQ(object->getVelocity().y(), 5.0f);
@@ -2265,7 +2278,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAs
     object->inst._animationProgress = 0.5f;
     object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
-    object->setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+    movementControl(*object).setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
     object->inst.updateAnimationRate();
 
@@ -2336,7 +2349,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsT
     object->inst._canBeInterrupted = true;
     object->inst._freezeAtLastFrame = false;
     object->_objectPhysics._groundElevation = object->getPosZ();
-    object->setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+    movementControl(*object).setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
     object->inst.updateAnimationRate();
 
@@ -2357,7 +2370,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyReturnsWalkingAnimationToI
     object->inst._canBeInterrupted = true;
     object->inst._freezeAtLastFrame = false;
     object->_objectPhysics._groundElevation = object->getPosZ();
-    object->setDesiredVelocity(idlib::zero<Ego::Vector2f>());
+    movementControl(*object).setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
     object->inst.updateAnimationRate();
 
@@ -2380,7 +2393,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnim
     object->inst._freezeAtLastFrame = false;
     object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
-    object->setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
+    movementControl(*object).setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
     object->inst.updateAnimationRate();
 

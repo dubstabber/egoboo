@@ -31,6 +31,11 @@
 
 namespace
 {
+IMovementControl& movementControl(Object& object)
+{
+    return object;
+}
+
 GameSessionContext& gameSession()
 {
     return GameSessionContext::get();
@@ -124,7 +129,7 @@ void Player::updateLatches()
         object->setLatchButton(LATCHBUTTON_RIGHT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::USE_RIGHT));
         object->setLatchButton(LATCHBUTTON_ALTLEFT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::GRAB_LEFT));
         object->setLatchButton(LATCHBUTTON_ALTRIGHT, getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::GRAB_RIGHT));
-        object->setDesiredVelocity(movementInput);
+        movementControl(*object).setDesiredVelocity(movementInput);
     }
 
     //inventory mode

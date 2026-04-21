@@ -177,10 +177,6 @@ public:
 
     void detachFromPlatform();
 
-    const Ego::Vector2f& getDesiredVelocity() const;
-
-    void setDesiredVelocity(const Ego::Vector2f& velocity);
-
     float getMass() const;
 
     bool grabStuff(grip_offset_t gripOffset, bool grabPeople);
@@ -1403,6 +1399,10 @@ public:
     void setPreviousFacingZ(Facing facing) { ori_old.facing_z = facing; }
 
 private:
+
+    const Ego::Vector2f& getDesiredVelocity() const override;
+
+    void setDesiredVelocity(const Ego::Vector2f& velocity) override;
 
     Team& getMutableTeam() const;
 

@@ -814,6 +814,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by localizing the remaini
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for the preserved map/UI adapter behavior, self damage-type and equipped-state mutation, and `PumpTarget` preserving self-ref mana-source attribution. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 165 — Desired-velocity movement seam closure (2026-04-21)
+
+Continued Tier 1.2 by widening `IMovementControl` with desired-velocity read/write accessors, migrating the remaining non-`Object` callers in `Script/script.c`, `Logic/Player.cpp`, and `Graphics/ObjectGraphics.cpp` onto that role, and moving `Object`'s desired-velocity override behind the role-only surface instead of leaving it as a public concrete seam.
+
+Extended `ObjectAccessors.cpp` and `ScriptRuntime.cpp` with movement-role desired-velocity coverage for clamping, waypoint publication, mount rider propagation, and invalid-actor no-op behavior. Build, the focused accessor/runtime slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

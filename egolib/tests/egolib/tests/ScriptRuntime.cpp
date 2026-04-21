@@ -19,6 +19,15 @@
 
 namespace
 {
+IMovementControl& movementControl(Object& object)
+{
+    return object;
+}
+
+const IMovementControl& movementControl(const Object& object)
+{
+    return object;
+}
 
 class ScriptRuntimeFixture : public ::testing::Test
 {
@@ -184,8 +193,8 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptResetsInvisibleTargetAndAppliesWa
     scr_run_chr_script(actor.get());
 
     EXPECT_EQ(aiState.getTarget(), actor->getObjRef());
-    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().x(), 1.0f);
-    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().y(), 0.0f);
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), 1.0f);
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), 0.0f);
 }
 
 TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentObjects)
@@ -253,7 +262,7 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFr
 
     mount->setHeldObject(SLOT_LEFT, rider->getObjRef());
     rider->setHolderRef(mount->getObjRef());
-    rider->setDesiredVelocity(Ego::Vector2f(2.5f, -1.5f));
+    movementControl(*rider).setDesiredVelocity(Ego::Vector2f(2.5f, -1.5f));
 
     auto& aiScript = mount->getProfile()->getAIScript();
     aiScript._name = "runtime-mount-test";
@@ -266,8 +275,8 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFr
 
     scr_run_chr_script(mount.get());
 
-    EXPECT_FLOAT_EQ(mount->getDesiredVelocity().x(), rider->getDesiredVelocity().x());
-    EXPECT_FLOAT_EQ(mount->getDesiredVelocity().y(), rider->getDesiredVelocity().y());
+    EXPECT_FLOAT_EQ(movementControl(*mount).getDesiredVelocity().x(), movementControl(*rider).getDesiredVelocity().x());
+    EXPECT_FLOAT_EQ(movementControl(*mount).getDesiredVelocity().y(), movementControl(*rider).getDesiredVelocity().y());
 }
 
 TEST_F(ScriptRuntimeFixture, InvalidCharacterRefsAreQuietNoOpsForAlertPollingAndScriptRun)
@@ -278,8 +287,8 @@ TEST_F(ScriptRuntimeFixture, InvalidCharacterRefsAreQuietNoOpsForAlertPollingAnd
 
     ASSERT_NE(actor, nullptr);
 
-    actor->setDesiredVelocity(Ego::Vector2f(3.0f, -2.0f));
-    const auto initialDesiredVelocity = actor->getDesiredVelocity();
+    movementControl(*actor).setDesiredVelocity(Ego::Vector2f(3.0f, -2.0f));
+    const auto initialDesiredVelocity = movementControl(*actor).getDesiredVelocity();
     auto& actorState = Ego::Script::runtimeState(*actor);
     actorState.alert = ALERTIF_ORDERED;
     actorState.setTarget(actor->getObjRef());
@@ -289,8 +298,8 @@ TEST_F(ScriptRuntimeFixture, InvalidCharacterRefsAreQuietNoOpsForAlertPollingAnd
 
     EXPECT_EQ(actorState.alert, ALERTIF_ORDERED);
     EXPECT_EQ(actorState.getTarget(), actor->getObjRef());
-    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().x(), initialDesiredVelocity.x());
-    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().y(), initialDesiredVelocity.y());
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), initialDesiredVelocity.x());
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), initialDesiredVelocity.y());
 }
 
 TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesFallBackToSelfWhenTeamLeaderMissing)

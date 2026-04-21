@@ -14,6 +14,8 @@ public:
 
     virtual const Ego::Vector3f& getVelocity() const = 0;
     virtual void setVelocity(const Ego::Vector3f& velocity) = 0;
+    virtual const Ego::Vector2f& getDesiredVelocity() const = 0;
+    virtual void setDesiredVelocity(const Ego::Vector2f& velocity) = 0;
     virtual void setJumpTimer(uint8_t timer) = 0;
     virtual void movePosition(float x, float y, float z) = 0;
     virtual void setTurnMode(turn_mode_t mode) = 0;

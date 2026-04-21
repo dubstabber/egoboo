@@ -25,6 +25,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+const IMovementControl& movementControl(const Object& object)
+{
+    return object;
+}
+
 const std::shared_ptr<Object>& attachmentObject(ObjectRef objectRef)
 {
     return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
@@ -81,7 +86,7 @@ LocomotionAnimationDecision makeLocomotionAnimationDecision(Object& object,
     else
     {
         speed = std::max(idlib::euclidean_norm(xy(object.getVelocity())),
-                         idlib::euclidean_norm(object.getDesiredVelocity()));
+                         idlib::euclidean_norm(movementControl(object).getDesiredVelocity()));
         if (object.floorIsSlippy())
         {
             decision.animationRate = 2.0f;

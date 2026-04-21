@@ -122,6 +122,16 @@ static const char * script_error_classname = "UNKNOWN";
 
 namespace
 {
+IMovementControl& movementControl(Object& object)
+{
+    return object;
+}
+
+const IMovementControl& movementControl(const Object& object)
+{
+    return object;
+}
+
 const IInventoryHolder& inventoryHolder(const Object& object)
 {
     return object;
@@ -274,7 +284,7 @@ void publishWaypointVelocity(RuntimeActorContext& context)
 {
     const ai_state_t& aiState = context.state();
     Object& object = context.actor();
-    object.setDesiredVelocity(Ego::Vector2f(
+    movementControl(object).setDesiredVelocity(Ego::Vector2f(
         (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
         (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
 }
@@ -289,7 +299,7 @@ void applyNonPlayerMovementLatchUpdate(RuntimeActorContext& context)
         object.isMount() && rider != nullptr)
     {
         // Mount (rider is held in left grip)
-        object.setDesiredVelocity(rider->getDesiredVelocity());
+        movementControl(object).setDesiredVelocity(movementControl(*rider).getDesiredVelocity());
     }
     else if (aiState.wp_valid)
     {
