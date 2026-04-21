@@ -213,6 +213,31 @@ TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentO
     EXPECT_TRUE(HAS_SOME_BITS(actorState.alert, ALERTIF_ATLASTWAYPOINT));
 }
 
+TEST_F(ScriptRuntimeFixture, SetAlertsDoesNotPublishLastWaypointAlertForEquipmentObjects)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto equipment = makeObject(module, "mp_data/globalobjects/magic_item/wbracelet.obj", 58114);
+
+    ASSERT_NE(equipment, nullptr);
+    ASSERT_TRUE(equipment->getProfile()->isEquipment());
+
+    auto& equipmentState = Ego::Script::runtimeState(*equipment);
+    equipmentState.alert = 0;
+    equipmentState.wp_valid = false;
+    waypoint_list_t::clear(equipmentState.wp_lst);
+    waypoint_list_t::push(equipmentState.wp_lst, equipment->getPosX(), equipment->getPosY());
+
+    set_alerts(equipment->getObjRef());
+
+    EXPECT_TRUE(HAS_SOME_BITS(equipmentState.alert, ALERTIF_ATWAYPOINT));
+    EXPECT_FALSE(HAS_SOME_BITS(equipmentState.alert, ALERTIF_ATLASTWAYPOINT));
+
+    set_alerts(equipment->getObjRef());
+
+    EXPECT_FALSE(HAS_SOME_BITS(equipmentState.alert, ALERTIF_ATLASTWAYPOINT));
+}
+
 TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFromHeldLeftSlot)
 {
     auto& module = beginActiveTestModule();
@@ -243,6 +268,29 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFr
 
     EXPECT_FLOAT_EQ(mount->getDesiredVelocity().x(), rider->getDesiredVelocity().x());
     EXPECT_FLOAT_EQ(mount->getDesiredVelocity().y(), rider->getDesiredVelocity().y());
+}
+
+TEST_F(ScriptRuntimeFixture, InvalidCharacterRefsAreQuietNoOpsForAlertPollingAndScriptRun)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 58118);
+
+    ASSERT_NE(actor, nullptr);
+
+    actor->setDesiredVelocity(Ego::Vector2f(3.0f, -2.0f));
+    const auto initialDesiredVelocity = actor->getDesiredVelocity();
+    auto& actorState = Ego::Script::runtimeState(*actor);
+    actorState.alert = ALERTIF_ORDERED;
+    actorState.setTarget(actor->getObjRef());
+
+    set_alerts(ObjectRef::Invalid);
+    scr_run_chr_script(ObjectRef::Invalid);
+
+    EXPECT_EQ(actorState.alert, ALERTIF_ORDERED);
+    EXPECT_EQ(actorState.getTarget(), actor->getObjRef());
+    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().x(), initialDesiredVelocity.x());
+    EXPECT_FLOAT_EQ(actor->getDesiredVelocity().y(), initialDesiredVelocity.y());
 }
 
 TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesFallBackToSelfWhenTeamLeaderMissing)

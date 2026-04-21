@@ -183,29 +183,101 @@ void dumpDebugScriptState(vfs_FILE* scr_file, const script_info_t& script, const
     vfs_printf(scr_file, "\twp_head == %d\n\n", aiState.wp_lst._head);
 }
 
-void resetInvisibleTargetToSelf(Object& object, ai_state_t& aiState)
+struct RuntimeActorContext
 {
+    Object* object = nullptr;
+    ai_state_t* aiState = nullptr;
+    script_info_t* script = nullptr;
+
+    Object& actor() const
+    {
+        return *object;
+    }
+
+    ai_state_t& state() const
+    {
+        return *aiState;
+    }
+
+    script_info_t& scriptInfo() const
+    {
+        return *script;
+    }
+
+    bool isPlayerActor() const
+    {
+        return object != nullptr && object->isPlayer();
+    }
+};
+
+bool tryResolveRuntimeActorContext(Object& object, RuntimeActorContext& context)
+{
+    context.object = &object;
+    context.aiState = &Ego::Script::runtimeState(object);
+    context.script = &object.getProfile()->getAIScript();
+    return true;
+}
+
+bool tryResolveRuntimeActorContext(ObjectRef actorRef, RuntimeActorContext& context)
+{
+    Object* object = tryObject(actorRef);
+    return object != nullptr && tryResolveRuntimeActorContext(*object, context);
+}
+
+bool shouldSkipScriptRun(const RuntimeActorContext& context)
+{
+    const ai_state_t& aiState = context.state();
+    return context.actor().isTerminated() ||
+           (aiState.poof_time >= 0 && aiState.poof_time <= static_cast<int32_t>(worldUpdateCount()));
+}
+
+void publishChangedAlertIfNeeded(ai_state_t& aiState)
+{
+    if (!aiState.changed)
+    {
+        return;
+    }
+
+    SET_BIT(aiState.alert, ALERTIF_CHANGED);
+    aiState.changed = false;
+}
+
+void resetNonPlayerInputCommands(RuntimeActorContext& context)
+{
+    if (!context.isPlayerActor())
+    {
+        context.actor().resetInputCommands();
+    }
+}
+
+void resetInvisibleTargetToSelf(RuntimeActorContext& context)
+{
+    ai_state_t& aiState = context.state();
     if (aiState.getTarget() == aiState.getSelf())
     {
         return;
     }
 
     const std::shared_ptr<Object> target = tryObjectShared(aiState.getTarget());
-    if (target != nullptr && !object.canSeeObject(target))
+    if (target != nullptr && !context.actor().canSeeObject(target))
     {
         aiState.setTarget(aiState.getSelf());
     }
 }
 
-void publishWaypointVelocity(Object& object, const ai_state_t& aiState)
+void publishWaypointVelocity(RuntimeActorContext& context)
 {
+    const ai_state_t& aiState = context.state();
+    Object& object = context.actor();
     object.setDesiredVelocity(Ego::Vector2f(
         (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
         (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
 }
 
-void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
+void applyNonPlayerMovementLatchUpdate(RuntimeActorContext& context)
 {
+    Object& object = context.actor();
+    ai_state_t& aiState = context.state();
     ai_state_t::ensure_wp(aiState);
 
     const std::shared_ptr<Object>& rider = leftHandRider(object);
@@ -217,7 +289,7 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
     else if (aiState.wp_valid)
     {
         // Normal AI
-        publishWaypointVelocity(object, aiState);
+        publishWaypointVelocity(context);
     }
 }
 
@@ -308,8 +380,10 @@ Ego::Script::ScriptOperandContext makeOperandContext(const ai_state_t& aiState)
     return context;
 }
 
-bool isAtCurrentWaypoint(const Object& object, const ai_state_t& aiState)
+bool isAtCurrentWaypoint(const RuntimeActorContext& context)
 {
+    const Object& object = context.actor();
+    const ai_state_t& aiState = context.state();
     return aiState.wp_valid &&
            (std::abs(object.getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
            (std::abs(object.getPosY() - aiState.wp[kY]) < WAYTHRESH);
@@ -320,8 +394,10 @@ void publishWaypointArrivalAlert(ai_state_t& aiState)
     SET_BIT(aiState.alert, ALERTIF_ATWAYPOINT);
 }
 
-void advanceWaypointPathAfterArrival(const Object& object, ai_state_t& aiState)
+void advanceWaypointPathAfterArrival(RuntimeActorContext& context)
 {
+    const Object& object = context.actor();
+    ai_state_t& aiState = context.state();
     if (waypoint_list_t::finished(aiState.wp_lst))
     {
         // we are now at the last waypoint
@@ -348,8 +424,9 @@ void advanceWaypointPathAfterArrival(const Object& object, ai_state_t& aiState)
     }
 }
 
-void pollWaypointAlerts(Object& object, ai_state_t& aiState)
+void pollWaypointAlerts(RuntimeActorContext& context)
 {
+    ai_state_t& aiState = context.state();
     if (waypoint_list_t::empty(aiState.wp_lst))
     {
         return;
@@ -365,13 +442,80 @@ void pollWaypointAlerts(Object& object, ai_state_t& aiState)
     // is the current waypoint is not valid, try to load up the top waypoint
     ai_state_t::ensure_wp(aiState);
 
-    if (!isAtCurrentWaypoint(object, aiState))
+    if (!isAtCurrentWaypoint(context))
     {
         return;
     }
 
     publishWaypointArrivalAlert(aiState);
-    advanceWaypointPathAfterArrival(object, aiState);
+    advanceWaypointPathAfterArrival(context);
+}
+
+void runCharacterScript(RuntimeActorContext& context)
+{
+    if (shouldSkipScriptRun(context))
+    {
+        return;
+    }
+
+    Object& actor = context.actor();
+    ai_state_t& aiState = context.state();
+    script_info_t& script = context.scriptInfo();
+
+    publishChangedAlertIfNeeded(aiState);
+
+    Ego::Time::ClockScope<Ego::Time::ClockPolicy::NonRecursive> scope(*aiState._clock);
+
+    // debug a certain script
+    // debug_scripts = ( 385 == pself->index && 76 == pchr->profile_ref );
+
+    // target_old is set to the target every time the script is run
+    aiState.setOldTarget(aiState.getTarget());
+
+    // Make life easier
+    updateScriptErrorContext(actor);
+
+    if (debug_scripts && debug_script_file)
+    {
+        dumpDebugScriptState(debug_script_file, script, aiState);
+    }
+
+    resetNonPlayerInputCommands(context);
+    resetInvisibleTargetToSelf(context);
+
+    script_state_t my_state;
+
+    aiState.terminate = false;
+    script.indent = 0;
+
+    script.set_pos(0);
+    while (!aiState.terminate && script.get_pos() < script._instructions.getNumberOfInstructions())
+    {
+        script.indent_last = script.indent;
+        script.indent = script._instructions[script.get_pos()].getDataBits();
+
+        if (script._instructions[script.get_pos()].isInv())
+        {
+            if (!my_state.run_function_call(aiState, script))
+            {
+                break;
+            }
+        }
+        else
+        {
+            if (!my_state.run_operation(aiState, script))
+            {
+                break;
+            }
+        }
+    }
+
+    if (!context.isPlayerActor())
+    {
+        applyNonPlayerMovementLatchUpdate(context);
+    }
+
+    RESET_BIT_FIELD(aiState.alert);
 }
 }
 
@@ -398,97 +542,20 @@ void scripting_system_end()
 //--------------------------------------------------------------------------------------------
 void scr_run_chr_script(Object *pchr)
 {
-
     // Make sure that this module is initialized.
     scripting_system_begin();
 
-    // Do not run scripts of terminated entities.
-    if (pchr->isTerminated())
+    if (pchr == nullptr)
     {
         return;
     }
-    ai_state_t& aiState = Ego::Script::runtimeState(*pchr);
-    script_info_t& script = pchr->getProfile()->getAIScript();
-
-    // Has the time for this character to die come and gone?
-    if (aiState.poof_time >= 0 && aiState.poof_time <= (int32_t)worldUpdateCount())
+    RuntimeActorContext context;
+    if (!tryResolveRuntimeActorContext(*pchr, context))
     {
         return;
     }
 
-    // Grab the "changed" value from the last time the script was run.
-    if (aiState.changed)
-    {
-        SET_BIT(aiState.alert, ALERTIF_CHANGED);
-        aiState.changed = false;
-    }
-
-    Ego::Time::ClockScope<Ego::Time::ClockPolicy::NonRecursive> scope(*aiState._clock);
-
-    // debug a certain script
-    // debug_scripts = ( 385 == pself->index && 76 == pchr->profile_ref );
-
-    // target_old is set to the target every time the script is run
-    aiState.setOldTarget(aiState.getTarget());
-
-    // Make life easier
-    updateScriptErrorContext(*pchr);
-
-    if (debug_scripts && debug_script_file)
-    {
-        dumpDebugScriptState(debug_script_file, script, aiState);
-    }
-
-    // Clear the button latches.
-    if (!pchr->isPlayer())
-    {
-        pchr->resetInputCommands();
-    }
-
-    // Reset the target if it can't be seen.
-    resetInvisibleTargetToSelf(*pchr, aiState);
-
-    // Reset the script state.
-    script_state_t my_state;
-
-    // Reset the ai.
-    aiState.terminate = false;
-    script.indent = 0;
-
-    // Run the AI Script.
-    script.set_pos(0);
-    while (!aiState.terminate && script.get_pos() < script._instructions.getNumberOfInstructions())
-    {
-        // This is used by the Else function
-        // it only keeps track of functions.
-        script.indent_last = script.indent;
-        script.indent = script._instructions[script.get_pos()].getDataBits();
-
-        // Was it a function.
-        if (script._instructions[script.get_pos()].isInv())
-        {
-            if (!my_state.run_function_call(aiState, script))
-            {
-                break;
-            }
-        }
-        else
-        {
-            if (!my_state.run_operation(aiState, script))
-            {
-                break;
-            }
-        }
-    }
-
-    // Set movement latches
-    if (!pchr->isPlayer())
-    {
-        applyNonPlayerMovementLatchUpdate(*pchr, aiState);
-    }
-
-    // Clear alerts for next time around
-    RESET_BIT_FIELD(aiState.alert);
+    runCharacterScript(context);
 }
 void scr_run_chr_script(const ObjectRef character)
 {
@@ -498,12 +565,12 @@ void scr_run_chr_script(const ObjectRef character)
     // Make sure that this module is initialized.
     scripting_system_begin();
 
-    if (!objectHandler().exists(character))
+    RuntimeActorContext context;
+    if (!tryResolveRuntimeActorContext(character, context))
     {
         return;
     }
-    Object *pchr = objectHandler().get(character);
-    return scr_run_chr_script(pchr);
+    runCharacterScript(context);
 }
 
 //--------------------------------------------------------------------------------------------
@@ -940,14 +1007,12 @@ void set_alerts(const ObjectRef character)
     /// @author ZZ
     /// @details This function polls some alert conditions
 
-    // invalid characters do not think
-    Object* pchr = tryObject(character);
-    if (pchr == nullptr)
+    RuntimeActorContext context;
+    if (!tryResolveRuntimeActorContext(character, context))
     {
         return;
     }
-    ai_state_t& aiState = Ego::Script::runtimeState(*pchr);
-    pollWaypointAlerts(*pchr, aiState);
+    pollWaypointAlerts(context);
 }
 
 //--------------------------------------------------------------------------------------------
