@@ -760,6 +760,12 @@ Continued Tier 1.2 inside `Script/script.c` by isolating the remaining direct `o
 
 Extended `ScriptRuntime.cpp` with focused regressions for invalid spawn refs and invalid bump targets on top of the existing order-publication, valid-spawn, and bump-throttling coverage. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 156 — Script runtime liveness-helper closure (2026-04-21)
+
+Continued Tier 1.2 inside `Script/script.c` by replacing the remaining direct runtime `objectHandler().exists(...)` checks with a file-local ref-liveness helper and routing order publication through a ref-yielding iteration helper instead of open-coded object-handle reads at each call site. Kept `ai_state_t::get_wp(...)`, `ai_state_t::ensure_wp(...)`, `issue_order(...)`, and `issue_special_order(...)` behavior unchanged while narrowing the runtime TU's remaining object-handler coupling.
+
+Kept the existing focused `ScriptRuntime.cpp` coverage for invalid actor refs, waypoint velocity publication, same-team order publication, special-IDSZ order filtering, invalid spawn refs, and invalid bump targets as the behavior lock. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

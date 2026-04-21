@@ -137,6 +137,12 @@ ObjectRef leftHandRiderRef(const Object& object)
     return heldItemRef(inventoryHolder(object), SLOT_LEFT);
 }
 
+bool isRuntimeObjectAlive(ObjectRef ref)
+{
+    const IInventoryHolder* holder = tryInventoryHolder(ref);
+    return holder != nullptr && !holder->isTerminated();
+}
+
 void updateScriptErrorContext(const Object& object)
 {
     script_error_classname = "UNKNOWN";
@@ -976,7 +982,7 @@ bool ai_state_t::get_wp(ai_state_t& self)
 {
     // try to load up the top waypoint
 
-    if (!objectHandler().exists(self.getSelf())) return false;
+    if (!isRuntimeObjectAlive(self.getSelf())) return false;
 
     self.wp_valid = waypoint_list_t::peek(self.wp_lst, self.wp);
 
@@ -988,7 +994,7 @@ bool ai_state_t::ensure_wp(ai_state_t& self)
 {
     // is the current waypoint is not valid, try to load up the top waypoint
 
-    if (!objectHandler().exists(self.getSelf()))
+    if (!isRuntimeObjectAlive(self.getSelf()))
     {
         return false;
     }
@@ -1036,13 +1042,14 @@ struct OrderRecipient
 };
 
 template <typename Fn>
-void forEachResolvedObjectRef(Fn&& fn)
+void forEachLiveRuntimeObjectRef(Fn&& fn)
 {
-    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    for (const auto& object : objectHandler().iterator())
     {
-        if (object != nullptr)
+        const ObjectRef ref = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
+        if (ref != ObjectRef::Invalid)
         {
-            fn(object->getObjRef());
+            fn(ref);
         }
     }
 }
@@ -1116,7 +1123,7 @@ void issue_order(const ObjectRef character, uint32_t value)
         return;
     }
 
-    forEachResolvedObjectRef([&](ObjectRef candidateRef)
+    forEachLiveRuntimeObjectRef([&](ObjectRef candidateRef)
     {
         tryPublishOrder(candidateRef, *caller, value, counter);
     });
@@ -1129,7 +1136,7 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
     /// @details This function issues an order to all characters with the a matching special IDSZ
     int counter = 0;
 
-    forEachResolvedObjectRef([&](ObjectRef candidateRef)
+    forEachLiveRuntimeObjectRef([&](ObjectRef candidateRef)
     {
         tryPublishSpecialOrder(candidateRef, value, idsz, counter);
     });
