@@ -676,6 +676,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by routing `scr_SpawnCharac
 
 Extended `ScriptStateFunctions.cpp` with focused regressions for both exact-position spawn variants, pinning requested profile/facing/position plus the shared child-state publication contract. Build, the focused `ScriptStateFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 142 — Narrow systems role sweep follow-on (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by widening `ICharacterState` for XP grants, adding the missing terminate hook on `ILifecycleControl`, and routing the remaining bounded target-inventory helpers (`GiveExperienceToTarget`, `CostTargetItemID`, `UnkurseTargetInventory`) through the landed role seams instead of direct concrete-object mutation. Kept the current gameplay semantics intact, including the legacy actor-pocket behavior in `UnkurseTargetInventory` and the existing self-inventory removal path in `CostTargetItemID`.
+
+Extended `ObjectAccessors.cpp` and `ScriptSystemsFunctions.cpp` with focused regressions for `ICharacterState` XP parity, lifecycle termination through the role seam, role-surface XP grants to targets, inventory-item poof coverage, and the preserved unkurse actor-pocket quirk. Build, targeted accessor/systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -305,6 +305,7 @@ TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDPoofsInventoryItemWhenOwne
     ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
 
     inventoryItem->setAmmo(1);
+    IInventoryHolder& actorInventory = *actor;
 
     script_state_t state;
     state.argument = inventoryItem->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
@@ -312,7 +313,7 @@ TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDPoofsInventoryItemWhenOwne
 
     EXPECT_TRUE(scr_CostTargetItemID(state, self));
     EXPECT_TRUE(inventoryItem->isTerminated());
-    EXPECT_EQ(actor->getInventoryItem(0), nullptr);
+    EXPECT_EQ(actorInventory.getInventoryItemRef(0), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, InventoryRoleHelpersReturnFalseWhenTargetIsMissing)
@@ -720,7 +721,7 @@ TEST_F(ScriptSystemsFunctionsFixture, KillTargetHandlesSelfHeldByMount)
     EXPECT_FALSE(mountKillTarget->isAlive());
 }
 
-TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesResolvedTargetObject)
+TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesCharacterStateRoleAndPreservesMissingTargetFailure)
 {
     auto& module = beginActiveTestModule();
     auto actor = makeObject(module, "mp_objects/follower.obj", 5646);
@@ -728,6 +729,8 @@ TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesResolvedTargetOb
 
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
+
+    ICharacterState& targetState = *target;
 
     script_state_t state;
     state.argument = 48;
@@ -737,9 +740,9 @@ TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesResolvedTargetOb
     EXPECT_FALSE(scr_GiveExperienceToTarget(state, self));
 
     self.setTarget(target->getObjRef());
-    const uint32_t experienceBefore = target->getExperience();
+    const uint32_t experienceBefore = targetState.getExperience();
     EXPECT_TRUE(scr_GiveExperienceToTarget(state, self));
-    EXPECT_GT(target->getExperience(), experienceBefore);
+    EXPECT_GT(targetState.getExperience(), experienceBefore);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, HealSelfAndTargetUseDamageableRoleAndPreserveHealEnchantCleanup)

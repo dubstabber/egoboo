@@ -559,6 +559,23 @@ TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsDismountPublication)
     EXPECT_EQ(object->getDismountObject(), ObjectRef(88));
 }
 
+TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsTerminationRequest)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3607);
+    ASSERT_NE(object, nullptr);
+
+    ILifecycleControl& lifecycle = *object;
+    const ObjectRef objectRef = object->getObjRef();
+
+    EXPECT_TRUE(objectHandler.exists(objectRef));
+
+    lifecycle.requestTerminate();
+
+    EXPECT_TRUE(object->isTerminated());
+    EXPECT_FALSE(objectHandler.exists(objectRef));
+}
+
 TEST_F(ObjectAccessorFixture, RespawnRestoresMoraleAndClaimsLeadershipWhenUnset)
 {
     auto& objectHandler = beginActiveTestModule();
@@ -1044,6 +1061,31 @@ TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsMutableAmmoTimerK
     EXPECT_GT(object->getMana(), manaBefore);
     EXPECT_TRUE(characterState.hasPerk(Ego::Perks::NIGHT_VISION));
     EXPECT_TRUE(object->hasPerk(Ego::Perks::NIGHT_VISION));
+}
+
+TEST_F(ObjectAccessorFixture, CharacterStateRoleSurfaceSupportsExperienceGrantParity)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto directObject = makeFollower(objectHandler, 30507);
+    auto roleObject = makeFollower(objectHandler, 30508);
+    ASSERT_NE(directObject, nullptr);
+    ASSERT_NE(roleObject, nullptr);
+
+    directObject->setInvincible(false);
+    roleObject->setInvincible(false);
+    directObject->setExperience(0);
+    roleObject->setExperience(0);
+    directObject->setBaseAttribute(Ego::Attribute::INTELLECT, 10.0f);
+    roleObject->setBaseAttribute(Ego::Attribute::INTELLECT, 10.0f);
+
+    ICharacterState& characterState = *roleObject;
+
+    directObject->giveExperience(48, XP_DIRECT, false);
+    characterState.giveExperience(48, XP_DIRECT, false);
+
+    EXPECT_EQ(characterState.getExperience(), roleObject->getExperience());
+    EXPECT_EQ(roleObject->getExperience(), directObject->getExperience());
+    EXPECT_GT(roleObject->getExperience(), 0u);
 }
 
 TEST_F(ObjectAccessorFixture, VisualControlRoleSurfaceSupportsShiftFlagAndRenderStateMutation)

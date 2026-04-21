@@ -122,6 +122,61 @@ ObjectRef findMatchingHeldOrInventoryItemRef(const IInventoryHolder& holder, con
     return ObjectRef::Invalid;
 }
 
+void removeInventoryItemRefIfPresent(IInventoryHolder& holder, ObjectRef itemRef)
+{
+    for (size_t slot = 0; slot < holder.getInventoryMaxItems(); ++slot)
+    {
+        if (holder.getInventoryItemRef(slot) == itemRef)
+        {
+            Inventory::remove_item(holder, slot, true);
+            return;
+        }
+    }
+}
+
+void unkurseItemIfPresent(ObjectRef itemRef)
+{
+    ICharacterState* itemState = tryCharacterState(itemRef);
+    if (itemState != nullptr)
+    {
+        itemState->setKursed(false);
+    }
+}
+
+bool consumeOrPoofItemWithLegacyInventoryPath(ObjectRef itemRef, IInventoryHolder& selfInventory)
+{
+    ICharacterState* itemState = tryCharacterState(itemRef);
+    if (itemState == nullptr)
+    {
+        return false;
+    }
+
+    if (itemState->getAmmo() > 1)
+    {
+        itemState->setAmmo(itemState->getAmmo() - 1);
+        return true;
+    }
+
+    const IInventoryHolder* itemInventory = tryInventoryHolder(itemRef);
+    ILifecycleControl* itemLifecycle = tryLifecycleControl(itemRef);
+    if (itemInventory == nullptr || itemLifecycle == nullptr)
+    {
+        return false;
+    }
+
+    if (itemInventory->isInsideInventory())
+    {
+        removeInventoryItemRefIfPresent(selfInventory, itemRef);
+    }
+    else
+    {
+        itemLifecycle->detachFromHolder(true, false);
+    }
+
+    itemLifecycle->requestTerminate();
+    return true;
+}
+
 std::shared_ptr<Ego::Player> targetPlayer(const ITargetInfo& target)
 {
     if (!target.isPlayer())
@@ -477,39 +532,12 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
+    returncode = false;
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     const ObjectRef itemRef = findMatchingHeldOrInventoryItemRef(*targetInventory, idsz);
-    const std::shared_ptr<Object> pitem = tryObjectShared(itemRef);
-
-    returncode = false;
-    if ( pitem )
+    if (itemRef != ObjectRef::Invalid)
     {
-        returncode = true;
-        ICharacterState& itemState = characterState(*pitem);
-
-        // Cost one ammo
-        if ( itemState.getAmmo() > 1 )
-        {
-            itemState.setAmmo(itemState.getAmmo() - 1);
-        }
-
-        // Poof the item
-        else
-        {
-            if ( pitem->isInsideInventory() )
-            {
-                // Remove from the pack
-                pchr->removeInventoryItem(pitem, true);
-            }
-            else
-            {
-                // Drop from hand
-                pitem->detatchFromHolder(true, false);
-            }
-
-            // get rid of the character, no matter what
-            pitem->requestTerminate();
-        }
+        returncode = consumeOrPoofItemWithLegacyInventoryPath(itemRef, inventoryHolder(*pchr));
     }
 
     SCRIPT_FUNCTION_END();
@@ -853,12 +881,12 @@ uint8_t scr_GiveExperienceToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> target = tryObjectShared(self.getTarget());
-    if(!target) {
+    ICharacterState* targetState = tryCharacterState(self.getTarget());
+    if(targetState == nullptr) {
         return false;
     }
 
-    target->giveExperience(state.argument, static_cast<XPType>(state.distance), false);
+    targetState->giveExperience(state.argument, static_cast<XPType>(state.distance), false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1598,24 +1626,12 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    ICharacterState* heldItemState = tryCharacterState(targetInventory->getHeldObject(SLOT_LEFT));
-    if (heldItemState != nullptr)
-    {
-        heldItemState->setKursed(false);
-    }
+    unkurseItemIfPresent(targetInventory->getHeldObject(SLOT_LEFT));
+    unkurseItemIfPresent(targetInventory->getHeldObject(SLOT_RIGHT));
 
-    heldItemState = tryCharacterState(targetInventory->getHeldObject(SLOT_RIGHT));
-    if (heldItemState != nullptr)
+    for (const ObjectRef itemRef : inventoryHolder(*pchr).getInventoryItemRefs())
     {
-        heldItemState->setKursed(false);
-    }
-
-    for (const std::shared_ptr<Object>& pitem : inventoryHolder(*pchr).getInventoryItems())
-    {
-        if (pitem != nullptr)
-        {
-            characterState(*pitem).setKursed(false);
-        }
+        unkurseItemIfPresent(itemRef);
     }
 
     SCRIPT_FUNCTION_END();

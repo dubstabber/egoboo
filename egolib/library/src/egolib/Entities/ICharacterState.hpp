@@ -19,6 +19,7 @@ public:
     virtual void setAmmo(uint16_t ammoCount) = 0;
 
     virtual bool costMana(int amount, ObjectRef killer) = 0;
+    virtual void giveExperience(int amount, XPType xptype, bool overrideInvincibility) = 0;
     virtual void increaseBaseAttribute(Ego::Attribute::AttributeType type, float value) = 0;
 
     virtual int16_t getGrogTimer() const = 0;

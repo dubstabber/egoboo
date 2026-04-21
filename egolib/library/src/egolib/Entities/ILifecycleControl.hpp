@@ -7,6 +7,7 @@ class ILifecycleControl
 public:
     virtual ~ILifecycleControl() = default;
 
+    virtual void requestTerminate() = 0;
     virtual bool detachFromHolder(bool ignoreKurse, bool doShop) = 0;
     virtual void dropKeys() = 0;
     virtual void dropAllItems() = 0;

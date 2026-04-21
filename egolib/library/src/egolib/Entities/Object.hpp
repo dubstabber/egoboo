@@ -468,7 +468,7 @@ public:
     * @brief
     *   Mark this object as terminated, it will be removed from the game by the update.
     **/
-    void requestTerminate();
+    void requestTerminate() override;
 
     /**
     * @brief 
@@ -762,7 +762,7 @@ public:
     *   Invincible objects usually gain no experience (scenery objects such as a rock for example).
     *   Set this parameter to true to override this and give the experience anyways.
     **/
-    void giveExperience(const int amount, const XPType xptype, const bool overrideInvincibility);
+    void giveExperience(const int amount, const XPType xptype, const bool overrideInvincibility) override;
 
 
     /// @author BB
