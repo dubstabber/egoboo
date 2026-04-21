@@ -212,6 +212,38 @@ TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentO
     EXPECT_TRUE(HAS_SOME_BITS(actorState.alert, ALERTIF_ATLASTWAYPOINT));
 }
 
+TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFromHeldLeftSlot)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto mount = makeObject(module, "mp_data/globalobjects/magic/mount.obj", 5812,
+                            Ego::Vector3f(96.0f, 96.0f, 0.0f));
+    auto rider = makeObject(module, "mp_objects/follower.obj", 5813,
+                            Ego::Vector3f(96.0f, 96.0f, 0.0f));
+
+    ASSERT_NE(mount, nullptr);
+    ASSERT_NE(rider, nullptr);
+    ASSERT_TRUE(mount->isMount());
+
+    mount->setHeldObject(SLOT_LEFT, rider->getObjRef());
+    rider->setHolderRef(mount->getObjRef());
+    rider->setDesiredVelocity(Ego::Vector2f(2.5f, -1.5f));
+
+    auto& aiScript = mount->getProfile()->getAIScript();
+    aiScript._name = "runtime-mount-test";
+    aiScript._instructions.clear();
+
+    auto& aiState = Ego::Script::runtimeState(*mount);
+    aiState.setTarget(mount->getObjRef());
+    aiState.wp_valid = false;
+    waypoint_list_t::clear(aiState.wp_lst);
+
+    scr_run_chr_script(mount.get());
+
+    EXPECT_FLOAT_EQ(mount->getDesiredVelocity().x(), rider->getDesiredVelocity().x());
+    EXPECT_FLOAT_EQ(mount->getDesiredVelocity().y(), rider->getDesiredVelocity().y());
+}
+
 TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesFallBackToSelfWhenTeamLeaderMissing)
 {
     auto& module = beginActiveTestModule();

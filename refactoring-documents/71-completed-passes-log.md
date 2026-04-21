@@ -736,6 +736,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remainin
 
 Kept the focused `ScriptSystemsFunctions.cpp` regressions for tile helper parity, pit teleport/kill behavior, quest helper player resolution, all-player quest updates, enemy-sense publication/reset, nearby module-environment coverage, and the `test.mod` validator as the acceptance bar for the pass.
 
+### Pass 152 — Script runtime helper quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `Script/script.c` by isolating the remaining held-item, operand-context, leader-resolution, and order-recipient pockets behind file-local helpers that consume the existing `IInventoryHolder`, `ITargetInfo`, `IScriptable`, `IPhysical`, `ICharacterState`, and `IWallet` seams instead of scattering direct casts and mixed lookup logic across the runtime file. Kept `Ego::Script::runtimeState(...)`, `scr_run_chr_script(...)`, and the current waypoint / invisible-target / order-publication behavior unchanged.
+
+Extended `ScriptRuntime.cpp` with a focused regression covering mount rider-velocity publication through the left-hand held-item seam. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

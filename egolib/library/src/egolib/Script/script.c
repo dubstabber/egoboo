@@ -122,9 +122,14 @@ static const char * script_error_classname = "UNKNOWN";
 
 namespace
 {
-const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+const IInventoryHolder& inventoryHolder(const Object& object)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+    return object;
+}
+
+const std::shared_ptr<Object>& heldItem(const IInventoryHolder& holder, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[holder.getHeldObject(slot)];
 }
 
 void updateScriptErrorContext(const Object& object)
@@ -191,7 +196,7 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
 {
     ai_state_t::ensure_wp(aiState);
 
-    const std::shared_ptr<Object>& rider = heldItem(object, SLOT_LEFT);
+    const std::shared_ptr<Object>& rider = heldItem(inventoryHolder(object), SLOT_LEFT);
     if (object.isMount() && rider)
     {
         // Mount (rider is held in left grip)
@@ -216,6 +221,63 @@ const Object* tryLeaderForVariables(const ITargetInfo& selfInfo)
     return tryObject(resolveLeaderRefForVariables(selfInfo));
 }
 
+void populateSelfOperandContext(Ego::Script::ScriptOperandContext& context)
+{
+    context.selfObject = tryObject(context.selfRef);
+    if (context.selfObject == nullptr)
+    {
+        return;
+    }
+
+    context.selfPhysical = tryPhysical(context.selfRef);
+    context.selfCharacterState = tryCharacterState(context.selfRef);
+    context.selfTargetInfo = tryTargetInfo(context.selfRef);
+    context.selfWallet = tryWallet(context.selfRef);
+    context.selfInventoryHolder = tryInventoryHolder(context.selfRef);
+}
+
+void populateTargetOperandContext(Ego::Script::ScriptOperandContext& context)
+{
+    context.targetObject = tryObject(context.targetRef);
+    if (context.targetObject == nullptr)
+    {
+        return;
+    }
+
+    context.targetPhysical = tryPhysical(context.targetRef);
+    context.targetCharacterState = tryCharacterState(context.targetRef);
+    context.targetTargetInfo = tryTargetInfo(context.targetRef);
+    context.targetWallet = tryWallet(context.targetRef);
+}
+
+void populateOwnerOperandContext(Ego::Script::ScriptOperandContext& context)
+{
+    context.ownerObject = tryObject(context.ownerRef);
+    if (context.ownerObject == nullptr)
+    {
+        return;
+    }
+
+    context.ownerPhysical = tryPhysical(context.ownerRef);
+}
+
+void populateLeaderOperandContext(Ego::Script::ScriptOperandContext& context)
+{
+    if (context.selfTargetInfo == nullptr)
+    {
+        return;
+    }
+
+    context.leaderRef = resolveLeaderRefForVariables(*context.selfTargetInfo);
+    context.leaderObject = tryLeaderForVariables(*context.selfTargetInfo);
+    if (context.leaderObject == nullptr)
+    {
+        return;
+    }
+
+    context.leaderPhysical = tryPhysical(context.leaderRef);
+}
+
 Ego::Script::ScriptOperandContext makeOperandContext(const ai_state_t& aiState)
 {
     Ego::Script::ScriptOperandContext context;
@@ -223,39 +285,15 @@ Ego::Script::ScriptOperandContext makeOperandContext(const ai_state_t& aiState)
     context.targetRef = aiState.getTarget();
     context.ownerRef = aiState.owner;
 
-    context.selfObject = tryObject(context.selfRef);
-    if (context.selfObject == nullptr)
+    populateSelfOperandContext(context);
+    if (!context.hasSelf())
     {
         return context;
     }
 
-    context.selfPhysical = static_cast<const IPhysical*>(context.selfObject);
-    context.selfCharacterState = static_cast<const ICharacterState*>(context.selfObject);
-    context.selfTargetInfo = static_cast<const ITargetInfo*>(context.selfObject);
-    context.selfWallet = static_cast<const IWallet*>(context.selfObject);
-    context.selfInventoryHolder = static_cast<const IInventoryHolder*>(context.selfObject);
-
-    context.targetObject = tryObject(context.targetRef);
-    if (context.targetObject != nullptr)
-    {
-        context.targetPhysical = static_cast<const IPhysical*>(context.targetObject);
-        context.targetCharacterState = static_cast<const ICharacterState*>(context.targetObject);
-        context.targetTargetInfo = static_cast<const ITargetInfo*>(context.targetObject);
-        context.targetWallet = static_cast<const IWallet*>(context.targetObject);
-    }
-
-    context.ownerObject = tryObject(context.ownerRef);
-    if (context.ownerObject != nullptr)
-    {
-        context.ownerPhysical = static_cast<const IPhysical*>(context.ownerObject);
-    }
-
-    context.leaderRef = resolveLeaderRefForVariables(*context.selfTargetInfo);
-    context.leaderObject = tryLeaderForVariables(*context.selfTargetInfo);
-    if (context.leaderObject != nullptr)
-    {
-        context.leaderPhysical = static_cast<const IPhysical*>(context.leaderObject);
-    }
+    populateTargetOperandContext(context);
+    populateOwnerOperandContext(context);
+    populateLeaderOperandContext(context);
 
     return context;
 }
@@ -897,17 +935,28 @@ bool shouldReceiveOrder(const ITargetInfo& caller, const ITargetInfo& candidate)
     return candidate.getTeamRef() == caller.getTeamRef();
 }
 
-bool resolveOrderRecipient(ObjectRef candidateRef,
-                           const ITargetInfo*& candidateInfo,
-                           IScriptable*& candidateScriptable)
+struct OrderRecipient
 {
-    candidateInfo = tryTargetInfo(candidateRef);
-    candidateScriptable = tryScriptable(candidateRef);
-    const IInventoryHolder* candidateInventory = tryInventoryHolder(candidateRef);
-    return candidateInfo != nullptr &&
-           candidateScriptable != nullptr &&
-           candidateInventory != nullptr &&
-           !candidateInventory->isTerminated();
+    const ITargetInfo* info = nullptr;
+    IScriptable* scriptable = nullptr;
+    const IInventoryHolder* inventory = nullptr;
+
+    bool isLive() const
+    {
+        return info != nullptr &&
+               scriptable != nullptr &&
+               inventory != nullptr &&
+               !inventory->isTerminated();
+    }
+};
+
+OrderRecipient resolveOrderRecipient(ObjectRef candidateRef)
+{
+    OrderRecipient recipient;
+    recipient.info = tryTargetInfo(candidateRef);
+    recipient.scriptable = tryScriptable(candidateRef);
+    recipient.inventory = tryInventoryHolder(candidateRef);
+    return recipient;
 }
 
 bool tryPublishOrder(ObjectRef candidateRef,
@@ -915,19 +964,18 @@ bool tryPublishOrder(ObjectRef candidateRef,
                      uint32_t value,
                      int& counter)
 {
-    const ITargetInfo* candidateInfo = nullptr;
-    IScriptable* candidateScriptable = nullptr;
-    if (!resolveOrderRecipient(candidateRef, candidateInfo, candidateScriptable))
+    const OrderRecipient recipient = resolveOrderRecipient(candidateRef);
+    if (!recipient.isLive())
     {
         return false;
     }
 
-    if (!shouldReceiveOrder(caller, *candidateInfo))
+    if (!shouldReceiveOrder(caller, *recipient.info))
     {
         return false;
     }
 
-    candidateScriptable->addAIOrder(value, counter);
+    recipient.scriptable->addAIOrder(value, counter);
     counter++;
     return true;
 }
@@ -937,15 +985,14 @@ bool tryPublishSpecialOrder(ObjectRef candidateRef,
                             const IDSZ2& idsz,
                             int& counter)
 {
-    const ITargetInfo* candidateInfo = nullptr;
-    IScriptable* candidateScriptable = nullptr;
-    if (!resolveOrderRecipient(candidateRef, candidateInfo, candidateScriptable) ||
-        !candidateInfo->matchesSpecialIDSZ(idsz))
+    const OrderRecipient recipient = resolveOrderRecipient(candidateRef);
+    if (!recipient.isLive() ||
+        !recipient.info->matchesSpecialIDSZ(idsz))
     {
         return false;
     }
 
-    candidateScriptable->addAIOrder(value, counter);
+    recipient.scriptable->addAIOrder(value, counter);
     counter++;
     return true;
 }
