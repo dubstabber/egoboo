@@ -24,7 +24,6 @@ public:
     virtual ObjectRef getInventoryItemRef(size_t slotNumber) const = 0;
     virtual std::shared_ptr<Object> getInventoryItem(size_t slotNumber) const = 0;
     virtual std::vector<ObjectRef> getInventoryItemRefs() const = 0;
-    virtual std::vector<std::shared_ptr<Object>> getInventoryItems() const = 0;
     virtual void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item) = 0;
     virtual bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse) = 0;
 

@@ -332,11 +332,6 @@ std::vector<ObjectRef> Object::getInventoryItemRefs() const
     return refs;
 }
 
-std::vector<std::shared_ptr<Object>> Object::getInventoryItems() const
-{
-    return _inventory.iterate();
-}
-
 void Object::setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item)
 {
     _inventory.setItem(slotNumber, item);

@@ -521,27 +521,32 @@ TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsKeyAndInventoryDrops)
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(packItem, nullptr);
     ASSERT_NE(keyItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+    actor->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
+    leftItem->setHolderRef(actor->getObjRef());
+    leftItem->setAttachmentSlot(SLOT_LEFT);
+    actor->setHeldObject(SLOT_RIGHT, rightItem->getObjRef());
+    rightItem->setHolderRef(actor->getObjRef());
+    rightItem->setAttachmentSlot(SLOT_RIGHT);
     ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), packItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
     ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), keyItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
 
     ILifecycleControl& lifecycle = *actor;
 
-    lifecycle.dropKeys();
+    ASSERT_NO_THROW(lifecycle.dropKeys());
 
     EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
-    ASSERT_EQ(actor->getInventoryItems().size(), 1u);
-    EXPECT_EQ(actor->getInventoryItems().front()->getObjRef(), packItem->getObjRef());
+    const std::vector<ObjectRef> remainingAfterKeys = actor->getInventoryItemRefs();
+    ASSERT_EQ(remainingAfterKeys.size(), 1u);
+    EXPECT_EQ(remainingAfterKeys.front(), packItem->getObjRef());
 
-    lifecycle.dropAllItems();
+    ASSERT_NO_THROW(lifecycle.dropAllItems());
 
     EXPECT_EQ(actor->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
     EXPECT_EQ(actor->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
     EXPECT_EQ(leftItem->getHolderRef(), ObjectRef::Invalid);
     EXPECT_EQ(rightItem->getHolderRef(), ObjectRef::Invalid);
     EXPECT_EQ(packItem->getInventoryHolderRef(), ObjectRef::Invalid);
-    EXPECT_TRUE(actor->getInventoryItems().empty());
+    EXPECT_TRUE(actor->getInventoryItemRefs().empty());
 }
 
 TEST_F(ObjectAccessorFixture, LifecycleRoleSurfaceSupportsDismountPublication)
@@ -741,7 +746,7 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
     EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
     EXPECT_EQ(object->getInventoryItem(0), nullptr);
     EXPECT_EQ(object->getInventoryItem(1), nullptr);
-    EXPECT_TRUE(object->getInventoryItems().empty());
+    EXPECT_TRUE(object->getInventoryItemRefs().empty());
 
     object->setInventoryItem(0, item0);
     object->setInventoryItem(2, item2);
@@ -749,15 +754,19 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
     EXPECT_EQ(object->getInventoryItem(0), item0);
     EXPECT_EQ(object->getInventoryItem(1), nullptr);
     EXPECT_EQ(object->getInventoryItem(2), item2);
+    EXPECT_EQ(object->getInventoryItemRef(0), item0->getObjRef());
+    EXPECT_EQ(object->getInventoryItemRef(1), ObjectRef::Invalid);
+    EXPECT_EQ(object->getInventoryItemRef(2), item2->getObjRef());
     EXPECT_EQ(object->getFirstFreeInventorySlot(), 1u);
 
-    const auto items = object->getInventoryItems();
-    ASSERT_EQ(items.size(), 2u);
-    EXPECT_EQ(items[0], item0);
-    EXPECT_EQ(items[1], item2);
+    const std::vector<ObjectRef> itemRefs = object->getInventoryItemRefs();
+    ASSERT_EQ(itemRefs.size(), 2u);
+    EXPECT_EQ(itemRefs[0], item0->getObjRef());
+    EXPECT_EQ(itemRefs[1], item2->getObjRef());
 
     EXPECT_TRUE(object->removeInventoryItem(item0, true));
     EXPECT_EQ(object->getInventoryItem(0), nullptr);
+    EXPECT_EQ(object->getInventoryItemRef(0), ObjectRef::Invalid);
     EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
 }
 

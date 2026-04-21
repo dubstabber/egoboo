@@ -932,8 +932,6 @@ public:
 
     std::vector<ObjectRef> getInventoryItemRefs() const override;
 
-    std::vector<std::shared_ptr<Object>> getInventoryItems() const override;
-
     void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item) override;
 
     bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse) override;

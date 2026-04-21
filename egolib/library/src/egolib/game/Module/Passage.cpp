@@ -178,10 +178,16 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
                 if(pchr->isWieldingItemIDSZ(require_item)) {
                     return pchr->getObjRef();
                 }
-                
+
                 // II: Check the pack
-                for (const auto& pitem : pchr->getInventoryItems())
+                for (size_t slot = 0; slot < pchr->getInventoryMaxItems(); ++slot)
                 {
+                    const std::shared_ptr<Object> pitem = pchr->getInventoryItem(slot);
+                    if (!pitem)
+                    {
+                        continue;
+                    }
+
                     if ( pitem->getProfile()->hasTypeIDSZ(require_item) )
                     {
                         // It has the required item in inventory...

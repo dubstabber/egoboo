@@ -26,8 +26,14 @@ ObjectRef hasStack(const std::shared_ptr<Object>& item, const IInventoryHolder& 
         return ObjectRef::Invalid;
     }
 
-    for (const std::shared_ptr<Object>& stack : owner.getInventoryItems())
+    for (size_t slot = 0; slot < owner.getInventoryMaxItems(); ++slot)
     {
+        const std::shared_ptr<Object> stack = owner.getInventoryItem(slot);
+        if (!stack)
+        {
+            continue;
+        }
+
         bool found = stack->getProfile()->isStackable();
 
         if (stack->getAmmo() >= stack->getAmmoMax())
@@ -79,8 +85,14 @@ ObjectRef Inventory::findItem(const IInventoryHolder& owner, const IDSZ2& idsz, 
 
     ObjectRef result = ObjectRef::Invalid;
 
-    for (const std::shared_ptr<Object>& pitem : owner.getInventoryItems())
+    for (size_t slot = 0; slot < owner.getInventoryMaxItems(); ++slot)
     {
+        const std::shared_ptr<Object> pitem = owner.getInventoryItem(slot);
+        if (!pitem)
+        {
+            continue;
+        }
+
         bool matches_equipped = (!equippedOnly || pitem->isEquipped());
 
         if (pitem->getProfile()->hasTypeIDSZ(idsz) && matches_equipped)

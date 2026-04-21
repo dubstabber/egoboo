@@ -29,6 +29,19 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+auto& objectHandler()
+{
+    return GameSessionContext::get().activeModule().getObjectHandler();
+}
+
+bool isKeyIDSZ(const IDSZ2& value)
+{
+    const uint32_t keyStart = IDSZ2('K', 'E', 'Y', 'A').toUint32();
+    const uint32_t keyEnd = IDSZ2('K', 'E', 'Y', 'Z').toUint32();
+    const uint32_t encoded = value.toUint32();
+    return encoded >= keyStart && encoded <= keyEnd;
+}
 }
 
 bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
@@ -280,15 +293,22 @@ void Object::dropKeys()
 {
     if (getPosZ() <= (GameModule::PITDEPTH / 2)) return;
 
-    const IDSZ2 testa = IDSZ2('K', 'E', 'Y', 'A');
-    const IDSZ2 testz = IDSZ2('K', 'E', 'Y', 'Z');
+    const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
 
-    for (const std::shared_ptr<Object>& pkey : getInventoryItems()) {
+    for (const ObjectRef& keyRef : inventoryItemRefs) {
+        if (!objectHandler().exists(keyRef)) {
+            continue;
+        }
+
+        const std::shared_ptr<Object> pkey = objectHandler()[keyRef];
+        if (!pkey) {
+            continue;
+        }
+
         const IDSZ2& idsz_parent = pkey->getProfile()->getIDSZ(IDSZ_PARENT);
         const IDSZ2& idsz_type = pkey->getProfile()->getIDSZ(IDSZ_TYPE);
 
-        if ((idsz_parent.toUint32() < testa.toUint32() && idsz_parent.toUint32() > testz.toUint32()) &&
-            (idsz_type.toUint32() < testa.toUint32() && idsz_type.toUint32() > testz.toUint32())) continue;
+        if (!isKeyIDSZ(idsz_parent) && !isKeyIDSZ(idsz_type)) continue;
 
         Facing direction = Facing::random();
         Facing turn = direction;
@@ -326,7 +346,13 @@ void Object::dropAllItems()
         rightItem->detatchFromHolder(true, false);
     }
 
-    uint8_t pack_count = getInventoryItems().size();
+    const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
+    uint8_t pack_count = 0;
+    for (const ObjectRef& itemRef : inventoryItemRefs) {
+        if (objectHandler().exists(itemRef)) {
+            ++pack_count;
+        }
+    }
     if (pack_count == 0) {
         return;
     }
@@ -334,9 +360,17 @@ void Object::dropAllItems()
     const FACING_T diradd = (std::numeric_limits<FACING_T>::max() / 2) / pack_count;
 
     Facing direction = ori.facing_z + ATK_BEHIND - Facing(diradd * (pack_count / 2));
-    for (const std::shared_ptr<Object>& pitem : getInventoryItems()) {
+    for (const ObjectRef& itemRef : inventoryItemRefs) {
+        if (!objectHandler().exists(itemRef)) {
+            continue;
+        }
+
+        const std::shared_ptr<Object> pitem = objectHandler()[itemRef];
+        if (!pitem) {
+            continue;
+        }
+
         removeInventoryItem(pitem, true);
-        pitem->detatchFromHolder(true, false);
 
         pitem->setDismountTimer(PHYS_DISMOUNT_TIME);
         pitem->setDismountObject(getObjRef());

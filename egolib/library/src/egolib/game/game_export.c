@@ -184,9 +184,10 @@ egolib_rv export_all_players( bool require_local )
 
         // Export the inventory
         number = 0;
-        for (const auto& pitem : pchr->getInventoryItems())
+        for (size_t slot = 0; slot < pchr->getInventoryMaxItems(); ++slot)
         {
-            if ( number >= pchr->getInventoryMaxItems() ) break;
+            const std::shared_ptr<Object> pitem = pchr->getInventoryItem(slot);
+            if ( !pitem ) continue;
 
             export_chr_rv = export_one_character( pitem->getObjRef(), character, number + SLOT_COUNT, true);
             if ( rv_error == export_chr_rv )
