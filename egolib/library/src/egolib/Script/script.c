@@ -151,6 +151,12 @@ Object* tryObject(const ObjectRef objectRef)
     return object.get();
 }
 
+const ITargetInfo* tryTargetInfo(const ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
 void updateScriptErrorContext(const Object& object)
 {
     script_error_classname = "UNKNOWN";
@@ -229,10 +235,14 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
     }
 }
 
-Object* resolveLeaderForVariables(const Object& object)
+ObjectRef resolveLeaderRefForVariables(const ITargetInfo& selfInfo)
 {
-    const std::shared_ptr<Object> leader = activeModule().getTeamList()[object.getTeamRef()].getLeader();
-    return leader.get();
+    return activeModule().getTeamLeaderRef(selfInfo.getTeamRef());
+}
+
+Object* tryLeaderForVariables(const ITargetInfo& selfInfo)
+{
+    return tryObject(resolveLeaderRefForVariables(selfInfo));
 }
 
 struct OperandContext
@@ -254,7 +264,8 @@ OperandContext makeOperandContext(const ai_state_t& aiState)
 
     context.target = tryObject(aiState.getTarget());
     context.owner = tryObject(aiState.owner);
-    context.leader = resolveLeaderForVariables(*context.self);
+    const ITargetInfo* selfInfo = static_cast<const ITargetInfo*>(context.self);
+    context.leader = tryLeaderForVariables(*selfInfo);
     return context;
 }
 
@@ -890,23 +901,54 @@ void set_alerts(const ObjectRef character)
 }
 
 //--------------------------------------------------------------------------------------------
+bool shouldReceiveOrder(const ITargetInfo& caller, const ITargetInfo& candidate)
+{
+    return candidate.getTeamRef() == caller.getTeamRef();
+}
+
+bool tryPublishOrder(ObjectRef candidateRef,
+                     const ITargetInfo& caller,
+                     uint32_t value,
+                     int& counter)
+{
+    Object* candidateObject = tryObject(candidateRef);
+    if (candidateObject == nullptr || candidateObject->isTerminated())
+    {
+        return false;
+    }
+
+    const ITargetInfo* candidateInfo = static_cast<const ITargetInfo*>(candidateObject);
+    IScriptable* candidateScriptable = static_cast<IScriptable*>(candidateObject);
+    if (!shouldReceiveOrder(caller, *candidateInfo))
+    {
+        return false;
+    }
+
+    candidateScriptable->addAIOrder(value, counter);
+    counter++;
+    return true;
+}
+
 void issue_order(const ObjectRef character, uint32_t value)
 {
     /// @author ZZ
     /// @details This function issues an value for help to all teammates
     int counter = 0;
 
-    const std::shared_ptr<Object> &pchr = objectHandler()[character];
+    const ITargetInfo* caller = tryTargetInfo(character);
+    if (caller == nullptr)
+    {
+        return;
+    }
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        if (object->isTerminated()) continue;
-
-        if (object->getTeam() == pchr->getTeam())
+        if (object == nullptr)
         {
-            object->addAIOrder(value, counter);
-            counter++;
+            continue;
         }
+
+        tryPublishOrder(object->getObjRef(), *caller, value, counter);
     }
 }
 

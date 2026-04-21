@@ -247,16 +247,57 @@ TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesFallBackToSelfWhenTeamLead
     EXPECT_EQ(static_cast<int32_t>(scriptState.operationsum), 0x7FFFFFFF);
 }
 
+TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesUseResolvedTeamLeaderWhenPresent)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5816,
+                            Ego::Vector3f(96.0f, 160.0f, 0.0f));
+    auto leader = makeObject(module, "mp_objects/follower.obj", 5817,
+                             Ego::Vector3f(224.0f, 160.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leader, nullptr);
+
+    constexpr TEAM_REF goodTeam = static_cast<TEAM_REF>(Team::TEAM_GOOD);
+    actor->setTeam(goodTeam);
+    leader->setTeam(goodTeam);
+    module.getTeamList()[goodTeam].setLeader(leader);
+    EXPECT_EQ(module.getTeamLeaderRef(goodTeam), leader->getObjRef());
+
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    aiState.setSelf(actor->getObjRef());
+
+    script_state_t scriptState{};
+    script_info_t script;
+    const auto xIndex = script._instructions.getConstantPool().getOrCreateConstant(Ego::Script::VARLEADERX);
+    script._instructions.append(Instruction((static_cast<uint32_t>(Ego::Script::OPADD) << 27) | xIndex));
+
+    scriptState.operationsum = 0;
+    scriptState.run_operand(aiState, script);
+    EXPECT_EQ(static_cast<int32_t>(scriptState.operationsum), static_cast<int32_t>(leader->getPosX()));
+
+    script._instructions.clear();
+    const auto distanceIndex = script._instructions.getConstantPool().getOrCreateConstant(Ego::Script::VARLEADERDISTANCE);
+    script._instructions.append(Instruction((static_cast<uint32_t>(Ego::Script::OPADD) << 27) | distanceIndex));
+
+    scriptState.operationsum = 0;
+    scriptState.run_operand(aiState, script);
+    EXPECT_EQ(static_cast<int32_t>(scriptState.operationsum), 128);
+}
+
 TEST_F(ScriptRuntimeFixture, IssueOrderPublishesToLiveSameTeamObjectsOnly)
 {
     auto& module = beginActiveTestModule();
     auto caller = makeObject(module, "mp_objects/follower.obj", 5821);
     auto teammate = makeObject(module, "mp_objects/follower.obj", 5822);
     auto outsider = makeObject(module, "mp_objects/follower.obj", 5823);
+    auto terminated = makeObject(module, "mp_objects/follower.obj", 5824);
 
     ASSERT_NE(caller, nullptr);
     ASSERT_NE(teammate, nullptr);
     ASSERT_NE(outsider, nullptr);
+    ASSERT_NE(terminated, nullptr);
 
     flushSpawnedObjects(module);
 
@@ -265,16 +306,20 @@ TEST_F(ScriptRuntimeFixture, IssueOrderPublishesToLiveSameTeamObjectsOnly)
     caller->setTeam(goodTeam);
     teammate->setTeam(goodTeam);
     outsider->setTeam(evilTeam);
+    terminated->setTeam(goodTeam);
 
     clearOrderState(*caller);
     clearOrderState(*teammate);
     clearOrderState(*outsider);
+    clearOrderState(*terminated);
+    terminated->requestTerminate();
 
     issue_order(caller->getObjRef(), 77);
 
     const auto& callerState = Ego::Script::runtimeState(*caller);
     const auto& teammateState = Ego::Script::runtimeState(*teammate);
     const auto& outsiderState = Ego::Script::runtimeState(*outsider);
+    const auto& terminatedState = Ego::Script::runtimeState(*terminated);
     EXPECT_EQ(callerState.order_value, 77u);
     EXPECT_TRUE(HAS_SOME_BITS(callerState.alert, ALERTIF_ORDERED));
     EXPECT_EQ(teammateState.order_value, 77u);
@@ -282,6 +327,27 @@ TEST_F(ScriptRuntimeFixture, IssueOrderPublishesToLiveSameTeamObjectsOnly)
     EXPECT_LT(callerState.order_counter, teammateState.order_counter);
     EXPECT_EQ(outsiderState.order_value, 0u);
     EXPECT_FALSE(HAS_SOME_BITS(outsiderState.alert, ALERTIF_ORDERED));
+    EXPECT_EQ(terminatedState.order_value, 0u);
+    EXPECT_FALSE(HAS_SOME_BITS(terminatedState.alert, ALERTIF_ORDERED));
+}
+
+TEST_F(ScriptRuntimeFixture, IssueOrderQuietlyIgnoresInvalidCallerRef)
+{
+    auto& module = beginActiveTestModule();
+    auto teammate = makeObject(module, "mp_objects/follower.obj", 5825);
+
+    ASSERT_NE(teammate, nullptr);
+
+    flushSpawnedObjects(module);
+
+    teammate->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    clearOrderState(*teammate);
+
+    issue_order(ObjectRef::Invalid, 77);
+
+    const auto& teammateState = Ego::Script::runtimeState(*teammate);
+    EXPECT_EQ(teammateState.order_value, 0u);
+    EXPECT_FALSE(HAS_SOME_BITS(teammateState.alert, ALERTIF_ORDERED));
 }
 
 TEST_F(ScriptRuntimeFixture, IssueSpecialOrderPublishesToMatchingSpecialIdsOnly)
