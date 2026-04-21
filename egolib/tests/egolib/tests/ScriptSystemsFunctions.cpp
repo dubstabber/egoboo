@@ -1131,6 +1131,37 @@ TEST_F(ScriptSystemsFunctionsFixture, EnchantLifecycleHelpersUseEnchantableRole)
     EXPECT_TRUE(scr_DisenchantAll(state, self));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, EnchantTargetAndChildReturnFalseWhenOwnerOrSpawnerCannotBeResolved)
+{
+    auto& module = beginActiveTestModule();
+    ENC_REF enchantRef = ENCHANTPROFILES_MAX;
+    auto actor = makeEnchantSpawner(module, 5702, enchantRef);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5705);
+    auto child = makeObject(module, "mp_objects/follower.obj", 5706);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(child, nullptr);
+    ASSERT_LT(enchantRef, ENCHANTPROFILES_MAX);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    self.child = child->getObjRef();
+
+    self.owner = ObjectRef::Invalid;
+    EXPECT_FALSE(scr_EnchantTarget(state, self));
+    EXPECT_FALSE(scr_EnchantChild(state, self));
+    EXPECT_FALSE(target->hasActiveEnchants());
+    EXPECT_FALSE(child->hasActiveEnchants());
+
+    self.owner = actor->getObjRef();
+    self.setSelf(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_EnchantTarget(state, self));
+    EXPECT_FALSE(scr_EnchantChild(state, self));
+    EXPECT_FALSE(target->hasActiveEnchants());
+    EXPECT_FALSE(child->hasActiveEnchants());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, DisenchantAllHandlesMixedEnchantedAndPlainObjects)
 {
     auto& module = beginActiveTestModule();

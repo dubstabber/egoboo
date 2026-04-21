@@ -268,14 +268,19 @@ bool resolveRetaliationTarget(const ai_state_t& self,
     return targetInfo != nullptr && damageableSelf != nullptr;
 }
 
+std::shared_ptr<Object> resolveEnchantSpawner(const ai_state_t& self)
+{
+    return tryObjectShared(self.getSelf());
+}
+
 bool resolveEnchantParticipants(const ai_state_t& self,
                                 ObjectRef enchantedRef,
                                 IEnchantable*& enchantedTarget,
-                                ObjectRef& ownerRef)
+                                std::shared_ptr<Object>& owner)
 {
     enchantedTarget = tryEnchantable(enchantedRef);
-    ownerRef = self.owner;
-    return enchantedTarget != nullptr && tryObject(ownerRef) != nullptr;
+    owner = tryObjectShared(self.owner);
+    return enchantedTarget != nullptr && owner != nullptr;
 }
 
 int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz)
@@ -815,19 +820,14 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     IEnchantable* targetEnchantable = nullptr;
-    ObjectRef ownerRef = ObjectRef::Invalid;
-    if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, ownerRef)) {
-        const std::shared_ptr<Object> owner = tryObjectShared(ownerRef);
-        if (owner != nullptr) {
-            const std::shared_ptr<Object> spawner = pchr->toSharedPointer();
-            returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
-                                                       pchr->getProfileID().get(),
-                                                       owner,
-                                                       spawner) != nullptr;
-        }
-        else {
-            returncode = false;
-        }
+    std::shared_ptr<Object> owner;
+    const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
+    if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, owner) &&
+        spawner != nullptr) {
+        returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
+                                                   pchr->getProfileID().get(),
+                                                   owner,
+                                                   spawner) != nullptr;
     }
     else {
         returncode = false;
@@ -849,19 +849,14 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     IEnchantable* childEnchantable = nullptr;
-    ObjectRef ownerRef = ObjectRef::Invalid;
-    if (resolveEnchantParticipants(self, self.child, childEnchantable, ownerRef)) {
-        const std::shared_ptr<Object> owner = tryObjectShared(ownerRef);
-        if (owner != nullptr) {
-            const std::shared_ptr<Object> spawner = pchr->toSharedPointer();
-            returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
-                                                      pchr->getProfileID().get(),
-                                                      owner,
-                                                      spawner) != nullptr;
-        }
-        else {
-            returncode = false;
-        }
+    std::shared_ptr<Object> owner;
+    const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
+    if (resolveEnchantParticipants(self, self.child, childEnchantable, owner) &&
+        spawner != nullptr) {
+        returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
+                                                  pchr->getProfileID().get(),
+                                                  owner,
+                                                  spawner) != nullptr;
     }
     else {
         returncode = false;
