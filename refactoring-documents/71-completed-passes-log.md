@@ -700,6 +700,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by consolidating the rema
 
 Extended `ScriptSystemsFunctions.cpp` with a focused regression pinning the `IfCharacterWasABook()` base-model/current-profile semantics. Explicitly deferred the remaining message/logging coupling in `scr_FollowLink()` and `scr_EnableListenSkill()`, passage/mesh/module helper follow-ons, and any `Script/script.c` changes. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 146 — FollowLink and deprecation-message quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remaining `scr_FollowLink()` and `scr_EnableListenSkill()` compatibility behavior behind file-local helpers that consume the already-resolved script actor/profile context instead of re-resolving the actor from `ai_state_t`. Kept the current follow-link and deprecation contract unchanged: invalid message IDs still fail quietly, failed module links still publish `"That's too scary for <name>"`, and `EnableListenSkill` remains a logged no-op.
+
+Preserved the existing focused `ScriptSystemsFunctions.cpp` coverage for successful follow-link resolution, scary-message publication, no-active-playing-state fallback, and deprecated `EnableListenSkill` logging. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -100,22 +100,6 @@ struct FollowLinkRequest
     std::string moduleName;
 };
 
-bool resolveSelfObject(const ai_state_t& self, const Object*& selfObject)
-{
-    if (!objectHandler().exists(self.getSelf()))
-    {
-        return false;
-    }
-
-    selfObject = objectHandler().get(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 bool resolveSelfProfileCompatibilityData(const Object& selfObject,
                                          SelfProfileCompatibilityData& data)
 {
@@ -150,41 +134,23 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void publishDeprecatedEnableListenSkillWarning(const ai_state_t& self)
+void publishDeprecatedEnableListenSkillWarning(const ObjectProfile& selfProfile)
 {
-    const Object* selfObject = nullptr;
-    if (!resolveSelfObject(self, selfObject))
-    {
-        return;
-    }
-
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
-    if (!selfProfile)
-    {
-        return;
-    }
-
-    logDeprecatedScriptFunctionUse("EnableListenSkill", selfProfile->getClassName());
+    logDeprecatedScriptFunctionUse("EnableListenSkill", selfProfile.getClassName());
 }
 
-bool resolveFollowLinkRequest(const ai_state_t& self,
+bool resolveFollowLinkRequest(const Object& selfObject,
+                              const ObjectProfile& selfProfile,
                               const int messageId,
                               FollowLinkRequest& request)
 {
-    const Object* selfObject = nullptr;
-    if (!resolveSelfObject(self, selfObject))
+    if (!selfProfile.isValidMessageID(messageId))
     {
         return false;
     }
 
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
-    if (!selfProfile || !selfProfile->isValidMessageID(messageId))
-    {
-        return false;
-    }
-
-    request.selfName = selfObject->getName();
-    request.moduleName = selfProfile->getMessage(messageId);
+    request.selfName = selfObject.getName();
+    request.moduleName = selfProfile.getMessage(messageId);
     return true;
 }
 
@@ -211,10 +177,13 @@ bool tryFollowLink(const FollowLinkRequest& request)
     return followed;
 }
 
-bool followLinkFromMessageId(const ai_state_t& self, const int messageId)
+bool followLinkFromMessageId(const Object& selfObject,
+                             const ObjectProfile& selfProfile,
+                             const int messageId)
 {
     FollowLinkRequest request;
-    return resolveFollowLinkRequest(self, messageId, request) && tryFollowLink(request);
+    return resolveFollowLinkRequest(selfObject, selfProfile, messageId, request) &&
+           tryFollowLink(request);
 }
 
 bool resolveSelfAttributedDamageSource(const ai_state_t& self,
@@ -2308,7 +2277,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    publishDeprecatedEnableListenSkillWarning(self);
+    publishDeprecatedEnableListenSkillWarning(*ppro);
     returncode = false;
 
     SCRIPT_FUNCTION_END();
@@ -2324,7 +2293,7 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = followLinkFromMessageId(self, state.argument);
+    returncode = followLinkFromMessageId(*pchr, *ppro, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
