@@ -931,6 +931,24 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedReadsAlertAndLastAttackerThro
     EXPECT_EQ(self.getTarget(), attacker->getObjRef());
 }
 
+TEST_F(ScriptStateFunctionsFixture, IfSittingReadsHolderRefThroughTargetInfoRole)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55321);
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55322);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(holder, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_IfSitting(state, self));
+
+    actor->setHolderRef(holder->getObjRef());
+    EXPECT_TRUE(scr_IfSitting(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedFailsWithoutBlockedAlertOrLastAttacker)
 {
     auto& module = beginActiveTestModule();
@@ -958,6 +976,28 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedFailsWithoutBlockedAlertOrLas
     attacker->requestTerminate();
     EXPECT_FALSE(scr_IfHolderBlocked(state, self));
     EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfModuleHasIDSZMatchesActiveModuleQueryAndRejectsInvalidMessageId)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55323);
+
+    ASSERT_NE(actor, nullptr);
+
+    const IDSZ2 queriedIdsz('Z', 'Z', 'Z', 'Z');
+    const int validMessageId = static_cast<int>(actor->getProfile()->addMessage("ignored module name"));
+
+    script_state_t state;
+    state.argument = validMessageId;
+    state.distance = static_cast<int>(queriedIdsz.toUint32());
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
+
+    state.argument = 9999;
+    ASSERT_FALSE(actor->getProfile()->isValidMessageID(state.argument));
+    EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
 }
 
 TEST_F(ScriptStateFunctionsFixture, IfBackstabbedReadsLastAttackerThroughScriptableRole)

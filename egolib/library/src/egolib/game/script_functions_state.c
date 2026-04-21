@@ -51,6 +51,52 @@ bool isShield(ObjectRef itemRef)
     const IItemInfo* item = tryItemInfo(itemRef);
     return item != nullptr && item->isShield();
 }
+
+bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
+{
+    if (!objectHandler().exists(objectRef))
+    {
+        return false;
+    }
+
+    self.setTarget(objectRef);
+    return true;
+}
+
+bool hasExistingHolder(const ITargetInfo& objectTargetInfo)
+{
+    return objectHandler().exists(objectTargetInfo.getHolderRef());
+}
+
+bool trySetTargetToHolderLastAttacker(ai_state_t& self, const ITargetInfo& objectTargetInfo)
+{
+    const IScriptable* holder = tryScriptable(objectTargetInfo.getHolderRef());
+    if (holder == nullptr || !HAS_SOME_BITS(holder->getAIAlertBits(), ALERTIF_BLOCKED))
+    {
+        return false;
+    }
+
+    return trySetResolvedTarget(self, holder->getAILastAttacker());
+}
+
+bool activeModuleHasIdszWithValidMessage(const ObjectProfile& profile,
+                                         int messageId,
+                                         IDSZ2 idsz)
+{
+    if (!profile.isValidMessageID(messageId))
+    {
+        return false;
+    }
+
+    try
+    {
+        return ModuleProfile::moduleHasIDSZ(activeModule().getName(), idsz);
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -426,7 +472,7 @@ uint8_t scr_IfSitting( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = objectHandler().exists(targetInfo(*pchr).getHolderRef());
+    returncode = hasExistingHolder(targetInfo(*pchr));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1404,35 +1450,7 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef iattached = targetInfo(*pchr).getHolderRef();
-
-    IScriptable* attached = tryScriptable(iattached);
-    if (attached != nullptr)
-    {
-        BIT_FIELD bits = attached->getAIAlertBits();
-
-        if ( HAS_SOME_BITS( bits, ALERTIF_BLOCKED ) )
-        {
-            auto iLastAttacker = attached->getAILastAttacker();
-
-            if ( objectHandler().exists(iLastAttacker) )
-            {
-                self.setTarget(iLastAttacker);
-            }
-            else
-            {
-                returncode = false;
-            }
-        }
-        else
-        {
-            returncode = false;
-        }
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetTargetToHolderLastAttacker(self, targetInfo(*pchr));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1562,10 +1580,9 @@ uint8_t scr_IfModuleHasIDSZ( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ///use message.txt to send the module name
-    if ( !ppro->isValidMessageID((int)state.argument) ) return false;
-
-    returncode = ModuleProfile::moduleHasIDSZ( activeModule().getName(), state.distance);
+    returncode = activeModuleHasIdszWithValidMessage(*ppro,
+                                                     static_cast<int>(state.argument),
+                                                     Ego::Script::Interpreter::safeCast<IDSZ2>(state.distance));
 
     SCRIPT_FUNCTION_END();
 }

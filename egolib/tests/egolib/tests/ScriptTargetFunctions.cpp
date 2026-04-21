@@ -204,6 +204,25 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToTargetHandsReadsThroughInventory
     EXPECT_EQ(self.getTarget(), rightHandItem->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToTargetHandsFailWithoutChangingTargetWhenHeldRefsAreMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53061);
+    auto target = makeObject(module, "mp_objects/follower.obj", 53062);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_FALSE(scr_SetTargetToTargetLeftHand(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToTargetRightHand(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, SetTargetToRiderReadsThroughInventoryHolderRole)
 {
     auto& module = beginActiveTestModule();
@@ -221,6 +240,61 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToRiderReadsThroughInventoryHolder
 
     EXPECT_TRUE(scr_SetTargetToRider(state, self));
     EXPECT_EQ(self.getTarget(), rider->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToOldTargetUsesResolvedRefHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53101);
+    auto oldTarget = makeObject(module, "mp_objects/follower.obj", 53102);
+    auto currentTarget = makeObject(module, "mp_objects/follower.obj", 53103);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(oldTarget, nullptr);
+    ASSERT_NE(currentTarget, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, currentTarget);
+    self.setOldTarget(oldTarget->getObjRef());
+
+    EXPECT_TRUE(scr_SetTargetToOldTarget(state, self));
+    EXPECT_EQ(self.getTarget(), oldTarget->getObjRef());
+
+    self.setTarget(currentTarget->getObjRef());
+    self.setOldTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetToOldTarget(state, self));
+    EXPECT_EQ(self.getTarget(), currentTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, TranslateOrderDecodesPackedOrderAndPreservesInvalidTargetFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53104);
+    auto target = makeObject(module, "mp_objects/follower.obj", 53105);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+    constexpr int expectedX = 320;
+    constexpr int expectedY = 448;
+    constexpr int expectedArgument = 7;
+    self.order_value = (static_cast<uint32_t>(target->getObjRef().get()) << 24) |
+                       ((static_cast<uint32_t>(expectedX >> 6) & 0x03FF) << 14) |
+                       ((static_cast<uint32_t>(expectedY >> 6) & 0x03FF) << 4) |
+                       (expectedArgument & 0x000F);
+
+    EXPECT_TRUE(scr_TranslateOrder(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
+    EXPECT_EQ(state.x, expectedX);
+    EXPECT_EQ(state.y, expectedY);
+    EXPECT_EQ(state.argument, expectedArgument);
+
+    self.setTarget(target->getObjRef());
+    self.order_value = 0xFF000000u;
+    EXPECT_FALSE(scr_TranslateOrder(state, self));
+    EXPECT_EQ(self.getTarget(), target->getObjRef());
 }
 
 TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersSelectMatchingOccupants)

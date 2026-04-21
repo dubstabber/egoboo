@@ -356,30 +356,37 @@ TEST_F(ScriptRuntimeFixture, IssueSpecialOrderPublishesToMatchingSpecialIdsOnly)
     auto matchingA = makeObject(module, "mp_objects/follower.obj", 5831);
     auto matchingB = makeObject(module, "mp_objects/follower.obj", 5832);
     auto nonMatching = makeObject(module, "mp_data/globalobjects/items/torch.obj", 5833);
+    auto terminatedMatch = makeObject(module, "mp_objects/follower.obj", 5834);
 
     ASSERT_NE(matchingA, nullptr);
     ASSERT_NE(matchingB, nullptr);
     ASSERT_NE(nonMatching, nullptr);
+    ASSERT_NE(terminatedMatch, nullptr);
 
     flushSpawnedObjects(module);
 
     clearOrderState(*matchingA);
     clearOrderState(*matchingB);
     clearOrderState(*nonMatching);
+    clearOrderState(*terminatedMatch);
 
     const IDSZ2 specialId = matchingA->getProfile()->getIDSZ(IDSZ_SPECIAL);
     ASSERT_NE(nonMatching->getProfile()->getIDSZ(IDSZ_SPECIAL), specialId);
+    terminatedMatch->requestTerminate();
 
     issue_special_order(91, specialId);
 
     const auto& matchingAState = Ego::Script::runtimeState(*matchingA);
     const auto& matchingBState = Ego::Script::runtimeState(*matchingB);
     const auto& nonMatchingState = Ego::Script::runtimeState(*nonMatching);
+    const auto& terminatedMatchState = Ego::Script::runtimeState(*terminatedMatch);
     EXPECT_EQ(matchingAState.order_value, 91u);
     EXPECT_TRUE(HAS_SOME_BITS(matchingAState.alert, ALERTIF_ORDERED));
     EXPECT_EQ(matchingBState.order_value, 91u);
     EXPECT_TRUE(HAS_SOME_BITS(matchingBState.alert, ALERTIF_ORDERED));
     EXPECT_LT(matchingAState.order_counter, matchingBState.order_counter);
+    EXPECT_EQ(terminatedMatchState.order_value, 0u);
+    EXPECT_FALSE(HAS_SOME_BITS(terminatedMatchState.alert, ALERTIF_ORDERED));
     EXPECT_EQ(nonMatchingState.order_value, 0u);
     EXPECT_FALSE(HAS_SOME_BITS(nonMatchingState.alert, ALERTIF_ORDERED));
 }

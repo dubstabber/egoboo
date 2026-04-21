@@ -897,20 +897,50 @@ bool shouldReceiveOrder(const ITargetInfo& caller, const ITargetInfo& candidate)
     return candidate.getTeamRef() == caller.getTeamRef();
 }
 
+bool resolveOrderRecipient(ObjectRef candidateRef,
+                           const ITargetInfo*& candidateInfo,
+                           IScriptable*& candidateScriptable)
+{
+    candidateInfo = tryTargetInfo(candidateRef);
+    candidateScriptable = tryScriptable(candidateRef);
+    const IInventoryHolder* candidateInventory = tryInventoryHolder(candidateRef);
+    return candidateInfo != nullptr &&
+           candidateScriptable != nullptr &&
+           candidateInventory != nullptr &&
+           !candidateInventory->isTerminated();
+}
+
 bool tryPublishOrder(ObjectRef candidateRef,
                      const ITargetInfo& caller,
                      uint32_t value,
                      int& counter)
 {
-    Object* candidateObject = tryObject(candidateRef);
-    if (candidateObject == nullptr || candidateObject->isTerminated())
+    const ITargetInfo* candidateInfo = nullptr;
+    IScriptable* candidateScriptable = nullptr;
+    if (!resolveOrderRecipient(candidateRef, candidateInfo, candidateScriptable))
     {
         return false;
     }
 
-    const ITargetInfo* candidateInfo = static_cast<const ITargetInfo*>(candidateObject);
-    IScriptable* candidateScriptable = static_cast<IScriptable*>(candidateObject);
     if (!shouldReceiveOrder(caller, *candidateInfo))
+    {
+        return false;
+    }
+
+    candidateScriptable->addAIOrder(value, counter);
+    counter++;
+    return true;
+}
+
+bool tryPublishSpecialOrder(ObjectRef candidateRef,
+                            uint32_t value,
+                            const IDSZ2& idsz,
+                            int& counter)
+{
+    const ITargetInfo* candidateInfo = nullptr;
+    IScriptable* candidateScriptable = nullptr;
+    if (!resolveOrderRecipient(candidateRef, candidateInfo, candidateScriptable) ||
+        !candidateInfo->matchesSpecialIDSZ(idsz))
     {
         return false;
     }
@@ -952,13 +982,12 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        if (object->isTerminated()) continue;
-
-        if (idsz == object->getProfile()->getIDSZ(IDSZ_SPECIAL))
+        if (object == nullptr)
         {
-            object->addAIOrder(value, counter);
-            counter++;
+            continue;
         }
+
+        tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
     }
 }
 

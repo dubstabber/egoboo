@@ -40,6 +40,13 @@ bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
     return true;
 }
 
+bool trySetTargetFromHeldObject(ai_state_t& self,
+                                const IInventoryHolder& holder,
+                                slot_t slot)
+{
+    return trySetResolvedTarget(self, holder.getHeldObject(slot));
+}
+
 bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                      int passageId,
                                      const IDSZ2& occupantIdsz,
@@ -100,17 +107,7 @@ uint8_t scr_SetTargetToNearbyEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target(pchr, NEARBY, IDSZ2::None, TARGET_ENEMIES);
-
-    if ( objectHandler().exists(ichr) )
-    {
-        self.setTarget(ichr);
-        returncode = true;
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, chr_find_target(pchr, NEARBY, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
@@ -132,13 +129,7 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    auto ichr = targetInventory->getHeldObject(SLOT_LEFT);
-    returncode = false;
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget(ichr);
-        returncode = true;
-    }
+    returncode = trySetTargetFromHeldObject(self, *targetInventory, SLOT_LEFT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -160,13 +151,7 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
         return false;
     }
 
-    auto ichr = targetInventory->getHeldObject(SLOT_RIGHT);
-    returncode = false;
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget(ichr);
-        returncode = true;
-    }
+    returncode = trySetTargetFromHeldObject(self, *targetInventory, SLOT_RIGHT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -182,15 +167,7 @@ uint8_t scr_SetTargetToWhoeverAttacked( script_state_t& state, ai_state_t& self 
     SCRIPT_FUNCTION_BEGIN();
 
     const IScriptable& selfScriptable = scriptable(*pchr);
-    const ObjectRef attackerRef = selfScriptable.getAILastAttacker();
-    if ( objectHandler().exists(attackerRef) )
-    {
-        self.setTarget(attackerRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, selfScriptable.getAILastAttacker());
 
     SCRIPT_FUNCTION_END();
 }
@@ -206,15 +183,7 @@ uint8_t scr_SetTargetToWhoeverBumped( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IScriptable& selfScriptable = scriptable(*pchr);
-    const ObjectRef bumpedRef = selfScriptable.getAIBumped();
-    if ( objectHandler().exists(bumpedRef) )
-    {
-        self.setTarget(bumpedRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, selfScriptable.getAIBumped());
 
     SCRIPT_FUNCTION_END();
 }
@@ -245,14 +214,7 @@ uint8_t scr_SetTargetToOldTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.getOldTarget() ) )
-    {
-        self.setTarget(self.getOldTarget());
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, self.getOldTarget());
 
     SCRIPT_FUNCTION_END();
 }
@@ -725,15 +687,7 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    const ObjectRef riderRef = selfInventory->getHeldObject(SLOT_LEFT);
-    if ( objectHandler().exists(riderRef) )
-    {
-        self.setTarget(riderRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetTargetFromHeldObject(self, *selfInventory, SLOT_LEFT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -782,19 +736,13 @@ uint8_t scr_TranslateOrder( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = ObjectRef(Ego::Math::clipBits<16>( self.order_value >> 24 ));
-
-    if ( objectHandler().exists( ichr ) )
+    const ObjectRef targetRef = ObjectRef(Ego::Math::clipBits<16>(self.order_value >> 24));
+    returncode = trySetResolvedTarget(self, targetRef);
+    if (returncode)
     {
-        self.setTarget( ichr );
-
-        state.x        = (( self.order_value >> 14 ) & 0x03FF ) << 6;
-        state.y        = (( self.order_value >>  4 ) & 0x03FF ) << 6;
-        state.argument = (( self.order_value >>  0 ) & 0x000F );
-    }
-    else
-    {
-        returncode = false;
+        state.x = ((self.order_value >> 14) & 0x03FF) << 6;
+        state.y = ((self.order_value >> 4) & 0x03FF) << 6;
+        state.argument = (self.order_value >> 0) & 0x000F;
     }
 
     SCRIPT_FUNCTION_END();
@@ -810,15 +758,7 @@ uint8_t scr_SetTargetToWhoeverWasHit( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef lastHitRef = scriptable(*pchr).getAILastHit();
-    if ( objectHandler().exists(lastHitRef) )
-    {
-        self.setTarget(lastHitRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, scriptable(*pchr).getAILastHit());
 
     SCRIPT_FUNCTION_END();
 }
@@ -834,16 +774,7 @@ uint8_t scr_SetTargetToWideEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target( pchr, WIDE, IDSZ2::None, TARGET_ENEMIES );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget( ichr );
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, chr_find_target(pchr, WIDE, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
