@@ -688,6 +688,38 @@ TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
     config.hud_feedback.setValue(previousFeedback);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, KillTargetHandlesSelfHeldByMount)
+{
+    auto& module = beginActiveTestModule();
+    auto mount = makeObject(module, "mp_data/globalobjects/magic/mount.obj", 5662);
+    auto mountedChild = makeObject(module, "mp_objects/follower.obj", 5663);
+    auto mountKillTarget = makeObject(module, "mp_objects/follower.obj", 5667);
+
+    ASSERT_NE(mount, nullptr);
+    ASSERT_NE(mountedChild, nullptr);
+    ASSERT_NE(mountKillTarget, nullptr);
+    ASSERT_TRUE(mount->isMount());
+    mount->setHeldObject(SLOT_LEFT, ObjectRef::Invalid);
+    mount->setHeldObject(SLOT_RIGHT, mountedChild->getObjRef());
+    mountedChild->setHolderRef(mount->getObjRef());
+
+    const auto setTeamRefs = [](const std::shared_ptr<Object>& object, TEAM_REF team)
+    {
+        object->setTeam(team);
+        object->setTeamRef(team);
+        object->setBaseTeamRef(team);
+    };
+
+    setTeamRefs(mount, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    setTeamRefs(mountedChild, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    setTeamRefs(mountKillTarget, static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    script_state_t state;
+    ai_state_t mountedChildSelf = makeScriptSelf(mountedChild, mountKillTarget);
+    EXPECT_TRUE(scr_KillTarget(state, mountedChildSelf));
+    EXPECT_FALSE(mountKillTarget->isAlive());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, GiveExperienceToTargetUsesResolvedTargetObject)
 {
     auto& module = beginActiveTestModule();
@@ -1094,6 +1126,28 @@ TEST_F(ScriptSystemsFunctionsFixture, EnchantLifecycleHelpersUseEnchantableRole)
     EXPECT_TRUE(scr_EnchantTarget(state, self));
     EXPECT_TRUE(scr_EnchantChild(state, self));
     EXPECT_TRUE(scr_DisenchantAll(state, self));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, DisenchantAllHandlesMixedEnchantedAndPlainObjects)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5698);
+    auto enchanted = makeObject(module, "mp_objects/follower.obj", 5699);
+    auto plain = makeObject(module, "mp_objects/follower.obj", 5700);
+    auto enchant = addHealRemovableEnchant(module, enchanted, 5701);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(enchanted, nullptr);
+    ASSERT_NE(plain, nullptr);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(enchanted->hasActiveEnchants());
+    EXPECT_FALSE(plain->hasActiveEnchants());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, enchanted);
+
+    EXPECT_TRUE(scr_DisenchantAll(state, self));
+    EXPECT_FALSE(plain->hasActiveEnchants());
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
