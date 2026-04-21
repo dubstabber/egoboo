@@ -18,6 +18,7 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/MessageLog.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
@@ -27,6 +28,8 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/game.h"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
@@ -182,6 +185,7 @@ public:
     {
         auto& context = EngineContext::get();
         context.setEngine(std::make_unique<GameEngine>());
+        context.clearCameraSystem();
 
         GameEngine& engine = context.engine();
         engine._uiManager.reset(_fakeUiManager);
@@ -196,6 +200,9 @@ public:
         _fakeGraphicsSystem->context = nullptr;
         _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
 
+        CameraSystem::initialize();
+        context.installCameraSystem(CameraSystem::get());
+
         engine._currentGameState = std::make_shared<PlayingState>();
         _playingState = std::dynamic_pointer_cast<PlayingState>(engine._currentGameState);
     }
@@ -209,6 +216,8 @@ public:
             engine->_uiManager.release();
         }
 
+        EngineContext::get().clearCameraSystem();
+        CameraSystem::uninitialize();
         context.clearEngine();
         context.installAudioSystem(AudioSystem::get());
         context.installParticleHandler(ParticleHandler::get());
@@ -800,6 +809,90 @@ TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
     EXPECT_NE(output.find("EnableListenSkill"), std::string::npos);
     EXPECT_NE(output.find(actor->getProfile()->getClassName()), std::string::npos);
     EXPECT_TRUE(playingStateHarness.messageTexts().empty());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAndFlagPublication)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5614, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    state.argument = 85;
+    EXPECT_TRUE(scr_SetWaterLevel(state, self));
+    EXPECT_FLOAT_EQ(module.getWater()._douse_level, 8.5f);
+
+    state.argument = 0;
+    EXPECT_TRUE(scr_GetWaterLevel(state, self));
+    EXPECT_EQ(state.argument, 85);
+
+    auto& fog = GameSessionContext::get().fog();
+    const float originalTop = fog._top;
+    const float originalDistance = fog._distance;
+    EngineContext::get().config().graphic_fog_enable.setValue(true);
+
+    state.argument = 42;
+    EXPECT_TRUE(scr_SetFogLevel(state, self));
+    EXPECT_FLOAT_EQ(fog._top, 4.2f);
+    EXPECT_FLOAT_EQ(fog._distance, originalDistance + (4.2f - originalTop));
+    EXPECT_TRUE(scr_GetFogLevel(state, self));
+    EXPECT_EQ(state.argument, 42);
+
+    state.turn = 300;
+    state.argument = -5;
+    state.distance = 128;
+    EXPECT_TRUE(scr_SetFogTAD(state, self));
+    EXPECT_EQ(fog._red, 255);
+    EXPECT_EQ(fog._grn, 0);
+    EXPECT_EQ(fog._blu, 128);
+
+    const float originalBottom = fog._bottom;
+    const float distanceAfterTop = fog._distance;
+    state.argument = 18;
+    EXPECT_TRUE(scr_SetFogBottomLevel(state, self));
+    EXPECT_NEAR(fog._bottom, 1.8f, 0.0001f);
+    EXPECT_FLOAT_EQ(fog._distance, distanceAfterTop - (1.8f - originalBottom));
+    EXPECT_TRUE(scr_GetFogBottomLevel(state, self));
+    EXPECT_EQ(state.argument, 18);
+
+    module._isBeaten = false;
+    EXPECT_TRUE(scr_BeatModule(state, self));
+    EXPECT_TRUE(module._isBeaten);
+
+    module._exportValid = true;
+    EXPECT_TRUE(scr_DisableExport(state, self));
+    EXPECT_FALSE(module._exportValid);
+    EXPECT_TRUE(scr_EnableExport(state, self));
+    EXPECT_TRUE(module._exportValid);
+
+    module.enablePitsTeleport(Ego::Vector3f(1.0f, 2.0f, 3.0f));
+    EXPECT_TRUE(scr_PitsKill(state, self));
+    EXPECT_FALSE(module._pitsTeleport);
+    EXPECT_TRUE(module._pitsKill);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavior)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5616);
+
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("Done."));
+
+    script_state_t state;
+    state.argument = messageId;
+    ai_state_t self = makeScriptSelf(actor);
+
+    g_endText.setText("Prefix:");
+    EXPECT_TRUE(scr_AddEndMessage(state, self));
+    EXPECT_EQ(g_endText.getText(), "Prefix:Done.");
+
+    EXPECT_TRUE(scr_ClearEndMessage(state, self));
+    EXPECT_TRUE(g_endText.getText().empty());
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRoleLookups)

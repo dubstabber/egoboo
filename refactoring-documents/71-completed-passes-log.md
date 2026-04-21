@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 148) completed between 2026-04-13 and 2026-04-21. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 150) completed between 2026-04-13 and 2026-04-21. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -723,6 +723,12 @@ Extended `ScriptRuntime.cpp` with focused regressions for resolved leader-variab
 Continued Tier 1.2 inside `script_functions_systems.c` by tightening the remaining self-profile and target-armor compatibility helpers into smaller file-local policy structs and resolvers. Routed `scr_GetTargetArmorPrice()`, `scr_ChangeTargetArmor()`, `scr_TargetPayForArmor()`, `scr_IfCharacterWasABook()`, `scr_BecomeSpellbook()`, `scr_EnchantTarget()`, `scr_EnchantChild()`, `scr_FollowLink()`, and `scr_EnableListenSkill()` through the renamed helper layer without widening any public `Object` role surfaces or changing the existing success/failure semantics.
 
 Kept the focused `ScriptSystemsFunctions.cpp` armor, spellbook, enchant, follow-link, and deprecation-message regressions as the behavior lock. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 150 — Systems module/UI helper quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remaining module-environment, playing-state UI, and end-text compatibility helpers behind file-local wrappers instead of scattering direct `activeModule()`, `GameSessionContext::fog()`, `PlayingState`, and `g_endText` calls across the script opcodes. Routed `scr_Set/GetWaterLevel()`, fog top/bottom/color helpers, tile get/set, minimap/status-monitor helpers, module beat/export/pits helpers, good-team XP publication, and end-text clear/append through those local seams without widening any public `Object` role surfaces or changing the current success/failure semantics.
+
+Extended `ScriptSystemsFunctions.cpp` with focused regressions for water/fog/module-flag publication and end-text clear/append behavior. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
 ---
 

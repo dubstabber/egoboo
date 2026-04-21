@@ -116,6 +116,147 @@ struct ArmorCostPolicy
     int netCost = 0;
 };
 
+water_instance_t& moduleWater()
+{
+    return activeModule().getWater();
+}
+
+fog_instance_t& moduleFog()
+{
+    return GameSessionContext::get().fog();
+}
+
+void setModuleWaterLevel(int waterLevelTimesTen)
+{
+    moduleWater().set_douse_level(waterLevelTimesTen / 10.0f);
+}
+
+int getModuleWaterLevelTimesTen()
+{
+    return moduleWater()._douse_level * 10;
+}
+
+void setModuleFogTopLevel(int fogLevelTimesTen)
+{
+    fog_instance_t& fog = moduleFog();
+    const float delta = (Ego::Script::Interpreter::safeCast<float>(fogLevelTimesTen) / 10.0f) - fog._top;
+    fog._top += delta;
+    fog._distance += delta;
+    fog._on = config().graphic_fog_enable.getValue();
+    if (fog._distance < 1.0f)
+    {
+        fog._on = false;
+    }
+}
+
+int getModuleFogTopLevelTimesTen()
+{
+    return moduleFog()._top * 10;
+}
+
+void setModuleFogColor(int red, int green, int blue)
+{
+    fog_instance_t& fog = moduleFog();
+    fog._red = Ego::Math::constrain(red, 0, 0xFF);
+    fog._grn = Ego::Math::constrain(green, 0, 0xFF);
+    fog._blu = Ego::Math::constrain(blue, 0, 0xFF);
+}
+
+void setModuleFogBottomLevel(int fogLevelTimesTen)
+{
+    fog_instance_t& fog = moduleFog();
+    const float delta = (fogLevelTimesTen / 10.0f) - fog._bottom;
+    fog._bottom += delta;
+    fog._distance -= delta;
+    fog._on = config().graphic_fog_enable.getValue();
+    if (fog._distance < 1.0f)
+    {
+        fog._on = false;
+    }
+}
+
+int getModuleFogBottomLevelTimesTen()
+{
+    return moduleFog()._bottom * 10;
+}
+
+bool tryGetModuleTileTypeAtPosition(const Ego::Vector2f& position, uint16_t& tileType)
+{
+    return activeModule().tryGetTileTypeAtPosition(position, tileType);
+}
+
+bool setModuleTileTypeAtPosition(const Ego::Vector2f& position, uint16_t tileType)
+{
+    return activeModule().setTileTypeAtPosition(position, tileType);
+}
+
+void markActiveModuleBeaten()
+{
+    activeModule().beatModule();
+}
+
+void setActiveModuleExportValid(bool valid)
+{
+    activeModule().setExportValid(valid);
+}
+
+void enableActiveModulePitsKill()
+{
+    activeModule().enablePitsKill();
+}
+
+void enableActiveModulePitsTeleport(const Ego::Vector3f& location)
+{
+    activeModule().enablePitsTeleport(location);
+}
+
+void giveGoodTeamExperience(int amount, XPType type)
+{
+    activeModule().giveTeamExperience(static_cast<TEAM_REF>(Team::TEAM_GOOD), amount, type);
+}
+
+std::shared_ptr<PlayingState> playingState()
+{
+    return activePlayingState();
+}
+
+Ego::GUI::MiniMap& miniMap()
+{
+    return *playingState()->getMiniMap();
+}
+
+bool showMiniMap()
+{
+    const bool wasHidden = !miniMap().isVisible();
+    miniMap().setVisible(true);
+    return wasHidden;
+}
+
+void showMiniMapPlayerPosition()
+{
+    miniMap().setShowPlayerPosition(true);
+}
+
+void addMiniMapBlip(float x, float y, ObjectRef objectRef)
+{
+    miniMap().addBlip(x, y, objectHandler()[objectRef]);
+}
+
+void addSelfStatusMonitor(ObjectRef objectRef)
+{
+    playingState()->addStatusMonitor(objectHandler()[objectRef]);
+}
+
+void clearEndMessageText()
+{
+    g_endText.setText("");
+}
+
+bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
+{
+    return ::AddEndMessage(&object, messageIndex, &state);
+}
+
 void populateSelfProfilePolicyData(const Object& selfObject,
                                    const ObjectProfile& selfProfile,
                                    SelfProfilePolicyData& data)
@@ -981,7 +1122,7 @@ uint8_t scr_SetWaterLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().getWater().set_douse_level(state.argument / 10.0f);
+    setModuleWaterLevel(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1266,7 +1407,7 @@ uint8_t scr_GetWaterLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = activeModule().getWater()._douse_level * 10;
+    state.argument = getModuleWaterLevelTimesTen();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1466,9 +1607,7 @@ uint8_t scr_ShowMap( script_state_t& state, ai_state_t& self )
     /// Fails if map already visible
 
     SCRIPT_FUNCTION_BEGIN();
-    if(activePlayingState()->getMiniMap()->isVisible()) returncode = false;
-
-    activePlayingState()->getMiniMap()->setVisible(true);
+    returncode = showMiniMap();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1484,7 +1623,7 @@ uint8_t scr_ShowYouAreHere( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activePlayingState()->getMiniMap()->setShowPlayerPosition(true);
+    showMiniMapPlayerPosition();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1503,7 +1642,7 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
     if ( state.argument >= 0 )
     {
         //activePlayingState()->getMiniMap()->addBlip(state.x, state.y, static_cast<HUDColors>(state.argument % COLOR_MAX));
-        activePlayingState()->getMiniMap()->addBlip(state.x, state.y, objectHandler()[pchr->getObjRef()]);
+        addMiniMapBlip(state.x, state.y, pchr->getObjRef());
     }
 
     SCRIPT_FUNCTION_END();
@@ -1583,16 +1722,9 @@ uint8_t scr_SetFogLevel( script_state_t& state, ai_state_t& self )
     /// Values are * 10
     /// !!BAD!! DOESN'T WORK !!BAD!!
 
-    float fTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    fog_instance_t& fog = GameSessionContext::get().fog();
-    fTmp = ( Ego::Script::Interpreter::safeCast<float>(state.argument) / 10.0f ) - fog._top;
-    fog._top += fTmp;
-    fog._distance += fTmp;
-    fog._on = config().graphic_fog_enable.getValue();
-	if (fog._distance < 1.0f)  fog._on = false;
+    setModuleFogTopLevel(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1608,7 +1740,7 @@ uint8_t scr_GetFogLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = GameSessionContext::get().fog()._top * 10;
+    state.argument = getModuleFogTopLevelTimesTen();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1625,10 +1757,7 @@ uint8_t scr_SetFogTAD( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    fog_instance_t& fog = GameSessionContext::get().fog();
-	fog._red = Ego::Math::constrain(state.turn, 0, 0xFF);
-	fog._grn = Ego::Math::constrain(state.argument, 0, 0xFF);
-	fog._blu = Ego::Math::constrain(state.distance, 0, 0xFF);
+    setModuleFogColor(state.turn, state.argument, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1643,16 +1772,9 @@ uint8_t scr_SetFogBottomLevel( script_state_t& state, ai_state_t& self )
     /// @details This function sets the level of the module's fog.
     /// Values are * 10
 
-    float fTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    fog_instance_t& fog = GameSessionContext::get().fog();
-	fTmp = (state.argument / 10.0f) - fog._bottom;
-    fog._bottom += fTmp;
-    fog._distance -= fTmp;
-    fog._on = config().graphic_fog_enable.getValue();
-	if (fog._distance < 1.0f)  fog._on = false;
+    setModuleFogBottomLevel(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1669,7 +1791,7 @@ uint8_t scr_GetFogBottomLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    state.argument = GameSessionContext::get().fog()._bottom * 10;
+    state.argument = getModuleFogBottomLevelTimesTen();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1687,7 +1809,7 @@ uint8_t scr_GetTileXY( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     uint16_t tileType = 0;
-    if (activeModule().tryGetTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)), tileType))
+    if (tryGetModuleTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)), tileType))
     {
         returncode = true;
         state.argument = tileType;
@@ -1706,8 +1828,8 @@ uint8_t scr_SetTileXY( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = activeModule().setTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)),
-                                                      state.argument);
+    returncode = setModuleTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)),
+                                             state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1874,7 +1996,7 @@ uint8_t scr_BeatModule( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().beatModule();
+    markActiveModuleBeaten();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1905,7 +2027,7 @@ uint8_t scr_DisableExport( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().setExportValid(false);
+    setActiveModuleExportValid(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1920,7 +2042,7 @@ uint8_t scr_EnableExport( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().setExportValid(true);
+    setActiveModuleExportValid(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1993,7 +2115,7 @@ uint8_t scr_ClearEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    g_endText.setText("");
+    clearEndMessageText();
 
     SCRIPT_FUNCTION_END();
 }
@@ -2008,7 +2130,7 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ::AddEndMessage( pchr,  state.argument, &state );
+    returncode = addEndMessageText(*pchr, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2023,7 +2145,7 @@ uint8_t scr_AddStat( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activePlayingState()->addStatusMonitor( objectHandler()[self.getSelf()] );
+    addSelfStatusMonitor(self.getSelf());
 
     SCRIPT_FUNCTION_END();
 }
@@ -2194,7 +2316,7 @@ uint8_t scr_PitsKill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().enablePitsKill();
+    enableActiveModulePitsKill();
 
     SCRIPT_FUNCTION_END();
 }
@@ -2211,9 +2333,7 @@ uint8_t scr_GiveExperienceToGoodTeam( script_state_t& state, ai_state_t& self )
 
     if(state.distance < XP_COUNT)
     {
-        activeModule().giveTeamExperience(static_cast<TEAM_REF>(Team::TEAM_GOOD),
-                                          state.argument,
-                                          static_cast<XPType>(state.distance));
+        giveGoodTeamExperience(state.argument, static_cast<XPType>(state.distance));
     }
 
 
@@ -2428,14 +2548,14 @@ uint8_t scr_PitsFall( script_state_t& state, ai_state_t& self )
 
     if (activeModule().isInsidePitBounds(static_cast<float>(state.x), static_cast<float>(state.y)))
     {
-        activeModule().enablePitsTeleport(Ego::Vector3f(static_cast<float>(state.x), 
-                                                         static_cast<float>(state.y), 
-                                                         static_cast<float>(state.distance)));
+        enableActiveModulePitsTeleport(Ego::Vector3f(static_cast<float>(state.x),
+                                                     static_cast<float>(state.y),
+                                                     static_cast<float>(state.distance)));
     }
     else
     {
         //make it kill instead
-        activeModule().enablePitsKill();
+        enableActiveModulePitsKill();
     }
 
     SCRIPT_FUNCTION_END();
