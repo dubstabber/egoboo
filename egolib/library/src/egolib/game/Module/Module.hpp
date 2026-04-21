@@ -174,6 +174,14 @@ public:
     **/
     bool isInside(const float x, const float y) const;
 
+    bool isInsidePitBounds(float x, float y) const;
+
+    bool setTileType(Index1D tileIndex, uint16_t tileType);
+
+    bool tryGetTileTypeAtPosition(const Ego::Vector2f& position, uint16_t& tileType) const;
+
+    bool setTileTypeAtPosition(const Ego::Vector2f& position, uint16_t tileType);
+
     /**
     * Porting hack, TODO: remove
     **/

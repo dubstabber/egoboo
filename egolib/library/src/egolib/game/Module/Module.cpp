@@ -22,6 +22,19 @@
 
 #include "egolib/game/Module/Module_internal.h"
 
+namespace
+{
+ego_mesh_t& requireMesh(const std::shared_ptr<ego_mesh_t>& mesh)
+{
+    if (!mesh)
+    {
+        throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
+    }
+
+    return *mesh;
+}
+}
+
 int GameModule::getPassageCount()
 {
     return _passages.size();
@@ -75,6 +88,40 @@ uint8_t GameModule::getMinPlayers() const
 bool GameModule::isInside(const float x, const float y) const
 {
     return x >= 0 && x < _mesh->_tmem._edge_x && y >= 0 && y < _mesh->_tmem._edge_y;
+}
+
+bool GameModule::isInsidePitBounds(float x, float y) const
+{
+    const ego_mesh_t& mesh = requireMesh(_mesh);
+    return x > EDGE && y > EDGE &&
+           x < mesh._tmem._edge_x - EDGE &&
+           y < mesh._tmem._edge_y - EDGE;
+}
+
+bool GameModule::setTileType(Index1D tileIndex, uint16_t tileType)
+{
+    ego_mesh_t& mesh = requireMesh(_mesh);
+    return mesh.set_texture(tileIndex, tileType);
+}
+
+bool GameModule::tryGetTileTypeAtPosition(const Ego::Vector2f& position, uint16_t& tileType) const
+{
+    const ego_mesh_t& mesh = requireMesh(_mesh);
+    const Index1D tileIndex = mesh.getTileIndex(position);
+    if (Index1D::Invalid == tileIndex)
+    {
+        return false;
+    }
+
+    tileType = mesh.getTileInfo(tileIndex)._img & TILE_LOWER_MASK;
+    return true;
+}
+
+bool GameModule::setTileTypeAtPosition(const Ego::Vector2f& position, uint16_t tileType)
+{
+    ego_mesh_t& mesh = requireMesh(_mesh);
+    const Index1D tileIndex = mesh.getTileIndex(position);
+    return mesh.set_texture(tileIndex, tileType);
 }
 
 ObjectRef GameModule::getTeamLeaderRef(TEAM_REF teamRef) const

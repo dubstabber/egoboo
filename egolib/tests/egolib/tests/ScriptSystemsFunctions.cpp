@@ -509,6 +509,159 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptSystemsFunctionsFixture::s_runtime;
 
+uint16_t tileTypeForIndex(const GameModule& module, Index1D tileIndex)
+{
+    if (!module._mesh)
+    {
+        throw std::runtime_error("test module mesh not initialized");
+    }
+    if (Index1D::Invalid == tileIndex)
+    {
+        throw std::runtime_error("invalid test tile index");
+    }
+
+    return module._mesh->getTileInfo(tileIndex)._img & TILE_LOWER_MASK;
+}
+
+uint16_t tileTypeAtPosition(const GameModule& module, const Ego::Vector2f& position)
+{
+    if (!module._mesh)
+    {
+        throw std::runtime_error("test module mesh not initialized");
+    }
+
+    const Index1D tileIndex = module._mesh->getTileIndex(position);
+    return tileTypeForIndex(module, tileIndex);
+}
+
+uint16_t findAlternateTileType(const GameModule& module, const Ego::Vector2f& origin)
+{
+    const uint16_t currentType = tileTypeAtPosition(module, origin);
+    const float gridSize = Info<float>::Grid::Size();
+
+    for (int y = 0; y < 4; ++y)
+    {
+        for (int x = 0; x < 4; ++x)
+        {
+            const Ego::Vector2f candidate(origin.x() + x * gridSize, origin.y() + y * gridSize);
+            if (!module.isInside(candidate.x(), candidate.y()))
+            {
+                continue;
+            }
+
+            const uint16_t candidateType = tileTypeAtPosition(module, candidate);
+            if (candidateType != currentType)
+            {
+                return candidateType;
+            }
+        }
+    }
+
+    throw std::runtime_error("unable to find alternate tile type in test fixture");
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, ChangeTileUsesModuleTileHelperForActorTile)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5590, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    const uint16_t originalType = tileTypeForIndex(module, actor->getTile());
+    const uint16_t replacementType = findAlternateTileType(module, Ego::Vector2f(actor->getPosX(), actor->getPosY()));
+    ASSERT_NE(originalType, replacementType);
+
+    script_state_t state;
+    state.argument = replacementType;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_ChangeTile(state, self));
+    EXPECT_EQ(tileTypeForIndex(module, actor->getTile()), replacementType);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, GetTileXYReturnsMaskedTileTypeThroughModuleHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5591, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.x = static_cast<int32_t>(actor->getPosX());
+    state.y = static_cast<int32_t>(actor->getPosY());
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_GetTileXY(state, self));
+    EXPECT_EQ(state.argument,
+              tileTypeAtPosition(module, Ego::Vector2f(static_cast<float>(state.x), static_cast<float>(state.y))));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, SetTileXYUpdatesTargetTileThroughModuleHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5592, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    const Ego::Vector2f targetPosition(actor->getPosX(), actor->getPosY());
+    const uint16_t originalType = tileTypeAtPosition(module, targetPosition);
+    const uint16_t replacementType = findAlternateTileType(module, targetPosition);
+    ASSERT_NE(originalType, replacementType);
+
+    script_state_t state;
+    state.x = static_cast<int32_t>(targetPosition.x());
+    state.y = static_cast<int32_t>(targetPosition.y());
+    state.argument = replacementType;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SetTileXY(state, self));
+    EXPECT_EQ(tileTypeAtPosition(module, targetPosition), replacementType);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, PitsFallEnablesTeleportInsidePitBounds)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5593, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(module._mesh, nullptr);
+
+    script_state_t state;
+    state.x = EDGE + 1;
+    state.y = EDGE + 2;
+    state.distance = 33;
+    ai_state_t self = makeScriptSelf(actor);
+
+    module.enablePitsKill();
+
+    EXPECT_TRUE(scr_PitsFall(state, self));
+    EXPECT_TRUE(module._pitsTeleport);
+    EXPECT_FALSE(module._pitsKill);
+    EXPECT_FLOAT_EQ(module._pitsTeleportPos.x(), static_cast<float>(state.x));
+    EXPECT_FLOAT_EQ(module._pitsTeleportPos.y(), static_cast<float>(state.y));
+    EXPECT_FLOAT_EQ(module._pitsTeleportPos.z(), static_cast<float>(state.distance));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, PitsFallEnablesKillOutsidePitBounds)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5594, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    state.x = EDGE;
+    state.y = EDGE;
+    state.distance = 44;
+    ai_state_t self = makeScriptSelf(actor);
+
+    module.enablePitsTeleport(Ego::Vector3f(1.0f, 2.0f, 3.0f));
+
+    EXPECT_TRUE(scr_PitsFall(state, self));
+    EXPECT_FALSE(module._pitsTeleport);
+    EXPECT_TRUE(module._pitsKill);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, FollowLinkReturnsFalseForInvalidMessageIdWithoutInvokingLinkFollow)
 {
     auto& module = beginActiveTestModule();

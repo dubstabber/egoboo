@@ -879,11 +879,7 @@ uint8_t scr_ChangeTile( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	auto mesh = activeModule().getMeshPointer();
-	if (!mesh) {
-		throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
-	}
-    returncode = mesh->set_texture( pchr->getTile(), state.argument );
+    returncode = activeModule().setTileType(pchr->getTile(), state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1680,11 +1676,12 @@ uint8_t scr_GetTileXY( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     returncode = false;
-    Index1D idx = activeModule().getMeshPointer()->getTileIndex(Ego::Vector2f(float(state.x), float(state.y)));
-
-    const ego_tile_info_t& ptr = activeModule().getMeshPointer()->getTileInfo(idx);
-    returncode = true;
-    state.argument = ptr._img & TILE_LOWER_MASK;
+    uint16_t tileType = 0;
+    if (activeModule().tryGetTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)), tileType))
+    {
+        returncode = true;
+        state.argument = tileType;
+    }
 
     SCRIPT_FUNCTION_END();
 }
@@ -1699,13 +1696,8 @@ uint8_t scr_SetTileXY( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	auto mesh = activeModule().getMeshPointer();
-	if (!mesh) {
-		throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
-	}
-
-    Index1D index = mesh->getTileIndex(Ego::Vector2f(float(state.x), float(state.y)));
-    returncode = mesh->set_texture( index, state.argument );
+    returncode = activeModule().setTileTypeAtPosition(Ego::Vector2f(float(state.x), float(state.y)),
+                                                      state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2410,7 +2402,7 @@ uint8_t scr_PitsFall( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( state.x > EDGE && state.y > EDGE && state.x < activeModule().getMeshPointer()->_tmem._edge_x - EDGE && state.y < activeModule().getMeshPointer()->_tmem._edge_y - EDGE )
+    if (activeModule().isInsidePitBounds(static_cast<float>(state.x), static_cast<float>(state.y)))
     {
         activeModule().enablePitsTeleport(Ego::Vector3f(static_cast<float>(state.x), 
                                                          static_cast<float>(state.y), 
