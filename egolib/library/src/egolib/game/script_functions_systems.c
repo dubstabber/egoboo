@@ -66,19 +66,6 @@ IMorphControl& morphControl(Object& object)
     return object;
 }
 
-struct SelfAttributedDamageSource
-{
-    DamageType damageType = DamageType::DAMAGE_DIRECT;
-    TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
-    std::shared_ptr<Object> object;
-};
-
-struct DamageSource
-{
-    TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
-    std::shared_ptr<Object> object;
-};
-
 struct SelfProfileComparisonData
 {
     ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
@@ -119,6 +106,34 @@ struct ArmorCostPolicy
     int requestedSkinCost = 0;
     int currentSkinRefund = 0;
     int netCost = 0;
+};
+
+struct OwnedObjectHandle
+{
+    ObjectRef ref = ObjectRef::Invalid;
+    std::shared_ptr<Object> object;
+};
+
+struct DamageInvocationContext
+{
+    IDamageable* damageable = nullptr;
+    TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
+    DamageType damageType = DamageType::DAMAGE_DIRECT;
+    OwnedObjectHandle source;
+};
+
+struct HealingInvocationContext
+{
+    ICharacterState* targetState = nullptr;
+    IDamageable* damageable = nullptr;
+    OwnedObjectHandle healer;
+};
+
+struct EnchantInvocationContext
+{
+    IEnchantable* target = nullptr;
+    OwnedObjectHandle owner;
+    OwnedObjectHandle spawner;
 };
 
 water_instance_t& moduleWater()
@@ -372,20 +387,11 @@ bool followLinkFromMessageId(const SelfProfileScriptContext& context,
            tryFollowLink(request);
 }
 
-bool resolveSelfAttributedDamageSource(const ai_state_t& self,
-                                       SelfAttributedDamageSource& source)
+bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
 {
-    const IDamageable* selfDamageable = tryDamageable(self.getSelf());
-    const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
-    source.object = tryObjectShared(self.getSelf());
-    if (selfDamageable == nullptr || selfInfo == nullptr || source.object == nullptr)
-    {
-        return false;
-    }
-
-    source.damageType = selfDamageable->getDamageTargetType();
-    source.teamRef = selfInfo->getTeamRef();
-    return true;
+    handle.ref = objectRef;
+    handle.object = tryObjectShared(objectRef);
+    return handle.object != nullptr;
 }
 
 void becomeSpell(IEnchantable& selfEnchantable,
@@ -517,17 +523,23 @@ ObjectRef resolvedKillSourceRef(const ITargetInfo& selfInfo, ObjectRef selfRef)
     return selfRef;
 }
 
-bool resolveKillSource(const ai_state_t& self,
-                       std::shared_ptr<Object>& killSource)
+bool resolveSelfAttributedDamageContext(const ai_state_t& self,
+                                        DamageInvocationContext& context)
 {
+    context.damageable = tryDamageable(self.getTarget());
+    const IDamageable* selfDamageable = tryDamageable(self.getSelf());
     const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
-    if (selfInfo == nullptr)
+    if (context.damageable == nullptr ||
+        selfDamageable == nullptr ||
+        selfInfo == nullptr ||
+        !resolveOwnedObjectHandle(self.getSelf(), context.source))
     {
         return false;
     }
 
-    killSource = tryObjectShared(resolvedKillSourceRef(*selfInfo, self.getSelf()));
-    return killSource != nullptr;
+    context.damageType = selfDamageable->getDamageTargetType();
+    context.teamRef = selfInfo->getTeamRef();
+    return true;
 }
 
 ICharacterState* resolveAliveTargetState(const ai_state_t& self)
@@ -539,70 +551,74 @@ ICharacterState* resolveAliveTargetState(const ai_state_t& self)
            resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
 }
 
-bool resolveDamageableTarget(const ai_state_t& self,
-                             IDamageable*& damageableTarget)
+bool resolveKillDamageContext(const ai_state_t& self,
+                              DamageInvocationContext& context)
 {
-    damageableTarget = tryDamageable(self.getTarget());
-    return damageableTarget != nullptr;
-}
-
-bool resolveSelfDamageable(const ai_state_t& self,
-                           IDamageable*& damageableSelf)
-{
-    damageableSelf = tryDamageable(self.getSelf());
-    return damageableSelf != nullptr;
-}
-
-std::shared_ptr<Object> resolveSelfObjectHandle(const ai_state_t& self)
-{
-    return tryObjectShared(self.getSelf());
-}
-
-bool resolveAliveTargetStateAndDamageable(const ai_state_t& self,
-                                          ICharacterState*& resolvedTargetState,
-                                          IDamageable*& resolvedDamageable)
-{
-    resolvedTargetState = resolveAliveTargetState(self);
-    resolvedDamageable = tryDamageable(self.getTarget());
-    return resolvedTargetState != nullptr && resolvedDamageable != nullptr;
-}
-
-bool resolveHealingTarget(const ai_state_t& self,
-                          ICharacterState*& targetState,
-                          IDamageable*& damageableTarget)
-{
-    targetState = tryCharacterState(self.getTarget());
-    damageableTarget = tryDamageable(self.getTarget());
-    return targetState != nullptr && damageableTarget != nullptr;
-}
-
-bool resolveRetaliationSource(const ai_state_t& self,
-                              DamageSource& source)
-{
-    const ITargetInfo* retaliationInfo = tryTargetInfo(self.getTarget());
-    source.object = tryObjectShared(self.getTarget());
-    if (retaliationInfo == nullptr || source.object == nullptr)
+    context.damageable = tryDamageable(self.getTarget());
+    const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
+    if (context.damageable == nullptr || selfInfo == nullptr)
     {
         return false;
     }
 
-    source.teamRef = retaliationInfo->getTeamRef();
+    return resolveOwnedObjectHandle(resolvedKillSourceRef(*selfInfo, self.getSelf()), context.source);
+}
+
+bool resolveSelfHealingContext(const ai_state_t& self,
+                               HealingInvocationContext& context)
+{
+    context.damageable = tryDamageable(self.getSelf());
+    return context.damageable != nullptr &&
+           resolveOwnedObjectHandle(self.getSelf(), context.healer);
+}
+
+bool resolveAliveTargetHealingContext(const ai_state_t& self,
+                                      HealingInvocationContext& context)
+{
+    const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
+    context.targetState = tryCharacterState(self.getTarget());
+    context.damageable = tryDamageable(self.getTarget());
+    return resolvedTargetInfo != nullptr &&
+           context.targetState != nullptr &&
+           context.damageable != nullptr &&
+           resolvedTargetInfo->isAlive() &&
+           resolveOwnedObjectHandle(self.getSelf(), context.healer);
+}
+
+bool resolveHealingTargetContext(const ai_state_t& self,
+                                 HealingInvocationContext& context)
+{
+    context.targetState = tryCharacterState(self.getTarget());
+    context.damageable = tryDamageable(self.getTarget());
+    return context.targetState != nullptr &&
+           context.damageable != nullptr &&
+           resolveOwnedObjectHandle(self.getSelf(), context.healer);
+}
+
+bool resolveRetaliationDamageContext(const ai_state_t& self,
+                                     DamageInvocationContext& context)
+{
+    context.damageable = tryDamageable(self.getSelf());
+    const ITargetInfo* retaliationInfo = tryTargetInfo(self.getTarget());
+    if (context.damageable == nullptr ||
+        retaliationInfo == nullptr ||
+        !resolveOwnedObjectHandle(self.getTarget(), context.source))
+    {
+        return false;
+    }
+
+    context.teamRef = retaliationInfo->getTeamRef();
     return true;
 }
 
-std::shared_ptr<Object> resolveEnchantSpawner(const ai_state_t& self)
+bool resolveEnchantInvocationContext(const ai_state_t& self,
+                                     ObjectRef targetRef,
+                                     EnchantInvocationContext& context)
 {
-    return tryObjectShared(self.getSelf());
-}
-
-bool resolveEnchantParticipants(const ai_state_t& self,
-                                ObjectRef enchantedRef,
-                                IEnchantable*& enchantedTarget,
-                                std::shared_ptr<Object>& owner)
-{
-    enchantedTarget = tryEnchantable(enchantedRef);
-    owner = tryObjectShared(self.owner);
-    return enchantedTarget != nullptr && owner != nullptr;
+    context.target = tryEnchantable(targetRef);
+    return context.target != nullptr &&
+           resolveOwnedObjectHandle(self.owner, context.owner) &&
+           resolveOwnedObjectHandle(self.getSelf(), context.spawner);
 }
 
 int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz)
@@ -681,6 +697,18 @@ bool updatePlayerQuestLogs(Fn&& fn)
     }
 
     return updated;
+}
+
+template <typename Fn>
+void forEachResolvedObject(Fn&& fn)
+{
+    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    {
+        if (object != nullptr)
+        {
+            fn(*object);
+        }
+    }
 }
 
 bool resolveTargetAppearance(const ai_state_t& self, IAppearanceProfile*& appearance)
@@ -937,10 +965,8 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfAttributedDamageSource damageSource;
-    IDamageable* damageableTarget = nullptr;
-    if (!resolveDamageableTarget(self, damageableTarget) ||
-        !resolveSelfAttributedDamageSource(self, damageSource))
+    DamageInvocationContext damageContext;
+    if (!resolveSelfAttributedDamageContext(self, damageContext))
     {
         return false;
     }
@@ -948,8 +974,9 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableTarget->damage(ATK_FRONT, tmp_damage, damageSource.damageType,
-                             damageSource.teamRef, damageSource.object, false, false, true);
+    damageContext.damageable->damage(ATK_FRONT, tmp_damage, damageContext.damageType,
+                                     damageContext.teamRef, damageContext.source.object,
+                                     false, false, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1185,17 +1212,16 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    IEnchantable* targetEnchantable = nullptr;
-    std::shared_ptr<Object> owner;
-    const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
-    if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, owner) &&
-        spawner != nullptr) {
-        returncode = targetEnchantable->addEnchant(selfContext.policy.enchantRef,
-                                                   selfContext.policy.profileRef.get(),
-                                                   owner,
-                                                   spawner) != nullptr;
+    EnchantInvocationContext enchantContext;
+    if (resolveEnchantInvocationContext(self, self.getTarget(), enchantContext))
+    {
+        returncode = enchantContext.target->addEnchant(selfContext.policy.enchantRef,
+                                                       selfContext.policy.profileRef.get(),
+                                                       enchantContext.owner.object,
+                                                       enchantContext.spawner.object) != nullptr;
     }
-    else {
+    else
+    {
         returncode = false;
     }
 
@@ -1220,17 +1246,16 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    IEnchantable* childEnchantable = nullptr;
-    std::shared_ptr<Object> owner;
-    const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
-    if (resolveEnchantParticipants(self, self.child, childEnchantable, owner) &&
-        spawner != nullptr) {
-        returncode = childEnchantable->addEnchant(selfContext.policy.enchantRef,
-                                                  selfContext.policy.profileRef.get(),
-                                                  owner,
-                                                  spawner) != nullptr;
+    EnchantInvocationContext enchantContext;
+    if (resolveEnchantInvocationContext(self, self.child, enchantContext))
+    {
+        returncode = enchantContext.target->addEnchant(selfContext.policy.enchantRef,
+                                                       selfContext.policy.profileRef.get(),
+                                                       enchantContext.owner.object,
+                                                       enchantContext.spawner.object) != nullptr;
     }
-    else {
+    else
+    {
         returncode = false;
     }
 
@@ -1401,15 +1426,13 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    std::shared_ptr<Object> killer;
-    IDamageable* damageableTarget = nullptr;
-    if (!resolveDamageableTarget(self, damageableTarget) ||
-        !resolveKillSource(self, killer))
+    DamageInvocationContext damageContext;
+    if (!resolveKillDamageContext(self, damageContext))
     {
         return false;
     }
 
-    damageableTarget->kill(killer, false);
+    damageContext.damageable->kill(damageContext.source.object, false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1483,14 +1506,13 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* damageableSelf = nullptr;
-    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
-    if (!resolveSelfDamageable(self, damageableSelf) || selfObject == nullptr)
+    HealingInvocationContext healingContext;
+    if (!resolveSelfHealingContext(self, healingContext))
     {
         return false;
     }
 
-    damageableSelf->heal(selfObject, state.argument, true);
+    healingContext.damageable->heal(healingContext.healer.object, state.argument, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1610,14 +1632,12 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's life
 
     SCRIPT_FUNCTION_BEGIN();
-    ICharacterState* resolvedTargetState = nullptr;
-    IDamageable* resolvedDamageable = nullptr;
-    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
-    if (selfObject != nullptr &&
-        resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable))
+    HealingInvocationContext healingContext;
+    if (resolveAliveTargetHealingContext(self, healingContext))
     {
-        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
-        resolvedDamageable->heal(selfObject, state.argument, true);
+        healingContext.targetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE,
+                                                          FP8_TO_FLOAT(state.argument));
+        healingContext.damageable->heal(healingContext.healer.object, state.argument, true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1703,18 +1723,17 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* damageableTarget = nullptr;
-    ICharacterState* targetState = nullptr;
-    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
-    if (!resolveHealingTarget(self, targetState, damageableTarget) || selfObject == nullptr) {
+    HealingInvocationContext healingContext;
+    if (!resolveHealingTargetContext(self, healingContext))
+    {
         return false;
     }
 
     returncode = false;
-    if (damageableTarget->heal(selfObject, state.argument, false))
+    if (healingContext.damageable->heal(healingContext.healer.object, state.argument, false))
     {
         returncode = true;
-        targetState->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
+        healingContext.targetState->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
     }
 
     SCRIPT_FUNCTION_END();
@@ -2222,16 +2241,10 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    for (const std::shared_ptr<Object>& object : objectHandler().iterator()) {
-        if (object == nullptr) {
-            continue;
-        }
-
-        IEnchantable* enchantable = tryEnchantable(object->getObjRef());
-        if (enchantable != nullptr) {
-            enchantable->disenchant();
-        }
-    }
+    forEachResolvedObject([](Object& object)
+    {
+        enchantable(object).disenchant();
+    });
 
     SCRIPT_FUNCTION_END();
 }
@@ -2724,10 +2737,8 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    DamageSource retaliationSource;
-    IDamageable* damageableSelf = nullptr;
-    if (!resolveSelfDamageable(self, damageableSelf) ||
-        !resolveRetaliationSource(self, retaliationSource))
+    DamageInvocationContext damageContext;
+    if (!resolveRetaliationDamageContext(self, damageContext))
     {
         return false;
     }
@@ -2735,8 +2746,10 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     tmp_damage.base = state.argument;
     tmp_damage.rand = 1;
 
-    damageableSelf->damage(ATK_FRONT, tmp_damage, static_cast<DamageType>(state.distance),
-                           retaliationSource.teamRef, retaliationSource.object, false, false, true);
+    damageContext.damageable->damage(ATK_FRONT, tmp_damage,
+                                     static_cast<DamageType>(state.distance),
+                                     damageContext.teamRef, damageContext.source.object,
+                                     false, false, true);
 
     SCRIPT_FUNCTION_END();
 }

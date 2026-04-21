@@ -748,6 +748,12 @@ Continued Tier 1.2 by replacing the remaining public alias-style `Object` shared
 
 Updated the matching gameplay/runtime/test callers (`Script/script.c`, spawn/inventory/collision/shop/targeting paths, and focused script/gameplay regressions) to use refs or bounded bool queries instead of public shared-object aliases. Build, focused script/gameplay tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 154 — Systems ownership-pocket cleanup (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by collapsing the last ownership-bearing damage/heal/kill/enchant compatibility paths behind file-local resolver structs instead of repeating ad hoc `tryObjectShared(...)` lookups in opcode bodies. Kept the existing `IDamageable` and `IEnchantable` ownership-bearing signatures intact, and routed `DamageTarget`, `KillTarget`, `HealSelf`, `GiveLifeToTarget`, `HealTarget`, `TargetDamageSelf`, `EnchantTarget`, and `EnchantChild` through the new local helper layer without widening any public role seams.
+
+Also replaced the mixed null-check/object-handle sweep in `DisenchantAll` with a small local object-iteration helper that delegates directly through the landed `IEnchantable` role. Kept the focused `ScriptSystemsFunctions` coverage for damage/kill, heal cleanup, retaliation attribution, enchant owner/spawner failure, and mixed-object disenchant behavior plus the `test.mod` validator as the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
