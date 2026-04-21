@@ -699,6 +699,52 @@ TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesReadThroughRoleSurface)
     EXPECT_EQ(state.argument, 9);
 }
 
+TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesFailQuietlyWhenTargetRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53341);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    state.argument = IDSZ2('T', 'E', 'S', 'T').toUint32();
+    EXPECT_FALSE(scr_IfTargetHasID(state, self));
+    EXPECT_FALSE(scr_IfTargetHoldingItemID(state, self));
+    EXPECT_FALSE(scr_IfTargetHasSkillID(state, self));
+    EXPECT_FALSE(scr_IfTargetHasVulnerabilityID(state, self));
+    EXPECT_FALSE(scr_IfTargetHasSpecialID(state, self));
+    EXPECT_FALSE(scr_IfTargetHasAnyID(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnOtherTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnHatedTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnSameTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsHurt(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAPlayer(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAlive(state, self));
+    EXPECT_FALSE(scr_IfTargetIsMale(state, self));
+    EXPECT_FALSE(scr_IfTargetIsFemale(state, self));
+    EXPECT_FALSE(scr_IfTargetIsDefending(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAttacking(state, self));
+    EXPECT_FALSE(scr_IfTargetIsKursed(state, self));
+    EXPECT_FALSE(scr_IfTargetIsSneaking(state, self));
+    EXPECT_FALSE(scr_IfTargetCanSeeInvisible(state, self));
+    EXPECT_FALSE(scr_IfTargetIsFlying(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAMount(state, self));
+    EXPECT_FALSE(scr_IfTargetIsAPlatform(state, self));
+    EXPECT_FALSE(scr_IfTargetHasNotFullMana(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOwner(state, self));
+    EXPECT_FALSE(scr_IfTargetCanSeeKurses(state, self));
+
+    state.argument = 123;
+    EXPECT_FALSE(scr_GetTargetGrogTime(state, self));
+    EXPECT_EQ(state.argument, 123);
+
+    state.argument = 456;
+    EXPECT_FALSE(scr_GetTargetDazeTime(state, self));
+    EXPECT_EQ(state.argument, 456);
+}
+
 TEST_F(ScriptTargetFunctionsFixture, IfTargetHasItemIDEquippedFailsQuietlyWhenInventoryLookupFindsNoEquippedMatch)
 {
     auto& module = beginActiveTestModule();

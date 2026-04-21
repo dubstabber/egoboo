@@ -34,6 +34,11 @@ bool isLiveTargetRef(ObjectRef objectRef)
     return tryTargetInfo(objectRef) != nullptr;
 }
 
+const ITargetInfo* tryResolvedTargetInfo(const ai_state_t& self)
+{
+    return tryTargetInfo(self.getTarget());
+}
+
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
     if (!isLiveTargetRef(objectRef))
@@ -230,13 +235,13 @@ uint8_t scr_IfTargetHasID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
 
     SCRIPT_FUNCTION_END();
@@ -292,13 +297,13 @@ uint8_t scr_IfTargetHoldingItemID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -313,13 +318,13 @@ uint8_t scr_IfTargetHasSkillID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -407,7 +412,7 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
     if (target == nullptr)
     {
         return false;
@@ -429,7 +434,7 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
     if (target == nullptr || damageableTarget == nullptr)
     {
@@ -515,13 +520,13 @@ uint8_t scr_IfTargetHasVulnerabilityID( script_state_t& state, ai_state_t& self 
     
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -536,13 +541,13 @@ uint8_t scr_IfTargetIsHurt( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isHurt();
+    returncode = target->isHurt();
 
     SCRIPT_FUNCTION_END();
 }
@@ -557,13 +562,13 @@ uint8_t scr_IfTargetIsAPlayer( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isPlayer();
+    returncode = target->isPlayer();
 
     SCRIPT_FUNCTION_END();
 }
@@ -578,13 +583,13 @@ uint8_t scr_IfTargetIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isAlive();
+    returncode = target->isAlive();
 
     SCRIPT_FUNCTION_END();
 }
@@ -614,13 +619,13 @@ uint8_t scr_IfTargetIsMale( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = ( targetInfo->getGender() == Gender::Male );
+    returncode = ( target->getGender() == Gender::Male );
 
     SCRIPT_FUNCTION_END();
 }
@@ -635,13 +640,13 @@ uint8_t scr_IfTargetIsFemale( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = ( targetInfo->getGender() == Gender::Female );
+    returncode = ( target->getGender() == Gender::Female );
 
     SCRIPT_FUNCTION_END();
 }
@@ -780,13 +785,13 @@ uint8_t scr_IfTargetHasSpecialID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -802,13 +807,13 @@ uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    state.argument = targetInfo->getGrogTimer();
+    state.argument = target->getGrogTimer();
 
     returncode = ( 0 != state.argument );
 
@@ -826,13 +831,13 @@ uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    state.argument = targetInfo->getDazeTimer();
+    state.argument = target->getDazeTimer();
 
     returncode = ( 0 != state.argument );
 
@@ -849,13 +854,13 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isOnSameTeam(pchr->getTeamRef());
+    returncode = target->isOnSameTeam(pchr->getTeamRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -870,13 +875,13 @@ uint8_t scr_IfTargetHasAnyID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    returncode = target->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -892,13 +897,13 @@ uint8_t scr_IfTargetIsDefending( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = ACTION_IS_TYPE(targetInfo->getCurrentAnimation(), P);
+    returncode = ACTION_IS_TYPE(target->getCurrentAnimation(), P);
 
     SCRIPT_FUNCTION_END();
 }
@@ -913,13 +918,13 @@ uint8_t scr_IfTargetIsAttacking( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isAttacking();
+    returncode = target->isAttacking();
 
     SCRIPT_FUNCTION_END();
 }
@@ -934,13 +939,13 @@ uint8_t scr_IfTargetIsKursed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isKursed();
+    returncode = target->isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1225,13 +1230,13 @@ uint8_t scr_IfTargetIsSneaking( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    const ModelAction currentAnimation = targetInfo->getCurrentAnimation();
+    const ModelAction currentAnimation = target->getCurrentAnimation();
     returncode = ( currentAnimation == ACTION_DA || currentAnimation == ACTION_WA );
 
     SCRIPT_FUNCTION_END();
@@ -1247,13 +1252,13 @@ uint8_t scr_IfTargetCanSeeInvisible( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->canSeeInvisible();
+    returncode = target->canSeeInvisible();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1337,13 +1342,13 @@ uint8_t scr_IfTargetIsFlying( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isFlying();
+    returncode = target->isFlying();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1399,13 +1404,13 @@ uint8_t scr_IfTargetIsAMount( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isMount();
+    returncode = target->isMount();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1420,13 +1425,13 @@ uint8_t scr_IfTargetIsAPlatform( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isPlatform();
+    returncode = target->isPlatform();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1461,13 +1466,13 @@ uint8_t scr_IfTargetHasNotFullMana( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->hasNotFullMana();
+    returncode = target->hasNotFullMana();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1593,13 +1598,13 @@ uint8_t scr_IfTargetIsOwner( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = ( targetInfo->isAlive() && self.owner == self.getTarget() );
+    returncode = ( target->isAlive() && self.owner == self.getTarget() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1614,13 +1619,13 @@ uint8_t scr_IfTargetCanSeeKurses( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    if (target == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->canSeeKurses();
+    returncode = target->canSeeKurses();
 
     SCRIPT_FUNCTION_END();
 }
