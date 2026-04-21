@@ -2,27 +2,256 @@
 
 #include <cstdlib>
 #include <memory>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#define protected public
+#define private public
+#include "egolib/Core/System.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Image/ImageManager.hpp"
+#include "egolib/Logic/PerkHandler.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/GUI/MessageLog.hpp"
+#undef private
+#undef protected
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
 
+void scr_systems_set_follow_link_by_modname_for_test(bool (*fn)(const std::string&, bool));
+
 namespace
 {
+
+struct FollowLinkStubState
+{
+    int callCount = 0;
+    std::string moduleName;
+    bool pushCurrentModule = false;
+    bool returnValue = false;
+};
+
+FollowLinkStubState* g_followLinkStubState = nullptr;
+
+bool followLinkStub(const std::string& moduleName, bool pushCurrentModule)
+{
+    if (g_followLinkStubState == nullptr)
+    {
+        return false;
+    }
+
+    ++g_followLinkStubState->callCount;
+    g_followLinkStubState->moduleName = moduleName;
+    g_followLinkStubState->pushCurrentModule = pushCurrentModule;
+    return g_followLinkStubState->returnValue;
+}
+
+class ScopedFollowLinkStub
+{
+public:
+    explicit ScopedFollowLinkStub(FollowLinkStubState& state)
+    {
+        g_followLinkStubState = &state;
+        scr_systems_set_follow_link_by_modname_for_test(&followLinkStub);
+    }
+
+    ~ScopedFollowLinkStub()
+    {
+        scr_systems_set_follow_link_by_modname_for_test(nullptr);
+        g_followLinkStubState = nullptr;
+    }
+};
+
+struct GraphicsSystemAccess : Ego::GraphicsSystem
+{
+    using idlib::singleton<Ego::GraphicsSystem>::instance;
+};
+
+struct CoreSystemAccess : Ego::Core::System
+{
+    using idlib::singleton<Ego::Core::System, Ego::Core::SystemCreateFunctor>::instance;
+};
+
+class StubGraphicsWindow : public Ego::GraphicsWindow
+{
+public:
+    explicit StubGraphicsWindow(const idlib::vector_2s& size) :
+        _size(size),
+        _position(0, 0)
+    {}
+
+    void title(const std::string& title) override
+    {
+        _title = title;
+    }
+
+    std::string title() const override
+    {
+        return _title;
+    }
+
+    void grab_enabled(bool enabled) override
+    {
+        _grabEnabled = enabled;
+    }
+
+    bool grab_enabled() const override
+    {
+        return _grabEnabled;
+    }
+
+    idlib::vector_2s size() const override
+    {
+        return _size;
+    }
+
+    void size(const idlib::vector_2s& size) override
+    {
+        _size = size;
+    }
+
+    idlib::point_2s position() const override
+    {
+        return _position;
+    }
+
+    void position(const idlib::point_2s& position) override
+    {
+        _position = position;
+    }
+
+    void center() override {}
+
+    idlib::vector_2s drawable_size() const override
+    {
+        return _size;
+    }
+
+    void update() override {}
+
+    SDL_Window* get() override
+    {
+        return nullptr;
+    }
+
+    void setIcon(SDL_Surface*) override {}
+
+    int getDisplayIndex() const override
+    {
+        return 0;
+    }
+
+    std::shared_ptr<SDL_Surface> getContents() const override
+    {
+        return nullptr;
+    }
+
+private:
+    std::string _title;
+    bool _grabEnabled = false;
+    idlib::vector_2s _size;
+    idlib::point_2s _position;
+};
+
+class ScopedPlayingStateHarness
+{
+public:
+    ScopedPlayingStateHarness() :
+        _window({640, 480}),
+        _fakeCoreSystem(static_cast<Ego::Core::System*>(::operator new(sizeof(Ego::Core::System)))),
+        _fakeSystemService(static_cast<Ego::Core::SystemService*>(::operator new(sizeof(Ego::Core::SystemService)))),
+        _fakeGraphicsSystem(static_cast<Ego::GraphicsSystem*>(::operator new(sizeof(Ego::GraphicsSystem)))),
+        _fakeUiManager(static_cast<Ego::GUI::UIManager*>(::operator new(sizeof(Ego::GUI::UIManager))))
+    {
+        auto& context = EngineContext::get();
+        context.setEngine(std::make_unique<GameEngine>());
+
+        GameEngine& engine = context.engine();
+        engine._uiManager.reset(_fakeUiManager);
+
+        _fakeCoreSystem->systemService = _fakeSystemService;
+        _fakeCoreSystem->videoService = nullptr;
+        _fakeCoreSystem->audioService = nullptr;
+        _fakeCoreSystem->inputService = nullptr;
+        _previousCoreSystem = CoreSystemAccess::instance.exchange(_fakeCoreSystem);
+
+        _fakeGraphicsSystem->window = &_window;
+        _fakeGraphicsSystem->context = nullptr;
+        _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
+
+        engine._currentGameState = std::make_shared<PlayingState>();
+        _playingState = std::dynamic_pointer_cast<PlayingState>(engine._currentGameState);
+    }
+
+    ~ScopedPlayingStateHarness()
+    {
+        auto& context = EngineContext::get();
+        if (GameEngine* engine = EngineContext::get().tryEngine())
+        {
+            engine->_currentGameState.reset();
+            engine->_uiManager.release();
+        }
+
+        context.clearEngine();
+        context.installAudioSystem(AudioSystem::get());
+        context.installParticleHandler(ParticleHandler::get());
+        context.installImageManager(Ego::ImageManager::get());
+        context.installPerkHandler(Ego::Perks::PerkHandler::get());
+        context.installProfileSystem(ProfileSystem::get());
+        CoreSystemAccess::instance.store(_previousCoreSystem);
+        GraphicsSystemAccess::instance.store(_previousGraphicsSystem);
+        ::operator delete(_fakeCoreSystem);
+        ::operator delete(_fakeSystemService);
+        ::operator delete(_fakeGraphicsSystem);
+        ::operator delete(_fakeUiManager);
+    }
+
+    const std::shared_ptr<PlayingState>& playingState() const
+    {
+        return _playingState;
+    }
+
+    std::vector<std::string> messageTexts() const
+    {
+        std::vector<std::string> texts;
+        if (_playingState == nullptr)
+        {
+            return texts;
+        }
+
+        for (const auto& message : _playingState->getMessageLog()->_messages)
+        {
+            texts.push_back(message.text);
+        }
+        return texts;
+    }
+
+private:
+    StubGraphicsWindow _window;
+    Ego::Core::System* _fakeCoreSystem = nullptr;
+    Ego::Core::System* _previousCoreSystem = nullptr;
+    Ego::Core::SystemService* _fakeSystemService = nullptr;
+    Ego::GraphicsSystem* _fakeGraphicsSystem = nullptr;
+    Ego::GraphicsSystem* _previousGraphicsSystem = nullptr;
+    Ego::GUI::UIManager* _fakeUiManager = nullptr;
+    std::shared_ptr<PlayingState> _playingState;
+};
 
 class ScriptSystemsFunctionsFixture : public ::testing::Test
 {
@@ -270,6 +499,96 @@ protected:
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptSystemsFunctionsFixture::s_runtime;
+
+TEST_F(ScriptSystemsFunctionsFixture, FollowLinkReturnsFalseForInvalidMessageIdWithoutInvokingLinkFollow)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5600);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_FALSE(actor->getProfile()->isValidMessageID(9999));
+
+    script_state_t state;
+    state.argument = 9999;
+    ai_state_t self = makeScriptSelf(actor);
+
+    FollowLinkStubState followLinkState;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+
+    EXPECT_FALSE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 0);
+    EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, FollowLinkUsesResolvedMessageAndPreservesSuccessfulFollowPath)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5604);
+
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("test-next.mod"));
+
+    script_state_t state;
+    state.argument = messageId;
+    ai_state_t self = makeScriptSelf(actor);
+
+    FollowLinkStubState followLinkState;
+    followLinkState.returnValue = true;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+
+    EXPECT_TRUE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 1);
+    EXPECT_EQ(followLinkState.moduleName, "test-next.mod");
+    EXPECT_TRUE(followLinkState.pushCurrentModule);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, FollowLinkFailurePublishesExistingScaryMessage)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5608);
+
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("too-scary.mod"));
+
+    script_state_t state;
+    state.argument = messageId;
+    ai_state_t self = makeScriptSelf(actor);
+
+    FollowLinkStubState followLinkState;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+
+    EXPECT_FALSE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 1);
+    EXPECT_EQ(followLinkState.moduleName, "too-scary.mod");
+    EXPECT_TRUE(followLinkState.pushCurrentModule);
+
+    const std::vector<std::string> messages = playingStateHarness.messageTexts();
+    ASSERT_EQ(messages.size(), 1u);
+    EXPECT_EQ(messages.front(), "That's too scary for " + actor->getName());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5612);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    testing::internal::CaptureStdout();
+    EXPECT_FALSE(scr_EnableListenSkill(state, self));
+    const std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_NE(output.find("deprecated script function"), std::string::npos);
+    EXPECT_NE(output.find("EnableListenSkill"), std::string::npos);
+    EXPECT_NE(output.find(actor->getProfile()->getClassName()), std::string::npos);
+}
 
 TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRoleLookups)
 {

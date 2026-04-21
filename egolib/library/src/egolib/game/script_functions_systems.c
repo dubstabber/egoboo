@@ -6,10 +6,14 @@
 
 namespace
 {
+using FollowLinkByModuleNameFn = bool (*)(const std::string&, bool);
+
 egoboo_config_t& config()
 {
     return EngineContext::get().config();
 }
+
+FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
 IAppearanceProfile& appearanceProfile(Object& object)
 {
@@ -105,6 +109,39 @@ bool resolveSelfProfileCompatibilityData(const Object& selfObject,
     data.comparison.baseModelIsSpellbook = data.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
     data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
     return true;
+}
+
+void logDeprecatedEnableListenSkill(const Object& selfObject)
+{
+    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
+                                                           __FILE__,
+                                                           __LINE__,
+                                                           "deprecated script function ",
+                                                           "`",
+                                                           "EnableListenSkill",
+                                                           "`",
+                                                           " by class `",
+                                                           selfObject.getProfile()->getClassName(),
+                                                           "`",
+                                                           Log::EndOfEntry);
+}
+
+bool followLinkFromMessageId(const ObjectProfile& profile,
+                             int messageId,
+                             const Object& selfObject)
+{
+    if (!profile.isValidMessageID(messageId))
+    {
+        return false;
+    }
+
+    const bool followed = g_followLinkByModuleName(profile.getMessage(messageId), true);
+    if (!followed)
+    {
+        DisplayMsg_printf("That's too scary for %s", selfObject.getName().c_str());
+    }
+
+    return followed;
 }
 
 bool resolveSelfAttributedDamageSource(const ai_state_t& self,
@@ -469,6 +506,11 @@ void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId)
         default: break;
     }
 }
+}
+
+void scr_systems_set_follow_link_by_modname_for_test(bool (*fn)(const std::string&, bool))
+{
+    g_followLinkByModuleName = fn ? fn : &link_follow_modname;
 }
 
 
@@ -2193,10 +2235,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "deprecated script function ", "`", "EnableListenSkill", "`", " by class `", pchr->getProfile()->getClassName(), "`", Log::EndOfEntry);
-    }
-
+    logDeprecatedEnableListenSkill(*pchr);
     returncode = false;
 
     SCRIPT_FUNCTION_END();
@@ -2212,13 +2251,7 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( !ppro->isValidMessageID(state.argument) ) return false;
-
-    returncode = link_follow_modname( ppro->getMessage(state.argument).c_str(), true );
-    if ( !returncode )
-    {
-        DisplayMsg_printf( "That's too scary for %s", pchr->getName().c_str() );
-    }
+    returncode = followLinkFromMessageId(*ppro, state.argument, *pchr);
 
     SCRIPT_FUNCTION_END();
 }
