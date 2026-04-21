@@ -47,6 +47,12 @@ bool trySetTargetFromHeldObject(ai_state_t& self,
     return trySetResolvedTarget(self, holder.getHeldObject(slot));
 }
 
+bool trySetTargetFromScriptableTarget(ai_state_t& self, const IScriptable* scriptableObject)
+{
+    return scriptableObject != nullptr &&
+           trySetResolvedTarget(self, scriptableObject->getAITarget());
+}
+
 bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                      int passageId,
                                      const IDSZ2& occupantIdsz,
@@ -62,17 +68,6 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                                               requiredItem));
 }
 
-ObjectRef leaderTargetRef(const ITargetInfo& selfInfo)
-{
-    const ObjectRef resolvedLeaderRef = teamLeaderRef(selfInfo);
-    if (!objectHandler().exists(resolvedLeaderRef))
-    {
-        return ObjectRef::Invalid;
-    }
-
-    const IScriptable* leader = tryScriptable(resolvedLeaderRef);
-    return leader != nullptr ? leader->getAITarget() : ObjectRef::Invalid;
-}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -392,16 +387,7 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    const ObjectRef holderRef = selfTargetInfo.getHolderRef();
-    if ( objectHandler().exists(holderRef) )
-    {
-        self.setTarget(holderRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, targetInfo(*pchr).getHolderRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -462,7 +448,7 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, leaderTargetRef(targetInfo(*pchr)));
+    returncode = trySetTargetFromScriptableTarget(self, tryScriptable(teamLeaderRef(targetInfo(*pchr))));
 
     SCRIPT_FUNCTION_END();
 }
@@ -997,15 +983,7 @@ uint8_t scr_SetTargetToLowestTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
 	auto itarget = chr_get_lowest_attachment( self.getTarget(), false );
-
-    if ( objectHandler().exists( itarget ) )
-    {
-        self.setTarget(itarget);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, itarget);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1060,14 +1038,7 @@ uint8_t scr_SetTargetToOwner( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( objectHandler().exists( self.owner ) )
-    {
-        self.setTarget(self.owner);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = trySetResolvedTarget(self, self.owner);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1084,17 +1055,8 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // Try to find one
-    auto ichr = chr_find_target( pchr, WIDE, state.argument, state.distance );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget( ichr );
-        returncode = true;
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target( pchr, WIDE, state.argument, state.distance );
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1133,16 +1095,8 @@ uint8_t scr_SetTargetToDistantEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target( pchr, state.distance, IDSZ2::None, TARGET_ENEMIES );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget(ichr);
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target( pchr, state.distance, IDSZ2::None, TARGET_ENEMIES );
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1312,16 +1266,8 @@ uint8_t scr_SetTargetToNearestBlahID( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // Try to find one
-    auto ichr = chr_find_target(pchr, NEAREST, IDSZ2(state.argument), state.distance);
-
-    if (objectHandler().exists(ichr))
-    {
-        self.setTarget( ichr );
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target(pchr, NEAREST, IDSZ2(state.argument), state.distance);
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1336,16 +1282,8 @@ uint8_t scr_SetTargetToNearestEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ENEMIES );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget( ichr );
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ENEMIES );
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1360,16 +1298,8 @@ uint8_t scr_SetTargetToNearestFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_FRIENDS );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget( ichr );
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_FRIENDS );
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1386,16 +1316,8 @@ uint8_t scr_SetTargetToNearestLifeform( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES );
-
-    if ( objectHandler().exists( ichr ) )
-    {
-        self.setTarget( ichr );
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES );
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1556,14 +1478,8 @@ uint8_t scr_SetTargetToLastItemUsed( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ObjectRef lastItemUsedRef = scriptable(*pchr).getAILastItemUsed();
-    if ( lastItemUsedRef != self.getSelf() && objectHandler().exists(lastItemUsedRef) )
-    {
-        self.setTarget(lastItemUsedRef);
-    }
-    else
-    {
-        returncode = false;
-    }
+    returncode = lastItemUsedRef != self.getSelf() &&
+                 trySetResolvedTarget(self, lastItemUsedRef);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1753,13 +1669,7 @@ uint8_t scr_SetTargetToNearbyMeleeWeapon( script_state_t& state, ai_state_t& sel
     SCRIPT_FUNCTION_BEGIN();
 
     ObjectRef best_target = FindWeapon( pchr, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true );
-
-    //Did we find anything good?
-    if ( objectHandler().exists( best_target ) )
-    {
-        self.setTarget(best_target);
-        returncode = true;
-    }
+    returncode = trySetResolvedTarget(self, best_target);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1775,16 +1685,8 @@ uint8_t scr_SetTargetToDistantFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    auto ichr = chr_find_target(pchr, state.distance, IDSZ2::None, TARGET_FRIENDS);
-
-    if (objectHandler().exists(ichr))
-    {
-        self.setTarget(ichr);
-    }
-    else
-    {
-        returncode = false;
-    }
+    const auto ichr = chr_find_target(pchr, state.distance, IDSZ2::None, TARGET_FRIENDS);
+    returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
 }

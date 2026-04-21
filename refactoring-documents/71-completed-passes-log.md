@@ -772,6 +772,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remainin
 
 Extended `ScriptSystemsFunctions.cpp` with focused coverage for `ShowMap`/`ShowYouAreHere` active-state publication, no-active-playing-state no-op behavior for the UI adapters, and `AddStat` status-monitor publication through the new helper layer. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 158 — Target-selection object-handler seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_target.c` by routing the remaining setter-style target-selection helpers through the shared file-local resolved-target helper instead of open-coded `objectHandler().exists(...)` checks. Kept passage-target helpers, query-only predicates, and all other script translation units unchanged so the pass stayed focused on quiet-failure target publication semantics.
+
+Extended `ScriptTargetFunctions.cpp` with focused regressions for owner-target resolution, self-ref rejection in `SetTargetToLastItemUsed`, no-match nearest/distant/weapon search behavior, and invalid-target failure for `SetTargetToLowestTarget`. Build, the focused `ScriptTargetFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

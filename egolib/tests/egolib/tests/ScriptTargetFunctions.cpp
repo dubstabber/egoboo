@@ -480,6 +480,79 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetToWhoeverIsHoldingFailsWithoutHold
     EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToOwnerPreservesExistingTargetWhenOwnerRefIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53124);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53125);
+    auto owner = makeObject(module, "mp_objects/follower.obj", 53126);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+
+    self.owner = owner->getObjRef();
+    EXPECT_TRUE(scr_SetTargetToOwner(state, self));
+    EXPECT_EQ(self.getTarget(), owner->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    self.owner = ObjectRef::Invalid;
+    EXPECT_FALSE(scr_SetTargetToOwner(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToLastItemUsedRejectsSelfAndPreservesExistingTarget)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53127);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53128);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+
+    static_cast<IScriptable&>(*actor).setAILastItemUsed(actor->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToLastItemUsed(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetSearchHelpersPreserveExistingTargetWhenNoMatchIsFound)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53129);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53130);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+
+    const TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_GOOD);
+    actor->setTeamRef(teamRef);
+    actor->setBaseTeamRef(teamRef);
+    existingTarget->setTeamRef(teamRef);
+    existingTarget->setBaseTeamRef(teamRef);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+
+    EXPECT_FALSE(scr_SetTargetToNearestEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    state.distance = 1;
+    EXPECT_FALSE(scr_SetTargetToDistantEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToNearbyMeleeWeapon(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)
 {
     auto& module = beginActiveTestModule();
@@ -701,6 +774,20 @@ TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
     self.setTarget(target->getObjRef());
     EXPECT_FALSE(scr_SetTargetToWhoeverCalledForHelp(state, self));
     EXPECT_EQ(self.getTarget(), target->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToLowestTargetFailsQuietlyForInvalidTargetRef)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53401);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    EXPECT_FALSE(scr_SetTargetToLowestTarget(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptTargetFunctionsFixture, TargetAnimationPredicatesReadThroughRoleSurface)
