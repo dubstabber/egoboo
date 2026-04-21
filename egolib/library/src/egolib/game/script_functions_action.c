@@ -5,6 +5,11 @@
 
 namespace
 {
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
 IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
@@ -48,11 +53,18 @@ const ITargetInfo& targetInfo(const Object& object)
 template <typename Fn>
 void forEachLiveActionObjectRef(Fn&& fn)
 {
-    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    ObjectHandler* handler = gameSession().tryObjectHandler();
+    if (handler == nullptr)
     {
-        if (object)
+        return;
+    }
+
+    for (const std::shared_ptr<Object>& object : handler->iterator())
+    {
+        const ObjectRef objectRef = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
+        if (objectRef != ObjectRef::Invalid)
         {
-            fn(object->getObjRef());
+            fn(objectRef);
         }
     }
 }

@@ -872,18 +872,29 @@ TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSp
     constexpr int colorMax = 6;
 
     auto& module = beginActiveTestModule();
-    auto actor = makeObject(module, "mp_objects/follower.obj", 5763);
-    auto peer = makeObject(module, "mp_objects/follower.obj", 5764);
+    const ObjectProfileRef sharedProfile = loadProfile("mp_objects/follower.obj", 5763);
+    ASSERT_NE(sharedProfile, ObjectProfileRef::Invalid);
+
+    auto actor = module.spawnObject(Ego::Vector3f(64.0f, 64.0f, 0.0f), sharedProfile,
+                                    static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    auto peer = module.spawnObject(Ego::Vector3f(96.0f, 64.0f, 0.0f), sharedProfile,
+                                   static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
     auto other = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5765);
+    auto terminatedPeer = module.spawnObject(Ego::Vector3f(128.0f, 64.0f, 0.0f), sharedProfile,
+                                             static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(peer, nullptr);
     ASSERT_NE(other, nullptr);
+    ASSERT_NE(terminatedPeer, nullptr);
 
     actor->setNameKnown(false);
     actor->setAmmoKnown(false);
     actor->setSparkle(3);
     peer->setNameKnown(false);
     other->setNameKnown(false);
+    terminatedPeer->setNameKnown(false);
+    terminatedPeer->requestTerminate();
+    ASSERT_TRUE(terminatedPeer->isTerminated());
 
     ai_state_t self = makeScriptSelf(actor);
     script_state_t state;
@@ -938,13 +949,15 @@ TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSp
 
     EXPECT_TRUE(scr_MakeSimilarNamesKnown(state, self));
     EXPECT_FALSE(other->isNameKnown());
+    EXPECT_FALSE(peer->isNameKnown());
+    EXPECT_FALSE(terminatedPeer->isNameKnown());
 }
 
 TEST_F(ScriptActionFunctionsFixture, FlashTargetAndBlackTargetUseVisualRoleAndPreserveMissingTargetFailure)
 {
     auto& module = beginActiveTestModule();
-    auto actor = makeObject(module, "mp_objects/follower.obj", 5766);
-    auto target = makeObject(module, "mp_objects/follower.obj", 5767);
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5767);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5768);
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
     ASSERT_FALSE(target->inst._vertexList.empty());
