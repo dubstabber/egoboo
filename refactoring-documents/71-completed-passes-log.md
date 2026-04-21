@@ -694,6 +694,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by consolidating the rema
 
 Extended `ScriptSystemsFunctions.cpp` with a focused missing-target retaliation regression alongside the existing damage/kill attribution coverage. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 145 — Systems self-profile compatibility quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by consolidating the remaining self-profile compatibility reads behind one file-local resolver that exposes self profile ref, self enchant ref, spell-effect skin, and base-model/current-profile comparison state. Routed `scr_BecomeSpellbook()`, `scr_EnchantTarget()`, `scr_EnchantChild()`, and `scr_IfCharacterWasABook()` through that helper while keeping mutation on the landed `IEnchantable`, `IMorphControl`, and `IAnimationControl` seams and preserving the existing false-return behavior when owner or spawner resolution fails.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused regression pinning the `IfCharacterWasABook()` base-model/current-profile semantics. Explicitly deferred the remaining message/logging coupling in `scr_FollowLink()` and `scr_EnableListenSkill()`, passage/mesh/module helper follow-ons, and any `Script/script.c` changes. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

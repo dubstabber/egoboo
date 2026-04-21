@@ -74,6 +74,39 @@ struct DamageSource
     std::shared_ptr<Object> object;
 };
 
+struct SelfProfileComparisonData
+{
+    ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
+    bool baseModelIsSpellbook = false;
+    bool currentProfileMatchesBaseModel = false;
+};
+
+struct SelfProfileCompatibilityData
+{
+    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
+    EVE_REF enchantRef = INVALID_EVE_REF;
+    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
+    SelfProfileComparisonData comparison;
+};
+
+bool resolveSelfProfileCompatibilityData(const Object& selfObject,
+                                         SelfProfileCompatibilityData& data)
+{
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject.getProfile();
+    if (!selfProfile)
+    {
+        return false;
+    }
+
+    data.profileRef = selfObject.getProfileID();
+    data.enchantRef = selfProfile->getEnchantRef();
+    data.spellEffectSkin = selfProfile->getSpellEffectType();
+    data.comparison.baseModelRef = selfObject.getBaseModelRef();
+    data.comparison.baseModelIsSpellbook = data.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
+    data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
+    return true;
+}
+
 bool resolveSelfAttributedDamageSource(const ai_state_t& self,
                                        SelfAttributedDamageSource& source)
 {
@@ -812,11 +845,17 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    SelfProfileCompatibilityData selfProfileData;
+    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    {
+        return false;
+    }
+
     becomeSpellbook(enchantable(*pchr),
                     morphControl(*pchr),
                     animationControl(*pchr),
-                    pchr->getProfileID(),
-                    ppro->getSpellEffectType(),
+                    selfProfileData.profileRef,
+                    selfProfileData.spellEffectSkin,
                     self);
 
     SCRIPT_FUNCTION_END();
@@ -863,13 +902,19 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    SelfProfileCompatibilityData selfProfileData;
+    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    {
+        return false;
+    }
+
     IEnchantable* targetEnchantable = nullptr;
     std::shared_ptr<Object> owner;
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = targetEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
-                                                   pchr->getProfileID().get(),
+        returncode = targetEnchantable->addEnchant(selfProfileData.enchantRef,
+                                                   selfProfileData.profileRef.get(),
                                                    owner,
                                                    spawner) != nullptr;
     }
@@ -892,13 +937,19 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    SelfProfileCompatibilityData selfProfileData;
+    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    {
+        return false;
+    }
+
     IEnchantable* childEnchantable = nullptr;
     std::shared_ptr<Object> owner;
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.child, childEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = childEnchantable->addEnchant(pchr->getProfile()->getEnchantRef(),
-                                                  pchr->getProfileID().get(),
+        returncode = childEnchantable->addEnchant(selfProfileData.enchantRef,
+                                                  selfProfileData.profileRef.get(),
                                                   owner,
                                                   spawner) != nullptr;
     }
@@ -1582,8 +1633,14 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( pchr->getBaseModelRef() == ObjectProfileRef(SPELLBOOK) ||
-                   pchr->getBaseModelRef() == pchr->getProfileID() );
+    SelfProfileCompatibilityData selfProfileData;
+    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    {
+        return false;
+    }
+
+    returncode = ( selfProfileData.comparison.baseModelIsSpellbook ||
+                   selfProfileData.comparison.currentProfileMatchesBaseModel );
 
     SCRIPT_FUNCTION_END();
 }

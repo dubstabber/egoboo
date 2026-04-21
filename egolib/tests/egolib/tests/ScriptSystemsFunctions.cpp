@@ -1449,6 +1449,34 @@ TEST_F(ScriptSystemsFunctionsFixture, BecomeSpellbookUsesEnchantableMorphAndAnim
     EXPECT_EQ(actor->getCurrentAnimation(), ACTION_JB);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, IfCharacterWasABookPreservesBaseModelAndCurrentProfileSemantics)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/healer.obj", 5709);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    const ObjectProfileRef initialBaseModel = actor->getBaseModelRef();
+    ASSERT_EQ(initialBaseModel, actor->getProfileID());
+    EXPECT_TRUE(scr_IfCharacterWasABook(state, self));
+
+    const ObjectProfileRef alternateProfile = loadProfile("mp_data/globalobjects/players/rogue.obj", 5710);
+    ASSERT_NE(alternateProfile, ObjectProfileRef::Invalid);
+    ASSERT_NE(alternateProfile, actor->getProfileID());
+
+    actor->polymorphObject(alternateProfile, 0);
+    EXPECT_EQ(actor->getBaseModelRef(), initialBaseModel);
+    EXPECT_EQ(actor->getProfileID(), alternateProfile);
+    EXPECT_FALSE(scr_IfCharacterWasABook(state, self));
+
+    actor->setBaseModelRef(ObjectProfileRef(SPELLBOOK));
+    EXPECT_EQ(actor->getProfileID(), alternateProfile);
+    EXPECT_TRUE(scr_IfCharacterWasABook(state, self));
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassUsesMorphControlAndPublishesBaseModel)
 {
     auto& module = beginActiveTestModule();
