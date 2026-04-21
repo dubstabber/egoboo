@@ -30,6 +30,19 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+void publishStealthBillboardIfAvailable(ObjectRef objectRef, const std::string& text)
+{
+    if (auto* billboardSystem = EngineContext::get().tryBillboardSystem())
+    {
+        billboardSystem->makeBillboard(objectRef,
+                                       text,
+                                       Ego::Colour4f::white(),
+                                       Ego::Colour4f::white(),
+                                       2,
+                                       Ego::Graphics::Billboard::Flags::All);
+    }
+}
+
 const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
 {
     return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
@@ -556,7 +569,7 @@ void Object::deactivateStealth()
     _stealthTimer = std::max<uint16_t>(_stealthTimer, ONESECOND);
     _stealth = false;
 
-    GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Revealed!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
+    publishStealthBillboardIfAvailable(getObjRef(), "Revealed!");
     audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH_END));
     setAlpha(0xFF);
 }
@@ -625,7 +638,7 @@ bool Object::activateStealth()
 
         //We can't stealth while an enemy is nearby
         if(isPlayer()) {
-            GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Hide Failed!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
+            publishStealthBillboardIfAvailable(getObjRef(), "Hide Failed!");
             audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH_END));
         }
         return false;
@@ -634,7 +647,7 @@ bool Object::activateStealth()
     //All good, we are now stealthed!
     _stealth = true;
     setAlpha(0);
-    GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Hidden!", Ego::Colour4f::white(), Ego::Colour4f::white(), 2, Ego::Graphics::Billboard::Flags::All);
+    publishStealthBillboardIfAvailable(getObjRef(), "Hidden!");
     audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_STEALTH));
 
     return true;
