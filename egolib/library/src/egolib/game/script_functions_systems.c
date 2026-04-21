@@ -9,6 +9,11 @@ namespace
 {
 using FollowLinkByModuleNameFn = bool (*)(const std::string&, bool);
 
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
 egoboo_config_t& config()
 {
     return EngineContext::get().config();
@@ -123,7 +128,7 @@ water_instance_t& moduleWater()
 
 fog_instance_t& moduleFog()
 {
-    return GameSessionContext::get().fog();
+    return gameSession().fog();
 }
 
 void setModuleWaterLevel(int waterLevelTimesTen)
@@ -213,6 +218,16 @@ void enableActiveModulePitsTeleport(const Ego::Vector3f& location)
 void giveGoodTeamExperience(int amount, XPType type)
 {
     activeModule().giveTeamExperience(static_cast<TEAM_REF>(Team::TEAM_GOOD), amount, type);
+}
+
+bool tryAddActiveModuleIdsz(const IDSZ2& idsz)
+{
+    return ModuleProfile::moduleAddIDSZ(activeModule().getPath(), idsz);
+}
+
+bool setActorTileType(const Object& actor, uint16_t tileType)
+{
+    return activeModule().setTileType(actor.getTile(), tileType);
 }
 
 std::shared_ptr<PlayingState> playingState()
@@ -652,7 +667,7 @@ template <typename Fn>
 bool updatePlayerQuestLogs(Fn&& fn)
 {
     bool updated = false;
-    for (const std::shared_ptr<Ego::Player>& player : activeModule().getPlayerList())
+    for (const std::shared_ptr<Ego::Player>& player : gameSession().playerList())
     {
         if (player != nullptr && fn(player->getQuestLog()))
         {
@@ -703,6 +718,27 @@ void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId)
         case IDSZ2::caseLabel( 'D', 'A', 'R', 'K' ): targetState.addPerk(Ego::Perks::NIGHT_VISION); break;
         default: break;
     }
+}
+
+void publishEnemySense(const EnemySenseState& state)
+{
+    gameSession().publishEnemySense(state);
+}
+
+void resetEnemySense()
+{
+    gameSession().resetEnemySense();
+}
+
+void configurePitFall(const Ego::Vector3f& location)
+{
+    if (activeModule().isInsidePitBounds(location.x(), location.y()))
+    {
+        enableActiveModulePitsTeleport(location);
+        return;
+    }
+
+    enableActiveModulePitsKill();
 }
 }
 
@@ -874,7 +910,7 @@ uint8_t scr_AddIDSZ( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( ModuleProfile::moduleAddIDSZ(activeModule().getPath(), Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)) )
+    if (tryAddActiveModuleIdsz(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)))
     {
         // invalidate any module list so that we will reload them
         //module_list_valid = false;
@@ -1030,7 +1066,7 @@ uint8_t scr_ChangeTile( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = activeModule().setTileType(pchr->getTile(), state.argument);
+    returncode = setActorTileType(*pchr, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2526,11 +2562,11 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
     const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
     if (targetInfo != nullptr)
     {
-        GameSessionContext::get().publishEnemySense(EnemySenseState(targetInfo->getTeamRef(), state.argument));
+        publishEnemySense(EnemySenseState(targetInfo->getTeamRef(), state.argument));
     }
     else
     {
-        GameSessionContext::get().resetEnemySense();
+        resetEnemySense();
     }
 
     SCRIPT_FUNCTION_END();
@@ -2546,17 +2582,9 @@ uint8_t scr_PitsFall( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if (activeModule().isInsidePitBounds(static_cast<float>(state.x), static_cast<float>(state.y)))
-    {
-        enableActiveModulePitsTeleport(Ego::Vector3f(static_cast<float>(state.x),
-                                                     static_cast<float>(state.y),
-                                                     static_cast<float>(state.distance)));
-    }
-    else
-    {
-        //make it kill instead
-        enableActiveModulePitsKill();
-    }
+    configurePitFall(Ego::Vector3f(static_cast<float>(state.x),
+                                   static_cast<float>(state.y),
+                                   static_cast<float>(state.distance)));
 
     SCRIPT_FUNCTION_END();
 }

@@ -730,6 +730,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remainin
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for water/fog/module-flag publication and end-text clear/append behavior. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 151 — Residual systems quest/tile/pit helper quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by isolating the remaining quest-player iteration, module-IDSZ append, actor-tile mutation, enemy-sense publication, and pit-fall compatibility pockets behind file-local helpers instead of leaving direct `activeModule()` and `GameSessionContext` calls spread across the opcode bodies. Routed `updatePlayerQuestLogs(...)`, `scr_AddIDSZ()`, `scr_ChangeTile()`, `scr_AddBlipAllEnemies()`, and `scr_PitsFall()` through those local seams without widening any public `Object` role surfaces or changing the current quiet-failure and branch behavior.
+
+Kept the focused `ScriptSystemsFunctions.cpp` regressions for tile helper parity, pit teleport/kill behavior, quest helper player resolution, all-player quest updates, enemy-sense publication/reset, nearby module-environment coverage, and the `test.mod` validator as the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
