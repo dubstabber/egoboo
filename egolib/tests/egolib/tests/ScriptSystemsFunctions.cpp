@@ -520,6 +520,29 @@ TEST_F(ScriptSystemsFunctionsFixture, FollowLinkReturnsFalseForInvalidMessageIdW
     EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, FollowLinkInvalidMessageIdDoesNotPublishScaryMessage)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5603);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_FALSE(actor->getProfile()->isValidMessageID(9999));
+
+    script_state_t state;
+    state.argument = 9999;
+    ai_state_t self = makeScriptSelf(actor);
+
+    FollowLinkStubState followLinkState;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+
+    EXPECT_FALSE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 0);
+    EXPECT_TRUE(playingStateHarness.messageTexts().empty());
+    EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, FollowLinkUsesResolvedMessageAndPreservesSuccessfulFollowPath)
 {
     auto& module = beginActiveTestModule();
@@ -591,6 +614,7 @@ TEST_F(ScriptSystemsFunctionsFixture, FollowLinkFailureWithoutActivePlayingState
     EXPECT_EQ(followLinkState.callCount, 1);
     EXPECT_EQ(followLinkState.moduleName, "too-scary.mod");
     EXPECT_TRUE(followLinkState.pushCurrentModule);
+    EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
     EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
 }
 
@@ -603,6 +627,8 @@ TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor);
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
 
     testing::internal::CaptureStdout();
     EXPECT_FALSE(scr_EnableListenSkill(state, self));
@@ -611,6 +637,7 @@ TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
     EXPECT_NE(output.find("deprecated script function"), std::string::npos);
     EXPECT_NE(output.find("EnableListenSkill"), std::string::npos);
     EXPECT_NE(output.find(actor->getProfile()->getClassName()), std::string::npos);
+    EXPECT_TRUE(playingStateHarness.messageTexts().empty());
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRoleLookups)

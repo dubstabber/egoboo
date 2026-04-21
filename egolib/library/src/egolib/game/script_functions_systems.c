@@ -94,35 +94,25 @@ struct SelfProfileCompatibilityData
     SelfProfileComparisonData comparison;
 };
 
-struct SelfScriptCompatibilityContext
+struct FollowLinkRequest
 {
-    std::shared_ptr<ObjectProfile> profile;
     std::string selfName;
-    std::string selfClassName;
+    std::string moduleName;
 };
 
-bool resolveSelfScriptCompatibilityContext(const ai_state_t& self,
-                                           SelfScriptCompatibilityContext& context)
+bool resolveSelfObject(const ai_state_t& self, const Object*& selfObject)
 {
     if (!objectHandler().exists(self.getSelf()))
     {
         return false;
     }
 
-    const Object* selfObject = objectHandler().get(self.getSelf());
+    selfObject = objectHandler().get(self.getSelf());
     if (selfObject == nullptr)
     {
         return false;
     }
 
-    context.profile = selfObject->getProfile();
-    if (!context.profile)
-    {
-        return false;
-    }
-
-    context.selfName = selfObject->getName();
-    context.selfClassName = context.profile->getClassName();
     return true;
 }
 
@@ -162,18 +152,40 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
 
 void publishDeprecatedEnableListenSkillWarning(const ai_state_t& self)
 {
-    SelfScriptCompatibilityContext context;
-    if (!resolveSelfScriptCompatibilityContext(self, context))
+    const Object* selfObject = nullptr;
+    if (!resolveSelfObject(self, selfObject))
     {
         return;
     }
 
-    logDeprecatedScriptFunctionUse("EnableListenSkill", context.selfClassName);
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
+    if (!selfProfile)
+    {
+        return;
+    }
+
+    logDeprecatedScriptFunctionUse("EnableListenSkill", selfProfile->getClassName());
 }
 
-bool dispatchFollowLinkByModuleName(const std::string& moduleName)
+bool resolveFollowLinkRequest(const ai_state_t& self,
+                              const int messageId,
+                              FollowLinkRequest& request)
 {
-    return g_followLinkByModuleName(moduleName, true);
+    const Object* selfObject = nullptr;
+    if (!resolveSelfObject(self, selfObject))
+    {
+        return false;
+    }
+
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
+    if (!selfProfile || !selfProfile->isValidMessageID(messageId))
+    {
+        return false;
+    }
+
+    request.selfName = selfObject->getName();
+    request.moduleName = selfProfile->getMessage(messageId);
+    return true;
 }
 
 void publishFollowLinkFailureMessage(const std::string& selfName)
@@ -188,22 +200,21 @@ void publishFollowLinkFailureMessage(const std::string& selfName)
     DisplayMsg_printf("%s", text.c_str());
 }
 
-bool followLinkFromMessageId(const ai_state_t& self, int messageId)
+bool tryFollowLink(const FollowLinkRequest& request)
 {
-    SelfScriptCompatibilityContext context;
-    if (!resolveSelfScriptCompatibilityContext(self, context) ||
-        !context.profile->isValidMessageID(messageId))
-    {
-        return false;
-    }
-
-    const bool followed = dispatchFollowLinkByModuleName(context.profile->getMessage(messageId));
+    const bool followed = g_followLinkByModuleName(request.moduleName, true);
     if (!followed)
     {
-        publishFollowLinkFailureMessage(context.selfName);
+        publishFollowLinkFailureMessage(request.selfName);
     }
 
     return followed;
+}
+
+bool followLinkFromMessageId(const ai_state_t& self, const int messageId)
+{
+    FollowLinkRequest request;
+    return resolveFollowLinkRequest(self, messageId, request) && tryFollowLink(request);
 }
 
 bool resolveSelfAttributedDamageSource(const ai_state_t& self,
