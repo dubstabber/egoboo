@@ -1148,8 +1148,15 @@ TEST_F(ScriptSystemsFunctionsFixture, DisenchantAllHandlesMixedEnchantedAndPlain
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor, enchanted);
+    for (const auto& object : module.getObjectHandler().iterator())
+    {
+        (void)object;
+    }
 
     EXPECT_TRUE(scr_DisenchantAll(state, self));
+    ASSERT_NE(enchanted->getFirstActiveEnchant(), nullptr);
+    EXPECT_TRUE(enchanted->getFirstActiveEnchant()->isTerminated());
+    EXPECT_TRUE(enchant->isTerminated());
     EXPECT_FALSE(plain->hasActiveEnchants());
 }
 

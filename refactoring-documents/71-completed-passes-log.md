@@ -682,6 +682,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by widening `ICharacterSt
 
 Extended `ObjectAccessors.cpp` and `ScriptSystemsFunctions.cpp` with focused regressions for `ICharacterState` XP parity, lifecycle termination through the role seam, role-surface XP grants to targets, inventory-item poof coverage, and the preserved unkurse actor-pocket quirk. Build, targeted accessor/systems tests, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 143 — Residual enchant-all role closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by routing `scr_DisenchantAll()` through the landed `IEnchantable` seam instead of direct concrete-`Object` mutation, while preserving the same full object sweep, null-skip guard, and unconditional success behavior. Kept the pass intentionally narrow: no role-surface widening, no changes to the target/child enchant helpers, and no changes to the remaining damage-attribution or profile-coupling pockets.
+
+Extended `ScriptSystemsFunctions.cpp` by tightening the mixed-object global disenchant regression to assert that the previously enchanted object's enchantment is terminated after the sweep. Build, the focused `ScriptSystemsFunctions` test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

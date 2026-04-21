@@ -1873,7 +1873,10 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
             continue;
         }
 
-        object->disenchant();
+        IEnchantable* enchantable = tryEnchantable(object->getObjRef());
+        if (enchantable != nullptr) {
+            enchantable->disenchant();
+        }
     }
 
     SCRIPT_FUNCTION_END();
