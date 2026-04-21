@@ -802,6 +802,12 @@ Continued Tier 1.2 inside `script_functions_state.c` by adding one file-local re
 
 Extended `ScriptStateFunctions.cpp` with a focused regression for terminated held-item refs on top of the existing `IfHolderBlocked` and `IfUnarmed` coverage. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 163 — Residual action/state seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_action.c` and `script_functions_state.c` by isolating the remaining direct live-object sweep, holder-liveness, and module-IDSZ lookup pockets behind file-local helpers instead of leaving open-coded `objectHandler()` and module-name access in the opcode bodies. Routed `scr_MakeSimilarNamesKnown()`, `scr_CorrectActionForHand()`, and `scr_IfModuleHasIDSZ()` through those local seams while preserving the existing action-band and quiet-failure behavior and correcting the module predicate to consult the message-selected module name as documented.
+
+Extended `ScriptActionFunctions.cpp` and `ScriptStateFunctions.cpp` with focused regressions for missing-holder no-op action correction, preserved non-match name visibility behavior, valid `test.mod` IDSZ lookup, and invalid module/message rejection. Build, the focused script action/state test slices, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

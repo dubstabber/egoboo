@@ -45,6 +45,42 @@ const ITargetInfo& targetInfo(const Object& object)
     return static_cast<const ITargetInfo&>(object);
 }
 
+template <typename Fn>
+void forEachLiveActionObjectRef(Fn&& fn)
+{
+    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    {
+        if (object)
+        {
+            fn(object->getObjRef());
+        }
+    }
+}
+
+bool hasMatchingIdszProfile(ObjectRef objectRef, const ObjectProfile& profile)
+{
+    const Object* object = tryObject(objectRef);
+    if (object == nullptr)
+    {
+        return false;
+    }
+
+    for (int idszIndex = 0; idszIndex < IDSZ_COUNT; ++idszIndex)
+    {
+        if (profile.getIDSZ(idszIndex) != object->getProfile()->getIDSZ(idszIndex))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool hasLiveHolder(const ITargetInfo& objectTargetInfo)
+{
+    return tryTargetInfo(objectTargetInfo.getHolderRef()) != nullptr;
+}
+
 std::shared_ptr<Ego::Graphics::Billboard> tryMakeBillboard(ObjectRef objectRef,
                                                            const std::string& text,
                                                            const Ego::Colour4f& textColor,
@@ -537,28 +573,21 @@ uint8_t scr_MakeSimilarNamesKnown( script_state_t& state, ai_state_t& self )
     /// @details This function makes the names of similar objects known.
     /// Checks all 6 IDSZ types to make sure they match.
 
-    int tTmp;
-    uint16_t sTmp = 0;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    for(const std::shared_ptr<Object> &object : objectHandler().iterator())
+    forEachLiveActionObjectRef([&](ObjectRef objectRef)
     {
-
-        sTmp = true;
-        for ( tTmp = 0; tTmp < IDSZ_COUNT; tTmp++ )
+        if (!hasMatchingIdszProfile(objectRef, *ppro))
         {
-            if ( ppro->getIDSZ(tTmp) != object->getProfile()->getIDSZ(tTmp) )
-            {
-                sTmp = false;
-            }
+            return;
         }
 
-        if ( sTmp )
+        IVisualControl* visual = tryVisualControl(objectRef);
+        if (visual != nullptr)
         {
-            visualControl(*object).setNameKnown(true);
+            visual->setNameKnown(true);
         }
-    }
+    });
 
     SCRIPT_FUNCTION_END();
 }
@@ -575,7 +604,7 @@ uint8_t scr_CorrectActionForHand( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
     const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    if ( objectHandler().exists(selfTargetInfo.getHolderRef()) )
+    if ( hasLiveHolder(selfTargetInfo) )
     {
         if ( selfTargetInfo.getAttachmentSlot() == SLOT_LEFT )
         {

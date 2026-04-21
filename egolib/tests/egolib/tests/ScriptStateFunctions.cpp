@@ -1192,21 +1192,30 @@ TEST_F(ScriptStateFunctionsFixture, IfHolderBlockedFailsWithoutBlockedAlertOrLas
     EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
 }
 
-TEST_F(ScriptStateFunctionsFixture, IfModuleHasIDSZMatchesActiveModuleQueryAndRejectsInvalidMessageId)
+TEST_F(ScriptStateFunctionsFixture, IfModuleHasIDSZUsesMessageSelectedModuleAndRejectsInvalidNames)
 {
     auto& module = beginActiveTestModule();
     auto actor = makeObject(module, "mp_objects/follower.obj", 55323);
 
     ASSERT_NE(actor, nullptr);
 
-    const IDSZ2 queriedIdsz('Z', 'Z', 'Z', 'Z');
-    const int validMessageId = static_cast<int>(actor->getProfile()->addMessage("ignored module name"));
+    const IDSZ2 presentIdsz('T', 'Y', 'P', 'E');
+    const IDSZ2 missingIdsz('Z', 'Z', 'Z', 'Z');
+    const int validMessageId = static_cast<int>(actor->getProfile()->addMessage("test.mod"));
+    const int invalidModuleMessageId = static_cast<int>(actor->getProfile()->addMessage("missing.mod"));
 
     script_state_t state;
     state.argument = validMessageId;
-    state.distance = static_cast<int>(queriedIdsz.toUint32());
+    state.distance = static_cast<int>(presentIdsz.toUint32());
     ai_state_t self = makeScriptSelf(actor);
 
+    EXPECT_TRUE(scr_IfModuleHasIDSZ(state, self));
+
+    state.distance = static_cast<int>(missingIdsz.toUint32());
+    EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
+
+    state.argument = invalidModuleMessageId;
+    state.distance = static_cast<int>(presentIdsz.toUint32());
     EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
 
     state.argument = 9999;

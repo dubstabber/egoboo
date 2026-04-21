@@ -859,6 +859,11 @@ TEST_F(ScriptActionFunctionsFixture, CorrectActionForHandUsesAttachmentSlotBands
     EXPECT_TRUE(scr_CorrectActionForHand(state, self));
     EXPECT_GE(state.argument, ACTION_DA + 2);
     EXPECT_LE(state.argument, ACTION_DA + 3);
+
+    state.argument = ACTION_DA;
+    actor->setHolderRef(ObjectRef::Invalid);
+    EXPECT_TRUE(scr_CorrectActionForHand(state, self));
+    EXPECT_EQ(state.argument, ACTION_DA);
 }
 
 TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSparkleSemantics)

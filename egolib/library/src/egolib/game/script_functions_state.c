@@ -93,9 +93,15 @@ bool activeModuleHasIdszWithValidMessage(const ObjectProfile& profile,
         return false;
     }
 
+    const std::string& moduleName = profile.getMessage(messageId);
+    if (moduleName.empty())
+    {
+        return false;
+    }
+
     try
     {
-        return ModuleProfile::moduleHasIDSZ(activeModule().getName(), idsz);
+        return ModuleProfile::moduleHasIDSZ(moduleName, idsz);
     }
     catch (...)
     {
