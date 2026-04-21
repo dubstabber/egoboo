@@ -718,6 +718,12 @@ Continued Tier 1.2 inside `Script/script.c` by isolating the remaining leader-va
 
 Extended `ScriptRuntime.cpp` with focused regressions for resolved leader-variable reads, invalid-caller quiet no-op behavior, and terminated same-team listeners. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 149 — Residual systems profile/armor policy quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by tightening the remaining self-profile and target-armor compatibility helpers into smaller file-local policy structs and resolvers. Routed `scr_GetTargetArmorPrice()`, `scr_ChangeTargetArmor()`, `scr_TargetPayForArmor()`, `scr_IfCharacterWasABook()`, `scr_BecomeSpellbook()`, `scr_EnchantTarget()`, `scr_EnchantChild()`, `scr_FollowLink()`, and `scr_EnableListenSkill()` through the renamed helper layer without widening any public `Object` role surfaces or changing the existing success/failure semantics.
+
+Kept the focused `ScriptSystemsFunctions.cpp` armor, spellbook, enchant, follow-link, and deprecation-message regressions as the behavior lock. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

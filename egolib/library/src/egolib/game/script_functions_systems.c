@@ -81,7 +81,7 @@ struct SelfProfileComparisonData
     bool currentProfileMatchesBaseModel = false;
 };
 
-struct SelfProfileCompatibilityData
+struct SelfProfilePolicyData
 {
     ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
     EVE_REF enchantRef = INVALID_EVE_REF;
@@ -95,16 +95,30 @@ struct FollowLinkRequest
     std::string moduleName;
 };
 
-struct ResolvedSelfScriptContext
+struct SelfProfileScriptContext
 {
-    Object* object = nullptr;
-    std::shared_ptr<ObjectProfile> profile;
-    SelfProfileCompatibilityData compatibility;
+    const ObjectProfile* profile = nullptr;
+    std::string selfName;
+    std::string className;
+    SelfProfilePolicyData policy;
 };
 
-void populateSelfProfileCompatibilityData(const Object& selfObject,
-                                          const ObjectProfile& selfProfile,
-                                          SelfProfileCompatibilityData& data)
+struct TargetArmorPaymentContext
+{
+    IAppearanceProfile* appearance = nullptr;
+    IWallet* wallet = nullptr;
+};
+
+struct ArmorCostPolicy
+{
+    int requestedSkinCost = 0;
+    int currentSkinRefund = 0;
+    int netCost = 0;
+};
+
+void populateSelfProfilePolicyData(const Object& selfObject,
+                                   const ObjectProfile& selfProfile,
+                                   SelfProfilePolicyData& data)
 {
     data.profileRef = selfObject.getProfileID();
     data.enchantRef = selfProfile.getEnchantRef();
@@ -114,24 +128,25 @@ void populateSelfProfileCompatibilityData(const Object& selfObject,
     data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
 }
 
-bool resolveSelfScriptContext(const ai_state_t& self,
-                              ResolvedSelfScriptContext& context)
+bool resolveSelfProfileScriptContext(const ai_state_t& self,
+                                     SelfProfileScriptContext& context)
 {
-    context.object = tryObject(self.getSelf());
-    if (context.object == nullptr)
+    const Object* selfObject = tryObject(self.getSelf());
+    if (selfObject == nullptr)
     {
         return false;
     }
 
-    context.profile = context.object->getProfile();
-    if (!context.profile)
+    const std::shared_ptr<ObjectProfile> profile = selfObject->getProfile();
+    if (!profile)
     {
         return false;
     }
 
-    populateSelfProfileCompatibilityData(*context.object,
-                                         *context.profile,
-                                         context.compatibility);
+    context.profile = profile.get();
+    context.selfName = selfObject->getName();
+    context.className = profile->getClassName();
+    populateSelfProfilePolicyData(*selfObject, *profile, context.policy);
     return true;
 }
 
@@ -151,12 +166,12 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void publishDeprecatedEnableListenSkillWarning(const ResolvedSelfScriptContext& context)
+void publishDeprecatedEnableListenSkillWarning(const SelfProfileScriptContext& context)
 {
-    logDeprecatedScriptFunctionUse("EnableListenSkill", context.profile->getClassName());
+    logDeprecatedScriptFunctionUse("EnableListenSkill", context.className);
 }
 
-bool resolveFollowLinkRequest(const ResolvedSelfScriptContext& context,
+bool resolveFollowLinkRequest(const SelfProfileScriptContext& context,
                               const int messageId,
                               FollowLinkRequest& request)
 {
@@ -165,7 +180,7 @@ bool resolveFollowLinkRequest(const ResolvedSelfScriptContext& context,
         return false;
     }
 
-    request.selfName = context.object->getName();
+    request.selfName = context.selfName;
     request.moduleName = context.profile->getMessage(messageId);
     return true;
 }
@@ -193,7 +208,7 @@ bool tryFollowLink(const FollowLinkRequest& request)
     return followed;
 }
 
-bool followLinkFromMessageId(const ResolvedSelfScriptContext& context,
+bool followLinkFromMessageId(const SelfProfileScriptContext& context,
                              const int messageId)
 {
     FollowLinkRequest request;
@@ -507,20 +522,28 @@ bool updatePlayerQuestLogs(Fn&& fn)
     return updated;
 }
 
-IAppearanceProfile* resolvedTargetAppearance(const ai_state_t& self)
+bool resolveTargetAppearance(const ai_state_t& self, IAppearanceProfile*& appearance)
 {
-    return tryAppearanceProfile(self.getTarget());
+    appearance = tryAppearanceProfile(self.getTarget());
+    return appearance != nullptr;
 }
 
-struct AppearanceWalletTarget
+bool resolveTargetArmorPaymentContext(const ai_state_t& self,
+                                      TargetArmorPaymentContext& context)
 {
-    IAppearanceProfile* appearance;
-    IWallet* wallet;
-};
+    context.appearance = tryAppearanceProfile(self.getTarget());
+    context.wallet = tryWallet(self.getTarget());
+    return context.appearance != nullptr && context.wallet != nullptr;
+}
 
-AppearanceWalletTarget resolvedTargetAppearanceWallet(const ai_state_t& self)
+ArmorCostPolicy makeArmorCostPolicy(const IAppearanceProfile& appearance,
+                                    const size_t requestedSkin)
 {
-    return {tryAppearanceProfile(self.getTarget()), tryWallet(self.getTarget())};
+    ArmorCostPolicy policy;
+    policy.requestedSkinCost = appearance.getSkinCost(requestedSkin);
+    policy.currentSkinRefund = appearance.getSkinCost(appearance.getSkin());
+    policy.netCost = policy.requestedSkinCost - policy.currentSkinRefund;
+    return policy;
 }
 
 void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId)
@@ -558,13 +581,13 @@ uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = tryAppearanceProfile(self.getTarget());
-    if (targetAppearance == nullptr)
+    IAppearanceProfile* targetAppearance = nullptr;
+    if (!resolveTargetAppearance(self, targetAppearance))
     {
         return false;
     }
 
-    int value = targetAppearance->getSkinCost(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    const int value = targetAppearance->getSkinCost(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
 
     if ( value > 0 )
     {
@@ -793,14 +816,14 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = resolvedTargetAppearance(self);
-    if (targetAppearance == nullptr)
+    IAppearanceProfile* targetAppearance = nullptr;
+    if (!resolveTargetAppearance(self, targetAppearance))
     {
         return false;
     }
 
     iTmp = targetAppearance->getSkin();
-    state.x = targetAppearance->setSkin(state.argument);
+    state.x = targetAppearance->setSkin(static_cast<size_t>(state.argument));
 
     state.argument = iTmp;  // The character's old armor
 
@@ -917,8 +940,8 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
@@ -926,8 +949,8 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
     becomeSpellbook(enchantable(*pchr),
                     morphControl(*pchr),
                     animationControl(*pchr),
-                    selfContext.compatibility.profileRef,
-                    selfContext.compatibility.spellEffectSkin,
+                    selfContext.policy.profileRef,
+                    selfContext.policy.spellEffectSkin,
                     self);
 
     SCRIPT_FUNCTION_END();
@@ -974,8 +997,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
@@ -985,8 +1008,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = targetEnchantable->addEnchant(selfContext.compatibility.enchantRef,
-                                                   selfContext.compatibility.profileRef.get(),
+        returncode = targetEnchantable->addEnchant(selfContext.policy.enchantRef,
+                                                   selfContext.policy.profileRef.get(),
                                                    owner,
                                                    spawner) != nullptr;
     }
@@ -1009,8 +1032,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
@@ -1020,8 +1043,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.child, childEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = childEnchantable->addEnchant(selfContext.compatibility.enchantRef,
-                                                  selfContext.compatibility.profileRef.get(),
+        returncode = childEnchantable->addEnchant(selfContext.policy.enchantRef,
+                                                  selfContext.policy.profileRef.get(),
                                                   owner,
                                                   spawner) != nullptr;
     }
@@ -1701,14 +1724,14 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
 
-    returncode = ( selfContext.compatibility.comparison.baseModelIsSpellbook ||
-                   selfContext.compatibility.comparison.currentProfileMatchesBaseModel );
+    returncode = ( selfContext.policy.comparison.baseModelIsSpellbook ||
+                   selfContext.policy.comparison.currentProfileMatchesBaseModel );
 
     SCRIPT_FUNCTION_END();
 }
@@ -2085,16 +2108,18 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const AppearanceWalletTarget target = resolvedTargetAppearanceWallet(self);
-    if (target.appearance == nullptr || target.wallet == nullptr)
+    TargetArmorPaymentContext target;
+    if (!resolveTargetArmorPaymentContext(self, target))
     {
         return false;
     }
 
-    iTmp = target.appearance->getSkinCost(static_cast<size_t>(state.argument));
+    const ArmorCostPolicy armorCost = makeArmorCostPolicy(*target.appearance,
+                                                          static_cast<size_t>(state.argument));
+    iTmp = armorCost.requestedSkinCost;
     state.y = iTmp;                                       // Cost of new skin
 
-    iTmp -= target.appearance->getSkinCost(target.appearance->getSkin());     // Refund for old skin
+    iTmp = armorCost.netCost;
 
     if ( iTmp > target.wallet->getMoney() )
     {
@@ -2261,8 +2286,8 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
@@ -2283,8 +2308,8 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ResolvedSelfScriptContext selfContext;
-    if (!resolveSelfScriptContext(self, selfContext))
+    SelfProfileScriptContext selfContext;
+    if (!resolveSelfProfileScriptContext(self, selfContext))
     {
         return false;
     }
