@@ -35,6 +35,11 @@
 //--------------------------------------------------------------------------------------------
 
 class Object;
+class ICharacterState;
+class IInventoryHolder;
+class IPhysical;
+class ITargetInfo;
+class IWallet;
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -490,6 +495,46 @@ public:
 
 };
 
+namespace Ego {
+namespace Script {
+
+struct ScriptOperandContext
+{
+    ObjectRef selfRef = ObjectRef::Invalid;
+    ObjectRef targetRef = ObjectRef::Invalid;
+    ObjectRef ownerRef = ObjectRef::Invalid;
+    ObjectRef leaderRef = ObjectRef::Invalid;
+
+    const Object* selfObject = nullptr;
+    const Object* targetObject = nullptr;
+    const Object* ownerObject = nullptr;
+    const Object* leaderObject = nullptr;
+
+    const IPhysical* selfPhysical = nullptr;
+    const IPhysical* targetPhysical = nullptr;
+    const IPhysical* ownerPhysical = nullptr;
+    const IPhysical* leaderPhysical = nullptr;
+
+    const ICharacterState* selfCharacterState = nullptr;
+    const ICharacterState* targetCharacterState = nullptr;
+
+    const ITargetInfo* selfTargetInfo = nullptr;
+    const ITargetInfo* targetTargetInfo = nullptr;
+
+    const IWallet* selfWallet = nullptr;
+    const IWallet* targetWallet = nullptr;
+
+    const IInventoryHolder* selfInventoryHolder = nullptr;
+
+    bool hasSelf() const
+    {
+        return selfObject != nullptr;
+    }
+};
+
+} // namespace Script
+} // namespace Ego
+
 //--------------------------------------------------------------------------------------------
 // struct script_state_t
 //--------------------------------------------------------------------------------------------
@@ -516,7 +561,7 @@ struct script_state_t : private idlib::non_copyable
     void onVariableNotDefinedError(uint8_t variableIndex);
 	// protected
 	uint8_t run_function(ai_state_t& aiState, script_info_t& script);
-    int32_t loadVariable(uint8_t variableIndex, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader);
+    int32_t loadVariable(uint8_t variableIndex, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context);
 	void storeVariable(uint8_t variableIndex);
 	void run_operand(ai_state_t& aiState, script_info_t& script);
 	bool run_operation(ai_state_t& aiState, script_info_t& script);

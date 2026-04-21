@@ -211,32 +211,52 @@ ObjectRef resolveLeaderRefForVariables(const ITargetInfo& selfInfo)
     return teamLeaderRef(selfInfo);
 }
 
-Object* tryLeaderForVariables(const ITargetInfo& selfInfo)
+const Object* tryLeaderForVariables(const ITargetInfo& selfInfo)
 {
     return tryObject(resolveLeaderRefForVariables(selfInfo));
 }
 
-struct OperandContext
+Ego::Script::ScriptOperandContext makeOperandContext(const ai_state_t& aiState)
 {
-    Object* self = nullptr;
-    Object* target = nullptr;
-    Object* owner = nullptr;
-    Object* leader = nullptr;
-};
+    Ego::Script::ScriptOperandContext context;
+    context.selfRef = aiState.getSelf();
+    context.targetRef = aiState.getTarget();
+    context.ownerRef = aiState.owner;
 
-OperandContext makeOperandContext(const ai_state_t& aiState)
-{
-    OperandContext context;
-    context.self = tryObject(aiState.getSelf());
-    if (context.self == nullptr)
+    context.selfObject = tryObject(context.selfRef);
+    if (context.selfObject == nullptr)
     {
         return context;
     }
 
-    context.target = tryObject(aiState.getTarget());
-    context.owner = tryObject(aiState.owner);
-    const ITargetInfo* selfInfo = static_cast<const ITargetInfo*>(context.self);
-    context.leader = tryLeaderForVariables(*selfInfo);
+    context.selfPhysical = static_cast<const IPhysical*>(context.selfObject);
+    context.selfCharacterState = static_cast<const ICharacterState*>(context.selfObject);
+    context.selfTargetInfo = static_cast<const ITargetInfo*>(context.selfObject);
+    context.selfWallet = static_cast<const IWallet*>(context.selfObject);
+    context.selfInventoryHolder = static_cast<const IInventoryHolder*>(context.selfObject);
+
+    context.targetObject = tryObject(context.targetRef);
+    if (context.targetObject != nullptr)
+    {
+        context.targetPhysical = static_cast<const IPhysical*>(context.targetObject);
+        context.targetCharacterState = static_cast<const ICharacterState*>(context.targetObject);
+        context.targetTargetInfo = static_cast<const ITargetInfo*>(context.targetObject);
+        context.targetWallet = static_cast<const IWallet*>(context.targetObject);
+    }
+
+    context.ownerObject = tryObject(context.ownerRef);
+    if (context.ownerObject != nullptr)
+    {
+        context.ownerPhysical = static_cast<const IPhysical*>(context.ownerObject);
+    }
+
+    context.leaderRef = resolveLeaderRefForVariables(*context.selfTargetInfo);
+    context.leaderObject = tryLeaderForVariables(*context.selfTargetInfo);
+    if (context.leaderObject != nullptr)
+    {
+        context.leaderPhysical = static_cast<const IPhysical*>(context.leaderObject);
+    }
+
     return context;
 }
 
@@ -545,7 +565,7 @@ std::string getVariableName(int variableIndex)
     return Ego::Script::_scriptVariableNames[variableIndex];
 }
 
-int32_t script_state_t::loadVariable(uint8_t variableIndex, ai_state_t& aiState, Object *pobject, Object *ptarget, Object *powner, Object *pleader)
+int32_t script_state_t::loadVariable(uint8_t variableIndex, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
     switch (variableIndex)
     {
@@ -553,7 +573,7 @@ int32_t script_state_t::loadVariable(uint8_t variableIndex, ai_state_t& aiState,
     #define DEFINE(name) \
         case Ego::Script::VAR##name: \
         { \
-            return load_##VAR##name(*this, aiState, pobject, ptarget, powner, pleader); \
+            return load_##VAR##name(*this, aiState, context); \
         }
 
         DEFINE(TMPX)
@@ -693,8 +713,8 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
     /// @author ZZ
     /// @details This function does the scripted arithmetic in OPERATOR, OPERAND pscriptrs
 
-    const OperandContext context = makeOperandContext(aiState);
-    if (context.self == nullptr) return;
+    const Ego::Script::ScriptOperandContext context = makeOperandContext(aiState);
+    if (!context.hasSelf()) return;
 
     std::string varname;
 
@@ -720,7 +740,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
         // Load the variable. 
         auto variableIndex = constant.getAsInteger();
         varname = getVariableName(variableIndex);
-        iTmp = loadVariable(variableIndex, aiState, context.self, context.target, context.owner, context.leader);
+        iTmp = loadVariable(variableIndex, aiState, context);
     }
 
     // Now do the math

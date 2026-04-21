@@ -144,6 +144,16 @@ ObjectRef GameModule::getTeamCallerForHelpRef(TEAM_REF teamRef) const
     return _teamList[teamRef].getSissyRef();
 }
 
+uint16_t GameModule::getTeamMorale(TEAM_REF teamRef) const
+{
+    if (!VALID_TEAM_RANGE(teamRef))
+    {
+        return 0;
+    }
+
+    return _teamList[teamRef].getMorale();
+}
+
 void GameModule::giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const
 {
     if (!VALID_TEAM_RANGE(teamRef))

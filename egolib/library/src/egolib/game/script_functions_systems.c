@@ -95,21 +95,43 @@ struct FollowLinkRequest
     std::string moduleName;
 };
 
-bool resolveSelfProfileCompatibilityData(const Object& selfObject,
-                                         SelfProfileCompatibilityData& data)
+struct ResolvedSelfScriptContext
 {
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject.getProfile();
-    if (!selfProfile)
+    Object* object = nullptr;
+    std::shared_ptr<ObjectProfile> profile;
+    SelfProfileCompatibilityData compatibility;
+};
+
+void populateSelfProfileCompatibilityData(const Object& selfObject,
+                                          const ObjectProfile& selfProfile,
+                                          SelfProfileCompatibilityData& data)
+{
+    data.profileRef = selfObject.getProfileID();
+    data.enchantRef = selfProfile.getEnchantRef();
+    data.spellEffectSkin = selfProfile.getSpellEffectType();
+    data.comparison.baseModelRef = selfObject.getBaseModelRef();
+    data.comparison.baseModelIsSpellbook = data.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
+    data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
+}
+
+bool resolveSelfScriptContext(const ai_state_t& self,
+                              ResolvedSelfScriptContext& context)
+{
+    context.object = tryObject(self.getSelf());
+    if (context.object == nullptr)
     {
         return false;
     }
 
-    data.profileRef = selfObject.getProfileID();
-    data.enchantRef = selfProfile->getEnchantRef();
-    data.spellEffectSkin = selfProfile->getSpellEffectType();
-    data.comparison.baseModelRef = selfObject.getBaseModelRef();
-    data.comparison.baseModelIsSpellbook = data.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
-    data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
+    context.profile = context.object->getProfile();
+    if (!context.profile)
+    {
+        return false;
+    }
+
+    populateSelfProfileCompatibilityData(*context.object,
+                                         *context.profile,
+                                         context.compatibility);
     return true;
 }
 
@@ -129,23 +151,22 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void publishDeprecatedEnableListenSkillWarning(const ObjectProfile& selfProfile)
+void publishDeprecatedEnableListenSkillWarning(const ResolvedSelfScriptContext& context)
 {
-    logDeprecatedScriptFunctionUse("EnableListenSkill", selfProfile.getClassName());
+    logDeprecatedScriptFunctionUse("EnableListenSkill", context.profile->getClassName());
 }
 
-bool resolveFollowLinkRequest(const Object& selfObject,
-                              const ObjectProfile& selfProfile,
+bool resolveFollowLinkRequest(const ResolvedSelfScriptContext& context,
                               const int messageId,
                               FollowLinkRequest& request)
 {
-    if (!selfProfile.isValidMessageID(messageId))
+    if (!context.profile->isValidMessageID(messageId))
     {
         return false;
     }
 
-    request.selfName = selfObject.getName();
-    request.moduleName = selfProfile.getMessage(messageId);
+    request.selfName = context.object->getName();
+    request.moduleName = context.profile->getMessage(messageId);
     return true;
 }
 
@@ -172,12 +193,11 @@ bool tryFollowLink(const FollowLinkRequest& request)
     return followed;
 }
 
-bool followLinkFromMessageId(const Object& selfObject,
-                             const ObjectProfile& selfProfile,
+bool followLinkFromMessageId(const ResolvedSelfScriptContext& context,
                              const int messageId)
 {
     FollowLinkRequest request;
-    return resolveFollowLinkRequest(selfObject, selfProfile, messageId, request) &&
+    return resolveFollowLinkRequest(context, messageId, request) &&
            tryFollowLink(request);
 }
 
@@ -897,8 +917,8 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileCompatibilityData selfProfileData;
-    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
     {
         return false;
     }
@@ -906,8 +926,8 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
     becomeSpellbook(enchantable(*pchr),
                     morphControl(*pchr),
                     animationControl(*pchr),
-                    selfProfileData.profileRef,
-                    selfProfileData.spellEffectSkin,
+                    selfContext.compatibility.profileRef,
+                    selfContext.compatibility.spellEffectSkin,
                     self);
 
     SCRIPT_FUNCTION_END();
@@ -954,8 +974,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileCompatibilityData selfProfileData;
-    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
     {
         return false;
     }
@@ -965,8 +985,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.getTarget(), targetEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = targetEnchantable->addEnchant(selfProfileData.enchantRef,
-                                                   selfProfileData.profileRef.get(),
+        returncode = targetEnchantable->addEnchant(selfContext.compatibility.enchantRef,
+                                                   selfContext.compatibility.profileRef.get(),
                                                    owner,
                                                    spawner) != nullptr;
     }
@@ -989,8 +1009,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileCompatibilityData selfProfileData;
-    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
     {
         return false;
     }
@@ -1000,8 +1020,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> spawner = resolveEnchantSpawner(self);
     if (resolveEnchantParticipants(self, self.child, childEnchantable, owner) &&
         spawner != nullptr) {
-        returncode = childEnchantable->addEnchant(selfProfileData.enchantRef,
-                                                  selfProfileData.profileRef.get(),
+        returncode = childEnchantable->addEnchant(selfContext.compatibility.enchantRef,
+                                                  selfContext.compatibility.profileRef.get(),
                                                   owner,
                                                   spawner) != nullptr;
     }
@@ -1681,14 +1701,14 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileCompatibilityData selfProfileData;
-    if (!resolveSelfProfileCompatibilityData(*pchr, selfProfileData))
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
     {
         return false;
     }
 
-    returncode = ( selfProfileData.comparison.baseModelIsSpellbook ||
-                   selfProfileData.comparison.currentProfileMatchesBaseModel );
+    returncode = ( selfContext.compatibility.comparison.baseModelIsSpellbook ||
+                   selfContext.compatibility.comparison.currentProfileMatchesBaseModel );
 
     SCRIPT_FUNCTION_END();
 }
@@ -2241,7 +2261,13 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    publishDeprecatedEnableListenSkillWarning(*ppro);
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
+    {
+        return false;
+    }
+
+    publishDeprecatedEnableListenSkillWarning(selfContext);
     returncode = false;
 
     SCRIPT_FUNCTION_END();
@@ -2257,7 +2283,13 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = followLinkFromMessageId(*pchr, *ppro, state.argument);
+    ResolvedSelfScriptContext selfContext;
+    if (!resolveSelfScriptContext(self, selfContext))
+    {
+        return false;
+    }
+
+    returncode = followLinkFromMessageId(selfContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }

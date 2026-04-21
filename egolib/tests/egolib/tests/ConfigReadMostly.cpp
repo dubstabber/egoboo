@@ -287,13 +287,14 @@ TEST_F(InstalledConfigFixture, ScriptDifficultyReadUsesInstalledConfig)
 
     script_state_t scriptState{};
     ai_state_t aiState{};
+    const Ego::Script::ScriptOperandContext context{};
 
     config.game_difficulty.setValue(Ego::GameDifficulty::Hard);
-    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, nullptr, nullptr, nullptr, nullptr),
+    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, context),
               static_cast<uint32_t>(Ego::GameDifficulty::Hard));
 
     config.game_difficulty.setValue(Ego::GameDifficulty::Easy);
-    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, nullptr, nullptr, nullptr, nullptr),
+    EXPECT_EQ(load_VARDIFFICULTY(scriptState, aiState, context),
               static_cast<uint32_t>(Ego::GameDifficulty::Easy));
 }
 

@@ -160,6 +160,8 @@ public:
 
     ObjectRef getTeamCallerForHelpRef(TEAM_REF teamRef) const;
 
+    uint16_t getTeamMorale(TEAM_REF teamRef) const;
+
     void giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const;
 
     /**

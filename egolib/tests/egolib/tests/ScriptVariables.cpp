@@ -13,11 +13,57 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Script/script.h"
 #include "egolib/game/script_variables.h"
 #include "egolib/vfs.h"
 
 namespace
 {
+
+Ego::Script::ScriptOperandContext makeOperandContext(const Object* self,
+                                                     const Object* target = nullptr,
+                                                     const Object* owner = nullptr,
+                                                     const Object* leader = nullptr)
+{
+    Ego::Script::ScriptOperandContext context;
+    context.selfObject = self;
+    context.targetObject = target;
+    context.ownerObject = owner;
+    context.leaderObject = leader;
+
+    if (self != nullptr)
+    {
+        context.selfRef = self->getObjRef();
+        context.selfPhysical = static_cast<const IPhysical*>(self);
+        context.selfCharacterState = static_cast<const ICharacterState*>(self);
+        context.selfTargetInfo = static_cast<const ITargetInfo*>(self);
+        context.selfWallet = static_cast<const IWallet*>(self);
+        context.selfInventoryHolder = static_cast<const IInventoryHolder*>(self);
+    }
+
+    if (target != nullptr)
+    {
+        context.targetRef = target->getObjRef();
+        context.targetPhysical = static_cast<const IPhysical*>(target);
+        context.targetCharacterState = static_cast<const ICharacterState*>(target);
+        context.targetTargetInfo = static_cast<const ITargetInfo*>(target);
+        context.targetWallet = static_cast<const IWallet*>(target);
+    }
+
+    if (owner != nullptr)
+    {
+        context.ownerRef = owner->getObjRef();
+        context.ownerPhysical = static_cast<const IPhysical*>(owner);
+    }
+
+    if (leader != nullptr)
+    {
+        context.leaderRef = leader->getObjRef();
+        context.leaderPhysical = static_cast<const IPhysical*>(leader);
+    }
+
+    return context;
+}
 
 class ScriptVariablesFixture : public ::testing::Test
 {
@@ -174,57 +220,61 @@ TEST_F(ScriptVariablesFixture, SpatialReadersUseRoleSeamsAndPreserveFallbacks)
 
     ai_state_t aiState{};
     aiState.setSelf(actor->getObjRef());
+    const auto context = makeOperandContext(actor.get(), target.get(), owner.get(), leader.get());
+    const auto missingTargetContext = makeOperandContext(actor.get(), nullptr, owner.get(), nullptr);
+    const auto missingOwnerContext = makeOperandContext(actor.get(), target.get(), nullptr, leader.get());
+    const auto missingLeaderContext = makeOperandContext(actor.get(), target.get(), owner.get(), nullptr);
 
-    EXPECT_EQ(load_VARSELFX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 10);
-    EXPECT_EQ(load_VARSELFY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 20);
-    EXPECT_EQ(load_VARSELFTURN(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 111);
-    EXPECT_EQ(load_VARSELFZ(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 30);
-    EXPECT_EQ(load_VARWEIGHT(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 12);
-    EXPECT_EQ(load_VARSELFSPAWNX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 4);
-    EXPECT_EQ(load_VARSELFSPAWNY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 6);
-    EXPECT_EQ(load_VARSPAWNDISTANCE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 20);
-    EXPECT_EQ(load_VARSELFALTITUDE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
+    EXPECT_EQ(load_VARSELFX(scriptState, aiState, context), 10);
+    EXPECT_EQ(load_VARSELFY(scriptState, aiState, context), 20);
+    EXPECT_EQ(load_VARSELFTURN(scriptState, aiState, context), 111);
+    EXPECT_EQ(load_VARSELFZ(scriptState, aiState, context), 30);
+    EXPECT_EQ(load_VARWEIGHT(scriptState, aiState, context), 12);
+    EXPECT_EQ(load_VARSELFSPAWNX(scriptState, aiState, context), 4);
+    EXPECT_EQ(load_VARSELFSPAWNY(scriptState, aiState, context), 6);
+    EXPECT_EQ(load_VARSPAWNDISTANCE(scriptState, aiState, context), 20);
+    EXPECT_EQ(load_VARSELFALTITUDE(scriptState, aiState, context),
               static_cast<int32_t>(actor->getPosZ() - actor->getFloorElevation()));
-    EXPECT_EQ(load_VARSELFMORALE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
-              module.getTeamList()[Team::TEAM_GOOD].getMorale());
+    EXPECT_EQ(load_VARSELFMORALE(scriptState, aiState, context),
+              module.getTeamMorale(static_cast<TEAM_REF>(Team::TEAM_GOOD)));
 
-    EXPECT_EQ(load_VARTARGETX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 30);
-    EXPECT_EQ(load_VARTARGETY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 45);
-    EXPECT_EQ(load_VARTARGETDISTANCE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 45);
-    EXPECT_EQ(load_VARTARGETTURN(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 222);
-    EXPECT_EQ(load_VARTARGETSPEEDX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 4);
-    EXPECT_EQ(load_VARTARGETSPEEDY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 5);
-    EXPECT_EQ(load_VARTARGETSPEEDZ(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 6);
-    EXPECT_EQ(load_VARTARGETZ(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 50);
-    EXPECT_EQ(load_VARTARGETALTITUDE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
+    EXPECT_EQ(load_VARTARGETX(scriptState, aiState, context), 30);
+    EXPECT_EQ(load_VARTARGETY(scriptState, aiState, context), 45);
+    EXPECT_EQ(load_VARTARGETDISTANCE(scriptState, aiState, context), 45);
+    EXPECT_EQ(load_VARTARGETTURN(scriptState, aiState, context), 222);
+    EXPECT_EQ(load_VARTARGETSPEEDX(scriptState, aiState, context), 4);
+    EXPECT_EQ(load_VARTARGETSPEEDY(scriptState, aiState, context), 5);
+    EXPECT_EQ(load_VARTARGETSPEEDZ(scriptState, aiState, context), 6);
+    EXPECT_EQ(load_VARTARGETZ(scriptState, aiState, context), 50);
+    EXPECT_EQ(load_VARTARGETALTITUDE(scriptState, aiState, context),
               static_cast<int32_t>(target->getPosZ() - target->getFloorElevation()));
 
-    EXPECT_EQ(load_VARLEADERX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 13);
-    EXPECT_EQ(load_VARLEADERY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 17);
-    EXPECT_EQ(load_VARLEADERDISTANCE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 6);
-    EXPECT_EQ(load_VARLEADERTURN(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 444);
+    EXPECT_EQ(load_VARLEADERX(scriptState, aiState, context), 13);
+    EXPECT_EQ(load_VARLEADERY(scriptState, aiState, context), 17);
+    EXPECT_EQ(load_VARLEADERDISTANCE(scriptState, aiState, context), 6);
+    EXPECT_EQ(load_VARLEADERTURN(scriptState, aiState, context), 444);
 
-    EXPECT_EQ(load_VAROWNERX(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 16);
-    EXPECT_EQ(load_VAROWNERY(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 23);
-    EXPECT_EQ(load_VAROWNERDISTANCE(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 9);
-    EXPECT_EQ(load_VAROWNERTURN(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()), 333);
+    EXPECT_EQ(load_VAROWNERX(scriptState, aiState, context), 16);
+    EXPECT_EQ(load_VAROWNERY(scriptState, aiState, context), 23);
+    EXPECT_EQ(load_VAROWNERDISTANCE(scriptState, aiState, context), 9);
+    EXPECT_EQ(load_VAROWNERTURN(scriptState, aiState, context), 333);
 
-    EXPECT_EQ(load_VARTARGETTURNTO(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
+    EXPECT_EQ(load_VARTARGETTURNTO(scriptState, aiState, context),
               Ego::Math::clipBits<16>(FACING_T(vec_to_facing(20.0f, 25.0f))));
-    EXPECT_EQ(load_VAROWNERTURNTO(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
+    EXPECT_EQ(load_VAROWNERTURNTO(scriptState, aiState, context),
               Ego::Math::clipBits<16>(FACING_T(vec_to_facing(6.0f, 3.0f))));
-    EXPECT_EQ(load_VARXYTURNTO(scriptState, aiState, actor.get(), target.get(), owner.get(), leader.get()),
+    EXPECT_EQ(load_VARXYTURNTO(scriptState, aiState, context),
               Ego::Math::clipBits<16>(FACING_T(vec_to_facing(30.0f, 35.0f))));
 
-    EXPECT_EQ(load_VARTARGETX(scriptState, aiState, actor.get(), nullptr, owner.get(), nullptr), 0);
-    EXPECT_EQ(load_VARTARGETDISTANCE(scriptState, aiState, actor.get(), nullptr, owner.get(), nullptr), 0x7FFFFFFF);
-    EXPECT_EQ(load_VAROWNERX(scriptState, aiState, actor.get(), target.get(), nullptr, leader.get()), 0);
-    EXPECT_EQ(load_VAROWNERDISTANCE(scriptState, aiState, actor.get(), target.get(), nullptr, leader.get()), 0x7FFFFFFF);
-    EXPECT_EQ(load_VAROWNERTURNTO(scriptState, aiState, actor.get(), target.get(), nullptr, leader.get()), 0);
-    EXPECT_EQ(load_VARLEADERX(scriptState, aiState, actor.get(), target.get(), owner.get(), nullptr), 10);
-    EXPECT_EQ(load_VARLEADERY(scriptState, aiState, actor.get(), target.get(), owner.get(), nullptr), 20);
-    EXPECT_EQ(load_VARLEADERTURN(scriptState, aiState, actor.get(), target.get(), owner.get(), nullptr), 111);
-    EXPECT_EQ(load_VARLEADERDISTANCE(scriptState, aiState, actor.get(), target.get(), owner.get(), nullptr), 0x7FFFFFFF);
+    EXPECT_EQ(load_VARTARGETX(scriptState, aiState, missingTargetContext), 0);
+    EXPECT_EQ(load_VARTARGETDISTANCE(scriptState, aiState, missingTargetContext), 0x7FFFFFFF);
+    EXPECT_EQ(load_VAROWNERX(scriptState, aiState, missingOwnerContext), 0);
+    EXPECT_EQ(load_VAROWNERDISTANCE(scriptState, aiState, missingOwnerContext), 0x7FFFFFFF);
+    EXPECT_EQ(load_VAROWNERTURNTO(scriptState, aiState, missingOwnerContext), 0);
+    EXPECT_EQ(load_VARLEADERX(scriptState, aiState, missingLeaderContext), 10);
+    EXPECT_EQ(load_VARLEADERY(scriptState, aiState, missingLeaderContext), 20);
+    EXPECT_EQ(load_VARLEADERTURN(scriptState, aiState, missingLeaderContext), 111);
+    EXPECT_EQ(load_VARLEADERDISTANCE(scriptState, aiState, missingLeaderContext), 0x7FFFFFFF);
 }
 
 TEST_F(ScriptVariablesFixture, NumericReadersUseRoleSeamsForStatsEconomyAndProfileIds)
@@ -268,47 +318,48 @@ TEST_F(ScriptVariablesFixture, NumericReadersUseRoleSeamsForStatsEconomyAndProfi
 
     script_state_t scriptState{};
     ai_state_t aiState{};
+    const auto context = makeOperandContext(actor.get(), target.get(), nullptr, nullptr);
 
-    EXPECT_EQ(load_VARSELFLIFE(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), FLOAT_TO_FP8(actor->getLife()));
-    EXPECT_EQ(load_VARSELFSTR(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFLIFE(scriptState, aiState, context), FLOAT_TO_FP8(actor->getLife()));
+    EXPECT_EQ(load_VARSELFSTR(scriptState, aiState, context),
               FLOAT_TO_FP8(actor->getAttribute(Ego::Attribute::MIGHT)));
-    EXPECT_EQ(load_VARSELFINT(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFINT(scriptState, aiState, context),
               FLOAT_TO_FP8(actor->getAttribute(Ego::Attribute::INTELLECT)));
-    EXPECT_EQ(load_VARSELFDEX(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFDEX(scriptState, aiState, context),
               FLOAT_TO_FP8(actor->getAttribute(Ego::Attribute::AGILITY)));
-    EXPECT_EQ(load_VARSELFMANAFLOW(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFMANAFLOW(scriptState, aiState, context),
               FLOAT_TO_FP8(actor->getAttribute(Ego::Attribute::SPELL_POWER)));
-    EXPECT_EQ(load_VARSELFMONEY(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), actor->getMoney());
-    EXPECT_EQ(load_VARSELFACCEL(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFMONEY(scriptState, aiState, context), actor->getMoney());
+    EXPECT_EQ(load_VARSELFACCEL(scriptState, aiState, context),
               static_cast<int32_t>(actor->getAttribute(Ego::Attribute::ACCELERATION) * 100.0f));
-    EXPECT_EQ(load_VARSELFAMMO(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), actor->getAmmo());
-    EXPECT_EQ(load_VARSELFLEVEL(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), actor->getExperienceLevelIndex());
-    EXPECT_EQ(load_VARSELFID(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFAMMO(scriptState, aiState, context), actor->getAmmo());
+    EXPECT_EQ(load_VARSELFLEVEL(scriptState, aiState, context), actor->getExperienceLevelIndex());
+    EXPECT_EQ(load_VARSELFID(scriptState, aiState, context),
               actor->getProfile()->getIDSZ(IDSZ_TYPE).toUint32());
-    EXPECT_EQ(load_VARSELFHATEID(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFHATEID(scriptState, aiState, context),
               actor->getProfile()->getIDSZ(IDSZ_HATE).toUint32());
 
-    EXPECT_EQ(load_VARTARGETSTR(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETSTR(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getAttribute(Ego::Attribute::MIGHT)));
-    EXPECT_EQ(load_VARTARGETINT(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETINT(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getAttribute(Ego::Attribute::INTELLECT)));
-    EXPECT_EQ(load_VARTARGETDEX(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETDEX(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getAttribute(Ego::Attribute::AGILITY)));
-    EXPECT_EQ(load_VARTARGETLIFE(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETLIFE(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getLife()));
-    EXPECT_EQ(load_VARTARGETMANAFLOW(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETMANAFLOW(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getAttribute(Ego::Attribute::SPELL_POWER)));
-    EXPECT_EQ(load_VARTARGETLEVEL(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), target->getExperienceLevelIndex());
-    EXPECT_EQ(load_VARTARGETEXP(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETLEVEL(scriptState, aiState, context), target->getExperienceLevelIndex());
+    EXPECT_EQ(load_VARTARGETEXP(scriptState, aiState, context),
               static_cast<int32_t>(target->getExperience()));
-    EXPECT_EQ(load_VARTARGETAMMO(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), target->getAmmo());
-    EXPECT_EQ(load_VARTARGETMONEY(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), target->getMoney());
-    EXPECT_EQ(load_VARTARGETRELOADTIME(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), target->getReloadTimer());
-    EXPECT_EQ(load_VARTARGETMAXLIFE(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETAMMO(scriptState, aiState, context), target->getAmmo());
+    EXPECT_EQ(load_VARTARGETMONEY(scriptState, aiState, context), target->getMoney());
+    EXPECT_EQ(load_VARTARGETRELOADTIME(scriptState, aiState, context), target->getReloadTimer());
+    EXPECT_EQ(load_VARTARGETMAXLIFE(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getAttribute(Ego::Attribute::MAX_LIFE)));
-    EXPECT_EQ(load_VARTARGETTEAM(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETTEAM(scriptState, aiState, context),
               static_cast<int32_t>(target->getTeamRef()));
-    EXPECT_EQ(load_VARTARGETARMOR(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr), targetSkin);
+    EXPECT_EQ(load_VARTARGETARMOR(scriptState, aiState, context), targetSkin);
 }
 
 TEST_F(ScriptVariablesFixture, ManaReadersPreserveChannelLifeBehaviorThroughCharacterStateRole)
@@ -330,13 +381,15 @@ TEST_F(ScriptVariablesFixture, ManaReadersPreserveChannelLifeBehaviorThroughChar
 
     script_state_t scriptState{};
     ai_state_t aiState{};
+    const auto context = makeOperandContext(actor.get(), target.get(), nullptr, nullptr);
+    const auto missingTargetContext = makeOperandContext(actor.get(), nullptr, nullptr, nullptr);
 
-    EXPECT_EQ(load_VARSELFMANA(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARSELFMANA(scriptState, aiState, context),
               FLOAT_TO_FP8(actor->getMana()) + FLOAT_TO_FP8(actor->getLife()));
-    EXPECT_EQ(load_VARTARGETMANA(scriptState, aiState, actor.get(), target.get(), nullptr, nullptr),
+    EXPECT_EQ(load_VARTARGETMANA(scriptState, aiState, context),
               FLOAT_TO_FP8(target->getMana()) + FLOAT_TO_FP8(target->getLife()));
 
-    EXPECT_EQ(load_VARTARGETMANA(scriptState, aiState, actor.get(), nullptr, nullptr, nullptr), 0);
+    EXPECT_EQ(load_VARTARGETMANA(scriptState, aiState, missingTargetContext), 0);
 }
 
 } // namespace
