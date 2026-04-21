@@ -52,9 +52,14 @@ bool isShield(ObjectRef itemRef)
     return item != nullptr && item->isShield();
 }
 
+bool isLiveStateObjectRef(ObjectRef objectRef)
+{
+    return tryObject(objectRef) != nullptr;
+}
+
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
-    if (!objectHandler().exists(objectRef))
+    if (!isLiveStateObjectRef(objectRef))
     {
         return false;
     }
@@ -65,7 +70,7 @@ bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 
 bool hasExistingHolder(const ITargetInfo& objectTargetInfo)
 {
-    return objectHandler().exists(objectTargetInfo.getHolderRef());
+    return isLiveStateObjectRef(objectTargetInfo.getHolderRef());
 }
 
 bool trySetTargetToHolderLastAttacker(ai_state_t& self, const ITargetInfo& objectTargetInfo)
@@ -663,8 +668,8 @@ uint8_t scr_IfUnarmed( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( !objectHandler().exists(selfInventory->getHeldObject(SLOT_LEFT))
-                && !objectHandler().exists(selfInventory->getHeldObject(SLOT_RIGHT)) );
+    returncode = ( !isLiveStateObjectRef(selfInventory->getHeldObject(SLOT_LEFT))
+                && !isLiveStateObjectRef(selfInventory->getHeldObject(SLOT_RIGHT)) );
 
     SCRIPT_FUNCTION_END();
 }

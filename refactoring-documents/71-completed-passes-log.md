@@ -796,6 +796,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by adding file-local ref-li
 
 Extended `ScriptStateFunctions.cpp` with focused regressions for cleanup listener iteration, particle owner fallback and attachment placement, attached-character inventory and grip behavior, and module respawn toggling. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 162 — Script state liveness seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_state.c` by adding one file-local ref-liveness helper and routing the remaining holder/target publication and held-slot predicates through it instead of open-coded `objectHandler().exists(...)` checks. Kept `IfSitting`, `IfHolderBlocked`, and `IfUnarmed` behavior unchanged: invalid or terminated refs still fail quietly, `self.target` stays untouched on failure, and terminated held-item refs still count as unarmed.
+
+Extended `ScriptStateFunctions.cpp` with a focused regression for terminated held-item refs on top of the existing `IfHolderBlocked` and `IfUnarmed` coverage. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

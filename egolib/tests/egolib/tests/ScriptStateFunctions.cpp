@@ -1299,6 +1299,28 @@ TEST_F(ScriptStateFunctionsFixture, IfUnarmedReadsHeldSlotsThroughInventoryHolde
     EXPECT_FALSE(scr_IfUnarmed(state, self));
 }
 
+TEST_F(ScriptStateFunctionsFixture, IfUnarmedTreatsTerminatedHeldRefsAsUnarmed)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5598);
+    auto leftHandItem = makeObject(module, "mp_objects/follower.obj", 5599);
+    auto rightHandItem = makeObject(module, "mp_objects/follower.obj", 5600);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(leftHandItem, nullptr);
+    ASSERT_NE(rightHandItem, nullptr);
+
+    actor->setHeldObject(SLOT_LEFT, leftHandItem->getObjRef());
+    actor->setHeldObject(SLOT_RIGHT, rightHandItem->getObjRef());
+    leftHandItem->requestTerminate();
+    rightHandItem->requestTerminate();
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_IfUnarmed(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, IfHoldingItemIDReadsHeldItemsThroughTargetInfoRole)
 {
     auto& module = beginActiveTestModule();
