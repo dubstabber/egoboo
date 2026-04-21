@@ -513,6 +513,43 @@ TEST_F(ScriptRuntimeFixture, AIStateSpawnPublishesSpawnDefaultsFromProfileAndObj
     EXPECT_FLOAT_EQ(aiState.wp[kY], actor->getSpawnPosition().y());
 }
 
+TEST_F(ScriptRuntimeFixture, AIStateSpawnWithInvalidRefResetsStateWithoutPublishingObjectData)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+
+    ai_state_t aiState;
+    aiState.alert = ALERTIF_ATTACKED;
+    aiState.state = 99;
+    aiState.content = 123;
+    aiState.owner = ObjectRef(77);
+    aiState.child = ObjectRef(78);
+    aiState.order_value = 17;
+    aiState.order_counter = 9;
+    aiState.setSelf(ObjectRef(79));
+    aiState.setTarget(ObjectRef(80));
+    aiState.setOldTarget(ObjectRef(81));
+    aiState.setBumped(ObjectRef(82));
+
+    ai_state_t::spawn(aiState, ObjectRef::Invalid, 0, 7);
+
+    EXPECT_EQ(aiState.getSelf(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getTarget(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getOldTarget(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.getBumped(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.owner, ObjectRef::Invalid);
+    EXPECT_EQ(aiState.child, ObjectRef::Invalid);
+    EXPECT_EQ(aiState.hitlast, ObjectRef::Invalid);
+    EXPECT_EQ(aiState.alert, 0u);
+    EXPECT_EQ(aiState.state, 0);
+    EXPECT_EQ(aiState.content, 0);
+    EXPECT_EQ(aiState.order_value, 0u);
+    EXPECT_EQ(aiState.order_counter, 0u);
+    EXPECT_FLOAT_EQ(aiState.maxSpeed, 1.0f);
+    EXPECT_TRUE(waypoint_list_t::empty(aiState.wp_lst));
+    EXPECT_FALSE(aiState.wp_valid);
+}
+
 TEST_F(ScriptRuntimeFixture, AIStateSetBumplastThrottlesRepeatedBumpsButPublishesNewOrExpiredOnes)
 {
     auto& module = beginActiveTestModule();
@@ -558,6 +595,24 @@ TEST_F(ScriptRuntimeFixture, AIStateSetBumplastThrottlesRepeatedBumpsButPublishe
     EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperB->getObjRef()));
     EXPECT_TRUE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
     EXPECT_EQ(aiState.bumplast_time, session.worldUpdateCount());
+}
+
+TEST_F(ScriptRuntimeFixture, AIStateSetBumplastRejectsInvalidTargetRefWithoutPublishingAlert)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5845);
+
+    ASSERT_NE(actor, nullptr);
+
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    ai_state_t::reset(aiState);
+    aiState.alert = 0;
+
+    EXPECT_FALSE(ai_state_t::set_bumplast(aiState, ObjectRef::Invalid));
+    EXPECT_FALSE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.getBumped(), ObjectRef::Invalid);
+    EXPECT_EQ(aiState.bumplast_time, 0u);
 }
 
 } // namespace

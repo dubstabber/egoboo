@@ -754,6 +754,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by collapsing the last ow
 
 Also replaced the mixed null-check/object-handle sweep in `DisenchantAll` with a small local object-iteration helper that delegates directly through the landed `IEnchantable` role. Kept the focused `ScriptSystemsFunctions` coverage for damage/kill, heal cleanup, retaliation attribution, enchant owner/spawner failure, and mixed-object disenchant behavior plus the `test.mod` validator as the acceptance bar for the pass.
 
+### Pass 155 — Script runtime object-handle quarantine (2026-04-21)
+
+Continued Tier 1.2 inside `Script/script.c` by isolating the remaining direct `objectHandler()` / `shared_ptr<Object>` runtime pockets behind file-local helpers for object-ref iteration, spawn-object resolution, and bump-target validation. Routed `issue_order(...)`, `issue_special_order(...)`, `ai_state_t::set_bumplast(...)`, and `ai_state_t::spawn(...)` through those helpers without widening any public role seams or changing order, spawn, or bump semantics.
+
+Extended `ScriptRuntime.cpp` with focused regressions for invalid spawn refs and invalid bump targets on top of the existing order-publication, valid-spawn, and bump-throttling coverage. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

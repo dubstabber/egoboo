@@ -1035,6 +1035,28 @@ struct OrderRecipient
     }
 };
 
+template <typename Fn>
+void forEachResolvedObjectRef(Fn&& fn)
+{
+    for (const std::shared_ptr<Object>& object : objectHandler().iterator())
+    {
+        if (object != nullptr)
+        {
+            fn(object->getObjRef());
+        }
+    }
+}
+
+bool isRuntimeObjectRefValid(ObjectRef ref)
+{
+    return tryObject(ref) != nullptr;
+}
+
+const Object* tryRuntimeSpawnObject(ObjectRef ref)
+{
+    return tryObject(ref);
+}
+
 OrderRecipient resolveOrderRecipient(ObjectRef candidateRef)
 {
     OrderRecipient recipient;
@@ -1094,12 +1116,10 @@ void issue_order(const ObjectRef character, uint32_t value)
         return;
     }
 
-    for (const std::shared_ptr<Object> &object : objectHandler().iterator())
+    forEachResolvedObjectRef([&](ObjectRef candidateRef)
     {
-        if (object != nullptr) {
-            tryPublishOrder(object->getObjRef(), *caller, value, counter);
-        }
-    }
+        tryPublishOrder(candidateRef, *caller, value, counter);
+    });
 }
 
 //--------------------------------------------------------------------------------------------
@@ -1109,12 +1129,10 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
     /// @details This function issues an order to all characters with the a matching special IDSZ
     int counter = 0;
 
-    for (const std::shared_ptr<Object> &object : objectHandler().iterator())
+    forEachResolvedObjectRef([&](ObjectRef candidateRef)
     {
-        if (object != nullptr) {
-            tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
-        }
-    }
+        tryPublishSpecialOrder(candidateRef, value, idsz, counter);
+    });
 }
 
 void publishSpawnIdentity(ai_state_t& self, ObjectRef index)
@@ -1293,7 +1311,7 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
     /// @details bumping into a chest can initiate whole loads of update messages.
     ///     Try to throttle the rate that new "bump" messages can be passed to the ai
 
-    if (!objectHandler().exists(ichr))
+    if (!isRuntimeObjectRefValid(ichr))
     {
         return false;
     }
@@ -1311,10 +1329,10 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
 
 void ai_state_t::spawn(ai_state_t& self, const ObjectRef index, const PRO_REF iobj, uint16_t rank)
 {
-    const std::shared_ptr<Object> &pchr = objectHandler()[index];
+    const Object* pchr = tryRuntimeSpawnObject(index);
     ai_state_t::reset(self);
 
-    if (!pchr)
+    if (pchr == nullptr)
     {
         return;
     }
