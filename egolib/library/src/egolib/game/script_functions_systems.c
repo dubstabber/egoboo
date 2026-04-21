@@ -61,6 +61,40 @@ IWallet& wallet(Object& object)
     return object;
 }
 
+ObjectRef selfObjectRef(const ai_state_t& self)
+{
+    return self.getSelf();
+}
+
+Object* trySelfObject(const ai_state_t& self)
+{
+    return tryObject(selfObjectRef(self));
+}
+
+bool setSelfDamageType(const ai_state_t& self, DamageType damageType)
+{
+    Object* selfObject = trySelfObject(self);
+    if (selfObject == nullptr)
+    {
+        return false;
+    }
+
+    selfObject->setDamageTargetType(damageType);
+    return true;
+}
+
+bool markSelfEquipped(const ai_state_t& self)
+{
+    Object* selfObject = trySelfObject(self);
+    if (selfObject == nullptr)
+    {
+        return false;
+    }
+
+    selfObject->setEquipped(true);
+    return true;
+}
+
 IMorphControl& morphControl(Object& object)
 {
     return object;
@@ -292,6 +326,11 @@ void addMiniMapBlip(float x, float y, ObjectRef objectRef)
     }
 
     minimap->addBlip(x, y, object);
+}
+
+void addSelfMiniMapBlip(const ai_state_t& self, float x, float y)
+{
+    addMiniMapBlip(x, y, selfObjectRef(self));
 }
 
 void addSelfStatusMonitor(ObjectRef objectRef)
@@ -622,6 +661,22 @@ bool resolveHealingTargetContext(const ai_state_t& self,
     return context.targetState != nullptr &&
            context.damageable != nullptr &&
            resolveOwnedObjectHandle(self.getSelf(), context.healer);
+}
+
+bool pumpTargetManaFromSelf(const ai_state_t& self, int amount)
+{
+    if (amount <= 0)
+    {
+        return false;
+    }
+
+    ICharacterState* resolvedTargetState = resolveAliveTargetState(self);
+    if (resolvedTargetState == nullptr)
+    {
+        return false;
+    }
+
+    return resolvedTargetState->costMana(-amount, selfObjectRef(self));
 }
 
 bool resolveRetaliationDamageContext(const ai_state_t& self,
@@ -1210,7 +1265,7 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setDamageTargetType(static_cast<DamageType>(state.argument % DAMAGE_COUNT));
+    returncode = setSelfDamageType(self, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1563,7 +1618,7 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    pchr->setEquipped(true);
+    returncode = markSelfEquipped(self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1740,8 +1795,7 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
     // Add a blip
     if ( state.argument >= 0 )
     {
-        //activePlayingState()->getMiniMap()->addBlip(state.x, state.y, static_cast<HUDColors>(state.argument % COLOR_MAX));
-        addMiniMapBlip(state.x, state.y, pchr->getObjRef());
+        addSelfMiniMapBlip(self, state.x, state.y);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1784,11 +1838,7 @@ uint8_t scr_PumpTarget( script_state_t& state, ai_state_t& self )
     /// Values are 8.8 fixed point
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self);
-         resolvedTargetState != nullptr && state.argument > 0)
-    {
-        resolvedTargetState->costMana(-state.argument, pchr->getObjRef());
-    }
+    pumpTargetManaFromSelf(self, state.argument);
 
     SCRIPT_FUNCTION_END();
 }

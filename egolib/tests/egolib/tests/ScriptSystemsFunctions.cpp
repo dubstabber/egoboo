@@ -1413,6 +1413,37 @@ TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
     config.hud_feedback.setValue(previousFeedback);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, SetDamageTypeUsesLocalizedSelfHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5646);
+
+    ASSERT_NE(actor, nullptr);
+    actor->setDamageTargetType(DamageType::DAMAGE_DIRECT);
+
+    script_state_t state;
+    state.argument = DAMAGE_FIRE;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SetDamageType(state, self));
+    EXPECT_EQ(actor->getDamageTargetType(), DamageType::DAMAGE_FIRE);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, EquipUsesLocalizedSelfHelper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5647);
+
+    ASSERT_NE(actor, nullptr);
+    actor->setEquipped(false);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_Equip(state, self));
+    EXPECT_TRUE(actor->isEquipped());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, KillTargetHandlesSelfHeldByMount)
 {
     auto& module = beginActiveTestModule();
@@ -1549,6 +1580,33 @@ TEST_F(ScriptSystemsFunctionsFixture, ManaAmmoAndKurseHelpersUseCharacterStateRo
     EXPECT_FALSE(itemTarget->isKursed());
     EXPECT_TRUE(scr_KurseTarget(state, kurseSelf));
     EXPECT_TRUE(itemTarget->isKursed());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, PumpTargetUsesSelfRefAsManaSource)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 56612);
+    auto target = makeObject(module, "mp_objects/follower.obj", 56613);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setMana(target->getMaxMana());
+    target->setLife(-5.0f);
+    target->setBaseAttribute(Ego::Attribute::CHANNEL_LIFE, 1.0f);
+    target->setAILastAttacker(ObjectRef::Invalid);
+    target->careful_timer = 0;
+
+    script_state_t state;
+    state.argument = FLOAT_TO_FP8(3.0f);
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    const float lifeBefore = target->getLife();
+
+    EXPECT_TRUE(scr_PumpTarget(state, self));
+    EXPECT_GT(target->getLife(), lifeBefore);
+    EXPECT_EQ(target->getAILastAttacker(), actor->getObjRef());
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, UnkurseTargetUsesCharacterStateRoleAndPreservesMissingTargetFailure)

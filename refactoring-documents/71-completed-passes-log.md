@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 150) completed between 2026-04-13 and 2026-04-21. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 164) completed between 2026-04-13 and 2026-04-21. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -807,6 +807,12 @@ Extended `ScriptStateFunctions.cpp` with a focused regression for terminated hel
 Continued Tier 1.2 inside `script_functions_action.c` and `script_functions_state.c` by isolating the remaining direct live-object sweep, holder-liveness, and module-IDSZ lookup pockets behind file-local helpers instead of leaving open-coded `objectHandler()` and module-name access in the opcode bodies. Routed `scr_MakeSimilarNamesKnown()`, `scr_CorrectActionForHand()`, and `scr_IfModuleHasIDSZ()` through those local seams while preserving the existing action-band and quiet-failure behavior and correcting the module predicate to consult the message-selected module name as documented.
 
 Extended `ScriptActionFunctions.cpp` and `ScriptStateFunctions.cpp` with focused regressions for missing-holder no-op action correction, preserved non-match name visibility behavior, valid `test.mod` IDSZ lookup, and invalid module/message rejection. Build, the focused script action/state test slices, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 164 — Residual systems self-seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by localizing the remaining concrete-self opcode writes and self-ref publication behind file-local helpers instead of reading `pchr` directly in the opcode bodies. Routed `scr_SetDamageType()`, `scr_Equip()`, `scr_ShowBlipXY()`, and `scr_PumpTarget()` through the new self helpers while preserving the current UI no-op behavior, target-liveness gating, and mana-source semantics.
+
+Extended `ScriptSystemsFunctions.cpp` with focused regressions for the preserved map/UI adapter behavior, self damage-type and equipped-state mutation, and `PumpTarget` preserving self-ref mana-source attribution. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
 ---
 
