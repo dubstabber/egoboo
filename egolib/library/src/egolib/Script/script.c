@@ -132,6 +132,11 @@ const std::shared_ptr<Object>& heldItem(const IInventoryHolder& holder, slot_t s
     return GameSessionContext::get().activeModule().getObjectHandler()[holder.getHeldObject(slot)];
 }
 
+const std::shared_ptr<Object>& leftHandRider(const Object& object)
+{
+    return heldItem(inventoryHolder(object), SLOT_LEFT);
+}
+
 void updateScriptErrorContext(const Object& object)
 {
     script_error_classname = "UNKNOWN";
@@ -192,11 +197,18 @@ void resetInvisibleTargetToSelf(Object& object, ai_state_t& aiState)
     }
 }
 
+void publishWaypointVelocity(Object& object, const ai_state_t& aiState)
+{
+    object.setDesiredVelocity(Ego::Vector2f(
+        (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
+        (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
+}
+
 void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
 {
     ai_state_t::ensure_wp(aiState);
 
-    const std::shared_ptr<Object>& rider = heldItem(inventoryHolder(object), SLOT_LEFT);
+    const std::shared_ptr<Object>& rider = leftHandRider(object);
     if (object.isMount() && rider)
     {
         // Mount (rider is held in left grip)
@@ -205,9 +217,7 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
     else if (aiState.wp_valid)
     {
         // Normal AI
-        object.setDesiredVelocity(Ego::Vector2f(
-            (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
-            (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
+        publishWaypointVelocity(object, aiState);
     }
 }
 
@@ -298,6 +308,46 @@ Ego::Script::ScriptOperandContext makeOperandContext(const ai_state_t& aiState)
     return context;
 }
 
+bool isAtCurrentWaypoint(const Object& object, const ai_state_t& aiState)
+{
+    return aiState.wp_valid &&
+           (std::abs(object.getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
+           (std::abs(object.getPosY() - aiState.wp[kY]) < WAYTHRESH);
+}
+
+void publishWaypointArrivalAlert(ai_state_t& aiState)
+{
+    SET_BIT(aiState.alert, ALERTIF_ATWAYPOINT);
+}
+
+void advanceWaypointPathAfterArrival(const Object& object, ai_state_t& aiState)
+{
+    if (waypoint_list_t::finished(aiState.wp_lst))
+    {
+        // we are now at the last waypoint
+        // if the object can be alerted to last waypoint, do it
+        // this test needs to be done because the ALERTIF_ATLASTWAYPOINT
+        // doubles for "at last waypoint" and "not put away"
+        if (!object.getProfile()->isEquipment())
+        {
+            SET_BIT(aiState.alert, ALERTIF_ATLASTWAYPOINT);
+        }
+
+        // !!!!restart the waypoint list, do not clear them!!!!
+        waypoint_list_t::reset(aiState.wp_lst);
+
+        // load the top waypoint
+        ai_state_t::get_wp(aiState);
+        return;
+    }
+
+    if (waypoint_list_t::advance(aiState.wp_lst))
+    {
+        // load the top waypoint
+        ai_state_t::get_wp(aiState);
+    }
+}
+
 void pollWaypointAlerts(Object& object, ai_state_t& aiState)
 {
     if (waypoint_list_t::empty(aiState.wp_lst))
@@ -315,42 +365,13 @@ void pollWaypointAlerts(Object& object, ai_state_t& aiState)
     // is the current waypoint is not valid, try to load up the top waypoint
     ai_state_t::ensure_wp(aiState);
 
-    bool at_waypoint = false;
-    if (aiState.wp_valid)
-    {
-        at_waypoint = (std::abs(object.getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
-                      (std::abs(object.getPosY() - aiState.wp[kY]) < WAYTHRESH);
-    }
-
-    if (!at_waypoint)
+    if (!isAtCurrentWaypoint(object, aiState))
     {
         return;
     }
 
-    SET_BIT(aiState.alert, ALERTIF_ATWAYPOINT);
-
-    if (waypoint_list_t::finished(aiState.wp_lst))
-    {
-        // we are now at the last waypoint
-        // if the object can be alerted to last waypoint, do it
-        // this test needs to be done because the ALERTIF_ATLASTWAYPOINT
-        // doubles for "at last waypoint" and "not put away"
-        if (!object.getProfile()->isEquipment())
-        {
-            SET_BIT(aiState.alert, ALERTIF_ATLASTWAYPOINT);
-        }
-
-        // !!!!restart the waypoint list, do not clear them!!!!
-        waypoint_list_t::reset(aiState.wp_lst);
-
-        // load the top waypoint
-        ai_state_t::get_wp(aiState);
-    }
-    else if (waypoint_list_t::advance(aiState.wp_lst))
-    {
-        // load the top waypoint
-        ai_state_t::get_wp(aiState);
-    }
+    publishWaypointArrivalAlert(aiState);
+    advanceWaypointPathAfterArrival(object, aiState);
 }
 }
 
@@ -980,6 +1001,15 @@ bool tryPublishOrder(ObjectRef candidateRef,
     return true;
 }
 
+bool tryPublishOrder(const std::shared_ptr<Object>& object,
+                     const ITargetInfo& caller,
+                     uint32_t value,
+                     int& counter)
+{
+    return object != nullptr &&
+           tryPublishOrder(object->getObjRef(), caller, value, counter);
+}
+
 bool tryPublishSpecialOrder(ObjectRef candidateRef,
                             uint32_t value,
                             const IDSZ2& idsz,
@@ -997,6 +1027,15 @@ bool tryPublishSpecialOrder(ObjectRef candidateRef,
     return true;
 }
 
+bool tryPublishSpecialOrder(const std::shared_ptr<Object>& object,
+                            uint32_t value,
+                            const IDSZ2& idsz,
+                            int& counter)
+{
+    return object != nullptr &&
+           tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
+}
+
 void issue_order(const ObjectRef character, uint32_t value)
 {
     /// @author ZZ
@@ -1011,12 +1050,7 @@ void issue_order(const ObjectRef character, uint32_t value)
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        if (object == nullptr)
-        {
-            continue;
-        }
-
-        tryPublishOrder(object->getObjRef(), *caller, value, counter);
+        tryPublishOrder(object, *caller, value, counter);
     }
 }
 
@@ -1029,13 +1063,44 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        if (object == nullptr)
-        {
-            continue;
-        }
-
-        tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
+        tryPublishSpecialOrder(object, value, idsz, counter);
     }
+}
+
+void publishSpawnIdentity(ai_state_t& self, ObjectRef index)
+{
+    self.setSelf(index);
+    self.setTarget(index);
+    self.setOldTarget(index);
+    self.setBumped(index);
+    self.alert = ALERTIF_SPAWNED;
+    self.passage = 0;
+    self.owner = index;
+    self.child = index;
+    self.hitlast = index;
+}
+
+void publishSpawnOverrides(ai_state_t& self, const Object& object)
+{
+    self.state = object.getProfile()->getStateOverride();
+    self.content = object.getProfile()->getContentOverride();
+}
+
+void publishSpawnWaypoint(ai_state_t& self, const Object& object)
+{
+    waypoint_list_t::push(self.wp_lst, object.getSpawnPosition().x(), object.getSpawnPosition().y());
+}
+
+void publishSpawnOrderDefaults(ai_state_t& self, uint16_t rank)
+{
+    self.order_counter = rank;
+    self.order_value = 0;
+}
+
+bool shouldPublishBumpAlert(const ai_state_t& self, ObjectRef bumpedRef)
+{
+    return self.getBumped() != bumpedRef ||
+           worldUpdateCount() > self.bumplast_time + GameEngine::GAME_TARGET_UPS / 5;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -1184,7 +1249,7 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
     }
 
     // 5 bumps per second?
-    if (self.getBumped() != ichr || worldUpdateCount() > self.bumplast_time + GameEngine::GAME_TARGET_UPS / 5)
+    if (shouldPublishBumpAlert(self, ichr))
     {
         self.bumplast_time = worldUpdateCount();
         SET_BIT(self.alert, ALERTIF_BUMPED);
@@ -1204,25 +1269,11 @@ void ai_state_t::spawn(ai_state_t& self, const ObjectRef index, const PRO_REF io
         return;
     }
 
-    self.setSelf(index);
-    self.setTarget(index);
-    self.setOldTarget(index);
-    self.setBumped(index);
-    self.alert = ALERTIF_SPAWNED;
-    self.state = pchr->getProfile()->getStateOverride();
-    self.content = pchr->getProfile()->getContentOverride();
-    self.passage = 0;
-    self.owner = index;
-    self.child = index;
-
-    waypoint_list_t::push(self.wp_lst, pchr->getSpawnPosition().x(), pchr->getSpawnPosition().y());
-
+    publishSpawnIdentity(self, index);
+    publishSpawnOverrides(self, *pchr);
+    publishSpawnWaypoint(self, *pchr);
     self.maxSpeed = 1.0f;
-
-    self.hitlast = index;
-
-    self.order_counter = rank;
-    self.order_value = 0;
+    publishSpawnOrderDefaults(self, rank);
 }
 
 //--------------------------------------------------------------------------------------------

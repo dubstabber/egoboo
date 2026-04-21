@@ -11,6 +11,7 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
@@ -421,6 +422,94 @@ TEST_F(ScriptRuntimeFixture, IssueSpecialOrderPublishesToMatchingSpecialIdsOnly)
     EXPECT_FALSE(HAS_SOME_BITS(terminatedMatchState.alert, ALERTIF_ORDERED));
     EXPECT_EQ(nonMatchingState.order_value, 0u);
     EXPECT_FALSE(HAS_SOME_BITS(nonMatchingState.alert, ALERTIF_ORDERED));
+}
+
+TEST_F(ScriptRuntimeFixture, AIStateSpawnPublishesSpawnDefaultsFromProfileAndObjectPosition)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5841,
+                            Ego::Vector3f(160.0f, 224.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    ai_state_t::reset(aiState);
+    aiState.alert = ALERTIF_ATTACKED;
+    aiState.state = 99;
+    aiState.content = 123;
+    aiState.owner = ObjectRef::Invalid;
+    aiState.child = ObjectRef::Invalid;
+    aiState.order_value = 17;
+    aiState.order_counter = 9;
+
+    ai_state_t::spawn(aiState, actor->getObjRef(), 0, 7);
+
+    EXPECT_EQ(aiState.getSelf(), actor->getObjRef());
+    EXPECT_EQ(aiState.getTarget(), actor->getObjRef());
+    EXPECT_EQ(aiState.getOldTarget(), actor->getObjRef());
+    EXPECT_EQ(aiState.getBumped(), actor->getObjRef());
+    EXPECT_EQ(aiState.owner, actor->getObjRef());
+    EXPECT_EQ(aiState.child, actor->getObjRef());
+    EXPECT_EQ(aiState.hitlast, actor->getObjRef());
+    EXPECT_EQ(aiState.alert, ALERTIF_SPAWNED);
+    EXPECT_EQ(aiState.state, actor->getProfile()->getStateOverride());
+    EXPECT_EQ(aiState.content, actor->getProfile()->getContentOverride());
+    EXPECT_EQ(aiState.order_value, 0u);
+    EXPECT_EQ(aiState.order_counter, 7u);
+    EXPECT_FLOAT_EQ(aiState.maxSpeed, 1.0f);
+    EXPECT_FALSE(waypoint_list_t::empty(aiState.wp_lst));
+    EXPECT_TRUE(ai_state_t::get_wp(aiState));
+    EXPECT_TRUE(aiState.wp_valid);
+    EXPECT_FLOAT_EQ(aiState.wp[kX], actor->getSpawnPosition().x());
+    EXPECT_FLOAT_EQ(aiState.wp[kY], actor->getSpawnPosition().y());
+}
+
+TEST_F(ScriptRuntimeFixture, AIStateSetBumplastThrottlesRepeatedBumpsButPublishesNewOrExpiredOnes)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5842);
+    auto bumperA = makeObject(module, "mp_objects/follower.obj", 5843);
+    auto bumperB = makeObject(module, "mp_objects/follower.obj", 5844);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(bumperA, nullptr);
+    ASSERT_NE(bumperB, nullptr);
+
+    auto& session = GameSessionContext::get();
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    ai_state_t::reset(aiState);
+
+    session.worldUpdateCount() = 10;
+    EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperA->getObjRef()));
+    EXPECT_TRUE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.getBumped(), bumperA->getObjRef());
+    EXPECT_EQ(aiState.bumplast_time, 10u);
+
+    aiState.alert = 0;
+    EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperA->getObjRef()));
+    EXPECT_FALSE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.getBumped(), bumperA->getObjRef());
+    EXPECT_EQ(aiState.bumplast_time, 10u);
+
+    aiState.alert = 0;
+    EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperB->getObjRef()));
+    EXPECT_TRUE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.getBumped(), bumperB->getObjRef());
+    EXPECT_EQ(aiState.bumplast_time, 10u);
+
+    aiState.alert = 0;
+    session.worldUpdateCount() = 10 + (GameEngine::GAME_TARGET_UPS / 5);
+    EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperB->getObjRef()));
+    EXPECT_FALSE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.bumplast_time, 10u);
+
+    aiState.alert = 0;
+    session.worldUpdateCount() += 1;
+    EXPECT_TRUE(ai_state_t::set_bumplast(aiState, bumperB->getObjRef()));
+    EXPECT_TRUE(HAS_SOME_BITS(aiState.alert, ALERTIF_BUMPED));
+    EXPECT_EQ(aiState.bumplast_time, session.worldUpdateCount());
 }
 
 } // namespace
