@@ -37,6 +37,11 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
 }
 
 Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, const std::shared_ptr<Object> &owner) :
@@ -314,14 +319,16 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     // do retargeting, if necessary
     // Should it choose an inhand item?
     if (_enchantProfile->retarget) {
+        const std::shared_ptr<Object>& rightHandItem = heldItem(*target, SLOT_RIGHT);
+        const std::shared_ptr<Object>& leftHandItem = heldItem(*target, SLOT_LEFT);
         // Left, right, or both are valid
-        if (target->getRightHandItem()) {
+        if (rightHandItem) {
             // Only right hand is valid
-            target = target->getRightHandItem();
+            target = rightHandItem;
         }
-        else if (target->getLeftHandItem()) {
+        else if (leftHandItem) {
             // Pick left hand
-            target = target->getLeftHandItem();
+            target = leftHandItem;
         }
         else {
             // No weapons to pick, make it fail

@@ -35,6 +35,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
+
 void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
 {
     if (listener.getAITarget() == targetRef)
@@ -476,9 +481,9 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         }
 
         //If the killer is a mount, try to award the kill to the rider
-        else if (actualKiller->isMount() && actualKiller->getLeftHandItem())
+        else if (actualKiller->isMount() && heldItem(*actualKiller, SLOT_LEFT))
         {
-            actualKiller = actualKiller->getLeftHandItem();
+            actualKiller = heldItem(*actualKiller, SLOT_LEFT);
         }
     }
 
@@ -779,20 +784,22 @@ bool Object::isInvictusDirection(Facing direction) const
         if (ACTION_IS_TYPE(inst.getCurrentAnimation(), P))
         {
             bool parry_left = ( inst.getCurrentAnimation() < ACTION_PC );
+            const std::shared_ptr<Object>& leftHandItem = heldItem(*this, SLOT_LEFT);
+            const std::shared_ptr<Object>& rightHandItem = heldItem(*this, SLOT_RIGHT);
 
             // Using a shield?
-            if (parry_left && getLeftHandItem())
+            if (parry_left && leftHandItem)
             {
                 // Check left hand
                 // 0x00010000L ~ 65536 ~ 2^16
-                left = MAX - Facing(getLeftHandItem()->getProfile()->getInvictusFrameAngle());
-                right = Facing(getLeftHandItem()->getProfile()->getInvictusFrameAngle());
+                left = MAX - Facing(leftHandItem->getProfile()->getInvictusFrameAngle());
+                right = Facing(leftHandItem->getProfile()->getInvictusFrameAngle());
             }
-            else if(getRightHandItem())
+            else if (rightHandItem)
             {
                 // Check right hand
-                left = MAX - Facing(getRightHandItem()->getProfile()->getInvictusFrameAngle());
-                right = Facing(getRightHandItem()->getProfile()->getInvictusFrameAngle());
+                left = MAX - Facing(rightHandItem->getProfile()->getInvictusFrameAngle());
+                right = Facing(rightHandItem->getProfile()->getInvictusFrameAngle());
             }
         }
     }

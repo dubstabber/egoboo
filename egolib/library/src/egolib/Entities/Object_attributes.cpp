@@ -29,6 +29,11 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
 }
 
 float Object::getBaseAttribute(const Ego::Attribute::AttributeType type) const
@@ -67,8 +72,10 @@ float Object::getAttribute(const Ego::Attribute::AttributeType type) const
         //Wolverine perk gives +0.25 Life Regeneration while holding a Claw weapon
         case Ego::Attribute::LIFE_REGEN:
             if(hasPerk(Ego::Perks::WOLVERINE)) {
-                if( (getLeftHandItem() && getLeftHandItem()->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W'))
-                 || (getRightHandItem() && getRightHandItem()->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W')))
+                const std::shared_ptr<Object>& leftHandItem = heldItem(*this, SLOT_LEFT);
+                const std::shared_ptr<Object>& rightHandItem = heldItem(*this, SLOT_RIGHT);
+                if( (leftHandItem && leftHandItem->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W'))
+                 || (rightHandItem && rightHandItem->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W')))
                  {
                     attributeValue += 0.25f;
                  }
@@ -369,8 +376,8 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
     deactivateStealth();
 
     //Get any items we are holding
-    const std::shared_ptr<Object> &leftItem = getLeftHandItem();
-    const std::shared_ptr<Object> &rightItem = getRightHandItem();
+    const std::shared_ptr<Object> &leftItem = heldItem(*this, SLOT_LEFT);
+    const std::shared_ptr<Object> &rightItem = heldItem(*this, SLOT_RIGHT);
 
     // Drop left weapon if we have no left grip
     if ( leftItem && ( !_profile->isSlotValid(SLOT_LEFT) || _profile->isMount() ) )
@@ -682,11 +689,11 @@ void Object::setTeam(TEAM_REF team_new, bool permanent)
         }
 
         //Switch team of whatever we are holding as well
-        if(getLeftHandItem()) {
-            getLeftHandItem()->setTeam(team_new, false);
+        if (const std::shared_ptr<Object>& leftHandItem = heldItem(*this, SLOT_LEFT)) {
+            leftHandItem->setTeam(team_new, false);
         }
-        if(getRightHandItem()) {
-            getRightHandItem()->setTeam(team_new, false);
+        if (const std::shared_ptr<Object>& rightHandItem = heldItem(*this, SLOT_RIGHT)) {
+            rightHandItem->setTeam(team_new, false);
         }
     }
 }

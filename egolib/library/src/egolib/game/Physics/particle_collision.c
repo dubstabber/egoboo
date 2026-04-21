@@ -62,6 +62,11 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
+
 bool usedHeldItemForBlock(const Object& character, const IScriptable& scriptableCharacter, slot_t slot, ObjectRef& usedItem)
 {
     usedItem = character.getHeldObject(slot);
@@ -825,10 +830,10 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
                 // Tell the weapons who the attacker hit last
                 bool meleeAttack = false;
-                const std::shared_ptr<Object> &leftHanditem = powner->getRightHandItem();
+                const std::shared_ptr<Object> &leftHanditem = heldItem(*powner, SLOT_RIGHT);
                 meleeAttack = publishWeaponScoredHit(leftHanditem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
-                const std::shared_ptr<Object> &rightHandItem = powner->getRightHandItem();
+                const std::shared_ptr<Object> &rightHandItem = heldItem(*powner, SLOT_RIGHT);
                 meleeAttack = publishWeaponScoredHit(rightHandItem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
                 //Unarmed attack?
@@ -994,7 +999,7 @@ bool do_chr_prt_collision_handle_bump( chr_prt_collision_data_t& pdata )
             if (pdata.pchr->isMount())
             {
                 // if the mount's rider can't get money, the mount gets to keep the money!
-                const std::shared_ptr<Object> &rider = pdata.pchr->getLeftHandItem();
+                const std::shared_ptr<Object> &rider = heldItem(*pdata.pchr, SLOT_LEFT);
                 if (rider != nullptr && rider->getProfile()->canGrabMoney()) {
                     pcollector = rider.get();
                 }

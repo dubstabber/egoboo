@@ -147,16 +147,6 @@ bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
     return true;
 }
 
-const std::shared_ptr<Object>& Object::getLeftHandItem() const
-{
-    return activeModule().getObjectHandler()[holdingwhich[SLOT_LEFT]];
-}
-
-const std::shared_ptr<Object>& Object::getRightHandItem() const
-{
-    return activeModule().getObjectHandler()[holdingwhich[SLOT_RIGHT]];
-}
-
 void Object::resetAlpha()
 {
     const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[getHolderRef()];
@@ -234,14 +224,14 @@ bool Object::isInsideInventory() const
 
 const std::shared_ptr<Object>& Object::isWieldingItemIDSZ(const IDSZ2& idsz) const
 {
-    const std::shared_ptr<Object>& leftHandItem = getLeftHandItem();
+    const std::shared_ptr<Object>& leftHandItem = objectHandler()[getHeldObject(SLOT_LEFT)];
     if (leftHandItem) {
         if (leftHandItem->getProfile()->hasTypeIDSZ(idsz)) {
             return leftHandItem;
         }
     }
 
-    const std::shared_ptr<Object>& rightHandItem = getRightHandItem();
+    const std::shared_ptr<Object>& rightHandItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
     if (rightHandItem) {
         if (rightHandItem->getProfile()->hasTypeIDSZ(idsz)) {
             return rightHandItem;
@@ -337,11 +327,11 @@ void Object::dropKeys()
 
 void Object::dropAllItems()
 {
-    const std::shared_ptr<Object>& leftItem = getLeftHandItem();
+    const std::shared_ptr<Object>& leftItem = objectHandler()[getHeldObject(SLOT_LEFT)];
     if (leftItem) {
         leftItem->detatchFromHolder(true, false);
     }
-    const std::shared_ptr<Object>& rightItem = getRightHandItem();
+    const std::shared_ptr<Object>& rightItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
     if (rightItem) {
         rightItem->detatchFromHolder(true, false);
     }
@@ -468,7 +458,7 @@ void Object::updateLatchButtons()
 
     if (_inputLatchesPressed[LATCHBUTTON_ALTLEFT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = GRABDELAY;
-        if (!getLeftHandItem()) {
+        if (!objectHandler()[getHeldObject(SLOT_LEFT)]) {
             if (!getProfile()->getModel()->isActionValid(ACTION_ME)) {
                 grabStuff(GRIP_LEFT, false);
             } else {
@@ -481,7 +471,7 @@ void Object::updateLatchButtons()
 
     if (_inputLatchesPressed[LATCHBUTTON_ALTRIGHT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = GRABDELAY;
-        if (!getRightHandItem()) {
+        if (!objectHandler()[getHeldObject(SLOT_RIGHT)]) {
             if (!getProfile()->getModel()->isActionValid(ACTION_MF)) {
                 grabStuff(GRIP_RIGHT, false);
             } else {

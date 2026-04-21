@@ -122,6 +122,11 @@ static const char * script_error_classname = "UNKNOWN";
 
 namespace
 {
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
+
 void updateScriptErrorContext(const Object& object)
 {
     script_error_classname = "UNKNOWN";
@@ -186,10 +191,11 @@ void applyNonPlayerMovementLatchUpdate(Object& object, ai_state_t& aiState)
 {
     ai_state_t::ensure_wp(aiState);
 
-    if (object.isMount() && object.getLeftHandItem())
+    const std::shared_ptr<Object>& rider = heldItem(object, SLOT_LEFT);
+    if (object.isMount() && rider)
     {
         // Mount (rider is held in left grip)
-        object.setDesiredVelocity(object.getLeftHandItem()->getDesiredVelocity());
+        object.setDesiredVelocity(rider->getDesiredVelocity());
     }
     else if (aiState.wp_valid)
     {

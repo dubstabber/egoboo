@@ -622,18 +622,6 @@ public:
         return detachFromHolder(ignoreKurse, doShop);
     }
 
-    /**
-    * @return
-    *   Any Object held in the LEFT grip of this Object (or nullptr if no item is held)
-    **/
-    const std::shared_ptr<Object>& getLeftHandItem() const;
-
-    /**
-    * @return
-    *   Any Object held in the RIGHT grip of this Object (or nullptr if no item is held)
-    **/
-    const std::shared_ptr<Object>& getRightHandItem() const;
-
     ObjectRef getHeldObject(slot_t slot) const { return holdingwhich[slot]; }
 
     void setHeldObject(slot_t slot, ObjectRef objectRef) { holdingwhich[slot] = objectRef; }

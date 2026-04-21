@@ -30,6 +30,11 @@ const std::shared_ptr<Object>& attachmentObject(ObjectRef objectRef)
     return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
 }
 
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return attachmentObject(object.getHeldObject(slot));
+}
+
 struct TintRenderState
 {
     int alpha;
@@ -934,11 +939,11 @@ void ObjectGraphics::setMatrix(const Matrix4f4f& matrix)
 
 static void chr_invalidate_child_instances(Object &object)
 {
-    if(object.getLeftHandItem()) {
-        object.getLeftHandItem()->setMatrixCacheValid(false);
+    if (const std::shared_ptr<Object>& leftHandItem = heldItem(object, SLOT_LEFT)) {
+        leftHandItem->setMatrixCacheValid(false);
     }
-    if(object.getRightHandItem()) {
-        object.getRightHandItem()->setMatrixCacheValid(false);
+    if (const std::shared_ptr<Object>& rightHandItem = heldItem(object, SLOT_RIGHT)) {
+        rightHandItem->setMatrixCacheValid(false);
     }
 }
 
@@ -1039,15 +1044,15 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPLEFT ) )
     {
-        if(_object.getLeftHandItem()) {
-            _object.getLeftHandItem()->detatchFromHolder(false, true);
+        if (const std::shared_ptr<Object>& leftHandItem = heldItem(_object, SLOT_LEFT)) {
+            leftHandItem->detatchFromHolder(false, true);
         }
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPRIGHT ) )
     {
-        if(_object.getRightHandItem()) {
-            _object.getRightHandItem()->detatchFromHolder(false, true);
+        if (const std::shared_ptr<Object>& rightHandItem = heldItem(_object, SLOT_RIGHT)) {
+            rightHandItem->detatchFromHolder(false, true);
         }
     }
 
@@ -1133,7 +1138,7 @@ int ObjectGraphics::handleQueuedAnimationEnd()
 ModelAction ObjectGraphics::resolveMountedLoopAnimation() const
 {
     // ACTION_MH == "sitting"; use it when the rider is holding something.
-    if (_object.getLeftHandItem() || _object.getRightHandItem())
+    if (heldItem(_object, SLOT_LEFT) || heldItem(_object, SLOT_RIGHT))
     {
         return getModelDescriptor()->getAction(ACTION_MH);
     }

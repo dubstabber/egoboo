@@ -905,7 +905,7 @@ bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_o
     if (holder->isMount() && (GRIP_ONLY == grip_off))
     {
         // Riding imount
-        if (_object.getLeftHandItem() || _object.getRightHandItem())
+        if (objectByRef(_object.getHeldObject(SLOT_LEFT)) || objectByRef(_object.getHeldObject(SLOT_RIGHT)))
         {
             // if the character is holding anything, make the animation
             // ACTION_MH == "sitting" so that it does not look so silly

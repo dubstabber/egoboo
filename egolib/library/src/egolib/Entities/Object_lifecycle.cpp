@@ -29,6 +29,11 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+}
 }
 
 Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
@@ -206,12 +211,12 @@ void Object::removeFromGame(Object* obj)
         obj->detatchFromHolder(true, false);
     }
 
-    const std::shared_ptr<Object>& leftItem = obj->getLeftHandItem();
+    const std::shared_ptr<Object>& leftItem = heldItem(*obj, SLOT_LEFT);
     if (leftItem && leftItem->isItem()) {
         leftItem->detatchFromHolder(true, false);
     }
 
-    const std::shared_ptr<Object>& rightItem = obj->getRightHandItem();
+    const std::shared_ptr<Object>& rightItem = heldItem(*obj, SLOT_RIGHT);
     if (rightItem && rightItem->isItem()) {
         rightItem->detatchFromHolder(true, false);
     }
