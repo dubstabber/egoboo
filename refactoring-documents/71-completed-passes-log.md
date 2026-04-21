@@ -790,6 +790,12 @@ Continued Tier 1.2 inside `Script/script.c` by replacing the last direct runtime
 
 Kept the existing focused `ScriptRuntime.cpp` coverage for same-team order publication, special-IDSZ filtering, invalid spawn refs, and invalid bump targets as the behavior lock. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 161 — Script spawn seam closure (2026-04-21)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by adding file-local ref-liveness, owner-resolution, spawn publication, particle-owner, and respawn-toggle helpers, then routing the remaining cleanup, particle, character-spawn, attach, and respawn opcodes through that layer instead of open-coded `objectHandler()` and module calls. Kept the current spawn and attach semantics intact: invalid refs still fail quietly, unsafe spawned children still terminate without publishing `self.child`, holder and self owner fallbacks remain unchanged, and ownership-bearing spawn/particle APIs still use the existing shared-ownership signatures internally where required.
+
+Extended `ScriptStateFunctions.cpp` with focused regressions for cleanup listener iteration, particle owner fallback and attachment placement, attached-character inventory and grip behavior, and module respawn toggling. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -275,6 +275,46 @@ protected:
         return nullptr;
     }
 
+    int findFirstLocalParticleProfile(const Object& object) const
+    {
+        const std::shared_ptr<ObjectProfile> profile = object.getProfile();
+        if (!profile)
+        {
+            return -1;
+        }
+
+        for (LocalParticleProfileRef index(0); index.get() < 30; ++index)
+        {
+            if (profile->getParticleProfile(index) != INVALID_PIP_REF)
+            {
+                return index.get();
+            }
+        }
+
+        return -1;
+    }
+
+    void clearParticles() const
+    {
+        ParticleHandler::get().clear();
+    }
+
+    std::shared_ptr<Ego::Particle> latestSpawnedParticle() const
+    {
+        auto& handler = ParticleHandler::get();
+        if (!handler._pendingParticles.empty())
+        {
+            return handler._pendingParticles.back();
+        }
+
+        if (!handler._activeParticles.empty())
+        {
+            return handler._activeParticles.back();
+        }
+
+        return nullptr;
+    }
+
     ai_state_t makeScriptSelf(const std::shared_ptr<Object>& selfObject) const
     {
         ai_state_t self;
@@ -598,6 +638,39 @@ TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
     EXPECT_GT(particleHandler.getCount(), particleCountBefore);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SpawnParticleUsesResolvedHolderOwnerAndKeepsSelfAttachment)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55370);
+    auto actor = makeMeleeWeapon(module, 55371);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_TRUE(actor->attachToObject(holder->getObjRef(), GRIP_LEFT));
+
+    const int particleProfileIndex = findFirstLocalParticleProfile(*actor);
+    ASSERT_GE(particleProfileIndex, 0);
+
+    clearParticles();
+
+    script_state_t state;
+    state.argument = particleProfileIndex;
+    state.distance = 0;
+    state.x = 4;
+    state.y = 0;
+    state.turn = 0;
+
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_SpawnParticle(state, self));
+
+    const auto particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), actor->getObjRef());
+    EXPECT_EQ(particle->getSpawnerProfile(), actor->getProfileID());
+}
+
 TEST_F(ScriptStateFunctionsFixture, SpawnCharacterPublishesChildStateThroughRoleSurfaces)
 {
     const auto actorPosition = findSpawnCharacterPosition("mp_objects/follower.obj", 55388, true);
@@ -756,6 +829,147 @@ TEST_F(ScriptStateFunctionsFixture, SpawnExactCharacterXYZPublishesRequestedProf
     EXPECT_FLOAT_EQ(child->getVelocity().x(), 0.0f);
     EXPECT_FLOAT_EQ(child->getVelocity().y(), 0.0f);
     EXPECT_FLOAT_EQ(child->getVelocity().z(), 0.0f);
+}
+
+TEST_F(ScriptStateFunctionsFixture, AttachedParticleHelpersUseResolvedOwnerFallbacks)
+{
+    auto& module = beginActiveTestModule();
+    auto holder = makeObject(module, "mp_objects/follower.obj", 55395);
+    auto actor = makeMeleeWeapon(module, 55396);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55399);
+
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_TRUE(actor->attachToObject(holder->getObjRef(), GRIP_LEFT));
+
+    const int particleProfileIndex = findFirstLocalParticleProfile(*actor);
+    ASSERT_GE(particleProfileIndex, 0);
+
+    script_state_t state;
+    state.argument = particleProfileIndex;
+    state.distance = 0;
+    state.turn = 777;
+    state.x = 96;
+    state.y = 128;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.setTarget(target->getObjRef());
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnAttachedParticle(state, self));
+    auto particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), actor->getObjRef());
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnAttachedSizedParticle(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), actor->getObjRef());
+    EXPECT_EQ(particle->size, state.turn);
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnAttachedFacedParticle(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), actor->getObjRef());
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnAttachedHolderParticle(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), holder->getObjRef());
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnExactParticle(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->getAttachedObjectID(), ObjectRef::Invalid);
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnExactChaseParticle(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    ASSERT_NE(particle->getTarget(), nullptr);
+    EXPECT_EQ(particle->getTarget()->getObjRef(), target->getObjRef());
+
+    clearParticles();
+    EXPECT_TRUE(scr_SpawnExactParticleEndSpawn(state, self));
+    particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, holder->getObjRef());
+    EXPECT_EQ(particle->endspawn_characterstate, state.turn);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterPreservesInventoryAndWieldAttachBehavior)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55400);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55401);
+    auto existingRightItem = makeMeleeWeapon(module, 55402);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(existingRightItem, nullptr);
+    ASSERT_TRUE(existingRightItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
+
+    const ObjectProfileRef requestedProfile = loadProfile("mp_data/globalobjects/weapons/stiletto.obj", 55410);
+    ASSERT_NE(requestedProfile, ObjectProfileRef::Invalid);
+
+    script_state_t state;
+    state.argument = requestedProfile.get();
+    state.x = 72;
+    state.y = 84;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(314);
+    self.passage = 27;
+    self.setTarget(target->getObjRef());
+
+    const auto firstInventorySlot = target->getFirstFreeInventorySlot();
+    state.distance = ATTACH_INVENTORY;
+    EXPECT_TRUE(scr_SpawnAttachedCharacter(state, self));
+    ASSERT_NE(self.child, ObjectRef::Invalid);
+
+    auto inventoryChild = module.getObjectHandler().get(self.child);
+    ASSERT_NE(inventoryChild, nullptr);
+    ASSERT_NE(target->getInventoryItem(firstInventorySlot), nullptr);
+    EXPECT_EQ(target->getInventoryItem(firstInventorySlot).get(), inventoryChild);
+    EXPECT_EQ(inventoryChild->getInventoryHolderRef(), target->getObjRef());
+    EXPECT_EQ(inventoryChild->getAIOwner(), self.owner);
+    EXPECT_EQ(inventoryChild->getAIPassage(), self.passage);
+
+    self.child = ObjectRef::Invalid;
+    state.distance = ATTACH_LEFT;
+    EXPECT_TRUE(scr_SpawnAttachedCharacter(state, self));
+    ASSERT_NE(self.child, ObjectRef::Invalid);
+    EXPECT_EQ(target->getHeldObject(SLOT_LEFT), self.child);
+    EXPECT_EQ(target->getHeldObject(SLOT_RIGHT), existingRightItem->getObjRef());
+}
+
+TEST_F(ScriptStateFunctionsFixture, RespawnToggleHelpersUseModuleWrapper)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55420);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    module.setRespawnValid(false);
+    EXPECT_TRUE(scr_EnableRespawn(state, self));
+    EXPECT_TRUE(module.isRespawnValid());
+
+    EXPECT_TRUE(scr_DisableRespawn(state, self));
+    EXPECT_FALSE(module.isRespawnValid());
 }
 
 TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadListeners)

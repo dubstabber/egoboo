@@ -6,6 +6,11 @@
 
 namespace
 {
+GameSessionContext& gameSession()
+{
+    return GameSessionContext::get();
+}
+
 IScriptable& scriptable(Object& object)
 {
     return object;
@@ -34,6 +39,41 @@ ILifecycleControl& lifecycleControl(Object& object)
 IMovementControl& movementControl(Object& object)
 {
     return object;
+}
+
+bool isLiveSpawnObjectRef(ObjectRef objectRef)
+{
+    return tryObject(objectRef) != nullptr;
+}
+
+template <typename Fn>
+void forEachLiveSpawnObjectRef(Fn&& fn)
+{
+    ObjectHandler* handler = gameSession().tryObjectHandler();
+    if (handler == nullptr)
+    {
+        return;
+    }
+
+    for (const auto& object : handler->iterator())
+    {
+        const ObjectRef ref = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
+        if (ref != ObjectRef::Invalid)
+        {
+            fn(ref);
+        }
+    }
+}
+
+std::shared_ptr<Object> resolveSpawnObjectHandle(ObjectRef objectRef)
+{
+    ObjectHandler* handler = gameSession().tryObjectHandler();
+    if (handler == nullptr || !handler->exists(objectRef))
+    {
+        return nullptr;
+    }
+
+    return (*handler)[objectRef];
 }
 
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
@@ -108,7 +148,7 @@ bool tryDetachSelfFromHolder(ObjectRef objectRef)
 {
     const ITargetInfo* selfInfo = tryTargetInfo(objectRef);
     ILifecycleControl* lifecycle = tryLifecycleControl(objectRef);
-    if (selfInfo == nullptr || lifecycle == nullptr || !objectHandler().exists(selfInfo->getHolderRef()))
+    if (selfInfo == nullptr || lifecycle == nullptr || !isLiveSpawnObjectRef(selfInfo->getHolderRef()))
     {
         return false;
     }
@@ -118,7 +158,7 @@ bool tryDetachSelfFromHolder(ObjectRef objectRef)
 
 bool trySetTargetToChild(ai_state_t& self)
 {
-    if (!objectHandler().exists(self.child))
+    if (!isLiveSpawnObjectRef(self.child))
     {
         return false;
     }
@@ -159,17 +199,22 @@ void publishCleanupTimerForDeadListener(const ITargetInfo& listenerInfo, IScript
     }
 }
 
-void publishCleanUpForSameTeamListener(TEAM_REF teamRef, const std::shared_ptr<Object>& listener)
+void publishCleanUpForSameTeamListener(TEAM_REF teamRef, ObjectRef listenerRef)
 {
-    const ITargetInfo& listenerInfo = targetInfo(*listener);
-    if (teamRef != listenerInfo.getTeamRef())
+    const ITargetInfo* listenerInfo = tryTargetInfo(listenerRef);
+    IScriptable* listener = tryScriptable(listenerRef);
+    if (listenerInfo == nullptr || listener == nullptr)
     {
         return;
     }
 
-    IScriptable& scriptableListener = scriptable(*listener);
-    publishCleanupTimerForDeadListener(listenerInfo, scriptableListener);
-    publishCleanedUpState(scriptableListener);
+    if (teamRef != listenerInfo->getTeamRef())
+    {
+        return;
+    }
+
+    publishCleanupTimerForDeadListener(*listenerInfo, *listener);
+    publishCleanedUpState(*listener);
 }
 
 void applyDismountVelocity(IMovementControl& movement)
@@ -221,6 +266,46 @@ void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMo
     {
         applyDismountVelocity(*itemMovement);
     }
+}
+
+ObjectRef resolveHolderOrSelfRef(const Object& object)
+{
+    const ObjectRef holderRef = targetInfo(object).getHolderRef();
+    return isLiveSpawnObjectRef(holderRef) ? holderRef : object.getObjRef();
+}
+
+ObjectRef resolveSpawnParticleOwnerRef(const Object& object)
+{
+    ObjectRef ownerRef = resolveHolderOrSelfRef(object);
+    if (targetInfo(object).isMount())
+    {
+        const ObjectRef riderRef = inventoryHolder(object).getHeldObject(SLOT_LEFT);
+        if (isLiveSpawnObjectRef(riderRef))
+        {
+            ownerRef = riderRef;
+        }
+    }
+
+    return ownerRef;
+}
+
+ObjectRef resolveLowestAttachmentOrSelfRef(ObjectRef selfRef)
+{
+    const ObjectRef attachmentRef = chr_get_lowest_attachment(selfRef, true);
+    return isLiveSpawnObjectRef(attachmentRef) ? attachmentRef : selfRef;
+}
+
+std::shared_ptr<Object> spawnCharacterAt(const Ego::Vector3f& position,
+                                         ObjectProfileRef profile,
+                                         TEAM_REF teamRef,
+                                         Facing facing)
+{
+    return activeModule().spawnObject(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
+}
+
+void setModuleRespawnValid(bool valid)
+{
+    activeModule().setRespawnValid(valid);
 }
 }
 
@@ -292,7 +377,10 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(static_cast<float>(state.x), static_cast<float>(state.y), pchr->getPosZ());
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, pchr->getProfileID(), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid);
+    std::shared_ptr<Object> pchild = spawnCharacterAt(pos,
+                                                      pchr->getProfileID(),
+                                                      pchr->getTeamRef(),
+                                                      Facing(Ego::Math::clipBits<16>( state.turn )));
     returncode = pchild != nullptr;
 
     if ( !returncode )
@@ -364,10 +452,10 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const TEAM_REF selfTeam = targetInfo(*pchr).getTeamRef();
-    for(const std::shared_ptr<Object> &listener : objectHandler().iterator())
+    forEachLiveSpawnObjectRef([&](ObjectRef listenerRef)
     {
-        publishCleanUpForSameTeamListener(selfTeam, listener);
-    }
+        publishCleanUpForSameTeamListener(selfTeam, listenerRef);
+    });
 
     SCRIPT_FUNCTION_END();
 }
@@ -382,17 +470,7 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
-
-    //If we are a mount, our rider is the owner of this particle
-    if ( pchr->isMount() && objectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) )
-    {
-        ichr = pchr->getHeldObject(SLOT_LEFT);
-    }
+	ObjectRef ichr = resolveSpawnParticleOwnerRef(*pchr);
 
     std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), 
                                                    Facing(uint16_t(pchr->getFacingZ())), 
@@ -404,8 +482,14 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     returncode = (particle != nullptr);
     if ( returncode )
     {
+        const std::shared_ptr<Object> selfObject = resolveSpawnObjectHandle(self.getSelf());
+        if (selfObject == nullptr)
+        {
+            return false;
+        }
+
         // attach the particle
-        particle->placeAtVertex(objectHandler()[self.getSelf()], state.distance);
+        particle->placeAtVertex(selfObject, state.distance);
         particle->attach(ObjectRef::Invalid);
 
 		Ego::Vector3f tmp_pos = particle->getPosition();
@@ -475,12 +559,7 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     //If we are a weapon, our holder is the owner of this particle
-	ObjectRef iself = self.getSelf();
-	ObjectRef iholder = chr_get_lowest_attachment(iself, true);
-    if (objectHandler().exists(iholder))
-    {
-		iself = iholder;
-    }
+	ObjectRef iself = resolveLowestAttachmentOrSelfRef(self.getSelf());
 
     returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), self.getSelf(),
@@ -499,11 +578,7 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+    ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     {
 		Ego::Vector3f vtmp =
@@ -593,7 +668,7 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Object> selfObject = tryObjectShared(self.getSelf());
+    const std::shared_ptr<Object> selfObject = resolveSpawnObjectHandle(self.getSelf());
     if (selfObject == nullptr)
     {
         return false;
@@ -631,11 +706,7 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+    ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), 
                                                                                         ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument), self.getSelf(),
@@ -664,11 +735,7 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+	ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), Facing(Ego::Math::clipBits<16>( state.turn )),
                                                                       ObjectProfileRef(pchr->getProfileID()), LocalParticleProfileRef(state.argument),
@@ -689,11 +756,7 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+    ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     returncode = nullptr != EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(pchr->getFacingZ()), ObjectProfileRef(pchr->getProfileID()),
                                                                       LocalParticleProfileRef(state.argument), ichr,
@@ -715,7 +778,10 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(float(state.x), float(state.y), float(state.distance));
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject( pos, pchr->getProfileID(), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>( state.turn )), "", ObjectRef::Invalid );
+    std::shared_ptr<Object> pchild = spawnCharacterAt(pos,
+                                                      pchr->getProfileID(),
+                                                      pchr->getTeamRef(),
+                                                      Facing(Ego::Math::clipBits<16>( state.turn )));
     if (pchild == nullptr)
     {
 		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", pchr->getName(), "`", " failed to spawn a copy of itself", Log::EndOfEntry );
@@ -747,11 +813,14 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
 		Ego::Vector3f
         (
 			Ego::Script::Interpreter::safeCast<float>(state.x),
-            Ego::Script::Interpreter::safeCast<float>(state.y),
+			Ego::Script::Interpreter::safeCast<float>(state.y),
             Ego::Script::Interpreter::safeCast<float>(state.distance)
         );
 
-    const std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef(static_cast<PRO_REF>(state.argument)), pchr->getTeamRef(), 0, Facing(Ego::Math::clipBits<16>(state.turn)), "", ObjectRef::Invalid);
+    const std::shared_ptr<Object> pchild = spawnCharacterAt(pos,
+                                                            ObjectProfileRef(static_cast<PRO_REF>(state.argument)),
+                                                            pchr->getTeamRef(),
+                                                            Facing(Ego::Math::clipBits<16>(state.turn)));
 
     if ( !pchild )
     {
@@ -779,11 +848,7 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+    ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     {
 		auto vtmp =
@@ -975,11 +1040,7 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-	ObjectRef ichr = self.getSelf();
-    if ( objectHandler().exists( pchr->getHolderRef() ) )
-    {
-        ichr = pchr->getHolderRef();
-    }
+	ObjectRef ichr = resolveHolderOrSelfRef(*pchr);
 
     {
 		Ego::Vector3f vtmp =
@@ -1075,7 +1136,7 @@ uint8_t scr_EnableRespawn( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().setRespawnValid(true);
+    setModuleRespawnValid(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1090,7 +1151,7 @@ uint8_t scr_DisableRespawn( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    activeModule().setRespawnValid(false);
+    setModuleRespawnValid(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1115,7 +1176,10 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
 
 	Ego::Vector3f pos = Ego::Vector3f(float(state.x), float(state.y), float(state.distance));
 
-    std::shared_ptr<Object> pchild = activeModule().spawnObject(pos, ObjectProfileRef((PRO_REF)state.argument), pchr->getTeamRef(), 0, FACE_NORTH, "", ObjectRef::Invalid);
+    std::shared_ptr<Object> pchild = spawnCharacterAt(pos,
+                                                      ObjectProfileRef((PRO_REF)state.argument),
+                                                      pchr->getTeamRef(),
+                                                      FACE_NORTH);
     returncode = pchild != nullptr;
 
     if ( !returncode )
@@ -1151,7 +1215,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         }
         else if ( grip == ATTACH_LEFT || grip == ATTACH_RIGHT )
         {
-            if ( !objectHandler().exists( pself_target->getHeldObject(static_cast<slot_t>(grip)) ) )
+            if ( !isLiveSpawnObjectRef(pself_target->getHeldObject(static_cast<slot_t>(grip))) )
             {
                 // Wielded character
                 grip_offset_t grip_off = ( ATTACH_LEFT == grip ) ? GRIP_LEFT : GRIP_RIGHT;
