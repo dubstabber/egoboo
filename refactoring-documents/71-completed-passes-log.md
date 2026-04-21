@@ -742,6 +742,12 @@ Continued Tier 1.2 inside `Script/script.c` by isolating the remaining held-item
 
 Extended `ScriptRuntime.cpp` with a focused regression covering mount rider-velocity publication through the left-hand held-item seam. Build, the focused `ScriptRuntime` slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 153 — Residual `Object` handle seam closure (2026-04-21)
+
+Continued Tier 1.2 by replacing the remaining public alias-style `Object` shared-handle helpers with ref-based seams: attachment, mount, and visibility checks now consume `ObjectRef`, while public `toSharedPointer()` and `isWieldingItemIDSZ(...)` escape hatches are gone. Kept ownership-bearing damage/heal/enchant APIs unchanged by resolving self handles locally inside the few implementation sites that still need concrete shared ownership.
+
+Updated the matching gameplay/runtime/test callers (`Script/script.c`, spawn/inventory/collision/shop/targeting paths, and focused script/gameplay regressions) to use refs or bounded bool queries instead of public shared-object aliases. Build, focused script/gameplay tests, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

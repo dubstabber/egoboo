@@ -76,6 +76,11 @@ inline std::shared_ptr<PlayingState> tryActivePlayingState()
 {
     return EngineContext::get().tryActivePlayingState();
 }
+
+inline const std::shared_ptr<Object>& selfHandle(const Object& object)
+{
+    return activeModule().getObjectHandler()[object.getObjRef()];
+}
 } // namespace object_detail
 
 using namespace object_detail;

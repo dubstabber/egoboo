@@ -1156,7 +1156,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
                 // Wielded character
                 grip_offset_t grip_off = ( ATTACH_LEFT == grip ) ? GRIP_LEFT : GRIP_RIGHT;
 
-                if(pchild->attachToObject(objectHandler()[self.getTarget()], grip_off))
+                if(pchild->attachToObject(self.getTarget(), grip_off))
                 {
                     // Handle the "grabbed" messages
                     scr_run_chr_script( pchild->getObjRef() );

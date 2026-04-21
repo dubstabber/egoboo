@@ -178,8 +178,13 @@ bool Object::isFacingLocation(const float x, const float y) const
     return (facing.get_value() > 55535 || facing.get_value() < 10000);
 }
 
-bool Object::canSeeObject(const std::shared_ptr<Object>& target) const
+bool Object::canSeeObject(ObjectRef targetRef) const
 {
+    const std::shared_ptr<Object>& target = activeModule().getObjectHandler()[targetRef];
+    if (!target) {
+        return false;
+    }
+
     if (getProfile()->isInvincible()) {
         return true;
     }

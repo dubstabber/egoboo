@@ -277,7 +277,7 @@ TEST_F(GameplayAlertPublicationFixture, AttachToObjectPublishesGrabbedAlertForIt
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(item, nullptr);
 
-    EXPECT_TRUE(item->attachToObject(holder, GRIP_LEFT));
+    EXPECT_TRUE(item->attachToObject(holder->getObjRef(), GRIP_LEFT));
     EXPECT_TRUE(item->hasAnyAIAlertBits(ALERTIF_GRABBED));
 }
 
@@ -289,7 +289,7 @@ TEST_F(GameplayAlertPublicationFixture, CharacterSwipePublishesThrownAlertOnSpaw
 
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(thrownWeapon, nullptr);
-    ASSERT_TRUE(thrownWeapon->attachToObject(holder, GRIP_LEFT));
+    ASSERT_TRUE(thrownWeapon->attachToObject(holder->getObjRef(), GRIP_LEFT));
 
     thrownWeapon->setAmmo(2);
     flushObjectHandler(module);
@@ -329,8 +329,8 @@ TEST_F(GameplayAlertPublicationFixture, LongbowLatchAttackPreservesKursedHeldIte
     ASSERT_NE(actorBlocked, nullptr);
     ASSERT_NE(allowedWeapon, nullptr);
     ASSERT_NE(blockedWeapon, nullptr);
-    ASSERT_TRUE(allowedWeapon->attachToObject(actorAllowed, GRIP_LEFT));
-    ASSERT_TRUE(blockedWeapon->attachToObject(actorBlocked, GRIP_LEFT));
+    ASSERT_TRUE(allowedWeapon->attachToObject(actorAllowed->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(blockedWeapon->attachToObject(actorBlocked->getObjRef(), GRIP_LEFT));
 
     EXPECT_TRUE(chr_do_latch_attack(actorAllowed.get(), SLOT_LEFT));
 
@@ -346,7 +346,7 @@ TEST_F(GameplayAlertPublicationFixture, KursedPutawayPublishesNotPutAwayAlert)
 
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(item, nullptr);
-    ASSERT_TRUE(item->attachToObject(holder, GRIP_LEFT));
+    ASSERT_TRUE(item->attachToObject(holder->getObjRef(), GRIP_LEFT));
 
     item->setKursed(true);
 

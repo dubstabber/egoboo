@@ -162,7 +162,7 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
             Object *owner = objectHandler().get(ownerRef);
 
             canSteal = true;
-            if (owner->canSeeObject(thief) || detection <= 5 || (detection - thief->getAttribute(Ego::Attribute::AGILITY) + owner->getAttribute(Ego::Attribute::INTELLECT)) > 50)
+            if (owner->canSeeObject(thief->getObjRef()) || detection <= 5 || (detection - thief->getAttribute(Ego::Attribute::AGILITY) + owner->getAttribute(Ego::Attribute::INTELLECT)) > 50)
             {
                 publishShopOrder(scriptable(*owner), Passage::SHOP_STOLEN, Passage::SHOP_THEFT);
                 publishTheftTarget(scriptable(*owner), thief->getObjRef());
@@ -186,7 +186,7 @@ bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared
     if (INGAME_PCHR(shopKeeper))
     {
         // check for a stealthy pickup
-        bool isInvisible = !shopKeeper->canSeeObject(grabber);
+        bool isInvisible = !shopKeeper->canSeeObject(grabber->getObjRef());
 
         // pets are automatically stealthy
         bool canSteal = isInvisible || grabber->isItem();

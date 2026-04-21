@@ -232,7 +232,7 @@ void Object::respawn()
 
     const std::shared_ptr<ObjectProfile>& profile = getProfile();
 
-    EngineContext::get().particleHandler().spawnPoof(this->toSharedPointer());
+    EngineContext::get().particleHandler().spawnPoof(selfHandle(*this));
     disaffirm_attached_particles(getObjRef());
 
     for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {
@@ -345,11 +345,6 @@ void Object::setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& 
 bool Object::removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse)
 {
     return _inventory.removeItem(item, ignoreKurse);
-}
-
-const std::shared_ptr<Object>& Object::toSharedPointer() const
-{
-    return activeModule().getObjectHandler()[getObjRef()];
 }
 
 void Object::setName(const std::string& name)

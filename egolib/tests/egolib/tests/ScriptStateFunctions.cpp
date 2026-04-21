@@ -508,8 +508,8 @@ TEST_F(ScriptStateFunctionsFixture, DropWeaponsDetachesHeldItemsThroughRefLookup
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(actor->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(actor->getObjRef(), GRIP_RIGHT));
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor);
@@ -533,8 +533,8 @@ TEST_F(ScriptStateFunctionsFixture, LifecycleMutationHelpersUseRoleLookups)
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(keyItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(actor, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(actor->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(actor->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(actor->getObjRef(), keyItem->getObjRef(), actor->getFirstFreeInventorySlot(), true));
 
     script_state_t state;
@@ -570,7 +570,7 @@ TEST_F(ScriptStateFunctionsFixture, DetachFromHolderRequiresLiveHolderRef)
 
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(heldItem, nullptr);
-    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_LEFT));
+    ASSERT_TRUE(heldItem->attachToObject(holder->getObjRef(), GRIP_LEFT));
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(heldItem);
@@ -1093,7 +1093,7 @@ TEST_F(ScriptStateFunctionsFixture, IfHoldingItemIDReadsHeldItemsThroughTargetIn
 
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(item, nullptr);
-    ASSERT_TRUE(item->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(item->attachToObject(actor->getObjRef(), GRIP_RIGHT));
 
     script_state_t state;
     state.argument = item->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
@@ -1112,8 +1112,8 @@ TEST_F(ScriptStateFunctionsFixture, IfHoldingRangedWeaponUsesHeldSlotRoleAndAmmo
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(rightHandItem, nullptr);
     ASSERT_NE(leftHandItem, nullptr);
-    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
-    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightHandItem->attachToObject(actor->getObjRef(), GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor->getObjRef(), GRIP_LEFT));
 
     rightHandItem->setAmmo(0);
     if (leftHandItem->getAmmoMax() > 0)
@@ -1139,8 +1139,8 @@ TEST_F(ScriptStateFunctionsFixture, IfHoldingMeleeWeaponPrefersRightHandThroughI
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(rightHandItem, nullptr);
     ASSERT_NE(leftHandItem, nullptr);
-    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
-    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightHandItem->attachToObject(actor->getObjRef(), GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor->getObjRef(), GRIP_LEFT));
 
     script_state_t state;
     state.argument = 0;
@@ -1160,8 +1160,8 @@ TEST_F(ScriptStateFunctionsFixture, IfHoldingShieldPrefersRightHandThroughInvent
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(rightHandItem, nullptr);
     ASSERT_NE(leftHandItem, nullptr);
-    ASSERT_TRUE(rightHandItem->attachToObject(actor, GRIP_RIGHT));
-    ASSERT_TRUE(leftHandItem->attachToObject(actor, GRIP_LEFT));
+    ASSERT_TRUE(rightHandItem->attachToObject(actor->getObjRef(), GRIP_RIGHT));
+    ASSERT_TRUE(leftHandItem->attachToObject(actor->getObjRef(), GRIP_LEFT));
 
     script_state_t state;
     state.argument = 0;
@@ -1202,7 +1202,7 @@ TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandReadsHolderSlotThroughInvent
 
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(heldItem, nullptr);
-    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_LEFT));
+    ASSERT_TRUE(heldItem->attachToObject(holder->getObjRef(), GRIP_LEFT));
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(heldItem);
@@ -1219,7 +1219,7 @@ TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandFailsWithoutMatchingLeftHand
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(heldItem, nullptr);
 
-    ASSERT_TRUE(heldItem->attachToObject(holder, GRIP_RIGHT));
+    ASSERT_TRUE(heldItem->attachToObject(holder->getObjRef(), GRIP_RIGHT));
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(heldItem);

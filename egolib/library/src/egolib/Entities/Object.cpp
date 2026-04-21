@@ -55,7 +55,7 @@ void Object::becomeTeamLeader()
         return;
     }
 
-    getMutableTeam().setLeader(toSharedPointer());
+    getMutableTeam().setLeader(selfHandle(*this));
 }
 
 void Object::callTeamForHelp()
@@ -64,7 +64,7 @@ void Object::callTeamForHelp()
         return;
     }
 
-    getMutableTeam().callForHelp(toSharedPointer());
+    getMutableTeam().callForHelp(selfHandle(*this));
 }
 
 void Object::giveTeamExperience(int amount, XPType type) const
@@ -96,7 +96,7 @@ void Object::claimTeamLeadershipIfUnset(TEAM_REF teamRef)
 
     Team& team = getMutableTeam(teamRef);
     if (!team.getLeader()) {
-        team.setLeader(toSharedPointer());
+        team.setLeader(selfHandle(*this));
     }
 }
 
@@ -105,9 +105,9 @@ void Object::updatePhysics()
     _objectPhysics.updatePhysics();
 }
 
-bool Object::attachToPlatform(const std::shared_ptr<Object>& platform)
+bool Object::attachToPlatform(ObjectRef platformRef)
 {
-    return _objectPhysics.attachToPlatform(platform);
+    return _objectPhysics.attachToPlatform(platformRef);
 }
 
 void Object::detachFromPlatform()
@@ -135,9 +135,9 @@ bool Object::grabStuff(grip_offset_t gripOffset, bool grabPeople)
     return _objectPhysics.grabStuff(gripOffset, grabPeople);
 }
 
-bool Object::attachToObject(const std::shared_ptr<Object>& holder, grip_offset_t gripOffset)
+bool Object::attachToObject(ObjectRef holderRef, grip_offset_t gripOffset)
 {
-    return _objectPhysics.attachToObject(holder, gripOffset);
+    return _objectPhysics.attachToObject(holderRef, gripOffset);
 }
 
 void Object::updateCollisionSize(bool updateMatrix)
@@ -155,8 +155,13 @@ bool Object::isTouchingGround() const
     return _objectPhysics.isTouchingGround();
 }
 
-bool Object::canMount(const std::shared_ptr<Object> mount) const
+bool Object::canMount(ObjectRef mountRef) const
 {
+    const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[mountRef];
+    if (!mount) {
+        return false;
+    }
+
     //Cannot mount ourselves!
     if(this == mount.get())
     {

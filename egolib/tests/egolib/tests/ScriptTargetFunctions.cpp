@@ -340,7 +340,7 @@ TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersSelectMatchingOccupants
     EXPECT_FALSE(occupant->isInvincible());
     EXPECT_FALSE(occupant->isScenery());
     EXPECT_FALSE(actor->getTeam().hatesTeam(occupant->getTeam()));
-    EXPECT_TRUE(actor->canSeeObject(occupant));
+    EXPECT_TRUE(actor->canSeeObject(occupant->getObjRef()));
     constexpr int kPassageTargetMask = (1 << 8) | (1 << 2) | (1 << 1);
     EXPECT_EQ(passage->whoIsBlockingPassage(actor->getObjRef(),
                                             IDSZ2::None,

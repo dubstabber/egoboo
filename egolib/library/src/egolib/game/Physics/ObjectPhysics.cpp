@@ -484,8 +484,13 @@ void ObjectPhysics::detachFromPlatform()
     _platformOffset = idlib::zero<Vector2f>();
 }
 
-bool ObjectPhysics::attachToPlatform(const std::shared_ptr<Object> &platform)
+bool ObjectPhysics::attachToPlatform(ObjectRef platformRef)
 {
+    const std::shared_ptr<Object>& platform = objectByRef(platformRef);
+    if (!platform) {
+        return false;
+    }
+
     // check if they can be connected
     if(!_object.canUsePlatforms() || _object.isFlying() || !platform->isPlatform() || platform.get() == &_object) {
         return false;
@@ -818,7 +823,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
         if (Shop::canGrabItem(grabber, bestMatch))
         {
             // Stick 'em together and quit
-            if(bestMatch->attachToObject(grabber, grip_off))
+            if(bestMatch->attachToObject(grabber->getObjRef(), grip_off))
             {
                 if (grab_people)
                 {
@@ -842,8 +847,13 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     return false;
 }
 
-bool ObjectPhysics::attachToObject(const std::shared_ptr<Object> &holder, grip_offset_t grip_off)
+bool ObjectPhysics::attachToObject(ObjectRef holderRef, grip_offset_t grip_off)
 {
+    const std::shared_ptr<Object>& holder = objectByRef(holderRef);
+    if (!holder) {
+        return false;
+    }
+
     /// @author ZZ
     /// @details This function attaches one object (rider) to another object (mount)
     ///          at a certain vertex offset ( grip_off )

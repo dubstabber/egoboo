@@ -222,28 +222,15 @@ bool Object::isInsideInventory() const
     return true;
 }
 
-const std::shared_ptr<Object>& Object::isWieldingItemIDSZ(const IDSZ2& idsz) const
+bool Object::wieldsItemIDSZ(const IDSZ2& idsz) const
 {
     const std::shared_ptr<Object>& leftHandItem = objectHandler()[getHeldObject(SLOT_LEFT)];
-    if (leftHandItem) {
-        if (leftHandItem->getProfile()->hasTypeIDSZ(idsz)) {
-            return leftHandItem;
-        }
+    if (leftHandItem && leftHandItem->getProfile()->hasTypeIDSZ(idsz)) {
+        return true;
     }
 
     const std::shared_ptr<Object>& rightHandItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
-    if (rightHandItem) {
-        if (rightHandItem->getProfile()->hasTypeIDSZ(idsz)) {
-            return rightHandItem;
-        }
-    }
-
-    return INVALID_OBJECT;
-}
-
-bool Object::wieldsItemIDSZ(const IDSZ2& idsz) const
-{
-    return isWieldingItemIDSZ(idsz) != nullptr;
+    return rightHandItem && rightHandItem->getProfile()->hasTypeIDSZ(idsz);
 }
 
 void Object::dropMoney(int amount)

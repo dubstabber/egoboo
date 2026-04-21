@@ -431,14 +431,14 @@ bool CollisionSystem::detectCollision(const std::shared_ptr<Object> &objectA, co
 void CollisionSystem::handleCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, const float tmin, const float tmax)
 {
     //Try to mount A with B
-    if(objectA->canMount(objectB)) {
+    if(objectA->canMount(objectB->getObjRef())) {
         if(handleMountingCollision(objectA, objectB)) {
             return;
         }
     }
 
     //Try to mount B with A
-    if(objectB->canMount(objectA)) {
+    if(objectB->canMount(objectA->getObjRef())) {
         if(handleMountingCollision(objectB, objectA)) {
             return;
         }
@@ -471,7 +471,7 @@ bool CollisionSystem::handleMountingCollision(const std::shared_ptr<Object> &cha
 
     //Attempt to mount?
     if(characterWantsToMount) {
-        return character->attachToObject(mount, GRIP_ONLY);
+        return character->attachToObject(mount->getObjRef(), GRIP_ONLY);
     }
 
     return false;
@@ -608,7 +608,7 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
                 objectA->targetplatform_level = objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z];
                 objectA->targetplatform_ref   = ichr_b;
 
-                return objectA->attachToPlatform(objectB);
+                return objectA->attachToPlatform(objectB->getObjRef());
             }
         }
         else
@@ -618,7 +618,7 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
                 objectB->targetplatform_level = objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z];
                 objectB->targetplatform_ref   = ichr_a;
 
-                return objectB->attachToPlatform(objectA);
+                return objectB->attachToPlatform(objectA->getObjRef());
             }
         }
     }

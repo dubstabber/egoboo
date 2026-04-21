@@ -905,7 +905,7 @@ TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRol
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
     ASSERT_NE(heldItem, nullptr);
-    ASSERT_TRUE(heldItem->attachToObject(target, GRIP_LEFT));
+    ASSERT_TRUE(heldItem->attachToObject(target->getObjRef(), GRIP_LEFT));
 
     heldItem->setAmmo(2);
 
@@ -980,8 +980,8 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllUsesTargetHandsAndAc
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(inventoryItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(target, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
 
     leftItem->setAmmo(leftItem->getAmmoMax() - 1);
@@ -1013,8 +1013,8 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDFirstPreservesLeftRight
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(inventoryItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(target, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
 
     script_state_t state;
@@ -1063,8 +1063,8 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDFirstReturnsFalseWhenNo
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(inventoryItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(target, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
 
     leftItem->setAmmo(leftItem->getAmmoMax() - 1);
@@ -1096,8 +1096,8 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllReturnsFalseWhenNoHe
     ASSERT_NE(leftItem, nullptr);
     ASSERT_NE(rightItem, nullptr);
     ASSERT_NE(inventoryItem, nullptr);
-    ASSERT_TRUE(leftItem->attachToObject(target, GRIP_LEFT));
-    ASSERT_TRUE(rightItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(leftItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, actor->getFirstFreeInventorySlot(), true));
 
     leftItem->setAmmo(leftItem->getAmmoMax() - 1);
@@ -1304,7 +1304,7 @@ TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
 
     ASSERT_NE(heldWeapon, nullptr);
     ASSERT_NE(weaponKillTarget, nullptr);
-    ASSERT_TRUE(heldWeapon->attachToObject(actor, GRIP_RIGHT));
+    ASSERT_TRUE(heldWeapon->attachToObject(actor->getObjRef(), GRIP_RIGHT));
 
     ai_state_t weaponSelf = makeScriptSelf(heldWeapon, weaponKillTarget);
     EXPECT_TRUE(scr_KillTarget(state, weaponSelf));
@@ -1491,8 +1491,8 @@ TEST_F(ScriptSystemsFunctionsFixture, UnkurseTargetInventoryUsesRoleLookupsAndPr
     ASSERT_NE(rightHeldItem, nullptr);
     ASSERT_NE(actorPocketItem, nullptr);
     ASSERT_NE(targetPocketItem, nullptr);
-    ASSERT_TRUE(leftHeldItem->attachToObject(target, GRIP_LEFT));
-    ASSERT_TRUE(rightHeldItem->attachToObject(target, GRIP_RIGHT));
+    ASSERT_TRUE(leftHeldItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+    ASSERT_TRUE(rightHeldItem->attachToObject(target->getObjRef(), GRIP_RIGHT));
     ASSERT_TRUE(Inventory::add_item(*actor, actorPocketItem, actor->getFirstFreeInventorySlot(), true));
     ASSERT_TRUE(Inventory::add_item(*target, targetPocketItem, target->getFirstFreeInventorySlot(), true));
 

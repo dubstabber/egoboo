@@ -119,7 +119,7 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
     if ( ptst->isAlive() == HAS_SOME_BITS( targeting_bits, TARGET_DEAD ) ) return false;
 
     // Don't target invisible stuff, unless we can actually see them
-    if ( !psrc->canSeeObject(ptst) ) return false;
+    if ( !psrc->canSeeObject(ptst->getObjRef()) ) return false;
 
     //Need specific skill? ([NONE] always passes)
     if ( HAS_SOME_BITS( targeting_bits, TARGET_SKILL ) && !ptst->hasSkillIDSZ(idsz) ) return false;

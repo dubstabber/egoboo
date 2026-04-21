@@ -169,7 +169,7 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptResetsInvisibleTargetAndAppliesWa
     actor->setLight(200);
     target->setAlpha(0);
     target->setLight(0);
-    ASSERT_FALSE(actor->canSeeObject(target));
+    ASSERT_FALSE(actor->canSeeObject(target->getObjRef()));
 
     auto& aiScript = actor->getProfile()->getAIScript();
     aiScript._name = "runtime-test";

@@ -420,7 +420,7 @@ uint8_t AddEndMessage( Object * pchr, const int message_index, script_state_t * 
 
     if ( !pchr->getProfile()->isValidMessageID( message_index ) ) return false;
 
-    std::string escapedText = g_endText.getText() + expandEscapeCodes(pchr->toSharedPointer(), *pstate, pchr->getProfile()->getMessage(message_index));
+    std::string escapedText = g_endText.getText() + expandEscapeCodes(objectHandler()[pchr->getObjRef()], *pstate, pchr->getProfile()->getMessage(message_index));
     g_endText.setText(escapedText);
     return true;
 }

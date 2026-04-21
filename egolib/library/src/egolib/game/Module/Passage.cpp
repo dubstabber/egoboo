@@ -175,7 +175,7 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
             else
             {
                 // I: Check hands
-                if(pchr->isWieldingItemIDSZ(require_item)) {
+                if(pchr->wieldsItemIDSZ(require_item)) {
                     return pchr->getObjRef();
                 }
 

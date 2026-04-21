@@ -147,7 +147,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
         if ( !isMount() && 0 == damage_timer )
         {
             //Ping!
-            EngineContext::get().particleHandler().spawnDefencePing(toSharedPointer(), attacker);
+            EngineContext::get().particleHandler().spawnDefencePing(selfHandle(*this), attacker);
 
             //Only draw "Immune!" if we are truly completely immune and it was not simply a weak attack
             if(HAS_SOME_BITS(damageModifier, DAMAGEINVICTUS) || damage.base + damage.rand <= damage_threshold) {

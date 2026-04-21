@@ -414,7 +414,7 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     };
     ops.attachToGrip = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object, grip_offset_t grip)
     {
-        return object->attachToObject(parentObject, grip);
+        return object->attachToObject(parentObject->getObjRef(), grip);
     };
     ops.currentPlayerCount = [this]()
     {

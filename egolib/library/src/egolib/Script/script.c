@@ -127,14 +127,14 @@ const IInventoryHolder& inventoryHolder(const Object& object)
     return object;
 }
 
-const std::shared_ptr<Object>& heldItem(const IInventoryHolder& holder, slot_t slot)
+ObjectRef heldItemRef(const IInventoryHolder& holder, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[holder.getHeldObject(slot)];
+    return holder.getHeldObject(slot);
 }
 
-const std::shared_ptr<Object>& leftHandRider(const Object& object)
+ObjectRef leftHandRiderRef(const Object& object)
 {
-    return heldItem(inventoryHolder(object), SLOT_LEFT);
+    return heldItemRef(inventoryHolder(object), SLOT_LEFT);
 }
 
 void updateScriptErrorContext(const Object& object)
@@ -258,8 +258,7 @@ void resetInvisibleTargetToSelf(RuntimeActorContext& context)
         return;
     }
 
-    const std::shared_ptr<Object> target = tryObjectShared(aiState.getTarget());
-    if (target != nullptr && !context.actor().canSeeObject(target))
+    if (!context.actor().canSeeObject(aiState.getTarget()))
     {
         aiState.setTarget(aiState.getSelf());
     }
@@ -280,8 +279,8 @@ void applyNonPlayerMovementLatchUpdate(RuntimeActorContext& context)
     ai_state_t& aiState = context.state();
     ai_state_t::ensure_wp(aiState);
 
-    const std::shared_ptr<Object>& rider = leftHandRider(object);
-    if (object.isMount() && rider)
+    if (const Object* rider = tryObject(leftHandRiderRef(object));
+        object.isMount() && rider != nullptr)
     {
         // Mount (rider is held in left grip)
         object.setDesiredVelocity(rider->getDesiredVelocity());
@@ -1066,15 +1065,6 @@ bool tryPublishOrder(ObjectRef candidateRef,
     return true;
 }
 
-bool tryPublishOrder(const std::shared_ptr<Object>& object,
-                     const ITargetInfo& caller,
-                     uint32_t value,
-                     int& counter)
-{
-    return object != nullptr &&
-           tryPublishOrder(object->getObjRef(), caller, value, counter);
-}
-
 bool tryPublishSpecialOrder(ObjectRef candidateRef,
                             uint32_t value,
                             const IDSZ2& idsz,
@@ -1092,15 +1082,6 @@ bool tryPublishSpecialOrder(ObjectRef candidateRef,
     return true;
 }
 
-bool tryPublishSpecialOrder(const std::shared_ptr<Object>& object,
-                            uint32_t value,
-                            const IDSZ2& idsz,
-                            int& counter)
-{
-    return object != nullptr &&
-           tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
-}
-
 void issue_order(const ObjectRef character, uint32_t value)
 {
     /// @author ZZ
@@ -1115,7 +1096,9 @@ void issue_order(const ObjectRef character, uint32_t value)
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        tryPublishOrder(object, *caller, value, counter);
+        if (object != nullptr) {
+            tryPublishOrder(object->getObjRef(), *caller, value, counter);
+        }
     }
 }
 
@@ -1128,7 +1111,9 @@ void issue_special_order(uint32_t value, const IDSZ2& idsz)
 
     for (const std::shared_ptr<Object> &object : objectHandler().iterator())
     {
-        tryPublishSpecialOrder(object, value, idsz, counter);
+        if (object != nullptr) {
+            tryPublishSpecialOrder(object->getObjRef(), value, idsz, counter);
+        }
     }
 }
 

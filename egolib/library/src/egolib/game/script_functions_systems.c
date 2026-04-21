@@ -553,6 +553,11 @@ bool resolveSelfDamageable(const ai_state_t& self,
     return damageableSelf != nullptr;
 }
 
+std::shared_ptr<Object> resolveSelfObjectHandle(const ai_state_t& self)
+{
+    return tryObjectShared(self.getSelf());
+}
+
 bool resolveAliveTargetStateAndDamageable(const ai_state_t& self,
                                           ICharacterState*& resolvedTargetState,
                                           IDamageable*& resolvedDamageable)
@@ -1479,12 +1484,13 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     IDamageable* damageableSelf = nullptr;
-    if (!resolveSelfDamageable(self, damageableSelf))
+    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
+    if (!resolveSelfDamageable(self, damageableSelf) || selfObject == nullptr)
     {
         return false;
     }
 
-    damageableSelf->heal(pchr->toSharedPointer(), state.argument, true);
+    damageableSelf->heal(selfObject, state.argument, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1606,10 +1612,12 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
     ICharacterState* resolvedTargetState = nullptr;
     IDamageable* resolvedDamageable = nullptr;
-    if (resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable))
+    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
+    if (selfObject != nullptr &&
+        resolveAliveTargetStateAndDamageable(self, resolvedTargetState, resolvedDamageable))
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE, FP8_TO_FLOAT(state.argument));
-        resolvedDamageable->heal(pchr->toSharedPointer(), state.argument, true);
+        resolvedDamageable->heal(selfObject, state.argument, true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1697,12 +1705,13 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
 
     IDamageable* damageableTarget = nullptr;
     ICharacterState* targetState = nullptr;
-    if (!resolveHealingTarget(self, targetState, damageableTarget)) {
+    const std::shared_ptr<Object> selfObject = resolveSelfObjectHandle(self);
+    if (!resolveHealingTarget(self, targetState, damageableTarget) || selfObject == nullptr) {
         return false;
     }
 
     returncode = false;
-    if (damageableTarget->heal(pchr->toSharedPointer(), state.argument, false))
+    if (damageableTarget->heal(selfObject, state.argument, false))
     {
         returncode = true;
         targetState->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));

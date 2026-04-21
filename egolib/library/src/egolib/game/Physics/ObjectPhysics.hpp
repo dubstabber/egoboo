@@ -53,7 +53,7 @@ public:
     * @brief
     *   Attaches this Object to another Platform object
     **/
-    bool attachToPlatform(const std::shared_ptr<Object> &platform);
+    bool attachToPlatform(ObjectRef platformRef);
 
     /**
     * @return
@@ -89,7 +89,7 @@ public:
     * @return
     *   true if this Object is now attached to the holder
     **/
-    bool attachToObject(const std::shared_ptr<Object> &holder, grip_offset_t grip_off);
+    bool attachToObject(ObjectRef holderRef, grip_offset_t grip_off);
 
     /**
     * @author BB

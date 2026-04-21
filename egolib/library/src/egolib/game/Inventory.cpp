@@ -287,7 +287,7 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
     if (inventory_item) {
         owner.removeInventoryItem(inventory_item, ignorekurse);
 
-        inventory_item->attachToObject(objectHandler()[owner.getObjRef()], grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
+        inventory_item->attachToObject(owner.getObjRef(), grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
         //fix flags
         scriptable(*inventory_item).clearAIAlertBits(ALERTIF_GRABBED);

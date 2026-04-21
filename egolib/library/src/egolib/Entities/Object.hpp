@@ -173,7 +173,7 @@ public:
 
     void updatePhysics();
 
-    bool attachToPlatform(const std::shared_ptr<Object>& platform);
+    bool attachToPlatform(ObjectRef platformRef);
 
     void detachFromPlatform();
 
@@ -185,7 +185,7 @@ public:
 
     bool grabStuff(grip_offset_t gripOffset, bool grabPeople);
 
-    bool attachToObject(const std::shared_ptr<Object>& holder, grip_offset_t gripOffset);
+    bool attachToObject(ObjectRef holderRef, grip_offset_t gripOffset);
 
     void updateCollisionSize(bool updateMatrix);
 
@@ -457,7 +457,7 @@ public:
      * @param mount Which Object we are trying to mount
      * @return true if we are able to mount the specified Object
      */
-    bool canMount(const std::shared_ptr<Object> mount) const;
+    bool canMount(ObjectRef mountRef) const;
 
     /**
      * @return true if this Object is mountable by other Objects
@@ -634,7 +634,7 @@ public:
     * @return
     *   true if this Object has line of sight and can see the specified Object
     **/
-    bool canSeeObject(const std::shared_ptr<Object> &target) const;
+    bool canSeeObject(ObjectRef targetRef) const;
 
     /**
     * @brief Set the fat value of a character.
@@ -1067,8 +1067,6 @@ public:
 
     std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const override;
 
-    const std::shared_ptr<Object>& toSharedPointer() const;
-
     /**
     * @brief
     *   changes the name of this Object
@@ -1140,8 +1138,6 @@ public:
     * @return
     *   The Object that has the matching IDSZ
     **/
-    const std::shared_ptr<Object>& isWieldingItemIDSZ(const IDSZ2& idsz) const;
-
     /**
     * @brief
     *   Changes the team of this Object to another team
