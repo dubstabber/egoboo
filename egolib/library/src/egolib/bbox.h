@@ -398,7 +398,7 @@
          */
         static bool contains(const oct_bb_t& self, const oct_bb_t& other);
 
-        static egolib_rv validate(oct_bb_t& self);
+        static void validate(oct_bb_t& self);
         static bool empty_raw(const oct_bb_t& self);
 
 	public:
@@ -449,7 +449,7 @@
          * @post
          *  This octagonal bounding box was assigned the cut of itself with the other octagonal bounding box.
          */
-        egolib_rv cut(const oct_bb_t& other);
+        bool cut(const oct_bb_t& other);
 
         /**
          * @brief
@@ -461,10 +461,10 @@
          * @post
          *  This octagonal bounding box was assigned the restricted cut of itself with the other octagonal bounding box.
          */
-        egolib_rv cut(const oct_bb_t& other, int index);
+        bool cut(const oct_bb_t& other, int index);
 
-		static egolib_rv downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, oct_bb_t& pdst_bb);
-		static egolib_rv downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, bumper_t& pdst_bump);
+		static void downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, oct_bb_t& pdst_bb);
+		static void downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, bumper_t& pdst_bump);
 
 
 		static oct_bb_t intersection(const oct_bb_t& src1, const oct_bb_t& src2);

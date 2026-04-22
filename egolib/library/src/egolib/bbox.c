@@ -331,7 +331,7 @@ void oct_bb_t::points_to_oct_bb(oct_bb_t& self, const Ego::Vector4f points[], co
     self._empty = oct_bb_t::empty_raw(self);
 }
 
-egolib_rv oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, oct_bb_t& pdst_bb)
+void oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, oct_bb_t& pdst_bb)
 {
 	/// @author BB
 	/// @details convert a level 1 bumper to an "equivalent" level 0 bumper
@@ -363,10 +363,9 @@ egolib_rv oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt,
 
     pdst_bb._empty = oct_bb_t::empty_raw(pdst_bb);
 
-	return rv_success;
 }
 
-egolib_rv oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, bumper_t& pdst_bump)
+void oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt, const bumper_t& bump_base, bumper_t& pdst_bump)
 {
     /// @author BB
     /// @details convert a level 1 bumper to an "equivalent" level 0 bumper
@@ -412,7 +411,6 @@ egolib_rv oct_bb_t::downgrade(const oct_bb_t& psrc_bb, const bumper_t& bump_stt,
 			pdst_bump.size_big = std::max({ val1, val2, val3, val4 });
         }
 
-		return rv_success;
 }
 
 oct_bb_t oct_bb_t::interpolate(const oct_bb_t& src1, const oct_bb_t& src2, float flip)
@@ -446,10 +444,9 @@ void oct_bb_t::copy(oct_bb_t& self, const oct_bb_t& other)
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv oct_bb_t::validate(oct_bb_t& self)
+void oct_bb_t::validate(oct_bb_t& self)
 {
     self._empty = oct_bb_t::empty_raw(self);
-    return rv_success;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -552,7 +549,7 @@ void oct_bb_t::join(const oct_bb_t& other)
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv oct_bb_t::cut(const oct_bb_t& other, int index)
+bool oct_bb_t::cut(const oct_bb_t& other, int index)
 {
     if (index < 0 || index >= OCT_COUNT)
     {
@@ -561,7 +558,7 @@ egolib_rv oct_bb_t::cut(const oct_bb_t& other, int index)
 
 	// @todo Obviously the author does not know how set intersection works.
     if (other._empty) {
-        return rv_fail;
+        return false;
     }
 
     // No simple case. do the hard work.
@@ -569,7 +566,7 @@ egolib_rv oct_bb_t::cut(const oct_bb_t& other, int index)
     _maxs[index]  = std::min(_maxs[index], other._maxs[index]);
 
     oct_bb_t::validate_index(*this, index);
-	return rv_success;
+	return true;
 }
 
 oct_bb_t oct_bb_t::intersection(const oct_bb_t& src1, const oct_bb_t& src2)
@@ -591,11 +588,11 @@ oct_bb_t oct_bb_t::intersection(const oct_bb_t& src1, const oct_bb_t& src2)
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv oct_bb_t::cut(const oct_bb_t& other)
+bool oct_bb_t::cut(const oct_bb_t& other)
 {
 	/// @todo Obviously the author does not know how set intersection works.
     if (other._empty) {
-        return rv_fail;
+        return false;
     }
 
     // No simple case, do the hard work.
@@ -606,7 +603,7 @@ egolib_rv oct_bb_t::cut(const oct_bb_t& other)
     }
 
     this->_empty = oct_bb_t::empty_raw(*this);
-	return rv_success;
+	return true;
 }
 
 //--------------------------------------------------------------------------------------------

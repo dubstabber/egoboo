@@ -856,6 +856,12 @@ Continued Tier 1.4 by retiring `egolib_rv` from the AI script-loading seam in `s
 
 Updated the validator's script compile check to the new bool contract without changing its `script_missing`, `script_fallback`, or `script_compile_failure` classification, and added focused `ScriptLoader.cpp` coverage for valid-primary, missing-primary fallback, invalid-primary fallback, and both-primary-and-fallback failure behavior.
 
+### Pass 172 — Bounding-box bool/void contract cleanup (2026-04-22)
+
+Continued Tier 1.4 by retiring `egolib_rv` from the remaining `oct_bb_t` helper family in `bbox.{h,c}`: `validate(...)` and both `downgrade(...)` overloads now return `void`, while both `cut(...)` overloads now return `bool`. Preserved the existing behavior: empty-cut inputs still fail without mutation, and downgrade/validate still only publish recomputed output state.
+
+Added focused `BoundingBox.cpp` coverage for validate, empty/non-empty cut semantics, restricted-axis cuts, and both downgrade paths, while keeping the existing collision-volume behavior pinned through the focused `ObjectAccessors` slice.
+
 ---
 
 ## Files touched most by this pass log
