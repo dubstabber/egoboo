@@ -1405,6 +1405,42 @@ TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllReturnsFalseWhenNoHe
     EXPECT_EQ(inventoryItem->getAmmo(), inventoryItem->getAmmoMax() - 3);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, InventoryCompatibilityHelpersIgnoreTargetPocketItems)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5664);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5665);
+    auto targetPocketItem = makeAmmoItem(module, 5666);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(targetPocketItem, nullptr);
+    ASSERT_TRUE(Inventory::add_item(*target, targetPocketItem, target->getFirstFreeInventorySlot(), true));
+
+    targetPocketItem->setAmmo(targetPocketItem->getAmmoMax() - 2);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    const uint32_t matchingType = targetPocketItem->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
+
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_CostTargetItemID(state, self));
+    EXPECT_EQ(state.argument, matchingType);
+    EXPECT_FALSE(targetPocketItem->isTerminated());
+    EXPECT_EQ(targetPocketItem->getAmmo(), targetPocketItem->getAmmoMax() - 2);
+
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDAll(state, self));
+    EXPECT_EQ(state.argument, 0);
+    EXPECT_EQ(targetPocketItem->getAmmo(), targetPocketItem->getAmmoMax() - 2);
+
+    targetPocketItem->setAmmo(targetPocketItem->getAmmoMax() - 2);
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDFirst(state, self));
+    EXPECT_EQ(state.argument, 0);
+    EXPECT_EQ(targetPocketItem->getAmmo(), targetPocketItem->getAmmoMax() - 2);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, QuestHelpersResolvePlayersThroughTargetInfoRole)
 {
     auto& module = beginActiveTestModule();

@@ -538,36 +538,52 @@ bool itemMatchesType(ObjectRef itemRef, const IDSZ2& idsz)
     return item != nullptr && item->hasTypeIDSZ(idsz);
 }
 
-ObjectRef findMatchingHeldOrInventoryItemRef(const IInventoryHolder& holder, const IDSZ2& idsz)
+struct InventoryCompatibilityContext
+{
+    const IInventoryHolder* targetInventory = nullptr;
+    IInventoryHolder* actorInventory = nullptr;
+};
+
+bool resolveInventoryCompatibilityContext(const ai_state_t& self,
+                                          IInventoryHolder& actorInventory,
+                                          InventoryCompatibilityContext& context)
+{
+    context.targetInventory = tryInventoryHolder(self.getTarget());
+    context.actorInventory = &actorInventory;
+    return context.targetInventory != nullptr;
+}
+
+ObjectRef findMatchingTargetHeldOrActorPocketItemRef(const InventoryCompatibilityContext& context,
+                                                     const IDSZ2& idsz)
 {
     const std::array<slot_t, 2> heldSlots = {SLOT_LEFT, SLOT_RIGHT};
     for (const slot_t heldSlot : heldSlots)
     {
-        const ObjectRef heldObjectRef = holder.getHeldObject(heldSlot);
+        const ObjectRef heldObjectRef = context.targetInventory->getHeldObject(heldSlot);
         if (itemMatchesType(heldObjectRef, idsz))
         {
             return heldObjectRef;
         }
     }
 
-    for (const ObjectRef inventoryItemRef : holder.getInventoryItemRefs())
+    for (const ObjectRef& actorPocketItemRef : context.actorInventory->getInventoryItemRefs())
     {
-        if (itemMatchesType(inventoryItemRef, idsz))
+        if (itemMatchesType(actorPocketItemRef, idsz))
         {
-            return inventoryItemRef;
+            return actorPocketItemRef;
         }
     }
 
     return ObjectRef::Invalid;
 }
 
-void removeInventoryItemRefIfPresent(IInventoryHolder& holder, ObjectRef itemRef)
+void removeActorPocketItemRefIfPresent(IInventoryHolder& actorInventory, ObjectRef itemRef)
 {
-    for (size_t slot = 0; slot < holder.getInventoryMaxItems(); ++slot)
+    for (size_t slot = 0; slot < actorInventory.getInventoryMaxItems(); ++slot)
     {
-        if (holder.getInventoryItemRef(slot) == itemRef)
+        if (actorInventory.getInventoryItemRef(slot) == itemRef)
         {
-            Inventory::remove_item(holder, slot, true);
+            Inventory::remove_item(actorInventory, slot, true);
             return;
         }
     }
@@ -582,7 +598,7 @@ void unkurseItemIfPresent(ObjectRef itemRef)
     }
 }
 
-bool consumeOrPoofItemWithLegacyInventoryPath(ObjectRef itemRef, IInventoryHolder& selfInventory)
+bool consumeOrPoofItemWithActorPocketCompatibility(ObjectRef itemRef, IInventoryHolder& actorInventory)
 {
     ICharacterState* itemState = tryCharacterState(itemRef);
     if (itemState == nullptr)
@@ -605,7 +621,7 @@ bool consumeOrPoofItemWithLegacyInventoryPath(ObjectRef itemRef, IInventoryHolde
 
     if (itemInventory->isInsideInventory())
     {
-        removeInventoryItemRefIfPresent(selfInventory, itemRef);
+        removeActorPocketItemRefIfPresent(actorInventory, itemRef);
     }
     else
     {
@@ -614,6 +630,46 @@ bool consumeOrPoofItemWithLegacyInventoryPath(ObjectRef itemRef, IInventoryHolde
 
     itemLifecycle->requestTerminate();
     return true;
+}
+
+int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz);
+
+int restockMatchingTargetHeldAndActorPocketAmmo(const InventoryCompatibilityContext& context,
+                                                const IDSZ2& idsz,
+                                                bool stopAfterFirst)
+{
+    int ammoGiven = 0;
+    const std::array<slot_t, 2> heldSlots = {SLOT_LEFT, SLOT_RIGHT};
+    for (const slot_t heldSlot : heldSlots)
+    {
+        ammoGiven += restockAmmoIfMatching(context.targetInventory->getHeldObject(heldSlot), idsz);
+        if (stopAfterFirst && ammoGiven != 0)
+        {
+            return ammoGiven;
+        }
+    }
+
+    for (const ObjectRef& actorPocketItemRef : context.actorInventory->getInventoryItemRefs())
+    {
+        ammoGiven += restockAmmoIfMatching(actorPocketItemRef, idsz);
+        if (stopAfterFirst && ammoGiven != 0)
+        {
+            return ammoGiven;
+        }
+    }
+
+    return ammoGiven;
+}
+
+void unkurseTargetHeldAndActorPocketItems(const InventoryCompatibilityContext& context)
+{
+    unkurseItemIfPresent(context.targetInventory->getHeldObject(SLOT_LEFT));
+    unkurseItemIfPresent(context.targetInventory->getHeldObject(SLOT_RIGHT));
+
+    for (const ObjectRef& actorPocketItemRef : context.actorInventory->getInventoryItemRefs())
+    {
+        unkurseItemIfPresent(actorPocketItemRef);
+    }
 }
 
 Ego::QuestLog* resolvedTargetQuestLog(const ai_state_t& self)
@@ -1042,24 +1098,25 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
 {
     // CostTargetItemID( tmpargument = "idsz" )
     /// @author ZZ
-    /// @details This function proceeds if the target has a matching item, and poofs
-    /// that item.
-    /// For one use keys and such
+    /// @details This function proceeds if the target has a matching held item or the
+    /// actor has a matching pocket item, and poofs that item. This preserves the
+    /// legacy actor-pocket compatibility behavior for one-use items such as keys.
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    InventoryCompatibilityContext inventoryContext;
+    IInventoryHolder& actorInventory = inventoryHolder(*pchr);
+    if (!resolveInventoryCompatibilityContext(self, actorInventory, inventoryContext))
     {
         return false;
     }
 
     returncode = false;
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    const ObjectRef itemRef = findMatchingHeldOrInventoryItemRef(*targetInventory, idsz);
+    const ObjectRef itemRef = findMatchingTargetHeldOrActorPocketItemRef(inventoryContext, idsz);
     if (itemRef != ObjectRef::Invalid)
     {
-        returncode = consumeOrPoofItemWithLegacyInventoryPath(itemRef, inventoryHolder(*pchr));
+        returncode = consumeOrPoofItemWithActorPocketCompatibility(itemRef, actorInventory);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1465,28 +1522,20 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
 {
     // RestockTargetAmmoIDAll( tmpargument = "idsz" )
     /// @author ZZ
-    /// @details This function restocks the ammo of every item the character is holding,
-    /// if the item matches the ID given ( parent or child type )
+    /// @details This function restocks matching ammo on the target's held items and
+    /// the actor's pocket items, preserving the legacy target-held plus actor-pocket
+    /// compatibility traversal.
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    InventoryCompatibilityContext inventoryContext;
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
     {
         return false;
     }
 
-    int iTmp = 0;  // Amount of ammo given
-    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    iTmp += restockAmmoIfMatching(targetInventory->getHeldObject(SLOT_LEFT), idsz);
-    iTmp += restockAmmoIfMatching(targetInventory->getHeldObject(SLOT_RIGHT), idsz);
-
-    for (const ObjectRef itemRef : selfInventory.getInventoryItemRefs())
-    {
-        iTmp += restockAmmoIfMatching(itemRef, idsz);
-    }
+    const int iTmp = restockMatchingTargetHeldAndActorPocketAmmo(inventoryContext, idsz, false);
 
     state.argument = iTmp;
     returncode = ( iTmp != 0 );
@@ -1500,36 +1549,19 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
 {
     // RestockTargetAmmoIDFirst( tmpargument = "idsz" )
     /// @author ZZ
-    /// @details This function restocks the ammo of the first item the character is holding,
-    /// if the item matches the ID given ( parent or child type )
+    /// @details This function restocks the first matching item in the legacy target-held
+    /// then actor-pocket traversal order.
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    InventoryCompatibilityContext inventoryContext;
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
     {
         return false;
     }
 
-    int iTmp = 0;  // Amount of ammo given
-    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    iTmp += restockAmmoIfMatching(targetInventory->getHeldObject(SLOT_LEFT), idsz);
-
-    if (iTmp == 0)
-    {
-        iTmp += restockAmmoIfMatching(targetInventory->getHeldObject(SLOT_RIGHT), idsz);
-    }
-
-    if (iTmp == 0)
-    {
-        for (const ObjectRef itemRef : selfInventory.getInventoryItemRefs())
-        {
-            iTmp += restockAmmoIfMatching(itemRef, idsz);
-            if ( 0 != iTmp ) break;
-        }
-    }
+    const int iTmp = restockMatchingTargetHeldAndActorPocketAmmo(inventoryContext, idsz, true);
 
     state.argument = iTmp;
     returncode = ( iTmp != 0 );
@@ -2096,23 +2128,18 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
 {
     // UnkurseTargetInventory()
     /// @author ZZ
-    /// @details This function unkurses all items held and in the pockets of the target
+    /// @details This function preserves the legacy compatibility behavior: unkurse the
+    /// target's held items plus the actor's pocket items, but not the target's pockets.
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    InventoryCompatibilityContext inventoryContext;
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
     {
         return false;
     }
 
-    unkurseItemIfPresent(targetInventory->getHeldObject(SLOT_LEFT));
-    unkurseItemIfPresent(targetInventory->getHeldObject(SLOT_RIGHT));
-
-    for (const ObjectRef itemRef : inventoryHolder(*pchr).getInventoryItemRefs())
-    {
-        unkurseItemIfPresent(itemRef);
-    }
+    unkurseTargetHeldAndActorPocketItems(inventoryContext);
 
     SCRIPT_FUNCTION_END();
 }

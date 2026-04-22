@@ -862,6 +862,12 @@ Continued Tier 1.4 by retiring `egolib_rv` from the remaining `oct_bb_t` helper 
 
 Added focused `BoundingBox.cpp` coverage for validate, empty/non-empty cut semantics, restricted-axis cuts, and both downgrade paths, while keeping the existing collision-volume behavior pinned through the focused `ObjectAccessors` slice.
 
+### Pass 173 — Systems inventory compatibility closure (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining target-held plus actor-pocket inventory compatibility pocket behind one file-local helper/context layer. Routed `scr_CostTargetItemID`, both target-ammo restock opcodes, and `scr_UnkurseTargetInventory` through that shared traversal while preserving the legacy behavior: target held items are visited first, actor pockets remain the compatibility fallback, and target pocket items stay excluded.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused regression that pins target-pocket items as ignored by this compatibility cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
