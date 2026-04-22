@@ -25,36 +25,10 @@
 
 namespace
 {
-struct ObjectProfileRuntimeServices
-{
-    Log::Target& logTarget;
-    Ego::Perks::IPerkHandler& perkHandler;
-    IProfileSystem& profileSystem;
-    const egoboo_config_t& config;
-    IAudioSystem* audioSystem;
-};
-
-ObjectProfileRuntimeServices objectProfileRuntimeServices(bool includeAudio = false)
-{
-    auto& context = EngineContext::get();
-    return {
-        context.logTarget(),
-        context.perkHandler(),
-        context.profileSystem(),
-        context.config(),
-        includeAudio ? context.tryAudioSystem() : nullptr
-    };
-}
-
 std::string normalizePerkName(std::string perkName)
 {
     std::replace(perkName.begin(), perkName.end(), '_', ' ');
     return perkName;
-}
-
-SoundID tryLoadProfileSound(const ObjectProfileRuntimeServices& services, const std::string& soundName)
-{
-    return services.audioSystem ? services.audioSystem->loadSound(soundName) : INVALID_SOUND_ID;
 }
 
 ObjectProfileRef vfs_get_next_object_profile_ref(ReadContext& ctxt)
@@ -69,10 +43,17 @@ ObjectProfileRef vfs_get_next_object_profile_ref(ReadContext& ctxt)
 }
 } // namespace
 
-void ObjectProfile::loadTextures(const std::string &folderPath)
+struct ObjectProfile::LoadServices
 {
-    const auto services = objectProfileRuntimeServices();
+    Log::Target& logTarget;
+    Ego::Perks::IPerkHandler& perkHandler;
+    IProfileSystem& profileSystem;
+    const egoboo_config_t& config;
+    IAudioSystem* audioSystem;
+};
 
+void ObjectProfile::loadTextures(const std::string &folderPath, const LoadServices& services)
+{
     //Clear texture references
     _texturesLoaded.clear();
     _iconsLoaded.clear();
@@ -140,10 +121,8 @@ void ObjectProfile::loadAllMessages(const std::string &filePath)
     }
 }
 
-bool ObjectProfile::loadDataFile(const std::string &filePath)
+bool ObjectProfile::loadDataFile(const std::string &filePath, const LoadServices& services)
 {
-    const auto services = objectProfileRuntimeServices();
-
     // Open the file
     ReadContext ctxt(filePath);
 
@@ -641,7 +620,14 @@ bool ObjectProfile::loadDataFile(const std::string &filePath)
 
 std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& folderPath, ObjectProfileRef ref, bool lightWeight)
 {
-    const auto services = objectProfileRuntimeServices(!lightWeight);
+    auto& context = EngineContext::get();
+    const LoadServices services{
+        context.logTarget(),
+        context.perkHandler(),
+        context.profileSystem(),
+        context.config(),
+        !lightWeight ? context.tryAudioSystem() : nullptr
+    };
 
     // Assert the reference is valid.
     if (!ref)
@@ -697,7 +683,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
         for (size_t cnt = 0; cnt < 30; cnt++) //TODO: make better search than just 30 (list files?)
         {
             const std::string soundName = folderPath + "/sound" + std::to_string(cnt);
-            SoundID soundID = tryLoadProfileSound(services, soundName);
+            SoundID soundID = services.audioSystem ? services.audioSystem->loadSound(soundName) : INVALID_SOUND_ID;
 
             if (soundID != INVALID_SOUND_ID)
             {
@@ -707,7 +693,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     }
 
     //Load profile graphics (optional)
-    profile->loadTextures(folderPath);
+    profile->loadTextures(folderPath, services);
 
     // Load the random naming table for this icap (optional)
     profile->_randomName.loadFromFile(folderPath + "/naming.txt");
@@ -716,7 +702,7 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     // Do after loading particle and sound profiles
     try
     {
-        if (!profile->loadDataFile(folderPath + "/data.txt"))
+        if (!profile->loadDataFile(folderPath + "/data.txt", services))
         {
             services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;

@@ -592,6 +592,7 @@ public:
     size_t _spawnCount;                         ///< the number of successful spawns
 
 private:
+    struct LoadServices;
 
     /**
     * @brief Loads the md2 model for this profile
@@ -606,13 +607,13 @@ private:
     /**
     * @brief load all tris*.bmp or tris*.png skin and icons
     **/
-    void loadTextures(const std::string &folderPath);
+    void loadTextures(const std::string &folderPath, const LoadServices& services);
 
     /**
     * @brief Loads profile data from a datafile (data.txt)
     * @return true if it was successfully parsed and loaded
     **/
-    bool loadDataFile(const std::string &filePath);
+    bool loadDataFile(const std::string &filePath, const LoadServices& services);
 
     /**
     * @author ZF

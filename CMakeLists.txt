@@ -20,6 +20,8 @@ set(IDLIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/idlib)
 set(IDLIB_GAME_ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/idlib-game-engine)
 
 # Add Idlib.
+set(idlib-with-fetch-googletest OFF CACHE BOOL
+    "enable/disable fetching of google test. ON enables the content fetch, OFF disables compilation-time network fetch. Initial value is OFF.")
 set(idlib-with-tests ${EGOBOO_ENABLE_RUNNABLE_TESTS} CACHE BOOL
     "enable/disable compilation of tests. ON enables compilation of tests, OFF disables compilation of tests. Initial value is OFF." FORCE)
 set(idlib-with-demos OFF CACHE BOOL
