@@ -78,6 +78,45 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                                               requiredItem));
 }
 
+Object* trySelfObject(const ai_state_t& self)
+{
+    return tryObject(self.getSelf());
+}
+
+const ITargetInfo* trySelfTargetInfo(const ai_state_t& self)
+{
+    return tryTargetInfo(self.getSelf());
+}
+
+ObjectRef findTargetForSelf(const ai_state_t& self,
+                            float maxDistance,
+                            const IDSZ2& idsz,
+                            BIT_FIELD targetingBits)
+{
+    Object* selfObject = trySelfObject(self);
+    if (selfObject == nullptr)
+    {
+        return ObjectRef::Invalid;
+    }
+
+    return chr_find_target(selfObject, maxDistance, idsz, targetingBits);
+}
+
+ObjectRef findWeaponForSelf(const ai_state_t& self,
+                            float maxDistance,
+                            const IDSZ2& weaponIdsz,
+                            bool findRanged,
+                            bool useLineOfSight)
+{
+    Object* selfObject = trySelfObject(self);
+    if (selfObject == nullptr)
+    {
+        return ObjectRef::Invalid;
+    }
+
+    return FindWeapon(selfObject, maxDistance, weaponIdsz, findRanged, useLineOfSight);
+}
+
 }
 
 //--------------------------------------------------------------------------------------------
@@ -112,7 +151,7 @@ uint8_t scr_SetTargetToNearbyEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, chr_find_target(pchr, NEARBY, IDSZ2::None, TARGET_ENEMIES));
+    returncode = trySetResolvedTarget(self, findTargetForSelf(self, NEARBY, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
@@ -770,7 +809,7 @@ uint8_t scr_SetTargetToWideEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, chr_find_target(pchr, WIDE, IDSZ2::None, TARGET_ENEMIES));
+    returncode = trySetResolvedTarget(self, findTargetForSelf(self, WIDE, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
@@ -860,7 +899,13 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isOnSameTeam(pchr->getTeamRef());
+    const ITargetInfo* selfTarget = trySelfTargetInfo(self);
+    if (selfTarget == nullptr)
+    {
+        return false;
+    }
+
+    returncode = target->isOnSameTeam(selfTarget->getTeamRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -1065,7 +1110,10 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // Try to find one
-    const auto ichr = chr_find_target( pchr, WIDE, state.argument, state.distance );
+    const auto ichr = findTargetForSelf(self,
+                                        WIDE,
+                                        IDSZ2(state.argument),
+                                        state.distance);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1105,7 +1153,7 @@ uint8_t scr_SetTargetToDistantEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = chr_find_target( pchr, state.distance, IDSZ2::None, TARGET_ENEMIES );
+    const auto ichr = findTargetForSelf(self, state.distance, IDSZ2::None, TARGET_ENEMIES);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1276,7 +1324,10 @@ uint8_t scr_SetTargetToNearestBlahID( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     // Try to find one
-    const auto ichr = chr_find_target(pchr, NEAREST, IDSZ2(state.argument), state.distance);
+    const auto ichr = findTargetForSelf(self,
+                                        NEAREST,
+                                        IDSZ2(state.argument),
+                                        state.distance);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1292,7 +1343,7 @@ uint8_t scr_SetTargetToNearestEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ENEMIES );
+    const auto ichr = findTargetForSelf(self, NEAREST, IDSZ2::None, TARGET_ENEMIES);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1308,7 +1359,7 @@ uint8_t scr_SetTargetToNearestFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_FRIENDS );
+    const auto ichr = findTargetForSelf(self, NEAREST, IDSZ2::None, TARGET_FRIENDS);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1326,7 +1377,10 @@ uint8_t scr_SetTargetToNearestLifeform( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = chr_find_target( pchr, NEAREST, IDSZ2::None, TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES );
+    const auto ichr = findTargetForSelf(self,
+                                        NEAREST,
+                                        IDSZ2::None,
+                                        TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1678,7 +1732,7 @@ uint8_t scr_SetTargetToNearbyMeleeWeapon( script_state_t& state, ai_state_t& sel
 {
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef best_target = FindWeapon( pchr, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true );
+    ObjectRef best_target = findWeaponForSelf(self, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true);
     returncode = trySetResolvedTarget(self, best_target);
 
     SCRIPT_FUNCTION_END();
@@ -1695,7 +1749,7 @@ uint8_t scr_SetTargetToDistantFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = chr_find_target(pchr, state.distance, IDSZ2::None, TARGET_FRIENDS);
+    const auto ichr = findTargetForSelf(self, state.distance, IDSZ2::None, TARGET_FRIENDS);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();

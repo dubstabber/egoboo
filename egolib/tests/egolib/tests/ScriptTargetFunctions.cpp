@@ -539,6 +539,7 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetSearchHelpersPreserveExistingTarge
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor, existingTarget);
+    constexpr int kTargetEnemies = (1 << 1);
 
     EXPECT_FALSE(scr_SetTargetToNearestEnemy(state, self));
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
@@ -549,8 +550,87 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetSearchHelpersPreserveExistingTarge
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
 
     self.setTarget(existingTarget->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToNearbyEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToWideEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    state.argument = static_cast<int>(IDSZ2('N', 'O', 'P', 'E').toUint32());
+    state.distance = kTargetEnemies;
+    EXPECT_FALSE(scr_SetTargetToWideBlahID(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    state.argument = static_cast<int>(IDSZ2('N', 'O', 'P', 'E').toUint32());
+    state.distance = kTargetEnemies;
+    EXPECT_FALSE(scr_SetTargetToNearestBlahID(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    existingTarget->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    existingTarget->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    self.setTarget(existingTarget->getObjRef());
+    state.distance = 1;
+    EXPECT_FALSE(scr_SetTargetToDistantFriend(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
+    EXPECT_FALSE(scr_SetTargetToNearestFriend(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    self.setTarget(existingTarget->getObjRef());
     EXPECT_FALSE(scr_SetTargetToNearbyMeleeWeapon(state, self));
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, IfTargetIsOnSameTeamReadsActorTeamThroughSelfResolver)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53131);
+    auto target = makeObject(module, "mp_objects/follower.obj", 53132);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    const TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_GOOD);
+    actor->setTeamRef(teamRef);
+    actor->setBaseTeamRef(teamRef);
+    target->setTeamRef(teamRef);
+    target->setBaseTeamRef(teamRef);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_IfTargetIsOnSameTeam(state, self));
+
+    target->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    target->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    EXPECT_FALSE(scr_IfTargetIsOnSameTeam(state, self));
+}
+
+TEST_F(ScriptTargetFunctionsFixture, TargetSearchHelpersFailQuietlyWhenSelfRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53136);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53137);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+    self.setSelf(ObjectRef::Invalid);
+
+    EXPECT_FALSE(scr_SetTargetToNearestEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToNearbyMeleeWeapon(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_IfTargetIsOnSameTeam(state, self));
 }
 
 TEST_F(ScriptTargetFunctionsFixture, TargetStateAndContentQueriesReadThroughScriptableRole)
