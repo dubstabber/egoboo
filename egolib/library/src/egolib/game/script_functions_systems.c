@@ -131,6 +131,20 @@ struct EnchantInvocationContext
     OwnedObjectHandle spawner;
 };
 
+struct TargetCompatibilityContext
+{
+    ObjectRef targetRef = ObjectRef::Invalid;
+    const ITargetInfo* info = nullptr;
+    ICharacterState* characterState = nullptr;
+    IInventoryHolder* inventory = nullptr;
+    ITeamMember* teamMember = nullptr;
+    IEnchantable* enchantable = nullptr;
+};
+
+void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId);
+void publishEnemySense(const EnemySenseState& state);
+void resetEnemySense();
+
 SelfCompatibilityContext makeSelfCompatibilityContext(Object& selfObject)
 {
     SelfCompatibilityContext context;
@@ -811,6 +825,161 @@ bool resolveEnchantInvocationContext(const ai_state_t& self,
            resolveOwnedObjectHandle(self.getSelf(), context.spawner);
 }
 
+TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
+{
+    TargetCompatibilityContext context;
+    context.targetRef = self.getTarget();
+    context.info = tryTargetInfo(context.targetRef);
+    context.characterState = tryCharacterState(context.targetRef);
+    context.inventory = tryInventoryHolder(context.targetRef);
+    context.teamMember = tryTeamMember(context.targetRef);
+    context.enchantable = tryEnchantable(context.targetRef);
+    return context;
+}
+
+bool joinSelfTeamToResolvedTarget(const TargetCompatibilityContext& targetContext,
+                                  ITeamMember& selfTeamMember)
+{
+    if (targetContext.info == nullptr)
+    {
+        return false;
+    }
+
+    selfTeamMember.setTeam(targetContext.info->getTeamRef());
+    return true;
+}
+
+bool setResolvedTargetTeam(const TargetCompatibilityContext& targetContext, TEAM_REF teamRef)
+{
+    if (targetContext.teamMember == nullptr)
+    {
+        return false;
+    }
+
+    targetContext.teamMember->setTeam(teamRef);
+    return true;
+}
+
+bool giveResolvedTargetExperience(const TargetCompatibilityContext& targetContext,
+                                  int amount,
+                                  XPType type)
+{
+    if (targetContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    targetContext.characterState->giveExperience(amount, type, false);
+    return true;
+}
+
+bool unkurseResolvedTarget(const TargetCompatibilityContext& targetContext)
+{
+    if (targetContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    targetContext.characterState->setKursed(false);
+    return true;
+}
+
+bool costResolvedTargetMana(const TargetCompatibilityContext& targetContext,
+                            int amount,
+                            ObjectRef sourceRef)
+{
+    return targetContext.characterState != nullptr &&
+           targetContext.characterState->costMana(amount, sourceRef);
+}
+
+bool setResolvedTargetAmmo(const TargetCompatibilityContext& targetContext, int amount)
+{
+    if (targetContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    targetContext.characterState->setAmmo(std::min(amount, static_cast<int>(targetContext.characterState->getAmmoMax())));
+    return true;
+}
+
+bool grogResolvedTarget(const TargetCompatibilityContext& targetContext, int amount)
+{
+    if (targetContext.info == nullptr ||
+        targetContext.characterState == nullptr ||
+        !targetContext.info->canBeGrogged())
+    {
+        return false;
+    }
+
+    const int timerValue = targetContext.characterState->getGrogTimer() + amount;
+    targetContext.characterState->setGrogTimer(std::max(0, timerValue));
+    return true;
+}
+
+bool dazeResolvedTarget(const TargetCompatibilityContext& targetContext,
+                        int amount,
+                        ObjectRef selfRef)
+{
+    if (targetContext.info == nullptr || targetContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    if (!targetContext.info->canBeDazed() && selfRef != targetContext.targetRef)
+    {
+        return false;
+    }
+
+    const int timerValue = targetContext.characterState->getDazeTimer() + amount;
+    targetContext.characterState->setDazeTimer(std::max(0, timerValue));
+    return true;
+}
+
+bool kurseResolvedTarget(const TargetCompatibilityContext& targetContext)
+{
+    if (targetContext.inventory == nullptr ||
+        targetContext.info == nullptr ||
+        targetContext.characterState == nullptr ||
+        !targetContext.inventory->isItem() ||
+        targetContext.info->isKursed())
+    {
+        return false;
+    }
+
+    targetContext.characterState->setKursed(true);
+    return true;
+}
+
+bool giveResolvedTargetSkill(const TargetCompatibilityContext& targetContext, uint32_t skillId)
+{
+    if (targetContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    maybeAddSkillPerk(*targetContext.characterState, skillId);
+    return true;
+}
+
+bool disenchantResolvedTarget(const TargetCompatibilityContext& targetContext)
+{
+    return targetContext.enchantable != nullptr &&
+           targetContext.enchantable->disenchant();
+}
+
+void publishEnemySenseFromResolvedTarget(const TargetCompatibilityContext& targetContext,
+                                         uint32_t idsz)
+{
+    if (targetContext.info != nullptr)
+    {
+        publishEnemySense(EnemySenseState(targetContext.info->getTeamRef(), idsz));
+        return;
+    }
+
+    resetEnemySense();
+}
+
 int restockAmmoIfMatching(ObjectRef itemRef, const IDSZ2& idsz)
 {
     const IItemInfo* item = tryItemInfo(itemRef);
@@ -1082,14 +1251,8 @@ uint8_t scr_JoinTargetTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    const ITargetInfo* targetTeamInfo = tryTargetInfo(self.getTarget());
-    ITeamMember& selfTeamMember = teamMember(*pchr);
-    if ( targetTeamInfo != nullptr )
-    {
-        selfTeamMember.setTeam(targetTeamInfo->getTeamRef());
-        returncode = true;
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = joinSelfTeamToResolvedTarget(targetContext, teamMember(*pchr));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1496,12 +1659,10 @@ uint8_t scr_GiveExperienceToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if(targetState == nullptr) {
-        return false;
-    }
-
-    targetState->giveExperience(state.argument, static_cast<XPType>(state.distance), false);
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = giveResolvedTargetExperience(targetContext,
+                                              state.argument,
+                                              static_cast<XPType>(state.distance));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1533,13 +1694,8 @@ uint8_t scr_UnkurseTarget( script_state_t& state, ai_state_t& self )
     /// @details This function unkurses the target
 
     SCRIPT_FUNCTION_BEGIN();
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if (targetState == nullptr)
-    {
-        return false;
-    }
-
-    targetState->setKursed(false);
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = unkurseResolvedTarget(targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1684,8 +1840,8 @@ uint8_t scr_CostTargetMana( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    returncode = targetState ? targetState->costMana(state.argument, self.getSelf()) : false;
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = costResolvedTargetMana(targetContext, state.argument, self.getSelf());
 
     SCRIPT_FUNCTION_END();
 }
@@ -2331,14 +2487,8 @@ uint8_t scr_TargetJoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ITeamMember* targetTeamMember = tryTeamMember(self.getTarget());
-    if(targetTeamMember) {
-        targetTeamMember->setTeam(static_cast<TEAM_REF>(state.argument));
-        returncode = true;
-    }
-    else {
-        returncode = false;
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = setResolvedTargetTeam(targetContext, static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2400,8 +2550,8 @@ uint8_t scr_DisenchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IEnchantable* targetEnchantable = tryEnchantable(self.getTarget());
-    returncode = targetEnchantable ? targetEnchantable->disenchant() : false;
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = disenchantResolvedTarget(targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2562,20 +2712,8 @@ uint8_t scr_GrogTarget( script_state_t& state, ai_state_t& self )
     /// @details This function grogs the Target for a duration equal to tmpargument
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if (targetInfo == nullptr || targetState == nullptr)
-    {
-        return false;
-    }
-
-    returncode = false;
-    if ( targetInfo->canBeGrogged() )
-    {
-        int timer_val = targetState->getGrogTimer() + state.argument;
-        targetState->setGrogTimer(std::max(0, timer_val));
-        returncode = true;
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = grogResolvedTarget(targetContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2589,22 +2727,8 @@ uint8_t scr_DazeTarget( script_state_t& state, ai_state_t& self )
     /// @details This function dazes the Target for a duration equal to tmpargument
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if (targetInfo == nullptr || targetState == nullptr)
-    {
-        return false;
-    }
-
-    // Characters who manage to daze themselves are to ignore their daze immunity
-    returncode = false;
-    if ( targetInfo->canBeDazed() || self.getSelf() == self.getTarget() )
-    {
-        int timer_val = targetState->getDazeTimer() + state.argument;
-        targetState->setDazeTimer(std::max(0, timer_val));
-
-        returncode = true;
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = dazeResolvedTarget(targetContext, state.argument, self.getSelf());
 
     SCRIPT_FUNCTION_END();
 }
@@ -2728,15 +2852,8 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo != nullptr)
-    {
-        publishEnemySense(EnemySenseState(targetInfo->getTeamRef(), state.argument));
-    }
-    else
-    {
-        resetEnemySense();
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    publishEnemySenseFromResolvedTarget(targetContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2837,16 +2954,8 @@ uint8_t scr_KurseTarget( script_state_t& state, ai_state_t& self )
     /// @details This makes the target kursed
 
     SCRIPT_FUNCTION_BEGIN();
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    returncode = false;
-    if ( targetInventory != nullptr && targetInfo != nullptr && targetState != nullptr &&
-         targetInventory->isItem() && !targetInfo->isKursed() )
-    {
-        targetState->setKursed(true);
-        returncode = true;
-    }
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = kurseResolvedTarget(targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2860,13 +2969,8 @@ uint8_t scr_SetTargetAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function sets the ammo of the character's current AI target
 
     SCRIPT_FUNCTION_BEGIN();
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if (targetState == nullptr)
-    {
-        return false;
-    }
-
-    targetState->setAmmo(std::min( state.argument, (int)targetState->getAmmoMax() ));
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = setResolvedTargetAmmo(targetContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2911,13 +3015,8 @@ uint8_t scr_GiveSkillToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    if (targetState == nullptr)
-    {
-        return false;
-    }
-
-    maybeAddSkillPerk(*targetState, state.argument);
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    returncode = giveResolvedTargetSkill(targetContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }

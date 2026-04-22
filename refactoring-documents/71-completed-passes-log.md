@@ -874,6 +874,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining t
 
 Extended `ScriptSystemsFunctions.cpp` with a focused invalid-target regression on top of the existing armor and wallet coverage, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 175 — Systems target-role compatibility closure (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining target team/state/enchant compatibility pocket behind one file-local target-context helper layer. Routed `scr_JoinTargetTeam`, `scr_TargetJoinTeam`, `scr_GiveExperienceToTarget`, `scr_UnkurseTarget`, `scr_CostTargetMana`, `scr_AddBlipAllEnemies`, `scr_GrogTarget`, `scr_DazeTarget`, `scr_KurseTarget`, `scr_SetTargetAmmo`, `scr_DisenchantTarget`, and `scr_GiveSkillToTarget` through the shared resolver while preserving legacy quiet-failure, timer, perk, and enemy-sense behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused invalid-target regression for the new target-compatibility helper cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

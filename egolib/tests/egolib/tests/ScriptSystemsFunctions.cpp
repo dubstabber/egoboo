@@ -2067,6 +2067,72 @@ TEST_F(ScriptSystemsFunctionsFixture, GiveSkillToTargetPreservesLegacyUnknownSki
     EXPECT_FALSE(target->hasPerk(Ego::Perks::TRAP_LORE));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, TargetCompatibilityOpcodesFailQuietlyWhenTargetRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 56741);
+    auto target = makeObject(module, "mp_objects/follower.obj", 56742);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_TRUE(target->getProfile()->canBeGrogged());
+    ASSERT_TRUE(target->getProfile()->canBeDazed());
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    target->setMana(target->getMaxMana());
+    target->setAmmo(2);
+    target->setGrogTimer(3);
+    target->setDazeTimer(4);
+    ASSERT_FALSE(target->hasPerk(Ego::Perks::NIGHT_VISION));
+
+    auto enchant = addHealRemovableEnchant(module, target, 56743);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_FALSE(target->getFirstActiveEnchant()->isTerminated());
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    self.setTarget(ObjectRef::Invalid);
+
+    const TEAM_REF actorTeamBefore = actor->getTeamRef();
+    const TEAM_REF targetTeamBefore = target->getTeamRef();
+    const float targetManaBefore = target->getMana();
+    const uint16_t targetAmmoBefore = target->getAmmo();
+    const int targetGrogBefore = target->getGrogTimer();
+    const int targetDazeBefore = target->getDazeTimer();
+
+    state.argument = static_cast<int>(Team::TEAM_NULL);
+    EXPECT_FALSE(scr_JoinTargetTeam(state, self));
+    EXPECT_FALSE(scr_TargetJoinTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), actorTeamBefore);
+    EXPECT_EQ(target->getTeamRef(), targetTeamBefore);
+
+    state.argument = FLOAT_TO_FP8(1.0f);
+    EXPECT_FALSE(scr_CostTargetMana(state, self));
+    EXPECT_FLOAT_EQ(target->getMana(), targetManaBefore);
+
+    state.argument = 99;
+    EXPECT_FALSE(scr_SetTargetAmmo(state, self));
+    EXPECT_EQ(target->getAmmo(), targetAmmoBefore);
+
+    state.argument = 5;
+    EXPECT_FALSE(scr_GrogTarget(state, self));
+    EXPECT_FALSE(scr_DazeTarget(state, self));
+    EXPECT_EQ(target->getGrogTimer(), targetGrogBefore);
+    EXPECT_EQ(target->getDazeTimer(), targetDazeBefore);
+
+    state.argument = IDSZ2::caseLabel('D', 'A', 'R', 'K');
+    EXPECT_FALSE(scr_GiveSkillToTarget(state, self));
+    EXPECT_FALSE(target->hasPerk(Ego::Perks::NIGHT_VISION));
+
+    EXPECT_FALSE(scr_DisenchantTarget(state, self));
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_FALSE(target->getFirstActiveEnchant()->isTerminated());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ExportCharacterWritesPerkAndPoolNamesThroughInstalledPerkService)
 {
     auto& module = beginActiveTestModule();
