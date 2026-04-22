@@ -156,7 +156,7 @@ bool LoadingState::loadPlayers()
 
     if(importList.count > 0) {
 
-        if(game_copy_imports(&importList) == rv_success) {
+        if (game_copy_imports(importList)) {
             return true;
         }
         else {

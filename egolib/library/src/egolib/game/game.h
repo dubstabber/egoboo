@@ -145,7 +145,7 @@ struct import_list_t
 	}
 
 	static void init(import_list_t& self);
-	static egolib_rv from_players(import_list_t& self);
+	static size_t from_players(import_list_t& self);
 };
 
 //--------------------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ uint8_t get_light( int alpha, float seedark_mag );
 
 ObjectRef chr_get_lowest_attachment(ObjectRef object_ref, bool non_item );
 
-egolib_rv game_copy_imports( import_list_t * imp_lst );
+bool game_copy_imports(import_list_t& imports);
 
 //--------------------------------------------------------------------------------------------
 /**

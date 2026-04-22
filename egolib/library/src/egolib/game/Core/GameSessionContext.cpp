@@ -244,9 +244,7 @@ bool GameSessionContext::finishModule()
     }
 
     vfs_removeDirectoryAndContents("import");
-    game_copy_imports(&importList());
-
-    return true;
+    return game_copy_imports(importList());
 }
 
 ObjectHandler* GameSessionContext::tryObjectHandler()

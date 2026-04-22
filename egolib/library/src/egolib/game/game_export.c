@@ -238,16 +238,15 @@ bool export_one_character_name_vfs( const char *szSaveName, ObjectRef character 
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv game_copy_imports( import_list_t * imp_lst )
+bool game_copy_imports(import_list_t& imports)
 {
-    egolib_rv retval;
-
-    if ( NULL == imp_lst ) return rv_error;
-
-    if ( 0 == imp_lst->count ) return rv_success;
+    if (0 == imports.count)
+    {
+        return true;
+    }
 
     // assume the best
-    retval = rv_success;
+    bool copiedAllImports = true;
 
     // delete the data in the directory
     vfs_removeDirectoryAndContents( "import" );
@@ -257,15 +256,15 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
     if ( !vfs_mkdir( "/import" ) )
     {
 		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create import folder: ", vfs_getError(), Log::EndOfEntry);
-        return rv_error;
+        return false;
     }
     vfs_add_mount_point( fs_getUserDirectory(), Ego::FsPath("import"), Ego::VfsPath("mp_import"), 1 );
 
     // copy all of the imports over
-    for (auto import_idx = 0; import_idx < imp_lst->count; import_idx++ )
+    for (auto import_idx = 0; import_idx < imports.count; import_idx++ )
     {
         // grab the loadplayer info
-        import_element_t * import_ptr = imp_lst->lst + import_idx;
+        import_element_t* import_ptr = imports.lst + import_idx;
 
         std::stringstream stringStream;
         stringStream << "/import/temp" << std::setfill('0') << std::setw(4) << import_ptr->slot << ".obj";
@@ -273,7 +272,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
 
         if ( !vfs_copyDirectory( import_ptr->srcDir.c_str(), import_ptr->dstDir.c_str() ) )
         {
-            retval = rv_error;
+            copiedAllImports = false;
 			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import character ",
                                              "from ", "`", import_ptr->srcDir, "`", " to ", "`", import_ptr->dstDir, "`", "(",
                                              vfs_getError(), ")");
@@ -296,7 +295,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
                 auto tmp_dst_dir = stringStream.str();
                 if ( !vfs_copyDirectory( tmp_src_dir.c_str(), tmp_dst_dir.c_str() ) )
                 {
-                    retval = rv_error;
+                    copiedAllImports = false;
 					EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to copy an import inventory item from ",
                                                      "`", tmp_src_dir, "` to `", tmp_dst_dir, "`: ", vfs_getError());
                 }
@@ -304,7 +303,7 @@ egolib_rv game_copy_imports( import_list_t * imp_lst )
         }
     }
 
-    return retval;
+    return copiedAllImports;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -319,7 +318,7 @@ void import_list_t::init(import_list_t& self)
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv import_list_t::from_players(import_list_t& self)
+size_t import_list_t::from_players(import_list_t& self)
 {
     GameModule& module = activeModule();
     // blank out the ImportList list
@@ -346,5 +345,5 @@ egolib_rv import_list_t::from_players(import_list_t& self)
         import_ptr->srcDir = "mp_players/" + str_encode_path(pchr->getName());
 	}
 
-	return (self.count > 0) ? rv_success : rv_fail;
+	return self.count;
 }

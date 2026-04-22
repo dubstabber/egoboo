@@ -844,6 +844,12 @@ Continued Tier 1.4 by removing the last legacy status-code residue inside `Objec
 
 Extended `ObjectAccessors.cpp` with focused regressions that pin failed self-attach and already-held attach attempts as no-op state, then kept the attachment-heavy gameplay/script slices and the `test.mod` validator as the acceptance bar.
 
+### Pass 170 — Import-list bool/count contract cleanup (2026-04-22)
+
+Continued Tier 1.4 by retiring `egolib_rv` from the import-list copy/build seam in `game_export.c`: `game_copy_imports(...)` now takes `import_list_t&` and returns `bool`, while `import_list_t::from_players(...)` now returns the collected player count instead of a legacy status code. Preserved behavior: empty import lists remain successful no-ops, and copy failures still log warnings without changing the caller cleanup flow.
+
+Added focused `ImportWorkflow.cpp` coverage for empty-list success, missing-source failure, successful character-plus-inventory copy, and active-module player-list entry construction, then kept build and the `test.mod` validator as the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
