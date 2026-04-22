@@ -1159,7 +1159,7 @@ bool validateObjectProfile(const std::string& moduleName,
 
             script_info_t script;
             parser_state_t& parser = parser_state_t::get();
-            if (rv_success != load_ai_script_vfs(parser, scriptPath, profile.get(), script))
+            if (!load_ai_script_vfs(parser, scriptPath, profile.get(), script))
             {
                 reporter.error(moduleName,
                                "script_compile_failure",

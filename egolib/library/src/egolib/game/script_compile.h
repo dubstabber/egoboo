@@ -244,4 +244,4 @@ public:
  *		If this fails, then it tries to load the default script.
  *			If this fails, then the call to this function fails.
  */
-egolib_rv load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script);
+bool load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script);

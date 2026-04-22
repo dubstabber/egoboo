@@ -850,6 +850,12 @@ Continued Tier 1.4 by retiring `egolib_rv` from the import-list copy/build seam 
 
 Added focused `ImportWorkflow.cpp` coverage for empty-list success, missing-source failure, successful character-plus-inventory copy, and active-module player-list entry construction, then kept build and the `test.mod` validator as the acceptance bar for the pass.
 
+### Pass 171 — AI script loader bool-contract cleanup (2026-04-22)
+
+Continued Tier 1.4 by retiring `egolib_rv` from the AI script-loading seam in `script_compile.c`: `load_ai_script_vfs(...)` and its file-local helper now return `bool` while preserving the existing behavior of trying the requested script first and then falling back to `mp_data/script.txt`.
+
+Updated the validator's script compile check to the new bool contract without changing its `script_missing`, `script_fallback`, or `script_compile_failure` classification, and added focused `ScriptLoader.cpp` coverage for valid-primary, missing-primary fallback, invalid-primary fallback, and both-primary-and-fallback failure behavior.
+
 ---
 
 ## Files touched most by this pass log

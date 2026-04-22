@@ -1055,7 +1055,7 @@ bool load_ai_codes_vfs()
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script)
+static bool load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script)
 {
 	ps.clear_error();
 	ps._line_count = 0;
@@ -1065,16 +1065,16 @@ egolib_rv load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname, O
     // Load the entire file.
     try {
         if (!vfs_exists(loadname)) {
-            return rv_fail;
+            return false;
         }
         vfs_readEntireFile(loadname, [&ps](size_t numberOfBytes, const char *bytes) { ps._loadBuffer.append(bytes, numberOfBytes); });
     } catch (...) {
-        return rv_fail;
+        return false;
     }
     // Assert proper encoding: The file may not contain zero terminators.
     for (size_t i = 0; i < ps._loadBuffer.getSize(); ++i) {
         if (CSTR_END == ps._loadBuffer.get(i)) {
-            return rv_fail;
+            return false;
         }
     }
     try {
@@ -1090,25 +1090,25 @@ egolib_rv load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname, O
         // determine the correct jumps
         parser_state_t::parse_jumps(script);
     } catch (...) {
-        return rv_fail;
+        return false;
     }
 
-	return rv_success;
+	return true;
 }
-egolib_rv load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script)
+bool load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script)
 {
 	/// @author ZZ
 	/// @details This function loads a script to memory
 
-	if (rv_success != load_ai_script_vfs0(ps, loadname, ppro, script)) {
+	if (!load_ai_script_vfs0(ps, loadname, ppro, script)) {
 		Log::Entry e(Log::Level::Info, __FILE__, __LINE__, __FUNCTION__);
 		e << "unable to load script file `" << loadname << "` - loading default script `" << "mp_data/script.txt" << "` instead" << Log::EndOfEntry;
 		EngineContext::get().logTarget() << e;
-		if (rv_success != load_ai_script_vfs0(ps, "mp_data/script.txt", ppro, script)) {
-			return rv_fail;
+		if (!load_ai_script_vfs0(ps, "mp_data/script.txt", ppro, script)) {
+			return false;
 		}
 	}
-	return rv_success;
+	return true;
 }
 
 //--------------------------------------------------------------------------------------------
