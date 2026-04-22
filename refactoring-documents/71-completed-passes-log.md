@@ -832,6 +832,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by moving the remaining con
 
 Extended `ScriptStateFunctions.cpp` with focused regressions for terminated-self poof failure plus the inventory-full and occupied-grip attached-spawn failure paths, while keeping the existing spawn/particle success coverage and the `test.mod` validator as the acceptance bar.
 
+### Pass 168 — CharacterMatrix error-contract cleanup (2026-04-22)
+
+Started Tier 1.4 by retiring `egolib_rv` from the matrix-update seam in `CharacterMatrix`: `chr_update_matrix(...)` now takes `Object&` and returns `bool`, while the internal cache-dirty check became a ref-based boolean helper instead of a legacy status-code API. Kept behavior unchanged for recursive holder updates, matrix invalidation, collision-size follow-on work, and the pointer-based query helpers.
+
+Extended `ObjectAccessors.cpp` with focused regressions for stale-vs-current matrix publication and pointer-helper compatibility, then kept build, the focused accessor/module-spawn slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

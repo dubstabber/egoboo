@@ -526,7 +526,7 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
 
     //Actually change the model
     inst.setObjectProfile(getProfile());
-    chr_update_matrix(this, true);
+    chr_update_matrix(*this, true);
 
     // Set the skin after changing the model in ObjectGraphics::setProfile()
     setSkin(newSkin);

@@ -97,7 +97,7 @@ struct matrix_cache_t : public idlib::equal_to_expr<matrix_cache_t>
 
 //Function prototypes
 bool    chr_matrix_valid( const Object * pchr );
-egolib_rv chr_update_matrix( Object * pchr, bool update_size );
+bool chr_update_matrix(Object& object, bool update_size);
 bool set_weapongrip( const ObjectRef iitem, const ObjectRef iholder, uint16_t vrt_off );
 bool chr_getMatUp(Object *object_ptr, Ego::Vector3f& up);
 bool chr_getMatForward(Object *object_ptr, Ego::Vector3f& forward);

@@ -35,7 +35,7 @@ auto& objectHandler()
 
 static int get_grip_verts( uint16_t grip_verts[], const ObjectRef imount, int vrt_offset );
 
-static egolib_rv matrix_cache_needs_update( Object * pchr, matrix_cache_t& pmc );
+static bool matrix_cache_needs_update(Object& object, matrix_cache_t& pmc);
 static bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp );
 static bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp );
 
@@ -199,7 +199,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         Object * ptarget = objectHandler().get( pchr->getAITarget() );
 
         // make sure we have the latst info from the target
-        chr_update_matrix( ptarget, true );
+        chr_update_matrix(*ptarget, true);
 
         // grab the matrix cache into from the character we are overlaying
         mc_tmp = ptarget->getMatrixCache();
@@ -221,7 +221,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
             Object * pmount = objectHandler().get( pchr->getHolderRef() );
 
             // make sure we have the latst info from the target
-            chr_update_matrix( pmount, true );
+            chr_update_matrix(*pmount, true);
 
             // just in case the mounts's matrix cannot be corrected
             // then treat it as if it is not mounted... yuck
@@ -493,22 +493,20 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv matrix_cache_needs_update( Object * pchr, matrix_cache_t& pmc )
+bool matrix_cache_needs_update(Object& object, matrix_cache_t& pmc)
 {
     /// @author BB
     /// @details determine whether a matrix cache has become invalid and needs to be updated
 
-    if ( nullptr == pchr ) return rv_error;
-
     // get the matrix data that is supposed to be used to make the matrix
-    chr_get_matrix_cache( pchr, pmc );
+    chr_get_matrix_cache(&object, pmc);
 
     // compare that data to the actual data used to make the matrix
-    return !(pmc == pchr->getMatrixCache()) ? rv_success : rv_fail;
+    return !(pmc == object.getMatrixCache());
 }
 
 //--------------------------------------------------------------------------------------------
-egolib_rv chr_update_matrix( Object * pchr, bool update_size )
+bool chr_update_matrix(Object& object, bool update_size)
 {
     /// @author BB
     /// @details Do everything necessary to set the current matrix for this character.
@@ -519,31 +517,20 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     bool         needs_update = false;
 
     // recursively make sure that any mount matrices are updated
-    const ObjectRef holderRef = pchr->getHolderRef();
+    const ObjectRef holderRef = object.getHolderRef();
     if (objectHandler().exists(holderRef))
     {
-        egolib_rv attached_update = chr_update_matrix(objectHandler().get(holderRef), true);
-
-        // if this fails, we should probably do something...
-        if ( rv_error == attached_update )
-        {
-            // there is an error so this matrix is not defined and no readon to go farther
-            pchr->setMatrixValueValid(false);
-            return attached_update;
-        }
-        else if ( rv_success == attached_update )
+        if (chr_update_matrix(*objectHandler().get(holderRef), true))
         {
             // the holder/mount matrix has changed.
             // this matrix is no longer valid.
-            pchr->setMatrixValueValid(false);
+            object.setMatrixValueValid(false);
         }
     }
 
     // does the matrix cache need an update at all?
     matrix_cache_t mc_tmp;
-    egolib_rv retval = matrix_cache_needs_update( pchr, mc_tmp );
-    if ( rv_error == retval ) return rv_error;
-    needs_update = ( rv_success == retval );
+    needs_update = matrix_cache_needs_update(object, mc_tmp);
 
     // Update the grip vertices no matter what (if they are used)
     const std::shared_ptr<Object> &heldItem = objectHandler()[mc_tmp.grip_chr];
@@ -559,19 +546,19 @@ egolib_rv chr_update_matrix( Object * pchr, bool update_size )
     if (needs_update)
     {
         // we know the matrix is not valid
-        pchr->setMatrixValueValid(false);
+        object.setMatrixValueValid(false);
 
-        if(apply_matrix_cache(pchr, mc_tmp)) {
+        if(apply_matrix_cache(&object, mc_tmp)) {
             if(update_size) {
                 // call chr_update_collision_size() but pass in a false value to prevent a recursize call
-                pchr->updateCollisionSize(false);
+                object.updateCollisionSize(false);
             }
-            return rv_success;
+            return true;
         }
 
     }
 
-    return rv_fail;
+    return false;
 }
 
 
@@ -582,7 +569,7 @@ bool chr_getMatUp(Object *object_ptr, Ego::Vector3f& up)
 
 	if (!chr_matrix_valid(object_ptr))
 	{
-		chr_update_matrix(object_ptr, true);
+		chr_update_matrix(*object_ptr, true);
 	}
 
 	if (chr_matrix_valid(object_ptr))
@@ -605,7 +592,7 @@ bool chr_getMatRight(Object *object_ptr, Ego::Vector3f& right)
 
 	if (!chr_matrix_valid(object_ptr))
 	{
-		chr_update_matrix(object_ptr, true);
+		chr_update_matrix(*object_ptr, true);
 	}
 
 	if (chr_matrix_valid(object_ptr))
@@ -628,7 +615,7 @@ bool chr_getMatForward(Object *object_ptr, Ego::Vector3f& forward)
 
 	if (!chr_matrix_valid(object_ptr))
 	{
-		chr_update_matrix(object_ptr, true);
+		chr_update_matrix(*object_ptr, true);
 	}
 
 	if (chr_matrix_valid(object_ptr))
@@ -651,7 +638,7 @@ bool chr_getMatTranslate(Object *object_ptr, Ego::Vector3f& translate)
 
 	if (!chr_matrix_valid(object_ptr))
 	{
-		chr_update_matrix(object_ptr, true);
+		chr_update_matrix(*object_ptr, true);
 	}
 
 	if (chr_matrix_valid(object_ptr))

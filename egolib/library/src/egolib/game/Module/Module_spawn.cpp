@@ -307,7 +307,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
         }
     }
 
-    chr_update_matrix(pchr.get(), true);
+    chr_update_matrix(*pchr, true);
 
     // start the character out in the "dance" animation
     pchr->startAnimation(ACTION_DA, true, true);

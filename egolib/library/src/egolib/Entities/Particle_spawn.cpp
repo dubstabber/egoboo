@@ -553,7 +553,7 @@ bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_o
     // Do we have a matrix???
     if ( !chr_matrix_valid(object.get()) )
     {
-        chr_update_matrix(object.get(), true);
+        chr_update_matrix(*object, true);
     }
 
     // Do we have a matrix???

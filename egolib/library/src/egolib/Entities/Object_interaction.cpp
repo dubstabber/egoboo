@@ -142,7 +142,7 @@ bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
         inst.setActionKeep(false);
     }
 
-    chr_update_matrix(this, true);
+    chr_update_matrix(*this, true);
 
     return true;
 }

@@ -124,7 +124,7 @@ bool Object::teleport(const Ego::Vector3f& position, Facing facing_z)
         ori.facing_z = idlib::canonicalize(facing_z);
 
         if (!detatchFromHolder(true, false)) {
-            chr_update_matrix(this, true);
+            chr_update_matrix(*this, true);
         }
 
         return true;

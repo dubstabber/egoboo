@@ -1979,6 +1979,64 @@ TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
     EXPECT_FALSE(object->getMatrixCache().isValid());
 }
 
+TEST_F(ObjectAccessorFixture, MatrixUpdateReportsAppliedStateForStaleAndCurrentCache)
+{
+    ObjectHandler& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3131);
+    ASSERT_NE(object, nullptr);
+
+    object->setPosition(17.0f, 19.0f, 23.0f);
+    object->setFacingZ(Facing(1111));
+    object->setMapTwistFacingX(Facing(2222));
+    object->setMapTwistFacingY(Facing(3333));
+    object->invalidateMatrixCache();
+
+    EXPECT_TRUE(chr_update_matrix(*object, true));
+    EXPECT_TRUE(chr_matrix_valid(object.get()));
+    EXPECT_TRUE(object->hasValidMatrixCache());
+    EXPECT_TRUE(object->hasValidMatrixValue());
+
+    EXPECT_FALSE(chr_update_matrix(*object, true));
+
+    object->setPosition(31.0f, 37.0f, 41.0f);
+
+    EXPECT_TRUE(chr_update_matrix(*object, true));
+    EXPECT_TRUE(chr_matrix_valid(object.get()));
+    EXPECT_FLOAT_EQ(mat_getTranslate(object->getMatrix())[kX], object->getPosX());
+    EXPECT_FLOAT_EQ(mat_getTranslate(object->getMatrix())[kY], object->getPosY());
+    EXPECT_FLOAT_EQ(mat_getTranslate(object->getMatrix())[kZ], object->getPosZ());
+}
+
+TEST_F(ObjectAccessorFixture, MatrixQueryHelpersPreservePointerCompatibility)
+{
+    Ego::Vector3f up(-1.0f, -1.0f, -1.0f);
+    Ego::Vector3f right(-1.0f, -1.0f, -1.0f);
+    Ego::Vector3f forward(-1.0f, -1.0f, -1.0f);
+    Ego::Vector3f translate(-1.0f, -1.0f, -1.0f);
+
+    EXPECT_FALSE(chr_getMatUp(nullptr, up));
+    EXPECT_FALSE(chr_getMatRight(nullptr, right));
+    EXPECT_FALSE(chr_getMatForward(nullptr, forward));
+    EXPECT_FALSE(chr_getMatTranslate(nullptr, translate));
+
+    ObjectHandler& objectHandler = beginActiveTestModule();
+    auto object = makeFollower(objectHandler, 3132);
+    ASSERT_NE(object, nullptr);
+
+    object->setPosition(43.0f, 47.0f, 53.0f);
+    object->invalidateMatrixCache();
+
+    EXPECT_FALSE(chr_matrix_valid(object.get()));
+    EXPECT_TRUE(chr_getMatUp(object.get(), up));
+    EXPECT_TRUE(chr_getMatRight(object.get(), right));
+    EXPECT_TRUE(chr_getMatForward(object.get(), forward));
+    EXPECT_TRUE(chr_getMatTranslate(object.get(), translate));
+    EXPECT_TRUE(chr_matrix_valid(object.get()));
+    EXPECT_FLOAT_EQ(translate[kX], object->getPosX());
+    EXPECT_FLOAT_EQ(translate[kY], object->getPosY());
+    EXPECT_FLOAT_EQ(translate[kZ], object->getPosZ());
+}
+
 TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAndInvalidatesMatrixCache)
 {
     auto object = makeFollower(314);

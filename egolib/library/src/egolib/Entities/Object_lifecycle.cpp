@@ -293,7 +293,7 @@ void Object::respawn()
     }
 
     inst.setObjectProfile(getProfile());
-    chr_update_matrix(this, true);
+    chr_update_matrix(*this, true);
 
     if (!isHidden()) {
         reaffirm_attached_particles(getObjRef());

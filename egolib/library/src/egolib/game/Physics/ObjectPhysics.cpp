@@ -904,7 +904,7 @@ bool ObjectPhysics::attachToObject(ObjectRef holderRef, grip_offset_t grip_off)
     // set the grip vertices for the irider
     set_weapongrip(_object.getObjRef(), holder->getObjRef(), grip_off);
 
-    chr_update_matrix(&_object, true);
+    chr_update_matrix(_object, true);
 
     _object.setPosition(mat_getTranslate(_object.getMatrix()));
 
@@ -990,9 +990,7 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
     // make sure the matrix is updated properly
     if (update_matrix) {
         // call chr_update_matrix() but pass in a false value to prevent a recursive call
-        if (rv_error == chr_update_matrix(&_object, false)) {
-            return;
-        }
+        chr_update_matrix(_object, false);
     }
 
     // convert the point cloud in the GLvertex array (_object.inst._vertexList) to
