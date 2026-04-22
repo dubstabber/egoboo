@@ -880,6 +880,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining t
 
 Extended `ScriptSystemsFunctions.cpp` with a focused invalid-target regression for the new target-compatibility helper cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 176 — Systems quest/class compatibility closure (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining quest-log and self class-change compatibility pocket behind file-local helper contexts. Routed `scr_AddQuest`, `scr_BeatQuestAllPlayers`, `scr_SetQuestLevel`, `scr_AddQuestAllPlayers`, and `scr_ChangeTargetClass` through shared quest/class helpers while preserving quiet-failure for missing target quest logs, empty local-player sets, and unloaded class profiles.
+
+Extended `ScriptSystemsFunctions.cpp` with focused regressions for empty local-player quest updates and invalid-self class-change failure, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

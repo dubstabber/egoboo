@@ -1597,6 +1597,23 @@ TEST_F(ScriptSystemsFunctionsFixture, AddQuestAllPlayersOnlyRaisesNonBeatenQuest
     EXPECT_FALSE(scr_AddQuestAllPlayers(state, self));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, AllPlayerQuestHelpersReturnFalseWhenNoLocalPlayersExist)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5672);
+
+    ASSERT_NE(actor, nullptr);
+
+    const IDSZ2 questId('N', 'O', 'P', 'L');
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    state.argument = questId.toUint32();
+    state.distance = 4;
+
+    EXPECT_FALSE(scr_BeatQuestAllPlayers(state, self));
+    EXPECT_FALSE(scr_AddQuestAllPlayers(state, self));
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, DamageAndKillTargetUseDamageableRole)
 {
     auto& module = beginActiveTestModule();
@@ -2645,6 +2662,18 @@ TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassUsesMorphControlAndPublis
     EXPECT_EQ(actor->getBaseModelRef(), nextProfile);
     EXPECT_NE(previousProfile, nextProfile);
     EXPECT_NE(previousBaseModel, nextProfile);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, ChangeTargetClassFailsQuietlyWhenSelfRefIsInvalid)
+{
+    beginActiveTestModule();
+
+    script_state_t state;
+    state.argument = ObjectProfileRef(SPELLBOOK).get();
+    ai_state_t self;
+    self.setSelf(ObjectRef::Invalid);
+
+    EXPECT_FALSE(scr_ChangeTargetClass(state, self));
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, PassageMutatorsPreserveExistingPassageBehavior)

@@ -141,6 +141,16 @@ struct TargetCompatibilityContext
     IEnchantable* enchantable = nullptr;
 };
 
+struct QuestCompatibilityContext
+{
+    Ego::QuestLog* targetQuestLog = nullptr;
+};
+
+struct ClassChangeCompatibilityContext
+{
+    IMorphControl* selfMorph = nullptr;
+};
+
 void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId);
 void publishEnemySense(const EnemySenseState& state);
 void resetEnemySense();
@@ -699,6 +709,20 @@ Ego::QuestLog* resolvedTargetQuestLog(const ai_state_t& self)
     return target != nullptr ? tryQuestLog(*target) : nullptr;
 }
 
+QuestCompatibilityContext makeQuestCompatibilityContext(const ai_state_t& self)
+{
+    QuestCompatibilityContext context;
+    context.targetQuestLog = resolvedTargetQuestLog(self);
+    return context;
+}
+
+ClassChangeCompatibilityContext makeClassChangeCompatibilityContext(Object& selfObject)
+{
+    ClassChangeCompatibilityContext context;
+    context.selfMorph = static_cast<IMorphControl*>(&selfObject);
+    return context;
+}
+
 ObjectRef resolvedKillSourceRef(const ITargetInfo& selfInfo, ObjectRef selfRef)
 {
     const ObjectRef holderRef = selfInfo.getHolderRef();
@@ -1056,6 +1080,44 @@ bool updatePlayerQuestLogs(Fn&& fn)
     }
 
     return updated;
+}
+
+bool addResolvedQuest(const QuestCompatibilityContext& context, const IDSZ2& idsz, int progress)
+{
+    return context.targetQuestLog != nullptr &&
+           addQuestIfMissing(*context.targetQuestLog, idsz, progress);
+}
+
+bool adjustResolvedQuestLevel(const QuestCompatibilityContext& context, const IDSZ2& idsz, int delta)
+{
+    return context.targetQuestLog != nullptr &&
+           adjustActiveQuestLevel(*context.targetQuestLog, idsz, delta);
+}
+
+bool beatQuestForAllPlayers(const IDSZ2& idsz)
+{
+    return updatePlayerQuestLogs([&](Ego::QuestLog& questLog) { return beatActiveQuest(questLog, idsz); });
+}
+
+bool raiseQuestForAllPlayers(const IDSZ2& idsz, int progress)
+{
+    return updatePlayerQuestLogs([&](Ego::QuestLog& questLog)
+    {
+        return raiseQuestLevelIfHigher(questLog, idsz, progress);
+    });
+}
+
+bool changeSelfClass(const ClassChangeCompatibilityContext& context, ObjectProfileRef profileID)
+{
+    if (context.selfMorph == nullptr ||
+        !EngineContext::get().profileSystem().isLoaded(profileID))
+    {
+        return false;
+    }
+
+    context.selfMorph->polymorphObject(profileID, 0);
+    context.selfMorph->setBaseModelRef(profileID);
+    return true;
 }
 
 template <typename Fn>
@@ -2300,24 +2362,11 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const auto profileID = ObjectProfileRef(static_cast<PRO_REF>(state.argument));
+    const ClassChangeCompatibilityContext classContext = makeClassChangeCompatibilityContext(*pchr);
 
     /// @details This function polymorphs a character permanently so that it can be exported properly
     /// A character turned into a frog with this function will also export as a frog!
-    if(EngineContext::get().profileSystem().isLoaded(profileID)) 
-    {
-        IMorphControl& targetMorph = morphControl(*pchr);
-
-        //Change the object
-        targetMorph.polymorphObject(ObjectProfileRef(profileID), 0);
-
-        // set the base model to the new model, too
-        targetMorph.setBaseModelRef(profileID);
-
-        returncode = true;
-    }
-    else {
-        returncode = false;
-    }
+    returncode = changeSelfClass(classContext, profileID);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2779,8 +2828,8 @@ uint8_t scr_AddQuest( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    Ego::QuestLog* questLog = resolvedTargetQuestLog(self);
-    returncode = questLog != nullptr && addQuestIfMissing(*questLog, idsz, state.distance);
+    const QuestCompatibilityContext questContext = makeQuestCompatibilityContext(self);
+    returncode = addResolvedQuest(questContext, idsz, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2797,8 +2846,7 @@ uint8_t scr_BeatQuestAllPlayers( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    returncode = updatePlayerQuestLogs([&](Ego::QuestLog& questLog) { return beatActiveQuest(questLog, idsz); });
+    returncode = beatQuestForAllPlayers(idsz);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2815,8 +2863,8 @@ uint8_t scr_SetQuestLevel( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    Ego::QuestLog* questLog = resolvedTargetQuestLog(self);
-    returncode = questLog != nullptr && adjustActiveQuestLevel(*questLog, idsz, state.distance);
+    const QuestCompatibilityContext questContext = makeQuestCompatibilityContext(self);
+    returncode = adjustResolvedQuestLevel(questContext, idsz, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2833,10 +2881,7 @@ uint8_t scr_AddQuestAllPlayers( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    returncode = updatePlayerQuestLogs([&](Ego::QuestLog& questLog)
-    {
-        return raiseQuestLevelIfHigher(questLog, idsz, state.distance);
-    });
+    returncode = raiseQuestForAllPlayers(idsz, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
