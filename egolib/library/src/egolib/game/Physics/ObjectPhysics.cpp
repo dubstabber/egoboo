@@ -977,7 +977,7 @@ bool ObjectPhysics::attachToObject(ObjectRef holderRef, grip_offset_t grip_off)
     // It's not gonna hit the floor
     _object.setHitReady(false);
 
-    return rv_success;
+    return true;
 }
 
 void ObjectPhysics::updateCollisionSize(bool update_matrix)

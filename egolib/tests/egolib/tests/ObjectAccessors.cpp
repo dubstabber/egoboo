@@ -712,6 +712,34 @@ TEST_F(ObjectAccessorFixture, MissingHolderAndPlatformRefsRemainNullLikeThroughR
     EXPECT_FALSE(object->isBeingHeld());
 }
 
+TEST_F(ObjectAccessorFixture, AttachToObjectFailureLeavesAttachmentStateUnchanged)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto holder = makeFollower(objectHandler, 3048);
+    auto otherHolder = makeFollower(objectHandler, 3049);
+    auto object = makeFollower(objectHandler, 3050);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(otherHolder, nullptr);
+    ASSERT_NE(object, nullptr);
+
+    EXPECT_FALSE(object->attachToObject(object->getObjRef(), GRIP_LEFT));
+    EXPECT_EQ(object->getHolderRef(), ObjectRef::Invalid);
+    EXPECT_EQ(object->getAttachmentSlot(), SLOT_LEFT);
+    EXPECT_EQ(object->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
+    EXPECT_EQ(object->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
+
+    holder->setHeldObject(SLOT_LEFT, object->getObjRef());
+    object->setHolderRef(holder->getObjRef());
+    object->setAttachmentSlot(SLOT_LEFT);
+
+    EXPECT_TRUE(object->isBeingHeld());
+    EXPECT_FALSE(object->attachToObject(otherHolder->getObjRef(), GRIP_RIGHT));
+    EXPECT_EQ(object->getHolderRef(), holder->getObjRef());
+    EXPECT_EQ(object->getAttachmentSlot(), SLOT_LEFT);
+    EXPECT_EQ(holder->getHeldObject(SLOT_LEFT), object->getObjRef());
+    EXPECT_EQ(otherHolder->getHeldObject(SLOT_RIGHT), ObjectRef::Invalid);
+}
+
 TEST_F(ObjectAccessorFixture, PhysicsForwardersClampDesiredVelocityAndExposeGroundContactState)
 {
     auto object = makeFollower(3044);

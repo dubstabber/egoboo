@@ -838,6 +838,12 @@ Started Tier 1.4 by retiring `egolib_rv` from the matrix-update seam in `Charact
 
 Extended `ObjectAccessors.cpp` with focused regressions for stale-vs-current matrix publication and pointer-helper compatibility, then kept build, the focused accessor/module-spawn slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 169 — Attachment bool-contract residue cleanup (2026-04-22)
+
+Continued Tier 1.4 by removing the last legacy status-code residue inside `ObjectPhysics::attachToObject(...)`, keeping the public `bool` contract unchanged and preserving the existing early-false attachment guards plus success-path mutation order.
+
+Extended `ObjectAccessors.cpp` with focused regressions that pin failed self-attach and already-held attach attempts as no-op state, then kept the attachment-heavy gameplay/script slices and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
