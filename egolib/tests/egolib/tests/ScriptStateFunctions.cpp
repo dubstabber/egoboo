@@ -315,6 +315,49 @@ protected:
         return nullptr;
     }
 
+    std::vector<ObjectRef> collectObjectRefs(GameModule& module) const
+    {
+        std::vector<ObjectRef> refs;
+        for (const auto& object : module.getObjectHandler().getAllObjects())
+        {
+            if (object != nullptr)
+            {
+                refs.push_back(object->getObjRef());
+            }
+        }
+
+        return refs;
+    }
+
+    std::shared_ptr<Object> findNewObject(GameModule& module,
+                                          const std::vector<ObjectRef>& existingRefs) const
+    {
+        for (const auto& object : module.getObjectHandler().getAllObjects())
+        {
+            if (object == nullptr)
+            {
+                continue;
+            }
+
+            bool knownRef = false;
+            for (const ObjectRef& ref : existingRefs)
+            {
+                if (ref == object->getObjRef())
+                {
+                    knownRef = true;
+                    break;
+                }
+            }
+
+            if (!knownRef)
+            {
+                return object;
+            }
+        }
+
+        return nullptr;
+    }
+
     ai_state_t makeScriptSelf(const std::shared_ptr<Object>& selfObject) const
     {
         ai_state_t self;
@@ -638,6 +681,24 @@ TEST_F(ScriptStateFunctionsFixture, SpawnPoofUsesRefResolvedSelfObject)
     EXPECT_GT(particleHandler.getCount(), particleCountBefore);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SpawnPoofFailsWhenSelfIsNoLongerLive)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/ranger.obj", 55381);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    IParticleHandler& particleHandler = EngineContext::get().particleHandler();
+    const size_t particleCountBefore = particleHandler.getCount();
+
+    actor->requestTerminate();
+
+    EXPECT_FALSE(scr_SpawnPoof(state, self));
+    EXPECT_EQ(particleHandler.getCount(), particleCountBefore);
+}
+
 TEST_F(ScriptStateFunctionsFixture, SpawnParticleUsesResolvedHolderOwnerAndKeepsSelfAttachment)
 {
     auto& module = beginActiveTestModule();
@@ -952,6 +1013,89 @@ TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterPreservesInventoryAndW
     ASSERT_NE(self.child, ObjectRef::Invalid);
     EXPECT_EQ(target->getHeldObject(SLOT_LEFT), self.child);
     EXPECT_EQ(target->getHeldObject(SLOT_RIGHT), existingRightItem->getObjRef());
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterTerminatesChildWhenTargetInventoryIsFull)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55412);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55413);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    std::vector<std::shared_ptr<Object>> fillerItems;
+    while (target->getFirstFreeInventorySlot() < target->getInventoryMaxItems())
+    {
+        auto filler = makeMeleeWeapon(module, 55420 + static_cast<int>(fillerItems.size()) * 10);
+        ASSERT_NE(filler, nullptr);
+        ASSERT_TRUE(Inventory::add_item(target->getObjRef(),
+                                        filler->getObjRef(),
+                                        target->getFirstFreeInventorySlot(),
+                                        true));
+        fillerItems.push_back(filler);
+    }
+
+    const ObjectProfileRef requestedProfile = loadProfile("mp_data/globalobjects/weapons/stiletto.obj", 55490);
+    ASSERT_NE(requestedProfile, ObjectProfileRef::Invalid);
+
+    const auto refsBefore = collectObjectRefs(module);
+    const size_t inventoryItemCountBefore = target->getInventoryItemRefs().size();
+    const size_t objectCountBefore = module.getObjectHandler().getObjectCount();
+
+    script_state_t state;
+    state.argument = requestedProfile.get();
+    state.x = 72;
+    state.y = 84;
+    state.distance = ATTACH_INVENTORY;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(401);
+    self.passage = 31;
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_SpawnAttachedCharacter(state, self));
+    EXPECT_EQ(self.child, ObjectRef::Invalid);
+    EXPECT_EQ(target->getInventoryItemRefs().size(), inventoryItemCountBefore);
+    EXPECT_EQ(module.getObjectHandler().getObjectCount(), objectCountBefore);
+    EXPECT_EQ(findNewObject(module, refsBefore), nullptr);
+}
+
+TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterTerminatesChildWhenGripAlreadyUsed)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55491);
+    auto target = makeObject(module, "mp_objects/follower.obj", 55492);
+    auto existingLeftItem = makeMeleeWeapon(module, 55493);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(existingLeftItem, nullptr);
+    ASSERT_TRUE(existingLeftItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+
+    const ObjectProfileRef requestedProfile = loadProfile("mp_data/globalobjects/weapons/stiletto.obj", 55500);
+    ASSERT_NE(requestedProfile, ObjectProfileRef::Invalid);
+
+    const auto refsBefore = collectObjectRefs(module);
+    const ObjectRef previousLeftHand = target->getHeldObject(SLOT_LEFT);
+    const size_t objectCountBefore = module.getObjectHandler().getObjectCount();
+
+    script_state_t state;
+    state.argument = requestedProfile.get();
+    state.x = 96;
+    state.y = 108;
+    state.distance = ATTACH_LEFT;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.owner = ObjectRef(402);
+    self.passage = 32;
+    self.setTarget(target->getObjRef());
+
+    EXPECT_TRUE(scr_SpawnAttachedCharacter(state, self));
+    EXPECT_EQ(self.child, ObjectRef::Invalid);
+    EXPECT_EQ(target->getHeldObject(SLOT_LEFT), previousLeftHand);
+    EXPECT_EQ(module.getObjectHandler().getObjectCount(), objectCountBefore);
+    EXPECT_EQ(findNewObject(module, refsBefore), nullptr);
 }
 
 TEST_F(ScriptStateFunctionsFixture, RespawnToggleHelpersUseModuleWrapper)

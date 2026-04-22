@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 164) completed between 2026-04-13 and 2026-04-21. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 167) completed between 2026-04-13 and 2026-04-22. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -825,6 +825,12 @@ Extended `ObjectAccessors.cpp` and `ScriptRuntime.cpp` with movement-role desire
 Continued Tier 1.2 inside `script_functions_systems.c` by replacing the remaining scattered self-object/self-profile/self-wallet/team/end-text compatibility helpers with one file-local self-compatibility context used by the self-only opcode cluster. Routed spellbook/follow-link, self team/money/armor writes, and end-text compatibility paths through that shared helper layer without widening any public role surfaces or changing legacy success/failure behavior.
 
 Extended `ScriptSystemsFunctions.cpp` with a focused invalid-self regression on top of the existing follow-link, armor, team, wallet, end-text, and spellbook coverage. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
+### Pass 167 — Spawn compatibility quarantine (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by moving the remaining concrete-`Object` spawn, particle, poof, and attached-child compatibility pockets behind one file-local helper layer (`SpawnSelfContext`, particle/self-handle helpers, and attached-child placement helpers). Kept public seams unchanged and preserved the existing behavior: safe-position gating still only applies to `scr_SpawnCharacter()`, exact-position spawns still publish child owner/passage/kurse state, and failed attached spawns still leave `self.child` untouched without widening any role interfaces.
+
+Extended `ScriptStateFunctions.cpp` with focused regressions for terminated-self poof failure plus the inventory-full and occupied-grip attached-spawn failure paths, while keeping the existing spawn/particle success coverage and the `test.mod` validator as the acceptance bar.
 
 ---
 
