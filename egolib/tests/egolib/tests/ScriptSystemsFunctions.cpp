@@ -2348,6 +2348,51 @@ TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserve
     EXPECT_EQ(actor->getMoney(), 0);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, TargetEconomyHelpersReturnFalseWhenTargetIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5693);
+
+    ASSERT_NE(actor, nullptr);
+    actor->giveMoney(100);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+    const int initialMoney = actor->getMoney();
+    const SKIN_T initialSkin = actor->getSkin();
+
+    state.argument = 2;
+    state.x = 77;
+    EXPECT_FALSE(scr_GetTargetArmorPrice(state, self));
+    EXPECT_EQ(state.argument, 2);
+    EXPECT_EQ(state.x, 77);
+
+    state.argument = 2;
+    state.x = 88;
+    EXPECT_FALSE(scr_ChangeTargetArmor(state, self));
+    EXPECT_EQ(state.argument, 2);
+    EXPECT_EQ(state.x, 88);
+    EXPECT_EQ(actor->getSkin(), initialSkin);
+
+    state.argument = 30;
+    EXPECT_FALSE(scr_GiveMoneyToTarget(state, self));
+    EXPECT_EQ(state.argument, 30);
+    EXPECT_EQ(actor->getMoney(), initialMoney);
+
+    state.argument = 15;
+    EXPECT_FALSE(scr_DropTargetMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), initialMoney);
+
+    state.argument = 3;
+    state.x = 44;
+    state.y = 55;
+    EXPECT_FALSE(scr_TargetPayForArmor(state, self));
+    EXPECT_EQ(state.argument, 3);
+    EXPECT_EQ(state.x, 44);
+    EXPECT_EQ(state.y, 55);
+    EXPECT_EQ(actor->getMoney(), initialMoney);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ArmorHelpersUseAppearanceProfileSeamAndPreserveLegacyOutputs)
 {
     auto& module = beginActiveTestModule();

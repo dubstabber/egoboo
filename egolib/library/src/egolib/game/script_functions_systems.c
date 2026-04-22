@@ -51,11 +51,6 @@ const ITargetInfo& targetInfo(const Object& object)
     return object;
 }
 
-IWallet& wallet(Object& object)
-{
-    return object;
-}
-
 ObjectRef selfObjectRef(const ai_state_t& self)
 {
     return self.getSelf();
@@ -94,10 +89,11 @@ struct SelfCompatibilityContext
     SelfProfilePolicyData policy;
 };
 
-struct TargetArmorPaymentContext
+struct TargetEconomyCompatibilityContext
 {
-    IAppearanceProfile* appearance = nullptr;
-    IWallet* wallet = nullptr;
+    IAppearanceProfile* targetAppearance = nullptr;
+    IWallet* selfWallet = nullptr;
+    IWallet* targetWallet = nullptr;
 };
 
 struct ArmorCostPolicy
@@ -233,6 +229,17 @@ bool setSelfMoney(const script_state_t& state, SelfCompatibilityContext& selfCon
     }
 
     selfContext.wallet->giveMoney(state.argument - selfContext.wallet->getMoney());
+    return true;
+}
+
+bool dropMoney(const script_state_t& state, IWallet* targetWallet)
+{
+    if (targetWallet == nullptr)
+    {
+        return false;
+    }
+
+    targetWallet->dropMoney(state.argument);
     return true;
 }
 
@@ -900,18 +907,31 @@ void forEachResolvedObjectRef(Fn&& fn)
     }
 }
 
-bool resolveTargetAppearance(const ai_state_t& self, IAppearanceProfile*& appearance)
+TargetEconomyCompatibilityContext makeTargetEconomyCompatibilityContext(Object& selfObject, const ai_state_t& self)
 {
-    appearance = tryAppearanceProfile(self.getTarget());
-    return appearance != nullptr;
+    TargetEconomyCompatibilityContext context;
+    context.targetAppearance = tryAppearanceProfile(self.getTarget());
+    context.selfWallet = static_cast<IWallet*>(&selfObject);
+    context.targetWallet = tryWallet(self.getTarget());
+    return context;
 }
 
-bool resolveTargetArmorPaymentContext(const ai_state_t& self,
-                                      TargetArmorPaymentContext& context)
+bool setTargetArmorPrice(script_state_t& state, const TargetEconomyCompatibilityContext& context)
 {
-    context.appearance = tryAppearanceProfile(self.getTarget());
-    context.wallet = tryWallet(self.getTarget());
-    return context.appearance != nullptr && context.wallet != nullptr;
+    if (context.targetAppearance == nullptr)
+    {
+        return false;
+    }
+
+    const int value = context.targetAppearance->getSkinCost(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    if (value <= 0)
+    {
+        state.x = 0;
+        return false;
+    }
+
+    state.x = value;
+    return true;
 }
 
 ArmorCostPolicy makeArmorCostPolicy(const IAppearanceProfile& appearance,
@@ -922,6 +942,71 @@ ArmorCostPolicy makeArmorCostPolicy(const IAppearanceProfile& appearance,
     policy.currentSkinRefund = appearance.getSkinCost(appearance.getSkin());
     policy.netCost = policy.requestedSkinCost - policy.currentSkinRefund;
     return policy;
+}
+
+bool changeTargetArmor(script_state_t& state, const TargetEconomyCompatibilityContext& context)
+{
+    if (context.targetAppearance == nullptr)
+    {
+        return false;
+    }
+
+    const int oldSkin = context.targetAppearance->getSkin();
+    state.x = context.targetAppearance->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    state.argument = oldSkin;
+    return true;
+}
+
+void clampTransferredMoney(script_state_t& state, const TargetEconomyCompatibilityContext& context)
+{
+    if (context.selfWallet == nullptr || context.targetWallet == nullptr)
+    {
+        return;
+    }
+
+    if (state.argument < 0 && std::abs(state.argument) > context.targetWallet->getMoney())
+    {
+        state.argument = -context.targetWallet->getMoney();
+    }
+    if (state.argument > context.selfWallet->getMoney())
+    {
+        state.argument = context.selfWallet->getMoney();
+    }
+}
+
+bool giveMoneyToTarget(script_state_t& state, const TargetEconomyCompatibilityContext& context)
+{
+    if (context.selfWallet == nullptr || context.targetWallet == nullptr)
+    {
+        return false;
+    }
+
+    clampTransferredMoney(state, context);
+    context.selfWallet->giveMoney(-state.argument);
+    context.targetWallet->giveMoney(state.argument);
+    return true;
+}
+
+bool chargeTargetArmor(script_state_t& state, const TargetEconomyCompatibilityContext& context)
+{
+    if (context.targetAppearance == nullptr || context.targetWallet == nullptr)
+    {
+        return false;
+    }
+
+    const ArmorCostPolicy armorCost = makeArmorCostPolicy(*context.targetAppearance,
+                                                          Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    state.y = armorCost.requestedSkinCost;
+
+    if (armorCost.netCost > context.targetWallet->getMoney())
+    {
+        state.x = armorCost.netCost - context.targetWallet->getMoney();
+        return false;
+    }
+
+    context.targetWallet->giveMoney(-armorCost.netCost);
+    state.x = 0;
+    return true;
 }
 
 void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId)
@@ -980,24 +1065,8 @@ uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = nullptr;
-    if (!resolveTargetAppearance(self, targetAppearance))
-    {
-        return false;
-    }
-
-    const int value = targetAppearance->getSkinCost(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
-
-    if ( value > 0 )
-    {
-        state.x  = value;
-        returncode = true;
-    }
-    else
-    {
-        state.x  = 0;
-        returncode = false;
-    }
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    returncode = setTargetArmorPrice(state, targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1211,20 +1280,10 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target's armor type and returns the old type
     /// as tmpargument and the new type as tmpx
 
-    int iTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    IAppearanceProfile* targetAppearance = nullptr;
-    if (!resolveTargetAppearance(self, targetAppearance))
-    {
-        return false;
-    }
-
-    iTmp = targetAppearance->getSkin();
-    state.x = targetAppearance->setSkin(static_cast<size_t>(state.argument));
-
-    state.argument = iTmp;  // The character's old armor
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    returncode = changeTargetArmor(state, targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1240,24 +1299,8 @@ uint8_t scr_GiveMoneyToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IWallet* targetWallet = tryWallet(self.getTarget());
-    IWallet& selfWallet = wallet(*pchr);
-    if (targetWallet == nullptr)
-    {
-        return false;
-    }
-
-    //squash out-or-range values
-    if(state.argument < 0 && std::abs(state.argument) > targetWallet->getMoney()) {
-        state.argument = -targetWallet->getMoney();
-    }
-    if(state.argument > selfWallet.getMoney()) {
-        state.argument = selfWallet.getMoney();
-    }
-
-    //Do the transfer
-    selfWallet.giveMoney(-state.argument);
-    targetWallet->giveMoney(state.argument);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    returncode = giveMoneyToTarget(state, targetContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1304,7 +1347,8 @@ uint8_t scr_DropMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    wallet(*pchr).dropMoney(state.argument);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = dropMoney(state, selfContext.wallet);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2255,13 +2299,8 @@ uint8_t scr_DropTargetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IWallet* targetWallet = tryWallet(self.getTarget());
-    if (targetWallet == nullptr)
-    {
-        return false;
-    }
-
-    targetWallet->dropMoney(state.argument);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    returncode = dropMoney(state, targetContext.targetWallet);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2423,36 +2462,10 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
     /// Does trade-in bonus automatically.  tmpy is always set to cost of requested
     /// skin tmpx is set to amount needed after trade-in ( 0 for pass ).
 
-    int iTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    TargetArmorPaymentContext target;
-    if (!resolveTargetArmorPaymentContext(self, target))
-    {
-        return false;
-    }
-
-    const ArmorCostPolicy armorCost = makeArmorCostPolicy(*target.appearance,
-                                                          static_cast<size_t>(state.argument));
-    iTmp = armorCost.requestedSkinCost;
-    state.y = iTmp;                                       // Cost of new skin
-
-    iTmp = armorCost.netCost;
-
-    if ( iTmp > target.wallet->getMoney() )
-    {
-        // Not enough.
-        state.x = iTmp - target.wallet->getMoney();        // Amount needed
-        returncode = false;
-    }
-    else
-    {
-        // Pay for it.  Cost may be negative after refund.
-        target.wallet->giveMoney(-iTmp);
-        state.x = 0;
-        returncode = true;
-    }
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    returncode = chargeTargetArmor(state, targetContext);
 
     SCRIPT_FUNCTION_END();
 }

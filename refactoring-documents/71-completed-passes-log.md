@@ -868,6 +868,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining t
 
 Extended `ScriptSystemsFunctions.cpp` with a focused regression that pins target-pocket items as ignored by this compatibility cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 174 — Systems economics / armor seam closure (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining target armor and wallet compatibility pocket behind one file-local context/helper layer. Routed `scr_GetTargetArmorPrice`, `scr_ChangeTargetArmor`, `scr_GiveMoneyToTarget`, `scr_DropMoney`, `scr_DropTargetMoney`, and `scr_TargetPayForArmor` through that layer while preserving legacy price, refund, transfer-clamp, and quiet-failure behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused invalid-target regression on top of the existing armor and wallet coverage, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
