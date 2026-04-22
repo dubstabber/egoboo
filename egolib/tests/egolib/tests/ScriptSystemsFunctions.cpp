@@ -939,6 +939,10 @@ TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavi
     EXPECT_TRUE(scr_AddEndMessage(state, self));
     EXPECT_EQ(g_endText.getText(), "Prefix:Done.");
 
+    state.argument = messageId + 1000;
+    EXPECT_FALSE(scr_AddEndMessage(state, self));
+    EXPECT_EQ(g_endText.getText(), "Prefix:Done.");
+
     EXPECT_TRUE(scr_ClearEndMessage(state, self));
     EXPECT_TRUE(g_endText.getText().empty());
 }
@@ -2043,9 +2047,13 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
     EXPECT_TRUE(scr_IfLeaderIsAlive(state, self));
     EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), actor->getObjRef());
 
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
     state.argument = 96;
     state.distance = static_cast<int>(XP_TEAMKILL);
     EXPECT_TRUE(scr_GiveExperienceToTargetTeam(state, self));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(ally->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(target->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     target->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     const int goodTeamXpBefore = actor->getExperience();
@@ -2108,6 +2116,14 @@ TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserve
     state.argument = 33;
     EXPECT_TRUE(scr_SetMoney(state, self));
     EXPECT_EQ(actor->getMoney(), 33);
+
+    state.argument = Object::MAXMONEY + 25;
+    EXPECT_TRUE(scr_SetMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), Object::MAXMONEY);
+
+    state.argument = -5;
+    EXPECT_TRUE(scr_SetMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), 0);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, ArmorHelpersUseAppearanceProfileSeamAndPreserveLegacyOutputs)

@@ -21,11 +21,6 @@ egoboo_config_t& config()
 
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
-IAppearanceProfile& appearanceProfile(Object& object)
-{
-    return object;
-}
-
 IInventoryHolder& inventoryHolder(Object& object)
 {
     return object;
@@ -71,6 +66,24 @@ Object* trySelfObject(const ai_state_t& self)
     return tryObject(selfObjectRef(self));
 }
 
+IAppearanceProfile* trySelfAppearanceProfile(const ai_state_t& self)
+{
+    Object* selfObject = trySelfObject(self);
+    return selfObject != nullptr ? static_cast<IAppearanceProfile*>(selfObject) : nullptr;
+}
+
+ITeamMember* trySelfTeamMember(const ai_state_t& self)
+{
+    Object* selfObject = trySelfObject(self);
+    return selfObject != nullptr ? static_cast<ITeamMember*>(selfObject) : nullptr;
+}
+
+IWallet* trySelfWallet(const ai_state_t& self)
+{
+    Object* selfObject = trySelfObject(self);
+    return selfObject != nullptr ? static_cast<IWallet*>(selfObject) : nullptr;
+}
+
 bool setSelfDamageType(const ai_state_t& self, DamageType damageType)
 {
     Object* selfObject = trySelfObject(self);
@@ -92,6 +105,63 @@ bool markSelfEquipped(const ai_state_t& self)
     }
 
     selfObject->setEquipped(true);
+    return true;
+}
+
+bool changeSelfArmor(script_state_t& state, const ai_state_t& self)
+{
+    IAppearanceProfile* selfAppearance = trySelfAppearanceProfile(self);
+    if (selfAppearance == nullptr)
+    {
+        return false;
+    }
+
+    const int oldSkin = selfAppearance->getSkin();
+    state.x = state.argument;
+    selfAppearance->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    state.x = selfAppearance->getSkin();
+    state.argument = oldSkin;
+    return true;
+}
+
+bool giveSelfTeamExperience(const script_state_t& state, const ai_state_t& self)
+{
+    if (state.distance < 0 || state.distance >= XP_COUNT)
+    {
+        return true;
+    }
+
+    ITeamMember* selfTeamMember = trySelfTeamMember(self);
+    if (selfTeamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfTeamMember->giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
+    return true;
+}
+
+bool setSelfTeam(const ai_state_t& self, TEAM_REF teamRef)
+{
+    ITeamMember* selfTeamMember = trySelfTeamMember(self);
+    if (selfTeamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfTeamMember->setTeam(teamRef);
+    return true;
+}
+
+bool setSelfMoney(const script_state_t& state, const ai_state_t& self)
+{
+    IWallet* selfWallet = trySelfWallet(self);
+    if (selfWallet == nullptr)
+    {
+        return false;
+    }
+
+    selfWallet->giveMoney(state.argument - selfWallet->getMoney());
     return true;
 }
 
@@ -353,6 +423,12 @@ void clearEndMessageText()
 bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
 {
     return ::AddEndMessage(&object, messageIndex, &state);
+}
+
+bool addSelfEndMessageText(const ai_state_t& self, int messageIndex, script_state_t& state)
+{
+    Object* selfObject = trySelfObject(self);
+    return selfObject != nullptr && addEndMessageText(*selfObject, messageIndex, state);
 }
 
 void populateSelfProfilePolicyData(const Object& selfObject,
@@ -1421,9 +1497,7 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if(state.distance < XP_COUNT && state.distance >= 0) {
-        teamMember(*pchr).giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
-    }
+    returncode = giveSelfTeamExperience(state, self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1651,16 +1725,9 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     /// @details This function changes the character's armor.
     /// Sets tmpargument as the old type and tmpx as the new type
 
-    int iTmp;
-
     SCRIPT_FUNCTION_BEGIN();
 
-    state.x = state.argument;
-    IAppearanceProfile& selfAppearance = appearanceProfile(*pchr);
-    iTmp = selfAppearance.getSkin();
-    selfAppearance.setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
-    state.x = selfAppearance.getSkin();
-    state.argument = iTmp;  // The character's old armor
+    returncode = changeSelfArmor(state, self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2227,7 +2294,7 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(state.argument));
+    returncode = setSelfTeam(self, static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2279,7 +2346,7 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = addEndMessageText(*pchr, state.argument, state);
+    returncode = addSelfEndMessageText(self, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2416,7 +2483,7 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2431,7 +2498,7 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_NULL));
+    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_NULL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2446,7 +2513,7 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2743,8 +2810,7 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IWallet& selfWallet = wallet(*pchr);
-    selfWallet.giveMoney(state.argument - selfWallet.getMoney());
+    returncode = setSelfMoney(state, self);
 
     SCRIPT_FUNCTION_END();
 }
