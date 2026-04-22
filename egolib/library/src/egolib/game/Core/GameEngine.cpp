@@ -41,6 +41,11 @@ egoboo_config_t& config()
 {
     return EngineContext::get().config();
 }
+
+Ego::Input::IInputSystem& inputSystem()
+{
+    return EngineContext::get().inputSystem();
+}
 }
 
 //Declaration of class constants
@@ -232,8 +237,12 @@ void GameEngine::updateOneFrame()
     //Update current game state
     _currentGameState->update();
 
-    // Check for screenshots
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F11))
+    updateScreenshotRequest();
+}
+
+void GameEngine::updateScreenshotRequest()
+{
+    if (inputSystem().isKeyDown(SDLK_F11))
     {
         requestScreenshot();
     }
@@ -302,6 +311,7 @@ bool GameEngine::initialize()
 
     // Initialize the input system and enable mouse and keyboard.
     Ego::Input::InputSystem::initialize();
+    EngineContext::get().installInputSystem(Ego::Input::InputSystem::get());
 
     // renderer options
     gfx_config_t::download(gfx, EngineContext::get().config());
@@ -492,6 +502,7 @@ void GameEngine::uninitialize()
     GFX::uninitialize();
 
 	// Uninitialize the input system.
+    EngineContext::get().clearInputSystem();
 	Ego::Input::InputSystem::uninitialize();
 
     // Shut down the log services.

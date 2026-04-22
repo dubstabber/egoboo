@@ -1,15 +1,17 @@
 #pragma once
 
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Math/_Include.hpp"
 #include "egolib/InputControl/ModifierKeys.hpp"
 
 namespace Ego {
 namespace Input {
 
-class InputSystem : public idlib::singleton<InputSystem>
+class InputSystem : public IInputSystem, public idlib::singleton<InputSystem>
 {
 public:
     static constexpr float MOUSE_SENSITIVITY = 12.0f; //TODO: make configurable in settings.txt
+    using MouseButton = IInputSystem::MouseButton;
 
     /// @brief Construct this input system.
     InputSystem();
@@ -17,33 +19,22 @@ public:
     /// @brief Destruct this input system.
     virtual ~InputSystem();
 
-    void update();
-
-    enum MouseButton : uint8_t
-    {
-        LEFT,
-        MIDDLE,
-        RIGHT,
-        X1,
-        X2,
-        NR_OF_MOUSE_BUTTONS         //always last
-    };
-
-    const Vector2f& getMouseMovement() const;
+    void update() override;
+    const Vector2f& getMouseMovement() const override;
 
     /// @brief Get if the mouse button is down.
     /// @param button the mouse button
     /// @return @a true if the mouse button is down, @a false otherwise
-    bool isMouseButtonDown(const MouseButton button) const;
+    bool isMouseButtonDown(MouseButton button) const override;
 
     /// @brief Get if a keyboar key is down.
     /// @param key the keyboard key
     /// @return @a true if the keyboard key is down, @a false otherwise
-    bool isKeyDown(const SDL_Keycode key) const;
+    bool isKeyDown(SDL_Keycode key) const override;
 
     /// @brief Get the modifier keys state.
     /// @return the modifier key state
-    ModifierKeys getModifierKeys() const;
+    ModifierKeys getModifierKeys() const override;
 
 private:
 
@@ -52,7 +43,7 @@ private:
     Vector2f mouseMovement;
 
     /// @brief The state of the mouse buttons at the last update.
-    std::array<bool, NR_OF_MOUSE_BUTTONS> mouseButtonDown;
+    std::array<bool, IInputSystem::NR_OF_MOUSE_BUTTONS> mouseButtonDown;
 
     /// @brief The state of the modifiers keyboard keys at the last update.
     ModifierKeys modifierKeys;

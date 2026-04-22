@@ -3,6 +3,7 @@
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
@@ -46,6 +47,15 @@ public:
 
     IAudioSystem& audioSystem();
     const IAudioSystem& audioSystem() const;
+
+    void installInputSystem(Ego::Input::IInputSystem& inputSystem);
+    void clearInputSystem();
+
+    Ego::Input::IInputSystem* tryInputSystem();
+    const Ego::Input::IInputSystem* tryInputSystem() const;
+
+    Ego::Input::IInputSystem& inputSystem();
+    const Ego::Input::IInputSystem& inputSystem() const;
 
     void installPerkHandler(Ego::Perks::IPerkHandler& perkHandler);
     void clearPerkHandler();

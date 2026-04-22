@@ -3,6 +3,7 @@
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Log/Target.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
@@ -18,6 +19,7 @@ namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
 IAudioSystem* activeAudioSystem = nullptr;
+Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
@@ -50,6 +52,7 @@ void EngineContext::setEngine(std::unique_ptr<GameEngine> engine)
 void EngineContext::clearEngine()
 {
     clearAudioSystem();
+    clearInputSystem();
     clearPerkHandler();
     clearImageManager();
     clearParticleHandler();
@@ -171,6 +174,50 @@ const IAudioSystem& EngineContext::audioSystem() const
         throw std::logic_error("no active audio system");
     }
     return *currentAudioSystem;
+}
+
+void EngineContext::installInputSystem(Ego::Input::IInputSystem& inputSystem)
+{
+    if (activeInputSystem)
+    {
+        throw std::logic_error("input system already installed");
+    }
+    activeInputSystem = &inputSystem;
+}
+
+void EngineContext::clearInputSystem()
+{
+    activeInputSystem = nullptr;
+}
+
+Ego::Input::IInputSystem* EngineContext::tryInputSystem()
+{
+    return activeInputSystem;
+}
+
+const Ego::Input::IInputSystem* EngineContext::tryInputSystem() const
+{
+    return activeInputSystem;
+}
+
+Ego::Input::IInputSystem& EngineContext::inputSystem()
+{
+    Ego::Input::IInputSystem* currentInputSystem = tryInputSystem();
+    if (!currentInputSystem)
+    {
+        throw std::logic_error("no active input system");
+    }
+    return *currentInputSystem;
+}
+
+const Ego::Input::IInputSystem& EngineContext::inputSystem() const
+{
+    const Ego::Input::IInputSystem* currentInputSystem = tryInputSystem();
+    if (!currentInputSystem)
+    {
+        throw std::logic_error("no active input system");
+    }
+    return *currentInputSystem;
 }
 
 void EngineContext::installPerkHandler(Ego::Perks::IPerkHandler& perkHandler)

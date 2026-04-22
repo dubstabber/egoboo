@@ -209,6 +209,7 @@ private:
     *	contained in the current active GameState.
     **/
     void updateOneFrame();
+    void updateScreenshotRequest();
 
     /**
     * @brief

@@ -85,7 +85,7 @@ const Vector2f& InputSystem::getMouseMovement() const
     return mouseMovement;
 }
 
-bool InputSystem::isMouseButtonDown(const MouseButton button) const
+bool InputSystem::isMouseButtonDown(MouseButton button) const
 {
     if (button >= mouseButtonDown.size())
     {
@@ -94,7 +94,7 @@ bool InputSystem::isMouseButtonDown(const MouseButton button) const
     return mouseButtonDown[button];
 }
 
-bool InputSystem::isKeyDown(const SDL_Keycode key) const
+bool InputSystem::isKeyDown(SDL_Keycode key) const
 {
     return 1 == SDL_GetKeyboardState(nullptr)[SDL_GetScancodeFromKey(key)];
 }
@@ -106,4 +106,3 @@ ModifierKeys InputSystem::getModifierKeys() const
 
 } // namespace Input
 } // namespace Ego
-

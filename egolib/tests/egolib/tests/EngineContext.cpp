@@ -3,6 +3,7 @@
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Image/IImageManager.hpp"
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Logic/Perk.hpp"
 #include "egolib/Log/_Include.hpp"
@@ -37,6 +38,35 @@ public:
     void setMusicVolume(int) override {}
     void setSoundEffectVolume(int) override {}
     void update() override {}
+};
+
+class StubInputSystem : public Ego::Input::IInputSystem
+{
+public:
+    void update() override {}
+
+    const Ego::Vector2f& getMouseMovement() const override
+    {
+        return _mouseMovement;
+    }
+
+    bool isMouseButtonDown(MouseButton) const override
+    {
+        return false;
+    }
+
+    bool isKeyDown(SDL_Keycode) const override
+    {
+        return false;
+    }
+
+    Ego::ModifierKeys getModifierKeys() const override
+    {
+        return {};
+    }
+
+private:
+    Ego::Vector2f _mouseMovement{0.0f, 0.0f};
 };
 
 class StubPerkHandler : public Ego::Perks::IPerkHandler
@@ -203,6 +233,7 @@ protected:
         EngineContext::get().clearLogTarget();
         EngineContext::get().clearConfig();
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearInputSystem();
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
@@ -217,6 +248,7 @@ protected:
         EngineContext::get().clearLogTarget();
         EngineContext::get().clearConfig();
         EngineContext::get().clearAudioSystem();
+        EngineContext::get().clearInputSystem();
         EngineContext::get().clearImageManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
@@ -256,6 +288,14 @@ TEST_F(EngineContextFixture, AudioSystemThrowsWhenNoAudioSystemIsInstalled)
     EXPECT_THROW(context.audioSystem(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, InputSystemThrowsWhenNoInputSystemIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryInputSystem(), nullptr);
+    EXPECT_THROW(context.inputSystem(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, InstallAudioSystemPublishesInstalledAudioSystem)
 {
     EngineContext& context = EngineContext::get();
@@ -266,6 +306,18 @@ TEST_F(EngineContextFixture, InstallAudioSystemPublishesInstalledAudioSystem)
 
     EXPECT_EQ(context.tryAudioSystem(), &audioSystem);
     EXPECT_EQ(&context.audioSystem(), &audioSystem);
+}
+
+TEST_F(EngineContextFixture, InstallInputSystemPublishesInstalledInputSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubInputSystem inputSystem;
+    context.installInputSystem(inputSystem);
+
+    EXPECT_EQ(context.tryInputSystem(), &inputSystem);
+    EXPECT_EQ(&context.inputSystem(), &inputSystem);
 }
 
 TEST_F(EngineContextFixture, SetEngineRejectsNullAndDoubleInstall)
@@ -295,6 +347,19 @@ TEST_F(EngineContextFixture, InstallAudioSystemRejectsDoubleInstall)
     EXPECT_EQ(context.tryAudioSystem(), &first);
 }
 
+TEST_F(EngineContextFixture, InstallInputSystemRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubInputSystem first;
+    StubInputSystem second;
+    context.installInputSystem(first);
+
+    EXPECT_THROW(context.installInputSystem(second), std::logic_error);
+    EXPECT_EQ(context.tryInputSystem(), &first);
+}
+
 TEST_F(EngineContextFixture, ClearEngineRemovesInstalledEngine)
 {
     EngineContext& context = EngineContext::get();
@@ -320,6 +385,20 @@ TEST_F(EngineContextFixture, ClearAudioSystemRemovesInstalledAudioSystem)
     EXPECT_THROW(context.audioSystem(), std::logic_error);
 }
 
+TEST_F(EngineContextFixture, ClearInputSystemRemovesInstalledInputSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubInputSystem inputSystem;
+    context.installInputSystem(inputSystem);
+
+    context.clearInputSystem();
+
+    EXPECT_EQ(context.tryInputSystem(), nullptr);
+    EXPECT_THROW(context.inputSystem(), std::logic_error);
+}
+
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledAudioSystem)
 {
     EngineContext& context = EngineContext::get();
@@ -334,6 +413,22 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledAudioSystem)
     EXPECT_EQ(context.tryAudioSystem(), nullptr);
     EXPECT_THROW(context.engine(), std::logic_error);
     EXPECT_THROW(context.audioSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledInputSystem)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubInputSystem inputSystem;
+    context.installInputSystem(inputSystem);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryInputSystem(), nullptr);
+    EXPECT_THROW(context.engine(), std::logic_error);
+    EXPECT_THROW(context.inputSystem(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, PerkHandlerThrowsWhenNoPerkHandlerIsInstalled)

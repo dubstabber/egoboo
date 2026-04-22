@@ -1,10 +1,12 @@
 #include "gtest/gtest.h"
 
 #include <cstdlib>
+#include <array>
 #include <memory>
 #include <new>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "TestEnvironment.hpp"
@@ -28,12 +30,14 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
@@ -42,6 +46,13 @@ void scr_systems_set_follow_link_by_modname_for_test(bool (*fn)(const std::strin
 
 namespace
 {
+
+struct InputUpdateCalled final : std::runtime_error
+{
+    InputUpdateCalled() :
+        std::runtime_error("input update called")
+    {}
+};
 
 struct FollowLinkStubState
 {
@@ -173,6 +184,77 @@ private:
     idlib::point_2s _position;
 };
 
+class StubInputSystem : public Ego::Input::IInputSystem
+{
+public:
+    void update() override
+    {
+        ++updateCalls;
+        if (throwOnUpdate)
+        {
+            throw InputUpdateCalled();
+        }
+    }
+
+    const Ego::Vector2f& getMouseMovement() const override
+    {
+        return mouseMovement;
+    }
+
+    bool isMouseButtonDown(MouseButton button) const override
+    {
+        return mouseButtons[button];
+    }
+
+    bool isKeyDown(SDL_Keycode key) const override
+    {
+        return pressedKeys.count(key) != 0;
+    }
+
+    Ego::ModifierKeys getModifierKeys() const override
+    {
+        return modifierKeys;
+    }
+
+    void setKeyDown(SDL_Keycode key, bool down = true)
+    {
+        if (down)
+        {
+            pressedKeys.insert(key);
+        }
+        else
+        {
+            pressedKeys.erase(key);
+        }
+    }
+
+    int updateCalls = 0;
+    bool throwOnUpdate = false;
+    Ego::Vector2f mouseMovement{0.0f, 0.0f};
+    std::array<bool, Ego::Input::IInputSystem::NR_OF_MOUSE_BUTTONS> mouseButtons{};
+    Ego::ModifierKeys modifierKeys{};
+    std::unordered_set<SDL_Keycode> pressedKeys;
+};
+
+class StubBillboardSystem : public Ego::Graphics::IBillboardSystem
+{
+public:
+    void update() override {}
+
+    void reset() override {}
+
+    std::shared_ptr<Ego::Graphics::Billboard> makeBillboard(ObjectRef,
+                                                            const std::string&,
+                                                            const Ego::Colour4f&,
+                                                            const Ego::Colour4f&,
+                                                            int,
+                                                            BIT_FIELD,
+                                                            float) override
+    {
+        return nullptr;
+    }
+};
+
 class ScopedPlayingStateHarness
 {
 public:
@@ -202,6 +284,7 @@ public:
 
         CameraSystem::initialize();
         context.installCameraSystem(CameraSystem::get());
+        context.installBillboardSystem(_billboardSystem);
 
         engine._currentGameState = std::make_shared<PlayingState>();
         _playingState = std::dynamic_pointer_cast<PlayingState>(engine._currentGameState);
@@ -216,6 +299,7 @@ public:
             engine->_uiManager.release();
         }
 
+        context.clearBillboardSystem();
         EngineContext::get().clearCameraSystem();
         CameraSystem::uninitialize();
         context.clearEngine();
@@ -260,6 +344,7 @@ private:
     Ego::GraphicsSystem* _fakeGraphicsSystem = nullptr;
     Ego::GraphicsSystem* _previousGraphicsSystem = nullptr;
     Ego::GUI::UIManager* _fakeUiManager = nullptr;
+    StubBillboardSystem _billboardSystem;
     std::shared_ptr<PlayingState> _playingState;
 };
 
@@ -1034,6 +1119,70 @@ TEST_F(ScriptSystemsFunctionsFixture, AddStatNoOpsWithoutActivePlayingState)
     EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
 
     config.hud_displayStatusBars.setValue(originalShowStatusBars);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, PlayingStateUpdateUsesInstalledInputSystem)
+{
+    beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    StubInputSystem inputSystem;
+    inputSystem.throwOnUpdate = true;
+    EngineContext::get().installInputSystem(inputSystem);
+
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+    EXPECT_THROW(playingStateHarness.playingState()->update(), InputUpdateCalled);
+
+    EXPECT_EQ(inputSystem.updateCalls, 1);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsUsesInstalledInputSystemForShowMapCheat)
+{
+    beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    StubInputSystem inputSystem;
+    inputSystem.setKeyDown(SDLK_m);
+    inputSystem.setKeyDown(SDLK_LSHIFT);
+    EngineContext::get().installInputSystem(inputSystem);
+
+    const auto minimap = playingStateHarness.playingState()->getMiniMap();
+    ASSERT_NE(minimap, nullptr);
+    ASSERT_FALSE(minimap->isVisible());
+    ASSERT_FALSE(minimap->_showPlayerPosition);
+
+    auto& config = EngineContext::get().config();
+    const bool originalDeveloperMode = config.debug_developerMode_enable.getValue();
+    config.debug_developerMode_enable.setValue(true);
+
+    MainLoop::check_stats();
+
+    EXPECT_TRUE(minimap->isVisible());
+    EXPECT_TRUE(minimap->_showPlayerPosition);
+
+    config.debug_developerMode_enable.setValue(originalDeveloperMode);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, GameEngineScreenshotHotkeyUsesInstalledInputSystem)
+{
+    auto& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubInputSystem inputSystem;
+    inputSystem.setKeyDown(SDLK_F11);
+    context.installInputSystem(inputSystem);
+
+    GameEngine& engine = context.engine();
+    EXPECT_FALSE(engine._screenshotRequested);
+
+    engine.updateScreenshotRequest();
+
+    EXPECT_TRUE(engine._screenshotRequested);
+
+    context.clearEngine();
+    context.installAudioSystem(AudioSystem::get());
+    context.installParticleHandler(ParticleHandler::get());
+    context.installImageManager(Ego::ImageManager::get());
+    context.installPerkHandler(Ego::Perks::PerkHandler::get());
+    context.installProfileSystem(ProfileSystem::get());
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, CostTargetItemIDConsumesHeldAmmoThroughRoleLookups)

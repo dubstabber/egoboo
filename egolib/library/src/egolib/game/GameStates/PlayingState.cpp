@@ -48,6 +48,11 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+Ego::Input::IInputSystem& inputSystem()
+{
+    return EngineContext::get().inputSystem();
+}
 }
 
 PlayingState::PlayingState() :
@@ -158,7 +163,7 @@ void PlayingState::updateStatusBarPosition()
 void PlayingState::update()
 {
     // Get immediate mode state for the rest of the game
-    Ego::Input::InputSystem::get().update();
+    inputSystem().update();
 
     GameSessionContext::get().activeModule().update();
 

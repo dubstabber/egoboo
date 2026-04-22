@@ -41,6 +41,14 @@ namespace Ego
 namespace GameStates
 {
 
+namespace
+{
+Ego::Input::IInputSystem& inputSystem()
+{
+    return EngineContext::get().inputSystem();
+}
+}
+
 MapEditorState::MapEditorState(std::shared_ptr<ModuleProfile> module) :
     _miniMap(std::make_shared<Ego::GUI::MiniMap>()),
     _modeButtons(),
@@ -92,7 +100,7 @@ void MapEditorState::update()
     GameModule& module = session.activeModule();
 
     // Get immediate mode state for the rest of the game
-    Ego::Input::InputSystem::get().update();
+    inputSystem().update();
 
     //Rebuild the quadtree for fast object lookup
     module.getObjectHandler().updateQuadTree(0.0f, 0.0f, module.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size(),

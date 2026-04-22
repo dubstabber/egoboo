@@ -38,6 +38,11 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
+Ego::Input::IInputSystem& inputSystem()
+{
+    return EngineContext::get().inputSystem();
+}
+
 IScriptable& scriptable(Object& object)
 {
     return object;
@@ -112,6 +117,7 @@ void MainLoop::readPlayerInput()
 {
     GameModule& module = activeModule();
     GameSessionContext& session = GameSessionContext::get();
+    Ego::Input::IInputSystem& input = inputSystem();
     for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
 
         //Only valid players
@@ -125,7 +131,7 @@ void MainLoop::readPlayerInput()
 
         //Press space to respawn!
         bool respawnRequested = false;
-        if (Ego::Input::InputSystem::get().isKeyDown(SDLK_SPACE)
+        if (input.isKeyDown(SDLK_SPACE)
             && (session.allLocalPlayersDead() || module.canRespawnAnyTime())
             && module.isRespawnValid()
             && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
@@ -161,6 +167,7 @@ void MainLoop::check_stats()
     /// @author ZZ
     /// @details This function lets the players check character stats
     GameModule& module = activeModule();
+    Ego::Input::IInputSystem& input = inputSystem();
 
     static int stat_check_timer = 0;
     static int stat_check_delay = 0;
@@ -176,7 +183,7 @@ void MainLoop::check_stats()
         return;
 
     // Show map cheat
-    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_m) && Ego::Input::InputSystem::get().isKeyDown(SDLK_LSHIFT))
+    if (config().debug_developerMode_enable.getValue() && input.isKeyDown(SDLK_m) && input.isKeyDown(SDLK_LSHIFT))
     {
         std::shared_ptr<PlayingState> playingState = activePlayingState();
         playingState->getMiniMap()->setVisible(true);
@@ -186,13 +193,13 @@ void MainLoop::check_stats()
 
     // XP CHEAT
     if (config().debug_developerMode_enable.getValue() &&
-        Ego::Input::InputSystem::get().isKeyDown(SDLK_x))
+        input.isKeyDown(SDLK_x))
     {
         PLA_REF docheat = INVALID_PLA_REF;
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_1 ) )  docheat = 0;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_2 ) )  docheat = 1;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_3 ) )  docheat = 2;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  docheat = 3;
+        if (input.isKeyDown( SDLK_1 ) )  docheat = 0;
+        else if (input.isKeyDown( SDLK_2 ) )  docheat = 1;
+        else if (input.isKeyDown( SDLK_3 ) )  docheat = 2;
+        else if (input.isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
         if ( docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size() )
@@ -210,14 +217,14 @@ void MainLoop::check_stats()
     }
 
     // LIFE CHEAT
-    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_z))
+    if (config().debug_developerMode_enable.getValue() && input.isKeyDown(SDLK_z))
     {
         PLA_REF docheat = INVALID_PLA_REF;
 
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_1 ) )  docheat = 0;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_2 ) )  docheat = 1;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_3 ) )  docheat = 2;
-        else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  docheat = 3;
+        if (input.isKeyDown( SDLK_1 ) )  docheat = 0;
+        else if (input.isKeyDown( SDLK_2 ) )  docheat = 1;
+        else if (input.isKeyDown( SDLK_3 ) )  docheat = 2;
+        else if (input.isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
         if(docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size()) {
@@ -234,42 +241,42 @@ void MainLoop::check_stats()
     }
 
     // Display armor stats?
-    if (Ego::Input::InputSystem::get().isKeyDown( SDLK_LSHIFT ) )
+    if (input.isKeyDown( SDLK_LSHIFT ) )
     {
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_1 ) )  { show_armor( 0 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_2 ) )  { show_armor( 1 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_3 ) )  { show_armor( 2 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  { show_armor( 3 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_5 ) )  { show_armor( 4 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_6 ) )  { show_armor( 5 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_7 ) )  { show_armor( 6 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_8 ) )  { show_armor( 7 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_1 ) )  { show_armor( 0 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_2 ) )  { show_armor( 1 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_3 ) )  { show_armor( 2 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_4 ) )  { show_armor( 3 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_5 ) )  { show_armor( 4 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_6 ) )  { show_armor( 5 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_7 ) )  { show_armor( 6 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_8 ) )  { show_armor( 7 ); stat_check_delay = 1000; }
     }
 
     // Display enchantment stats?
-    else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_LCTRL ) )
+    else if (input.isKeyDown( SDLK_LCTRL ) )
     {
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_1 ) )  { show_full_status( 0 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_2 ) )  { show_full_status( 1 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_3 ) )  { show_full_status( 2 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  { show_full_status( 3 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_5 ) )  { show_full_status( 4 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_6 ) )  { show_full_status( 5 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_7 ) )  { show_full_status( 6 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_8 ) )  { show_full_status( 7 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_1 ) )  { show_full_status( 0 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_2 ) )  { show_full_status( 1 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_3 ) )  { show_full_status( 2 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_4 ) )  { show_full_status( 3 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_5 ) )  { show_full_status( 4 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_6 ) )  { show_full_status( 5 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_7 ) )  { show_full_status( 6 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_8 ) )  { show_full_status( 7 ); stat_check_delay = 1000; }
     }
 
     // Display character special powers?
-    else if (Ego::Input::InputSystem::get().isKeyDown( SDLK_LALT ) )
+    else if (input.isKeyDown( SDLK_LALT ) )
     {
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_1 ) )  { show_magic_status( 0 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_2 ) )  { show_magic_status( 1 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_3 ) )  { show_magic_status( 2 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_4 ) )  { show_magic_status( 3 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_5 ) )  { show_magic_status( 4 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_6 ) )  { show_magic_status( 5 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_7 ) )  { show_magic_status( 6 ); stat_check_delay = 1000; }
-        if (Ego::Input::InputSystem::get().isKeyDown( SDLK_8 ) )  { show_magic_status( 7 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_1 ) )  { show_magic_status( 0 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_2 ) )  { show_magic_status( 1 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_3 ) )  { show_magic_status( 2 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_4 ) )  { show_magic_status( 3 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_5 ) )  { show_magic_status( 4 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_6 ) )  { show_magic_status( 5 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_7 ) )  { show_magic_status( 6 ); stat_check_delay = 1000; }
+        if (input.isKeyDown( SDLK_8 ) )  { show_magic_status( 7 ); stat_check_delay = 1000; }
     }
 }
 
