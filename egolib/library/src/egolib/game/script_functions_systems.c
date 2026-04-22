@@ -61,115 +61,6 @@ ObjectRef selfObjectRef(const ai_state_t& self)
     return self.getSelf();
 }
 
-Object* trySelfObject(const ai_state_t& self)
-{
-    return tryObject(selfObjectRef(self));
-}
-
-IAppearanceProfile* trySelfAppearanceProfile(const ai_state_t& self)
-{
-    Object* selfObject = trySelfObject(self);
-    return selfObject != nullptr ? static_cast<IAppearanceProfile*>(selfObject) : nullptr;
-}
-
-ITeamMember* trySelfTeamMember(const ai_state_t& self)
-{
-    Object* selfObject = trySelfObject(self);
-    return selfObject != nullptr ? static_cast<ITeamMember*>(selfObject) : nullptr;
-}
-
-IWallet* trySelfWallet(const ai_state_t& self)
-{
-    Object* selfObject = trySelfObject(self);
-    return selfObject != nullptr ? static_cast<IWallet*>(selfObject) : nullptr;
-}
-
-bool setSelfDamageType(const ai_state_t& self, DamageType damageType)
-{
-    Object* selfObject = trySelfObject(self);
-    if (selfObject == nullptr)
-    {
-        return false;
-    }
-
-    selfObject->setDamageTargetType(damageType);
-    return true;
-}
-
-bool markSelfEquipped(const ai_state_t& self)
-{
-    Object* selfObject = trySelfObject(self);
-    if (selfObject == nullptr)
-    {
-        return false;
-    }
-
-    selfObject->setEquipped(true);
-    return true;
-}
-
-bool changeSelfArmor(script_state_t& state, const ai_state_t& self)
-{
-    IAppearanceProfile* selfAppearance = trySelfAppearanceProfile(self);
-    if (selfAppearance == nullptr)
-    {
-        return false;
-    }
-
-    const int oldSkin = selfAppearance->getSkin();
-    state.x = state.argument;
-    selfAppearance->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
-    state.x = selfAppearance->getSkin();
-    state.argument = oldSkin;
-    return true;
-}
-
-bool giveSelfTeamExperience(const script_state_t& state, const ai_state_t& self)
-{
-    if (state.distance < 0 || state.distance >= XP_COUNT)
-    {
-        return true;
-    }
-
-    ITeamMember* selfTeamMember = trySelfTeamMember(self);
-    if (selfTeamMember == nullptr)
-    {
-        return false;
-    }
-
-    selfTeamMember->giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
-    return true;
-}
-
-bool setSelfTeam(const ai_state_t& self, TEAM_REF teamRef)
-{
-    ITeamMember* selfTeamMember = trySelfTeamMember(self);
-    if (selfTeamMember == nullptr)
-    {
-        return false;
-    }
-
-    selfTeamMember->setTeam(teamRef);
-    return true;
-}
-
-bool setSelfMoney(const script_state_t& state, const ai_state_t& self)
-{
-    IWallet* selfWallet = trySelfWallet(self);
-    if (selfWallet == nullptr)
-    {
-        return false;
-    }
-
-    selfWallet->giveMoney(state.argument - selfWallet->getMoney());
-    return true;
-}
-
-IMorphControl& morphControl(Object& object)
-{
-    return object;
-}
-
 struct SelfProfileComparisonData
 {
     ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
@@ -191,8 +82,12 @@ struct FollowLinkRequest
     std::string moduleName;
 };
 
-struct SelfProfileScriptContext
+struct SelfCompatibilityContext
 {
+    Object* selfObject = nullptr;
+    IAppearanceProfile* appearance = nullptr;
+    ITeamMember* teamMember = nullptr;
+    IWallet* wallet = nullptr;
     const ObjectProfile* profile = nullptr;
     std::string selfName;
     std::string className;
@@ -239,6 +134,112 @@ struct EnchantInvocationContext
     OwnedObjectHandle owner;
     OwnedObjectHandle spawner;
 };
+
+SelfCompatibilityContext makeSelfCompatibilityContext(Object& selfObject)
+{
+    SelfCompatibilityContext context;
+    context.selfObject = &selfObject;
+    context.appearance = static_cast<IAppearanceProfile*>(&selfObject);
+    context.teamMember = static_cast<ITeamMember*>(&selfObject);
+    context.wallet = static_cast<IWallet*>(&selfObject);
+    return context;
+}
+
+SelfCompatibilityContext makeSelfCompatibilityProfileContext(Object& selfObject, const ObjectProfile& selfProfile)
+{
+    SelfCompatibilityContext context = makeSelfCompatibilityContext(selfObject);
+    context.profile = &selfProfile;
+    context.selfName = selfObject.getName();
+    context.className = selfProfile.getClassName();
+    context.policy.profileRef = selfObject.getProfileID();
+    context.policy.enchantRef = selfProfile.getEnchantRef();
+    context.policy.spellEffectSkin = selfProfile.getSpellEffectType();
+    context.policy.comparison.baseModelRef = selfObject.getBaseModelRef();
+    context.policy.comparison.baseModelIsSpellbook = context.policy.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
+    context.policy.comparison.currentProfileMatchesBaseModel =
+        context.policy.comparison.baseModelRef == context.policy.profileRef;
+    return context;
+}
+
+bool setSelfDamageType(SelfCompatibilityContext& selfContext, DamageType damageType)
+{
+    if (selfContext.selfObject == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.selfObject->setDamageTargetType(damageType);
+    return true;
+}
+
+bool markSelfEquipped(SelfCompatibilityContext& selfContext)
+{
+    if (selfContext.selfObject == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.selfObject->setEquipped(true);
+    return true;
+}
+
+bool changeSelfArmor(script_state_t& state, SelfCompatibilityContext& selfContext)
+{
+    if (selfContext.appearance == nullptr)
+    {
+        return false;
+    }
+
+    const int oldSkin = selfContext.appearance->getSkin();
+    state.x = state.argument;
+    selfContext.appearance->setSkin(Ego::Script::Interpreter::safeCast<size_t>(state.argument));
+    state.x = selfContext.appearance->getSkin();
+    state.argument = oldSkin;
+    return true;
+}
+
+bool giveSelfTeamExperience(const script_state_t& state, SelfCompatibilityContext& selfContext)
+{
+    if (state.distance < 0 || state.distance >= XP_COUNT)
+    {
+        return true;
+    }
+
+    if (selfContext.teamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.teamMember->giveTeamExperience(state.argument, static_cast<XPType>(state.distance));
+    return true;
+}
+
+bool setSelfTeam(SelfCompatibilityContext& selfContext, TEAM_REF teamRef)
+{
+    if (selfContext.teamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.teamMember->setTeam(teamRef);
+    return true;
+}
+
+bool setSelfMoney(const script_state_t& state, SelfCompatibilityContext& selfContext)
+{
+    if (selfContext.wallet == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.wallet->giveMoney(state.argument - selfContext.wallet->getMoney());
+    return true;
+}
+
+IMorphControl& morphControl(Object& object)
+{
+    return object;
+}
 
 water_instance_t& moduleWater()
 {
@@ -425,44 +426,10 @@ bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
     return ::AddEndMessage(&object, messageIndex, &state);
 }
 
-bool addSelfEndMessageText(const ai_state_t& self, int messageIndex, script_state_t& state)
+bool addSelfEndMessageText(const SelfCompatibilityContext& selfContext, int messageIndex, script_state_t& state)
 {
-    Object* selfObject = trySelfObject(self);
-    return selfObject != nullptr && addEndMessageText(*selfObject, messageIndex, state);
-}
-
-void populateSelfProfilePolicyData(const Object& selfObject,
-                                   const ObjectProfile& selfProfile,
-                                   SelfProfilePolicyData& data)
-{
-    data.profileRef = selfObject.getProfileID();
-    data.enchantRef = selfProfile.getEnchantRef();
-    data.spellEffectSkin = selfProfile.getSpellEffectType();
-    data.comparison.baseModelRef = selfObject.getBaseModelRef();
-    data.comparison.baseModelIsSpellbook = data.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
-    data.comparison.currentProfileMatchesBaseModel = data.comparison.baseModelRef == data.profileRef;
-}
-
-bool resolveSelfProfileScriptContext(const ai_state_t& self,
-                                     SelfProfileScriptContext& context)
-{
-    const Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return false;
-    }
-
-    const std::shared_ptr<ObjectProfile> profile = selfObject->getProfile();
-    if (!profile)
-    {
-        return false;
-    }
-
-    context.profile = profile.get();
-    context.selfName = selfObject->getName();
-    context.className = profile->getClassName();
-    populateSelfProfilePolicyData(*selfObject, *profile, context.policy);
-    return true;
+    return selfContext.selfObject != nullptr &&
+           addEndMessageText(*selfContext.selfObject, messageIndex, state);
 }
 
 void logDeprecatedScriptFunctionUse(const std::string& functionName,
@@ -481,12 +448,12 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void publishDeprecatedEnableListenSkillWarning(const SelfProfileScriptContext& context)
+void publishDeprecatedEnableListenSkillWarning(const SelfCompatibilityContext& context)
 {
     logDeprecatedScriptFunctionUse("EnableListenSkill", context.className);
 }
 
-bool resolveFollowLinkRequest(const SelfProfileScriptContext& context,
+bool resolveFollowLinkRequest(const SelfCompatibilityContext& context,
                               const int messageId,
                               FollowLinkRequest& request)
 {
@@ -523,7 +490,7 @@ bool tryFollowLink(const FollowLinkRequest& request)
     return followed;
 }
 
-bool followLinkFromMessageId(const SelfProfileScriptContext& context,
+bool followLinkFromMessageId(const SelfCompatibilityContext& context,
                              const int messageId)
 {
     FollowLinkRequest request;
@@ -1315,11 +1282,7 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     becomeSpellbook(enchantable(*pchr),
                     morphControl(*pchr),
@@ -1341,7 +1304,8 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfDamageType(self, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1372,11 +1336,7 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     EnchantInvocationContext enchantContext;
     if (resolveEnchantInvocationContext(self, self.getTarget(), enchantContext))
@@ -1406,11 +1366,7 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     EnchantInvocationContext enchantContext;
     if (resolveEnchantInvocationContext(self, self.child, enchantContext))
@@ -1497,7 +1453,8 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = giveSelfTeamExperience(state, self);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = giveSelfTeamExperience(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1692,7 +1649,8 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = markSelfEquipped(self);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = markSelfEquipped(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1727,7 +1685,8 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = changeSelfArmor(state, self);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = changeSelfArmor(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2062,11 +2021,7 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     returncode = ( selfContext.policy.comparison.baseModelIsSpellbook ||
                    selfContext.policy.comparison.currentProfileMatchesBaseModel );
@@ -2294,7 +2249,8 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfTeam(self, static_cast<TEAM_REF>(state.argument));
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2346,7 +2302,8 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = addSelfEndMessageText(self, state.argument, state);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = addSelfEndMessageText(selfContext, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2483,7 +2440,8 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2498,7 +2456,8 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_NULL));
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_NULL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2513,7 +2472,8 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfTeam(self, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2619,11 +2579,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     publishDeprecatedEnableListenSkillWarning(selfContext);
     returncode = false;
@@ -2641,11 +2597,7 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileScriptContext selfContext;
-    if (!resolveSelfProfileScriptContext(self, selfContext))
-    {
-        return false;
-    }
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityProfileContext(*pchr, *ppro);
 
     returncode = followLinkFromMessageId(selfContext, state.argument);
 
@@ -2810,7 +2762,8 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = setSelfMoney(state, self);
+    SelfCompatibilityContext selfContext = makeSelfCompatibilityContext(*pchr);
+    returncode = setSelfMoney(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }

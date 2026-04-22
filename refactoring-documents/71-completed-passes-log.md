@@ -820,6 +820,12 @@ Continued Tier 1.2 by widening `IMovementControl` with desired-velocity read/wri
 
 Extended `ObjectAccessors.cpp` and `ScriptRuntime.cpp` with movement-role desired-velocity coverage for clamping, waypoint publication, mount rider propagation, and invalid-actor no-op behavior. Build, the focused accessor/runtime slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 166 — Systems self-compatibility quarantine (2026-04-22)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by replacing the remaining scattered self-object/self-profile/self-wallet/team/end-text compatibility helpers with one file-local self-compatibility context used by the self-only opcode cluster. Routed spellbook/follow-link, self team/money/armor writes, and end-text compatibility paths through that shared helper layer without widening any public role surfaces or changing legacy success/failure behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with a focused invalid-self regression on top of the existing follow-link, armor, team, wallet, end-text, and spellbook coverage. Build, the focused `ScriptSystemsFunctions` slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

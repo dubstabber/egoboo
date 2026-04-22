@@ -811,6 +811,43 @@ TEST_F(ScriptSystemsFunctionsFixture, EnableListenSkillRemainsLoggedNoOp)
     EXPECT_TRUE(playingStateHarness.messageTexts().empty());
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, SelfCompatibilityOpcodesFailQuietlyWhenSelfRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5613);
+
+    ASSERT_NE(actor, nullptr);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("Done."));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(nullptr);
+
+    const SKIN_T initialSkin = actor->getSkin();
+    g_endText.setText("Prefix:");
+
+    state.argument = 3;
+    state.x = 77;
+    EXPECT_FALSE(scr_ChangeArmor(state, self));
+    EXPECT_EQ(actor->getSkin(), initialSkin);
+    EXPECT_EQ(state.argument, 3);
+    EXPECT_EQ(state.x, 77);
+
+    state.argument = 25;
+    EXPECT_FALSE(scr_SetMoney(state, self));
+    EXPECT_FALSE(scr_JoinGoodTeam(state, self));
+
+    state.argument = messageId;
+    EXPECT_FALSE(scr_AddEndMessage(state, self));
+    EXPECT_EQ(g_endText.getText(), "Prefix:");
+
+    FollowLinkStubState followLinkState;
+    ScopedFollowLinkStub followLinkStub(followLinkState);
+    EXPECT_FALSE(scr_FollowLink(state, self));
+    EXPECT_EQ(followLinkState.callCount, 0);
+    EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAndFlagPublication)
 {
     auto& module = beginActiveTestModule();
