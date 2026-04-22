@@ -14,8 +14,10 @@
 #include "egolib/vfs.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace
 {
@@ -75,6 +77,7 @@ protected:
 
         game_reset_players();
         vfs_removeDirectoryAndContents("import");
+        vfs_removeDirectoryAndContents("players");
         vfs_removeDirectoryAndContents(kImportTestRoot);
         setup_clear_module_vfs_paths();
 
@@ -92,6 +95,7 @@ protected:
 
         game_reset_players();
         vfs_removeDirectoryAndContents("import");
+        vfs_removeDirectoryAndContents("players");
         vfs_removeDirectoryAndContents(kImportTestRoot);
         setup_clear_module_vfs_paths();
     }
@@ -128,6 +132,30 @@ protected:
         return EngineContext::get().profileSystem().loadOneProfile("mp_objects/follower.obj", slot);
     }
 
+    ObjectProfileRef loadProfile(const std::string& path, int slot) const
+    {
+        return EngineContext::get().profileSystem().loadOneProfile(path, slot);
+    }
+
+    std::shared_ptr<Object> makeObject(GameModule& module, const std::string& path, int slot) const
+    {
+        const ObjectProfileRef profile = loadProfile(path, slot);
+        EXPECT_NE(profile, ObjectProfileRef::Invalid);
+        if (profile == ObjectProfileRef::Invalid)
+        {
+            throw std::runtime_error("profile load failed");
+        }
+
+        auto object = module.getObjectHandler().insert(profile);
+        EXPECT_NE(object, nullptr);
+        if (!object)
+        {
+            throw std::runtime_error("object insert failed");
+        }
+
+        return object;
+    }
+
     void copyFixtureObjectDirectory(const std::string& destination) const
     {
         setup_init_module_vfs_paths("mp_modules/test.mod");
@@ -136,6 +164,12 @@ protected:
         ASSERT_TRUE(vfs_exists((destination + "/data.txt").c_str()));
         setup_clear_module_vfs_paths();
     }
+
+    std::string playerExportRoot(const Object& object) const
+    {
+        return fs_getUserDirectory() + "/players/" + str_encode_path(object.getName());
+    }
+
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ImportWorkflowFixture::s_runtime;
@@ -213,6 +247,98 @@ TEST_F(ImportWorkflowFixture, FromPlayersBuildsImportEntriesForRegisteredPlayers
     EXPECT_EQ(imports.lst[0].slot, 0);
     EXPECT_EQ(imports.lst[0].name, object->getName());
     EXPECT_EQ(imports.lst[0].srcDir, "mp_players/" + str_encode_path(object->getName()));
+}
+
+TEST_F(ImportWorkflowFixture, ExportAllPlayersReturnsFalseWhenExportIsDisabled)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 212);
+    ASSERT_NE(player, nullptr);
+
+    player->setName("Export Disabled Player");
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+
+    module.setExportValid(false);
+
+    const std::string exportRoot = playerExportRoot(*player);
+    EXPECT_FALSE(export_all_players(false));
+    EXPECT_FALSE(std::filesystem::exists(exportRoot + "/data.txt"));
+}
+
+TEST_F(ImportWorkflowFixture, ExportAllPlayersExportsCharacterDirectoryForLivePlayer)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 213);
+    ASSERT_NE(player, nullptr);
+
+    player->setName("Export Hero");
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+
+    const std::string exportRoot = playerExportRoot(*player);
+    ASSERT_TRUE(export_all_players(false));
+    EXPECT_TRUE(std::filesystem::exists(exportRoot + "/data.txt"));
+    EXPECT_TRUE(std::filesystem::exists(exportRoot + "/naming.txt"));
+}
+
+TEST_F(ImportWorkflowFixture, ExportAllPlayersExportsHeldItemsIntoSlotDirectories)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 214);
+    auto leftItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 215);
+    auto rightItem = makeObject(module, "mp_data/globalobjects/armor/atshield.obj", 216);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+
+    player->setName("Held Export Hero");
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    player->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
+    player->setHeldObject(SLOT_RIGHT, rightItem->getObjRef());
+
+    const std::string exportRoot = playerExportRoot(*player);
+    ASSERT_TRUE(export_all_players(false));
+    EXPECT_TRUE(std::filesystem::exists(exportRoot + "/" + std::to_string(SLOT_LEFT) + ".obj/data.txt"));
+    EXPECT_TRUE(std::filesystem::exists(exportRoot + "/" + std::to_string(SLOT_RIGHT) + ".obj/data.txt"));
+}
+
+TEST_F(ImportWorkflowFixture, ExportAllPlayersSkipsNonCarryableInventoryItemsWithoutBreakingDenseNumbering)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 217);
+    auto skippedItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 218);
+    auto exportedItem = makeObject(module, "mp_data/globalobjects/weapons/xbow.obj", 219);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(skippedItem, nullptr);
+    ASSERT_NE(exportedItem, nullptr);
+
+    player->setName("Inventory Export Hero");
+    skippedItem->setName("Skipped Inventory Item");
+    exportedItem->setName("Carryable Inventory Item");
+
+    skippedItem->getProfile()->_isItem = true;
+    skippedItem->getProfile()->_canCarryToNextModule = false;
+    exportedItem->getProfile()->_isItem = true;
+    exportedItem->getProfile()->_canCarryToNextModule = true;
+
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    player->setInventoryItem(0, skippedItem);
+    player->setInventoryItem(2, exportedItem);
+
+    const std::string exportRoot = playerExportRoot(*player);
+    const std::string firstInventoryExport = exportRoot + "/" + std::to_string(SLOT_COUNT) + ".obj";
+    const std::string secondInventoryExport = exportRoot + "/" + std::to_string(SLOT_COUNT + 1) + ".obj";
+
+    ASSERT_TRUE(export_all_players(false));
+    EXPECT_TRUE(std::filesystem::exists(firstInventoryExport + "/data.txt"));
+    EXPECT_FALSE(std::filesystem::exists(secondInventoryExport + "/data.txt"));
+}
+
+TEST_F(ImportWorkflowFixture, ExportAllPlayersTreatsNoPlayersAsSuccessfulNoOp)
+{
+    GameModule& module = beginActiveTestModule();
+    module.setExportValid(true);
+
+    EXPECT_TRUE(export_all_players(false));
 }
 
 } // namespace

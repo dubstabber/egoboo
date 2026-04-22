@@ -23,8 +23,17 @@
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+namespace
+{
+enum class ExportCharacterResult
+{
+    Exported,
+    Skipped,
+    Error
+};
+
 //--------------------------------------------------------------------------------------------
-egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local )
+ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local )
 {
     /// @author ZZ
     /// @details This function exports a character
@@ -38,12 +47,12 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
     GameModule& module = activeModule();
     const std::shared_ptr<Object> &object = module.getObjectHandler()[character];
     if(!object) {
-        return rv_error;
+        return ExportCharacterResult::Error;
     }
 
     if ( !module.isExportValid() || ( object->getProfile()->isItem() && !object->getProfile()->canCarryToNextModule() ) )
     {
-        return rv_fail;
+        return ExportCharacterResult::Skipped;
     }
 
     // TWINK_BO.OBJ
@@ -80,7 +89,7 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
         if ( !vfs_mkdir( todir ) )
         {
 			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create object directory ", "`", todir, "`", Log::EndOfEntry);
-            return rv_error;
+            return ExportCharacterResult::Error;
         }
     }
 
@@ -90,7 +99,7 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
     // Build the DATA.TXT file
     if(!ObjectProfile::exportCharacterToFile(todir + "/data.txt", object.get())) {
 		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save ", "`", todir, "/data.txt`", Log::EndOfEntry);
-        return rv_error;
+        return ExportCharacterResult::Error;
     }
 
     // Build the NAMING.TXT file
@@ -103,7 +112,7 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
     // copy every file that does not already exist in the todir
     {
         SearchContext *ctxt = new SearchContext(Ego::VfsPath(fromdir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
-        if (!ctxt) return rv_success;
+        if (!ctxt) return ExportCharacterResult::Exported;
         while (ctxt->hasData()) {
             auto searchResult = ctxt->getData();
             fromfile = fromdir + "/" + searchResult.string();
@@ -118,27 +127,27 @@ egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_ob
         ctxt = nullptr;
     }
 
-    return rv_success;
+    return ExportCharacterResult::Exported;
 }
+} // namespace
 
 //--------------------------------------------------------------------------------------------
-egolib_rv export_all_players( bool require_local )
+bool export_all_players( bool require_local )
 {
     /// @author ZZ
     /// @details This function saves all the local players in the
     ///    PLAYERS directory
 
-    egolib_rv export_chr_rv;
-    egolib_rv retval;
+    (void)require_local;
+
+    ExportCharacterResult exportResult;
+    bool exportedAllPlayers = true;
     int number;
 
     GameModule& module = activeModule();
 
     // Stop if export isnt valid
-    if ( !module.isExportValid() ) return rv_fail;
-
-    // assume the best
-    retval = rv_success;
+    if ( !module.isExportValid() ) return false;
 
     // Check each player
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList()) {
@@ -154,20 +163,20 @@ egolib_rv export_all_players( bool require_local )
         if ( !pchr->isAlive() ) continue;
 
         // Export the character
-        export_chr_rv = export_one_character( character, character, -1, true );
-        if ( rv_error == export_chr_rv )
+        exportResult = export_one_character( character, character, -1, true );
+        if ( ExportCharacterResult::Error == exportResult )
         {
-            retval = rv_error;
+            exportedAllPlayers = false;
         }
 
         // Export the left hand item
         item = pchr->getHeldObject(SLOT_LEFT);
         if ( module.getObjectHandler().exists( item ) )
         {
-            export_chr_rv = export_one_character( item, character, SLOT_LEFT, true );
-            if ( rv_error == export_chr_rv )
+            exportResult = export_one_character( item, character, SLOT_LEFT, true );
+            if ( ExportCharacterResult::Error == exportResult )
             {
-                retval = rv_error;
+                exportedAllPlayers = false;
             }
         }
 
@@ -175,10 +184,10 @@ egolib_rv export_all_players( bool require_local )
         item = pchr->getHeldObject(SLOT_RIGHT);
         if ( module.getObjectHandler().exists( item ) )
         {
-            export_chr_rv = export_one_character( item, character, SLOT_RIGHT, true );
-            if ( rv_error == export_chr_rv )
+            exportResult = export_one_character( item, character, SLOT_RIGHT, true );
+            if ( ExportCharacterResult::Error == exportResult )
             {
-                retval = rv_error;
+                exportedAllPlayers = false;
             }
         }
 
@@ -189,19 +198,19 @@ egolib_rv export_all_players( bool require_local )
             const std::shared_ptr<Object> pitem = pchr->getInventoryItem(slot);
             if ( !pitem ) continue;
 
-            export_chr_rv = export_one_character( pitem->getObjRef(), character, number + SLOT_COUNT, true);
-            if ( rv_error == export_chr_rv )
+            exportResult = export_one_character( pitem->getObjRef(), character, number + SLOT_COUNT, true);
+            if ( ExportCharacterResult::Error == exportResult )
             {
-                retval = rv_error;
+                exportedAllPlayers = false;
             }
-            else if ( rv_success == export_chr_rv )
+            else if ( ExportCharacterResult::Exported == exportResult )
             {
                 number++;
             }
         }
     }
 
-    return retval;
+    return exportedAllPlayers;
 }
 
 //--------------------------------------------------------------------------------------------

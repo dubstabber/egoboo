@@ -188,8 +188,7 @@ bool game_begin_module(const std::shared_ptr<ModuleProfile> &module);
 void game_load_module_profiles(const std::string& modname);
 
 /// Exporting stuff
-egolib_rv export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local );
-egolib_rv export_all_players( bool require_local );
+bool export_all_players( bool require_local );
 
 // save character functions
 bool  export_one_character_quest_vfs( const char *szSaveName, ObjectRef character );
