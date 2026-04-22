@@ -30,8 +30,8 @@
 
 Ego::Physics::Environment Ego::Physics::g_environment;
 
-static egolib_rv phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax);
-static egolib_rv phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax);
+static bool phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax);
+static bool phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax);
 
 /// @brief A test to determine whether two "fast moving" objects are interacting within a frame.
 ///        Designed to determine whether a bullet particle will interact with character.
@@ -315,7 +315,7 @@ bool phys_estimate_pressure_normal(const oct_bb_t& obb_a, const oct_bb_t& obb_b,
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-egolib_rv phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax)
+bool phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax)
 {
     if (!tmin)
     {
@@ -335,7 +335,7 @@ egolib_rv phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct
     }
 
     float vdiff = ovel2[index] - ovel1[index];
-    if ( 0.0f == vdiff ) return rv_fail;
+    if ( 0.0f == vdiff ) return false;
 
     float src1_min = src1._mins[index];
     float src1_max = src1._maxs[index];
@@ -465,9 +465,9 @@ egolib_rv phys_intersect_oct_bb_index(int index, const oct_bb_t& src1, const oct
         *tmax *= idlib::inv_sqrt_two<float>();
     }
 
-    if (*tmax <= *tmin) return rv_fail;
+    if (*tmax <= *tmin) return false;
 
-    return rv_success;
+    return true;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -506,8 +506,6 @@ bool phys_intersect_oct_bb(const oct_bb_t& src1_orig, const Ego::Vector3f& pos1,
         // Cycle through the coordinates to see when the two volumes might coincide.
         for (size_t index = 0; index < OCT_COUNT; ++index)
         {
-            egolib_rv retval;
-
             if (std::abs(ovel1[index] - ovel2[index]) < 1.0e-6)
             {
                 failure_count++;
@@ -515,21 +513,20 @@ bool phys_intersect_oct_bb(const oct_bb_t& src1_orig, const Ego::Vector3f& pos1,
             else
             {
                 float tmp_min = 0.0f, tmp_max = 0.0f;
+                bool intersectsOnAxis = phys_intersect_oct_bb_index(index, src1, ovel1, src2, ovel2, test_platform, &tmp_min, &tmp_max);
 
-                retval = phys_intersect_oct_bb_index(index, src1, ovel1, src2, ovel2, test_platform, &tmp_min, &tmp_max);
-
-                // check for overflow
+                // Treat invalid interval math as a non-intersection on this axis.
                 if (idlib::is_bad(tmp_min) || idlib::is_bad(tmp_max))
                 {
-                    retval = rv_fail;
+                    intersectsOnAxis = false;
                 }
 
-                if (rv_fail == retval)
+                if (!intersectsOnAxis)
                 {
-                    // This case will only occur if the objects are not moving relative to each other.
+                    // There is no usable overlap interval on this axis for this frame.
                     failure_count++;
                 }
-                else if (rv_success == retval)
+                else
                 {
                     if (!found)
                     {
@@ -598,7 +595,7 @@ bool phys_intersect_oct_bb(const oct_bb_t& src1_orig, const Ego::Vector3f& pos1,
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-egolib_rv phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax)
+bool phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, const oct_vec_v2_t& ovel1, const oct_bb_t& src2, const oct_vec_v2_t& ovel2, int test_platform, float *tmin, float *tmax)
 {
     if (!tmin)
     {
@@ -617,7 +614,7 @@ egolib_rv phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, con
         throw std::invalid_argument("index >= OCT_COUNT");
     }
     float vdiff = ovel2[index] - ovel1[index];
-    if (0.0f == vdiff) return rv_fail;
+    if (0.0f == vdiff) return false;
 
     /// @todo Use src1.getMin(index), src2.getMax(index) and src1.getMid(index).
     float src1_min = src1._mins[index];
@@ -776,9 +773,9 @@ egolib_rv phys_intersect_oct_bb_close_index(int index, const oct_bb_t& src1, con
         *tmax *= idlib::inv_sqrt_two<float>();
     }
 
-    if (*tmax < *tmin) return rv_fail;
+    if (*tmax < *tmin) return false;
 
-    return rv_success;
+    return true;
 }
 
 //--------------------------------------------------------------------------------------------
