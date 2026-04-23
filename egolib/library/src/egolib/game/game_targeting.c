@@ -263,9 +263,12 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     //All objects within range
     else
     {
-        for (const std::shared_ptr<Object>& object : module.getObjectHandler().findObjects(psrc->getPosX(), psrc->getPosY(), max_dist, true))
+        std::vector<ObjectRef> nearbyObjectRefs;
+        module.getObjectHandler().findObjectRefs(psrc->getPosX(), psrc->getPosY(), max_dist, nearbyObjectRefs, true);
+        for (const ObjectRef& objectRef : nearbyObjectRefs)
         {
-            if (object == nullptr)
+            Object* object = module.getObjectHandler().get(objectRef);
+            if (object == nullptr || object->isTerminated())
             {
                 continue;
             }

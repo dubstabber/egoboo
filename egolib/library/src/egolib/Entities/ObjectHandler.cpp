@@ -32,6 +32,15 @@ void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
         listener.addAIAlertBits(ALERTIF_TARGETKILLED);
     }
 }
+
+void appendObjectRefs(const std::vector<std::shared_ptr<Object>>& objects, std::vector<ObjectRef>& result)
+{
+    result.reserve(result.size() + objects.size());
+    for (const auto& object : objects)
+    {
+        result.push_back(object ? object->getObjRef() : ObjectRef::Invalid);
+    }
+}
 }
 
 ObjectRef GET_INDEX_PCHR(const Object *pobj) {
@@ -345,10 +354,34 @@ std::vector<std::shared_ptr<Object>> ObjectHandler::findObjects(const float x, c
     return result;
 }
 
+void ObjectHandler::findObjectRefs(float x, float y, float distance, std::vector<ObjectRef>& result, bool includeSceneryObjects) const
+{
+    std::vector<std::shared_ptr<Object>> objects;
+    const Ego::AxisAlignedBox2f searchArea(Ego::Point2f(x - distance, y - distance),
+                                           Ego::Point2f(x + distance, y + distance));
+    _dynamicObjects.find(searchArea, objects);
+    if (includeSceneryObjects)
+    {
+        _staticObjects.find(searchArea, objects);
+    }
+    appendObjectRefs(objects, result);
+}
+
 void ObjectHandler::findObjects(const Ego::AxisAlignedBox2f &searchArea, std::vector<std::shared_ptr<Object>> &result, bool includeSceneryObjects) const
 {
     if(includeSceneryObjects) { 
     	_staticObjects.find(searchArea, result);
     }
     return _dynamicObjects.find(searchArea, result);
+}
+
+void ObjectHandler::findObjectRefs(const Ego::AxisAlignedBox2f& searchArea, std::vector<ObjectRef>& result, bool includeSceneryObjects) const
+{
+    std::vector<std::shared_ptr<Object>> objects;
+    if (includeSceneryObjects)
+    {
+        _staticObjects.find(searchArea, objects);
+    }
+    _dynamicObjects.find(searchArea, objects);
+    appendObjectRefs(objects, result);
 }

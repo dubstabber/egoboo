@@ -275,20 +275,21 @@ void CollisionSystem::update()
 
 void CollisionSystem::updateObjectCollisions()
 {
-    std::unordered_set<std::shared_ptr<Object>> handledObjects;
+    std::unordered_set<ObjectRef> handledObjects;
+    ObjectHandler& handler = activeModule().getObjectHandler();
 
     //Detect character -> character collisions
-    for(const std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator()) {
+    for(const std::shared_ptr<Object> &object : handler.iterator()) {
 
         //Can we collide?
         if (!object->canCollide()) {
             continue;
         }
-        handledObjects.insert(object);
+        handledObjects.insert(object->getObjRef());
 
         //First check if this object is still attached to it's Platform
-        const std::shared_ptr<Object> &platform = activeModule().getObjectHandler()[object->onwhichplatform_ref];
-        if(platform)
+        Object* platform = handler.get(object->onwhichplatform_ref);
+        if (platform != nullptr && !platform->isTerminated())
         {
             //If we are no longer colliding in the horizontal plane, then we are disconnected
             if(!idlib::is_intersecting(object->getAxisAlignedBox2D(), platform->getAxisAlignedBox2D()))
@@ -309,12 +310,17 @@ void CollisionSystem::updateObjectCollisions()
         bool canCollideWithScenery = !object->isScenery() || object->canUsePlatforms();
 
         // Check collisions to nearby Objects
-        std::vector<std::shared_ptr<Object>> possibleCollisions;
-        activeModule().getObjectHandler().findObjects(object->getAxisAlignedBox2D(), possibleCollisions, canCollideWithScenery);
-        for (const std::shared_ptr<Object> &other : possibleCollisions)
+        std::vector<ObjectRef> possibleCollisionRefs;
+        handler.findObjectRefs(object->getAxisAlignedBox2D(), possibleCollisionRefs, canCollideWithScenery);
+        for (const ObjectRef& otherRef : possibleCollisionRefs)
         {
+            Object* other = handler.get(otherRef);
+            if (other == nullptr || other->isTerminated()) {
+                continue;
+            }
+
             //Skip possible interactions that have already been handled earlier this iteration
-            if(handledObjects.find(other) != handledObjects.end()) {
+            if(handledObjects.find(otherRef) != handledObjects.end()) {
                 continue;
             }
 
@@ -325,8 +331,9 @@ void CollisionSystem::updateObjectCollisions()
 
             //Detect any collisions and handle it if needed
             float tmin, tmax;
-            if(detectCollision(object, other, &tmin, &tmax)) {
-                handleCollision(object, other, tmin, tmax);
+            const std::shared_ptr<Object> otherHandle = other->shared_from_this();
+            if(detectCollision(object, otherHandle, &tmin, &tmax)) {
+                handleCollision(object, otherHandle, tmin, tmax);
             }
         }
     }
@@ -353,10 +360,15 @@ void CollisionSystem::updateParticleCollisions()
         const AxisAlignedBox2f aabb2d = AxisAlignedBox2f(Point2f(tmp_oct._mins[OCT_X], tmp_oct._mins[OCT_Y]), Point2f(tmp_oct._maxs[OCT_X], tmp_oct._maxs[OCT_Y]));
 
         //Detect collisions with nearby Objects
-        std::vector<std::shared_ptr<Object>> possibleCollisions;
-         activeModule().getObjectHandler().findObjects(aabb2d, possibleCollisions, true);
-        for (const std::shared_ptr<Object> &object : possibleCollisions)
+        std::vector<ObjectRef> possibleCollisionRefs;
+         activeModule().getObjectHandler().findObjectRefs(aabb2d, possibleCollisionRefs, true);
+        for (const ObjectRef& objectRef : possibleCollisionRefs)
         {
+            Object* object = activeModule().getObjectHandler().get(objectRef);
+            if (object == nullptr || object->isTerminated()) {
+                continue;
+            }
+
             //Is it a valid collision?
             if(!object->canCollide()) {
                 continue;
@@ -364,9 +376,10 @@ void CollisionSystem::updateParticleCollisions()
 
             //Detect any collisions and handle it if needed
             float tmin, tmax;
-            if(detectCollision(particle, object, &tmin, &tmax)) {
+            const std::shared_ptr<Object> objectHandle = object->shared_from_this();
+            if(detectCollision(particle, objectHandle, &tmin, &tmax)) {
                 do_prt_platform_detection(object->getObjRef(), particle->getParticleID());
-                do_chr_prt_collision(object, particle, tmin, tmax);
+                do_chr_prt_collision(objectHandle, particle, tmin, tmax);
             }
         }
     }    

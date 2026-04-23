@@ -405,14 +405,21 @@ void Object::update()
 
         //Give Rally bonus to friends within 6 tiles
         if(hasPerk(Ego::Perks::RALLY)) {
-            std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
-            for(const std::shared_ptr<Object> &object : nearbyObjects)
+            std::vector<ObjectRef> nearbyObjectRefs;
+            activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+            for (const ObjectRef& objectRef : nearbyObjectRefs)
             {
+                Object* object = activeModule().getObjectHandler().get(objectRef);
+                if (object == nullptr)
+                {
+                    continue;
+                }
+
                 //Only valid objects that are on our team
                 if(object->isTerminated() || object->getTeam() != getTeam()) continue;
 
                 //Don't give bonus to ourselves!
-                if(object.get() == this) continue;
+                if(object == this) continue;
 
                 object->_reallyDuration = worldUpdateCount() + GameEngine::GAME_TARGET_UPS*3;    //Apply bonus for 3 seconds
             }
@@ -433,8 +440,14 @@ void Object::update()
             lineOfSightInfo.stopped_by = stoppedby;
 
             //Check for nearby enemies
-            std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
-            for(const std::shared_ptr<Object> &target : nearbyObjects) {
+            std::vector<ObjectRef> nearbyObjectRefs;
+            activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+            for (const ObjectRef& objectRef : nearbyObjectRefs) {
+                Object* target = activeModule().getObjectHandler().get(objectRef);
+                if (target == nullptr) {
+                    continue;
+                }
+
                 //Valid objects only
                 if(target->isTerminated() || target->isHidden()) continue;
 

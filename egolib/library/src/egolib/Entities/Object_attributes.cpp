@@ -602,8 +602,14 @@ bool Object::activateStealth()
     lineOfSightInfo.z1 = getPosZ() + std::max(1.0f, bump.height);
 
     //Check if there are any nearby Objects disrupting our stealth attempt
-    std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(getPosX(), getPosY(), WIDE, false);
-    for(const std::shared_ptr<Object> &object : nearbyObjects) {
+    std::vector<ObjectRef> nearbyObjectRefs;
+    activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+    for (const ObjectRef& objectRef : nearbyObjectRefs) {
+        Object* object = activeModule().getObjectHandler().get(objectRef);
+        if (object == nullptr) {
+            continue;
+        }
+
         //Valid objects only
         if(object->isTerminated() || !object->isAlive() || object->isBeingHeld()) continue;
 

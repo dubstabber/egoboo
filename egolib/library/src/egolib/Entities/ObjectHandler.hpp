@@ -170,6 +170,13 @@ public:
 
 	/**
 	* @brief
+	*	Find all object references that are within range of a specified point in this
+	*	QuadTree's bounding box.
+	**/
+	void findObjectRefs(float x, float y, float distance, std::vector<ObjectRef>& result, bool includeSceneryObjects = true) const;
+
+	/**
+	* @brief
 	*	Find all elements that collide with a 2D bounding box area
 	* @param searchArea
 	*	The bounding box to scan
@@ -179,6 +186,12 @@ public:
 	*	if true, it will also include Scenery objects in the search as defined by Object::isScenery()
 	**/
 	void findObjects(const Ego::AxisAlignedBox2f &searchArea, std::vector<std::shared_ptr<Object>> &result, bool includeSceneryObjects = true) const;
+
+	/**
+	* @brief
+	*	Find all object references that collide with a 2D bounding box area.
+	**/
+	void findObjectRefs(const Ego::AxisAlignedBox2f& searchArea, std::vector<ObjectRef>& result, bool includeSceneryObjects = true) const;
 
 	/**
 	* @brief

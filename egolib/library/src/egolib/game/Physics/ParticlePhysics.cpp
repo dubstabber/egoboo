@@ -494,11 +494,17 @@ void ParticlePhysics::updateGravity()
         const auto &particleTeam = activeModule().getTeamList()[_particle.team];
 
         //Pull all nearby objects
-        std::vector<std::shared_ptr<Object>> affectedObjects = activeModule().getObjectHandler().findObjects(_particle.getPosX(), _particle.getPosY(), pullDistance, false);
-        for(const std::shared_ptr<Object> &object : affectedObjects)
+        std::vector<ObjectRef> affectedObjectRefs;
+        activeModule().getObjectHandler().findObjectRefs(_particle.getPosX(), _particle.getPosY(), pullDistance, affectedObjectRefs, false);
+        for (const ObjectRef& objectRef : affectedObjectRefs)
         {
+            Object* object = activeModule().getObjectHandler().get(objectRef);
+            if (object == nullptr || object->isTerminated()) {
+                continue;
+            }
+
             //Do not affect the object we are attached to
-            if(_particle.getAttachedObject() == object) continue;
+            if(_particle.getAttachedObject().get() == object) continue;
 
             //Allow friendly fire?
             if(!_particle.getProfile()->hateonly && !particleTeam.hatesTeam(object->getTeam())) continue;

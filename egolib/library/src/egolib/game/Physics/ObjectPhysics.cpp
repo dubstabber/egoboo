@@ -717,13 +717,19 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     Vector3f   slot_pos = Vector3f(mids[OCT_X], mids[OCT_Y], mids[OCT_Z]) + _object.getPosition();
 
     //The object that we grab
-    std::shared_ptr<Object> bestMatch = nullptr;
+    Object* bestMatch = nullptr;
     float bestMatchDistance = std::numeric_limits<float>::max();
 
     // Go through all nearby objects to find the best match
-    std::vector<std::shared_ptr<Object>> nearbyObjects = activeModule().getObjectHandler().findObjects(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, false);
-    for(const std::shared_ptr<Object> &pchr_c : nearbyObjects)
+    std::vector<ObjectRef> nearbyObjectRefs;
+    activeModule().getObjectHandler().findObjectRefs(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, nearbyObjectRefs, false);
+    for (const ObjectRef& objectRef : nearbyObjectRefs)
     {
+        Object* pchr_c = activeModule().getObjectHandler().get(objectRef);
+        if (pchr_c == nullptr) {
+            continue;
+        }
+
         //Skip invalid objects
         if(pchr_c->isTerminated()) {
             continue;
@@ -820,7 +826,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
 
     if(bestMatch != nullptr) {
         const std::shared_ptr<Object> &grabber = activeModule().getObjectHandler()[_object.getObjRef()];
-        if (Shop::canGrabItem(grabber, bestMatch))
+        if (Shop::canGrabItem(grabber, bestMatch->shared_from_this()))
         {
             // Stick 'em together and quit
             if(bestMatch->attachToObject(grabber->getObjRef(), grip_off))

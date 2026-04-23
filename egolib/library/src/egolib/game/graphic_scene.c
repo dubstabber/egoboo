@@ -380,16 +380,23 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam)
 {
     el.clear();
 
-    std::vector<std::shared_ptr<Object>> visibleObjects =
-        activeModule().getObjectHandler().findObjects(
-            cam.getCenter()[kX],
-            cam.getCenter()[kY],
-            Info<float>::Grid::Size() * 10,
-            true);
+    std::vector<ObjectRef> visibleObjectRefs;
+    activeModule().getObjectHandler().findObjectRefs(
+        cam.getCenter()[kX],
+        cam.getCenter()[kY],
+        Info<float>::Grid::Size() * 10,
+        visibleObjectRefs,
+        true);
 
-    for (const std::shared_ptr<Object>& object : visibleObjects)
+    for (const ObjectRef& objectRef : visibleObjectRefs)
     {
-        el.add(cam, *object.get());
+        Object* object = activeModule().getObjectHandler().get(objectRef);
+        if (object == nullptr || object->isTerminated())
+        {
+            continue;
+        }
+
+        el.add(cam, *object);
     }
 
     for (const std::shared_ptr<Ego::Particle>& particle : EngineContext::get().particleHandler().iterator())
