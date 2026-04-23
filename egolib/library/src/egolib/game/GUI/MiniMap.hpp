@@ -25,6 +25,8 @@
 
 #include "egolib/game/GUI/Component.hpp"
 
+class GameModule;
+struct EnemySenseState;
 namespace Ego { class DeferredTexture; class Texture; }
 
 namespace Ego {
@@ -52,6 +54,7 @@ public:
     bool notifyMouseButtonReleased(const Events::MouseButtonReleasedEvent& e) override;
 
 private:
+    void queueEnemySenseBlips(const EnemySenseState& enemySense, GameModule& activeModule);
 
     //Private blip class
     class Blip {

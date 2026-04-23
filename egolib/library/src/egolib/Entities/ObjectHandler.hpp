@@ -97,6 +97,48 @@ public:
 		friend class ObjectHandler;
 	};
 
+	class ObjectRefIterator
+	{
+	public:
+
+		inline std::vector<ObjectRef>::const_iterator cbegin() const
+		{
+			return _refs.cbegin();
+		}
+
+		inline std::vector<ObjectRef>::const_iterator cend() const
+		{
+			return _refs.cend();
+		}
+
+		inline std::vector<ObjectRef>::const_iterator begin() const
+		{
+			return _refs.cbegin();
+		}
+
+		inline std::vector<ObjectRef>::const_iterator end() const
+		{
+			return _refs.cend();
+		}
+
+		~ObjectRefIterator() = default;
+
+		ObjectRefIterator(const ObjectRefIterator& other) :
+			_objects(other._objects),
+			_refs(other._refs)
+		{}
+
+		ObjectRefIterator& operator=(const ObjectRefIterator&) = delete;
+
+	private:
+		explicit ObjectRefIterator(ObjectHandler& handler);
+
+		ObjectIterator _objects;
+		std::vector<ObjectRef> _refs;
+
+		friend class ObjectHandler;
+	};
+
 public:
 	/**
 	 * @brief Default constructor.
@@ -107,6 +149,11 @@ public:
 	 * @brief Returns a safe deferred iterator that ensure nothing is modified while iterating.
 	 */
 	ObjectIterator iterator();
+
+	/**
+	 * @brief Returns a safe deferred iterator over object references in iterator order.
+	 */
+	ObjectRefIterator objectRefIterator();
 
 	/**
 	 * @brief Remove the specified object for the game. 

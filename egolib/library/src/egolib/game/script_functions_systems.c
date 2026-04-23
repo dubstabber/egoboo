@@ -1155,12 +1155,9 @@ void forEachResolvedObjectRef(Fn&& fn)
         return;
     }
 
-    for (const std::shared_ptr<Object>& object : handler->iterator())
+    for (const ObjectRef objectRef : handler->objectRefIterator())
     {
-        if (object != nullptr)
-        {
-            fn(object->getObjRef());
-        }
+        fn(objectRef);
     }
 }
 

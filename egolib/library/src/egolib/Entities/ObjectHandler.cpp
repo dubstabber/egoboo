@@ -54,6 +54,20 @@ bool INGAME_PCHR(const Object *pobj)
     return (nullptr != pobj) && !pobj->isTerminated();
 }
 
+ObjectHandler::ObjectRefIterator::ObjectRefIterator(ObjectHandler& handler) :
+    _objects(handler),
+    _refs()
+{
+    _refs.reserve(std::distance(_objects.cbegin(), _objects.cend()));
+    for (const auto& object : _objects)
+    {
+        if (object != nullptr)
+        {
+            _refs.push_back(object->getObjRef());
+        }
+    }
+}
+
 ObjectHandler::ObjectHandler() :
 	_internalCharacterList(),
     _iteratorList(),
@@ -307,6 +321,11 @@ void ObjectHandler::unlock()
 ObjectHandler::ObjectIterator ObjectHandler::iterator()
 {
     return ObjectIterator(*this);
+}
+
+ObjectHandler::ObjectRefIterator ObjectHandler::objectRefIterator()
+{
+    return ObjectRefIterator(*this);
 }
 
 size_t ObjectHandler::getObjectCount() const 

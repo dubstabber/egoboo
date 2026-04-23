@@ -56,6 +56,33 @@ MiniMap::MiniMap() :
     }
 }
 
+void MiniMap::queueEnemySenseBlips(const EnemySenseState& enemySense, GameModule& activeModule)
+{
+    if (static_cast<TEAM_REF>(Team::TEAM_MAX) == enemySense.team)
+    {
+        return;
+    }
+
+    GameSessionContext& session = GameSessionContext::get();
+    for (const ObjectRef objectRef : activeModule.getObjectHandler().objectRefIterator())
+    {
+        const Object* object = session.tryObject(objectRef);
+        if (object == nullptr || object->isTerminated())
+        {
+            continue;
+        }
+
+        const std::shared_ptr<ObjectProfile>& profile = object->getProfile();
+        if (object->getTeam().hatesTeam(activeModule.getTeamList()[enemySense.team]) &&
+            (enemySense.idsz == IDSZ2::None ||
+             enemySense.idsz == profile->getIDSZ(IDSZ_PARENT) ||
+             enemySense.idsz == profile->getIDSZ(IDSZ_TYPE)))
+        {
+            addBlip(object->getPosX(), object->getPosY(), COLOR_RED);
+        }
+    }
+}
+
 void MiniMap::draw(DrawingContext& drawingContext) {
     GameSessionContext& session = GameSessionContext::get();
     GameModule* activeModule = session.tryActiveModule();
@@ -68,25 +95,7 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
-    const EnemySenseState& enemySense = session.enemySense();
-    if (static_cast<TEAM_REF>(Team::TEAM_MAX) != enemySense.team) {
-        for (const std::shared_ptr<Object> &pchr : activeModule->getObjectHandler().iterator()) {
-            if (pchr->isTerminated()) continue;
-
-            const std::shared_ptr<ObjectProfile> &profile = pchr->getProfile();
-
-            // Show only teams that will attack the player
-            if (pchr->getTeam().hatesTeam(activeModule->getTeamList()[enemySense.team])) {
-                // Only if they match the required IDSZ ([NONE] always works)
-                if (enemySense.idsz == IDSZ2::None ||
-                    enemySense.idsz == profile->getIDSZ(IDSZ_PARENT) ||
-                    enemySense.idsz == profile->getIDSZ(IDSZ_TYPE)) {
-                    // Red blips
-                    addBlip(pchr->getPosX(), pchr->getPosY(), COLOR_RED);
-                }
-            }
-        }
-    }
+    queueEnemySenseBlips(session.enemySense(), *activeModule);
 
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {

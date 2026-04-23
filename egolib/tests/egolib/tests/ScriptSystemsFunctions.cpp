@@ -21,6 +21,7 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/GUI/InventorySlot.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/MessageLog.hpp"
 #include "egolib/game/Module/Module.hpp"
@@ -1056,6 +1057,59 @@ TEST_F(ScriptSystemsFunctionsFixture, ShowMapHelpersNoOpWithoutActivePlayingStat
     EXPECT_TRUE(scr_ShowYouAreHere(state, self));
     EXPECT_TRUE(scr_ShowBlipXY(state, self));
     EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, MiniMapEnemySenseQueueSkipsTerminatedObservedObjects)
+{
+    auto& module = beginActiveTestModule();
+    auto liveEnemy = makeObject(module, "mp_objects/follower.obj", 5621, Ego::Vector3f(48.0f, 64.0f, 0.0f));
+    auto terminatedEnemy = makeObject(module, "mp_objects/follower.obj", 5622, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(liveEnemy, nullptr);
+    ASSERT_NE(terminatedEnemy, nullptr);
+
+    {
+        auto objects = module.getObjectHandler().iterator();
+        (void)objects;
+    }
+
+    liveEnemy->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    terminatedEnemy->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    terminatedEnemy->requestTerminate();
+
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+
+    const auto minimap = playingStateHarness.playingState()->getMiniMap();
+    ASSERT_NE(minimap, nullptr);
+
+    minimap->_blips.clear();
+    GameSessionContext::get().publishEnemySense(EnemySenseState(static_cast<TEAM_REF>(Team::TEAM_GOOD), IDSZ2::None));
+    minimap->queueEnemySenseBlips(GameSessionContext::get().enemySense(), module);
+
+    ASSERT_EQ(minimap->_blips.size(), 1u);
+    EXPECT_FLOAT_EQ(minimap->_blips.front().x, liveEnemy->getPosX());
+    EXPECT_FLOAT_EQ(minimap->_blips.front().y, liveEnemy->getPosY());
+    EXPECT_EQ(minimap->_blips.front().color, COLOR_RED);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, InventorySlotResolvesLiveItemByRefAndSkipsTerminatedItems)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5623);
+    auto inventoryItem = makeAmmoItem(module, 5724);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(inventoryItem, nullptr);
+
+    const size_t slot = actor->getFirstFreeInventorySlot();
+    ASSERT_TRUE(Inventory::add_item(*actor, inventoryItem, slot, true));
+
+    Ego::GUI::InventorySlot inventorySlot(actor->getObjRef(), slot, nullptr);
+    EXPECT_EQ(inventorySlot.tryObservedItem(), inventoryItem.get());
+
+    inventoryItem->requestTerminate();
+    EXPECT_EQ(inventorySlot.tryObservedItem(), nullptr);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavior)

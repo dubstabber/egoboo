@@ -19,6 +19,8 @@ public:
     bool notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) override;
 
 private:
+    const Object* tryObservedItem() const;
+
     ObjectRef _characterRef;
     size_t _slotNumber;
     std::shared_ptr<Player> _player;

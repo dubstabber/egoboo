@@ -15,6 +15,13 @@ Object* tryObservedCharacter(ObjectRef objectRef)
     Object* object = GameSessionContext::get().tryObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
+
+const Object* tryObservedInventoryItem(const IInventoryHolder& holder, size_t slotNumber)
+{
+    const ObjectRef itemRef = holder.getInventoryItemRef(slotNumber);
+    const Object* item = GameSessionContext::get().tryObject(itemRef);
+    return item != nullptr && !item->isTerminated() ? item : nullptr;
+}
 }
 
 InventorySlot::InventorySlot(ObjectRef characterRef, const size_t slotNumber, const std::shared_ptr<Player>& player) :
@@ -24,9 +31,14 @@ InventorySlot::InventorySlot(ObjectRef characterRef, const size_t slotNumber, co
     //ctor
 }
 
+const Object* InventorySlot::tryObservedItem() const
+{
+    const Object* character = tryObservedCharacter(_characterRef);
+    return character ? tryObservedInventoryItem(*character, _slotNumber) : nullptr;
+}
+
 void InventorySlot::draw(DrawingContext& drawingContext) {
-    Object* character = tryObservedCharacter(_characterRef);
-    std::shared_ptr<Object> item = character ? character->getInventoryItem(_slotNumber) : nullptr;
+    const Object* item = tryObservedItem();
 
     // grab the icon reference
     std::shared_ptr<const Texture> icon_ref;

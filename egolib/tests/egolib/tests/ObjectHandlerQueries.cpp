@@ -261,4 +261,97 @@ TEST_F(ObjectHandlerQueriesFixture, QueryRefsCanBeResolvedSafelyAfterRemoval)
 
     EXPECT_EQ(resolvedRefs, expectedResolvedRefs);
 }
+
+TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProjectionOrder)
+{
+    const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6105);
+    ObjectHandler& handler = beginActiveTestModule();
+
+    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+
+    ASSERT_NE(nearA, nullptr);
+    ASSERT_NE(nearB, nullptr);
+    ASSERT_NE(farAway, nullptr);
+
+    refreshQuadTree(handler);
+
+    std::vector<ObjectRef> legacyRefs;
+    {
+        auto objects = handler.iterator();
+        for (const auto& object : objects)
+        {
+            if (object != nullptr)
+            {
+                legacyRefs.push_back(object->getObjRef());
+            }
+        }
+    }
+
+    std::vector<ObjectRef> refIteratorRefs;
+    {
+        auto refs = handler.objectRefIterator();
+        refIteratorRefs.assign(refs.begin(), refs.end());
+    }
+
+    EXPECT_EQ(refIteratorRefs, legacyRefs);
+}
+
+TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorRemainsStableAcrossDeferredRemoval)
+{
+    const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6106);
+    ObjectHandler& handler = beginActiveTestModule();
+
+    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+
+    ASSERT_NE(nearA, nullptr);
+    ASSERT_NE(nearB, nullptr);
+    ASSERT_NE(farAway, nullptr);
+
+    refreshQuadTree(handler);
+
+    std::vector<ObjectRef> expectedRefs;
+    {
+        auto objects = handler.iterator();
+        for (const auto& object : objects)
+        {
+            if (object != nullptr)
+            {
+                expectedRefs.push_back(object->getObjRef());
+            }
+        }
+    }
+
+    std::vector<ObjectRef> iteratedRefs;
+    {
+        auto refs = handler.objectRefIterator();
+        for (const ObjectRef ref : refs)
+        {
+            iteratedRefs.push_back(ref);
+            if (ref == nearA->getObjRef())
+            {
+                ASSERT_TRUE(handler.remove(nearB->getObjRef()));
+            }
+        }
+    }
+
+    EXPECT_EQ(iteratedRefs, expectedRefs);
+    EXPECT_EQ(handler.get(nearB->getObjRef()), nullptr);
+
+    std::vector<ObjectRef> expectedPostRemovalRefs = expectedRefs;
+    expectedPostRemovalRefs.erase(
+        std::remove(expectedPostRemovalRefs.begin(), expectedPostRemovalRefs.end(), nearB->getObjRef()),
+        expectedPostRemovalRefs.end());
+
+    std::vector<ObjectRef> postRemovalRefs;
+    {
+        auto refs = handler.objectRefIterator();
+        postRemovalRefs.assign(refs.begin(), refs.end());
+    }
+
+    EXPECT_EQ(postRemovalRefs, expectedPostRemovalRefs);
+}
 }  // namespace
