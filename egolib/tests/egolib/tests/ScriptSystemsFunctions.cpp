@@ -910,7 +910,16 @@ TEST_F(ScriptSystemsFunctionsFixture, SelfCompatibilityOpcodesFailQuietlyWhenSel
     ai_state_t self = makeScriptSelf(nullptr);
 
     const SKIN_T initialSkin = actor->getSkin();
+    const DamageType initialDamageType = actor->getDamageTargetType();
+    const int initialMoney = actor->getMoney();
     g_endText.setText("Prefix:");
+
+    state.argument = static_cast<int>(DamageType::DAMAGE_FIRE);
+    EXPECT_FALSE(scr_SetDamageType(state, self));
+    EXPECT_EQ(actor->getDamageTargetType(), initialDamageType);
+
+    EXPECT_FALSE(scr_Equip(state, self));
+    EXPECT_FALSE(actor->isEquipped());
 
     state.argument = 3;
     state.x = 77;
@@ -918,6 +927,10 @@ TEST_F(ScriptSystemsFunctionsFixture, SelfCompatibilityOpcodesFailQuietlyWhenSel
     EXPECT_EQ(actor->getSkin(), initialSkin);
     EXPECT_EQ(state.argument, 3);
     EXPECT_EQ(state.x, 77);
+
+    state.argument = 25;
+    EXPECT_FALSE(scr_DropMoney(state, self));
+    EXPECT_EQ(actor->getMoney(), initialMoney);
 
     state.argument = 25;
     EXPECT_FALSE(scr_SetMoney(state, self));

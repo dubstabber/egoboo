@@ -898,6 +898,12 @@ Continued Tier 3.1 by removing `Player::getObject()` as a `shared_ptr<Object>` e
 
 Kept missing or terminated player objects as normal no-op branches, retained the existing pre-module startup/test behavior for local-player aggregation, and updated focused startup/status regressions plus the existing export/script coverage to lock the new seam. Build and `test.mod` validator remain the acceptance bar.
 
+### Pass 179 — Systems self/module compatibility split (2026-04-23)
+
+Returned to Tier 1.2 inside `script_functions_systems.c` by splitting the remaining broad self/module compatibility helper into narrower file-local contexts: self-role mutation, self-profile policy, and UI/module side effects. Routed the self damage-type/equip/team/money/armor writes, spellbook/follow-link/deprecation policy, minimap/status/end-text adapters, and water/fog/tile/export/pit/module helpers through those smaller contexts without widening any public role seams or changing legacy success/failure behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the widened self-role cluster on top of the existing follow-link, end-text, UI, and module-environment regressions, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
