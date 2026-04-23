@@ -922,6 +922,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by splitting the remaining
 
 Extended `ScriptTargetFunctions.cpp` with focused invalid-self coverage for the widened selector cluster, then kept the focused target-function test slice, build, and the `test.mod` validator as the acceptance bar for the pass.
 
+### Pass 183 — Action self/profile compatibility closure (2026-04-23)
+
+Continued Tier 1.2 inside `script_functions_action.c` by moving the remaining self/profile message, sound, billboard, charge-display, and visual mutation residue behind one file-local self-compatibility context. Routed the lingering `pchr` / `ppro` access pockets through that shared helper layer, normalized the action-start checks to the landed bool contract on `IAnimationControl`, and preserved the existing success/failure behavior without widening any public role seams.
+
+Extended `ScriptActionFunctions.cpp` with focused regressions for direct self-message dispatch, usage-known publication, and volume-adjusted sound routing on top of the existing action/audio/billboard/charge coverage, then kept build, the focused action test slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

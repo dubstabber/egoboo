@@ -5,6 +5,16 @@
 
 namespace
 {
+struct SelfActionContext
+{
+    Object* object = nullptr;
+    ObjectProfile* profile = nullptr;
+    IAnimationControl* animation = nullptr;
+    IVisualControl* visual = nullptr;
+    ITeamMember* teamMember = nullptr;
+    const ITargetInfo* targetInfo = nullptr;
+};
+
 GameSessionContext& gameSession()
 {
     return GameSessionContext::get();
@@ -30,24 +40,48 @@ Ego::GUI::UIManager* tryUIManager()
     return EngineContext::get().tryUIManager();
 }
 
-IAnimationControl& animationControl(Object& object)
+SelfActionContext makeSelfActionContext(Object& object, ObjectProfile& profile)
 {
-    return static_cast<IAnimationControl&>(object);
+    SelfActionContext context;
+    context.object = &object;
+    context.profile = &profile;
+    context.animation = static_cast<IAnimationControl*>(&object);
+    context.visual = static_cast<IVisualControl*>(&object);
+    context.teamMember = static_cast<ITeamMember*>(&object);
+    context.targetInfo = static_cast<const ITargetInfo*>(&object);
+    return context;
 }
 
-IVisualControl& visualControl(Object& object)
+bool startResolvedAnimation(IAnimationControl& animation, int actionIndex, bool overrideAction)
 {
-    return static_cast<IVisualControl&>(object);
+    const ModelAction action = animation.resolveModelAction(actionIndex);
+    return animation.startAnimation(action, false, overrideAction);
 }
 
-ITeamMember& teamMember(Object& object)
+bool sendSelfProfileMessage(const ai_state_t& self,
+                            const SelfActionContext& context,
+                            int messageId,
+                            script_state_t& state)
 {
-    return static_cast<ITeamMember&>(object);
+    return _display_message(self.getSelf(),
+                            context.object->getProfileID().get(),
+                            messageId,
+                            &state);
 }
 
-const ITargetInfo& targetInfo(const Object& object)
+SoundID selfProfileSound(const SelfActionContext& context, int soundIndex)
 {
-    return static_cast<const ITargetInfo&>(object);
+    return context.profile->getSoundID(soundIndex);
+}
+
+bool hasValidProfileMessage(const SelfActionContext& context, int messageId)
+{
+    return context.profile->isValidMessageID(messageId);
+}
+
+const std::string& selfProfileMessage(const SelfActionContext& context, int messageId)
+{
+    return context.profile->getMessage(messageId);
 }
 
 template <typename Fn>
@@ -116,14 +150,9 @@ uint8_t scr_DoAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAnimationControl& selfAnimation = animationControl(*pchr);
-    const ModelAction action = selfAnimation.resolveModelAction(state.argument);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
-    returncode = false;
-    if ( rv_success == selfAnimation.startAnimation(action, false, false) )
-    {
-        returncode = true;
-    }
+    returncode = startResolvedAnimation(*selfContext.animation, state.argument, false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -139,7 +168,8 @@ uint8_t scr_KeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    animationControl(*pchr).setActionKeep(true);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.animation->setActionKeep(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -161,8 +191,7 @@ uint8_t scr_TargetDoAction( script_state_t& state, ai_state_t& self )
     IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
     if ( target != nullptr && targetAnimation != nullptr && target->isAlive() )
     {
-        const ModelAction action = targetAnimation->resolveModelAction(state.argument);
-        if ( rv_success == targetAnimation->startAnimation(action, false, false) )
+        if (startResolvedAnimation(*targetAnimation, state.argument, false))
         {
             returncode = true;
         }
@@ -182,14 +211,9 @@ uint8_t scr_DoActionOverride( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IAnimationControl& selfAnimation = animationControl(*pchr);
-    const ModelAction action = selfAnimation.resolveModelAction(state.argument);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
-    returncode = false;
-    if ( rv_success == selfAnimation.startAnimation(action, false, true) )
-    {
-        returncode = true;
-    }
+    returncode = startResolvedAnimation(*selfContext.animation, state.argument, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -204,7 +228,8 @@ uint8_t scr_SendMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = _display_message( self.getSelf(), pchr->getProfileID().get(), state.argument, &state );
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    returncode = sendSelfProfileMessage(self, selfContext, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -220,7 +245,8 @@ uint8_t scr_CallForHelp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).callTeamForHelp();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.teamMember->callTeamForHelp();
 
     SCRIPT_FUNCTION_END();
 }
@@ -235,7 +261,8 @@ uint8_t scr_UnkeepAction( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    animationControl(*pchr).setActionKeep(false);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.animation->setActionKeep(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -251,9 +278,11 @@ uint8_t scr_PlaySound( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    if ( pchr->getOldPosition()[kZ] > PITNOSOUND )
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    const auto& oldPosition = selfContext.object->getOldPosition();
+    if ( oldPosition[kZ] > PITNOSOUND )
     {
-        audioSystem().playSound(pchr->getOldPosition(), ppro->getSoundID(state.argument));
+        audioSystem().playSound(oldPosition, selfProfileSound(selfContext, state.argument));
     }
 
     SCRIPT_FUNCTION_END();
@@ -291,7 +320,8 @@ uint8_t scr_SetRedShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setRedShift(Ego::Math::constrain(state.argument, 0, 6));
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setRedShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -307,7 +337,8 @@ uint8_t scr_SetGreenShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setGreenShift(Ego::Math::constrain(state.argument, 0, 6));
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setGreenShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -323,7 +354,8 @@ uint8_t scr_SetBlueShift( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setBlueShift(Ego::Math::constrain(state.argument, 0, 6));
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setBlueShift(Ego::Math::constrain(state.argument, 0, 6));
 
     SCRIPT_FUNCTION_END();
 }
@@ -339,7 +371,8 @@ uint8_t scr_SetLight( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setLight(state.argument);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setLight(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -355,7 +388,8 @@ uint8_t scr_SetAlpha( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setAlpha(state.argument);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setAlpha(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -392,12 +426,14 @@ uint8_t scr_SendMessageNear( script_state_t& state, ai_state_t& self )
     int iTmp, min_distance;
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    const auto& oldPosition = selfContext.object->getOldPosition();
 
     // iterate over all cameras and find the minimum distance
     min_distance = -1;
     for (const std::shared_ptr<Camera>& camera : cameraSystem().getCameraList())
     {
-        iTmp = std::abs( pchr->getOldPosition()[kX] - camera->getTrackPosition()[kX] ) + std::fabs( pchr->getOldPosition()[kY] - camera->getTrackPosition()[kY] );
+        iTmp = std::abs( oldPosition[kX] - camera->getTrackPosition()[kX] ) + std::fabs( oldPosition[kY] - camera->getTrackPosition()[kY] );
 
         if ( -1 == min_distance || iTmp < min_distance )
         {
@@ -407,7 +443,7 @@ uint8_t scr_SendMessageNear( script_state_t& state, ai_state_t& self )
 
     if ( min_distance < MSGDISTANCE )
     {
-        returncode = _display_message( self.getSelf(), pchr->getProfileID().get(), state.argument, &state );
+        returncode = sendSelfProfileMessage(self, selfContext, state.argument, state);
     }
 
     SCRIPT_FUNCTION_END();
@@ -424,7 +460,8 @@ uint8_t scr_MakeNameKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setNameKnown(true);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setNameKnown(true);
     //           pchr->icon = true;
 
     SCRIPT_FUNCTION_END();
@@ -441,7 +478,8 @@ uint8_t scr_MakeUsageKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    ppro->makeUsageKnown();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.profile->makeUsageKnown();
 
     SCRIPT_FUNCTION_END();
 }
@@ -456,7 +494,8 @@ uint8_t scr_MakeAmmoKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setAmmoKnown(true);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setAmmoKnown(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -471,8 +510,9 @@ uint8_t scr_PlaySoundLooped( script_state_t& state, ai_state_t& self )
     /// @details This function starts playing a continuous sound
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
-    SoundID sound = ppro->getSoundID(state.argument);
+    SoundID sound = selfProfileSound(selfContext, state.argument);
     
     if ( INVALID_SOUND_ID == sound )
     {
@@ -499,7 +539,8 @@ uint8_t scr_StopSound( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    audioSystem().stopObjectLoopingSounds(self.getSelf(), ppro->getSoundID(state.argument));
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    audioSystem().stopObjectLoopingSounds(self.getSelf(), selfProfileSound(selfContext, state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -522,8 +563,7 @@ uint8_t scr_ChildDoActionOverride( script_state_t& state, ai_state_t& self )
     IAnimationControl* childAnimation = tryAnimationControl(self.child);
     if ( childAnimation != nullptr )
     {
-        const ModelAction action = childAnimation->resolveModelAction(state.argument);
-        if ( rv_success == childAnimation->startAnimation(action, false, true) )
+        if (startResolvedAnimation(*childAnimation, state.argument, true))
         {
             returncode = true;
         }
@@ -558,10 +598,13 @@ uint8_t scr_PlaySoundVolume( script_state_t& state, ai_state_t& self )
     /// @details This function sets the volume of a sound and plays it
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
     if ( state.distance > 0 )
     {
-        int channel = audioSystem().playSound(pchr->getOldPosition(), ppro->getSoundID(Ego::Script::Interpreter::safeCast<int>(state.argument)));
+        int channel = audioSystem().playSound(selfContext.object->getOldPosition(),
+                                              selfProfileSound(selfContext,
+                                                               Ego::Script::Interpreter::safeCast<int>(state.argument)));
 
         if ( channel != INVALID_SOUND_CHANNEL )
         {
@@ -582,10 +625,11 @@ uint8_t scr_MakeSimilarNamesKnown( script_state_t& state, ai_state_t& self )
     /// Checks all 6 IDSZ types to make sure they match.
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
     forEachLiveActionObjectRef([&](ObjectRef objectRef)
     {
-        if (!hasMatchingIdszProfile(objectRef, *ppro))
+        if (!hasMatchingIdszProfile(objectRef, *selfContext.profile))
         {
             return;
         }
@@ -611,10 +655,10 @@ uint8_t scr_CorrectActionForHand( script_state_t& state, ai_state_t& self )
     /// USAGE:  wizards casting spells
 
     SCRIPT_FUNCTION_BEGIN();
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
-    if ( hasLiveHolder(selfTargetInfo) )
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    if ( hasLiveHolder(*selfContext.targetInfo) )
     {
-        if ( selfTargetInfo.getAttachmentSlot() == SLOT_LEFT )
+        if ( selfContext.targetInfo->getAttachmentSlot() == SLOT_LEFT )
         {
             // A or B
             state.argument += Random::next(1);
@@ -638,15 +682,16 @@ uint8_t scr_SparkleIcon( script_state_t& state, ai_state_t& self )
     /// @details This function starts little sparklies going around the character's icon
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
     if ( state.argument < COLOR_MAX )
     {
         if ( state.argument < -1 )
         {
-            visualControl(*pchr).setSparkle(NOSPARKLE);
+            selfContext.visual->setSparkle(NOSPARKLE);
         }
         else
         {
-            visualControl(*pchr).setSparkle(state.argument % COLOR_MAX);
+            selfContext.visual->setSparkle(state.argument % COLOR_MAX);
         }
     }
 
@@ -663,7 +708,8 @@ uint8_t scr_UnsparkleIcon( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setSparkle(NOSPARKLE);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setSparkle(NOSPARKLE);
 
     SCRIPT_FUNCTION_END();
 }
@@ -679,7 +725,8 @@ uint8_t scr_PlayFullSound( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    audioSystem().playSoundFull(ppro->getSoundID(state.argument));
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    audioSystem().playSoundFull(selfProfileSound(selfContext, state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -701,8 +748,7 @@ uint8_t scr_TargetDoActionSetFrame( script_state_t& state, ai_state_t& self )
     IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
     if ( targetAnimation != nullptr )
     {
-        const ModelAction action = targetAnimation->resolveModelAction(state.argument);
-        if ( rv_success == targetAnimation->startAnimation(action, false, true) )
+        if (startResolvedAnimation(*targetAnimation, state.argument, true))
         {
             // remove the interpolation
             targetAnimation->removeInterpolation();
@@ -839,7 +885,8 @@ uint8_t scr_MakeNameUnknown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    visualControl(*pchr).setNameKnown(false);
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
+    selfContext.visual->setNameKnown(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1009,8 +1056,9 @@ uint8_t scr_DrawBillboard( script_state_t& state, ai_state_t& self )
     const auto tint_blue = Ego::Colour4f{ 0.25f, 0.25f, 1.00f, 1.00f };
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
-    if ( !ppro->isValidMessageID(state.argument) ) return false;
+    if ( !hasValidProfileMessage(selfContext, state.argument) ) return false;
 
     auto* tint = &tint_white;
     //Figure out which color to use
@@ -1025,7 +1073,7 @@ uint8_t scr_DrawBillboard( script_state_t& state, ai_state_t& self )
     }
 
     returncode = nullptr != tryMakeBillboard(self.getSelf(),
-                                             ppro->getMessage(state.argument),
+                                             selfProfileMessage(selfContext, state.argument),
                                              text_color,
                                              *tint,
                                              state.distance);
@@ -1042,9 +1090,10 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     /// @details Draws a special progress bar this update frame
 
     SCRIPT_FUNCTION_BEGIN();
+    const SelfActionContext selfContext = makeSelfActionContext(*pchr, *ppro);
 
     //We ourselves must be a player or our holder must be one
-    const ITargetInfo* chargeTarget = &targetInfo(*pchr);
+    const ITargetInfo* chargeTarget = selfContext.targetInfo;
     if (!chargeTarget->isPlayer() && chargeTarget->isBeingHeld())
     {
         chargeTarget = tryTargetInfo(chargeTarget->getHolderRef());

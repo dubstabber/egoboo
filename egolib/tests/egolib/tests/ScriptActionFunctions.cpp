@@ -631,6 +631,31 @@ TEST_F(ScriptActionFunctionsFixture, PlaySoundUsesInstalledAudioSystemOnlyAboveP
     EXPECT_TRUE(audioSystem.playedSounds.empty());
 }
 
+TEST_F(ScriptActionFunctionsFixture, SendMessageAndUsageKnownUseSelfCompatibilityContext)
+{
+    auto& module = beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5704);
+
+    ASSERT_NE(actor, nullptr);
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("self context text"));
+    ASSERT_TRUE(actor->getProfile()->isValidMessageID(messageId));
+
+    ai_state_t self = makeScriptSelf(actor);
+    script_state_t usageState;
+    script_state_t messageState;
+    messageState.argument = messageId;
+
+    EXPECT_TRUE(scr_MakeUsageKnown(usageState, self));
+    EXPECT_TRUE(actor->getProfile()->isUsageKnown());
+
+    const size_t initialMessageCount = playingStateHarness.messageTexts().size();
+    EXPECT_TRUE(scr_SendMessage(messageState, self));
+    const auto messages = playingStateHarness.messageTexts();
+    ASSERT_EQ(messages.size(), initialMessageCount + 1);
+    EXPECT_EQ(messages.back(), "Self context text");
+}
+
 TEST_F(ScriptActionFunctionsFixture, MusicPassageHelpersUpdatePassageMusic)
 {
     auto& module = beginActiveTestModule();
@@ -724,6 +749,29 @@ TEST_F(ScriptActionFunctionsFixture, PlaySoundLoopedAndStopSoundUseInstalledAudi
     ASSERT_EQ(audioSystem.stoppedLoopSounds.size(), 2u);
     EXPECT_EQ(audioSystem.stoppedLoopSounds.back().ownerRef, actor->getObjRef());
     EXPECT_EQ(audioSystem.stoppedLoopSounds.back().soundID, actor->getProfile()->getSoundID(soundIndex));
+}
+
+TEST_F(ScriptActionFunctionsFixture, PlaySoundVolumeUsesInstalledAudioSystemAndSkipsNonPositiveDistance)
+{
+    auto& module = beginActiveTestModule();
+    const auto [actor, soundIndex] = makeSoundingObject(module, 5716);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_GE(soundIndex, 0);
+
+    script_state_t state;
+    state.argument = soundIndex;
+    state.distance = 75;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_PlaySoundVolume(state, self));
+    ASSERT_EQ(audioSystem.playedSounds.size(), 1u);
+    EXPECT_EQ(audioSystem.playedSounds.front().soundID, actor->getProfile()->getSoundID(soundIndex));
+
+    audioSystem.reset();
+    state.distance = 0;
+    EXPECT_TRUE(scr_PlaySoundVolume(state, self));
+    EXPECT_TRUE(audioSystem.playedSounds.empty());
 }
 
 TEST_F(ScriptActionFunctionsFixture, PlayFullSoundPlayMusicAndStopMusicUseInstalledAudioSystem)
