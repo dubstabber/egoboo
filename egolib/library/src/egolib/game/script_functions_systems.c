@@ -108,6 +108,12 @@ struct PresentationEffectsContext
     std::shared_ptr<Ego::GUI::MiniMap> minimap;
 };
 
+struct SelfPresentationCompatibilityContext
+{
+    SelfRoleContext selfRole;
+    PresentationEffectsContext presentation;
+};
+
 struct TargetEconomyCompatibilityContext
 {
     IAppearanceProfile* targetAppearance = nullptr;
@@ -219,6 +225,14 @@ PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self
     return context;
 }
 
+SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(const ai_state_t& self, Object& selfObject)
+{
+    SelfPresentationCompatibilityContext context;
+    context.selfRole = makeSelfRoleContext(selfObject);
+    context.presentation = makePresentationEffectsContext(self, &selfObject);
+    return context;
+}
+
 bool setSelfDamageType(SelfRoleContext& selfContext, DamageType damageType)
 {
     if (selfContext.selfObject == nullptr)
@@ -303,6 +317,31 @@ bool dropMoney(const script_state_t& state, IWallet* targetWallet)
 
     targetWallet->dropMoney(state.argument);
     return true;
+}
+
+bool applySelfDamageType(SelfPresentationCompatibilityContext& context, DamageType damageType)
+{
+    return setSelfDamageType(context.selfRole, damageType);
+}
+
+bool markSelfAsEquipped(SelfPresentationCompatibilityContext& context)
+{
+    return markSelfEquipped(context.selfRole);
+}
+
+bool applySelfArmorChange(script_state_t& state, SelfPresentationCompatibilityContext& context)
+{
+    return changeSelfArmor(state, context.selfRole);
+}
+
+bool applySelfMoney(const script_state_t& state, SelfPresentationCompatibilityContext& context)
+{
+    return setSelfMoney(state, context.selfRole);
+}
+
+bool applySelfTeam(SelfPresentationCompatibilityContext& context, TEAM_REF teamRef)
+{
+    return setSelfTeam(context.selfRole, teamRef);
 }
 
 IMorphControl& morphControl(Object& object)
@@ -1316,6 +1355,11 @@ void configurePitFall(const ModuleEffectsContext& context, const Ego::Vector3f& 
 
     enableActiveModulePitsKill(context);
 }
+
+void pushModuleEndVictoryScreen()
+{
+    engine().pushGameState(std::make_shared<VictoryScreen>(nullptr, true));
+}
 }
 
 void scr_systems_set_follow_link_by_modname_for_test(bool (*fn)(const std::string&, bool))
@@ -1670,8 +1714,8 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1985,8 +2029,8 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = markSelfEquipped(selfContext);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = markSelfAsEquipped(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2021,8 +2065,8 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = changeSelfArmor(state, selfContext);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfArmorChange(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2123,8 +2167,8 @@ uint8_t scr_ShowMap( script_state_t& state, ai_state_t& self )
     /// Fails if map already visible
 
     SCRIPT_FUNCTION_BEGIN();
-    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
-    returncode = showMiniMap(presentationContext);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = showMiniMap(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2140,8 +2184,8 @@ uint8_t scr_ShowYouAreHere( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
-    showMiniMapPlayerPosition(presentationContext);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    showMiniMapPlayerPosition(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2159,8 +2203,8 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
     // Add a blip
     if ( state.argument >= 0 )
     {
-        const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
-        addSelfMiniMapBlip(presentationContext, state.x, state.y);
+        const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+        addSelfMiniMapBlip(selfContext.presentation, state.x, state.y);
     }
 
     SCRIPT_FUNCTION_END();
@@ -2514,8 +2558,7 @@ uint8_t scr_EndModule( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    // This tells the game to quit
-    engine().pushGameState(std::make_shared<VictoryScreen>(nullptr, true));
+    pushModuleEndVictoryScreen();
 
     SCRIPT_FUNCTION_END();
 }
@@ -2578,8 +2621,8 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(state.argument));
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2625,8 +2668,8 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
-    returncode = addSelfEndMessageText(presentationContext, state.argument, state);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = addSelfEndMessageText(selfContext.presentation, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2641,8 +2684,8 @@ uint8_t scr_AddStat( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
-    addSelfStatusMonitor(presentationContext);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    addSelfStatusMonitor(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2738,8 +2781,8 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2754,8 +2797,8 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_NULL));
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_NULL));
 
     SCRIPT_FUNCTION_END();
 }
@@ -2770,8 +2813,8 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
     SCRIPT_FUNCTION_END();
 }
@@ -3028,8 +3071,8 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
-    returncode = setSelfMoney(state, selfContext);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    returncode = applySelfMoney(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }

@@ -948,6 +948,56 @@ TEST_F(ScriptSystemsFunctionsFixture, SelfCompatibilityOpcodesFailQuietlyWhenSel
     EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, SelfPresentationCompatibilityHelpersPreserveUiNoOpsAndInvalidSelfFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 56131);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+
+    auto& config = EngineContext::get().config();
+    const bool originalShowStatusBars = config.hud_displayStatusBars.getValue();
+    config.hud_displayStatusBars.setValue(true);
+
+    actor->setShowStatus(false);
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_NULL));
+    actor->giveMoney(-static_cast<int>(actor->getMoney()));
+    actor->giveMoney(12);
+
+    const int messageId = static_cast<int>(actor->getProfile()->addMessage("Done."));
+    g_endText.setText("Prefix:");
+
+    script_state_t state;
+    state.x = 64;
+    state.y = 64;
+    state.argument = 1;
+    ai_state_t validSelf = makeScriptSelf(actor);
+
+    EXPECT_FALSE(scr_ShowMap(state, validSelf));
+    EXPECT_TRUE(scr_ShowYouAreHere(state, validSelf));
+    EXPECT_TRUE(scr_ShowBlipXY(state, validSelf));
+    EXPECT_TRUE(scr_AddStat(state, validSelf));
+    EXPECT_FALSE(actor->getShowStatus());
+    EXPECT_EQ(EngineContext::get().tryActivePlayingState(), nullptr);
+
+    ai_state_t invalidSelf = makeScriptSelf(nullptr);
+
+    state.argument = 33;
+    EXPECT_FALSE(scr_SetMoney(state, invalidSelf));
+    EXPECT_EQ(actor->getMoney(), 12);
+
+    state.argument = static_cast<int>(Team::TEAM_GOOD);
+    EXPECT_FALSE(scr_JoinGoodTeam(state, invalidSelf));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_NULL));
+
+    state.argument = messageId;
+    EXPECT_FALSE(scr_AddEndMessage(state, invalidSelf));
+    EXPECT_EQ(g_endText.getText(), "Prefix:");
+
+    config.hud_displayStatusBars.setValue(originalShowStatusBars);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAndFlagPublication)
 {
     auto& module = beginActiveTestModule();
