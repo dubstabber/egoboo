@@ -948,6 +948,24 @@ TEST_F(ScriptSystemsFunctionsFixture, SelfCompatibilityOpcodesFailQuietlyWhenSel
     EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, SelfProfileHelpersFailQuietlyWhenSelfRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/magic/summonspellii.obj", 56132);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(nullptr);
+
+    const ObjectProfileRef initialProfile = actor->getProfileID();
+    const SKIN_T initialSkin = actor->getSkin();
+
+    EXPECT_FALSE(scr_BecomeSpellbook(state, self));
+    EXPECT_EQ(actor->getProfileID(), initialProfile);
+    EXPECT_EQ(actor->getSkin(), initialSkin);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, SelfPresentationCompatibilityHelpersPreserveUiNoOpsAndInvalidSelfFailure)
 {
     auto& module = beginActiveTestModule();

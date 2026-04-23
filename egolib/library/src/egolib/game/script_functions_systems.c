@@ -87,7 +87,6 @@ struct SelfRoleContext
 
 struct SelfProfileContext
 {
-    Object* selfObject = nullptr;
     const ObjectProfile* profile = nullptr;
     std::string selfName;
     std::string className;
@@ -185,27 +184,43 @@ void maybeAddSkillPerk(ICharacterState& targetState, uint32_t skillId);
 void publishEnemySense(const EnemySenseState& state);
 void resetEnemySense();
 
-SelfRoleContext makeSelfRoleContext(Object& selfObject)
+SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
 {
     SelfRoleContext context;
-    context.selfObject = &selfObject;
-    context.appearance = static_cast<IAppearanceProfile*>(&selfObject);
-    context.teamMember = static_cast<ITeamMember*>(&selfObject);
-    context.wallet = static_cast<IWallet*>(&selfObject);
+    context.selfObject = tryObject(self.getSelf());
+    if (context.selfObject == nullptr)
+    {
+        return context;
+    }
+
+    context.appearance = static_cast<IAppearanceProfile*>(context.selfObject);
+    context.teamMember = static_cast<ITeamMember*>(context.selfObject);
+    context.wallet = static_cast<IWallet*>(context.selfObject);
     return context;
 }
 
-SelfProfileContext makeSelfProfileContext(Object& selfObject, const ObjectProfile& selfProfile)
+SelfProfileContext makeSelfProfileContext(const ai_state_t& self)
 {
     SelfProfileContext context;
-    context.selfObject = &selfObject;
-    context.profile = &selfProfile;
-    context.selfName = selfObject.getName();
-    context.className = selfProfile.getClassName();
-    context.policy.profileRef = selfObject.getProfileID();
-    context.policy.enchantRef = selfProfile.getEnchantRef();
-    context.policy.spellEffectSkin = selfProfile.getSpellEffectType();
-    context.policy.comparison.baseModelRef = selfObject.getBaseModelRef();
+    Object* selfObject = tryObject(self.getSelf());
+    if (selfObject == nullptr)
+    {
+        return context;
+    }
+
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
+    if (selfProfile == nullptr)
+    {
+        return context;
+    }
+
+    context.profile = selfProfile.get();
+    context.selfName = selfObject->getName();
+    context.className = selfProfile->getClassName();
+    context.policy.profileRef = selfObject->getProfileID();
+    context.policy.enchantRef = selfProfile->getEnchantRef();
+    context.policy.spellEffectSkin = selfProfile->getSpellEffectType();
+    context.policy.comparison.baseModelRef = selfObject->getBaseModelRef();
     context.policy.comparison.baseModelIsSpellbook = context.policy.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
     context.policy.comparison.currentProfileMatchesBaseModel =
         context.policy.comparison.baseModelRef == context.policy.profileRef;
@@ -230,11 +245,11 @@ PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self
     return context;
 }
 
-SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(const ai_state_t& self, Object& selfObject)
+SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(const ai_state_t& self)
 {
     SelfPresentationCompatibilityContext context;
-    context.selfRole = makeSelfRoleContext(selfObject);
-    context.presentation = makePresentationEffectsContext(self, &selfObject);
+    context.selfRole = makeSelfRoleContext(self);
+    context.presentation = makePresentationEffectsContext(self, tryObject(self.getSelf()));
     return context;
 }
 
@@ -1262,11 +1277,11 @@ void forEachResolvedObjectRef(Fn&& fn)
     }
 }
 
-TargetEconomyCompatibilityContext makeTargetEconomyCompatibilityContext(Object& selfObject, const ai_state_t& self)
+TargetEconomyCompatibilityContext makeTargetEconomyCompatibilityContext(const ai_state_t& self)
 {
     TargetEconomyCompatibilityContext context;
     context.targetAppearance = tryAppearanceProfile(self.getTarget());
-    context.selfWallet = static_cast<IWallet*>(&selfObject);
+    context.selfWallet = tryWallet(self.getSelf());
     context.targetWallet = tryWallet(self.getTarget());
     return context;
 }
@@ -1425,7 +1440,7 @@ uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = setTargetArmorPrice(state, targetContext);
 
     SCRIPT_FUNCTION_END();
@@ -1637,7 +1652,7 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = changeTargetArmor(state, targetContext);
 
     SCRIPT_FUNCTION_END();
@@ -1654,7 +1669,7 @@ uint8_t scr_GiveMoneyToTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = giveMoneyToTarget(state, targetContext);
 
     SCRIPT_FUNCTION_END();
@@ -1703,7 +1718,7 @@ uint8_t scr_DropMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = dropMoney(state, selfContext.wallet);
 
     SCRIPT_FUNCTION_END();
@@ -1739,7 +1754,7 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
 
     becomeSpellbook(enchantable(*pchr),
                     morphControl(*pchr),
@@ -1761,7 +1776,7 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 
     SCRIPT_FUNCTION_END();
@@ -1794,7 +1809,7 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
 
     EnchantInvocationContext enchantContext;
     if (resolveEnchantInvocationContext(self, self.getTarget(), enchantContext))
@@ -1824,7 +1839,7 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
 
     EnchantInvocationContext enchantContext;
     if (resolveEnchantInvocationContext(self, self.child, enchantContext))
@@ -1904,7 +1919,7 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfRoleContext selfContext = makeSelfRoleContext(*pchr);
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = giveSelfTeamExperience(state, selfContext);
 
     SCRIPT_FUNCTION_END();
@@ -2076,7 +2091,7 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = markSelfAsEquipped(selfContext);
 
     SCRIPT_FUNCTION_END();
@@ -2112,7 +2127,7 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfArmorChange(state, selfContext);
 
     SCRIPT_FUNCTION_END();
@@ -2214,7 +2229,7 @@ uint8_t scr_ShowMap( script_state_t& state, ai_state_t& self )
     /// Fails if map already visible
 
     SCRIPT_FUNCTION_BEGIN();
-    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = showMiniMap(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
@@ -2231,7 +2246,7 @@ uint8_t scr_ShowYouAreHere( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     showMiniMapPlayerPosition(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
@@ -2250,7 +2265,7 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
     // Add a blip
     if ( state.argument >= 0 )
     {
-        const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+        const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
         addSelfMiniMapBlip(selfContext.presentation, state.x, state.y);
     }
 
@@ -2461,7 +2476,7 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
 
     returncode = ( selfContext.policy.comparison.baseModelIsSpellbook ||
                    selfContext.policy.comparison.currentProfileMatchesBaseModel );
@@ -2652,7 +2667,7 @@ uint8_t scr_DropTargetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = dropMoney(state, targetContext.targetWallet);
 
     SCRIPT_FUNCTION_END();
@@ -2668,7 +2683,7 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(state.argument));
 
     SCRIPT_FUNCTION_END();
@@ -2715,7 +2730,7 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = addSelfEndMessageText(selfContext.presentation, state.argument, state);
 
     SCRIPT_FUNCTION_END();
@@ -2731,7 +2746,7 @@ uint8_t scr_AddStat( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     addSelfStatusMonitor(selfContext.presentation);
 
     SCRIPT_FUNCTION_END();
@@ -2812,7 +2827,7 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(*pchr, self);
+    const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = chargeTargetArmor(state, targetContext);
 
     SCRIPT_FUNCTION_END();
@@ -2828,7 +2843,7 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_EVIL));
 
     SCRIPT_FUNCTION_END();
@@ -2844,7 +2859,7 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_NULL));
 
     SCRIPT_FUNCTION_END();
@@ -2860,7 +2875,7 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
     SCRIPT_FUNCTION_END();
@@ -2943,7 +2958,7 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
 
     publishDeprecatedEnableListenSkillWarning(selfContext);
     returncode = false;
@@ -2961,7 +2976,7 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    SelfProfileContext selfContext = makeSelfProfileContext(self);
     const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
 
     returncode = followLinkFromMessageId(selfContext, presentationContext, state.argument);
@@ -3120,7 +3135,7 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self, *pchr);
+    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfMoney(state, selfContext);
 
     SCRIPT_FUNCTION_END();
