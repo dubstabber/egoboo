@@ -1011,6 +1011,24 @@ TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAn
     EXPECT_TRUE(module._pitsKill);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, AddIDSZPublishesExpansionToActiveModuleMenu)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5624);
+
+    ASSERT_NE(actor, nullptr);
+
+    const IDSZ2 idsz('T', 'S', 'Z', '1');
+    ASSERT_FALSE(ModuleProfile::moduleHasIDSZ(module.getPath(), idsz));
+
+    script_state_t state;
+    state.argument = static_cast<int32_t>(idsz.toUint32());
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_AddIDSZ(state, self));
+    EXPECT_TRUE(ModuleProfile::moduleHasIDSZ(module.getPath(), idsz));
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, ShowMapHelpersUsePlayingStateMiniMapAdapters)
 {
     auto& module = beginActiveTestModule();

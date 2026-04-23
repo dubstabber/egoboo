@@ -94,11 +94,16 @@ struct SelfProfileContext
     SelfProfilePolicyData policy;
 };
 
-struct UiModuleCompatibilityContext
+struct ModuleEffectsContext
+{
+    Object* selfObject = nullptr;
+    GameModule* module = nullptr;
+};
+
+struct PresentationEffectsContext
 {
     Object* selfObject = nullptr;
     ObjectRef selfRef = ObjectRef::Invalid;
-    GameModule* module = nullptr;
     std::shared_ptr<PlayingState> playingState;
     std::shared_ptr<Ego::GUI::MiniMap> minimap;
 };
@@ -196,12 +201,19 @@ SelfProfileContext makeSelfProfileContext(Object& selfObject, const ObjectProfil
     return context;
 }
 
-UiModuleCompatibilityContext makeUiModuleCompatibilityContext(const ai_state_t& self, Object* selfObject = nullptr)
+ModuleEffectsContext makeModuleEffectsContext(const ai_state_t&, Object* selfObject = nullptr)
 {
-    UiModuleCompatibilityContext context;
+    ModuleEffectsContext context;
+    context.selfObject = selfObject;
+    context.module = gameSession().tryActiveModule();
+    return context;
+}
+
+PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self, Object* selfObject = nullptr)
+{
+    PresentationEffectsContext context;
     context.selfObject = selfObject;
     context.selfRef = self.getSelf();
-    context.module = gameSession().tryActiveModule();
     context.playingState = EngineContext::get().tryActivePlayingState();
     context.minimap = context.playingState ? context.playingState->getMiniMap() : nullptr;
     return context;
@@ -298,7 +310,7 @@ IMorphControl& morphControl(Object& object)
     return object;
 }
 
-GameModule& compatibleModule(const UiModuleCompatibilityContext& context)
+GameModule& compatibleModule(const ModuleEffectsContext& context)
 {
     if (context.module != nullptr)
     {
@@ -308,27 +320,27 @@ GameModule& compatibleModule(const UiModuleCompatibilityContext& context)
     return activeModule();
 }
 
-water_instance_t& moduleWater(const UiModuleCompatibilityContext& context)
+water_instance_t& moduleWater(const ModuleEffectsContext& context)
 {
     return compatibleModule(context).getWater();
 }
 
-fog_instance_t& moduleFog(const UiModuleCompatibilityContext&)
+fog_instance_t& moduleFog(const ModuleEffectsContext&)
 {
     return gameSession().fog();
 }
 
-void setModuleWaterLevel(const UiModuleCompatibilityContext& context, int waterLevelTimesTen)
+void setModuleWaterLevel(const ModuleEffectsContext& context, int waterLevelTimesTen)
 {
     moduleWater(context).set_douse_level(waterLevelTimesTen / 10.0f);
 }
 
-int getModuleWaterLevelTimesTen(const UiModuleCompatibilityContext& context)
+int getModuleWaterLevelTimesTen(const ModuleEffectsContext& context)
 {
     return moduleWater(context)._douse_level * 10;
 }
 
-void setModuleFogTopLevel(const UiModuleCompatibilityContext& context, int fogLevelTimesTen)
+void setModuleFogTopLevel(const ModuleEffectsContext& context, int fogLevelTimesTen)
 {
     fog_instance_t& fog = moduleFog(context);
     const float delta = (Ego::Script::Interpreter::safeCast<float>(fogLevelTimesTen) / 10.0f) - fog._top;
@@ -341,12 +353,12 @@ void setModuleFogTopLevel(const UiModuleCompatibilityContext& context, int fogLe
     }
 }
 
-int getModuleFogTopLevelTimesTen(const UiModuleCompatibilityContext& context)
+int getModuleFogTopLevelTimesTen(const ModuleEffectsContext& context)
 {
     return moduleFog(context)._top * 10;
 }
 
-void setModuleFogColor(const UiModuleCompatibilityContext& context, int red, int green, int blue)
+void setModuleFogColor(const ModuleEffectsContext& context, int red, int green, int blue)
 {
     fog_instance_t& fog = moduleFog(context);
     fog._red = Ego::Math::constrain(red, 0, 0xFF);
@@ -354,7 +366,7 @@ void setModuleFogColor(const UiModuleCompatibilityContext& context, int red, int
     fog._blu = Ego::Math::constrain(blue, 0, 0xFF);
 }
 
-void setModuleFogBottomLevel(const UiModuleCompatibilityContext& context, int fogLevelTimesTen)
+void setModuleFogBottomLevel(const ModuleEffectsContext& context, int fogLevelTimesTen)
 {
     fog_instance_t& fog = moduleFog(context);
     const float delta = (fogLevelTimesTen / 10.0f) - fog._bottom;
@@ -367,62 +379,62 @@ void setModuleFogBottomLevel(const UiModuleCompatibilityContext& context, int fo
     }
 }
 
-int getModuleFogBottomLevelTimesTen(const UiModuleCompatibilityContext& context)
+int getModuleFogBottomLevelTimesTen(const ModuleEffectsContext& context)
 {
     return moduleFog(context)._bottom * 10;
 }
 
-bool tryGetModuleTileTypeAtPosition(const UiModuleCompatibilityContext& context,
+bool tryGetModuleTileTypeAtPosition(const ModuleEffectsContext& context,
                                     const Ego::Vector2f& position,
                                     uint16_t& tileType)
 {
     return compatibleModule(context).tryGetTileTypeAtPosition(position, tileType);
 }
 
-bool setModuleTileTypeAtPosition(const UiModuleCompatibilityContext& context,
+bool setModuleTileTypeAtPosition(const ModuleEffectsContext& context,
                                  const Ego::Vector2f& position,
                                  uint16_t tileType)
 {
     return compatibleModule(context).setTileTypeAtPosition(position, tileType);
 }
 
-void markActiveModuleBeaten(const UiModuleCompatibilityContext& context)
+void markActiveModuleBeaten(const ModuleEffectsContext& context)
 {
     compatibleModule(context).beatModule();
 }
 
-void setActiveModuleExportValid(const UiModuleCompatibilityContext& context, bool valid)
+void setActiveModuleExportValid(const ModuleEffectsContext& context, bool valid)
 {
     compatibleModule(context).setExportValid(valid);
 }
 
-void enableActiveModulePitsKill(const UiModuleCompatibilityContext& context)
+void enableActiveModulePitsKill(const ModuleEffectsContext& context)
 {
     compatibleModule(context).enablePitsKill();
 }
 
-void enableActiveModulePitsTeleport(const UiModuleCompatibilityContext& context, const Ego::Vector3f& location)
+void enableActiveModulePitsTeleport(const ModuleEffectsContext& context, const Ego::Vector3f& location)
 {
     compatibleModule(context).enablePitsTeleport(location);
 }
 
-void giveGoodTeamExperience(const UiModuleCompatibilityContext& context, int amount, XPType type)
+void giveGoodTeamExperience(const ModuleEffectsContext& context, int amount, XPType type)
 {
     compatibleModule(context).giveTeamExperience(static_cast<TEAM_REF>(Team::TEAM_GOOD), amount, type);
 }
 
-bool tryAddActiveModuleIdsz(const UiModuleCompatibilityContext& context, const IDSZ2& idsz)
+bool tryAddActiveModuleIdsz(const ModuleEffectsContext& context, const IDSZ2& idsz)
 {
     return ModuleProfile::moduleAddIDSZ(compatibleModule(context).getPath(), idsz);
 }
 
-bool setActorTileType(const UiModuleCompatibilityContext& context, uint16_t tileType)
+bool setActorTileType(const ModuleEffectsContext& context, uint16_t tileType)
 {
     return context.selfObject != nullptr &&
            compatibleModule(context).setTileType(context.selfObject->getTile(), tileType);
 }
 
-bool showMiniMap(const UiModuleCompatibilityContext& context)
+bool showMiniMap(const PresentationEffectsContext& context)
 {
     if (!context.minimap)
     {
@@ -434,7 +446,7 @@ bool showMiniMap(const UiModuleCompatibilityContext& context)
     return wasHidden;
 }
 
-void showMiniMapPlayerPosition(const UiModuleCompatibilityContext& context)
+void showMiniMapPlayerPosition(const PresentationEffectsContext& context)
 {
     if (context.minimap)
     {
@@ -447,7 +459,7 @@ std::shared_ptr<Object> tryUiObject(ObjectRef objectRef)
     return tryObjectShared(objectRef);
 }
 
-void addMiniMapBlip(const UiModuleCompatibilityContext& context, float x, float y, ObjectRef objectRef)
+void addMiniMapBlip(const PresentationEffectsContext& context, float x, float y, ObjectRef objectRef)
 {
     const std::shared_ptr<Object> object = tryUiObject(objectRef);
     if (!context.minimap || !object)
@@ -458,12 +470,12 @@ void addMiniMapBlip(const UiModuleCompatibilityContext& context, float x, float 
     context.minimap->addBlip(x, y, object->getIcon());
 }
 
-void addSelfMiniMapBlip(const UiModuleCompatibilityContext& context, float x, float y)
+void addSelfMiniMapBlip(const PresentationEffectsContext& context, float x, float y)
 {
     addMiniMapBlip(context, x, y, context.selfRef);
 }
 
-void addSelfStatusMonitor(const UiModuleCompatibilityContext& context)
+void addSelfStatusMonitor(const PresentationEffectsContext& context)
 {
     if (!context.playingState)
     {
@@ -483,7 +495,7 @@ bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
     return ::AddEndMessage(&object, messageIndex, &state);
 }
 
-bool addSelfEndMessageText(const UiModuleCompatibilityContext& context, int messageIndex, script_state_t& state)
+bool addSelfEndMessageText(const PresentationEffectsContext& context, int messageIndex, script_state_t& state)
 {
     return context.selfObject != nullptr &&
            addEndMessageText(*context.selfObject, messageIndex, state);
@@ -524,35 +536,38 @@ bool resolveFollowLinkRequest(const SelfProfileContext& context,
     return true;
 }
 
-void publishFollowLinkFailureMessage(const std::string& selfName)
+void publishFollowLinkFailureMessage(const PresentationEffectsContext& context,
+                                     const std::string& selfName)
 {
     const std::string text = "That's too scary for " + selfName;
-    if (const std::shared_ptr<PlayingState> playingState = EngineContext::get().tryActivePlayingState())
+    if (context.playingState)
     {
-        playingState->getMessageLog()->addMessage(text);
+        context.playingState->getMessageLog()->addMessage(text);
         return;
     }
 
     DisplayMsg_printf("%s", text.c_str());
 }
 
-bool tryFollowLink(const FollowLinkRequest& request)
+bool tryFollowLink(const PresentationEffectsContext& context,
+                   const FollowLinkRequest& request)
 {
     const bool followed = g_followLinkByModuleName(request.moduleName, true);
     if (!followed)
     {
-        publishFollowLinkFailureMessage(request.selfName);
+        publishFollowLinkFailureMessage(context, request.selfName);
     }
 
     return followed;
 }
 
 bool followLinkFromMessageId(const SelfProfileContext& context,
+                             const PresentationEffectsContext& presentationContext,
                              const int messageId)
 {
     FollowLinkRequest request;
     return resolveFollowLinkRequest(context, messageId, request) &&
-           tryFollowLink(request);
+           tryFollowLink(presentationContext, request);
 }
 
 bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
@@ -1291,7 +1306,7 @@ void resetEnemySense()
     gameSession().resetEnemySense();
 }
 
-void configurePitFall(const UiModuleCompatibilityContext& context, const Ego::Vector3f& location)
+void configurePitFall(const ModuleEffectsContext& context, const Ego::Vector3f& location)
 {
     if (compatibleModule(context).isInsidePitBounds(location.x(), location.y()))
     {
@@ -1450,8 +1465,8 @@ uint8_t scr_AddIDSZ( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    if (tryAddActiveModuleIdsz(uiContext, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)))
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    if (tryAddActiveModuleIdsz(moduleContext, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)))
     {
         // invalidate any module list so that we will reload them
         //module_list_valid = false;
@@ -1580,8 +1595,8 @@ uint8_t scr_ChangeTile( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    returncode = setActorTileType(uiContext, state.argument);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    returncode = setActorTileType(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1671,8 +1686,8 @@ uint8_t scr_SetWaterLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setModuleWaterLevel(uiContext, state.argument);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setModuleWaterLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1912,8 +1927,8 @@ uint8_t scr_GetWaterLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    state.argument = getModuleWaterLevelTimesTen(uiContext);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    state.argument = getModuleWaterLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2108,8 +2123,8 @@ uint8_t scr_ShowMap( script_state_t& state, ai_state_t& self )
     /// Fails if map already visible
 
     SCRIPT_FUNCTION_BEGIN();
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    returncode = showMiniMap(uiContext);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+    returncode = showMiniMap(presentationContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2125,8 +2140,8 @@ uint8_t scr_ShowYouAreHere( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    showMiniMapPlayerPosition(uiContext);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+    showMiniMapPlayerPosition(presentationContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2144,8 +2159,8 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
     // Add a blip
     if ( state.argument >= 0 )
     {
-        const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-        addSelfMiniMapBlip(uiContext, state.x, state.y);
+        const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+        addSelfMiniMapBlip(presentationContext, state.x, state.y);
     }
 
     SCRIPT_FUNCTION_END();
@@ -2223,8 +2238,8 @@ uint8_t scr_SetFogLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setModuleFogTopLevel(uiContext, state.argument);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setModuleFogTopLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2240,8 +2255,8 @@ uint8_t scr_GetFogLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    state.argument = getModuleFogTopLevelTimesTen(uiContext);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    state.argument = getModuleFogTopLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2258,8 +2273,8 @@ uint8_t scr_SetFogTAD( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setModuleFogColor(uiContext, state.turn, state.argument, state.distance);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setModuleFogColor(moduleContext, state.turn, state.argument, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2276,8 +2291,8 @@ uint8_t scr_SetFogBottomLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setModuleFogBottomLevel(uiContext, state.argument);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setModuleFogBottomLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2294,8 +2309,8 @@ uint8_t scr_GetFogBottomLevel( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    state.argument = getModuleFogBottomLevelTimesTen(uiContext);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    state.argument = getModuleFogBottomLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2313,8 +2328,8 @@ uint8_t scr_GetTileXY( script_state_t& state, ai_state_t& self )
 
     returncode = false;
     uint16_t tileType = 0;
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    if (tryGetModuleTileTypeAtPosition(uiContext,
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    if (tryGetModuleTileTypeAtPosition(moduleContext,
                                        Ego::Vector2f(float(state.x), float(state.y)),
                                        tileType))
     {
@@ -2335,8 +2350,8 @@ uint8_t scr_SetTileXY( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    returncode = setModuleTileTypeAtPosition(uiContext,
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    returncode = setModuleTileTypeAtPosition(moduleContext,
                                              Ego::Vector2f(float(state.x), float(state.y)),
                                              state.argument);
 
@@ -2483,8 +2498,8 @@ uint8_t scr_BeatModule( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    markActiveModuleBeaten(uiContext);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    markActiveModuleBeaten(moduleContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2515,8 +2530,8 @@ uint8_t scr_DisableExport( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setActiveModuleExportValid(uiContext, false);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setActiveModuleExportValid(moduleContext, false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2531,8 +2546,8 @@ uint8_t scr_EnableExport( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    setActiveModuleExportValid(uiContext, true);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    setActiveModuleExportValid(moduleContext, true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2610,8 +2625,8 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    returncode = addSelfEndMessageText(uiContext, state.argument, state);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+    returncode = addSelfEndMessageText(presentationContext, state.argument, state);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2626,8 +2641,8 @@ uint8_t scr_AddStat( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    addSelfStatusMonitor(uiContext);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+    addSelfStatusMonitor(presentationContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2772,8 +2787,8 @@ uint8_t scr_PitsKill( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    enableActiveModulePitsKill(uiContext);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    enableActiveModulePitsKill(moduleContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2790,8 +2805,8 @@ uint8_t scr_GiveExperienceToGoodTeam( script_state_t& state, ai_state_t& self )
 
     if(state.distance < XP_COUNT)
     {
-        const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-        giveGoodTeamExperience(uiContext, state.argument, static_cast<XPType>(state.distance));
+        const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+        giveGoodTeamExperience(moduleContext, state.argument, static_cast<XPType>(state.distance));
     }
 
 
@@ -2857,8 +2872,9 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     SelfProfileContext selfContext = makeSelfProfileContext(*pchr, *ppro);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
 
-    returncode = followLinkFromMessageId(selfContext, state.argument);
+    returncode = followLinkFromMessageId(selfContext, presentationContext, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2959,8 +2975,8 @@ uint8_t scr_PitsFall( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const UiModuleCompatibilityContext uiContext = makeUiModuleCompatibilityContext(self, pchr);
-    configurePitFall(uiContext,
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    configurePitFall(moduleContext,
                      Ego::Vector3f(static_cast<float>(state.x),
                                    static_cast<float>(state.y),
                                    static_cast<float>(state.distance)));
