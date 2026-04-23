@@ -149,6 +149,11 @@ struct HealingInvocationContext
     OwnedObjectHandle healer;
 };
 
+struct TargetStateCompatibilityContext
+{
+    ICharacterState* characterState = nullptr;
+};
+
 struct EnchantInvocationContext
 {
     IEnchantable* target = nullptr;
@@ -843,6 +848,13 @@ ICharacterState* resolveAliveTargetState(const ai_state_t& self)
            resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
 }
 
+bool resolveTargetStateCompatibilityContext(const ai_state_t& self,
+                                            TargetStateCompatibilityContext& context)
+{
+    context.characterState = resolveAliveTargetState(self);
+    return context.characterState != nullptr;
+}
+
 bool resolveKillDamageContext(const ai_state_t& self,
                               DamageInvocationContext& context)
 {
@@ -917,6 +929,41 @@ bool resolveRetaliationDamageContext(const ai_state_t& self,
 
     context.teamRef = retaliationInfo->getTeamRef();
     return true;
+}
+
+void applyResolvedTargetBaseAttribute(const TargetStateCompatibilityContext& context,
+                                      Ego::Attribute::AttributeType attribute,
+                                      float value)
+{
+    if (context.characterState != nullptr)
+    {
+        context.characterState->increaseBaseAttribute(attribute, value);
+    }
+}
+
+bool dispelResolvedTargetEnchants(const TargetStateCompatibilityContext& context,
+                                  IDSZ2 removedByIDSZ)
+{
+    if (context.characterState == nullptr)
+    {
+        return false;
+    }
+
+    context.characterState->removeEnchantsWithIDSZ(removedByIDSZ);
+    return true;
+}
+
+void applyRetaliationDamage(const DamageInvocationContext& context,
+                            int amount,
+                            DamageType damageType)
+{
+    IPair damage;
+    damage.base = amount;
+    damage.rand = 1;
+
+    context.damageable->damage(ATK_FRONT, damage, damageType,
+                               context.teamRef, context.source.object,
+                               false, false, true);
 }
 
 bool resolveEnchantInvocationContext(const ai_state_t& self,
@@ -3036,10 +3083,11 @@ uint8_t scr_GiveManaFlowToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's mana flow
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
-    {
-        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::SPELL_POWER, FP8_TO_FLOAT(state.argument));
-    }
+    TargetStateCompatibilityContext targetContext;
+    resolveTargetStateCompatibilityContext(self, targetContext);
+    applyResolvedTargetBaseAttribute(targetContext,
+                                     Ego::Attribute::SPELL_POWER,
+                                     FP8_TO_FLOAT(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -3053,10 +3101,11 @@ uint8_t scr_GiveManaReturnToTarget( script_state_t& state, ai_state_t& self )
     /// @details Permanently boost the target's mana return
 
     SCRIPT_FUNCTION_BEGIN();
-    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
-    {
-        resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MANA_REGEN, FP8_TO_FLOAT(state.argument));
-    }
+    TargetStateCompatibilityContext targetContext;
+    resolveTargetStateCompatibilityContext(self, targetContext);
+    applyResolvedTargetBaseAttribute(targetContext,
+                                     Ego::Attribute::MANA_REGEN,
+                                     FP8_TO_FLOAT(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -3086,13 +3135,10 @@ uint8_t scr_DispelTargetEnchantID( script_state_t& state, ai_state_t& self )
     /// @details This function removes all enchants from the target who match the specified RemovedByIDSZ
 
     SCRIPT_FUNCTION_BEGIN();
-    returncode = false;
-    if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
-    {
-        // Check all enchants to see if they are removed
-        resolvedTargetState->removeEnchantsWithIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-        returncode = true;
-    }
+    TargetStateCompatibilityContext targetContext;
+    returncode = resolveTargetStateCompatibilityContext(self, targetContext) &&
+                 dispelResolvedTargetEnchants(targetContext,
+                                              Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -3136,8 +3182,6 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     /// @details This function applies little bit of hate from the character's target to
     /// the character itself. The amount is set in tmpargument
 
-    IPair tmp_damage;
-
     SCRIPT_FUNCTION_BEGIN();
 
     DamageInvocationContext damageContext;
@@ -3146,13 +3190,9 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    tmp_damage.base = state.argument;
-    tmp_damage.rand = 1;
-
-    damageContext.damageable->damage(ATK_FRONT, tmp_damage,
-                                     static_cast<DamageType>(state.distance),
-                                     damageContext.teamRef, damageContext.source.object,
-                                     false, false, true);
+    applyRetaliationDamage(damageContext,
+                           state.argument,
+                           static_cast<DamageType>(state.distance));
 
     SCRIPT_FUNCTION_END();
 }

@@ -904,6 +904,12 @@ Returned to Tier 1.2 inside `script_functions_systems.c` by splitting the remain
 
 Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the widened self-role cluster on top of the existing follow-link, end-text, UI, and module-environment regressions, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 180 — Systems target-state retaliation residue cleanup (2026-04-23)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining bottom-of-file target-state and retaliation residue behind small file-local helpers. Routed `scr_GiveManaFlowToTarget`, `scr_GiveManaReturnToTarget`, `scr_DispelTargetEnchantID`, and `scr_TargetDamageSelf` through shared alive-target or retaliation helpers without widening any public role seams or changing the existing missing-target and quiet-no-op contracts.
+
+Extended `ScriptSystemsFunctions.cpp` with focused missing-target and terminated-target regressions for the new helper cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

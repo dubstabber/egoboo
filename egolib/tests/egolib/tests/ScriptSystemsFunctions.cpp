@@ -2236,6 +2236,83 @@ TEST_F(ScriptSystemsFunctionsFixture, TargetDamageSelfReturnsFalseWhenTargetIsMi
     EXPECT_EQ(actor->getAILastDamageType(), DamageType::DAMAGE_DIRECT);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, TargetStateCompatibilityHelpersPreserveMissingTargetNoOps)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 56781);
+    auto target = makeObject(module, "mp_objects/follower.obj", 56782);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    auto enchant = addHealRemovableEnchant(module, target, 56783);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+
+    const float spellPowerBefore = target->getBaseAttribute(Ego::Attribute::SPELL_POWER);
+    const float manaRegenBefore = target->getBaseAttribute(Ego::Attribute::MANA_REGEN);
+
+    script_state_t state;
+    state.argument = FLOAT_TO_FP8(1.0f);
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_GiveManaFlowToTarget(state, self));
+    EXPECT_FLOAT_EQ(target->getBaseAttribute(Ego::Attribute::SPELL_POWER), spellPowerBefore);
+
+    EXPECT_TRUE(scr_GiveManaReturnToTarget(state, self));
+    EXPECT_FLOAT_EQ(target->getBaseAttribute(Ego::Attribute::MANA_REGEN), manaRegenBefore);
+
+    state.argument = IDSZ2('H', 'E', 'A', 'L').toUint32();
+    EXPECT_FALSE(scr_DispelTargetEnchantID(state, self));
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_FALSE(target->getFirstActiveEnchant()->isTerminated());
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, TargetStateCompatibilityHelpersTreatTerminatedTargetsAsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 56791);
+    auto target = makeObject(module, "mp_objects/follower.obj", 56792);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    auto enchant = addHealRemovableEnchant(module, target, 56793);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(target->hasActiveEnchants());
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+
+    actor->setAILastDamageType(DamageType::DAMAGE_DIRECT);
+    const float actorLifeBefore = actor->getLife();
+    const float spellPowerBefore = target->getBaseAttribute(Ego::Attribute::SPELL_POWER);
+    const float manaRegenBefore = target->getBaseAttribute(Ego::Attribute::MANA_REGEN);
+
+    target->requestTerminate();
+    ASSERT_TRUE(target->isTerminated());
+
+    script_state_t state;
+    state.argument = FLOAT_TO_FP8(1.0f);
+    ai_state_t self = makeScriptSelf(actor, target);
+
+    EXPECT_TRUE(scr_GiveManaFlowToTarget(state, self));
+    EXPECT_FLOAT_EQ(target->getBaseAttribute(Ego::Attribute::SPELL_POWER), spellPowerBefore);
+
+    EXPECT_TRUE(scr_GiveManaReturnToTarget(state, self));
+    EXPECT_FLOAT_EQ(target->getBaseAttribute(Ego::Attribute::MANA_REGEN), manaRegenBefore);
+
+    state.argument = IDSZ2('H', 'E', 'A', 'L').toUint32();
+    EXPECT_FALSE(scr_DispelTargetEnchantID(state, self));
+    ASSERT_NE(target->getFirstActiveEnchant(), nullptr);
+    EXPECT_FALSE(target->getFirstActiveEnchant()->isTerminated());
+
+    state.argument = 512;
+    state.distance = static_cast<int>(DamageType::DAMAGE_FIRE);
+    EXPECT_FALSE(scr_TargetDamageSelf(state, self));
+    EXPECT_FLOAT_EQ(actor->getLife(), actorLifeBefore);
+    EXPECT_EQ(actor->getAILastDamageType(), DamageType::DAMAGE_DIRECT);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, AttributeTimerEnchantAndPerkHelpersUseCharacterStateRole)
 {
     auto& module = beginActiveTestModule();
