@@ -4,6 +4,7 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #define private public
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Logic/Player.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #undef private
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
@@ -247,6 +248,52 @@ TEST_F(ImportWorkflowFixture, FromPlayersBuildsImportEntriesForRegisteredPlayers
     EXPECT_EQ(imports.lst[0].slot, 0);
     EXPECT_EQ(imports.lst[0].name, object->getName());
     EXPECT_EQ(imports.lst[0].srcDir, "mp_players/" + str_encode_path(object->getName()));
+}
+
+TEST_F(ImportWorkflowFixture, FromPlayersSkipsMissingAndTerminatedPlayersWithoutDisturbingLiveOrder)
+{
+    GameModule& module = beginActiveTestModule();
+
+    const ObjectProfileRef profile = loadFollowerProfile(214);
+    ASSERT_NE(profile, ObjectProfileRef::Invalid);
+
+    auto first = module.getObjectHandler().insert(profile);
+    auto missing = module.getObjectHandler().insert(profile);
+    auto terminated = module.getObjectHandler().insert(profile);
+    auto last = module.getObjectHandler().insert(profile);
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(missing, nullptr);
+    ASSERT_NE(terminated, nullptr);
+    ASSERT_NE(last, nullptr);
+
+    first->setName("First Live Player");
+    missing->setName("Missing Player");
+    terminated->setName("Terminated Player");
+    last->setName("Last Live Player");
+
+    ASSERT_TRUE(module.addPlayer(first, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(missing, Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(terminated, Ego::Input::InputDevice::DeviceList[2]));
+    ASSERT_TRUE(module.addPlayer(last, Ego::Input::InputDevice::DeviceList[3]));
+
+    ASSERT_NE(module.getPlayer(1), nullptr);
+    module.getPlayer(1)->_objectRef = ObjectRef::Invalid;
+    module.getPlayer(1)->_bootstrapObject.reset();
+    terminated->requestTerminate();
+
+    import_list_t imports;
+    import_list_t::init(imports);
+
+    ASSERT_EQ(import_list_t::from_players(imports), 2u);
+    ASSERT_EQ(imports.count, 2u);
+    EXPECT_EQ(imports.lst[0].player, 0u);
+    EXPECT_EQ(imports.lst[0].slot, 0);
+    EXPECT_EQ(imports.lst[0].name, first->getName());
+    EXPECT_EQ(imports.lst[0].srcDir, "mp_players/" + str_encode_path(first->getName()));
+    EXPECT_EQ(imports.lst[1].player, 3u);
+    EXPECT_EQ(imports.lst[1].slot, 3 * MAX_IMPORT_PER_PLAYER);
+    EXPECT_EQ(imports.lst[1].name, last->getName());
+    EXPECT_EQ(imports.lst[1].srcDir, "mp_players/" + str_encode_path(last->getName()));
 }
 
 TEST_F(ImportWorkflowFixture, ExportAllPlayersReturnsFalseWhenExportIsDisabled)

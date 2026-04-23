@@ -47,6 +47,23 @@ IScriptable& scriptable(Object& object)
 {
     return object;
 }
+
+Object* tryCheatPlayerObject(GameModule& module, PLA_REF playerIndex)
+{
+    if (playerIndex == INVALID_PLA_REF || playerIndex >= module.getPlayerList().size())
+    {
+        return nullptr;
+    }
+
+    const std::shared_ptr<Ego::Player>& player = module.getPlayer(playerIndex);
+    if (!player)
+    {
+        return nullptr;
+    }
+
+    Object* object = player->tryObject();
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -204,7 +221,7 @@ void MainLoop::check_stats()
         //Apply the cheat if valid
         if ( docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size() )
         {
-            const std::shared_ptr<Object> object = module.getObjectHandler()[module.getPlayer(docheat)->getObjectRef()];
+            Object* object = tryCheatPlayerObject(module, docheat);
             if(object)
             {
                 //Give 10% of XP needed for next level
@@ -228,12 +245,16 @@ void MainLoop::check_stats()
 
         //Apply the cheat if valid
         if(docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size()) {
-            const std::shared_ptr<Object> object = module.getObjectHandler()[module.getPlayer(docheat)->getObjectRef()];
+            Object* object = tryCheatPlayerObject(module, docheat);
             if (object)
             {
-                //Heal 1 life
-                object->heal(object, 256, true);
-                stat_check_delay = 1;
+                const std::shared_ptr<Object> objectHandle = module.getObjectHandler()[object->getObjRef()];
+                if (objectHandle)
+                {
+                    //Heal 1 life
+                    object->heal(objectHandle, 256, true);
+                    stat_check_delay = 1;
+                }
             }
 
         }

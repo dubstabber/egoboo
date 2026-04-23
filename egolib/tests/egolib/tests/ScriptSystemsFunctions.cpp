@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <array>
 #include <memory>
@@ -1187,6 +1188,88 @@ TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsUsesInstalledInputSystem
     EXPECT_TRUE(minimap->_showPlayerPosition);
 
     config.debug_developerMode_enable.setValue(originalDeveloperMode);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsXpCheatUsesLivePlayerAndSkipsTerminatedPlayerObject)
+{
+    auto& module = beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5618);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_TRUE(module.addPlayer(actor, Ego::Input::InputDevice::DeviceList[0]));
+
+    StubInputSystem idleInputSystem;
+    EngineContext::get().clearInputSystem();
+    EngineContext::get().installInputSystem(idleInputSystem);
+    for (int i = 0; i < 8; ++i)
+    {
+        MainLoop::check_stats();
+    }
+
+    StubInputSystem inputSystem;
+    inputSystem.setKeyDown(SDLK_x);
+    inputSystem.setKeyDown(SDLK_1);
+    EngineContext::get().clearInputSystem();
+    EngineContext::get().installInputSystem(inputSystem);
+
+    auto& config = EngineContext::get().config();
+    const bool originalDeveloperMode = config.debug_developerMode_enable.getValue();
+    config.debug_developerMode_enable.setValue(true);
+
+    actor->setExperience(0);
+    const uint32_t experienceBeforeCheat = actor->getExperience();
+
+    MainLoop::check_stats();
+    EXPECT_GT(actor->getExperience(), experienceBeforeCheat);
+
+    actor->requestTerminate();
+    const uint32_t experienceAfterLiveCheat = actor->getExperience();
+    MainLoop::check_stats();
+    EXPECT_EQ(actor->getExperience(), experienceAfterLiveCheat);
+
+    config.debug_developerMode_enable.setValue(originalDeveloperMode);
+    EngineContext::get().clearInputSystem();
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsLifeCheatUsesLivePlayerAndSkipsTerminatedPlayerObject)
+{
+    auto& module = beginActiveTestModule();
+    ScopedPlayingStateHarness playingStateHarness;
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5619);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_TRUE(module.addPlayer(actor, Ego::Input::InputDevice::DeviceList[0]));
+
+    StubInputSystem idleInputSystem;
+    EngineContext::get().clearInputSystem();
+    EngineContext::get().installInputSystem(idleInputSystem);
+    for (int i = 0; i < 8; ++i)
+    {
+        MainLoop::check_stats();
+    }
+
+    StubInputSystem inputSystem;
+    inputSystem.setKeyDown(SDLK_z);
+    inputSystem.setKeyDown(SDLK_1);
+    EngineContext::get().clearInputSystem();
+    EngineContext::get().installInputSystem(inputSystem);
+
+    auto& config = EngineContext::get().config();
+    const bool originalDeveloperMode = config.debug_developerMode_enable.getValue();
+    config.debug_developerMode_enable.setValue(true);
+
+    actor->_currentLife = std::max(1.0f, actor->getAttribute(Ego::Attribute::MAX_LIFE) - 10.0f);
+    const float lifeBeforeHeal = actor->getLife();
+
+    MainLoop::check_stats();
+    EXPECT_GT(actor->getLife(), lifeBeforeHeal);
+
+    actor->requestTerminate();
+    const float lifeAfterLiveCheat = actor->getLife();
+    MainLoop::check_stats();
+    EXPECT_FLOAT_EQ(actor->getLife(), lifeAfterLiveCheat);
+
+    config.debug_developerMode_enable.setValue(originalDeveloperMode);
+    EngineContext::get().clearInputSystem();
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, GameEngineScreenshotHotkeyUsesInstalledInputSystem)

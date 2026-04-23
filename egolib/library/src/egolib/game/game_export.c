@@ -32,6 +32,17 @@ enum class ExportCharacterResult
     Error
 };
 
+const Object* tryPlayerExportObject(const std::shared_ptr<Ego::Player>& player)
+{
+    if (!player)
+    {
+        return nullptr;
+    }
+
+    const Object* object = player->tryObject();
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
+
 //--------------------------------------------------------------------------------------------
 ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner, int chr_obj_index, bool is_local )
 {
@@ -338,12 +349,8 @@ size_t import_list_t::from_players(import_list_t& self)
     // generate the ImportList list from the player info
     for(size_t player_idx = 0; player_idx < module.getPlayerList().size(); ++player_idx) {
         const std::shared_ptr<Ego::Player>& player = module.getPlayerList()[player_idx];
-        if (!player) {
-            continue;
-        }
-
-		std::shared_ptr<Object> pchr = module.getObjectHandler()[player->getObjectRef()];
-        if(!pchr || pchr->isTerminated()) {
+        const Object* pchr = tryPlayerExportObject(player);
+        if(!pchr) {
             continue;
         }
 

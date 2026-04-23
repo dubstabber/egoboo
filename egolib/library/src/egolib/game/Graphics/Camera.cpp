@@ -42,6 +42,15 @@ const uint8_t Camera::DEFAULT_TURN_TIME = 16;
 const float Camera::CAM_ZADD_AVG = (0.5f * (CAM_ZADD_MIN + CAM_ZADD_MAX));
 const float Camera::CAM_ZOOM_AVG = (0.5f * (CAM_ZOOM_MIN + CAM_ZOOM_MAX));
 
+namespace
+{
+Object* tryLiveTrackedObject(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() && object->isAlive() ? object : nullptr;
+}
+}
+
 Camera::Camera(const CameraOptions &options) :
     _options(options),
 
@@ -360,7 +369,6 @@ void Camera::updateTrack()
 {
     // The default camera motion is to do nothing.
     Ego::Vector3f new_track = _trackPos;
-    auto& session = GameSessionContext::get();
 
     switch(_moveMode)
     {
@@ -369,16 +377,14 @@ void Camera::updateTrack()
     case CameraMovementMode::Reset:
         {
             float sum_wt    = 0.0f;
-            float sum_level = 0.0f;
             Ego::Vector3f sum_pos = idlib::zero<Ego::Vector3f>();
 
             for(ObjectRef objectRef : _trackList)
             {
-                const std::shared_ptr<Object>& object = session.objectHandler()[objectRef];
-                if (!object || object->isTerminated() || !object->isAlive()) continue;
+                Object* object = tryLiveTrackedObject(objectRef);
+                if (!object) continue;
 
                 sum_pos += object->getPosition() + Ego::Vector3f(0.0f, 0.0f, object->getMinCollisionVolume()._maxs[OCT_Z] * 0.9f);
-                sum_level += object->getFloorElevation();
                 sum_wt += 1.0f;
             }
 
@@ -397,59 +403,54 @@ void Camera::updateTrack()
     // "Show me the drama!"
     case CameraMovementMode::Player:
         {
-            std::vector<std::shared_ptr<Object>> trackedPlayers;
+            Object* soleTrackedPlayer = nullptr;
+            size_t trackedPlayerCount = 0;
+            float sum_wt = 0.0f;
+            Ego::Vector3f sum_pos = idlib::zero<Ego::Vector3f>();
 
-            // Count the number of local players, first.
             for(ObjectRef objectRef : _trackList)
             {
-                const std::shared_ptr<Object> &object = session.objectHandler()[objectRef];
-                if (!object || object->isTerminated() || !object->isAlive()) continue;
+                Object* object = tryLiveTrackedObject(objectRef);
+                if (!object) continue;
 
-                trackedPlayers.push_back(object);
+                ++trackedPlayerCount;
+                soleTrackedPlayer = trackedPlayerCount == 1 ? object : nullptr;
+
+                // Weight it by the character's velocity^2, so that
+                // inactive characters don't control the camera.
+                float weight1 = Ego::dot(object->getVelocity(), object->getVelocity());
+
+                // Make another weight based on button-pushing.
+                float weight2 = object->isAnyLatchButtonPressed() ? 127 : 0;
+
+                // I would weight this by the amount of damage that the character just sustained,
+                // but there is no real way to do this?
+
+                // Get the maximum effect.
+                float weight = std::max(weight1, weight2);
+
+                // The character is on foot.
+                sum_pos += object->getPosition() * weight;
+                sum_wt += weight;
             }
 
-            if (trackedPlayers.empty())
+            if (trackedPlayerCount == 0)
             {
                 // Do nothing.
             }
-            else if (1 == trackedPlayers.size())
+            else if (trackedPlayerCount == 1 && soleTrackedPlayer != nullptr)
             {
                 // Copy from the one character.
-                _trackPos = trackedPlayers[0]->getPosition();
+                _trackPos = soleTrackedPlayer->getPosition();
+            }
+            else if (sum_wt > 0.0f)
+            {
+                // Use the characer's "activity" to average the position the camera is viewing.
+                new_track = sum_pos * (1.0f / sum_wt);
             }
             else
             {
-                // Use the characer's "activity" to average the position the camera is viewing.
-                float sum_wt    = 0.0f;
-                float sum_level = 0.0f;
-                Ego::Vector3f sum_pos = idlib::zero<Ego::Vector3f>();
-
-                for(const std::shared_ptr<Object> &pchr : trackedPlayers)
-                {
-                    // Weight it by the character's velocity^2, so that
-                    // inactive characters don't control the camera.
-                    float weight1 = Ego::dot(pchr->getVelocity(), pchr->getVelocity());
-
-                    // Make another weight based on button-pushing.
-                    float weight2 = pchr->isAnyLatchButtonPressed() ? 127 : 0;
-
-                    // I would weight this by the amount of damage that the character just sustained,
-                    // but there is no real way to do this?
-
-                    // Get the maximum effect.
-                    float weight = std::max(weight1, weight2);
-
-                    // The character is on foot.
-                    sum_pos += pchr->getPosition() * weight;
-                    sum_level += (pchr->getFloorElevation() + 128) * weight;
-                    sum_wt += weight;
-                }
-
-                // If any of the characters is doing anything.
-                if (sum_wt > 0.0f)
-                {
-                    new_track = sum_pos * (1.0f / sum_wt);
-                }
+                // If all live tracked players are idle, keep the current focal point.
             }
         }
         break;
@@ -771,7 +772,7 @@ void Camera::setScreen( float xmin, float ymin, float xmax, float ymax )
 void Camera::addTrackTarget(ObjectRef targetRef)
 {
     //Make sure the target is valid
-    const std::shared_ptr<Object>& object = GameSessionContext::get().objectHandler()[targetRef];
+    Object* object = GameSessionContext::get().tryObject(targetRef);
     if(!object) {
         return;
     }

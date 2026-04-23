@@ -39,6 +39,17 @@ Ego::Graphics::IBillboardSystem& billboardSystem()
     return EngineContext::get().billboardSystem();
 }
 
+Object* tryObservedPlayerObject(const std::shared_ptr<Ego::Player>& player)
+{
+    if (!player)
+    {
+        return nullptr;
+    }
+
+    Object* object = player->tryObject();
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
+
 int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
                        const std::shared_ptr<Object>& attacker, bool setDamageTime)
 {
@@ -51,8 +62,8 @@ void GameModule::checkPassageMusic()
     // Look at each player
     for (const std::shared_ptr<Ego::Player> &player : _playerList)
     {
-        const std::shared_ptr<Object> &pchr = getObjectHandler()[player != nullptr ? player->getObjectRef() : ObjectRef::Invalid];
-        if (!pchr || pchr->isTerminated()) continue;
+        Object* pchr = tryObservedPlayerObject(player);
+        if (!pchr) continue;
 
         if (!pchr->isAlive()) continue;
 

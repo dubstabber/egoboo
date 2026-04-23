@@ -671,6 +671,31 @@ TEST_F(ScriptActionFunctionsFixture, MusicPassageHelpersIgnoreMissingPassagesWit
     EXPECT_TRUE(scr_ClearMusicPassage(state, self));
 }
 
+TEST_F(ScriptActionFunctionsFixture, CheckPassageMusicUsesLivePlayerObservation)
+{
+    auto& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 5902, Ego::Vector3f(2.0f, 2.0f, 0.0f));
+
+    ASSERT_NE(player, nullptr);
+    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+    EXPECT_EQ(passageId, 0);
+
+    passage->setMusic(11);
+    module.checkPassageMusic();
+
+    ASSERT_EQ(audioSystem.playedMusicIds.size(), 1u);
+    EXPECT_EQ(audioSystem.playedMusicIds.front().musicID, 11);
+    EXPECT_EQ(audioSystem.playedMusicIds.front().fadeTime, 0u);
+
+    audioSystem.reset();
+    player->requestTerminate();
+    module.checkPassageMusic();
+    EXPECT_TRUE(audioSystem.playedMusicIds.empty());
+}
+
 TEST_F(ScriptActionFunctionsFixture, PlaySoundLoopedAndStopSoundUseInstalledAudioSystem)
 {
     auto& module = beginActiveTestModule();
