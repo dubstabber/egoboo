@@ -77,6 +77,12 @@ struct FollowLinkRequest
     std::string moduleName;
 };
 
+struct PassageCompatibilityContext
+{
+    std::shared_ptr<Passage> passage;
+    ObjectRef selfRef = ObjectRef::Invalid;
+};
+
 struct SelfRoleContext
 {
     Object* selfObject = nullptr;
@@ -627,6 +633,55 @@ bool followLinkFromMessageId(const SelfProfileContext& context,
     FollowLinkRequest request;
     return resolveFollowLinkRequest(context, messageId, request) &&
            tryFollowLink(presentationContext, request);
+}
+
+bool resolvePassageCompatibilityContext(const ai_state_t& self,
+                                        int passageId,
+                                        PassageCompatibilityContext& context)
+{
+    context.selfRef = self.getSelf();
+    context.passage = tryPassage(passageId);
+    return context.passage != nullptr;
+}
+
+bool openResolvedPassage(const PassageCompatibilityContext& context)
+{
+    if (!context.passage)
+    {
+        return false;
+    }
+
+    context.passage->open();
+    return true;
+}
+
+bool closeResolvedPassage(const PassageCompatibilityContext& context)
+{
+    return context.passage != nullptr && context.passage->close();
+}
+
+bool isResolvedPassageOpen(const PassageCompatibilityContext& context)
+{
+    return context.passage != nullptr && context.passage->isOpen();
+}
+
+void flashResolvedPassage(const PassageCompatibilityContext& context, uint8_t flashColor)
+{
+    if (context.passage)
+    {
+        context.passage->flashColor(flashColor);
+    }
+}
+
+bool addResolvedShopPassage(const PassageCompatibilityContext& context)
+{
+    if (!context.passage)
+    {
+        return false;
+    }
+
+    context.passage->makeShop(context.selfRef);
+    return true;
 }
 
 bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
@@ -1476,13 +1531,9 @@ uint8_t scr_OpenPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
-    
-    returncode = false;
-    if(passage) {
-        returncode = true;
-        passage->open();
-    }
+    PassageCompatibilityContext passageContext;
+    returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
+                 openResolvedPassage(passageContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1499,12 +1550,9 @@ uint8_t scr_ClosePassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
-
-    returncode = false;
-    if(passage) {
-        returncode = passage->close();
-    }
+    PassageCompatibilityContext passageContext;
+    returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
+                 closeResolvedPassage(passageContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1520,12 +1568,9 @@ uint8_t scr_IfPassageOpen( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
-
-    returncode = false;
-    if(passage) {
-        returncode = passage->isOpen();
-    }
+    PassageCompatibilityContext passageContext;
+    returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
+                 isResolvedPassageOpen(passageContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2566,10 +2611,9 @@ uint8_t scr_FlashPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
-    if(passage) {
-        passage->flashColor(state.distance);
-    }
+    PassageCompatibilityContext passageContext;
+    resolvePassageCompatibilityContext(self, state.argument, passageContext);
+    flashResolvedPassage(passageContext, state.distance);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2801,14 +2845,9 @@ uint8_t scr_AddShopPassage( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const std::shared_ptr<Passage> passage = tryPassage(state.argument);
-    if(passage) {
-        passage->makeShop(self.getSelf());
-        returncode = true;
-    }
-    else {
-        returncode = false;
-    }
+    PassageCompatibilityContext passageContext;
+    returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
+                 addResolvedShopPassage(passageContext);
 
     SCRIPT_FUNCTION_END();
 }

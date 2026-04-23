@@ -910,6 +910,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining b
 
 Extended `ScriptSystemsFunctions.cpp` with focused missing-target and terminated-target regressions for the new helper cluster, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 181 — Systems passage compatibility closure (2026-04-23)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining bounded passage mutator/query pocket behind one file-local compatibility context and helper layer. Routed `scr_OpenPassage`, `scr_ClosePassage`, `scr_IfPassageOpen`, `scr_FlashPassage`, and `scr_AddShopPassage` through the new passage helpers without widening any public role seams or changing the existing success/failure quirks for invalid passage IDs.
+
+Kept the focused `ScriptSystemsFunctions.cpp` passage regression as the behavior lock, then used build and the `test.mod` validator as the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
