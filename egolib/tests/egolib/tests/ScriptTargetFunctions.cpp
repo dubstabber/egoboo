@@ -978,6 +978,66 @@ TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
     EXPECT_EQ(self.getTarget(), target->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SelfSelectorHelpersFailQuietlyWhenSelfRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53411);
+    auto existingTarget = makeObject(module, "mp_objects/follower.obj", 53412);
+    auto attacker = makeObject(module, "mp_objects/follower.obj", 53413);
+    auto holder = makeObject(module, "mp_objects/follower.obj", 53414);
+    auto leader = makeObject(module, "mp_objects/follower.obj", 53415);
+    auto caller = makeObject(module, "mp_objects/follower.obj", 53416);
+    auto leaderTarget = makeObject(module, "mp_objects/follower.obj", 53417);
+    auto lastItemUsed = makeObject(module, "mp_objects/follower.obj", 53418);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(existingTarget, nullptr);
+    ASSERT_NE(attacker, nullptr);
+    ASSERT_NE(holder, nullptr);
+    ASSERT_NE(leader, nullptr);
+    ASSERT_NE(caller, nullptr);
+    ASSERT_NE(leaderTarget, nullptr);
+    ASSERT_NE(lastItemUsed, nullptr);
+
+    constexpr TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_GOOD);
+    actor->setTeamRef(teamRef);
+    actor->setBaseTeamRef(teamRef);
+    leader->setTeamRef(teamRef);
+    leader->setBaseTeamRef(teamRef);
+    caller->setTeamRef(teamRef);
+    caller->setBaseTeamRef(teamRef);
+    actor->setHolderRef(holder->getObjRef());
+    static_cast<IScriptable&>(*actor).setAILastAttacker(attacker->getObjRef());
+    static_cast<IScriptable&>(*actor).setAILastItemUsed(lastItemUsed->getObjRef());
+    static_cast<IScriptable&>(*leader).setAITarget(leaderTarget->getObjRef());
+
+    auto& team = module.getTeamList()[teamRef];
+    team.setLeader(leader);
+    team.callForHelp(caller);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, existingTarget);
+    self.setSelf(ObjectRef::Invalid);
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverAttacked(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverIsHolding(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToLeader(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToTargetOfLeader(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToWhoeverCalledForHelp(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+
+    EXPECT_FALSE(scr_SetTargetToLastItemUsed(state, self));
+    EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
 TEST_F(ScriptTargetFunctionsFixture, SetTargetToLowestTargetFailsQuietlyForInvalidTargetRef)
 {
     auto& module = beginActiveTestModule();

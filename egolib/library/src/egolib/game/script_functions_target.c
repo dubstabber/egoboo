@@ -6,20 +6,14 @@
 
 namespace
 {
-IScriptable& scriptable(Object& object)
+struct SelfTargetSelectorContext
 {
-    return object;
-}
-
-const ITargetInfo& targetInfo(const Object& object)
-{
-    return object;
-}
-
-const IPhysical& physical(const Object& object)
-{
-    return object;
-}
+    Object* object = nullptr;
+    const IScriptable* scriptable = nullptr;
+    const ITargetInfo* info = nullptr;
+    const IPhysical* physical = nullptr;
+    const IAppearanceProfile* appearance = nullptr;
+};
 
 bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
 {
@@ -27,6 +21,22 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
                                              targetPhysical.getPosY() - selfPhysical.getPosY()));
     facing -= FACING_T(selfPhysical.getFacingZ());
     return facing > 55535 || facing < 10000;
+}
+
+SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
+{
+    SelfTargetSelectorContext context;
+    context.object = tryObject(self.getSelf());
+    if (context.object == nullptr)
+    {
+        return context;
+    }
+
+    context.scriptable = static_cast<IScriptable*>(context.object);
+    context.info = static_cast<ITargetInfo*>(context.object);
+    context.physical = static_cast<IPhysical*>(context.object);
+    context.appearance = static_cast<IAppearanceProfile*>(context.object);
+    return context;
 }
 
 bool isLiveTargetRef(ObjectRef objectRef)
@@ -63,6 +73,41 @@ bool trySetTargetFromScriptableTarget(ai_state_t& self, const IScriptable* scrip
            trySetResolvedTarget(self, scriptableObject->getAITarget());
 }
 
+ObjectRef selfLastAttackerRef(const SelfTargetSelectorContext& context)
+{
+    return context.scriptable != nullptr ? context.scriptable->getAILastAttacker() : ObjectRef::Invalid;
+}
+
+ObjectRef selfBumpedRef(const SelfTargetSelectorContext& context)
+{
+    return context.scriptable != nullptr ? context.scriptable->getAIBumped() : ObjectRef::Invalid;
+}
+
+ObjectRef selfLastHitRef(const SelfTargetSelectorContext& context)
+{
+    return context.scriptable != nullptr ? context.scriptable->getAILastHit() : ObjectRef::Invalid;
+}
+
+ObjectRef selfLastItemUsedRef(const SelfTargetSelectorContext& context)
+{
+    return context.scriptable != nullptr ? context.scriptable->getAILastItemUsed() : ObjectRef::Invalid;
+}
+
+ObjectRef selfTeamLeaderRef(const SelfTargetSelectorContext& context)
+{
+    return context.info != nullptr ? teamLeaderRef(*context.info) : ObjectRef::Invalid;
+}
+
+ObjectRef selfTeamCallerForHelpRef(const SelfTargetSelectorContext& context)
+{
+    return context.info != nullptr ? teamCallerForHelpRef(*context.info) : ObjectRef::Invalid;
+}
+
+ObjectRef selfHolderRef(const SelfTargetSelectorContext& context)
+{
+    return context.info != nullptr ? context.info->getHolderRef() : ObjectRef::Invalid;
+}
+
 bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                      int passageId,
                                      const IDSZ2& occupantIdsz,
@@ -78,43 +123,31 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                                               requiredItem));
 }
 
-Object* trySelfObject(const ai_state_t& self)
-{
-    return tryObject(self.getSelf());
-}
-
-const ITargetInfo* trySelfTargetInfo(const ai_state_t& self)
-{
-    return tryTargetInfo(self.getSelf());
-}
-
-ObjectRef findTargetForSelf(const ai_state_t& self,
+ObjectRef findTargetForSelf(const SelfTargetSelectorContext& context,
                             float maxDistance,
                             const IDSZ2& idsz,
                             BIT_FIELD targetingBits)
 {
-    Object* selfObject = trySelfObject(self);
-    if (selfObject == nullptr)
+    if (context.object == nullptr)
     {
         return ObjectRef::Invalid;
     }
 
-    return chr_find_target(selfObject, maxDistance, idsz, targetingBits);
+    return chr_find_target(context.object, maxDistance, idsz, targetingBits);
 }
 
-ObjectRef findWeaponForSelf(const ai_state_t& self,
+ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
                             float maxDistance,
                             const IDSZ2& weaponIdsz,
                             bool findRanged,
                             bool useLineOfSight)
 {
-    Object* selfObject = trySelfObject(self);
-    if (selfObject == nullptr)
+    if (context.object == nullptr)
     {
         return ObjectRef::Invalid;
     }
 
-    return FindWeapon(selfObject, maxDistance, weaponIdsz, findRanged, useLineOfSight);
+    return FindWeapon(context.object, maxDistance, weaponIdsz, findRanged, useLineOfSight);
 }
 
 }
@@ -151,7 +184,8 @@ uint8_t scr_SetTargetToNearbyEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, findTargetForSelf(self, NEARBY, IDSZ2::None, TARGET_ENEMIES));
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, findTargetForSelf(selfContext, NEARBY, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
@@ -210,8 +244,8 @@ uint8_t scr_SetTargetToWhoeverAttacked( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IScriptable& selfScriptable = scriptable(*pchr);
-    returncode = trySetResolvedTarget(self, selfScriptable.getAILastAttacker());
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfLastAttackerRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -226,8 +260,8 @@ uint8_t scr_SetTargetToWhoeverBumped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IScriptable& selfScriptable = scriptable(*pchr);
-    returncode = trySetResolvedTarget(self, selfScriptable.getAIBumped());
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfBumpedRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -242,7 +276,8 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, teamCallerForHelpRef(targetInfo(*pchr)));
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfTeamCallerForHelpRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -436,7 +471,8 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, targetInfo(*pchr).getHolderRef());
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfHolderRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -452,13 +488,13 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (target == nullptr || selfContext.info == nullptr)
     {
         return false;
     }
 
-    const TEAM_REF selfTeamRef = targetInfo(*pchr).getTeamRef();
-    returncode = ( target->isAlive() && !target->isOnSameTeam(selfTeamRef) );
+    returncode = ( target->isAlive() && !target->isOnSameTeam(selfContext.info->getTeamRef()) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -475,13 +511,15 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
     IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    if (target == nullptr || damageableTarget == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (target == nullptr || damageableTarget == nullptr || selfContext.info == nullptr)
     {
         return false;
     }
 
-    const TEAM_REF selfTeamRef = targetInfo(*pchr).getTeamRef();
-    returncode = ( target->isAlive() && target->isHatedByTeam(selfTeamRef) && !damageableTarget->isInvincible() );
+    returncode = ( target->isAlive() &&
+                   target->isHatedByTeam(selfContext.info->getTeamRef()) &&
+                   !damageableTarget->isInvincible() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -497,7 +535,8 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetTargetFromScriptableTarget(self, tryScriptable(teamLeaderRef(targetInfo(*pchr))));
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetTargetFromScriptableTarget(self, tryScriptable(selfTeamLeaderRef(selfContext)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -528,7 +567,8 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, teamLeaderRef(targetInfo(*pchr)));
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfTeamLeaderRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -716,13 +756,13 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IInventoryHolder* selfInventory = tryInventoryHolder(self.getSelf());
-    if (selfInventory == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (selfContext.object == nullptr)
     {
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *selfInventory, SLOT_LEFT);
+    returncode = trySetTargetFromHeldObject(self, *selfContext.object, SLOT_LEFT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -793,7 +833,8 @@ uint8_t scr_SetTargetToWhoeverWasHit( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, scriptable(*pchr).getAILastHit());
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, selfLastHitRef(selfContext));
 
     SCRIPT_FUNCTION_END();
 }
@@ -809,7 +850,8 @@ uint8_t scr_SetTargetToWideEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = trySetResolvedTarget(self, findTargetForSelf(self, WIDE, IDSZ2::None, TARGET_ENEMIES));
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    returncode = trySetResolvedTarget(self, findTargetForSelf(selfContext, WIDE, IDSZ2::None, TARGET_ENEMIES));
 
     SCRIPT_FUNCTION_END();
 }
@@ -894,18 +936,13 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (target == nullptr || selfContext.info == nullptr)
     {
         return false;
     }
 
-    const ITargetInfo* selfTarget = trySelfTargetInfo(self);
-    if (selfTarget == nullptr)
-    {
-        return false;
-    }
-
-    returncode = target->isOnSameTeam(selfTarget->getTeamRef());
+    returncode = target->isOnSameTeam(selfContext.info->getTeamRef());
 
     SCRIPT_FUNCTION_END();
 }
@@ -1005,7 +1042,13 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = static_cast<IAppearanceProfile&>(*pchr).isCurrentSkinDressy();
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (selfContext.appearance == nullptr)
+    {
+        return false;
+    }
+
+    returncode = selfContext.appearance->isCurrentSkinDressy();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1109,8 +1152,9 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     // Try to find one
-    const auto ichr = findTargetForSelf(self,
+    const auto ichr = findTargetForSelf(selfContext,
                                         WIDE,
                                         IDSZ2(state.argument),
                                         state.distance);
@@ -1131,13 +1175,13 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IPhysical* physicalTarget = tryPhysical(self.getTarget());
-    if (physicalTarget == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (physicalTarget == nullptr || selfContext.physical == nullptr)
     {
         return false;
     }
 
-    const IPhysical& selfPhysical = physical(*pchr);
-    returncode = isFacing(selfPhysical, *physicalTarget);
+    returncode = isFacing(*selfContext.physical, *physicalTarget);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1153,7 +1197,8 @@ uint8_t scr_SetTargetToDistantEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = findTargetForSelf(self, state.distance, IDSZ2::None, TARGET_ENEMIES);
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const auto ichr = findTargetForSelf(selfContext, state.distance, IDSZ2::None, TARGET_ENEMIES);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1323,8 +1368,9 @@ uint8_t scr_SetTargetToNearestBlahID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     // Try to find one
-    const auto ichr = findTargetForSelf(self,
+    const auto ichr = findTargetForSelf(selfContext,
                                         NEAREST,
                                         IDSZ2(state.argument),
                                         state.distance);
@@ -1343,7 +1389,8 @@ uint8_t scr_SetTargetToNearestEnemy( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = findTargetForSelf(self, NEAREST, IDSZ2::None, TARGET_ENEMIES);
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const auto ichr = findTargetForSelf(selfContext, NEAREST, IDSZ2::None, TARGET_ENEMIES);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1359,7 +1406,8 @@ uint8_t scr_SetTargetToNearestFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = findTargetForSelf(self, NEAREST, IDSZ2::None, TARGET_FRIENDS);
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const auto ichr = findTargetForSelf(selfContext, NEAREST, IDSZ2::None, TARGET_FRIENDS);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();
@@ -1377,7 +1425,8 @@ uint8_t scr_SetTargetToNearestLifeform( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = findTargetForSelf(self,
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const auto ichr = findTargetForSelf(selfContext,
                                         NEAREST,
                                         IDSZ2::None,
                                         TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES);
@@ -1541,7 +1590,8 @@ uint8_t scr_SetTargetToLastItemUsed( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ObjectRef lastItemUsedRef = scriptable(*pchr).getAILastItemUsed();
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const ObjectRef lastItemUsedRef = selfLastItemUsedRef(selfContext);
     returncode = lastItemUsedRef != self.getSelf() &&
                  trySetResolvedTarget(self, lastItemUsedRef);
 
@@ -1579,7 +1629,13 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = static_cast<IAppearanceProfile&>(*pchr).hasIntellectDamageParticle();
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (selfContext.appearance == nullptr)
+    {
+        return false;
+    }
+
+    returncode = selfContext.appearance->hasIntellectDamageParticle();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1715,13 +1771,13 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const IPhysical* physicalTarget = tryPhysical(self.getTarget());
-    if (physicalTarget == nullptr)
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    if (physicalTarget == nullptr || selfContext.physical == nullptr)
     {
         return false;
     }
 
-    const IPhysical& selfPhysical = physical(*pchr);
-    returncode = isFacing(*physicalTarget, selfPhysical);
+    returncode = isFacing(*physicalTarget, *selfContext.physical);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1732,7 +1788,8 @@ uint8_t scr_SetTargetToNearbyMeleeWeapon( script_state_t& state, ai_state_t& sel
 {
     SCRIPT_FUNCTION_BEGIN();
 
-    ObjectRef best_target = findWeaponForSelf(self, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true);
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    ObjectRef best_target = findWeaponForSelf(selfContext, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true);
     returncode = trySetResolvedTarget(self, best_target);
 
     SCRIPT_FUNCTION_END();
@@ -1749,7 +1806,8 @@ uint8_t scr_SetTargetToDistantFriend( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const auto ichr = findTargetForSelf(self, state.distance, IDSZ2::None, TARGET_FRIENDS);
+    const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
+    const auto ichr = findTargetForSelf(selfContext, state.distance, IDSZ2::None, TARGET_FRIENDS);
     returncode = trySetResolvedTarget(self, ichr);
 
     SCRIPT_FUNCTION_END();

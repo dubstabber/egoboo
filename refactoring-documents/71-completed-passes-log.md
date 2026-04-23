@@ -916,6 +916,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining b
 
 Kept the focused `ScriptSystemsFunctions.cpp` passage regression as the behavior lock, then used build and the `test.mod` validator as the acceptance bar for the pass.
 
+### Pass 182 — Target selector role closure (2026-04-23)
+
+Continued Tier 1.2 inside `script_functions_target.c` by splitting the remaining self-side selector/query pocket behind a file-local self-selector context. Routed attacker/bump/leader/caller/holder/last-item selectors, team-comparison predicates, self-facing queries, and proximity/weapon target search helpers through the resolved self-role context without widening any public role seams or changing quiet-failure behavior for invalid self refs.
+
+Extended `ScriptTargetFunctions.cpp` with focused invalid-self coverage for the widened selector cluster, then kept the focused target-function test slice, build, and the `test.mod` validator as the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log
