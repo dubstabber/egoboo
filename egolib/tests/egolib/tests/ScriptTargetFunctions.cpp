@@ -331,8 +331,8 @@ TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersSelectMatchingOccupants
         (void)objects;
     }
 
-    EXPECT_FALSE(passage->objectIsInPassage(actor));
-    EXPECT_TRUE(passage->objectIsInPassage(occupant));
+    EXPECT_FALSE(passage->objectIsInPassage(*actor));
+    EXPECT_TRUE(passage->objectIsInPassage(*occupant));
     EXPECT_TRUE(occupant->isAlive());
     EXPECT_FALSE(occupant->isHidden());
     EXPECT_FALSE(occupant->isBeingHeld());
@@ -392,6 +392,62 @@ TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersFailWithoutChangingTarg
 
     EXPECT_FALSE(scr_SetTargetToBlahInPassage(state, self));
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, PassageLookupIgnoresInvalidOrTerminatedRefs)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53124,
+                            Ego::Vector3f(Info<float>::Grid::Size() * 8.0f,
+                                          Info<float>::Grid::Size() * 8.0f,
+                                          0.0f));
+    auto occupant = makeObject(module, "mp_objects/follower.obj", 53125,
+                               Ego::Vector3f(Info<float>::Grid::Size() * 0.5f,
+                                             Info<float>::Grid::Size() * 0.5f,
+                                             0.0f));
+    auto heldItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 53126);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(occupant, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+    (void)passageId;
+
+    occupant->setTeam(actor->getTeamRef());
+    actor->setInvincible(false);
+    occupant->setInvincible(false);
+    actor->setAlpha(200);
+    actor->setLight(200);
+    occupant->setAlpha(200);
+    occupant->setLight(200);
+    static_cast<IInventoryHolder&>(*occupant).setHeldObject(SLOT_LEFT, heldItem->getObjRef());
+
+    {
+        auto objects = module.getObjectHandler().iterator();
+        (void)objects;
+    }
+
+    constexpr int kPassageTargetMask = (1 << 8) | (1 << 2) | (1 << 1);
+
+    EXPECT_EQ(passage->whoIsBlockingPassage(actor->getObjRef(),
+                                            IDSZ2::None,
+                                            kPassageTargetMask,
+                                            IDSZ2::None),
+              occupant->getObjRef());
+    EXPECT_EQ(passage->whoIsBlockingPassage(ObjectRef::Invalid,
+                                            IDSZ2::None,
+                                            kPassageTargetMask,
+                                            IDSZ2::None),
+              ObjectRef::Invalid);
+
+    occupant->requestTerminate();
+    EXPECT_EQ(passage->whoIsBlockingPassage(actor->getObjRef(),
+                                            IDSZ2::None,
+                                            kPassageTargetMask,
+                                            IDSZ2::None),
+              ObjectRef::Invalid);
 }
 
 TEST_F(ScriptTargetFunctionsFixture, SelfTargetSelectionReadsThroughScriptableRole)

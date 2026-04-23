@@ -78,7 +78,7 @@ public:
     *    	 radius is how much offset we allow outside the passage
     * @return true if object is inside this passage
     */
-	bool objectIsInPassage(const std::shared_ptr<Object> &object) const;
+	bool objectIsInPassage(const Object& object) const;
 
 	/**
 	* @brief This function makes a passage flash the specified color
@@ -104,7 +104,7 @@ public:
     * @brief Plays the passage music assigned to this passage if the specified character is inside this passage
     * @return true if a new song is now playing
     **/
-    bool checkPassageMusic(const std::shared_ptr<Object> &pobj) const;
+    bool checkPassageMusic(const Object& object) const;
 
     /**
     * @return Sets the MusicID of this passage. If a player character enters this passage, the specified MusicID will be played

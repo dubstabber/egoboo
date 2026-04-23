@@ -217,7 +217,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot );
 void character_swipe( ObjectRef cnt, slot_t slot );
 
 /// AI targeting
-bool  chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
+bool  chr_check_target( Object * psrc, const Object& ptst, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
 ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
 ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing, const PIP_REF ipip, const TEAM_REF team, ObjectRef dontTarget, ObjectRef oldTarget, Facing *targetAngle);
 

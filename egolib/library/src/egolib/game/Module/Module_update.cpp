@@ -62,7 +62,7 @@ void GameModule::checkPassageMusic()
         //Loop through every passage
         for (const std::shared_ptr<Passage>& passage : _passages)
         {
-            if (passage->checkPassageMusic(pchr))
+            if (passage->checkPassageMusic(*pchr))
             {
                 return;
             }

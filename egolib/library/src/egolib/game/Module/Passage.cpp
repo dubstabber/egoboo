@@ -107,7 +107,7 @@ bool Passage::close()
 
             if (object->canCollide())
             {
-                if (objectIsInPassage(object))
+                if (objectIsInPassage(*object))
                 {
                     if (!object->canBeCrushed() || (object->isAlive() && object->getProfile()->canOpenStuff()))
                     {
@@ -137,9 +137,9 @@ bool Passage::close()
     return true;    
 }
 
-bool Passage::objectIsInPassage(const std::shared_ptr<Object> &object) const
+bool Passage::objectIsInPassage(const Object& object) const
 {
-    return idlib::is_intersecting(_area, object->getAxisAlignedBox2D());
+    return idlib::is_intersecting(_area, object.getAxisAlignedBox2D());
 }
 
 ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, const BIT_FIELD targeting_bits, const IDSZ2& require_item ) const
@@ -159,10 +159,10 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
         if (!HAS_SOME_BITS(targeting_bits, TARGET_ITEMS) && pchr->isScenery()) continue;
 
         //Check if the object has the requirements
-        if ( !chr_check_target( psrc, pchr, idsz, targeting_bits ) ) continue;
+        if ( !chr_check_target( psrc, *pchr, idsz, targeting_bits ) ) continue;
 
         //Now check if it actually is inside the passage area
-        if (objectIsInPassage(pchr))
+        if (objectIsInPassage(*pchr))
         {
 
             // Found a live one, do we need to check for required items as well?
@@ -228,13 +228,13 @@ bool Passage::isPointInside(float xpos, float ypos) const
            ypos <= _area.get_max().y();
 }
 
-bool Passage::checkPassageMusic(const std::shared_ptr<Object> &pchr) const
+bool Passage::checkPassageMusic(const Object& object) const
 {
     if (_music == INVALID_SOUND_ID) {
        return false; 
     } 
 
-    if(!objectIsInPassage(pchr)) {
+    if(!objectIsInPassage(object)) {
         return false;
     }
 
@@ -274,7 +274,7 @@ void Passage::makeShop(ObjectRef owner)
 
         if ( object->isItem() )
         {
-            if (objectIsInPassage(object))
+            if (objectIsInPassage(*object))
             {
                 object->setShopItem(true);               // Full value
                 object->setKursed(false);                // Shop items are never kursed

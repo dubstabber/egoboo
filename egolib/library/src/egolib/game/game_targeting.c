@@ -92,7 +92,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 }
 
 //--------------------------------------------------------------------------------------------
-bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const IDSZ2 &idsz, const BIT_FIELD targeting_bits )
+bool chr_check_target( Object * psrc, const Object& ptst, const IDSZ2 &idsz, const BIT_FIELD targeting_bits )
 {
     GameModule& module = activeModule();
     bool retval = false;
@@ -101,37 +101,37 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
     if (!psrc || psrc->isTerminated()) return false;
 
     // Skip hidden characters
-    if ( ptst->isHidden() ) return false;
+    if ( ptst.isHidden() ) return false;
 
     // Players only?
-    if (( HAS_SOME_BITS( targeting_bits, TARGET_PLAYERS ) || HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) ) && !ptst->isPlayer() ) return false;
+    if (( HAS_SOME_BITS( targeting_bits, TARGET_PLAYERS ) || HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) ) && !ptst.isPlayer() ) return false;
 
     // Skip held objects
-    if ( ptst->isBeingHeld() ) return false;
+    if ( ptst.isBeingHeld() ) return false;
 
     // Allow to target ourselves?
-    if ( psrc == ptst.get() && HAS_NO_BITS( targeting_bits, TARGET_SELF ) ) return false;
+    if ( psrc == &ptst && HAS_NO_BITS( targeting_bits, TARGET_SELF ) ) return false;
 
     // Don't target our holder if we are an item and being held
-    if ( psrc->isItem() && psrc->getHolderRef() == ptst->getObjRef() ) return false;
+    if ( psrc->isItem() && psrc->getHolderRef() == ptst.getObjRef() ) return false;
 
     // Allow to target dead stuff?
-    if ( ptst->isAlive() == HAS_SOME_BITS( targeting_bits, TARGET_DEAD ) ) return false;
+    if ( ptst.isAlive() == HAS_SOME_BITS( targeting_bits, TARGET_DEAD ) ) return false;
 
     // Don't target invisible stuff, unless we can actually see them
-    if ( !psrc->canSeeObject(ptst->getObjRef()) ) return false;
+    if ( !psrc->canSeeObject(ptst.getObjRef()) ) return false;
 
     //Need specific skill? ([NONE] always passes)
-    if ( HAS_SOME_BITS( targeting_bits, TARGET_SKILL ) && !ptst->hasSkillIDSZ(idsz) ) return false;
+    if ( HAS_SOME_BITS( targeting_bits, TARGET_SKILL ) && !ptst.hasSkillIDSZ(idsz) ) return false;
 
     // Require player to have specific quest?
     if ( HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) )
     {
-        if(!ptst->isPlayer()) {
+        if(!ptst.isPlayer()) {
             return false;
         }
 
-        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst->getPlayerNumber());
+        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst.getPlayerNumber());
 
         // find only active quests?
         // this makes it backward-compatible with zefz's version
@@ -140,13 +140,13 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
         }
     }
 
-    bool is_hated = psrc->getTeam().hatesTeam(ptst->getTeam());
+    bool is_hated = psrc->getTeam().hatesTeam(ptst.getTeam());
 
     // Target neutral items? (still target evil items, could be pets)
-    if (( ptst->isItem() || ptst->isInvincible() ) && !HAS_SOME_BITS( targeting_bits, TARGET_ITEMS ) ) return false;
+    if (( ptst.isItem() || ptst.isInvincible() ) && !HAS_SOME_BITS( targeting_bits, TARGET_ITEMS ) ) return false;
 
     // Only target those of proper team. Skip this part if it's a item
-    if ( !ptst->isItem() )
+    if ( !ptst.isItem() )
     {
         if (( HAS_NO_BITS( targeting_bits, TARGET_ENEMIES ) && is_hated ) ) return false;
         if (( HAS_NO_BITS( targeting_bits, TARGET_FRIENDS ) && !is_hated ) ) return false;
@@ -159,8 +159,8 @@ bool chr_check_target( Object * psrc, const std::shared_ptr<Object>& ptst, const
     }
     else
     {
-        bool match_idsz = ( idsz == ptst->getProfile()->getIDSZ(IDSZ_PARENT) ) ||
-                            ( idsz == ptst->getProfile()->getIDSZ(IDSZ_TYPE) );
+        bool match_idsz = ( idsz == ptst.getProfile()->getIDSZ(IDSZ_PARENT) ) ||
+                            ( idsz == ptst.getProfile()->getIDSZ(IDSZ_TYPE) );
 
         if ( match_idsz )
         {
@@ -187,7 +187,42 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
 
     if (!psrc || psrc->isTerminated()) return ObjectRef::Invalid;
 
-    std::vector<std::shared_ptr<Object>> searchList;
+    // set the line-of-sight source
+    los_info.x0         = psrc->getPosX();
+    los_info.y0         = psrc->getPosY();
+    los_info.z0         = psrc->getPosZ() + psrc->getCurrentBump().height;
+    los_info.stopped_by = psrc->getStoppedByMask();
+
+    ObjectRef best_target = ObjectRef::Invalid;
+    float best_dist2  = (max_dist == NEAREST) ? std::numeric_limits<float>::max() : max_dist*max_dist + 1.0f;
+    auto considerTarget = [&](const Object& target)
+    {
+        if(target.isTerminated()) return;
+
+        //Skip held items
+        if(target.isBeingHeld()) return;
+
+        if (!chr_check_target(psrc, target, idsz, targeting_bits)) return;
+
+		float dist2 = idlib::squared_euclidean_norm(psrc->getPosition() - target.getPosition());
+        if (dist2 < best_dist2)
+        {
+            //Invictus chars do not need a line of sight
+            if ( !psrc->isInvincible() )
+            {
+                // set the line-of-sight source
+                los_info.x1 = target.getPosition()[kX];
+                los_info.y1 = target.getPosition()[kY];
+                los_info.z1 = target.getPosition()[kZ] + std::max( 1.0f, target.getCurrentBump().height );
+
+                if ( line_of_sight_info_t::blocked( los_info, module.getMeshPointer() ) ) return;
+            }
+
+            //Set the new best target found
+            best_target = target.getObjRef();
+            best_dist2  = dist2;
+        }
+    };
 
     //Only loop through the players
     if ( HAS_SOME_BITS( targeting_bits, TARGET_PLAYERS ) || HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) )
@@ -198,7 +233,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
                 continue;
             }
 
-            const std::shared_ptr<Object> object = module.getObjectHandler()[player->getObjectRef()];
+            const Object* object = player->tryObject();
             if (!object || object->isTerminated()) {
                 continue;
             }
@@ -206,7 +241,7 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
             //Within range?
             float distance = idlib::euclidean_norm(object->getPosition() - psrc->getPosition());
             if(max_dist == NEAREST || distance < max_dist) {
-                searchList.push_back(object);
+                considerTarget(*object);
             }
         }
     }
@@ -214,50 +249,28 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     //All objects in level
     else if(max_dist == NEAREST)
     {
-        searchList = module.getObjectHandler().getAllObjects();
+        for (const std::shared_ptr<Object>& object : module.getObjectHandler().getAllObjects())
+        {
+            if (object == nullptr)
+            {
+                continue;
+            }
+
+            considerTarget(*object);
+        }
     }
 
     //All objects within range
     else
     {
-        searchList = module.getObjectHandler().findObjects(psrc->getPosX(), psrc->getPosY(), max_dist, true);
-    }
-
-
-    // set the line-of-sight source
-    los_info.x0         = psrc->getPosX();
-    los_info.y0         = psrc->getPosY();
-    los_info.z0         = psrc->getPosZ() + psrc->getCurrentBump().height;
-    los_info.stopped_by = psrc->getStoppedByMask();
-
-    ObjectRef best_target = ObjectRef::Invalid;
-    float best_dist2  = (max_dist == NEAREST) ? std::numeric_limits<float>::max() : max_dist*max_dist + 1.0f;
-    for(const std::shared_ptr<Object> &ptst : searchList)
-    {
-        if(ptst->isTerminated()) continue;
-
-        //Skip held items
-        if(ptst->isBeingHeld()) continue;
-
-        if (!chr_check_target(psrc, ptst, idsz, targeting_bits)) continue;
-
-		float dist2 = idlib::squared_euclidean_norm(psrc->getPosition() - ptst->getPosition());
-        if (dist2 < best_dist2)
+        for (const std::shared_ptr<Object>& object : module.getObjectHandler().findObjects(psrc->getPosX(), psrc->getPosY(), max_dist, true))
         {
-            //Invictus chars do not need a line of sight
-            if ( !psrc->isInvincible() )
+            if (object == nullptr)
             {
-                // set the line-of-sight source
-                los_info.x1 = ptst->getPosition()[kX];
-                los_info.y1 = ptst->getPosition()[kY];
-                los_info.z1 = ptst->getPosition()[kZ] + std::max( 1.0f, ptst->getCurrentBump().height );
-
-                if ( line_of_sight_info_t::blocked( los_info, module.getMeshPointer() ) ) continue;
+                continue;
             }
 
-            //Set the new best target found
-            best_target = ptst->getObjRef();
-            best_dist2  = dist2;
+            considerTarget(*object);
         }
     }
 

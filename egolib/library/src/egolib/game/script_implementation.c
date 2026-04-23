@@ -377,7 +377,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 
             if ( img >= loc_starttile && img < endtile )
             {
-                if (passage->objectIsInPassage(pchr))
+                if (passage->objectIsInPassage(*pchr))
                 {
                     // Remember where the hit occured.
                     *ptilex = pchr->getPosX();
