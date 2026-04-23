@@ -41,7 +41,7 @@ namespace GUI {
 
 class CharacterWindow : public InternalWindow {
 public:
-    CharacterWindow(const std::shared_ptr<Object> &object);
+    CharacterWindow(ObjectRef objectRef);
     ~CharacterWindow();
 
     void drawContainer(DrawingContext& drawingContext) override;
@@ -60,7 +60,8 @@ private:
     void describeEnchantEffects(const std::vector<std::shared_ptr<Enchantment>> &enchants, std::shared_ptr<ScrollableList> list);
 
 private:
-    std::shared_ptr<Object> _character;
+    ObjectRef _characterRef;
+    PLA_REF _playerNumber;
     std::shared_ptr<Button> _levelUpButton;
     std::weak_ptr<InternalWindow> _levelUpWindow;
 

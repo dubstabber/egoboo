@@ -17,13 +17,44 @@
 namespace Ego {
 namespace GUI {
 
+namespace
+{
+Object* tryObservedCharacter(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
+
+std::string resolveCharacterWindowTitle(ObjectRef objectRef)
+{
+    if (const Object* object = tryObservedCharacter(objectRef))
+    {
+        return object->getName();
+    }
+
+    return "Character";
+}
+
+std::shared_ptr<Ego::Player> tryObservedPlayer(PLA_REF playerNumber)
+{
+    if (playerNumber == INVALID_PLA_REF)
+    {
+        return nullptr;
+    }
+
+    GameModule* module = GameSessionContext::get().tryActiveModule();
+    return module != nullptr ? module->tryGetPlayer(playerNumber) : nullptr;
+}
+}
+
 static const float WindowWidth = 420;
 static const float BorderPadding = 32;
 static const float Spacing = 8;
 static const int LINE_SPACING_OFFSET = -2; //To make space between lines less
 
-CharacterWindow::CharacterWindow(const std::shared_ptr<Object> &object) : InternalWindow(object->getName()),
-    _character(object),
+CharacterWindow::CharacterWindow(ObjectRef objectRef) : InternalWindow(resolveCharacterWindowTitle(objectRef)),
+    _characterRef(objectRef),
+    _playerNumber(INVALID_PLA_REF),
     _levelUpButton(nullptr),
     _levelUpWindow(),
     _characterStatisticsTab(),
@@ -48,6 +79,18 @@ CharacterWindow::CharacterWindow(const std::shared_ptr<Object> &object) : Intern
     _activeEnchantsTab->setWidth(WindowWidth);
     _activeEnchantsTab->setPosition(Point2f(xoffset, yoffset));
     addComponent(_activeEnchantsTab);
+
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr)
+    {
+        destroy();
+        return;
+    }
+
+    if (character->isPlayer())
+    {
+        _playerNumber = character->getPlayerNumber();
+    }
 
     buildCharacterStatisticTab(_characterStatisticsTab);
     buildKnownPerksTab(_knownPerksTab);
@@ -115,10 +158,8 @@ CharacterWindow::CharacterWindow(const std::shared_ptr<Object> &object) : Intern
 
 CharacterWindow::~CharacterWindow() {
     //If the character is a local player, then we no longer consume that players input events
-    if (_character->isPlayer()) {
-        if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
-            module->getPlayer(_character->getPlayerNumber())->setInventoryMode(false);
-        }
+    if (std::shared_ptr<Ego::Player> player = tryObservedPlayer(_playerNumber)) {
+        player->setInventoryMode(false);
     }
 
     //If the level up window is open, close it as well
@@ -129,6 +170,11 @@ CharacterWindow::~CharacterWindow() {
 }
 
 int CharacterWindow::addAttributeLabel(std::shared_ptr<Tab> target, const Point2f& position, const Attribute::AttributeType type) {
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        return 0;
+    }
+
     //Label
     std::shared_ptr<Label> label = std::make_shared<Label>(Attribute::toString(type) + ":");
     label->setPosition(position);
@@ -141,10 +187,10 @@ int CharacterWindow::addAttributeLabel(std::shared_ptr<Tab> target, const Point2
     //Special case regeneration values, use decimals
     if (type == Attribute::MANA_REGEN || type == Attribute::LIFE_REGEN) {
         std::stringstream valueString;
-        valueString << std::setprecision(2) << std::fixed << _character->getAttribute(type);
+        valueString << std::setprecision(2) << std::fixed << character->getAttribute(type);
         value->setText(valueString.str());
     } else {
-        value->setText(std::to_string(std::lround(_character->getAttribute(type))));
+        value->setText(std::to_string(std::lround(character->getAttribute(type))));
     }
 
     value->setPosition(Point2f(target->getWidth() / 2 - 20, label->getY()));
@@ -155,6 +201,11 @@ int CharacterWindow::addAttributeLabel(std::shared_ptr<Tab> target, const Point2
 }
 
 int CharacterWindow::addResistanceLabel(std::shared_ptr<Tab> target, const Point2f& position, const DamageType type) {
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        return 0;
+    }
+
     //Enum to string
     std::string damageName;
     switch (type) {
@@ -177,14 +228,14 @@ int CharacterWindow::addResistanceLabel(std::shared_ptr<Tab> target, const Point
     target->addComponent(label);
 
     //Value
-    std::shared_ptr<Label> value = std::make_shared<Label>(std::to_string(std::lround(_character->getRawDamageResistance(type))));
+    std::shared_ptr<Label> value = std::make_shared<Label>(std::to_string(std::lround(character->getRawDamageResistance(type))));
     value->setPosition(label->getPosition() + Vector2f(50, 0));
     value->setFont(uiManager().getFont(UIManager::FONT_GAME));
     value->setColour(Colour4f(DamageType_getColour(type), 1.0f));
     target->addComponent(value);
 
     //Percent
-    std::shared_ptr<Label> percent = std::make_shared<Label>("(" + std::to_string(std::lround(_character->getDamageReduction(type) * 100)) + "%)");
+    std::shared_ptr<Label> percent = std::make_shared<Label>("(" + std::to_string(std::lround(character->getDamageReduction(type) * 100)) + "%)");
     percent->setPosition(label->getPosition() + Vector2f(75, 0));
     percent->setFont(uiManager().getFont(UIManager::FONT_GAME));
     percent->setColour(Colour4f(DamageType_getColour(type), 1.0f));
@@ -211,14 +262,24 @@ void CharacterWindow::drawAll(DrawingContext& drawingContext) {
 }
 
 void CharacterWindow::draw(DrawingContext& drawingContext) {
+    if (tryObservedCharacter(_characterRef) == nullptr) {
+        destroy();
+        return;
+    }
+
     drawAll(drawingContext);
 }
 
 bool CharacterWindow::notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) {
+    if (tryObservedCharacter(_characterRef) == nullptr) {
+        destroy();
+        return false;
+    }
+
     //Make level up button visible if needed
-    if (_character->isPlayer()) {
-        if (GameModule* module = GameSessionContext::get().tryActiveModule()) {
-            _levelUpButton->setVisible(_levelUpWindow.expired() && module->getPlayer(_character->getPlayerNumber())->hasUnspentLevel());
+    if (_playerNumber != INVALID_PLA_REF && _levelUpButton != nullptr) {
+        if (std::shared_ptr<Ego::Player> player = tryObservedPlayer(_playerNumber)) {
+            _levelUpButton->setVisible(_levelUpWindow.expired() && player->hasUnspentLevel());
         } else {
             _levelUpButton->setVisible(false);
         }
@@ -229,21 +290,25 @@ bool CharacterWindow::notifyMousePointerMoved(const Events::MousePointerMovedEve
 
 void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     GameModule& activeModule = GameSessionContext::get().activeModule();
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        return;
+    }
 
     int xPos, yPos = 0;
 
     // draw the character's main icon
-    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->getSkin()));
+    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(character->getProfile()->getIcon(character->getSkin()));
     characterIcon->setPosition(Point2f(0, 0));
     characterIcon->setSize(Vector2f(32, 32));
     target->addComponent(characterIcon);
 
     std::stringstream buffer;
 
-    if (_character->isAlive()) {
+    if (character->isAlive()) {
         //Level
-        buffer << std::to_string(_character->getExperienceLevel());
-        switch (_character->getExperienceLevel()) {
+        buffer << std::to_string(character->getExperienceLevel());
+        switch (character->getExperienceLevel()) {
             case 1:
                 buffer << "st";
                 break;
@@ -263,14 +328,14 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
         buffer << " level ";
 
         //Gender
-        if (_character->getGender() == Gender::Male)   buffer << "male ";
-        else if (_character->getGender() == Gender::Female) buffer << "female ";
+        if (character->getGender() == Gender::Male)   buffer << "male ";
+        else if (character->getGender() == Gender::Female) buffer << "female ";
     } else {
         buffer << "Dead ";
     }
 
     //Class
-    buffer << _character->getProfile()->getClassName();
+    buffer << character->getProfile()->getClassName();
 
     std::shared_ptr<Label> classLevelLabel = std::make_shared<Label>(buffer.str());
     classLevelLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
@@ -300,13 +365,15 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     }
 
     //Inventory
-    const size_t inventorySlots = _character->getInventoryMaxItems();
+    const size_t inventorySlots = character->getInventoryMaxItems();
     const int slotSize = (target->getWidth() - 15 - inventorySlots * 5) / inventorySlots;
     xPos = 0;
     yPos += 5;
     std::vector<std::shared_ptr<Component>> slots;
     for (size_t i = 0; i < inventorySlots; ++i) {
-        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_character, i, _character->isPlayer() ? activeModule.getPlayer(_character->getPlayerNumber()) : nullptr);
+        std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_characterRef,
+                                                                              i,
+                                                                              _playerNumber != INVALID_PLA_REF ? activeModule.getPlayer(_playerNumber) : nullptr);
         slot->setSize(Vector2f(slotSize, slotSize));
         target->addComponent(slot);
         slots.push_back(slot);
@@ -315,8 +382,8 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     layoutRows(slots);
 
     //If the character is a local player, then we consume that players input events for inventory managment
-    if (_character->isPlayer()) {
-        activeModule.getPlayer(_character->getPlayerNumber())->setInventoryMode(true);
+    if (_playerNumber != INVALID_PLA_REF) {
+        activeModule.getPlayer(_playerNumber)->setInventoryMode(true);
     }
 
     JoinBounds joinBounds;
@@ -324,16 +391,20 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
 
     yPos = bounds.get_max().y() + 5;
     //LevelUp button
-    if (_character->isPlayer()) {
+    if (_playerNumber != INVALID_PLA_REF) {
         _levelUpButton = std::make_shared<Button>("LEVEL UP");
         _levelUpButton->setSize(Vector2f(120, 30));
         _levelUpButton->setPosition(Point2f(target->getWidth() / 2 - _levelUpButton->getWidth() / 2,
                                             yPos));
         _levelUpButton->setOnClickFunction(
             [this]() {
-            std::shared_ptr<LevelUpWindow> window = std::make_shared<LevelUpWindow>(_character);
+            if (tryObservedCharacter(_characterRef) == nullptr || getParent() == nullptr) {
+                destroy();
+                return;
+            }
+
+            std::shared_ptr<LevelUpWindow> window = std::make_shared<LevelUpWindow>(_characterRef);
             getParent()->addComponent(window);
-            //destroy();
             _levelUpWindow = window;
             _levelUpButton->setVisible(false);
         }
@@ -341,13 +412,18 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
         target->addComponent(_levelUpButton);
 
         //Make level up button visible if needed
-        _levelUpButton->setVisible(activeModule.getPlayer(_character->getPlayerNumber())->hasUnspentLevel());
+        _levelUpButton->setVisible(activeModule.getPlayer(_playerNumber)->hasUnspentLevel());
     }
     float newHeight = yPos + 30 + BorderPadding;
     target->setHeight(newHeight);
 }
 
 void CharacterWindow::buildKnownPerksTab(std::shared_ptr<Tab> target) {
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        return;
+    }
+
     //List of perks known
     std::shared_ptr<ScrollableList> perksKnown = std::make_shared<ScrollableList>();
     perksKnown->setSize(Vector2f(getWidth() - 60, getHeight() * 0.60f));
@@ -379,7 +455,7 @@ void CharacterWindow::buildKnownPerksTab(std::shared_ptr<Tab> target) {
         const Perks::PerkID perkID = static_cast<Perks::PerkID>(i);
 
         //Do we know it?
-        if (_character->hasPerk(perkID)) {
+        if (character->hasPerk(perkID)) {
             const Perks::Perk &perk = EngineContext::get().perkHandler().getPerk(perkID);
 
             std::shared_ptr<IconButton> perkButton = std::make_shared<IconButton>(perk.getName(), perk.getIcon());
@@ -402,6 +478,11 @@ void CharacterWindow::buildKnownPerksTab(std::shared_ptr<Tab> target) {
 }
 
 void CharacterWindow::buildActiveEnchantsTab(std::shared_ptr<Tab> target) {
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        return;
+    }
+
     //List of active enchants
     std::shared_ptr<ScrollableList> activeEnchants = std::make_shared<ScrollableList>();
     activeEnchants->setSize(Vector2f((target->getWidth() - 20) / 2, getHeight() * 0.60f));
@@ -423,7 +504,7 @@ void CharacterWindow::buildActiveEnchantsTab(std::shared_ptr<Tab> target) {
 
     //Count number of unique enchants and merge all others
     std::unordered_map<std::string, std::vector<std::shared_ptr<Enchantment>>> enchantCount;
-    for (const std::shared_ptr<Enchantment>& enchant : _character->getActiveEnchants()) {
+    for (const std::shared_ptr<Enchantment>& enchant : character->getActiveEnchants()) {
         if (!enchant->getProfile()->getEnchantName().empty()) {
             enchantCount[enchant->getProfile()->getEnchantName()].push_back(enchant);
         } else {

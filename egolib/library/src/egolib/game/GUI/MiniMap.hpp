@@ -25,7 +25,7 @@
 
 #include "egolib/game/GUI/Component.hpp"
 
-namespace Ego { class DeferredTexture; }
+namespace Ego { class DeferredTexture; class Texture; }
 
 namespace Ego {
 namespace GUI {
@@ -44,7 +44,7 @@ public:
 
     void addBlip(const float x, const float y, const HUDColors color);
 
-    void addBlip(const float x, const float y, const std::shared_ptr<Object> &object);
+    void addBlip(const float x, const float y, const std::shared_ptr<const Texture>& icon);
 
     bool notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) override;
     bool notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) override;

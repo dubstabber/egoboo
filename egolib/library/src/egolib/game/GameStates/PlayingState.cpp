@@ -53,6 +53,12 @@ Ego::Input::IInputSystem& inputSystem()
 {
     return EngineContext::get().inputSystem();
 }
+
+Object* tryObservedUiObject(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
 }
 
 PlayingState::PlayingState() :
@@ -108,7 +114,9 @@ PlayingState::PlayingState() :
     //Show status display for all players
     GameModule& activeModule = GameSessionContext::get().activeModule();
     for(const std::shared_ptr<Ego::Player> &player : activeModule.getPlayerList()) {
-        addStatusMonitor(player->getObject());
+        if (player != nullptr) {
+            addStatusMonitor(player->getObjectRef());
+        }
     }
 }
 
@@ -143,7 +151,7 @@ void PlayingState::updateStatusBarPosition()
             auto status = weakStatus.lock();
             if(status)
             {
-                std::shared_ptr<Object> object = status->getObject();
+                Object* object = tryObservedUiObject(status->getObjectRef());
                 if(object)
                 {
                     auto camera = CameraSystem::get().getCamera(object->getObjRef());
@@ -153,6 +161,10 @@ void PlayingState::updateStatusBarPosition()
 
                     //Calculate bottom Y coordinate for this component
                     maxY[camera] = std::max<float>(maxY[camera], status->getY() + status->getHeight());                    
+                }
+                else
+                {
+                    status->destroy();
                 }
             }
         }
@@ -246,8 +258,13 @@ const std::shared_ptr<Ego::GUI::MiniMap>& PlayingState::getMiniMap() const
     return _miniMap;
 }
 
-void PlayingState::addStatusMonitor(const std::shared_ptr<Object> &object)
+void PlayingState::addStatusMonitor(ObjectRef objectRef)
 {
+    Object* object = tryObservedUiObject(objectRef);
+    if (object == nullptr) {
+        return;
+    }
+
     //Disabled by configuration?
     if(!EngineContext::get().config().hud_displayStatusBars.getValue()) {
         return;
@@ -261,7 +278,7 @@ void PlayingState::addStatusMonitor(const std::shared_ptr<Object> &object)
     //Get the camera that is following this object (defaults to main camera)
     auto camera = CameraSystem::get().getCamera(object->getObjRef());
 
-    auto status = std::make_shared<Ego::GUI::CharacterStatus>(object);
+    auto status = std::make_shared<Ego::GUI::CharacterStatus>(objectRef);
 
     status->setSize({ BARX, BARY });
     status->setPosition({ camera->getViewport().getLeftPixels() + camera->getViewport().getWidthPixels() - status->getWidth(),
@@ -273,7 +290,7 @@ void PlayingState::addStatusMonitor(const std::shared_ptr<Object> &object)
     object->setShowStatus(true);
 }
 
-std::shared_ptr<Object> PlayingState::getStatusCharacter(size_t index)
+ObjectRef PlayingState::getStatusCharacterRef(size_t index)
 {
     //First remove all expired elements
     auto condition = 
@@ -285,15 +302,15 @@ std::shared_ptr<Object> PlayingState::getStatusCharacter(size_t index)
 
 
     if(index >= _statusList.size()) {
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
     std::shared_ptr<Ego::GUI::CharacterStatus> status = _statusList[index].lock();
     if(!status) {
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
-    return status->getObject();
+    return status->getObjectRef();
 }
 
 void PlayingState::displayCharacterWindow(uint8_t statusNumber)
@@ -305,9 +322,10 @@ void PlayingState::displayCharacterWindow(uint8_t statusNumber)
     std::shared_ptr<Ego::GUI::CharacterWindow> chrWindow = _characterWindows[statusNumber].lock();
     if(chrWindow == nullptr || _characterWindows[statusNumber].expired())
     {
-        if(getStatusCharacter(statusNumber) != nullptr)
+        const ObjectRef characterRef = getStatusCharacterRef(statusNumber);
+        if(tryObservedUiObject(characterRef) != nullptr)
         {
-            chrWindow = std::make_shared<Ego::GUI::CharacterWindow>(getStatusCharacter(statusNumber));
+            chrWindow = std::make_shared<Ego::GUI::CharacterWindow>(characterRef);
             _characterWindows[statusNumber] = chrWindow;
             addComponent(chrWindow);
         }

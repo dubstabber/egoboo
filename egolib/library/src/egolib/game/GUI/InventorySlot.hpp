@@ -11,7 +11,7 @@ namespace GUI {
 
 class InventorySlot : public Component {
 public:
-    InventorySlot(const std::shared_ptr<Object>& character, const size_t slotNumber, const std::shared_ptr<Player>& player);
+    InventorySlot(ObjectRef characterRef, const size_t slotNumber, const std::shared_ptr<Player>& player);
 
     virtual void draw(Ego::GUI::DrawingContext& drawingContext) override;
 
@@ -19,7 +19,7 @@ public:
     bool notifyMouseButtonPressed(const Events::MouseButtonPressedEvent& e) override;
 
 private:
-    std::shared_ptr<Object> _character;
+    ObjectRef _characterRef;
     size_t _slotNumber;
     std::shared_ptr<Player> _player;
 };

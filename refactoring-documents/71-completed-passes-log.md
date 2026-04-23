@@ -886,6 +886,18 @@ Continued Tier 1.2 inside `script_functions_systems.c` by moving the remaining q
 
 Extended `ScriptSystemsFunctions.cpp` with focused regressions for empty local-player quest updates and invalid-self class-change failure, then kept the focused systems slice, build, and the `test.mod` validator as the acceptance bar.
 
+### Pass 177 — GUI object observation seam (2026-04-22)
+
+Started Tier 3.1 by removing strong `shared_ptr<Object>` ownership from the player-status UI path. `PlayingState`, `CharacterStatus`, `CharacterWindow`, `LevelUpWindow`, `InventorySlot`, and the status-driven `game_loop.c` helpers now store or pass `ObjectRef` plus session lookups instead of holding gameplay entities alive through presentation code.
+
+Added a narrow non-owning `GameSessionContext::tryObject(...)` seam, kept terminated or missing observed objects as normal no-op/destroy conditions for UI widgets, and extended `ScriptSystemsFunctions.cpp` with coverage for status-monitor publication and stale status-character window suppression. Build and `test.mod` validator remained the acceptance bar.
+
+### Pass 178 — Player observation seam (2026-04-23)
+
+Continued Tier 3.1 by removing `Player::getObject()` as a `shared_ptr<Object>` exposure point. `Player` now publishes object identity through `getObjectRef()` and bounded `tryObject()` lookup helpers, while runtime callers in session aggregation, camera/player setup, HUD/minimap, targeting, weather, module passage music, export/import list generation, and gameplay input/cheat helpers were migrated off the old shared-object API.
+
+Kept missing or terminated player objects as normal no-op branches, retained the existing pre-module startup/test behavior for local-player aggregation, and updated focused startup/status regressions plus the existing export/script coverage to lock the new seam. Build and `test.mod` validator remain the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

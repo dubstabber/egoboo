@@ -194,15 +194,19 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     {
         for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
         {
-            const std::shared_ptr<Object> &object = player->getObject();
-            if(player) {
+            if (!player) {
+                continue;
+            }
 
-                //Within range?
-                float distance = idlib::euclidean_norm(object->getPosition() - psrc->getPosition());
-                if(max_dist == NEAREST || distance < max_dist) {
-                    searchList.push_back(object);
-                }
+            const std::shared_ptr<Object> object = module.getObjectHandler()[player->getObjectRef()];
+            if (!object || object->isTerminated()) {
+                continue;
+            }
 
+            //Within range?
+            float distance = idlib::euclidean_norm(object->getPosition() - psrc->getPosition());
+            if(max_dist == NEAREST || distance < max_dist) {
+                searchList.push_back(object);
             }
         }
     }

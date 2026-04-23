@@ -72,7 +72,7 @@ LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego
             continue;
         }
 
-        const std::shared_ptr<Object> object = player->getObject();
+        Object* object = player->tryObject();
         if (!object || object->isTerminated())
         {
             continue;
@@ -103,7 +103,7 @@ LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::s
             continue;
         }
 
-        const std::shared_ptr<Object> object = player->getObject();
+        const Object* object = player->tryObject();
         if (!object || object->isTerminated() || !object->isAlive())
         {
             continue;
@@ -255,6 +255,34 @@ ObjectHandler* GameSessionContext::tryObjectHandler()
         return nullptr;
     }
     return &module->getObjectHandler();
+}
+
+Object* GameSessionContext::tryObject(ObjectRef objectRef)
+{
+    ObjectHandler* handler = tryObjectHandler();
+    if (handler == nullptr || !handler->exists(objectRef))
+    {
+        return nullptr;
+    }
+
+    return handler->get(objectRef);
+}
+
+const Object* GameSessionContext::tryObject(ObjectRef objectRef) const
+{
+    const GameModule* module = tryActiveModule();
+    if (module == nullptr)
+    {
+        return nullptr;
+    }
+
+    const ObjectHandler& handler = const_cast<GameModule*>(module)->getObjectHandler();
+    if (!handler.exists(objectRef))
+    {
+        return nullptr;
+    }
+
+    return handler.get(objectRef);
 }
 
 ObjectHandler& GameSessionContext::objectHandler()

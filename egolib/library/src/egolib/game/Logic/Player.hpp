@@ -24,6 +24,7 @@
 
 #include "idlib/idlib.hpp"
 #include "egolib/IDSZ.hpp"
+#include "egolib/typedef.h"
 #include "egolib/InputControl/InputDevice.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 
@@ -41,11 +42,20 @@ public:
 
     /**
     * @brief
-    *   Get the in-game Object character representing this Player 
+    *   Get the object reference of the in-game character representing this Player.
     * @return
-    *   the Object of this player or nullptr if it no longer exists
+    *   the object reference of this player or ObjectRef::Invalid if it is not bound
     **/
-    std::shared_ptr<Object> getObject() const;
+    ObjectRef getObjectRef() const;
+
+    /**
+    * @brief
+    *   Resolve the in-game Object character representing this Player.
+    * @return
+    *   the live Object of this player or nullptr if it no longer exists
+    **/
+    Object* tryObject();
+    const Object* tryObject() const;
 
     /**
     * @return
@@ -121,7 +131,8 @@ public:
     uint32_t getChargeBarFrame() const;
 
 private:
-    std::weak_ptr<Object> _object; ///< Which character?
+    ObjectRef _objectRef;          ///< Which character?
+    std::weak_ptr<Object> _bootstrapObject; ///< Pre-module compatibility fallback for tests/startup helpers.
     bool _unspentLevelUp;          ///< Has gained new experience level?
 
     //Charge bar

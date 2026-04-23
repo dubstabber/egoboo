@@ -152,12 +152,14 @@ bool export_all_players( bool require_local )
     // Check each player
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList()) {
         ObjectRef item;
+        if (!player) {
+            continue;
+        }
 
         // Is it alive?
-        std::shared_ptr<Object> pchr = player->getObject();
+        const ObjectRef character = player->getObjectRef();
+        std::shared_ptr<Object> pchr = module.getObjectHandler()[character];
         if(!pchr || pchr->isTerminated()) continue;
-
-        ObjectRef character = pchr->getObjRef();
 
         // don't export dead characters
         if ( !pchr->isAlive() ) continue;
@@ -336,8 +338,11 @@ size_t import_list_t::from_players(import_list_t& self)
     // generate the ImportList list from the player info
     for(size_t player_idx = 0; player_idx < module.getPlayerList().size(); ++player_idx) {
         const std::shared_ptr<Ego::Player>& player = module.getPlayerList()[player_idx];
+        if (!player) {
+            continue;
+        }
 
-		std::shared_ptr<Object> pchr = player->getObject();
+		std::shared_ptr<Object> pchr = module.getObjectHandler()[player->getObjectRef()];
         if(!pchr || pchr->isTerminated()) {
             continue;
         }

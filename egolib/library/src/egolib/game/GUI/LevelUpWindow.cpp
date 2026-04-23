@@ -14,6 +14,12 @@ IAudioSystem& audioSystem()
 {
     return EngineContext::get().audioSystem();
 }
+
+Object* tryObservedCharacter(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
 }
 
 namespace Ego {
@@ -107,9 +113,9 @@ private:
     float _hoverFadeEffect;
 };
 
-LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
+LevelUpWindow::LevelUpWindow(ObjectRef objectRef)
     : InternalWindow("Level Up!"),
-    _character(object),
+    _characterRef(objectRef),
 
     _currentPerk(Perks::NR_OF_PERKS),
     _descriptionLabel(std::make_shared<Label>()),
@@ -130,8 +136,14 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     //Place us in the center of the screen
     setCenterPosition(Point2f(uiManager().getScreenWidth() / 2, uiManager().getScreenHeight() / 2));
 
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        destroy();
+        return;
+    }
+
     // draw the character's main icon
-    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(_character->getProfile()->getIcon(_character->getSkin()));
+    std::shared_ptr<Image> characterIcon = std::make_shared<Image>(character->getProfile()->getIcon(character->getSkin()));
     characterIcon->setPosition(Point2f(borderSize, _titleBar->getHeight() + margin));
     characterIcon->setSize(Vector2f(32, 32));
     addComponent(characterIcon);
@@ -139,11 +151,11 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     std::stringstream buffer;
 
     //Name
-    buffer << object->getName() << " is now a ";
+    buffer << character->getName() << " is now a ";
 
     //Level
-    buffer << std::to_string(_character->getExperienceLevel() + 1);
-    switch (_character->getExperienceLevel() + 1) {
+    buffer << std::to_string(character->getExperienceLevel() + 1);
+    switch (character->getExperienceLevel() + 1) {
         case 1:
             buffer << "st";
             break;
@@ -163,11 +175,11 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     buffer << " level ";
 
     //Gender
-    if (_character->getGender() == Gender::Male)   buffer << "male ";
-    else if (_character->getGender() == Gender::Female) buffer << "female ";
+    if (character->getGender() == Gender::Male)   buffer << "male ";
+    else if (character->getGender() == Gender::Female) buffer << "female ";
 
     //Class
-    buffer << _character->getProfile()->getClassName() << '!';
+    buffer << character->getProfile()->getClassName() << '!';
 
     std::shared_ptr<Label> classLevelLabel = std::make_shared<Label>(buffer.str());
     classLevelLabel->setFont(uiManager().getFont(UIManager::FONT_GAME));
@@ -181,7 +193,7 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     addComponent(selectPerkLabel);
 
     //Figure out what perks this player can learn
-    std::vector<Perks::PerkID> perkPool = _character->getValidPerks();
+    std::vector<Perks::PerkID> perkPool = character->getValidPerks();
     for (size_t i = perkPool.size(); i < 5; ++i) {
         //Ensure at least 5 perks are selectable, add TOUGHNESS as default perk
         perkPool.push_back(Perks::TOUGHNESS);
@@ -196,10 +208,10 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
     setHoverPerk(Perks::NR_OF_PERKS);
 
     //Set random seed for deterministic level ups (no aborting or re-loading game for better results)
-    Random::setSeed(_character->getLevelUpSeed());
+    Random::setSeed(character->getLevelUpSeed());
 
     //Perk buttons (Jack of All Trades gives +2 perks)
-    const size_t NR_OF_PERKS = _character->hasPerk(Perks::JACK_OF_ALL_TRADES) ? 5 : 3;
+    const size_t NR_OF_PERKS = character->hasPerk(Perks::JACK_OF_ALL_TRADES) ? 5 : 3;
     const int PERK_BUTTON_SIZE = (getWidth() - 40 - 10 * NR_OF_PERKS) / NR_OF_PERKS;
     for (size_t i = 0; i < NR_OF_PERKS; ++i) {
         //Select a random perk
@@ -229,21 +241,35 @@ LevelUpWindow::LevelUpWindow(const std::shared_ptr<Object> &object)
 
 LevelUpWindow::~LevelUpWindow() {}
 
+void LevelUpWindow::draw(DrawingContext& drawingContext) {
+    if (tryObservedCharacter(_characterRef) == nullptr) {
+        destroy();
+        return;
+    }
+
+    InternalWindow::draw(drawingContext);
+}
+
 void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     GameModule& activeModule = GameSessionContext::get().activeModule();
+    Object* character = tryObservedCharacter(_characterRef);
+    if (character == nullptr) {
+        destroy();
+        return;
+    }
 
     //Set random seed for deterministic level ups (no aborting or re-loading game for better results)
-    Random::setSeed(_character->getLevelUpSeed());
+    Random::setSeed(character->getLevelUpSeed());
 
     //Calculate attribute improvements
     std::array<float, Attribute::NR_OF_PRIMARY_ATTRIBUTES> increase;
     for (uint8_t i = 0; i < Attribute::NR_OF_PRIMARY_ATTRIBUTES; ++i) {
         const Attribute::AttributeType type = static_cast<Attribute::AttributeType>(i);
-        increase[i] = Random::next(_character->getProfile()->getAttributeGain(type));
+        increase[i] = Random::next(character->getProfile()->getAttributeGain(type));
     }
 
     //Gain new Perk
-    _character->addPerk(selectedPerk->getPerk().getID());
+    character->addPerk(selectedPerk->getPerk().getID());
 
     //Gain attribute bonus from perks
     increase[selectedPerk->getPerk().getType()] += 1.0f;
@@ -277,11 +303,11 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
             break;
 
         case Perks::ACROBATIC:
-            _character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
+            character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
             break;
 
         case Perks::MASTER_ACROBAT:
-            _character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
+            character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
             break;
 
         case Perks::POWER:
@@ -316,15 +342,15 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
             break;
 
         case Perks::NIGHT_VISION:
-            _character->increaseBaseAttribute(Attribute::DARKVISION, 1.0f);
+            character->increaseBaseAttribute(Attribute::DARKVISION, 1.0f);
             break;
 
         case Perks::SENSE_KURSES:
-            _character->increaseBaseAttribute(Attribute::SENSE_KURSES, 1.0f);
+            character->increaseBaseAttribute(Attribute::SENSE_KURSES, 1.0f);
             break;
 
         case Perks::SENSE_INVISIBLE:
-            _character->increaseBaseAttribute(Attribute::SEE_INVISIBLE, 1.0f);
+            character->increaseBaseAttribute(Attribute::SEE_INVISIBLE, 1.0f);
             break;
 
         default:
@@ -333,17 +359,17 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     }
 
     //Increase character level by 1
-    _character->setExperienceLevelIndex(_character->getExperienceLevelIndex() + 1);
-    _character->addAIAlertBits(ALERTIF_LEVELUP);
-    activeModule.getPlayer(_character->getPlayerNumber())->setLevelUpIndicator(false);
+    character->setExperienceLevelIndex(character->getExperienceLevelIndex() + 1);
+    character->addAIAlertBits(ALERTIF_LEVELUP);
+    activeModule.getPlayer(character->getPlayerNumber())->setLevelUpIndicator(false);
 
     //Generate random seed for next level increase
-    _character->randomizeLevelUpSeed();
+    character->randomizeLevelUpSeed();
 
     //Might slightly increases character size
     if (increase[Attribute::MIGHT] != 0) {
-        _character->setTargetFat(_character->getTargetFat() + _character->getProfile()->getSizeGainPerMight() * 0.1f * increase[Attribute::MIGHT]);
-        _character->setResizeTimeRemaining(_character->getResizeTimeRemaining() + Object::SIZETIME);
+        character->setTargetFat(character->getTargetFat() + character->getProfile()->getSizeGainPerMight() * 0.1f * increase[Attribute::MIGHT]);
+        character->setResizeTimeRemaining(character->getResizeTimeRemaining() + Object::SIZETIME);
     }
 
     //Clear away all GUI components
@@ -418,10 +444,10 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         std::shared_ptr<Label> value = std::make_shared<Label>();
         if (type == Attribute::MANA_REGEN || type == Attribute::LIFE_REGEN) { //special case for regen values (2 decimals)
             std::stringstream valueString;
-            valueString << std::setprecision(2) << std::fixed << _character->getAttribute(type);
+            valueString << std::setprecision(2) << std::fixed << character->getAttribute(type);
             value->setText(valueString.str());
         } else {
-            value->setText(std::to_string(std::lround(_character->getAttribute(type))));
+            value->setText(std::to_string(std::lround(character->getAttribute(type))));
         }
         value->setFont(uiManager().getFont(UIManager::FONT_GAME));
         value->setPosition(Point2f(x + attributeWidthSpacing, y));
@@ -444,7 +470,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         }
 
         //Actually give attributes to character
-        _character->increaseBaseAttribute(type, increase[i]);
+        character->increaseBaseAttribute(type, increase[i]);
     }
 
     //Make sure the animation is drawn above other GUI components inside this window

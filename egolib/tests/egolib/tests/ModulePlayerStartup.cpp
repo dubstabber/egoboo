@@ -163,7 +163,8 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
 
     const auto& player = playerList.front();
     ASSERT_NE(player, nullptr);
-    EXPECT_EQ(player->getObject(), object);
+    EXPECT_EQ(player->getObjectRef(), object->getObjRef());
+    EXPECT_EQ(player->tryObject(), object.get());
     EXPECT_EQ(object->getPlayerNumber(), 0);
     EXPECT_TRUE(object->isPlayer());
     EXPECT_FALSE(object->isNameKnown());
@@ -190,8 +191,10 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIn
 
     EXPECT_EQ(firstObject->getPlayerNumber(), 0);
     EXPECT_EQ(secondObject->getPlayerNumber(), 1);
-    EXPECT_EQ(playerList[0]->getObject(), firstObject);
-    EXPECT_EQ(playerList[1]->getObject(), secondObject);
+    EXPECT_EQ(playerList[0]->getObjectRef(), firstObject->getObjRef());
+    EXPECT_EQ(playerList[1]->getObjectRef(), secondObject->getObjRef());
+    EXPECT_EQ(playerList[0]->tryObject(), firstObject.get());
+    EXPECT_EQ(playerList[1]->tryObject(), secondObject.get());
     EXPECT_EQ(session.localPlayerCount(), 2u);
     EXPECT_TRUE(session.hasLocalPlayers());
 }

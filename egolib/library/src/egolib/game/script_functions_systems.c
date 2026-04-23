@@ -427,7 +427,7 @@ void addMiniMapBlip(float x, float y, ObjectRef objectRef)
         return;
     }
 
-    minimap->addBlip(x, y, object);
+    minimap->addBlip(x, y, object->getIcon());
 }
 
 void addSelfMiniMapBlip(const ai_state_t& self, float x, float y)
@@ -438,13 +438,12 @@ void addSelfMiniMapBlip(const ai_state_t& self, float x, float y)
 void addSelfStatusMonitor(ObjectRef objectRef)
 {
     const std::shared_ptr<PlayingState> state = tryPlayingState();
-    const std::shared_ptr<Object> object = tryUiObject(objectRef);
-    if (!state || !object)
+    if (!state)
     {
         return;
     }
 
-    state->addStatusMonitor(object);
+    state->addStatusMonitor(objectRef);
 }
 
 void clearEndMessageText()

@@ -51,7 +51,7 @@ void GameModule::checkPassageMusic()
     // Look at each player
     for (const std::shared_ptr<Ego::Player> &player : _playerList)
     {
-        const std::shared_ptr<Object> &pchr = player->getObject();
+        const std::shared_ptr<Object> &pchr = getObjectHandler()[player != nullptr ? player->getObjectRef() : ObjectRef::Invalid];
         if (!pchr || pchr->isTerminated()) continue;
 
         if (!pchr->isAlive()) continue;

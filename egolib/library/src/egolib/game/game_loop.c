@@ -86,7 +86,7 @@ void MainLoop::updateLocalStats()
 
     for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
     {
-        std::shared_ptr<Object> pchr = player->getObject();
+        Object* pchr = player != nullptr ? player->tryObject() : nullptr;
         if(!pchr || pchr->isTerminated()) {
             continue;
         }
@@ -121,7 +121,7 @@ void MainLoop::readPlayerInput()
     for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
 
         //Only valid players
-        const std::shared_ptr<Object> &pchr = player->getObject();
+        Object* pchr = player != nullptr ? player->tryObject() : nullptr;
         if(!pchr || pchr->isTerminated()) {
             continue;
         }
@@ -204,7 +204,7 @@ void MainLoop::check_stats()
         //Apply the cheat if valid
         if ( docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size() )
         {
-            const std::shared_ptr<Object> &object = module.getPlayer(docheat)->getObject();
+            const std::shared_ptr<Object> object = module.getObjectHandler()[module.getPlayer(docheat)->getObjectRef()];
             if(object)
             {
                 //Give 10% of XP needed for next level
@@ -228,7 +228,7 @@ void MainLoop::check_stats()
 
         //Apply the cheat if valid
         if(docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size()) {
-            const std::shared_ptr<Object> &object = module.getPlayer(docheat)->getObject();
+            const std::shared_ptr<Object> object = module.getObjectHandler()[module.getPlayer(docheat)->getObjectRef()];
             if (object)
             {
                 //Heal 1 life
@@ -286,8 +286,8 @@ void show_armor( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character
 
-    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
-    if(!pchr) {
+    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    if(!pchr || pchr->isTerminated()) {
         return;
     }
 
@@ -334,8 +334,8 @@ void show_full_status( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character including magic
 
-    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
-    if(!pchr) {
+    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    if(!pchr || pchr->isTerminated()) {
         return;
     }
 
@@ -366,8 +366,8 @@ void show_magic_status( int statindex )
     /// @author ZF
     /// @details Displays special enchantment effects for the character
 
-    const std::shared_ptr<Object> &pchr = activePlayingState()->getStatusCharacter(statindex);
-    if(!pchr) {
+    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    if(!pchr || pchr->isTerminated()) {
         return;
     }
 

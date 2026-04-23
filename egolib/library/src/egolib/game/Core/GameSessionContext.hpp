@@ -10,6 +10,7 @@
 #include <vector>
 
 class ObjectHandler;
+class Object;
 class GameModule;
 class ModuleProfile;
 class ego_mesh_t;
@@ -77,6 +78,8 @@ public:
     bool finishModule();
 
     ObjectHandler* tryObjectHandler();
+    Object* tryObject(ObjectRef objectRef);
+    const Object* tryObject(ObjectRef objectRef) const;
     ObjectHandler& objectHandler();
     std::shared_ptr<ego_mesh_t> mesh();
     std::shared_ptr<const Ego::Texture> tileTexture(size_t index);

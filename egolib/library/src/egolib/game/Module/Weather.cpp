@@ -33,7 +33,7 @@ void WeatherState::update()
         // Did we find one?
         if (player)
         {
-            const std::shared_ptr<Object> pchr = player->getObject();
+            Object* pchr = player->tryObject();
             if (pchr)
             {
                 // Yes, so spawn nearby that character

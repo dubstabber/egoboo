@@ -1078,7 +1078,7 @@ TEST_F(ScriptSystemsFunctionsFixture, AddStatPublishesStatusMonitorThroughPlayin
 
     ScopedPlayingStateHarness playingStateHarness;
     ASSERT_NE(playingStateHarness.playingState(), nullptr);
-    ASSERT_EQ(playingStateHarness.playingState()->getStatusCharacter(0), nullptr);
+    ASSERT_EQ(playingStateHarness.playingState()->getStatusCharacterRef(0), ObjectRef::Invalid);
 
     auto& config = EngineContext::get().config();
     const bool originalShowStatusBars = config.hud_displayStatusBars.getValue();
@@ -1091,8 +1091,36 @@ TEST_F(ScriptSystemsFunctionsFixture, AddStatPublishesStatusMonitorThroughPlayin
 
     EXPECT_TRUE(scr_AddStat(state, self));
     EXPECT_TRUE(actor->getShowStatus());
-    ASSERT_NE(playingStateHarness.playingState()->getStatusCharacter(0), nullptr);
-    EXPECT_EQ(playingStateHarness.playingState()->getStatusCharacter(0), actor);
+    ASSERT_NE(playingStateHarness.playingState()->getStatusCharacterRef(0), ObjectRef::Invalid);
+    EXPECT_EQ(playingStateHarness.playingState()->getStatusCharacterRef(0), actor->getObjRef());
+
+    config.hud_displayStatusBars.setValue(originalShowStatusBars);
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, DisplayCharacterWindowIgnoresTerminatedStatusCharacter)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5620);
+
+    ASSERT_NE(actor, nullptr);
+
+    ScopedPlayingStateHarness playingStateHarness;
+    ASSERT_NE(playingStateHarness.playingState(), nullptr);
+
+    auto& config = EngineContext::get().config();
+    const bool originalShowStatusBars = config.hud_displayStatusBars.getValue();
+    config.hud_displayStatusBars.setValue(true);
+
+    actor->setShowStatus(false);
+    playingStateHarness.playingState()->addStatusMonitor(actor->getObjRef());
+    ASSERT_EQ(playingStateHarness.playingState()->getStatusCharacterRef(0), actor->getObjRef());
+
+    const size_t componentCountBefore = playingStateHarness.playingState()->getComponentCount();
+    actor->requestTerminate();
+
+    playingStateHarness.playingState()->displayCharacterWindow(0);
+
+    EXPECT_EQ(playingStateHarness.playingState()->getComponentCount(), componentCountBefore);
 
     config.hud_displayStatusBars.setValue(originalShowStatusBars);
 }

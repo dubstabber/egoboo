@@ -126,31 +126,37 @@ float draw_debug(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         if (activeModule().getPlayerList().size() > 0)
         {
-            std::shared_ptr<Object> pchr = activeModule().getPlayer(0)->getObject();
-            os << "~~PLA0DEF"
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_SLASH)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_CRUSH)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_POKE)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_HOLY)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_EVIL)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_FIRE)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ICE)
-               << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ZAP);
-            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
-            os.str(std::string());
-            os << std::setw(5) << std::setprecision(1) << (pchr->getPosX() / Info<float>::Grid::Size())
-               << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
-            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            Object* pchr = activeModule().getPlayer(0)->tryObject();
+            if (pchr != nullptr)
+            {
+                os << "~~PLA0DEF"
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_SLASH)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_CRUSH)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_POKE)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_HOLY)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_EVIL)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_FIRE)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ICE)
+                   << " " << std::setw(4) << std::setprecision(2) << pchr->getRawDamageResistance(DAMAGE_ZAP);
+                y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+                os.str(std::string());
+                os << std::setw(5) << std::setprecision(1) << (pchr->getPosX() / Info<float>::Grid::Size())
+                   << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
+                y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            }
         }
 
         if (activeModule().getPlayerList().size() > 1)
         {
-            std::shared_ptr<Object> pchr = activeModule().getPlayer(1)->getObject();
-            std::ostringstream os;
-            os << "~~PLA1"
-               << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size())
-               << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
-            y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            Object* pchr = activeModule().getPlayer(1)->tryObject();
+            if (pchr != nullptr)
+            {
+                std::ostringstream os;
+                os << "~~PLA1"
+                   << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size())
+                   << " " << std::setw(5) << std::setprecision(1) << (pchr->getPosY() / Info<float>::Grid::Size());
+                y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
+            }
         }
     }
 

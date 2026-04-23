@@ -31,8 +31,17 @@
 namespace Ego {
 namespace GUI {
 
-CharacterStatus::CharacterStatus(const std::shared_ptr<Object> &object) :
-    _object(object),
+namespace
+{
+Object* tryObservedObject(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
+}
+
+CharacterStatus::CharacterStatus(ObjectRef objectRef) :
+    _objectRef(objectRef),
     _chargeBar(std::make_shared<GUI::ProgressBar>())
 {
     //ctor
@@ -298,13 +307,9 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
 	return y + size.y();
 }
 
-float CharacterStatus::draw_character_xp_bar(const ObjectRef character, float x, float y)
+float CharacterStatus::draw_character_xp_bar(const Object& character, float x, float y)
 {
-	Object * pchr;
-
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-	if (!activeModule || !activeModule->getObjectHandler().exists(character)) return y;
-	pchr = activeModule->getObjectHandler().get(character);
+    const Object* pchr = &character;
 
 	//Draw the small XP progress bar
 	if (pchr->getExperienceLevelIndex() < MAXLEVEL - 1)
@@ -336,7 +341,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
     }
 
     //If object we are monitoring no longer exist, then destroy this GUI component
-    const std::shared_ptr<Object> pchr = _object.lock();
+    Object* pchr = tryObservedObject(_objectRef);
     if (!pchr) {
         destroy();
         return;
@@ -370,7 +375,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
     yOffset += 32;
 
     //Draw the small XP progress bar
-    yOffset = draw_character_xp_bar(pchr->getObjRef(), getX() + 16, yOffset);
+    yOffset = draw_character_xp_bar(*pchr, getX() + 16, yOffset);
 
     // Draw the life bar
     if (pchr->isAlive()) {

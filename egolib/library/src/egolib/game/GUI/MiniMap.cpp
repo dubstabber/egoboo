@@ -91,12 +91,12 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {
         for (const std::shared_ptr<Player> &player : activeModule->getPlayerList()) {
-            const std::shared_ptr<Object> &object = player->getObject();
+            const Object* object = player != nullptr ? player->tryObject() : nullptr;
             if (!object || object->isTerminated() || !object->isAlive()) {
                 continue;
             }
 
-            addBlip(object->getPosX(), object->getPosY(), object);
+            addBlip(object->getPosX(), object->getPosY(), object->getIcon());
         }
     } else {
         _markerBlinkTimer = ::Time::now<::Time::Unit::Ticks>() + MINIMAP_BLINK_RATE;
@@ -137,13 +137,13 @@ void MiniMap::addBlip(const float x, const float y, const HUDColors color) {
     _blips.push_back(Blip(x, y, color));
 }
 
-void MiniMap::addBlip(const float x, const float y, const std::shared_ptr<Object> &object) {
+void MiniMap::addBlip(const float x, const float y, const std::shared_ptr<const Texture>& icon) {
     GameModule* activeModule = GameSessionContext::get().tryActiveModule();
     if (!activeModule || !activeModule->isInside(x, y)) {
         return;
     }
 
-    _blips.push_back(Blip(x, y, object->getIcon()));
+    _blips.push_back(Blip(x, y, icon));
 }
 
 bool MiniMap::notifyMousePointerMoved(const Events::MousePointerMovedEvent& e) {

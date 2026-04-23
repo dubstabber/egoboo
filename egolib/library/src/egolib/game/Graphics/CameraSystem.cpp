@@ -288,6 +288,10 @@ void CameraSystem::autoSetTargets()
    
     // put all the valid players into camera 0
     for(const std::shared_ptr<Ego::Player> &player : GameSessionContext::get().playerList()) {
+        Object* object = player != nullptr ? player->tryObject() : nullptr;
+        if (object == nullptr) {
+            continue;
+        }
 
         // wrap around if there are less cameras than players
         if(cameraIndex >= _cameraList.size()) {
@@ -295,7 +299,7 @@ void CameraSystem::autoSetTargets()
         }
 
         // store the target
-        _cameraList[cameraIndex]->addTrackTarget(player->getObject()->getObjRef());
+        _cameraList[cameraIndex]->addTrackTarget(object->getObjRef());
         cameraIndex++;
     }
 }

@@ -54,9 +54,9 @@ public:
 
     const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const;
 
-    void addStatusMonitor(const std::shared_ptr<Object> &object);
+    void addStatusMonitor(ObjectRef objectRef);
 
-    std::shared_ptr<Object> getStatusCharacter(size_t index);
+    ObjectRef getStatusCharacterRef(size_t index);
 
     void displayCharacterWindow(uint8_t statusNumber);
 

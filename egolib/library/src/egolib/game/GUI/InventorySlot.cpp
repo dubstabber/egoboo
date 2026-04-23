@@ -8,15 +8,25 @@
 namespace Ego {
 namespace GUI {
 
-InventorySlot::InventorySlot(const std::shared_ptr<Object>& character, const size_t slotNumber, const std::shared_ptr<Player>& player) :
-    _character(character),
+namespace
+{
+Object* tryObservedCharacter(ObjectRef objectRef)
+{
+    Object* object = GameSessionContext::get().tryObject(objectRef);
+    return object != nullptr && !object->isTerminated() ? object : nullptr;
+}
+}
+
+InventorySlot::InventorySlot(ObjectRef characterRef, const size_t slotNumber, const std::shared_ptr<Player>& player) :
+    _characterRef(characterRef),
     _slotNumber(slotNumber),
     _player(player) {
     //ctor
 }
 
 void InventorySlot::draw(DrawingContext& drawingContext) {
-    std::shared_ptr<Object> item = _character ? _character->getInventoryItem(_slotNumber) : nullptr;
+    Object* character = tryObservedCharacter(_characterRef);
+    std::shared_ptr<Object> item = character ? character->getInventoryItem(_slotNumber) : nullptr;
 
     // grab the icon reference
     std::shared_ptr<const Texture> icon_ref;
@@ -69,7 +79,7 @@ bool InventorySlot::notifyMouseButtonPressed(const Events::MouseButtonPressedEve
         return false;
     }
 
-    const std::shared_ptr<Object> &pchr = _player->getObject();
+    Object* pchr = _player->tryObject();
     if (pchr && pchr->isAlive() && pchr->canBeInterrupted() && 0 == pchr->getReloadTimer()) {
         //put it away and swap with any existing item
         Inventory::swap_item(pchr->getObjRef(), _slotNumber, e.get_button() == SDL_BUTTON_LEFT ? SLOT_LEFT : SLOT_RIGHT, false);

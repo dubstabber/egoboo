@@ -43,8 +43,10 @@ namespace GUI {
 
 class LevelUpWindow : public InternalWindow {
 public:
-    LevelUpWindow(const std::shared_ptr<Object> &object);
+    LevelUpWindow(ObjectRef objectRef);
     ~LevelUpWindow();
+
+    void draw(DrawingContext& drawingContext) override;
 
 protected:
     void drawContainer(DrawingContext& drawingContext) override;
@@ -55,7 +57,7 @@ private:
     Perks::PerkID getCurrentPerk() const;
 
 private:
-    std::shared_ptr<Object> _character;
+    ObjectRef _characterRef;
 
     //Perk selection state
     Perks::PerkID _currentPerk;

@@ -45,13 +45,34 @@ uint32_t worldUpdateCount()
 {
     return gameSession().worldUpdateCount();
 }
+
+Object* trySessionObject(ObjectRef objectRef)
+{
+    if (objectRef == ObjectRef::Invalid || !gameSession().hasActiveModule())
+    {
+        return nullptr;
+    }
+
+    return gameSession().tryObject(objectRef);
+}
+
+const Object* tryConstSessionObject(ObjectRef objectRef)
+{
+    if (objectRef == ObjectRef::Invalid || !gameSession().hasActiveModule())
+    {
+        return nullptr;
+    }
+
+    return static_cast<const GameSessionContext&>(gameSession()).tryObject(objectRef);
+}
 }
 
 namespace Ego
 {
 
 Player::Player(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device) :
-    _object(object),
+    _objectRef(object ? object->getObjRef() : ObjectRef::Invalid),
+    _bootstrapObject(object),
     _unspentLevelUp(false),
 
     _currentCharge(0),
@@ -69,9 +90,31 @@ Player::Player(const std::shared_ptr<Object>& object, const Ego::Input::InputDev
 {
 }
 
-std::shared_ptr<Object> Player::getObject() const
+ObjectRef Player::getObjectRef() const
 {
-    return _object.lock();
+    return _objectRef;
+}
+
+Object* Player::tryObject()
+{
+    if (gameSession().hasActiveModule())
+    {
+        return trySessionObject(_objectRef);
+    }
+
+    std::shared_ptr<Object> object = _bootstrapObject.lock();
+    return object ? object.get() : nullptr;
+}
+
+const Object* Player::tryObject() const
+{
+    if (gameSession().hasActiveModule())
+    {
+        return tryConstSessionObject(_objectRef);
+    }
+
+    std::shared_ptr<Object> object = _bootstrapObject.lock();
+    return object ? object.get() : nullptr;
 }
 
 const Ego::Input::InputDevice& Player::getInputDevice() const
@@ -87,7 +130,7 @@ Ego::QuestLog& Player::getQuestLog()
 void Player::updateLatches()
 {
     //Ensure this player is controlling a valid object
-    std::shared_ptr<Object> object = getObject();
+    Object* object = tryObject();
     if(!object || object->isTerminated()) {
         return;
     }
