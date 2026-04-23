@@ -493,14 +493,14 @@ void showMiniMapPlayerPosition(const PresentationEffectsContext& context)
     }
 }
 
-std::shared_ptr<Object> tryUiObject(ObjectRef objectRef)
+const Object* tryUiObject(ObjectRef objectRef)
 {
-    return tryObjectShared(objectRef);
+    return tryObject(objectRef);
 }
 
 void addMiniMapBlip(const PresentationEffectsContext& context, float x, float y, ObjectRef objectRef)
 {
-    const std::shared_ptr<Object> object = tryUiObject(objectRef);
+    const Object* object = tryUiObject(objectRef);
     if (!context.minimap || !object)
     {
         return;

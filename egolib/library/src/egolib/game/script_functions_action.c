@@ -59,13 +59,9 @@ void forEachLiveActionObjectRef(Fn&& fn)
         return;
     }
 
-    for (const std::shared_ptr<Object>& object : handler->iterator())
+    for (const ObjectRef& objectRef : handler->objectRefIterator())
     {
-        const ObjectRef objectRef = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
-        if (objectRef != ObjectRef::Invalid)
-        {
-            fn(objectRef);
-        }
+        fn(objectRef);
     }
 }
 
