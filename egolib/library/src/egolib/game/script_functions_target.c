@@ -8,9 +8,10 @@ namespace
 {
 struct SelfTargetSelectorContext
 {
-    Object* object = nullptr;
+    ObjectRef selfRef = ObjectRef::Invalid;
     const IScriptable* scriptable = nullptr;
     const ITargetInfo* info = nullptr;
+    const IInventoryHolder* inventory = nullptr;
     const IPhysical* physical = nullptr;
     const IAppearanceProfile* appearance = nullptr;
 };
@@ -36,16 +37,12 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
 SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
 {
     SelfTargetSelectorContext context;
-    context.object = tryObject(self.getSelf());
-    if (context.object == nullptr)
-    {
-        return context;
-    }
-
-    context.scriptable = static_cast<IScriptable*>(context.object);
-    context.info = static_cast<ITargetInfo*>(context.object);
-    context.physical = static_cast<IPhysical*>(context.object);
-    context.appearance = static_cast<IAppearanceProfile*>(context.object);
+    context.selfRef = self.getSelf();
+    context.scriptable = tryScriptable(context.selfRef);
+    context.info = tryTargetInfo(context.selfRef);
+    context.inventory = tryInventoryHolder(context.selfRef);
+    context.physical = tryPhysical(context.selfRef);
+    context.appearance = tryAppearanceProfile(context.selfRef);
     return context;
 }
 
@@ -155,12 +152,13 @@ ObjectRef findTargetForSelf(const SelfTargetSelectorContext& context,
                             const IDSZ2& idsz,
                             BIT_FIELD targetingBits)
 {
-    if (context.object == nullptr)
+    Object* selfObject = tryObject(context.selfRef);
+    if (selfObject == nullptr)
     {
         return ObjectRef::Invalid;
     }
 
-    return chr_find_target(context.object, maxDistance, idsz, targetingBits);
+    return chr_find_target(selfObject, maxDistance, idsz, targetingBits);
 }
 
 ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
@@ -169,12 +167,13 @@ ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
                             bool findRanged,
                             bool useLineOfSight)
 {
-    if (context.object == nullptr)
+    Object* selfObject = tryObject(context.selfRef);
+    if (selfObject == nullptr)
     {
         return ObjectRef::Invalid;
     }
 
-    return FindWeapon(context.object, maxDistance, weaponIdsz, findRanged, useLineOfSight);
+    return FindWeapon(selfObject, maxDistance, weaponIdsz, findRanged, useLineOfSight);
 }
 
 }
@@ -721,12 +720,12 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (selfContext.object == nullptr)
+    if (selfContext.inventory == nullptr)
     {
         return false;
     }
 
-    return trySetTargetFromHeldObject(self, *selfContext.object, SLOT_LEFT);
+    return trySetTargetFromHeldObject(self, *selfContext.inventory, SLOT_LEFT);
 }
 
 

@@ -1012,6 +1012,12 @@ Finished the split script return-flow cleanup inside `script_functions_systems.c
 
 Made the `AddIDSZ` systems fixture clear its generated `test.mod` menu override before and after the test so stale ignored VFS state cannot leak across focused runs. Build, the full focused `ScriptSystemsFunctionsFixture` slice, residue search, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 198 — Target selector self-context residue closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_target.c` by replacing `SelfTargetSelectorContext`'s retained concrete `Object*` with self identity plus role pointers for script, target-info, inventory, physical, and appearance access. Resolved the concrete self only at the legacy `chr_find_target(...)` and `FindWeapon(...)` call boundaries, and moved `scr_SetTargetToRider()` onto the inventory role without widening public interfaces or changing quiet-failure behavior.
+
+Kept the existing target-search and self-selector regressions as the behavior lock, then used build, the focused `ScriptTargetFunctionsFixture.*TargetSearch*:*SelfSelector*` slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
