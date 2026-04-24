@@ -1261,6 +1261,13 @@ TEST_F(ScriptSystemsFunctionsFixture, EndTextHelpersPreserveClearAndAppendBehavi
 
     EXPECT_TRUE(scr_ClearEndMessage(state, self));
     EXPECT_TRUE(g_endText.getText().empty());
+
+    g_endText.setText("Prefix:Done.");
+    actor->requestTerminate();
+    state.argument = messageId;
+    EXPECT_FALSE(scr_AddEndMessage(state, self));
+    EXPECT_EQ(g_endText.getText(), "Prefix:Done.");
+    g_endText.setText("");
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, AddStatPublishesStatusMonitorThroughPlayingStateAdapter)

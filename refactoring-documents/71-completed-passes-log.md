@@ -1030,6 +1030,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by replacing `ModuleEffec
 
 Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage that pins `scr_ChangeTile()` as a quiet false/no-mutation path when self cannot be resolved. Kept build, the focused `ChangeTile` plus adjacent module-environment systems slices, and the `test.mod` validator as the acceptance bar.
 
+### Pass 201 — Systems presentation ObjectRef boundary closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by removing `PresentationEffectsContext`'s retained concrete self object. Presentation helpers now carry only self identity plus the installed playing-state/minimap adapters, and `scr_AddEndMessage()` resolves the concrete object only at the final legacy `AddEndMessage(...)` boundary without widening public role or UI interfaces.
+
+Extended `ScriptSystemsFunctions.cpp` with focused terminated-self coverage that pins end-message publication as a quiet false/no-mutation path when self is no longer live. Kept build, the focused end-text/presentation systems slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

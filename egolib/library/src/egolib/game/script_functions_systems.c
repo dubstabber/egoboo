@@ -100,7 +100,6 @@ struct ModuleEffectsContext
 
 struct PresentationEffectsContext
 {
-    Object* selfObject = nullptr;
     ObjectRef selfRef = ObjectRef::Invalid;
     std::shared_ptr<PlayingState> playingState;
     std::shared_ptr<Ego::GUI::MiniMap> minimap;
@@ -237,10 +236,9 @@ ModuleEffectsContext makeModuleEffectsContext(const ai_state_t& self)
     return context;
 }
 
-PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self, Object* selfObject = nullptr)
+PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self)
 {
     PresentationEffectsContext context;
-    context.selfObject = selfObject;
     context.selfRef = self.getSelf();
     context.playingState = EngineContext::get().tryActivePlayingState();
     context.minimap = context.playingState ? context.playingState->getMiniMap() : nullptr;
@@ -251,7 +249,7 @@ SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(co
 {
     SelfPresentationCompatibilityContext context;
     context.selfRole = makeSelfRoleContext(self);
-    context.presentation = makePresentationEffectsContext(self, tryObject(self.getSelf()));
+    context.presentation = makePresentationEffectsContext(self);
     return context;
 }
 
@@ -638,8 +636,9 @@ bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
 
 bool addSelfEndMessageText(const PresentationEffectsContext& context, int messageIndex, script_state_t& state)
 {
-    return context.selfObject != nullptr &&
-           addEndMessageText(*context.selfObject, messageIndex, state);
+    Object* selfObject = tryObject(context.selfRef);
+    return selfObject != nullptr &&
+           addEndMessageText(*selfObject, messageIndex, state);
 }
 
 void logDeprecatedScriptFunctionUse(const std::string& functionName,
