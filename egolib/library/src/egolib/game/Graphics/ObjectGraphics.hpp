@@ -119,7 +119,7 @@ public:
 
 	BIT_FIELD getFrameFX() const;
 
-    gfx_rv updateVertices(int vmin, int vmax, bool force);
+    bool updateVertices(int vmin, int vmax, bool force);
         
     void getTint(GLXvector4f tint, const bool reflection, const int type) const;
 
@@ -279,6 +279,13 @@ public:
     oct_bb_t getBoundingBox() const;
 
 private:
+    struct VertexUpdateNeed
+    {
+        bool updateNeeded = true;
+        bool verticesMatch = false;
+        bool framesMatch = false;
+    };
+
     void resetProfileApplicationState();
 
     void applyProfileRenderDefaults(const ObjectProfile& profile);
@@ -301,17 +308,13 @@ private:
     **/
     const MD2_Frame& getLastFrame() const;
 
-	gfx_rv updateVertexCache(int vmax, int vmin, bool force, bool vertices_match, bool frames_match);
+	bool updateVertexCache(int vmin, int vmax, bool force, bool vertices_match, bool frames_match);
 
     /**
     * @brief 
     *   determine whether some specific vertices of an instance need to be updated
-    * @return
-    *   gfx_error   means that the function was passed invalid values
-    *   gfx_fail    means that the instance does not need to be updated
-    *   gfx_success means that the instance should be updated
     **/
-	gfx_rv needs_update(int vmin, int vmax, bool *verts_match, bool *frames_match);
+	VertexUpdateNeed needsUpdate(int vmin, int vmax) const;
 
     /**
     * @brief

@@ -694,7 +694,7 @@ bool chr_calc_grip_cv( Object * pmount, int grip_offset, oct_bb_t * grip_cv_ptr,
 		int vert_stt = static_cast<int>(pmount->getVertexCount()) - static_cast<int>(grip_offset);
         if ( vert_stt < 0 ) return false;
 
-		if (gfx_error == pmount->updateVertices(vert_stt, vert_stt + grip_offset, false))
+		if (!pmount->updateVertices(vert_stt, vert_stt + grip_offset, false))
         {
             grip_count = 0;
             for ( cnt = 0; cnt < GRIP_VERTS; cnt++ )

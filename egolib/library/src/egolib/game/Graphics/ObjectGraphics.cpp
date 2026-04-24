@@ -338,22 +338,14 @@ int ObjectGraphics::getAmbientColour() const
     return _ambientColour;
 }
 
-gfx_rv ObjectGraphics::needs_update(int vmin, int vmax, bool *verts_match, bool *frames_match)
+ObjectGraphics::VertexUpdateNeed ObjectGraphics::needsUpdate(int vmin, int vmax) const
 {
-	bool local_verts_match, local_frames_match;
-
-    // ensure that the pointers point to something
-    if ( NULL == verts_match ) verts_match  = &local_verts_match;
-    if ( NULL == frames_match ) frames_match = &local_frames_match;
-
-    // initialize the boolean pointers
-    *verts_match  = false;
-    *frames_match = false;
+    VertexUpdateNeed result;
 
     // check to see if the _vertexCache has been marked as invalid.
     // in this case, everything needs to be updated
 	if (!isVertexCacheValid()) {
-		return gfx_success;
+		return result;
 	}
 
     // get the last valid vertex from the chr_instance
@@ -362,25 +354,26 @@ gfx_rv ObjectGraphics::needs_update(int vmin, int vmax, bool *verts_match, bool 
     // check to make sure the lower bound of the saved data is valid.
     // it is initialized to an invalid value (_vertexCache.vmin = _vertexCache.vmax = -1)
 	if (_vertexCache.vmin < 0 || _vertexCache.vmax < 0) {
-		return gfx_success;
+		return result;
 	}
     // check to make sure the upper bound of the saved data is valid.
 	if (_vertexCache.vmin > maxvert || _vertexCache.vmax > maxvert) {
-		return gfx_success;
+		return result;
 	}
     // make sure that the min and max vertices are in the correct order
 	if (vmax < vmin) {
 		std::swap(vmax, vmin);
 	}
     // test to see if we have already calculated this data
-    *verts_match = (vmin >= _vertexCache.vmin) && (vmax <= _vertexCache.vmax);
+    result.verticesMatch = (vmin >= _vertexCache.vmin) && (vmax <= _vertexCache.vmax);
 
 	bool flips_match = (std::abs(_vertexCache.flip - _animationProgress) < FLIP_TOLERANCE);
 
-    *frames_match = (_targetFrameIndex == _sourceFrameIndex && _vertexCache.frame_nxt == _targetFrameIndex && _vertexCache.frame_lst == _sourceFrameIndex ) ||
-                    (flips_match && _vertexCache.frame_nxt == _targetFrameIndex && _vertexCache.frame_lst == _sourceFrameIndex);
+    result.framesMatch = (_targetFrameIndex == _sourceFrameIndex && _vertexCache.frame_nxt == _targetFrameIndex && _vertexCache.frame_lst == _sourceFrameIndex ) ||
+                         (flips_match && _vertexCache.frame_nxt == _targetFrameIndex && _vertexCache.frame_lst == _sourceFrameIndex);
+    result.updateNeeded = !result.verticesMatch || !result.framesMatch;
 
-    return (!(*verts_match) || !( *frames_match )) ? gfx_success : gfx_fail;
+    return result;
 }
 
 void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_ary, const std::vector<MD2_Vertex> &nxt_ary, int vmin, int vmax, float flip )
@@ -455,9 +448,10 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
     }
 }
 
-gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
+bool ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
 {
-    bool vertices_match, frames_match;
+    bool vertices_match = false;
+    bool frames_match = false;
     float  loc_flip;
 
     int vdirty1_min = -1, vdirty1_max = -1;
@@ -470,7 +464,7 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     if (_vertexList.size() != pmd2->getVertexCount())
     {
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance vertex data does not match its md2", Log::EndOfEntry);
-        return gfx_error;
+        return false;
     }
 
     // get the vertex list size from the chr_instance
@@ -505,9 +499,12 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     else
     {
         // do we need to update?
-        gfx_rv retval = needs_update(vmin, vmax, &vertices_match, &frames_match );
-        if ( gfx_error == retval ) return gfx_error;            // gfx_error == retval means some pointer or reference is messed up
-        if ( gfx_fail  == retval ) return gfx_success;          // gfx_fail  == retval means we do not need to update this round
+        const VertexUpdateNeed updateNeed = needsUpdate(vmin, vmax);
+        vertices_match = updateNeed.verticesMatch;
+        frames_match = updateNeed.framesMatch;
+        if (!updateNeed.updateNeeded) {
+            return true;
+        }
 
         if ( !frames_match )
         {
@@ -538,7 +535,7 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     {
 		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance frame is outside "
                                          "the range of its MD2", Log::EndOfEntry);
-        return gfx_error;
+        return false;
     }
 
     // grab the frame data from the correct model
@@ -564,10 +561,11 @@ gfx_rv ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     }
 
     // update the saved parameters
-    return updateVertexCache(vmax, vmin, force, vertices_match, frames_match);
+    updateVertexCache(vmin, vmax, force, vertices_match, frames_match);
+    return true;
 }
 
-gfx_rv ObjectGraphics::updateVertexCache(int vmax, int vmin, bool force, bool vertices_match, bool frames_match)
+bool ObjectGraphics::updateVertexCache(int vmin, int vmax, bool force, bool vertices_match, bool frames_match)
 {
     // this is getting a bit ugly...
     // we need to do this calculation as little as possible, so it is important that the
@@ -667,7 +665,7 @@ gfx_rv ObjectGraphics::updateVertexCache(int vmax, int vmin, bool force, bool ve
         _vertexCache.vert_wld  = currentUpdateFrame;
     }
 
-    return ( verts_updated || frames_updated ) ? gfx_success : gfx_fail;
+    return verts_updated || frames_updated;
 }
 
 bool ObjectGraphics::updateGripVertices(const uint16_t vrt_lst[], const size_t vrt_count)
@@ -695,7 +693,7 @@ bool ObjectGraphics::updateGripVertices(const uint16_t vrt_lst[], const size_t v
     }
 
     // force the vertices to update
-    return updateVertices(vmin, vmax, true) == gfx_success;
+    return updateVertices(vmin, vmax, true);
 }
 
 bool ObjectGraphics::playAction(const ModelAction action, const bool action_ready)

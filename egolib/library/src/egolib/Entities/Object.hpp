@@ -413,7 +413,7 @@ public:
 
     size_t getVertexCount() const override { return inst.getVertexCount(); }
 
-    gfx_rv updateVertices(int vmin, int vmax, bool force) { return inst.updateVertices(vmin, vmax, force); }
+    bool updateVertices(int vmin, int vmax, bool force) { return inst.updateVertices(vmin, vmax, force); }
 
     bool updateGripVertices(const uint16_t vrt_lst[], size_t vrt_count) { return inst.updateGripVertices(vrt_lst, vrt_count); }
 

@@ -2035,6 +2035,60 @@ TEST_F(ObjectAccessorFixture, MatrixUpdateReportsAppliedStateForStaleAndCurrentC
     EXPECT_FLOAT_EQ(mat_getTranslate(object->getMatrix())[kZ], object->getPosZ());
 }
 
+TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateVerticesReportsSuccessForCacheHits)
+{
+    auto object = makeFollower(3133);
+    ASSERT_NE(object, nullptr);
+
+    auto& graphics = object->inst;
+    GameSessionContext::get().worldUpdateCount() = 101;
+    ASSERT_TRUE(graphics.updateVertices(-1, -1, true));
+
+    const VertexListCache forcedCache = graphics._vertexCache;
+    EXPECT_TRUE(graphics.isVertexCacheValid());
+    EXPECT_EQ(forcedCache.vert_wld, 101u);
+    EXPECT_EQ(forcedCache.frame_wld, 101u);
+
+    GameSessionContext::get().worldUpdateCount() = 109;
+    EXPECT_TRUE(graphics.updateVertices(-1, -1, false));
+    EXPECT_EQ(graphics._vertexCache.vmin, forcedCache.vmin);
+    EXPECT_EQ(graphics._vertexCache.vmax, forcedCache.vmax);
+    EXPECT_EQ(graphics._vertexCache.vert_wld, forcedCache.vert_wld);
+    EXPECT_EQ(graphics._vertexCache.frame_wld, forcedCache.frame_wld);
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateVerticesRejectsInvalidFrameAndVertexList)
+{
+    auto object = makeFollower(3134);
+    ASSERT_NE(object, nullptr);
+
+    auto& graphics = object->inst;
+    const uint16_t originalTargetFrame = graphics._targetFrameIndex;
+    graphics._targetFrameIndex = 0xFFFF;
+
+    EXPECT_FALSE(graphics.updateVertices(-1, -1, true));
+
+    graphics._targetFrameIndex = originalTargetFrame;
+    ASSERT_FALSE(graphics._vertexList.empty());
+    graphics._vertexList.pop_back();
+
+    EXPECT_FALSE(graphics.updateVertices(-1, -1, true));
+}
+
+TEST_F(ObjectAccessorFixture, ObjectGraphicsGripUpdateUsesBooleanVertexContract)
+{
+    auto object = makeFollower(3135);
+    ASSERT_NE(object, nullptr);
+    ASSERT_GT(object->getVertexCount(), 0u);
+
+    const uint16_t invalidGrip[] = {0xFFFF};
+    EXPECT_FALSE(object->updateGripVertices(nullptr, 1));
+    EXPECT_FALSE(object->updateGripVertices(invalidGrip, 1));
+
+    const uint16_t validGrip[] = {0};
+    EXPECT_TRUE(object->updateGripVertices(validGrip, 1));
+}
+
 TEST_F(ObjectAccessorFixture, MatrixQueryHelpersPreservePointerCompatibility)
 {
     Ego::Vector3f up(-1.0f, -1.0f, -1.0f);
