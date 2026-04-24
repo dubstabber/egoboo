@@ -15,6 +15,16 @@ struct SelfTargetSelectorContext
     const IAppearanceProfile* appearance = nullptr;
 };
 
+struct TargetCompatibilityContext
+{
+    ObjectRef ref = ObjectRef::Invalid;
+    const ITargetInfo* info = nullptr;
+    IInventoryHolder* inventory = nullptr;
+    IDamageable* damageable = nullptr;
+    IScriptable* scriptable = nullptr;
+    const IPhysical* physical = nullptr;
+};
+
 bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
 {
     FACING_T facing = FACING_T(vec_to_facing(targetPhysical.getPosX() - selfPhysical.getPosX(),
@@ -39,6 +49,23 @@ SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
     return context;
 }
 
+TargetCompatibilityContext makeTargetCompatibilityContext(ObjectRef objectRef)
+{
+    TargetCompatibilityContext context;
+    context.ref = objectRef;
+    context.info = tryTargetInfo(objectRef);
+    context.inventory = tryInventoryHolder(objectRef);
+    context.damageable = tryDamageable(objectRef);
+    context.scriptable = tryScriptable(objectRef);
+    context.physical = tryPhysical(objectRef);
+    return context;
+}
+
+TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
+{
+    return makeTargetCompatibilityContext(self.getTarget());
+}
+
 bool isLiveTargetRef(ObjectRef objectRef)
 {
     return tryTargetInfo(objectRef) != nullptr;
@@ -46,7 +73,7 @@ bool isLiveTargetRef(ObjectRef objectRef)
 
 const ITargetInfo* tryResolvedTargetInfo(const ai_state_t& self)
 {
-    return tryTargetInfo(self.getTarget());
+    return makeTargetCompatibilityContext(self).info;
 }
 
 bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
@@ -162,14 +189,14 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
-    if (damageableTarget == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.damageable == nullptr)
     {
         return false;
     }
 
     // Proceed only if the character's target has just died or is already dead
-    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !damageableTarget->isAlive() );
+    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !targetContext.damageable->isAlive() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -201,13 +228,13 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.inventory == nullptr)
     {
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *targetInventory, SLOT_LEFT);
+    returncode = trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_LEFT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -223,13 +250,13 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.inventory == nullptr)
     {
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *targetInventory, SLOT_RIGHT);
+    returncode = trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_RIGHT);
 
     SCRIPT_FUNCTION_END();
 }
@@ -332,9 +359,8 @@ uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInfo == nullptr || targetInventory == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.info == nullptr || targetContext.inventory == nullptr)
     {
         return false;
     }
@@ -345,13 +371,13 @@ uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
     const IDSZ2 itemId = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
     //Check hands
-    if (targetInfo->wieldsItemIDSZ(itemId)) {
+    if (targetContext.info->wieldsItemIDSZ(itemId)) {
         returncode = true;
     }
 
     //Check inventory
     if (!returncode) {
-        if (ObjectRef::Invalid != Inventory::findItem(*targetInventory, itemId, false)) {
+        if (ObjectRef::Invalid != Inventory::findItem(*targetContext.inventory, itemId, false)) {
             returncode = true;
         }
     }
@@ -433,16 +459,15 @@ uint8_t scr_IfTargetCanOpenStuff( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
     returncode = false;
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInfo == nullptr || targetInventory == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.info == nullptr || targetContext.inventory == nullptr)
     {
         return false;
     }
 
-    if ( targetInfo->isMount() )
+    if ( targetContext.info->isMount() )
     {
-        const ITargetInfo* rider = tryTargetInfo(targetInventory->getHeldObject(SLOT_LEFT));
+        const ITargetInfo* rider = tryTargetInfo(targetContext.inventory->getHeldObject(SLOT_LEFT));
 
         if (rider != nullptr)
         {
@@ -454,7 +479,7 @@ uint8_t scr_IfTargetCanOpenStuff( script_state_t& state, ai_state_t& self )
     if ( !returncode )
     {
         // if a rider can't openstuff, can the target openstuff?
-        returncode = targetInfo->canOpenStuff();
+        returncode = targetContext.info->canOpenStuff();
     }
 
     SCRIPT_FUNCTION_END();
@@ -510,16 +535,16 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
-    IDamageable* damageableTarget = tryDamageable(self.getTarget());
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (target == nullptr || damageableTarget == nullptr || selfContext.info == nullptr)
+    if (target == nullptr || targetContext.damageable == nullptr || selfContext.info == nullptr)
     {
         return false;
     }
 
     returncode = ( target->isAlive() &&
                    target->isHatedByTeam(selfContext.info->getTeamRef()) &&
-                   !damageableTarget->isInvincible() );
+                   !targetContext.damageable->isInvincible() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1096,13 +1121,13 @@ uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
-    if (targetInventory == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.inventory == nullptr)
     {
         return false;
     }
 
-	auto iitem = Inventory::findItem(*targetInventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
+	auto iitem = Inventory::findItem(*targetContext.inventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
 
     returncode = isLiveTargetRef(iitem);
 
@@ -1174,14 +1199,14 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IPhysical* physicalTarget = tryPhysical(self.getTarget());
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (physicalTarget == nullptr || selfContext.physical == nullptr)
+    if (targetContext.physical == nullptr || selfContext.physical == nullptr)
     {
         return false;
     }
 
-    returncode = isFacing(*selfContext.physical, *physicalTarget);
+    returncode = isFacing(*selfContext.physical, *targetContext.physical);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1214,15 +1239,15 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.info == nullptr)
     {
         return false;
     }
 
     returncode = false;
 
-    const ITargetInfo* holderInfo = tryTargetInfo(targetInfo->getHolderRef());
+    const ITargetInfo* holderInfo = tryTargetInfo(targetContext.info->getHolderRef());
     if ( holderInfo != nullptr )
     {
         returncode = holderInfo->isMount();
@@ -1242,13 +1267,13 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
-    if (scriptableTarget == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.scriptable == nullptr)
     {
         return false;
     }
 
-    returncode = scriptableTarget->addAIOrder(state.argument, 0);
+    returncode = targetContext.scriptable->addAIOrder(state.argument, 0);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1466,13 +1491,13 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
-    if (scriptableTarget == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.scriptable == nullptr)
     {
         return false;
     }
 
-    state.argument = scriptableTarget->getAIStateValue();
+    state.argument = targetContext.scriptable->getAIStateValue();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1486,13 +1511,13 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
-    if (scriptableTarget == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.scriptable == nullptr)
     {
         return false;
     }
 
-    state.argument = scriptableTarget->getAIContent();
+    state.argument = targetContext.scriptable->getAIContent();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1608,13 +1633,13 @@ uint8_t scr_IfTargetIsAWeapon( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.info == nullptr)
     {
         return false;
     }
 
-    returncode = targetInfo->isWeapon();
+    returncode = targetContext.info->isWeapon();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1650,13 +1675,13 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    IScriptable* scriptableTarget = tryScriptable(self.getTarget());
-    if (scriptableTarget == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.scriptable == nullptr)
     {
         return false;
     }
 
-    state.argument = scriptableTarget->getAILastDamageType();
+    state.argument = targetContext.scriptable->getAILastDamageType();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1672,8 +1697,8 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const ITargetInfo* targetInfo = tryTargetInfo(self.getTarget());
-    if (targetInfo == nullptr)
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
+    if (targetContext.info == nullptr)
     {
         return false;
     }
@@ -1681,8 +1706,8 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
     returncode = false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    if(targetInfo->isPlayer()) {
-        const std::shared_ptr<Ego::Player> player = tryPlayer(*targetInfo);
+    if(targetContext.info->isPlayer()) {
+        const std::shared_ptr<Ego::Player> player = tryPlayer(*targetContext.info);
         if (player == nullptr)
         {
             return false;
@@ -1770,14 +1795,14 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    const IPhysical* physicalTarget = tryPhysical(self.getTarget());
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (physicalTarget == nullptr || selfContext.physical == nullptr)
+    if (targetContext.physical == nullptr || selfContext.physical == nullptr)
     {
         return false;
     }
 
-    returncode = isFacing(*physicalTarget, *selfContext.physical);
+    returncode = isFacing(*targetContext.physical, *selfContext.physical);
 
     SCRIPT_FUNCTION_END();
 }

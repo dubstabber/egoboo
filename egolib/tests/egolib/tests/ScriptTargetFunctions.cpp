@@ -732,6 +732,45 @@ TEST_F(ScriptTargetFunctionsFixture, TargetDamageTypeQueryReadsThroughScriptable
     EXPECT_EQ(state.argument, static_cast<int>(DamageType::DAMAGE_FIRE));
 }
 
+TEST_F(ScriptTargetFunctionsFixture, TargetCompatibilityContextFailsQuietlyWhenTargetRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5323);
+
+    ASSERT_NE(actor, nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    EXPECT_FALSE(scr_IfTargetKilled(state, self));
+    EXPECT_FALSE(scr_SetTargetToTargetLeftHand(state, self));
+    EXPECT_FALSE(scr_SetTargetToTargetRightHand(state, self));
+    EXPECT_FALSE(scr_IfTargetCanOpenStuff(state, self));
+    EXPECT_FALSE(scr_IfTargetHasItemIDEquipped(state, self));
+    EXPECT_FALSE(scr_IfFacingTarget(state, self));
+    EXPECT_FALSE(scr_IfTargetIsMounted(state, self));
+    EXPECT_FALSE(scr_OrderTarget(state, self));
+    EXPECT_FALSE(scr_IfTargetIsFacingSelf(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+
+    state.argument = 123;
+    EXPECT_FALSE(scr_GetTargetState(state, self));
+    EXPECT_EQ(state.argument, 123);
+
+    state.argument = 456;
+    EXPECT_FALSE(scr_GetTargetContent(state, self));
+    EXPECT_EQ(state.argument, 456);
+
+    state.argument = 789;
+    EXPECT_FALSE(scr_GetTargetDamageType(state, self));
+    EXPECT_EQ(state.argument, 789);
+
+    state.argument = IDSZ2('T', 'Q', 'S', 'T').toUint32();
+    state.distance = 55;
+    EXPECT_FALSE(scr_IfTargetHasQuest(state, self));
+    EXPECT_EQ(state.distance, 55);
+}
+
 TEST_F(ScriptTargetFunctionsFixture, IfTargetKilledReturnsFalseForLiveTargetAndTrueForDeadTarget)
 {
     auto& module = beginActiveTestModule();

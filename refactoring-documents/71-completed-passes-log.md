@@ -940,6 +940,12 @@ Continued Tier 1.2 inside `script_functions_state.c` by replacing the remaining 
 
 Extended `ScriptStateFunctions.cpp` with focused coverage for profile-script indent comparison in `scr_Else()` and self-profile usage-known detection, then kept build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 186 — Target compatibility context closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_target.c` by replacing the remaining direct target-side interface probes with one file-local `TargetCompatibilityContext`. Routed the repeated inventory, damage, scriptable, physical, mount, weapon, and quest target pockets through that shared resolver without widening any public role seams or changing quiet-failure behavior.
+
+Extended `ScriptTargetFunctions.cpp` with focused invalid-target coverage for the shared target context across hand selectors, order/state/content queries, facing checks, and quest lookup, then kept build, the focused target-function slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
