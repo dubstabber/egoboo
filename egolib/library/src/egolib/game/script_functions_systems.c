@@ -94,7 +94,7 @@ struct SelfProfileContext
 
 struct ModuleEffectsContext
 {
-    Object* selfObject = nullptr;
+    ObjectRef selfRef = ObjectRef::Invalid;
     GameModule* module = nullptr;
 };
 
@@ -229,10 +229,10 @@ SelfProfileContext makeSelfProfileContext(const ai_state_t& self)
     return context;
 }
 
-ModuleEffectsContext makeModuleEffectsContext(const ai_state_t&, Object* selfObject = nullptr)
+ModuleEffectsContext makeModuleEffectsContext(const ai_state_t& self)
 {
     ModuleEffectsContext context;
-    context.selfObject = selfObject;
+    context.selfRef = self.getSelf();
     context.module = gameSession().tryActiveModule();
     return context;
 }
@@ -570,8 +570,9 @@ bool tryAddActiveModuleIdsz(const ModuleEffectsContext& context, const IDSZ2& id
 
 bool setActorTileType(const ModuleEffectsContext& context, uint16_t tileType)
 {
-    return context.selfObject != nullptr &&
-           compatibleModule(context).setTileType(context.selfObject->getTile(), tileType);
+    Object* selfObject = tryObject(context.selfRef);
+    return selfObject != nullptr &&
+           compatibleModule(context).setTileType(selfObject->getTile(), tileType);
 }
 
 bool showMiniMap(const PresentationEffectsContext& context)
@@ -1791,7 +1792,7 @@ uint8_t scr_ChangeTile( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, &resolvedSelfObject(self));
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     return setActorTileType(moduleContext, state.argument);
 }
 

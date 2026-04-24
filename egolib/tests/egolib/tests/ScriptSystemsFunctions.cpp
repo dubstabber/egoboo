@@ -695,6 +695,25 @@ TEST_F(ScriptSystemsFunctionsFixture, ChangeTileUsesModuleTileHelperForActorTile
     EXPECT_EQ(tileTypeForIndex(module, actor->getTile()), replacementType);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, ChangeTileFailsQuietlyForInvalidSelfWithoutMutatingTile)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5590, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+
+    const uint16_t originalType = tileTypeForIndex(module, actor->getTile());
+    const uint16_t replacementType = findAlternateTileType(module, Ego::Vector2f(actor->getPosX(), actor->getPosY()));
+    ASSERT_NE(originalType, replacementType);
+
+    script_state_t state;
+    state.argument = replacementType;
+    ai_state_t self = makeScriptSelf(nullptr);
+
+    EXPECT_FALSE(scr_ChangeTile(state, self));
+    EXPECT_EQ(tileTypeForIndex(module, actor->getTile()), originalType);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, GetTileXYReturnsMaskedTileTypeThroughModuleHelper)
 {
     auto& module = beginActiveTestModule();

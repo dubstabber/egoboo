@@ -1024,6 +1024,12 @@ Continued Tier 1.2 by moving the last `script_functions_target.c` concrete self 
 
 Preserved target-search no-match behavior, invalid-self quiet failure, and weapon/mount role-query behavior without widening public role interfaces or touching spawn/systems ownership-bearing flows. Build, the focused target-search/self-selector/weapon-query slice, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 200 — ChangeTile module-effects ObjectRef boundary closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by replacing `ModuleEffectsContext`'s retained concrete self object with self identity. `scr_ChangeTile()` now passes only the resolved self `ObjectRef` into the module-effects helper layer, and `setActorTileType(...)` resolves the concrete object at the final legacy tile-index boundary without widening any public role or module interfaces.
+
+Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage that pins `scr_ChangeTile()` as a quiet false/no-mutation path when self cannot be resolved. Kept build, the focused `ChangeTile` plus adjacent module-environment systems slices, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
