@@ -166,7 +166,7 @@ Uint8 FindTileInPassage( const int x0, const int y0, const int tiletype, const i
 
 /// @author ZF
 /// @details This function searches the nearby vincinity for a melee weapon the character can use
-ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz, bool find_ranged, bool use_line_of_sight );
+ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& weap_idsz, bool find_ranged, bool use_line_of_sight );
 
 /// @author ZZ
 /// @details This function sticks a message_offset in the display queue and sets its timer

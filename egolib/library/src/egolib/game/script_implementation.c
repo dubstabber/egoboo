@@ -500,7 +500,7 @@ uint8_t _display_message( const ObjectRef ichr, const PRO_REF iprofile, const in
 }
 
 //--------------------------------------------------------------------------------------------
-ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz, bool find_ranged, bool use_line_of_sight )
+ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& weap_idsz, bool find_ranged, bool use_line_of_sight )
 {
     /// @author ZF
     /// @details This function searches the nearby vincinity for a melee weapon the character can use
@@ -512,9 +512,10 @@ ObjectRef FindWeapon( Object * pchr, float max_distance, const IDSZ2& weap_idsz,
 
     line_of_sight_info_t los;
 
-    if (nullptr == pchr) {
-        throw idlib::argument_null_error(__FILE__, __LINE__, "pchr");
-    }
+    Object* pchr = objectHandler().exists(characterRef)
+        ? objectHandler().get(characterRef)
+        : nullptr;
+    if (pchr == nullptr || pchr->isTerminated()) return ObjectRef::Invalid;
 
     // set up the target
     best_target = ObjectRef::Invalid;

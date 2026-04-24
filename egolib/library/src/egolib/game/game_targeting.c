@@ -176,7 +176,7 @@ bool chr_check_target( Object * psrc, const Object& ptst, const IDSZ2 &idsz, con
 }
 
 //--------------------------------------------------------------------------------------------
-ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, const BIT_FIELD targeting_bits )
+ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& idsz, const BIT_FIELD targeting_bits )
 {
     /// @author ZF
     /// @details This is the new improved AI targeting algorithm. Also includes distance in the Z direction.
@@ -185,6 +185,9 @@ ObjectRef chr_find_target( Object * psrc, float max_dist, const IDSZ2& idsz, con
     GameModule& module = activeModule();
     line_of_sight_info_t los_info;
 
+    Object* psrc = module.getObjectHandler().exists(sourceRef)
+        ? module.getObjectHandler().get(sourceRef)
+        : nullptr;
     if (!psrc || psrc->isTerminated()) return ObjectRef::Invalid;
 
     // set the line-of-sight source

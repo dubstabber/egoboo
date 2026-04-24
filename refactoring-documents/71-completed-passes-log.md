@@ -1018,6 +1018,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by replacing `SelfTargetSe
 
 Kept the existing target-search and self-selector regressions as the behavior lock, then used build, the focused `ScriptTargetFunctionsFixture.*TargetSearch*:*SelfSelector*` slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 199 — Target-search ObjectRef boundary closure (2026-04-24)
+
+Continued Tier 1.2 by moving the last `script_functions_target.c` concrete self recovery out of the file-local target-search helpers. `findTargetForSelf(...)` and `findWeaponForSelf(...)` now pass self identity as `ObjectRef`, while `chr_find_target(...)` and `FindWeapon(...)` resolve the concrete object at their legacy implementation boundary and return `ObjectRef::Invalid` for missing or terminated sources.
+
+Preserved target-search no-match behavior, invalid-self quiet failure, and weapon/mount role-query behavior without widening public role interfaces or touching spawn/systems ownership-bearing flows. Build, the focused target-search/self-selector/weapon-query slice, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

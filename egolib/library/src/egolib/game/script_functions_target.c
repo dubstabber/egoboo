@@ -152,13 +152,7 @@ ObjectRef findTargetForSelf(const SelfTargetSelectorContext& context,
                             const IDSZ2& idsz,
                             BIT_FIELD targetingBits)
 {
-    Object* selfObject = tryObject(context.selfRef);
-    if (selfObject == nullptr)
-    {
-        return ObjectRef::Invalid;
-    }
-
-    return chr_find_target(selfObject, maxDistance, idsz, targetingBits);
+    return chr_find_target(context.selfRef, maxDistance, idsz, targetingBits);
 }
 
 ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
@@ -167,13 +161,7 @@ ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
                             bool findRanged,
                             bool useLineOfSight)
 {
-    Object* selfObject = tryObject(context.selfRef);
-    if (selfObject == nullptr)
-    {
-        return ObjectRef::Invalid;
-    }
-
-    return FindWeapon(selfObject, maxDistance, weaponIdsz, findRanged, useLineOfSight);
+    return FindWeapon(context.selfRef, maxDistance, weaponIdsz, findRanged, useLineOfSight);
 }
 
 }
