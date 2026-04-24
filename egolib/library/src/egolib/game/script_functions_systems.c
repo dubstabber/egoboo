@@ -41,6 +41,11 @@ ObjectRef selfObjectRef(const ai_state_t& self)
     return self.getSelf();
 }
 
+Object& resolvedSelfObject(const ai_state_t& self)
+{
+    return *resolveSelfContext(self).object;
+}
+
 struct SelfProfileComparisonData
 {
     ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
@@ -1551,7 +1556,8 @@ uint8_t scr_GetTargetArmorPrice( script_state_t& state, ai_state_t& self )
     /// @details This function returns the cost of the desired skin upgrade, setting
     /// tmpx to the price
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = setTargetArmorPrice(state, targetContext);
@@ -1568,7 +1574,8 @@ uint8_t scr_JoinTargetTeam( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character join a different team.  Used
     /// mostly for pets
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     SelfRoleContext selfContext = makeSelfRoleContext(self);
@@ -1588,7 +1595,8 @@ uint8_t scr_OpenPassage( script_state_t& state, ai_state_t& self )
     /// passage was already open.
     /// Passage areas are defined in passage.txt and set in spawn.txt for the given character
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     PassageCompatibilityContext passageContext;
     returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
@@ -1607,7 +1615,8 @@ uint8_t scr_ClosePassage( script_state_t& state, ai_state_t& self )
     /// if the passage isn't blocked.  Crushable characters within the passage
     /// are crushed.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     PassageCompatibilityContext passageContext;
     returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
@@ -1625,7 +1634,8 @@ uint8_t scr_IfPassageOpen( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the given passage is valid and open to movement
     /// Used mostly by door characters to tell them when to run their open animation.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     PassageCompatibilityContext passageContext;
     returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
@@ -1644,10 +1654,11 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     /// actor has a matching pocket item, and poofs that item. This preserves the
     /// legacy actor-pocket compatibility behavior for one-use items such as keys.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    IInventoryHolder& actorInventory = inventoryHolder(*pchr);
+    IInventoryHolder& actorInventory = inventoryHolder(resolvedSelfObject(self));
     if (!resolveInventoryCompatibilityContext(self, actorInventory, inventoryContext))
     {
         return false;
@@ -1673,9 +1684,10 @@ uint8_t scr_AddIDSZ( script_state_t& state, ai_state_t& self )
     /// @details This function slaps an expansion IDSZ onto the menu.txt file.
     /// Used to show completion of special quests for a given module
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     if (tryAddActiveModuleIdsz(moduleContext, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument)))
     {
         // invalidate any module list so that we will reload them
@@ -1696,7 +1708,8 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
 
     IPair tmp_damage;
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     DamageInvocationContext damageContext;
     if (!resolveSelfAttributedDamageContext(self, damageContext))
@@ -1722,7 +1735,8 @@ uint8_t scr_IfLeaderKilled( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the team's leader died this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_LEADERKILLED );
 
@@ -1737,7 +1751,8 @@ uint8_t scr_BecomeLeader( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character the leader of the team
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = becomeSelfLeader(selfContext);
@@ -1755,7 +1770,8 @@ uint8_t scr_ChangeTargetArmor( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target's armor type and returns the old type
     /// as tmpargument and the new type as tmpx
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = changeTargetArmor(state, targetContext);
@@ -1772,7 +1788,8 @@ uint8_t scr_GiveMoneyToTarget( script_state_t& state, ai_state_t& self )
     /// @details This function increases the target's money, while decreasing the
     /// character's own money.  tmpargument is set to the amount transferred
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = giveMoneyToTarget(state, targetContext);
@@ -1788,7 +1805,8 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the team has a leader
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = isSelfLeaderAlive(selfContext);
@@ -1805,9 +1823,10 @@ uint8_t scr_ChangeTile( script_state_t& state, ai_state_t& self )
     /// @details This function changes the tile under the character to the new tile type,
     /// which is highly module dependent
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, &resolvedSelfObject(self));
     returncode = setActorTileType(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
@@ -1822,7 +1841,8 @@ uint8_t scr_DropMoney( script_state_t& state, ai_state_t& self )
     /// @details This function drops a certain amount of money, if the character has that
     /// much
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = dropMoney(state, selfContext.wallet);
@@ -1840,9 +1860,13 @@ uint8_t scr_BecomeSpell( script_state_t& state, ai_state_t& self )
     /// content.
     /// TOO COMPLICATED TO EXPLAIN.  SHOULDN'T EVER BE NEEDED BY YOU.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    becomeSpell(enchantable(*pchr), morphControl(*pchr), ObjectProfileRef(self.content), self);
+    becomeSpell(enchantable(resolvedSelfObject(self)),
+                morphControl(resolvedSelfObject(self)),
+                ObjectProfileRef(self.content),
+                self);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1858,13 +1882,14 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
     /// TOO COMPLICATED TO EXPLAIN. Just copy the spells that already exist, and don't change
     /// them too much
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
 
-    becomeSpellbook(enchantable(*pchr),
-                    morphControl(*pchr),
-                    animationControl(*pchr),
+    becomeSpellbook(enchantable(resolvedSelfObject(self)),
+                    morphControl(resolvedSelfObject(self)),
+                    animationControl(resolvedSelfObject(self)),
                     selfContext.policy.profileRef,
                     selfContext.policy.spellEffectSkin,
                     self);
@@ -1880,7 +1905,8 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function lets a weapon change the type of damage it inflicts
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
@@ -1896,9 +1922,10 @@ uint8_t scr_SetWaterLevel( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function raises or lowers the water in the module
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setModuleWaterLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
@@ -1913,7 +1940,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
     /// @details This function enchants the target with the enchantment given
     /// in enchant.txt. Make sure you use set_OwnerToTarget before doing this.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
 
@@ -1943,7 +1971,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
     /// newly spawned character with the enchantment
     /// given in enchant.txt. Make sure you use set_OwnerToTarget before doing this.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
 
@@ -1972,7 +2001,8 @@ uint8_t scr_GiveExperienceToTarget( script_state_t& state, ai_state_t& self )
     /// @details This function gives the target some experience, xptype from distance,
     /// amount from argument.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = giveResolvedTargetExperience(targetContext,
@@ -1990,7 +2020,8 @@ uint8_t scr_IncreaseAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function increases the character's ammo by 1
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = increaseSelfAmmo(selfContext);
 
@@ -2005,7 +2036,8 @@ uint8_t scr_UnkurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function unkurses the target
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = unkurseResolvedTarget(targetContext);
 
@@ -2020,7 +2052,8 @@ uint8_t scr_GiveExperienceToTargetTeam( script_state_t& state, ai_state_t& self 
     /// @author ZZ
     /// @details This function gives experience to everyone on the target's team
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = giveSelfTeamExperience(state, selfContext);
@@ -2038,10 +2071,11 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     /// the actor's pocket items, preserving the legacy target-held plus actor-pocket
     /// compatibility traversal.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
     {
         return false;
     }
@@ -2064,10 +2098,11 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
     /// @details This function restocks the first matching item in the legacy target-held
     /// then actor-pocket traversal order.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
     {
         return false;
     }
@@ -2089,7 +2124,8 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function kills the target
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     DamageInvocationContext damageContext;
     if (!resolveKillDamageContext(self, damageContext))
@@ -2111,9 +2147,10 @@ uint8_t scr_UndoEnchant( script_state_t& state, ai_state_t& self )
     /// @details This function removes the last enchantment spawned by the character,
     /// proceeding if an enchantment was removed
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    std::shared_ptr<Ego::Enchantment> lastEnchant = enchantable(*pchr).getLastEnchantmentSpawned();
+    std::shared_ptr<Ego::Enchantment> lastEnchant = enchantable(resolvedSelfObject(self)).getLastEnchantmentSpawned();
     if(lastEnchant == nullptr || lastEnchant->isTerminated()) {
         returncode = false;
     }
@@ -2134,9 +2171,10 @@ uint8_t scr_GetWaterLevel( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the current douse level for the water * 10.
     /// A waterlevel in wawalight of 85 would set tmpargument to 850
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     state.argument = getModuleWaterLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
@@ -2151,7 +2189,8 @@ uint8_t scr_CostTargetMana( script_state_t& state, ai_state_t& self )
     /// @details This function costs the target a specific amount of mana, proceeding
     /// if the target was able to pay the price.  The amounts are 8.8 fixed point
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = costResolvedTargetMana(targetContext, state.argument, self.getSelf());
@@ -2170,7 +2209,8 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
     /// This does NOT remove [HEAL] enchants ( poisons )
     /// This does not set the ALERTIF_HEALED alert
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     HealingInvocationContext healingContext;
     if (!resolveSelfHealingContext(self, healingContext))
@@ -2192,7 +2232,8 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
     /// @details This function flags the character as being equipped.
     /// This is used by equipment items when they are placed in the inventory
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = markSelfAsEquipped(selfContext);
@@ -2212,7 +2253,8 @@ uint8_t scr_BreakPassage( script_state_t& state, ai_state_t& self )
     /// tmpx and tmpy are both set to the location of whoever broke the tile if
     /// the function passed.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ::BreakPassage( state.y, state.x, state.distance, state.turn, ( PASS_REF )state.argument, &( state.x ), &( state.y ) );
 
@@ -2228,7 +2270,8 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     /// @details This function changes the character's armor.
     /// Sets tmpargument as the old type and tmpx as the new type
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfArmorChange(state, selfContext);
@@ -2243,7 +2286,8 @@ uint8_t scr_GiveStrengthToTarget( script_state_t& state, ai_state_t& self )
     // GiveStrengthToTarget(argument = "amount")
     // Permanently boost the target's strength
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MIGHT, FP8_TO_FLOAT(state.argument));
@@ -2259,7 +2303,8 @@ uint8_t scr_GiveIntelligenceToTarget( script_state_t& state, ai_state_t& self )
     // GiveIntelligenceToTarget(tmpargument = "amount")
     // Permanently boost the target's intelligence
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::INTELLECT, FP8_TO_FLOAT(state.argument));
@@ -2275,7 +2320,8 @@ uint8_t scr_GiveDexterityToTarget( script_state_t& state, ai_state_t& self )
     // GiveDexterityToTarget(tmpargument = "amount")
     // Permanently boost the target's dexterity
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::AGILITY, FP8_TO_FLOAT(state.argument));
@@ -2292,7 +2338,8 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details Permanently boost the target's life
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     HealingInvocationContext healingContext;
     if (resolveAliveTargetHealingContext(self, healingContext))
     {
@@ -2312,7 +2359,8 @@ uint8_t scr_GiveManaToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details Permanently boost the target's mana
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     if ( ICharacterState* resolvedTargetState = resolveAliveTargetState(self) )
     {
         resolvedTargetState->increaseBaseAttribute(Ego::Attribute::MAX_MANA, FP8_TO_FLOAT(state.argument));
@@ -2331,7 +2379,8 @@ uint8_t scr_ShowMap( script_state_t& state, ai_state_t& self )
     /// @details This function shows the module's map.
     /// Fails if map already visible
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = showMiniMap(selfContext.presentation);
 
@@ -2347,7 +2396,8 @@ uint8_t scr_ShowYouAreHere( script_state_t& state, ai_state_t& self )
     /// @details This function shows the blinking white blip on the map that represents the
     /// camera location
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     showMiniMapPlayerPosition(selfContext.presentation);
@@ -2363,7 +2413,8 @@ uint8_t scr_ShowBlipXY( script_state_t& state, ai_state_t& self )
 
     /// @author ZZ
     /// @details This function draws a blip on the map, and must be done each update
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Add a blip
     if ( state.argument >= 0 )
@@ -2384,7 +2435,8 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
     /// @details This function gives some life back to the target.
     /// Values are 8.8 fixed point. Any enchantments that are removed by [HEAL], like poison, go away
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     HealingInvocationContext healingContext;
     if (!resolveHealingTargetContext(self, healingContext))
@@ -2411,7 +2463,8 @@ uint8_t scr_PumpTarget( script_state_t& state, ai_state_t& self )
     /// @details This function gives some mana back to the target.
     /// Values are 8.8 fixed point
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     pumpTargetManaFromSelf(self, state.argument);
 
     SCRIPT_FUNCTION_END();
@@ -2425,7 +2478,8 @@ uint8_t scr_CostAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function costs the character 1 point of ammo
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = costSelfAmmo(selfContext);
 
@@ -2442,9 +2496,10 @@ uint8_t scr_SetFogLevel( script_state_t& state, ai_state_t& self )
     /// Values are * 10
     /// !!BAD!! DOESN'T WORK !!BAD!!
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setModuleFogTopLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
@@ -2459,9 +2514,10 @@ uint8_t scr_GetFogLevel( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the level of the module's fog.
     /// Values are * 10
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     state.argument = getModuleFogTopLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
@@ -2477,9 +2533,10 @@ uint8_t scr_SetFogTAD( script_state_t& state, ai_state_t& self )
     /// Makes sense, huh?
     /// !!BAD!! DOESN'T WORK !!BAD!!
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setModuleFogColor(moduleContext, state.turn, state.argument, state.distance);
 
     SCRIPT_FUNCTION_END();
@@ -2495,9 +2552,10 @@ uint8_t scr_SetFogBottomLevel( script_state_t& state, ai_state_t& self )
     /// @details This function sets the level of the module's fog.
     /// Values are * 10
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setModuleFogBottomLevel(moduleContext, state.argument);
 
     SCRIPT_FUNCTION_END();
@@ -2513,9 +2571,10 @@ uint8_t scr_GetFogBottomLevel( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the level of the module's fog.
     /// Values are * 10
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     state.argument = getModuleFogBottomLevelTimesTen(moduleContext);
 
     SCRIPT_FUNCTION_END();
@@ -2530,11 +2589,12 @@ uint8_t scr_GetTileXY( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the tile type at the specified
     /// coordinates
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     uint16_t tileType = 0;
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     if (tryGetModuleTileTypeAtPosition(moduleContext,
                                        Ego::Vector2f(float(state.x), float(state.y)),
                                        tileType))
@@ -2554,9 +2614,10 @@ uint8_t scr_SetTileXY( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function changes the tile type at the specified coordinates
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     returncode = setModuleTileTypeAtPosition(moduleContext,
                                              Ego::Vector2f(float(state.x), float(state.y)),
                                              state.argument);
@@ -2574,7 +2635,8 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
     /// model or if the base model is SPELLBOOK
     /// USAGE: USED BY THE MORPH SPELL. Not much use elsewhere
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
 
@@ -2594,7 +2656,8 @@ uint8_t scr_SetEnchantBoostValues( script_state_t& state, ai_state_t& self )
     /// spawned by this character.
     /// Values are 8.8 fixed point
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfRoleContext selfContext = makeSelfRoleContext(self);
     returncode = setSelfEnchantBoostValues(state, selfContext);
@@ -2614,10 +2677,11 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
     /// MODULE TO MODULE.
     /// USAGE: This is intended as a way to incorporate more player classes into the game.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const auto profileID = ObjectProfileRef(static_cast<PRO_REF>(state.argument));
-    const ClassChangeCompatibilityContext classContext = makeClassChangeCompatibilityContext(*pchr);
+    const ClassChangeCompatibilityContext classContext = makeClassChangeCompatibilityContext(resolvedSelfObject(self));
 
     /// @details This function polymorphs a character permanently so that it can be exported properly
     /// A character turned into a frog with this function will also export as a frog!
@@ -2635,10 +2699,11 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
     /// @details This function preserves the legacy compatibility behavior: unkurse the
     /// target's held items plus the actor's pocket items, but not the target's pockets.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(*pchr), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
     {
         return false;
     }
@@ -2658,7 +2723,8 @@ uint8_t scr_FlashPassage( script_state_t& state, ai_state_t& self )
     /// @details This function makes the given passage light or dark.
     /// Usage: For debug purposes
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     PassageCompatibilityContext passageContext;
     resolvePassageCompatibilityContext(self, state.argument, passageContext);
@@ -2680,7 +2746,8 @@ uint8_t scr_FindTileInPassage( script_state_t& state, ai_state_t& self )
     /// both will be set to 0 if no tile is found.
     /// tmpx and tmpy are required and set on return
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ::FindTileInPassage( state.x, state.y, state.distance, static_cast<PASS_REF>(state.argument), &(state.x), &(state.y) );
 
@@ -2695,9 +2762,10 @@ uint8_t scr_BeatModule( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function displays the Module Ended message
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     markActiveModuleBeaten(moduleContext);
 
     SCRIPT_FUNCTION_END();
@@ -2711,7 +2779,8 @@ uint8_t scr_EndModule( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function presses the Escape key
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     pushModuleEndVictoryScreen();
 
@@ -2726,9 +2795,10 @@ uint8_t scr_DisableExport( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function turns export off
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setActiveModuleExportValid(moduleContext, false);
 
     SCRIPT_FUNCTION_END();
@@ -2742,9 +2812,10 @@ uint8_t scr_EnableExport( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function turns export on
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     setActiveModuleExportValid(moduleContext, true);
 
     SCRIPT_FUNCTION_END();
@@ -2758,7 +2829,8 @@ uint8_t scr_DropTargetMoney( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function drops some of the target's money
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = dropMoney(state, targetContext.targetWallet);
@@ -2774,7 +2846,8 @@ uint8_t scr_JoinTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This makes the character itself join a specified team (A = 0, B = 1, 23 = Z, etc.)
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(state.argument));
@@ -2790,7 +2863,8 @@ uint8_t scr_TargetJoinTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This makes the Target join a Team specified in tmpargument (A = 0, 25 = Z, etc.)
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = setResolvedTargetTeam(targetContext, static_cast<TEAM_REF>(state.argument));
@@ -2806,7 +2880,8 @@ uint8_t scr_ClearEndMessage( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function empties the end-module text buffer
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     clearEndMessageText();
 
@@ -2821,7 +2896,8 @@ uint8_t scr_AddEndMessage( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function appends a message to the end-module text buffer
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = addSelfEndMessageText(selfContext.presentation, state.argument, state);
@@ -2837,7 +2913,8 @@ uint8_t scr_AddStat( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function turns on an NPC's status display
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     addSelfStatusMonitor(selfContext.presentation);
@@ -2854,7 +2931,8 @@ uint8_t scr_DisenchantTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes all enchantments on the Target character, proceeding
     /// if there were any, failing if not
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = disenchantResolvedTarget(targetContext);
@@ -2870,7 +2948,8 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function removes all enchantments in the game
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     forEachResolvedObjectRef([](ObjectRef objectRef)
     {
@@ -2892,7 +2971,8 @@ uint8_t scr_AddShopPassage( script_state_t& state, ai_state_t& self )
     /// @details This function makes a passage behave as a shop area, as long as the
     /// character is alive.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     PassageCompatibilityContext passageContext;
     returncode = resolvePassageCompatibilityContext(self, state.argument, passageContext) &&
@@ -2913,7 +2993,8 @@ uint8_t scr_TargetPayForArmor( script_state_t& state, ai_state_t& self )
     /// Does trade-in bonus automatically.  tmpy is always set to cost of requested
     /// skin tmpx is set to amount needed after trade-in ( 0 for pass ).
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetEconomyCompatibilityContext targetContext = makeTargetEconomyCompatibilityContext(self);
     returncode = chargeTargetArmor(state, targetContext);
@@ -2929,7 +3010,8 @@ uint8_t scr_JoinEvilTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function adds the character to the evil Team.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_EVIL));
@@ -2945,7 +3027,8 @@ uint8_t scr_JoinNullTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function adds the character to the null Team.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_NULL));
@@ -2961,7 +3044,8 @@ uint8_t scr_JoinGoodTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function adds the character to the good Team.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfTeam(selfContext, static_cast<TEAM_REF>(Team::TEAM_GOOD));
@@ -2978,9 +3062,10 @@ uint8_t scr_PitsKill( script_state_t& state, ai_state_t& self )
     /// @details This function activates pit deaths for when characters fall below a
     /// certain altitude.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     enableActiveModulePitsKill(moduleContext);
 
     SCRIPT_FUNCTION_END();
@@ -2994,11 +3079,12 @@ uint8_t scr_GiveExperienceToGoodTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function gives experience to everyone on the G Team
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     if(state.distance < XP_COUNT)
     {
-        const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+        const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
         giveGoodTeamExperience(moduleContext, state.argument, static_cast<XPType>(state.distance));
     }
 
@@ -3014,7 +3100,8 @@ uint8_t scr_GrogTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function grogs the Target for a duration equal to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = grogResolvedTarget(targetContext, state.argument);
 
@@ -3029,7 +3116,8 @@ uint8_t scr_DazeTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function dazes the Target for a duration equal to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = dazeResolvedTarget(targetContext, state.argument, self.getSelf());
 
@@ -3044,7 +3132,8 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function increases range from which sound can be heard by 33%
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
 
@@ -3062,10 +3151,11 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
     /// @author BB
     /// @details Skips to the next module!
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileContext selfContext = makeSelfProfileContext(self);
-    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self, pchr);
+    const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self);
 
     returncode = followLinkFromMessageId(selfContext, presentationContext, state.argument);
 
@@ -3080,7 +3170,8 @@ uint8_t scr_AddQuest( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function adds a quest idsz set in tmpargument into the targets quest.txt to 0
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     const QuestCompatibilityContext questContext = makeQuestCompatibilityContext(self);
@@ -3098,7 +3189,8 @@ uint8_t scr_BeatQuestAllPlayers( script_state_t& state, ai_state_t& self )
     /// @details This function marks a IDSZ in the targets quest.txt as beaten
     ///               returns true if at least one quest got marked as beaten.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     returncode = beatQuestForAllPlayers(idsz);
@@ -3115,7 +3207,8 @@ uint8_t scr_SetQuestLevel( script_state_t& state, ai_state_t& self )
     /// @details This function modifies the quest level for a specific quest IDSZ
     /// tmpargument specifies quest idsz (tmpargument) and the adjustment (tmpdistance, which may be negative)
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     const QuestCompatibilityContext questContext = makeQuestCompatibilityContext(self);
@@ -3133,7 +3226,8 @@ uint8_t scr_AddQuestAllPlayers( script_state_t& state, ai_state_t& self )
     /// @details This function adds a quest idsz set in tmpargument into all local player's quest logs
     /// The quest level Is set to tmpdistance if the level Is not already higher
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
     returncode = raiseQuestForAllPlayers(idsz, state.distance);
@@ -3150,7 +3244,8 @@ uint8_t scr_AddBlipAllEnemies( script_state_t& state, ai_state_t& self )
     /// @details show all enemies on the minimap who match the IDSZ given in tmpargument
     /// it show only the enemies of the AI Target
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     publishEnemySenseFromResolvedTarget(targetContext, state.argument);
@@ -3166,9 +3261,10 @@ uint8_t scr_PitsFall( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function activates pit teleportation.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self, pchr);
+    const ModuleEffectsContext moduleContext = makeModuleEffectsContext(self);
     configurePitFall(moduleContext,
                      Ego::Vector3f(static_cast<float>(state.x),
                                    static_cast<float>(state.y),
@@ -3185,7 +3281,8 @@ uint8_t scr_GiveManaFlowToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently boost the target's mana flow
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     TargetStateCompatibilityContext targetContext;
     resolveTargetStateCompatibilityContext(self, targetContext);
     applyResolvedTargetBaseAttribute(targetContext,
@@ -3203,7 +3300,8 @@ uint8_t scr_GiveManaReturnToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently boost the target's mana return
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     TargetStateCompatibilityContext targetContext;
     resolveTargetStateCompatibilityContext(self, targetContext);
     applyResolvedTargetBaseAttribute(targetContext,
@@ -3221,7 +3319,8 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently sets the money for the character to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
     returncode = applySelfMoney(state, selfContext);
@@ -3237,7 +3336,8 @@ uint8_t scr_DispelTargetEnchantID( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function removes all enchants from the target who match the specified RemovedByIDSZ
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     TargetStateCompatibilityContext targetContext;
     returncode = resolveTargetStateCompatibilityContext(self, targetContext) &&
                  dispelResolvedTargetEnchants(targetContext,
@@ -3254,7 +3354,8 @@ uint8_t scr_KurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This makes the target kursed
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = kurseResolvedTarget(targetContext);
 
@@ -3269,7 +3370,8 @@ uint8_t scr_SetTargetAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function sets the ammo of the character's current AI target
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = setResolvedTargetAmmo(targetContext, state.argument);
 
@@ -3285,7 +3387,8 @@ uint8_t scr_TargetDamageSelf( script_state_t& state, ai_state_t& self )
     /// @details This function applies little bit of hate from the character's target to
     /// the character itself. The amount is set in tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     DamageInvocationContext damageContext;
     if (!resolveRetaliationDamageContext(self, damageContext))
@@ -3308,7 +3411,8 @@ uint8_t scr_GiveSkillToTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function permanently gives the target character a Perk
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     returncode = giveResolvedTargetSkill(targetContext, state.argument);

@@ -198,7 +198,8 @@ uint8_t scr_DoAction( script_state_t& state, ai_state_t& self )
     /// anything better.  Fails if the action is invalid or if the character is doing
     /// something else already
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
@@ -216,7 +217,8 @@ uint8_t scr_KeepAction( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character's animation stop on its last frame
     /// and stay there.  Usually used for dropped items
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.animation->setActionKeep(true);
@@ -234,7 +236,8 @@ uint8_t scr_TargetDoAction( script_state_t& state, ai_state_t& self )
     /// It will fail if the action is invalid or if the target is doing
     /// something else already
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     const ITargetInfo* target = tryTargetInfo(self.getTarget());
@@ -259,7 +262,8 @@ uint8_t scr_DoActionOverride( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character do a given action no matter what
     /// It will fail if the action is invalid
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
@@ -276,7 +280,8 @@ uint8_t scr_SendMessage( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sends a message to the players
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     returncode = sendSelfProfileMessage(selfContext, state.argument, state);
@@ -293,7 +298,8 @@ uint8_t scr_CallForHelp( script_state_t& state, ai_state_t& self )
     /// @details This function calls all of the character's teammates for help.  The
     /// teammates must use IfCalledForHelp in their scripts
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.teamMember->callTeamForHelp();
@@ -309,7 +315,8 @@ uint8_t scr_UnkeepAction( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function is the opposite of KeepAction. It makes the current animation resume.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.animation->setActionKeep(false);
@@ -326,7 +333,8 @@ uint8_t scr_PlaySound( script_state_t& state, ai_state_t& self )
     /// @details This function plays one of the character's sounds.
     /// The sound fades out depending on its distance from the viewer
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     const auto& oldPosition = selfContext.oldPosition();
@@ -346,7 +354,8 @@ uint8_t scr_FlashTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the target flash
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IVisualControl* targetVisual = tryVisualControl(self.getTarget());
     if (targetVisual == nullptr)
@@ -368,7 +377,8 @@ uint8_t scr_SetRedShift( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's red shift ( 0 - 3 ), higher values
     /// making the character less red and darker
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setRedShift(Ego::Math::constrain(state.argument, 0, 6));
@@ -385,7 +395,8 @@ uint8_t scr_SetGreenShift( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's green shift ( 0 - 3 ), higher values
     /// making the character less green and darker
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setGreenShift(Ego::Math::constrain(state.argument, 0, 6));
@@ -402,7 +413,8 @@ uint8_t scr_SetBlueShift( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's blue shift ( 0 - 3 ), higher values
     /// making the character less blue and darker
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setBlueShift(Ego::Math::constrain(state.argument, 0, 6));
@@ -419,7 +431,8 @@ uint8_t scr_SetLight( script_state_t& state, ai_state_t& self )
     /// @details This function alters the character's transparency ( 0 - 254 )
     /// 255 = no transparency
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setLight(state.argument);
@@ -436,7 +449,8 @@ uint8_t scr_SetAlpha( script_state_t& state, ai_state_t& self )
     /// @details This function alters the character's transparency ( 0 - 255 )
     /// 255 = no transparency
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setAlpha(state.argument);
@@ -452,7 +466,8 @@ uint8_t scr_BlackTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details  The opposite of FlashTarget, causing the target to turn black
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IVisualControl* targetVisual = tryVisualControl(self.getTarget());
     if (targetVisual == nullptr)
@@ -475,7 +490,8 @@ uint8_t scr_SendMessageNear( script_state_t& state, ai_state_t& self )
 
     int iTmp, min_distance;
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
     const auto& oldPosition = selfContext.oldPosition();
 
@@ -508,11 +524,11 @@ uint8_t scr_MakeNameKnown( script_state_t& state, ai_state_t& self )
     /// @details This function makes the name of the character known, for identifying
     /// weapons and spells and such
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setNameKnown(true);
-    //           pchr->icon = true;
 
     SCRIPT_FUNCTION_END();
 }
@@ -526,7 +542,8 @@ uint8_t scr_MakeUsageKnown( script_state_t& state, ai_state_t& self )
     /// @details This function makes the usage known for this type of object
     /// For XP gains from using an unknown potion or such
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.profile->makeUsageKnown();
@@ -542,7 +559,8 @@ uint8_t scr_MakeAmmoKnown( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character's ammo known ( for items )
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setAmmoKnown(true);
@@ -559,7 +577,8 @@ uint8_t scr_PlaySoundLooped( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function starts playing a continuous sound
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
     SoundID sound = selfContext.soundID(state.argument);
@@ -587,7 +606,8 @@ uint8_t scr_StopSound( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function stops the playing of a continuous sound!
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     audioSystem().stopObjectLoopingSounds(self.getSelf(), selfContext.soundID(state.argument));
@@ -607,7 +627,8 @@ uint8_t scr_ChildDoActionOverride( script_state_t& state, ai_state_t& self )
     /// action ( no interpolation from last frame ). If the cation is not valid for the model,
     /// the function will fail
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     IAnimationControl* childAnimation = tryAnimationControl(self.child);
@@ -631,7 +652,8 @@ uint8_t scr_ShowTimer( script_state_t& state, ai_state_t& self )
     /// @details This function sets the value displayed by the module timer.
     /// For races and such.  50 clicks per second
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     timeron = true;
     timervalue = state.argument;
@@ -647,7 +669,8 @@ uint8_t scr_PlaySoundVolume( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the volume of a sound and plays it
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
     if ( state.distance > 0 )
@@ -673,7 +696,8 @@ uint8_t scr_MakeSimilarNamesKnown( script_state_t& state, ai_state_t& self )
     /// @details This function makes the names of similar objects known.
     /// Checks all 6 IDSZ types to make sure they match.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
     forEachLiveActionObjectRef([&](ObjectRef objectRef)
@@ -703,7 +727,8 @@ uint8_t scr_CorrectActionForHand( script_state_t& state, ai_state_t& self )
     /// is held in It turns ZA into ZA, ZB, ZC, or ZD.
     /// USAGE:  wizards casting spells
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
     if ( hasLiveHolder(*selfContext.targetInfo) )
     {
@@ -730,7 +755,8 @@ uint8_t scr_SparkleIcon( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function starts little sparklies going around the character's icon
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
     if ( state.argument < COLOR_MAX )
     {
@@ -755,7 +781,8 @@ uint8_t scr_UnsparkleIcon( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function stops little sparklies going around the character's icon
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setSparkle(NOSPARKLE);
@@ -772,7 +799,8 @@ uint8_t scr_PlayFullSound( script_state_t& state, ai_state_t& self )
     /// @details This function plays one of the character's sounds .
     /// The sound will be heard at full volume by all players (Victory music)
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     audioSystem().playSoundFull(selfContext.soundID(state.argument));
@@ -791,7 +819,8 @@ uint8_t scr_TargetDoActionSetFrame( script_state_t& state, ai_state_t& self )
     /// interpolation 'cause it looks awful in some circumstances )
     /// It will fail if the action is invalid
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
@@ -817,7 +846,8 @@ uint8_t scr_ClearMusicPassage( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This clears the music for a specified passage
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
@@ -835,7 +865,8 @@ uint8_t scr_PlayMusic( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function begins playing a new track of music
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     int fadeTime = state.distance;
     if(fadeTime < 0) fadeTime = 0;
@@ -855,7 +886,8 @@ uint8_t scr_SetMusicPassage( script_state_t& state, ai_state_t& self )
     /// @details This function makes the given passage play music if a player enters it
     /// tmpargument is the passage to set and tmpdistance is the music track to play.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const std::shared_ptr<Passage> passage = tryPassage(state.argument);
     if(passage) {
@@ -873,7 +905,8 @@ uint8_t scr_StopMusic( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function stops the interactive music
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     audioSystem().stopMusic();
 
@@ -889,36 +922,10 @@ uint8_t scr_SetVolumeNearestTeammate( script_state_t& state, ai_state_t& self )
     /// @details This function lets insects buzz correctly.  The closest Team member
     /// is used to determine the overall sound level.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    //ZF> TODO: Not implemented
-
-    /*PORT
-    if(moduleactive && state.distance >= 0)
-    {
-    // Find the closest Teammate
-    iTmp = 10000;
-    sTmp = 0;
-    while(sTmp < OBJECTS_MAX)
-    {
-    if(objectHandler().exists(sTmp) && ChrList.lst[sTmp].alive && ChrList.lst[sTmp].Team == pchr->Team)
-    {
-    distance = ABS(PCamera->track.x-ChrList.lst[sTmp].getOldPosition().x)+ABS(PCamera->track.y-ChrList.lst[sTmp].getOldPosition().y);
-    if(distance < iTmp)  iTmp = distance;
-    }
-    sTmp++;
-    }
-    distance=iTmp+state.distance;
-    volume = -distance;
-    volume = volume<<VOLSHIFT;
-    if(volume < VOLMIN) volume = VOLMIN;
-    iTmp = CapStack.lst[pro_get_icap(pchr->getProfileID())].wavelist[pstate->argument];
-    if(iTmp < numsound && iTmp >= 0 && soundon)
-    {
-    lpDSBuffer[iTmp]->SetVolume(volume);
-    }
-    }
-    */
+    // TODO: no current runtime implementation.
 
     SCRIPT_FUNCTION_END();
 }
@@ -932,7 +939,8 @@ uint8_t scr_MakeNameUnknown( script_state_t& state, ai_state_t& self )
     /// @details This function makes the name of an item/character unknown.
     /// Usage: Use if you have subspawning of creatures from a book.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfActionContext selfContext = makeSelfActionContext(self);
     selfContext.visual->setNameKnown(false);
@@ -948,7 +956,8 @@ uint8_t scr_TakePicture( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function proceeds only if the screenshot was successful
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     Ego::GUI::UIManager* uiManager = tryUIManager();
     if (uiManager == nullptr)
@@ -969,16 +978,10 @@ uint8_t scr_SetSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets all of the RTS speech registers to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    //ZF> no longer supported
-#if 0
-    uint16_t sTmp = 0;
-    for ( sTmp = SPEECH_BEGIN; sTmp <= SPEECH_END; sTmp++ )
-    {
-        pchr->sound_index[sTmp] = state.argument;
-    }
-#endif
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -991,12 +994,10 @@ uint8_t scr_SetMoveSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS move speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_MOVE] = state.argument;
-#endif
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1009,11 +1010,9 @@ uint8_t scr_SetSecondMoveSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS movealt speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_MOVEALT] = state.argument;
-#endif
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1026,11 +1025,9 @@ uint8_t scr_SetAttackSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS attack speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_ATTACK] = state.argument;
-#endif
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1043,11 +1040,9 @@ uint8_t scr_SetAssistSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS assist speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_ASSIST] = state.argument;
-#endif
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1060,11 +1055,9 @@ uint8_t scr_SetTerrainSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS terrain speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_TERRAIN] = state.argument;
-#endif
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1077,11 +1070,9 @@ uint8_t scr_SetSelectSpeech( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the RTS select speech register to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
-    //ZF> no longer supported
-#if 0
-    pchr->sound_index[SPEECH_SELECT] = state.argument;
-#endif
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    // No longer supported.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1104,7 +1095,8 @@ uint8_t scr_DrawBillboard( script_state_t& state, ai_state_t& self )
     const auto tint_green = Ego::Colour4f{ 0.25f, 1.00f, 0.25f, 1.00f };
     const auto tint_blue = Ego::Colour4f{ 0.25f, 0.25f, 1.00f, 1.00f };
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
     if ( !selfContext.hasMessageID(state.argument) ) return false;
@@ -1138,7 +1130,8 @@ uint8_t scr_DisplayCharge(script_state_t& state, ai_state_t& self)
     /// @author ZF
     /// @details Draws a special progress bar this update frame
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
     const SelfActionContext selfContext = makeSelfActionContext(self);
 
     //We ourselves must be a player or our holder must be one

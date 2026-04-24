@@ -109,6 +109,12 @@ SpawnSelfContext makeSpawnSelfContext(Object& object)
     };
 }
 
+SpawnSelfContext makeSpawnSelfContext(const ai_state_t& self)
+{
+    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
+    return makeSpawnSelfContext(*resolvedSelf.object);
+}
+
 bool resolveSpawnAttachmentTarget(const ai_state_t& self,
                                   SpawnAttachmentTargetContext& context)
 {
@@ -617,8 +623,9 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     /// @details This function drops the character's in-hand items.  It will also
     /// buck the rider if the character is a mount
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     // This funtion drops the character's in hand items/riders
     const bool selfIsMount = selfContext.targetInfo->isMount();
@@ -637,8 +644,9 @@ uint8_t scr_GoPoof( script_state_t& state, ai_state_t& self )
     /// @details This function flags the character to be removed from the game entirely.
     /// This doesn't work on players
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     returncode = trySetSelfPoofTime(self, selfContext.targetInfo->isPlayer());
 
@@ -654,8 +662,9 @@ uint8_t scr_DropKeys( script_state_t& state, ai_state_t& self )
     /// @details This function drops all of the keys in the character's inventory.
     /// This does NOT drop keys in the character's hands.
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->dropKeys();
 
@@ -675,9 +684,10 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     /// tmpx and tmpy give the coodinates, tmpturn gives the new character's
     /// direction, and tmpdistance gives the new character's initial velocity
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(static_cast<float>(state.x),
                                  static_cast<float>(state.y),
                                  selfContext.object.getPosZ());
@@ -698,8 +708,9 @@ uint8_t scr_RespawnCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function respawns the character at its starting location.
     /// Often used with the Clean functions
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->respawn();
 
@@ -716,7 +727,8 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
     /// Can be used to make slippery weapons, or to make certain characters
     /// incapable of wielding certain weapons. "A troll can't grab a torch"
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = tryDetachSelfFromHolder(self.getSelf());
 
@@ -732,8 +744,9 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
     /// @details This function tells all the dead characters on the team to clean
     /// themselves up.  Usually done by the boss creature every second or so
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     const TEAM_REF selfTeam = selfContext.targetInfo->getTeamRef();
     forEachLiveSpawnObjectRef([&](ObjectRef listenerRef)
@@ -752,9 +765,10 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle, offset from the character's location
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveSpawnParticleOwnerRef(selfContext.object);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
@@ -787,7 +801,8 @@ uint8_t scr_DisaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function removes all the attached particles from a character
     /// ( stuck arrows, flames, etc )
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     disaffirm_attached_particles(self.getSelf());
 
@@ -803,7 +818,8 @@ uint8_t scr_ReaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function makes sure it has all of its reaffirmation particles
     /// attached to it. Used to make the torch light again
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     reaffirm_attached_particles(self.getSelf());
 
@@ -818,9 +834,10 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle attached to the character
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(self.getSelf());
     returncode = nullptr != spawnLocalParticleForSelf(selfContext,
                                                       selfContext.object.getPosition(),
@@ -840,9 +857,10 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle at a specific x, y, z position
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
 
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
@@ -868,8 +886,9 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
     /// @details This function makes a character able to be crushed by closing doors
     /// and such
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setCanBeCrushed(true);
 
@@ -885,7 +904,8 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes the target from the game, failing if the
     /// target is a player
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
     if (targetInventory == nullptr)
@@ -928,7 +948,8 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
     /// @details This function makes a lovely little poof at the character's location.
     /// The poof form and particle types are set in data.txt
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = spawnPoofForSelf(self.getSelf());
 
@@ -944,7 +965,8 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the state of the last character it
     /// spawned
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetChildState(self.child, state.argument);
 
@@ -960,9 +982,10 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle of the specific size attached to the
     /// character. For spell charging effects
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
@@ -993,9 +1016,10 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle attached to the character, facing the
     /// same direction given by tmpturn
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
     returncode = nullptr != spawnLocalParticleForSelf(selfContext,
                                                       selfContext.object.getPosition(),
@@ -1017,9 +1041,10 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
     /// @author ZZ
     /// @details This function spawns a particle attached to the character's holder, or to the character if no holder
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
     returncode = nullptr != spawnLocalParticleForSelf(selfContext,
                                                       selfContext.object.getPosition(),
@@ -1040,9 +1065,10 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a character of the same type at a specific location, failing if x,y,z is invalid
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
                                                                  position,
@@ -1071,9 +1097,10 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
@@ -1105,9 +1132,10 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
 
     std::shared_ptr<Ego::Particle> particle;
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
@@ -1138,8 +1166,9 @@ uint8_t scr_DropItems( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function drops all of the items the character is holding
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->dropAllItems();
 
@@ -1154,7 +1183,8 @@ uint8_t scr_RespawnTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function respawns the target at its current location
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
     if (targetLifecycle == nullptr)
@@ -1176,8 +1206,9 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character a non-item character.
     /// Usage: Used for spells that summon creatures
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setItem(false);
 
@@ -1192,7 +1223,8 @@ uint8_t scr_SetChildAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the ammo of the last character spawned by this character
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetChildAmmo(self.child, state.argument);
 
@@ -1208,8 +1240,9 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
     /// @details This function reveals the target's name, ammo, and usage
     /// Proceeds if the target was unknown
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     returncode = identifyResolvedTarget(*selfContext.profile, self.getTarget());
 
@@ -1224,7 +1257,8 @@ uint8_t scr_DropTargetKeys( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the Target drops keys in inventory (Not inhand)
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
     if (targetLifecycle == nullptr)
@@ -1245,8 +1279,9 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes doors unable to close on this object
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setCanBeCrushed(false);
 
@@ -1261,7 +1296,8 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character invincible for a little while
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetSelfDamageTimer(self, state.argument);
 
@@ -1281,9 +1317,10 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 
     std::shared_ptr<Ego::Particle> particle;
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
     const Ego::Vector3f position(float(state.x),
                                  float(state.y),
@@ -1319,8 +1356,9 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
 
     //ZF> Note: This script function seems to be only used by the Fireball spell, so its use is VERY limited
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     PIP_REF ipip = selfContext.profile->getParticlePoofProfile();
     if ( INVALID_PIP_REF == ipip) return false;
@@ -1382,7 +1420,8 @@ uint8_t scr_EnableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button on
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(true);
 
@@ -1397,7 +1436,8 @@ uint8_t scr_DisableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button off
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(false);
 
@@ -1416,7 +1456,8 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
     /// grip specified is full or already in use.
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     SpawnAttachmentTargetContext targetContext;
     if (!resolveSpawnAttachmentTarget(self, targetContext))
@@ -1424,7 +1465,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterAt(position,
                                                            ObjectProfileRef((PRO_REF)state.argument),
@@ -1459,7 +1500,8 @@ uint8_t scr_SetTargetToChild( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function sets the target to the character it spawned last (also called it's "child")
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetTargetToChild(self);
 
@@ -1474,12 +1516,14 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This sets the damage treshold for this character. Damage below the threshold is ignored
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     const int v = state.argument;
     if (v > 0)
     {
-        lifecycleControl(*pchr).setDamageThreshold(v);
+        selfContext.lifecycle->setDamageThreshold(v);
     }
 
     SCRIPT_FUNCTION_END();
@@ -1494,7 +1538,8 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     /// @details This morphs the character into the target
     /// Also set size and keeps the previous AI type
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IMorphControl* selfMorph = tryMorphControl(self.getSelf());
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());
@@ -1509,8 +1554,7 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     selfMorph->setTargetFat(targetMorph->getFat());
     selfMorph->setResizeTimeRemaining(Object::SIZETIME);
 
-    // change back to our original AI (keep our old AI script)
-//    pself->type      = ProList.lst[pchr->basemodel_ref].iai;      //TODO: this no longer works (is it even needed?)
+    // Keep the current AI script behavior unchanged.
 
     SCRIPT_FUNCTION_END();
 }
@@ -1524,7 +1568,8 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the content of the last character it
     /// spawned last
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetChildContent(self.child, state.argument);
 
@@ -1539,7 +1584,8 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character invulerable
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetSelfInvincibility(self, true);
 
@@ -1554,7 +1600,8 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character not invulerable
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = trySetSelfInvincibility(self, false);
 
@@ -1569,7 +1616,8 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This changes the AI target's size
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());
     if (targetMorph == nullptr)
@@ -1591,8 +1639,9 @@ uint8_t scr_EnableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object enter stealth mode. Returns true if it is now hidden from others.
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     if (selfContext.targetInfo->isStealthed()) {
         returncode = false;
@@ -1612,8 +1661,9 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object exit stealth mode. Returns true if it exited stealth mode.
 
-    SCRIPT_FUNCTION_BEGIN();
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     returncode = selfContext.targetInfo->isStealthed();
     selfContext.lifecycle->deactivateStealth();

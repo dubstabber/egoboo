@@ -7,41 +7,39 @@ namespace
 {
 struct SelfStateContext
 {
+    Object* object = nullptr;
     ObjectProfile* profile = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     const IInventoryHolder* inventory = nullptr;
     const IScriptable* scriptable = nullptr;
     IVisualControl* visual = nullptr;
+
+    bool isResolved() const
+    {
+        return object != nullptr &&
+               profile != nullptr &&
+               targetInfo != nullptr &&
+               inventory != nullptr &&
+               scriptable != nullptr &&
+               visual != nullptr;
+    }
 };
 
-const ITargetInfo& targetInfo(const Object& object)
+SelfStateContext makeSelfStateContext(const ai_state_t& self)
 {
-    return object;
-}
-
-const IInventoryHolder& inventoryHolder(const Object& object)
-{
-    return object;
-}
-
-const IScriptable& scriptable(const Object& object)
-{
-    return object;
-}
-
-IVisualControl& visualControl(Object& object)
-{
-    return object;
-}
-
-SelfStateContext makeSelfStateContext(Object& object, ObjectProfile& profile)
-{
+    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
     SelfStateContext context;
-    context.profile = &profile;
-    context.targetInfo = static_cast<const ITargetInfo*>(&object);
-    context.inventory = static_cast<const IInventoryHolder*>(&object);
-    context.scriptable = static_cast<const IScriptable*>(&object);
-    context.visual = static_cast<IVisualControl*>(&object);
+    context.object = resolvedSelf.object;
+    context.profile = resolvedSelf.profile;
+    if (!resolvedSelf.isResolved())
+    {
+        return context;
+    }
+
+    context.targetInfo = static_cast<const ITargetInfo*>(resolvedSelf.object);
+    context.inventory = static_cast<const IInventoryHolder*>(resolvedSelf.object);
+    context.scriptable = static_cast<const IScriptable*>(resolvedSelf.object);
+    context.visual = static_cast<IVisualControl*>(resolvedSelf.object);
     return context;
 }
 
@@ -138,7 +136,8 @@ uint8_t scr_IfSpawned( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character was spawned this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if it's a new character
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_SPAWNED );
@@ -155,7 +154,8 @@ uint8_t scr_IfTimeOut( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character's aitime is 0.  Use
     /// in conjunction with set_Time
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if time alert is set
     returncode = ( worldUpdateCount() > self.timer );
@@ -172,7 +172,8 @@ uint8_t scr_IfAttacked( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character ( an item ) was put in its
     /// owner's pocket this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character was damaged
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_ATTACKED );
@@ -189,7 +190,8 @@ uint8_t scr_IfBumped( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was bumped by another character
     /// this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character was bumped
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_BUMPED );
@@ -206,7 +208,8 @@ uint8_t scr_IfOrdered( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character got an order from another
     /// character on its team this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character was ordered
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_ORDERED );
@@ -223,7 +226,8 @@ uint8_t scr_IfCalledForHelp( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if one of the character's teammates was nearly
     /// killed this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character was called for help
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_CALLEDFORHELP );
@@ -240,7 +244,8 @@ uint8_t scr_SetContent( script_state_t& state, ai_state_t& self )
     /// @details This function sets the content variable.  Used in conjunction with
     /// GetContent.  Content is preserved from update to update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Set the content
     self.content = Ego::Script::Interpreter::safeCast<int>(state.argument);
@@ -256,7 +261,8 @@ uint8_t scr_IfKilled( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character was killed this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character's been killed
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_KILLED );
@@ -273,7 +279,8 @@ uint8_t scr_SetTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's ai timer.  50 clicks per second.
     /// Used in conjunction with IfTimeOut
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     self.timer = UpdateTime( self.timer, (int)state.argument );
 
@@ -289,7 +296,8 @@ uint8_t scr_GetContent( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the character's content variable.
     /// Used in conjunction with set_Content, or as a NOP to space out an Else
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Get the content
     state.argument = self.content;
@@ -305,9 +313,10 @@ uint8_t scr_Else( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function fails if the last function was more indented
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
     returncode = ( selfContext.profile->getAIScript().indent >= selfContext.profile->getAIScript().indent_last );
 
     SCRIPT_FUNCTION_END();
@@ -321,7 +330,8 @@ uint8_t scr_IfHealed( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character was healed by a healing particle
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Proceed only if the character was healed
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_HEALED );
@@ -338,7 +348,8 @@ uint8_t scr_SetState( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's state.
     /// VERY IMPORTANT. State is preserved from update to update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IScriptable* selfScriptable = tryScriptable(self.getSelf());
     if (selfScriptable == nullptr)
@@ -358,7 +369,8 @@ uint8_t scr_GetState( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function reads the character's state variable
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     state.argument = self.state;
 
@@ -373,7 +385,8 @@ uint8_t scr_IfStateIs( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's state equals tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.argument == self.state );
 
@@ -389,7 +402,8 @@ uint8_t scr_IfGrabbed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was grabbed (picked up) this update.
     /// Used mostly by item characters
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_GRABBED );
 
@@ -405,7 +419,8 @@ uint8_t scr_IfDropped( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was dropped this update.
     /// Used mostly by item characters
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_DROPPED );
 
@@ -420,7 +435,8 @@ uint8_t scr_IfXIsLessThanY( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if tmpx is less than tmpy.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.x < state.y );
 
@@ -436,7 +452,8 @@ uint8_t scr_SetWeatherTime( script_state_t& state, ai_state_t& self )
     /// @details This function can be used to slow down or speed up or stop rain and
     /// other weather effects
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     // Set the weather timer
     WeatherState& weatherState = GameSessionContext::get().weatherState();
@@ -455,7 +472,8 @@ uint8_t scr_IfReaffirmed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was damaged by its reaffirm
     /// damage type.  Used to relight the torch.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_REAFFIRMED );
 
@@ -471,7 +489,8 @@ uint8_t scr_IfUsed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was used by its holder or rider.
     /// Character's cannot be used if their reload time is greater than 0
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_USED );
 
@@ -487,7 +506,8 @@ uint8_t scr_IfCleanedUp( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is dead and if the boss told it
     /// to clean itself up
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_CLEANEDUP );
 
@@ -502,9 +522,11 @@ uint8_t scr_IfSitting( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is riding a mount
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = hasExistingHolder(targetInfo(*pchr));
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = hasExistingHolder(*selfContext.targetInfo);
 
     SCRIPT_FUNCTION_END();
 }
@@ -518,20 +540,10 @@ uint8_t scr_IfScoredAHit( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character damaged another character this
     /// update. If it's a held character it also sets the target to whoever was hit
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    // Proceed only if the character scored a hit
-//    if ( !objectHandler().exists( pchr->attachedto ) || objectHandler().get(pchr->attachedto).ismount )
-//    {
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_SCOREDAHIT );
-//    }
-
-    // Proceed only if the holder scored a hit with the character
-    /*    else if ( objectHandler().get(pchr->attachedto).ai.lastitemused == pself->index )
-        {
-            returncode = HAS_SOME_BITS( objectHandler().get(pchr->attachedto).ai.alert, ALERTIF_SCOREDAHIT );
-        }
-        else returncode = false;*/
 
     SCRIPT_FUNCTION_END();
 }
@@ -545,7 +557,8 @@ uint8_t scr_IfDisaffirmed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was disaffirmed.
     /// This doesn't seem useful anymore.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_DISAFFIRMED );
 
@@ -561,7 +574,8 @@ uint8_t scr_IfChanged( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was polymorphed.
     /// Needed for morph spells and such
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_CHANGED );
 
@@ -577,7 +591,8 @@ uint8_t scr_IfInWater( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character has just entered into some water
     /// this update ( and the water is really water, not fog or another effect )
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_INWATER );
 
@@ -592,7 +607,8 @@ uint8_t scr_IfBored( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character has been standing idle too long
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_BORED );
 
@@ -609,7 +625,8 @@ uint8_t scr_IfTooMuchBaggage( script_state_t& state, ai_state_t& self )
     /// pockets, but the character already has 6 items in the inventory.
     /// Used to tell the players what's going on.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_TOOMUCHBAGGAGE );
 
@@ -625,9 +642,11 @@ uint8_t scr_IfGrogged( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character has been grogged ( a type of
     /// confusion ) this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }
@@ -641,9 +660,11 @@ uint8_t scr_IfDazed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character has been dazed ( a type of
     /// confusion ) this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 
     SCRIPT_FUNCTION_END();
 }
@@ -656,7 +677,8 @@ uint8_t scr_IfInvisible( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is invisible
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IRenderable* selfRenderable = tryRenderable(self.getSelf());
     returncode = selfRenderable != nullptr && selfRenderable->getAlpha() <= INVISIBLE;
@@ -672,9 +694,11 @@ uint8_t scr_IfArmorIs( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's skin type equals tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).getSkin() == state.argument;
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->getSkin() == state.argument;
 
     SCRIPT_FUNCTION_END();
 }
@@ -687,7 +711,8 @@ uint8_t scr_IfUnarmed( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is holding no items in hand.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     IInventoryHolder* selfInventory = tryInventoryHolder(self.getSelf());
     if (selfInventory == nullptr)
@@ -709,7 +734,8 @@ uint8_t scr_IfHitFromBehind(script_state_t& state, ai_state_t& self) {
     /// @details This function proceeds if the last attack to the character came
     /// from behind
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     // (8192 / (2^16-1)) * 360 ~ 45 degrees
@@ -729,7 +755,8 @@ uint8_t scr_IfHitFromFront(script_state_t& state, ai_state_t& self) {
     /// @details This function proceeds if the last attack to the character came
     /// from the front
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     // (8192 / (2^16-1)) * 360 ~ 45 degrees
@@ -749,7 +776,8 @@ uint8_t scr_IfHitFromLeft(script_state_t& state, ai_state_t& self) {
     /// @details This function proceeds if the last attack to the character came
     /// from the left
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     // (8192 / (2^16-1)) * 360 ~ 45 degrees
@@ -769,7 +797,8 @@ uint8_t scr_IfHitFromRight(script_state_t& state, ai_state_t& self) {
     /// @details This function proceeds if the last attack to the character came
     /// from the right
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     // (8192 / (2^16-1)) * 360 ~ 45 degrees
@@ -790,7 +819,8 @@ uint8_t scr_IfNotDropped( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is kursed and another character
     /// was holding it and tried to drop it
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_NOTDROPPED );
 
@@ -805,7 +835,8 @@ uint8_t scr_IfYIsLessThanX( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if tmpy is less than tmpx
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.y < state.x );
 
@@ -821,7 +852,8 @@ uint8_t scr_IfBlocked( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character blocked the attack of another
     /// character this update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_BLOCKED );
 
@@ -832,7 +864,8 @@ uint8_t scr_IfBlocked( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs0( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 0 == self.state );
 
@@ -843,7 +876,8 @@ uint8_t scr_IfStateIs0( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs1( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 1 == self.state );
 
@@ -854,7 +888,8 @@ uint8_t scr_IfStateIs1( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs2( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 2 == self.state );
 
@@ -865,7 +900,8 @@ uint8_t scr_IfStateIs2( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs3( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 3 == self.state );
 
@@ -876,7 +912,8 @@ uint8_t scr_IfStateIs3( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs4( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 4 == self.state );
 
@@ -887,7 +924,8 @@ uint8_t scr_IfStateIs4( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs5( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 5 == self.state );
 
@@ -898,7 +936,8 @@ uint8_t scr_IfStateIs5( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs6( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 6 == self.state );
 
@@ -909,7 +948,8 @@ uint8_t scr_IfStateIs6( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs7( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 7 == self.state );
 
@@ -924,7 +964,8 @@ uint8_t scr_IfContentIs( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the content matches tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.argument == self.content );
 
@@ -939,7 +980,8 @@ uint8_t scr_IfStateIsNot( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's state does not equal tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.argument != self.state );
 
@@ -952,7 +994,8 @@ uint8_t scr_IfXIsEqualToY( script_state_t& state, ai_state_t& self )
 {
     // These functions proceed if tmpx and tmpy are the same
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( state.x == state.y );
 
@@ -967,12 +1010,14 @@ uint8_t scr_DebugMessage( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spits out some useful numbers
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     DisplayMsg_printf( "aistate %d, aicontent %d, target %" PRIuZ, self.state, self.content, self.getTarget().get() );
     DisplayMsg_printf( "tmpx %d, tmpy %d", state.x, state.y );
     DisplayMsg_printf( "tmpdistance %d, tmpturn %d", state.distance, state.turn );
-    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(pchr->getFacingZ()) );
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(selfContext.object->getFacingZ()) );
 
     SCRIPT_FUNCTION_END();
 }
@@ -986,7 +1031,8 @@ uint8_t scr_IfHitGround( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if a character hit the ground this update.
     /// Used to determine when to play the sound for a dropped item
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_HITGROUND );
 
@@ -1001,9 +1047,11 @@ uint8_t scr_IfNameIsKnown( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's name is known
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).isNameKnown();
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->isNameKnown();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1016,9 +1064,10 @@ uint8_t scr_IfUsageIsKnown( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's usage is known
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
     returncode = selfContext.profile->isUsageKnown();
 
     SCRIPT_FUNCTION_END();
@@ -1033,9 +1082,11 @@ uint8_t scr_IfHoldingItemID( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is holding a specified item
     /// in hand, setting tmpargument to the latch button to press to use it
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -1049,11 +1100,13 @@ uint8_t scr_IfHoldingRangedWeapon( script_state_t& state, ai_state_t& self )
     /// @details This function passes if the character is holding a ranged weapon, returning
     /// the latch to press to use it.  This also checks ammo.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     state.argument = 0;
-    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    const IInventoryHolder& selfInventory = *selfContext.inventory;
 
     // Check right hand
     const ObjectRef rightHandItem = heldItemRef(selfInventory, SLOT_RIGHT);
@@ -1087,11 +1140,13 @@ uint8_t scr_IfHoldingMeleeWeapon( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is holding a specified item
     /// in hand, setting tmpargument to the latch button to press to use it
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     state.argument = 0;
-    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    const IInventoryHolder& selfInventory = *selfContext.inventory;
 
     if ( !returncode )
     {
@@ -1130,11 +1185,13 @@ uint8_t scr_IfHoldingShield( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is holding a specified item
     /// in hand, setting tmpargument to the latch button to press to use it. The button will need to be held down.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
     state.argument = 0;
-    const IInventoryHolder& selfInventory = inventoryHolder(*pchr);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    const IInventoryHolder& selfInventory = *selfContext.inventory;
 
     if ( !returncode )
     {
@@ -1169,9 +1226,11 @@ uint8_t scr_IfKursed( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is kursed
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).isKursed();
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->isKursed();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1184,9 +1243,11 @@ uint8_t scr_IfOverWater( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is on a water tile
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).isOnWaterTile();
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->isOnWaterTile();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1199,7 +1260,8 @@ uint8_t scr_IfThrown( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character was thrown this update.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_THROWN );
 
@@ -1215,7 +1277,8 @@ uint8_t scr_IfCrushed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character was crushed in a passage this
     /// update.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_CRUSHED );
 
@@ -1232,7 +1295,8 @@ uint8_t scr_IfNotPutAway( script_state_t& state, ai_state_t& self )
     /// character's pockets for some reason.
     /// It might be kursed or too big or something
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_NOTPUTAWAY );
 
@@ -1249,7 +1313,8 @@ uint8_t scr_IfTakenOut( script_state_t& state, ai_state_t& self )
     /// and the holder tried to unequip it ( take it out of pack ), but the
     /// item was kursed and didn't cooperate
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_TAKENOUT );
 
@@ -1265,9 +1330,11 @@ uint8_t scr_IfAmmoOut( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character itself has no ammo left.
     /// This is for crossbows and such, not archers.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = ( 0 == targetInfo(*pchr).getAmmo() );
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = ( 0 == selfContext.targetInfo->getAmmo() );
 
     SCRIPT_FUNCTION_END();
 }
@@ -1280,7 +1347,8 @@ uint8_t scr_IfStateIsOdd( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character's state is 1, 3, 5, 7, etc.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = idlib::is_odd(self.state);
 
@@ -1297,10 +1365,12 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     /// left hand.
     /// Usage: Used mostly by enchants that target the item of the other hand
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = false;
-    const ITargetInfo& selfTargetInfo = targetInfo(*pchr);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    const ITargetInfo& selfTargetInfo = *selfContext.targetInfo;
     IInventoryHolder* holderInventory = tryInventoryHolder(selfTargetInfo.getHolderRef());
     if (holderInventory != nullptr)
     {
@@ -1320,7 +1390,8 @@ uint8_t scr_IfHitVulnerable( script_state_t& state, ai_state_t& self )
     /// vulnerability IDSZ.
     /// For example, a werewolf gets hit by a [SILV] bullet.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_HITVULNERABLE );
 
@@ -1333,9 +1404,11 @@ uint8_t scr_IfEquipped( script_state_t& state, ai_state_t& self )
 {
     // This proceeds if the character is equipped
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).isEquipped();
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->isEquipped();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1349,9 +1422,11 @@ uint8_t scr_FlashVariable( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character flash according to tmpargument
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    visualControl(*pchr).flash(state.argument);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    selfContext.visual->flash(state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1366,9 +1441,11 @@ uint8_t scr_FlashVariableHeight( script_state_t& state, ai_state_t& self )
     ///          This function sets a character's lighting depending on vertex height...
     ///          Can make feet dark and head light...
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    visualControl(*pchr).flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    selfContext.visual->flashVariableHeight(Ego::Math::clipBits<16>(state.turn), state.x, state.distance, state.y);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1377,7 +1454,8 @@ uint8_t scr_FlashVariableHeight( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs8( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 8 == self.state );
 
@@ -1388,7 +1466,8 @@ uint8_t scr_IfStateIs8( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs9( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 9 == self.state );
 
@@ -1399,7 +1478,8 @@ uint8_t scr_IfStateIs9( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs10( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 10 == self.state );
 
@@ -1410,7 +1490,8 @@ uint8_t scr_IfStateIs10( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs11( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 11 == self.state );
 
@@ -1421,7 +1502,8 @@ uint8_t scr_IfStateIs11( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs12( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 12 == self.state );
 
@@ -1432,7 +1514,8 @@ uint8_t scr_IfStateIs12( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs13( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 13 == self.state );
 
@@ -1443,7 +1526,8 @@ uint8_t scr_IfStateIs13( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs14( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 14 == self.state );
 
@@ -1454,7 +1538,8 @@ uint8_t scr_IfStateIs14( script_state_t& state, ai_state_t& self )
 //--------------------------------------------------------------------------------------------
 uint8_t scr_IfStateIs15( script_state_t& state, ai_state_t& self )
 {
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( 15 == self.state );
 
@@ -1481,9 +1566,11 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function passes if the holder blocked an attack
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetTargetToHolderLastAttacker(self, targetInfo(*pchr));
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = trySetTargetToHolderLastAttacker(self, *selfContext.targetInfo);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1496,7 +1583,8 @@ uint8_t scr_IfOperatorIsLinux( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Proceeds if running on linux
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
 #if defined(ID_LINUX)
     returncode = true;
@@ -1515,7 +1603,8 @@ uint8_t scr_IfSomeoneIsStealing( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function passes if someone stealed from it's shop
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = ( self.order_value == Passage::SHOP_STOLEN && self.order_counter == Passage::SHOP_THEFT );
 
@@ -1531,14 +1620,16 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
     /// @details Proceeds if HitFromBehind, target has [STAB] skill and damage dealt is physical
     /// automatically fails if attacker has a code of conduct
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     //Now check if it really was backstabbed
     returncode = false;
     if ( HAS_SOME_BITS( self.alert, ALERTIF_ATTACKED ) )
     {
         //Who is the dirty backstabber?
-        const ObjectRef lastAttackerRef = scriptable(*pchr).getAILastAttacker();
+        const SelfStateContext selfContext = makeSelfStateContext(self);
+        const ObjectRef lastAttackerRef = selfContext.scriptable->getAILastAttacker();
         const IInventoryHolder* lastAttackerHolder = tryInventoryHolder(lastAttackerRef);
         const ICharacterState* lastAttackerState = tryCharacterState(lastAttackerRef);
         if (lastAttackerHolder == nullptr || lastAttackerState == nullptr || lastAttackerHolder->isTerminated())
@@ -1574,7 +1665,8 @@ uint8_t scr_End( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This Is the last function in a script
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     self.terminate = true;
     returncode = false;
@@ -1590,7 +1682,8 @@ uint8_t scr_IfOperatorIsMacintosh( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Proceeds if the current running OS is mac
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
 #if defined(ID_OSX)
     returncode = true;
@@ -1611,9 +1704,10 @@ uint8_t scr_IfModuleHasIDSZ( script_state_t& state, ai_state_t& self )
     /// @details Proceeds if the specified module has the required IDSZ specified in tmpdistance
     /// The module folder name to be checked is a string from message.txt
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    const SelfStateContext selfContext = makeSelfStateContext(self);
     returncode = activeModuleHasIdszWithValidMessage(*selfContext.profile,
                                                      static_cast<int>(state.argument),
                                                      Ego::Script::Interpreter::safeCast<IDSZ2>(state.distance));
@@ -1628,7 +1722,8 @@ uint8_t scr_IfLevelUp( script_state_t& state, ai_state_t& self )
     // IfLevelUp()
     /// @author ZF
     /// @details This function proceeds if the character gained a new level this update
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_LEVELUP );
 
@@ -1643,9 +1738,11 @@ uint8_t scr_IfStealthed( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Returns true if the Object is currently in stealth mode and not detected
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = targetInfo(*pchr).isStealthed();
+    const SelfStateContext selfContext = makeSelfStateContext(self);
+    returncode = selfContext.targetInfo->isStealthed();
 
     SCRIPT_FUNCTION_END();
 }

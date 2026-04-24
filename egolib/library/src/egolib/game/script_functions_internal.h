@@ -141,6 +141,38 @@ inline Object* tryObject(ObjectRef objectRef)
     return objectHandler().exists(objectRef) ? objectHandler().get(objectRef) : nullptr;
 }
 
+struct ResolvedSelfContext
+{
+    ObjectRef ref = ObjectRef::Invalid;
+    Object* object = nullptr;
+    ObjectProfile* profile = nullptr;
+
+    bool isResolved() const
+    {
+        return ref != ObjectRef::Invalid && object != nullptr && profile != nullptr;
+    }
+};
+
+inline ResolvedSelfContext resolveSelfContext(ObjectRef objectRef)
+{
+    ResolvedSelfContext context;
+    context.ref = objectRef;
+    context.object = tryObject(objectRef);
+    if (context.object == nullptr)
+    {
+        return context;
+    }
+
+    const std::shared_ptr<ObjectProfile>& profile = context.object->getProfile();
+    context.profile = profile.get();
+    return context;
+}
+
+inline ResolvedSelfContext resolveSelfContext(const ai_state_t& self)
+{
+    return resolveSelfContext(self.getSelf());
+}
+
 inline std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
 {
     return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
@@ -280,10 +312,10 @@ using namespace script_detail;
 
 #define SCRIPT_FUNCTION_BEGIN() \
     uint8_t returncode = true; \
-    if( !objectHandler().exists(self.getSelf()) ) return false; \
-    Object *pchr = objectHandler().get( self.getSelf() ); \
-    const std::shared_ptr<ObjectProfile> &ppro = pchr->getProfile(); \
-    if(!ppro) return false;
+    const ResolvedSelfContext resolvedSelfContext = resolveSelfContext(self); \
+    if (!resolvedSelfContext.isResolved()) return false; \
+    [[maybe_unused]] Object *pchr = resolvedSelfContext.object; \
+    [[maybe_unused]] ObjectProfile *ppro = resolvedSelfContext.profile;
 
 #define SCRIPT_FUNCTION_END() \
     return returncode;

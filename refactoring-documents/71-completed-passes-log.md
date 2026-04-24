@@ -958,6 +958,12 @@ Continued Tier 1.2 inside `script_functions_action.c` by strengthening the file-
 
 Extended `ScriptActionFunctions.cpp` with focused non-player charge-display failure coverage, then kept build, the focused action test slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 189 — Script-entry self-resolution closure (2026-04-24)
+
+Continued Tier 1.2 by removing `SCRIPT_FUNCTION_BEGIN()` / `SCRIPT_REQUIRE_TARGET()` dependence from `script_functions_action.c`, `script_functions_target.c`, `script_functions_state.c`, `script_functions_spawn.c`, and `script_functions_systems.c`. Added shared non-owning `ResolvedSelfContext` resolution in `script_functions_internal.h`, then routed the converted files through their existing file-local compatibility contexts or explicit resolved-self helpers instead of macro-owned `pchr` / `ppro` setup.
+
+Kept the legacy invalid-self / missing-profile quiet-failure contract unchanged, pruned the last dead `pchr` / `ppro` residue from the converted files, and kept `egolib-library` plus `egoboo-content-validator` building clean with `test.mod` validating at 0 warnings / 0 errors. Focused `egolib-tests-executable` coverage remained blocked by the existing unresolved-link cluster in this workspace.
+
 ---
 
 ## Files touched most by this pass log
