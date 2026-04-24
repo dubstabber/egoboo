@@ -970,6 +970,12 @@ Continued Tier 1.2 inside `script_functions_movement.c` by removing its `SCRIPT_
 
 Extended `ScriptMovementFunctions.cpp` with focused pathfinding coverage for valid resolved-self waypoint publication and invalid-self no-mutation failure. Build, the focused movement test slice, and the `test.mod` validator remained the acceptance bar for the pass.
 
+### Pass 191 — Bitwise script macro retirement (2026-04-24)
+
+Finished the remaining script-entry macro cleanup inside `script_functions_bitwise.c` by converting all 12 bitwise alert/state opcodes to direct return flow. Removed the now-dead `SCRIPT_FUNCTION_BEGIN()` and `SCRIPT_REQUIRE_TARGET()` definitions while keeping the still-used `SCRIPT_FUNCTION_END()` helper for the other split script-function files.
+
+Added `ScriptBitwiseFunctions.cpp` coverage for alert bit/mask helpers, state bit/mask helpers, and invalid bit-index exceptions. Build, the focused bitwise test slice, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

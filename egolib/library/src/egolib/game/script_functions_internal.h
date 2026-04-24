@@ -310,13 +310,6 @@ using namespace script_detail;
 #    pragma warning(disable : 4189) // local variable is initialized but not referenced
 #endif
 
-#define SCRIPT_FUNCTION_BEGIN() \
-    uint8_t returncode = true; \
-    const ResolvedSelfContext resolvedSelfContext = resolveSelfContext(self); \
-    if (!resolvedSelfContext.isResolved()) return false; \
-    [[maybe_unused]] Object *pchr = resolvedSelfContext.object; \
-    [[maybe_unused]] ObjectProfile *ppro = resolvedSelfContext.profile;
-
 #define SCRIPT_FUNCTION_END() \
     return returncode;
 
@@ -329,7 +322,3 @@ using namespace script_detail;
 
 #define SET_TARGET_1(ITARGET,PTARGET) if( NULL != PTARGET ) { PTARGET = objectHandler().get(ITARGET); }
 #define SET_TARGET(ITARGET,PTARGET)   self.setTarget(ITARGET); SET_TARGET_1(ITARGET,PTARGET)
-
-#define SCRIPT_REQUIRE_TARGET(PTARGET) \
-    if( !objectHandler().exists(self.getTarget()) ) return false; \
-    PTARGET = objectHandler().get( self.getTarget() );
