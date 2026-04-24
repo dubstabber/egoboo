@@ -31,22 +31,7 @@ IAnimationControl& animationControl(Object& object)
     return object;
 }
 
-ICharacterState& characterState(Object& object)
-{
-    return object;
-}
-
 IEnchantable& enchantable(Object& object)
-{
-    return object;
-}
-
-ITeamMember& teamMember(Object& object)
-{
-    return object;
-}
-
-const ITargetInfo& targetInfo(const Object& object)
 {
     return object;
 }
@@ -87,7 +72,10 @@ struct SelfRoleContext
 {
     Object* selfObject = nullptr;
     IAppearanceProfile* appearance = nullptr;
+    ICharacterState* characterState = nullptr;
+    IEnchantable* enchantable = nullptr;
     ITeamMember* teamMember = nullptr;
+    const ITargetInfo* targetInfo = nullptr;
     IWallet* wallet = nullptr;
 };
 
@@ -200,7 +188,10 @@ SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
     }
 
     context.appearance = static_cast<IAppearanceProfile*>(context.selfObject);
+    context.characterState = static_cast<ICharacterState*>(context.selfObject);
+    context.enchantable = static_cast<IEnchantable*>(context.selfObject);
     context.teamMember = static_cast<ITeamMember*>(context.selfObject);
+    context.targetInfo = static_cast<const ITargetInfo*>(context.selfObject);
     context.wallet = static_cast<IWallet*>(context.selfObject);
     return context;
 }
@@ -331,6 +322,85 @@ bool setSelfMoney(const script_state_t& state, SelfRoleContext& selfContext)
     }
 
     selfContext.wallet->giveMoney(state.argument - selfContext.wallet->getMoney());
+    return true;
+}
+
+bool joinSelfTeamToResolvedTarget(const TargetCompatibilityContext& targetContext,
+                                  SelfRoleContext& selfContext)
+{
+    if (targetContext.info == nullptr || selfContext.teamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.teamMember->setTeam(targetContext.info->getTeamRef());
+    return true;
+}
+
+bool becomeSelfLeader(SelfRoleContext& selfContext)
+{
+    if (selfContext.teamMember == nullptr)
+    {
+        return false;
+    }
+
+    selfContext.teamMember->becomeTeamLeader();
+    return true;
+}
+
+bool isSelfLeaderAlive(const SelfRoleContext& selfContext)
+{
+    return selfContext.targetInfo != nullptr &&
+           teamLeaderRef(*selfContext.targetInfo) != ObjectRef::Invalid;
+}
+
+bool increaseSelfAmmo(SelfRoleContext& selfContext)
+{
+    if (selfContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    if (selfContext.characterState->getAmmo() < selfContext.characterState->getAmmoMax())
+    {
+        selfContext.characterState->setAmmo(selfContext.characterState->getAmmo() + 1);
+    }
+
+    return true;
+}
+
+bool costSelfAmmo(SelfRoleContext& selfContext)
+{
+    if (selfContext.characterState == nullptr)
+    {
+        return false;
+    }
+
+    if (selfContext.characterState->getAmmo() > 0)
+    {
+        selfContext.characterState->setAmmo(selfContext.characterState->getAmmo() - 1);
+    }
+
+    return true;
+}
+
+bool setSelfEnchantBoostValues(const script_state_t& state, SelfRoleContext& selfContext)
+{
+    if (selfContext.enchantable == nullptr || !selfContext.enchantable->hasActiveEnchants())
+    {
+        return false;
+    }
+
+    const std::shared_ptr<Ego::Enchantment> enchant = selfContext.enchantable->getFirstActiveEnchant();
+    if (enchant == nullptr || enchant->isTerminated())
+    {
+        return false;
+    }
+
+    enchant->setBoostValues(FP8_TO_FLOAT(state.argument),
+                            FP8_TO_FLOAT(state.distance),
+                            FP8_TO_FLOAT(state.x),
+                            FP8_TO_FLOAT(state.y));
     return true;
 }
 
@@ -1058,18 +1128,6 @@ TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self
     return context;
 }
 
-bool joinSelfTeamToResolvedTarget(const TargetCompatibilityContext& targetContext,
-                                  ITeamMember& selfTeamMember)
-{
-    if (targetContext.info == nullptr)
-    {
-        return false;
-    }
-
-    selfTeamMember.setTeam(targetContext.info->getTeamRef());
-    return true;
-}
-
 bool setResolvedTargetTeam(const TargetCompatibilityContext& targetContext, TEAM_REF teamRef)
 {
     if (targetContext.teamMember == nullptr)
@@ -1326,7 +1384,7 @@ void forEachResolvedObjectRef(Fn&& fn)
         return;
     }
 
-    for (const ObjectRef objectRef : handler->objectRefIterator())
+    for (const ObjectRef& objectRef : handler->objectRefIterator())
     {
         fn(objectRef);
     }
@@ -1513,7 +1571,8 @@ uint8_t scr_JoinTargetTeam( script_state_t& state, ai_state_t& self )
     SCRIPT_FUNCTION_BEGIN();
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    returncode = joinSelfTeamToResolvedTarget(targetContext, teamMember(*pchr));
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = joinSelfTeamToResolvedTarget(targetContext, selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1680,7 +1739,8 @@ uint8_t scr_BecomeLeader( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    teamMember(*pchr).becomeTeamLeader();
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = becomeSelfLeader(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1730,7 +1790,8 @@ uint8_t scr_IfLeaderIsAlive( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( teamLeaderRef(targetInfo(*pchr)) != ObjectRef::Invalid );
+    const SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = isSelfLeaderAlive(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1930,11 +1991,8 @@ uint8_t scr_IncreaseAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function increases the character's ammo by 1
 
     SCRIPT_FUNCTION_BEGIN();
-    ICharacterState& selfState = characterState(*pchr);
-    if ( selfState.getAmmo() < selfState.getAmmoMax() )
-    {
-        selfState.setAmmo(selfState.getAmmo() + 1);
-    }
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = increaseSelfAmmo(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2368,11 +2426,8 @@ uint8_t scr_CostAmmo( script_state_t& state, ai_state_t& self )
     /// @details This function costs the character 1 point of ammo
 
     SCRIPT_FUNCTION_BEGIN();
-    ICharacterState& selfState = characterState(*pchr);
-    if ( selfState.getAmmo() > 0 )
-    {
-        selfState.setAmmo(selfState.getAmmo() - 1);
-    }
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = costSelfAmmo(selfContext);
 
     SCRIPT_FUNCTION_END();
 }
@@ -2541,14 +2596,8 @@ uint8_t scr_SetEnchantBoostValues( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = false;
-    if (enchantable(*pchr).hasActiveEnchants()) {
-        const std::shared_ptr<Ego::Enchantment> enchant = enchantable(*pchr).getFirstActiveEnchant();
-        if(enchant != nullptr && !enchant->isTerminated()) {
-            enchant->setBoostValues(FP8_TO_FLOAT(state.argument), FP8_TO_FLOAT(state.distance), FP8_TO_FLOAT(state.x), FP8_TO_FLOAT(state.y));
-            returncode = true;            
-        }
-    }
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    returncode = setSelfEnchantBoostValues(state, selfContext);
 
     SCRIPT_FUNCTION_END();
 }

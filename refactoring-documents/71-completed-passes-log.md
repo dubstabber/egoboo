@@ -946,6 +946,12 @@ Continued Tier 1.2 inside `script_functions_target.c` by replacing the remaining
 
 Extended `ScriptTargetFunctions.cpp` with focused invalid-target coverage for the shared target context across hand selectors, order/state/content queries, facing checks, and quest lookup, then kept build, the focused target-function slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 187 — Systems self-role residue closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by widening the existing file-local `SelfRoleContext` to cover the remaining self-side team, leader, ammo, and enchant pockets. Routed `scr_JoinTargetTeam`, `scr_BecomeLeader`, `scr_IfLeaderIsAlive`, `scr_IncreaseAmmo`, `scr_CostAmmo`, and `scr_SetEnchantBoostValues` through shared self-role helpers without widening any public role seams or changing legacy success/failure behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the new helper cluster, then kept build, the focused systems slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

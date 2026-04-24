@@ -2716,6 +2716,63 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
     EXPECT_FALSE(scr_IfLeaderIsAlive(state, self));
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, SelfRoleResidueHelpersFailQuietlyWhenSelfRefIsInvalid)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 56811);
+    auto target = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 56812);
+    auto ammoActor = makeAmmoItem(module, 56813);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(ammoActor, nullptr);
+
+    actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    target->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    ammoActor->setAmmo(ammoActor->getAmmoMax());
+
+    auto enchant = addHealRemovableEnchant(module, actor, 56814);
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_TRUE(actor->hasActiveEnchants());
+    ASSERT_NE(actor->getFirstActiveEnchant(), nullptr);
+    const float ownerManaSustainBefore = actor->getFirstActiveEnchant()->getOwnerManaSustain();
+    const float ownerLifeSustainBefore = actor->getFirstActiveEnchant()->getOwnerLifeSustain();
+    const float targetManaDrainBefore = actor->getFirstActiveEnchant()->getTargetManaDrain();
+    const float targetLifeDrainBefore = actor->getFirstActiveEnchant()->getTargetLifeDrain();
+
+    script_state_t state;
+
+    ai_state_t invalidTeamSelf = makeScriptSelf(actor, target);
+    invalidTeamSelf.setSelf(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_JoinTargetTeam(state, invalidTeamSelf));
+    EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
+
+    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    EXPECT_FALSE(scr_BecomeLeader(state, invalidTeamSelf));
+    EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), ObjectRef::Invalid);
+    EXPECT_FALSE(scr_IfLeaderIsAlive(state, invalidTeamSelf));
+
+    ai_state_t invalidAmmoSelf = makeScriptSelf(ammoActor, target);
+    invalidAmmoSelf.setSelf(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_IncreaseAmmo(state, invalidAmmoSelf));
+    EXPECT_EQ(ammoActor->getAmmo(), ammoActor->getAmmoMax());
+    EXPECT_FALSE(scr_CostAmmo(state, invalidAmmoSelf));
+    EXPECT_EQ(ammoActor->getAmmo(), ammoActor->getAmmoMax());
+
+    ai_state_t invalidEnchantSelf = makeScriptSelf(actor, target);
+    invalidEnchantSelf.setSelf(ObjectRef::Invalid);
+    state.argument = FLOAT_TO_FP8(1.0f);
+    state.distance = FLOAT_TO_FP8(2.0f);
+    state.x = FLOAT_TO_FP8(3.0f);
+    state.y = FLOAT_TO_FP8(4.0f);
+    EXPECT_FALSE(scr_SetEnchantBoostValues(state, invalidEnchantSelf));
+    ASSERT_NE(actor->getFirstActiveEnchant(), nullptr);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getOwnerManaSustain(), ownerManaSustainBefore);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getOwnerLifeSustain(), ownerLifeSustainBefore);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getTargetManaDrain(), targetManaDrainBefore);
+    EXPECT_FLOAT_EQ(actor->getFirstActiveEnchant()->getTargetLifeDrain(), targetLifeDrainBefore);
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, WalletHelpersUseWalletRoleSeamsAndPreserveClampSemantics)
 {
     auto& module = beginActiveTestModule();
