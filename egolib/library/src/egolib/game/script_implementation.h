@@ -33,6 +33,7 @@
 //--------------------------------------------------------------------------------------------
 
 class Object;
+class IPhysical;
 struct script_state_t;
 
 //--------------------------------------------------------------------------------------------
@@ -126,7 +127,12 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
 /// @author ZF
 /// @details Ported the A* path finding algorithm by birdsey and heavily modified it
 /// This function adds enough waypoints to get from one point to another
-bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, bool * used_astar_ptr );
+bool FindPath( waypoint_list_t& wplst,
+               const IPhysical& physical,
+               uint8_t stopped_by,
+               float dst_x,
+               float dst_y,
+               bool * used_astar_ptr );
 
 /// @author ZZ
 /// @details This function modifies tmpx and tmpy, depending on the setting of

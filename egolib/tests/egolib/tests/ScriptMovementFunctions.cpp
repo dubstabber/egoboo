@@ -343,4 +343,28 @@ TEST_F(ScriptMovementFunctionsFixture, SetFramePublishesEncodedDaAnimationFrame)
     EXPECT_FLOAT_EQ(actor->inst._animationProgress, 0.5f);
 }
 
+TEST_F(ScriptMovementFunctionsFixture, FindPathUsesResolvedSelfPhysicalStateAndPreservesInvalidSelfFailure)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5611, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(actor, nullptr);
+
+    ai_state_t self = makeScriptSelf(actor);
+    waypoint_list_t::clear(self.wp_lst);
+
+    script_state_t state;
+    state.x = actor->getPosX() + Info<float>::Grid::Size();
+    state.y = actor->getPosY();
+
+    EXPECT_TRUE(scr_FindPath(state, self));
+    EXPECT_FALSE(waypoint_list_t::empty(self.wp_lst));
+
+    ai_state_t invalidSelf = makeScriptSelf(nullptr);
+    waypoint_list_t::clear(invalidSelf.wp_lst);
+    waypoint_list_t::push(invalidSelf.wp_lst, 12, 34);
+
+    EXPECT_FALSE(scr_FindPath(state, invalidSelf));
+    EXPECT_FALSE(waypoint_list_t::empty(invalidSelf.wp_lst));
+}
+
 } // namespace

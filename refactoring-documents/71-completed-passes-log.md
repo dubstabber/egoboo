@@ -964,6 +964,12 @@ Continued Tier 1.2 by removing `SCRIPT_FUNCTION_BEGIN()` / `SCRIPT_REQUIRE_TARGE
 
 Kept the legacy invalid-self / missing-profile quiet-failure contract unchanged, pruned the last dead `pchr` / `ppro` residue from the converted files, and kept `egolib-library` plus `egoboo-content-validator` building clean with `test.mod` validating at 0 warnings / 0 errors. Focused `egolib-tests-executable` coverage remained blocked by the existing unresolved-link cluster in this workspace.
 
+### Pass 190 — Movement script self-resolution closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_movement.c` by removing its `SCRIPT_FUNCTION_BEGIN()` / macro-owned `pchr` dependence and routing self movement, physical, frame, and pathfinding helpers through explicit resolved-self context. Narrowed `FindPath(...)` away from a raw `Object*` parameter to physical-role data plus the existing stopped-by mask, without changing waypoint, A* throttle, or quiet-failure behavior.
+
+Extended `ScriptMovementFunctions.cpp` with focused pathfinding coverage for valid resolved-self waypoint publication and invalid-self no-mutation failure. Build, the focused movement test slice, and the `test.mod` validator remained the acceptance bar for the pass.
+
 ---
 
 ## Files touched most by this pass log

@@ -215,7 +215,12 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
 }
 
 //--------------------------------------------------------------------------------------------
-bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, bool * used_astar_ptr )
+bool FindPath( waypoint_list_t& wplst,
+               const IPhysical& physical,
+               uint8_t stopped_by,
+               float dst_x,
+               float dst_y,
+               bool * used_astar_ptr )
 {
     // FindPath
     /// @author ZF
@@ -234,8 +239,8 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
     }
 
     //Our current position
-    src_ix = ( int )pchr->getPosX() / Info<int>::Grid::Size();
-    src_iy = ( int )pchr->getPosY() / Info<int>::Grid::Size();
+    src_ix = ( int )physical.getPosX() / Info<int>::Grid::Size();
+    src_iy = ( int )physical.getPosY() / Info<int>::Grid::Size();
 
     //Destination position
     dst_ix = dst_x / Info<int>::Grid::Size();
@@ -250,9 +255,9 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
     returncode = false;
 
     //setup line of sight data for source
-    los_info.stopped_by = pchr->getStoppedByMask();
-    los_info.x0 = pchr->getPosX();
-    los_info.y0 = pchr->getPosY();
+    los_info.stopped_by = stopped_by;
+    los_info.x0 = physical.getPosX();
+    los_info.y0 = physical.getPosY();
     los_info.z0 = 0;
 
     //setup line of sight to target
@@ -269,7 +274,7 @@ bool FindPath( waypoint_list_t& wplst, Object * pchr, float dst_x, float dst_y, 
         printf( "Finding a path from %d,%d to %d,%d: \n", src_ix, src_iy, dst_ix, dst_iy );
 #endif
         //Try to find a path with the AStar algorithm
-        if ( g_astar.find_path( activeModule().getMeshPointer(), pchr->getStoppedByMask(), src_ix, src_iy, dst_ix, dst_iy ) )
+        if ( g_astar.find_path( activeModule().getMeshPointer(), stopped_by, src_ix, src_iy, dst_ix, dst_iy ) )
         {
             returncode = g_astar.get_path( dst_x, dst_y, wplst);
         }

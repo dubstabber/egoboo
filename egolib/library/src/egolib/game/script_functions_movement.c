@@ -5,14 +5,41 @@
 
 namespace
 {
-IMovementControl& movementControl(Object& object)
+struct SelfMovementContext
 {
-    return object;
+    Object* object = nullptr;
+    ObjectProfile* profile = nullptr;
+    IMovementControl* movement = nullptr;
+    const IPhysical* physical = nullptr;
+
+    bool isResolved() const
+    {
+        return object != nullptr &&
+               profile != nullptr &&
+               movement != nullptr &&
+               physical != nullptr;
+    }
+};
+
+SelfMovementContext makeSelfMovementContext(const ai_state_t& self)
+{
+    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
+    SelfMovementContext context;
+    context.object = resolvedSelf.object;
+    context.profile = resolvedSelf.profile;
+    if (!resolvedSelf.isResolved())
+    {
+        return context;
+    }
+
+    context.movement = static_cast<IMovementControl*>(resolvedSelf.object);
+    context.physical = static_cast<const IPhysical*>(resolvedSelf.object);
+    return context;
 }
 
-const IPhysical& physical(const Object& object)
+bool hasResolvedSelf(const ai_state_t& self)
 {
-    return object;
+    return resolveSelfContext(self).isResolved();
 }
 
 bool setEncodedFrame(Object& object, int encodedFrame)
@@ -39,7 +66,8 @@ uint8_t scr_IfAtWaypoint( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character reached its waypoint this
     /// update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     // Proceed only if the character reached a waypoint
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_ATWAYPOINT );
@@ -56,7 +84,8 @@ uint8_t scr_IfAtLastWaypoint( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character reached its last waypoint this
     /// update
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     // Proceed only if the character reached its last waypoint
     returncode = HAS_SOME_BITS( self.alert, ALERTIF_ATLASTWAYPOINT );
@@ -73,7 +102,8 @@ uint8_t scr_ClearWaypoints( script_state_t& state, ai_state_t& self )
     /// @details This function is used to move a character around.  Do this before
     /// AddWaypoint
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
 	returncode = true;
 	waypoint_list_t::clear(self.wp_lst);
@@ -89,7 +119,8 @@ uint8_t scr_AddWaypoint( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function tells the character where to move next
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     returncode = ::AddWaypoint( self.wp_lst, self.getSelf(), Ego::Script::Interpreter::safeCast<float>(state.x),
                                 Ego::Script::Interpreter::safeCast<float>(state.y));
@@ -113,13 +144,17 @@ uint8_t scr_FindPath( script_state_t& state, ai_state_t& self )
     /// This function adds enough waypoints to get from one point to another
 
     bool used_astar;
-
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
     //Too soon since last try?
     if ( self.astar_timer > worldUpdateCount() ) return true;
 
-    returncode = ::FindPath( self.wp_lst, pchr, Ego::Script::Interpreter::safeCast<float>(state.x),
+    returncode = ::FindPath( self.wp_lst,
+                             *selfContext.physical,
+                             selfContext.object->getStoppedByMask(),
+                             Ego::Script::Interpreter::safeCast<float>(state.x),
                              Ego::Script::Interpreter::safeCast<float>(state.y), &used_astar );
 
     if ( used_astar )
@@ -144,7 +179,8 @@ uint8_t scr_Compass( script_state_t& state, ai_state_t& self )
     /// tmpdistance and tmpturn.  It acts like one of those Compass thing
     /// with the two little needle legs
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     Ego::Vector2f loc_pos = Ego::Vector2f(Ego::Script::Interpreter::safeCast<float>(state.x),
                                           Ego::Script::Interpreter::safeCast<float>(state.y));
@@ -169,9 +205,11 @@ uint8_t scr_SetTurnModeToVelocity( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the character's movement mode to the default
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setTurnMode(TURNMODE_VELOCITY);
+    selfContext.movement->setTurnMode(TURNMODE_VELOCITY);
 
     SCRIPT_FUNCTION_END();
 }
@@ -185,9 +223,11 @@ uint8_t scr_SetTurnModeToWatch( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character look at its next waypoint, usually
     /// used with close waypoints or the Stop function
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setTurnMode(TURNMODE_WATCH);
+    selfContext.movement->setTurnMode(TURNMODE_WATCH);
 
     SCRIPT_FUNCTION_END();
 }
@@ -201,9 +241,11 @@ uint8_t scr_SetTurnModeToSpin( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character spin around in a circle, usually
     /// used for magical items and such
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setTurnMode(TURNMODE_SPIN);
+    selfContext.movement->setTurnMode(TURNMODE_SPIN);
 
     SCRIPT_FUNCTION_END();
 }
@@ -217,9 +259,11 @@ uint8_t scr_SetBumpHeight( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character taller or shorter, usually used when
     /// the character dies
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setBumpHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
+    selfContext.movement->setBumpHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -233,7 +277,8 @@ uint8_t scr_Run( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's maximum acceleration to its
     /// actual maximum
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.maxSpeed = 1.0f;
 
@@ -249,7 +294,8 @@ uint8_t scr_Walk( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's maximum acceleration to 66%
     /// of its actual maximum
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.maxSpeed = 0.66f;
 
@@ -265,7 +311,8 @@ uint8_t scr_Sneak( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's maximum acceleration to 33%
     /// of its actual maximum
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.maxSpeed = 0.33f;
 
@@ -280,9 +327,11 @@ uint8_t scr_GetBumpHeight( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets tmpargument to the character's height
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    state.argument = physical(*pchr).getCurrentBump().height;
+    state.argument = selfContext.physical->getCurrentBump().height;
 
     SCRIPT_FUNCTION_END();
 }
@@ -295,11 +344,13 @@ uint8_t scr_PressLatchButton( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the character latch buttons
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
     if(state.argument >= LATCHBUTTON_LEFT && state.argument < LATCHBUTTON_RESPAWN)
     {
-        movementControl(*pchr).setLatchButton(static_cast<LatchButton>(state.argument), true);
+        selfContext.movement->setLatchButton(static_cast<LatchButton>(state.argument), true);
     }
 
     SCRIPT_FUNCTION_END();
@@ -314,7 +365,8 @@ uint8_t scr_Stop( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's maximum acceleration to 0.  Used
     /// along with Walk and Run and Sneak
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.maxSpeed = 0.0f;
 
@@ -330,7 +382,8 @@ uint8_t scr_PressTargetLatchButton( script_state_t& state, ai_state_t& self )
     /// @details This function mimics joystick button presses for the target.
     /// For making items force their own usage and such
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     if (targetMovement == nullptr)
@@ -355,7 +408,8 @@ uint8_t scr_TeleportTarget( script_state_t& state, ai_state_t& self )
     /// @details This function teleports the target to the X, Y location, failing if the
     /// location is off the map or blocked
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     if (targetMovement == nullptr)
@@ -377,9 +431,11 @@ uint8_t scr_SetBumpSize( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the how wide the character is
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setBumpWidth(Ego::Script::Interpreter::safeCast<float>(state.argument));
+    selfContext.movement->setBumpWidth(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -392,9 +448,11 @@ uint8_t scr_SetFlyHeight( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character fly ( or fall to ground if 0 )
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setFlyHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
+    selfContext.movement->setFlyHeight(Ego::Script::Interpreter::safeCast<float>(state.argument));
 
     SCRIPT_FUNCTION_END();
 }
@@ -408,9 +466,11 @@ uint8_t scr_SetTurnModeToWatchTarget( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character face its target, no matter what
     /// direction it is moving in.  Undo this with set_TurnModeToVelocity
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setTurnMode(TURNMODE_WATCHTARGET);
+    selfContext.movement->setTurnMode(TURNMODE_WATCHTARGET);
 
     SCRIPT_FUNCTION_END();
 }
@@ -426,7 +486,8 @@ uint8_t scr_StopTargetMovement( script_state_t& state, ai_state_t& self )
     /// sets the z velocity to 0 if the character is moving upwards.
     /// This is a special function for the IronBall object
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     const IPhysical* targetPhysical = tryPhysical(self.getTarget());
@@ -454,7 +515,8 @@ uint8_t scr_SetXY( script_state_t& state, ai_state_t& self )
     /// @details This function sets one of the 8 permanent storage variable slots
     /// ( each of which holds an x,y pair )
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.x[state.argument & STOR_AND] = state.x;
     self.y[state.argument & STOR_AND] = state.y;
@@ -471,7 +533,8 @@ uint8_t scr_GetXY( script_state_t& state, ai_state_t& self )
     /// @details This function reads one of the 8 permanent storage variable slots,
     /// setting tmpx and tmpy accordingly
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     state.x = self.x[state.argument & STOR_AND];
     state.y = self.y[state.argument & STOR_AND];
@@ -488,7 +551,8 @@ uint8_t scr_AddXY( script_state_t& state, ai_state_t& self )
     /// @details This function alters the contents of one of the 8 permanent storage
     /// slots
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.x[state.argument & STOR_AND] += state.x;
     self.y[state.argument & STOR_AND] += state.y;
@@ -504,7 +568,8 @@ uint8_t scr_AccelerateTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function changes the x and y speeds of the target
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     const IPhysical* targetPhysical = tryPhysical(self.getTarget());
@@ -527,9 +592,11 @@ uint8_t scr_SetFrame( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the current .MD2 frame for the character.  Values are * 4
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    returncode = setEncodedFrame(*pchr, state.argument);
+    returncode = setEncodedFrame(*selfContext.object, state.argument);
 
     SCRIPT_FUNCTION_END();
 }
@@ -543,9 +610,11 @@ uint8_t scr_SetReloadTime( script_state_t& state, ai_state_t& self )
     /// @details This function stops a character from being used for a while.  Used
     /// by weapons to slow down their attack rate.  50 clicks per second.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    movementControl(*pchr).setReloadTimer(static_cast<uint16_t>(std::max(0, state.argument)));
+    selfContext.movement->setReloadTimer(static_cast<uint16_t>(std::max(0, state.argument)));
 
     SCRIPT_FUNCTION_END();
 }
@@ -559,7 +628,8 @@ uint8_t scr_SetSpeedPercent( script_state_t& state, ai_state_t& self )
     /// @details This function acts like Run or Walk, except it allows the explicit
     /// setting of the speed
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     self.maxSpeed = std::max(0.0f, state.argument / 100.0f);
 
@@ -575,13 +645,15 @@ uint8_t scr_Teleport( script_state_t& state, ai_state_t& self )
     /// @details This function teleports the character to a new location, failing if
     /// the location is blocked or off the map
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    const IPhysical& selfPhysical = physical(*pchr);
+    const IPhysical& selfPhysical = *selfContext.physical;
     auto location = Ego::Vector3f(Ego::Script::Interpreter::safeCast<float>(state.x),
                                   Ego::Script::Interpreter::safeCast<float>(state.y),
                                   selfPhysical.getPosZ());
-    returncode = movementControl(*pchr).teleport(location, selfPhysical.getFacingZ());
+    returncode = selfContext.movement->teleport(location, selfPhysical.getFacingZ());
 
     SCRIPT_FUNCTION_END();
 }
@@ -596,7 +668,8 @@ uint8_t scr_SetTargetReloadTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target's reload time
     /// This function stops the target from attacking for a while.
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     if (targetMovement == nullptr)
@@ -624,9 +697,11 @@ uint8_t scr_SetShadowSize( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character's shadow bigger or smaller
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    IMovementControl& selfMovement = movementControl(*pchr);
+    IMovementControl& selfMovement = *selfContext.movement;
     selfMovement.setShadowSize(state.argument * selfMovement.getFat());
     selfMovement.setSavedShadowSize(state.argument);
 
@@ -641,11 +716,13 @@ uint8_t scr_AccelerateUp( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character accelerate up and down
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    const SelfMovementContext selfContext = makeSelfMovementContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    const IPhysical& selfPhysical = physical(*pchr);
-    movementControl(*pchr).setVelocity(selfPhysical.getVelocity() +
-                                       Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
+    const IPhysical& selfPhysical = *selfContext.physical;
+    selfContext.movement->setVelocity(selfPhysical.getVelocity() +
+                                      Ego::Vector3f(0.0f, 0.0f, state.argument / 100.0f));
 
     SCRIPT_FUNCTION_END();
 }
@@ -658,7 +735,8 @@ uint8_t scr_AccelerateTargetUp( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the target accelerate up and down
 
-    SCRIPT_FUNCTION_BEGIN();
+    uint8_t returncode = true;
+    if (!hasResolvedSelf(self)) return false;
 
     IMovementControl* targetMovement = tryMovementControl(self.getTarget());
     const IPhysical* targetPhysical = tryPhysical(self.getTarget());
