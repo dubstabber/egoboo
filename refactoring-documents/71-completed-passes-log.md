@@ -994,6 +994,12 @@ Continued the script return-flow cleanup inside `script_functions_target.c` by r
 
 Kept `SCRIPT_FUNCTION_END()` available for the remaining state/spawn/systems files. Build, the focused `ScriptTargetFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 195 — State script direct-return cleanup (2026-04-24)
+
+Continued the script return-flow cleanup inside `script_functions_state.c` by replacing the legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the state opcode file. Preserved explicit self-resolution, alert/state predicates, held-item hand selection, platform predicates, debug-message side effects, and quiet-failure behavior.
+
+Kept `SCRIPT_FUNCTION_END()` available for the remaining spawn/systems files. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
