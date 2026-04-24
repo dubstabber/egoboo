@@ -9,6 +9,11 @@ namespace
 struct SpawnSelfContext
 {
     Object& object;
+    ObjectProfile* profile = nullptr;
+    IScriptable* scriptable = nullptr;
+    const ITargetInfo* targetInfo = nullptr;
+    const IInventoryHolder* inventory = nullptr;
+    ILifecycleControl* lifecycle = nullptr;
     std::string name;
     std::string className;
 };
@@ -94,6 +99,11 @@ SpawnSelfContext makeSpawnSelfContext(Object& object)
     const std::shared_ptr<ObjectProfile> profile = object.getProfile();
     return SpawnSelfContext{
         object,
+        profile.get(),
+        static_cast<IScriptable*>(&object),
+        static_cast<const ITargetInfo*>(&object),
+        static_cast<const IInventoryHolder*>(&object),
+        static_cast<ILifecycleControl*>(&object),
         object.getName(),
         profile ? profile->getClassName() : std::string()
     };
@@ -218,6 +228,27 @@ bool trySetSelfPoofTime(ai_state_t& self, bool isPlayer, uint32_t updateOffset =
 
     self.poof_time = worldUpdateCount() + updateOffset;
     return true;
+}
+
+bool identifyResolvedTarget(ObjectProfile& selfProfile, ObjectRef targetRef)
+{
+    ICharacterState* targetState = tryCharacterState(targetRef);
+    const ITargetInfo* targetInfoRole = tryTargetInfo(targetRef);
+    IVisualControl* targetVisual = tryVisualControl(targetRef);
+    if (targetState == nullptr || targetInfoRole == nullptr || targetVisual == nullptr)
+    {
+        return false;
+    }
+
+    bool identifiedUnknownName = !targetInfoRole->isNameKnown();
+    if (targetState->getAmmoMax() != 0)
+    {
+        targetVisual->setAmmoKnown(true);
+    }
+
+    targetVisual->setNameKnown(true);
+    selfProfile.makeUsageKnown();
+    return identifiedUnknownName;
 }
 
 bool tryDetachSelfFromHolder(ObjectRef objectRef)
@@ -587,11 +618,12 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     /// buck the rider if the character is a mount
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
     // This funtion drops the character's in hand items/riders
-    const bool selfIsMount = targetInfo(*pchr).isMount();
-    dropHeldObject(inventoryHolder(*pchr), SLOT_LEFT, selfIsMount);
-    dropHeldObject(inventoryHolder(*pchr), SLOT_RIGHT, selfIsMount);
+    const bool selfIsMount = selfContext.targetInfo->isMount();
+    dropHeldObject(*selfContext.inventory, SLOT_LEFT, selfIsMount);
+    dropHeldObject(*selfContext.inventory, SLOT_RIGHT, selfIsMount);
 
     SCRIPT_FUNCTION_END();
 }
@@ -606,8 +638,9 @@ uint8_t scr_GoPoof( script_state_t& state, ai_state_t& self )
     /// This doesn't work on players
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    returncode = trySetSelfPoofTime(self, targetInfo(*pchr).isPlayer());
+    returncode = trySetSelfPoofTime(self, selfContext.targetInfo->isPlayer());
 
     SCRIPT_FUNCTION_END();
 }
@@ -622,8 +655,9 @@ uint8_t scr_DropKeys( script_state_t& state, ai_state_t& self )
     /// This does NOT drop keys in the character's hands.
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).dropKeys();
+    selfContext.lifecycle->dropKeys();
 
     SCRIPT_FUNCTION_END();
 }
@@ -665,8 +699,9 @@ uint8_t scr_RespawnCharacter( script_state_t& state, ai_state_t& self )
     /// Often used with the Clean functions
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).respawn();
+    selfContext.lifecycle->respawn();
 
     SCRIPT_FUNCTION_END();
 }
@@ -698,8 +733,9 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
     /// themselves up.  Usually done by the boss creature every second or so
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    const TEAM_REF selfTeam = targetInfo(*pchr).getTeamRef();
+    const TEAM_REF selfTeam = selfContext.targetInfo->getTeamRef();
     forEachLiveSpawnObjectRef([&](ObjectRef listenerRef)
     {
         publishCleanUpForSameTeamListener(selfTeam, listenerRef);
@@ -833,8 +869,9 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
     /// and such
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).setCanBeCrushed(true);
+    selfContext.lifecycle->setCanBeCrushed(true);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1102,8 +1139,9 @@ uint8_t scr_DropItems( script_state_t& state, ai_state_t& self )
     /// @details This function drops all of the items the character is holding
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).dropAllItems();
+    selfContext.lifecycle->dropAllItems();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1139,8 +1177,9 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
     /// Usage: Used for spells that summon creatures
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).setItem(false);
+    selfContext.lifecycle->setItem(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1170,24 +1209,9 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
     /// Proceeds if the target was unknown
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    ICharacterState* targetState = tryCharacterState(self.getTarget());
-    const ITargetInfo* targetInfoRole = tryTargetInfo(self.getTarget());
-    IVisualControl* targetVisual = tryVisualControl(self.getTarget());
-    if (targetState == nullptr || targetInfoRole == nullptr || targetVisual == nullptr)
-    {
-        return false;
-    }
-
-    returncode = false;
-    if (targetState->getAmmoMax() != 0)
-    {
-        targetVisual->setAmmoKnown(true);
-    }
-
-    returncode = !targetInfoRole->isNameKnown();
-    targetVisual->setNameKnown(true);
-    ppro->makeUsageKnown();
+    returncode = identifyResolvedTarget(*selfContext.profile, self.getTarget());
 
     SCRIPT_FUNCTION_END();
 }
@@ -1222,8 +1246,9 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
     /// @details This function makes doors unable to close on this object
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    lifecycleControl(*pchr).setCanBeCrushed(false);
+    selfContext.lifecycle->setCanBeCrushed(false);
 
     SCRIPT_FUNCTION_END();
 }
@@ -1295,8 +1320,9 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
     //ZF> Note: This script function seems to be only used by the Fireball spell, so its use is VERY limited
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    PIP_REF ipip = ppro->getParticlePoofProfile();
+    PIP_REF ipip = selfContext.profile->getParticlePoofProfile();
     if ( INVALID_PIP_REF == ipip) return false;
     const std::shared_ptr<ParticleProfile> &ppip = EngineContext::get().profileSystem().getParticleProfile(ipip);
 
@@ -1307,11 +1333,19 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         const float posOffsetBase = static_cast<float>(state.y);
         const float damage_rand = ppip->damage.length();
 
-        Facing facing_z = pchr->getFacingZ();
-        for (int cnt = 0; cnt < pchr->getProfile()->getParticlePoofAmount(); cnt++)
+        Facing facing_z = selfContext.object.getFacingZ();
+        for (int cnt = 0; cnt < selfContext.profile->getParticlePoofAmount(); cnt++)
         {
-            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(pchr->getOldPosition(), facing_z, pchr->getProfile()->getSlotNumber(), ipip,
-                                                                     ObjectRef::Invalid, GRIP_LAST, pchr->getTeamRef(), scriptable(*pchr).getAIOwner(), ParticleRef::Invalid, cnt);
+            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(selfContext.object.getOldPosition(),
+                                                                                     facing_z,
+                                                                                     selfContext.profile->getSlotNumber(),
+                                                                                     ipip,
+                                                                                     ObjectRef::Invalid,
+                                                                                     GRIP_LAST,
+                                                                                     selfContext.object.getTeamRef(),
+                                                                                     selfContext.scriptable->getAIOwner(),
+                                                                                     ParticleRef::Invalid,
+                                                                                     cnt);
 
             // set some values
             if(poofParticle) {
@@ -1333,7 +1367,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
                 returncode = true;
             }
 
-            facing_z += Facing(pchr->getProfile()->getParticlePoofFacingAdd());
+            facing_z += Facing(selfContext.profile->getParticlePoofFacingAdd());
         }
     }
 
@@ -1558,12 +1592,13 @@ uint8_t scr_EnableStealth( script_state_t& state, ai_state_t& self )
     /// @details Makes the object enter stealth mode. Returns true if it is now hidden from others.
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    if (targetInfo(*pchr).isStealthed()) {
+    if (selfContext.targetInfo->isStealthed()) {
         returncode = false;
     }
     else {
-        returncode = lifecycleControl(*pchr).activateStealth();
+        returncode = selfContext.lifecycle->activateStealth();
     }
 
     SCRIPT_FUNCTION_END();
@@ -1578,9 +1613,10 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
     /// @details Makes the object exit stealth mode. Returns true if it exited stealth mode.
 
     SCRIPT_FUNCTION_BEGIN();
+    const SpawnSelfContext selfContext = makeSpawnSelfContext(*pchr);
 
-    returncode = targetInfo(*pchr).isStealthed();
-    lifecycleControl(*pchr).deactivateStealth();
+    returncode = selfContext.targetInfo->isStealthed();
+    selfContext.lifecycle->deactivateStealth();
 
     SCRIPT_FUNCTION_END();
 }

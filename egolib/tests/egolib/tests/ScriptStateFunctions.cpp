@@ -699,6 +699,39 @@ TEST_F(ScriptStateFunctionsFixture, SpawnPoofFailsWhenSelfIsNoLongerLive)
     EXPECT_EQ(particleHandler.getCount(), particleCountBefore);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SpawnPoofSpeedSpacingDamageUsesSelfProfileContext)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/ranger.obj", 55382);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(actor->getProfile(), nullptr);
+    ASSERT_GT(actor->getProfile()->getParticlePoofAmount(), 0);
+    ASSERT_NE(actor->getProfile()->getParticlePoofProfile(), INVALID_PIP_REF);
+
+    actor->setTeam(Team::TEAM_GOOD);
+    actor->setAIOwner(ObjectRef(777));
+
+    clearParticles();
+
+    script_state_t state;
+    state.x = 3;
+    state.y = 5;
+    state.argument = FLOAT_TO_FP8(2.0f);
+    ai_state_t self = makeScriptSelf(actor);
+
+    IParticleHandler& particleHandler = EngineContext::get().particleHandler();
+    EXPECT_TRUE(scr_SpawnPoofSpeedSpacingDamage(state, self));
+    EXPECT_GT(particleHandler.getCount(), 0u);
+
+    const auto particle = latestSpawnedParticle();
+    ASSERT_NE(particle, nullptr);
+    EXPECT_EQ(particle->owner_ref, ObjectRef(777));
+    EXPECT_EQ(particle->team, actor->getTeamRef());
+    EXPECT_EQ(particle->getSpawnerProfile(), actor->getProfileID());
+    EXPECT_FLOAT_EQ(particle->damage.base, FP8_TO_FLOAT(state.argument));
+}
+
 TEST_F(ScriptStateFunctionsFixture, SpawnParticleUsesResolvedHolderOwnerAndKeepsSelfAttachment)
 {
     auto& module = beginActiveTestModule();
@@ -1182,6 +1215,7 @@ TEST_F(ScriptStateFunctionsFixture, IdentifyAndTargetKeyDropUseRoleLookups)
     EXPECT_TRUE(scr_IdentifyTarget(state, self));
     EXPECT_TRUE(target->isAmmoKnown());
     EXPECT_TRUE(target->isNameKnown());
+    EXPECT_TRUE(actor->getProfile()->isUsageKnown());
 
     EXPECT_TRUE(scr_DropTargetKeys(state, self));
     EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);

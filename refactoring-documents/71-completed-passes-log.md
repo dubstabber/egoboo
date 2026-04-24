@@ -928,6 +928,12 @@ Continued Tier 1.2 inside `script_functions_action.c` by moving the remaining se
 
 Extended `ScriptActionFunctions.cpp` with focused regressions for direct self-message dispatch, usage-known publication, and volume-adjusted sound routing on top of the existing action/audio/billboard/charge coverage, then kept build, the focused action test slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 184 — Spawn self/profile compatibility closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_spawn.c` by replacing the remaining direct self/profile compatibility pockets with a strengthened file-local `SpawnSelfContext` plus a narrow target-identification helper. Routed self lifecycle, cleanup, stealth, identify-target, and poof-config helpers through the resolved context without widening any public role seams or changing the existing success/failure behavior.
+
+Extended `ScriptStateFunctions.cpp` with focused coverage for usage-known publication during `scr_IdentifyTarget()` and the self-profile-driven `scr_SpawnPoofSpeedSpacingDamage()` path, then kept build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
