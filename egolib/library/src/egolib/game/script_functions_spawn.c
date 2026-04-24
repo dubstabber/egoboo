@@ -623,7 +623,6 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     /// @details This function drops the character's in-hand items.  It will also
     /// buck the rider if the character is a mount
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
@@ -632,7 +631,7 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     dropHeldObject(*selfContext.inventory, SLOT_LEFT, selfIsMount);
     dropHeldObject(*selfContext.inventory, SLOT_RIGHT, selfIsMount);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -644,13 +643,10 @@ uint8_t scr_GoPoof( script_state_t& state, ai_state_t& self )
     /// @details This function flags the character to be removed from the game entirely.
     /// This doesn't work on players
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
-    returncode = trySetSelfPoofTime(self, selfContext.targetInfo->isPlayer());
-
-    SCRIPT_FUNCTION_END();
+    return trySetSelfPoofTime(self, selfContext.targetInfo->isPlayer());
 }
 
 
@@ -662,13 +658,12 @@ uint8_t scr_DropKeys( script_state_t& state, ai_state_t& self )
     /// @details This function drops all of the keys in the character's inventory.
     /// This does NOT drop keys in the character's hands.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->dropKeys();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -684,7 +679,6 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     /// tmpx and tmpy give the coodinates, tmpturn gives the new character's
     /// direction, and tmpdistance gives the new character's initial velocity
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -694,9 +688,7 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
                                                                  position,
                                                                  Facing(Ego::Math::clipBits<16>(state.turn)));
-    returncode = finalizeSafeSelfCopySpawn(selfContext, child, self, state.distance);
-
-    SCRIPT_FUNCTION_END();
+    return finalizeSafeSelfCopySpawn(selfContext, child, self, state.distance);
 }
 
 
@@ -708,13 +700,12 @@ uint8_t scr_RespawnCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function respawns the character at its starting location.
     /// Often used with the Clean functions
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->respawn();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -727,12 +718,9 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
     /// Can be used to make slippery weapons, or to make certain characters
     /// incapable of wielding certain weapons. "A troll can't grab a torch"
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = tryDetachSelfFromHolder(self.getSelf());
-
-    SCRIPT_FUNCTION_END();
+    return tryDetachSelfFromHolder(self.getSelf());
 }
 
 
@@ -744,7 +732,6 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
     /// @details This function tells all the dead characters on the team to clean
     /// themselves up.  Usually done by the boss creature every second or so
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
@@ -754,7 +741,7 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
         publishCleanUpForSameTeamListener(selfTeam, listenerRef);
     });
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -765,7 +752,6 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle, offset from the character's location
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -779,17 +765,16 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
                                   state.distance,
                                   ownerRef);
 
-    returncode = (particle != nullptr);
-    if (returncode)
+    if (particle == nullptr)
     {
-        returncode = tryAttachParticleToResolvedSelf(particle,
-                                                     self.getSelf(),
-                                                     state.distance,
-                                                     state.x,
-                                                     state.y);
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    return tryAttachParticleToResolvedSelf(particle,
+                                           self.getSelf(),
+                                           state.distance,
+                                           state.x,
+                                           state.y);
 }
 
 
@@ -801,12 +786,11 @@ uint8_t scr_DisaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function removes all the attached particles from a character
     /// ( stuck arrows, flames, etc )
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     disaffirm_attached_particles(self.getSelf());
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -818,12 +802,11 @@ uint8_t scr_ReaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function makes sure it has all of its reaffirmation particles
     /// attached to it. Used to make the torch light again
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     reaffirm_attached_particles(self.getSelf());
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -834,19 +817,17 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle attached to the character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(self.getSelf());
-    returncode = nullptr != spawnLocalParticleForSelf(selfContext,
-                                                      selfContext.object.getPosition(),
-                                                      idlib::canonicalize(selfContext.object.getFacingZ()),
-                                                      LocalParticleProfileRef(state.argument),
-                                                      self.getSelf(),
-                                                      state.distance,
-                                                      ownerRef);
-    SCRIPT_FUNCTION_END();
+    return nullptr != spawnLocalParticleForSelf(selfContext,
+                                                selfContext.object.getPosition(),
+                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                LocalParticleProfileRef(state.argument),
+                                                self.getSelf(),
+                                                state.distance,
+                                                ownerRef);
 }
 
 
@@ -857,7 +838,6 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle at a specific x, y, z position
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -866,15 +846,13 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
-    returncode = nullptr != spawnLocalParticleForSelf(selfContext,
-                                                      position,
-                                                      idlib::canonicalize(selfContext.object.getFacingZ()),
-                                                      LocalParticleProfileRef(state.argument),
-                                                      ObjectRef::Invalid,
-                                                      0,
-                                                      ownerRef);
-
-    SCRIPT_FUNCTION_END();
+    return nullptr != spawnLocalParticleForSelf(selfContext,
+                                                position,
+                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                LocalParticleProfileRef(state.argument),
+                                                ObjectRef::Invalid,
+                                                0,
+                                                ownerRef);
 }
 
 
@@ -886,13 +864,12 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
     /// @details This function makes a character able to be crushed by closing doors
     /// and such
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setCanBeCrushed(true);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -904,7 +881,6 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes the target from the game, failing if the
     /// target is a player
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
@@ -913,30 +889,28 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = false;
-    if (!targetInventory->isPlayer())             //Do not poof players
+    if (targetInventory->isPlayer())             //Do not poof players
     {
-        returncode = true;
-        if ( self.getTarget() == self.getSelf() )
-        {
-            // Poof self later
-            trySetSelfPoofTime(self, false, 1);
-        }
-        else
-        {
-            // Poof others now
-            IScriptable* targetScriptable = tryScriptable(self.getTarget());
-            if (targetScriptable == nullptr)
-            {
-                return false;
-            }
-
-            publishImmediatePoof(*targetScriptable);
-            self.setTarget(self.getSelf());
-        }
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    if ( self.getTarget() == self.getSelf() )
+    {
+        // Poof self later
+        trySetSelfPoofTime(self, false, 1);
+        return true;
+    }
+
+    // Poof others now
+    IScriptable* targetScriptable = tryScriptable(self.getTarget());
+    if (targetScriptable == nullptr)
+    {
+        return false;
+    }
+
+    publishImmediatePoof(*targetScriptable);
+    self.setTarget(self.getSelf());
+    return true;
 }
 
 
@@ -948,12 +922,9 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
     /// @details This function makes a lovely little poof at the character's location.
     /// The poof form and particle types are set in data.txt
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = spawnPoofForSelf(self.getSelf());
-
-    SCRIPT_FUNCTION_END();
+    return spawnPoofForSelf(self.getSelf());
 }
 
 
@@ -965,12 +936,9 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the state of the last character it
     /// spawned
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetChildState(self.child, state.argument);
-
-    SCRIPT_FUNCTION_END();
+    return trySetChildState(self.child, state.argument);
 }
 
 
@@ -982,7 +950,6 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle of the specific size attached to the
     /// character. For spell charging effects
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -996,14 +963,13 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
                                   state.distance,
                                   ownerRef);
 
-    returncode = (particle != nullptr);
-
-    if ( returncode )
+    if (particle == nullptr)
     {
-        particle->setSize(state.turn);
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    particle->setSize(state.turn);
+    return true;
 }
 
 
@@ -1016,20 +982,17 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle attached to the character, facing the
     /// same direction given by tmpturn
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
-    returncode = nullptr != spawnLocalParticleForSelf(selfContext,
-                                                      selfContext.object.getPosition(),
-                                                      Facing(Ego::Math::clipBits<16>(state.turn)),
-                                                      LocalParticleProfileRef(state.argument),
-                                                      self.getSelf(),
-                                                      state.distance,
-                                                      ownerRef);
-
-    SCRIPT_FUNCTION_END();
+    return nullptr != spawnLocalParticleForSelf(selfContext,
+                                                selfContext.object.getPosition(),
+                                                Facing(Ego::Math::clipBits<16>(state.turn)),
+                                                LocalParticleProfileRef(state.argument),
+                                                self.getSelf(),
+                                                state.distance,
+                                                ownerRef);
 }
 
 
@@ -1041,20 +1004,17 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
     /// @author ZZ
     /// @details This function spawns a particle attached to the character's holder, or to the character if no holder
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
-    returncode = nullptr != spawnLocalParticleForSelf(selfContext,
-                                                      selfContext.object.getPosition(),
-                                                      idlib::canonicalize(selfContext.object.getFacingZ()),
-                                                      LocalParticleProfileRef(state.argument),
-                                                      ownerRef,
-                                                      state.distance,
-                                                      ownerRef);
-
-    SCRIPT_FUNCTION_END();
+    return nullptr != spawnLocalParticleForSelf(selfContext,
+                                                selfContext.object.getPosition(),
+                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                LocalParticleProfileRef(state.argument),
+                                                ownerRef,
+                                                state.distance,
+                                                ownerRef);
 }
 
 
@@ -1065,7 +1025,6 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a character of the same type at a specific location, failing if x,y,z is invalid
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -1076,14 +1035,10 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     if (child == nullptr)
     {
         logSelfCopySpawnFailure(selfContext);
-        returncode = false;
-    }
-    else
-    {
-        returncode = publishCopiedChildState(selfContext, child, self);
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    return publishCopiedChildState(selfContext, child, self);
 }
 
 
@@ -1097,7 +1052,6 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -1111,14 +1065,10 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
 
     if (!child)
     {
-        returncode = false;
-    }
-    else
-    {
-        returncode = publishCopiedChildState(selfContext, child, self);
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    return publishCopiedChildState(selfContext, child, self);
 }
 
 
@@ -1132,7 +1082,6 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
 
     std::shared_ptr<Ego::Particle> particle;
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -1148,14 +1097,13 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
                                          0,
                                          ownerRef);
 
-    returncode = (particle != nullptr);
-
-    if ( returncode )
+    if (particle == nullptr)
     {
-        particle->setTarget(self.getTarget());
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    particle->setTarget(self.getTarget());
+    return true;
 }
 
 
@@ -1166,13 +1114,12 @@ uint8_t scr_DropItems( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function drops all of the items the character is holding
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->dropAllItems();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1183,7 +1130,6 @@ uint8_t scr_RespawnTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function respawns the target at its current location
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
@@ -1194,7 +1140,7 @@ uint8_t scr_RespawnTarget( script_state_t& state, ai_state_t& self )
 
     targetLifecycle->respawnInPlace();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1206,13 +1152,12 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character a non-item character.
     /// Usage: Used for spells that summon creatures
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setItem(false);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1223,12 +1168,9 @@ uint8_t scr_SetChildAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the ammo of the last character spawned by this character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetChildAmmo(self.child, state.argument);
-
-    SCRIPT_FUNCTION_END();
+    return trySetChildAmmo(self.child, state.argument);
 }
 
 
@@ -1240,13 +1182,10 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
     /// @details This function reveals the target's name, ammo, and usage
     /// Proceeds if the target was unknown
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
-    returncode = identifyResolvedTarget(*selfContext.profile, self.getTarget());
-
-    SCRIPT_FUNCTION_END();
+    return identifyResolvedTarget(*selfContext.profile, self.getTarget());
 }
 
 
@@ -1257,7 +1196,6 @@ uint8_t scr_DropTargetKeys( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the Target drops keys in inventory (Not inhand)
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
@@ -1268,7 +1206,7 @@ uint8_t scr_DropTargetKeys( script_state_t& state, ai_state_t& self )
 
     targetLifecycle->dropKeys();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1279,13 +1217,12 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes doors unable to close on this object
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     selfContext.lifecycle->setCanBeCrushed(false);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1296,12 +1233,9 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character invincible for a little while
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetSelfDamageTimer(self, state.argument);
-
-    SCRIPT_FUNCTION_END();
+    return trySetSelfDamageTimer(self, state.argument);
 }
 
 
@@ -1317,7 +1251,6 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 
     std::shared_ptr<Ego::Particle> particle;
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
@@ -1333,14 +1266,13 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
                                          0,
                                          ownerRef);
 
-    returncode = (particle != nullptr);
-
-    if ( returncode )
+    if (particle == nullptr)
     {
-        particle->endspawn_characterstate = state.turn;
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    particle->endspawn_characterstate = state.turn;
+    return true;
 }
 
 
@@ -1356,7 +1288,6 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
 
     //ZF> Note: This script function seems to be only used by the Fireball spell, so its use is VERY limited
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
@@ -1364,7 +1295,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
     if ( INVALID_PIP_REF == ipip) return false;
     const std::shared_ptr<ParticleProfile> &ppip = EngineContext::get().profileSystem().getParticleProfile(ipip);
 
-    returncode = false;
+    bool spawnedPoof = false;
     if (ppip != nullptr)
     {
         const float velOffsetBase = static_cast<float>(state.x);
@@ -1402,14 +1333,14 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
                 poofParticle->damage.rand = ppip->damage.lower() + damage_rand;
 
                 //Success! We have spawned at least one poof
-                returncode = true;
+                spawnedPoof = true;
             }
 
             facing_z += Facing(selfContext.profile->getParticlePoofFacingAdd());
         }
     }
 
-    SCRIPT_FUNCTION_END();
+    return spawnedPoof;
 }
 
 
@@ -1420,12 +1351,11 @@ uint8_t scr_EnableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button on
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(true);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1436,12 +1366,11 @@ uint8_t scr_DisableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button off
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(false);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1456,7 +1385,6 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
     /// grip specified is full or already in use.
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     SpawnAttachmentTargetContext targetContext;
@@ -1471,25 +1399,21 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
                                                            ObjectProfileRef((PRO_REF)state.argument),
                                                            selfContext.object.getTeamRef(),
                                                            FACE_NORTH);
-    returncode = child != nullptr;
 
-    if (!returncode)
+    if (child == nullptr)
     {
         logAttachedCharacterSpawnFailure(selfContext, state.argument);
-    }
-    else
-    {
-        const uint8_t grip = Ego::Math::constrain<int>(state.distance,
-                                                       ATTACH_INVENTORY,
-                                                       ATTACH_RIGHT);
-        returncode = resolveSpawnAttachedCharacterPlacement(selfContext,
-                                                            targetContext,
-                                                            grip,
-                                                            child,
-                                                            self);
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    const uint8_t grip = Ego::Math::constrain<int>(state.distance,
+                                                   ATTACH_INVENTORY,
+                                                   ATTACH_RIGHT);
+    return resolveSpawnAttachedCharacterPlacement(selfContext,
+                                                  targetContext,
+                                                  grip,
+                                                  child,
+                                                  self);
 }
 
 
@@ -1500,12 +1424,9 @@ uint8_t scr_SetTargetToChild( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function sets the target to the character it spawned last (also called it's "child")
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetTargetToChild(self);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetToChild(self);
 }
 
 
@@ -1516,7 +1437,6 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This sets the damage treshold for this character. Damage below the threshold is ignored
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
@@ -1526,7 +1446,7 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
         selfContext.lifecycle->setDamageThreshold(v);
     }
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1538,7 +1458,6 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     /// @details This morphs the character into the target
     /// Also set size and keeps the previous AI type
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     IMorphControl* selfMorph = tryMorphControl(self.getSelf());
@@ -1556,7 +1475,7 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
 
     // Keep the current AI script behavior unchanged.
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1568,12 +1487,9 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the content of the last character it
     /// spawned last
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetChildContent(self.child, state.argument);
-
-    SCRIPT_FUNCTION_END();
+    return trySetChildContent(self.child, state.argument);
 }
 
 
@@ -1584,12 +1500,9 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character invulerable
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetSelfInvincibility(self, true);
-
-    SCRIPT_FUNCTION_END();
+    return trySetSelfInvincibility(self, true);
 }
 
 
@@ -1600,12 +1513,9 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character not invulerable
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetSelfInvincibility(self, false);
-
-    SCRIPT_FUNCTION_END();
+    return trySetSelfInvincibility(self, false);
 }
 
 
@@ -1616,7 +1526,6 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This changes the AI target's size
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());
@@ -1628,7 +1537,7 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     targetMorph->setTargetFat(targetMorph->getTargetFat() * state.argument / 100.0f);
     targetMorph->setResizeTimeRemaining(targetMorph->getResizeTimeRemaining() + Object::SIZETIME);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1639,18 +1548,14 @@ uint8_t scr_EnableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object enter stealth mode. Returns true if it is now hidden from others.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
     if (selfContext.targetInfo->isStealthed()) {
-        returncode = false;
-    }
-    else {
-        returncode = selfContext.lifecycle->activateStealth();
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    return selfContext.lifecycle->activateStealth();
 }
 
 
@@ -1661,12 +1566,11 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object exit stealth mode. Returns true if it exited stealth mode.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
 
-    returncode = selfContext.targetInfo->isStealthed();
+    const bool wasStealthed = selfContext.targetInfo->isStealthed();
     selfContext.lifecycle->deactivateStealth();
 
-    SCRIPT_FUNCTION_END();
+    return wasStealthed;
 }

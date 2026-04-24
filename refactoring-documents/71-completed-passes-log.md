@@ -1000,6 +1000,12 @@ Continued the script return-flow cleanup inside `script_functions_state.c` by re
 
 Kept `SCRIPT_FUNCTION_END()` available for the remaining spawn/systems files. Build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 196 — Spawn script direct-return cleanup (2026-04-24)
+
+Continued the script return-flow cleanup inside `script_functions_spawn.c` by replacing the legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the spawn opcode file. Preserved explicit self-resolution, poof/player-immunity branches, particle success gates, attached-character placement/termination behavior, child publication, morph, invictus, and stealth return semantics.
+
+Kept `SCRIPT_FUNCTION_END()` available for the remaining systems file. Build, focused `ScriptStateFunctions` / `ModuleSpawnRealization` coverage, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
