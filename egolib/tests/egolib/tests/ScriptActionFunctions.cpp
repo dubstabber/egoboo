@@ -1175,6 +1175,17 @@ TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRej
     ai_state_t invalidSelf = makeScriptSelf(player);
 
     EXPECT_FALSE(scr_DisplayCharge(invalidState, invalidSelf));
+
+    auto nonPlayer = makeObject(module, "mp_objects/follower.obj", 5773);
+    ASSERT_NE(nonPlayer, nullptr);
+
+    script_state_t nonPlayerState;
+    nonPlayerState.argument = 3;
+    nonPlayerState.distance = 8;
+    nonPlayerState.turn = 2;
+    ai_state_t nonPlayerSelf = makeScriptSelf(nonPlayer);
+
+    EXPECT_FALSE(scr_DisplayCharge(nonPlayerState, nonPlayerSelf));
 }
 
 } // namespace

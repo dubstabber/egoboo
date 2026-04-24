@@ -952,6 +952,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by widening the existing 
 
 Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the new helper cluster, then kept build, the focused systems slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 188 — Action self/profile compatibility closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_action.c` by strengthening the file-local `SelfActionContext` so the remaining self/profile message, sound, billboard, charge-display, and visual-identity helpers resolve through one shared compatibility context instead of repeating direct `pchr` / `ppro` access patterns in opcode bodies. Kept audio, camera, billboard, and UI work on the already-landed `EngineContext` service seams and preserved existing success/failure behavior without widening any public role seams.
+
+Extended `ScriptActionFunctions.cpp` with focused non-player charge-display failure coverage, then kept build, the focused action test slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
