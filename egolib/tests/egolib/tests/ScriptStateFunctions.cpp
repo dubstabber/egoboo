@@ -1221,6 +1221,43 @@ TEST_F(ScriptStateFunctionsFixture, IdentifyAndTargetKeyDropUseRoleLookups)
     EXPECT_EQ(keyItem->getInventoryHolderRef(), ObjectRef::Invalid);
 }
 
+TEST_F(ScriptStateFunctionsFixture, ElseUsesSelfProfileContextForIndentComparison)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55388);
+
+    ASSERT_NE(actor, nullptr);
+
+    auto& aiScript = actor->getProfile()->getAIScript();
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    aiScript.indent = 4;
+    aiScript.indent_last = 4;
+    EXPECT_TRUE(scr_Else(state, self));
+
+    aiScript.indent = 3;
+    aiScript.indent_last = 4;
+    EXPECT_FALSE(scr_Else(state, self));
+}
+
+TEST_F(ScriptStateFunctionsFixture, IfUsageIsKnownUsesSelfProfileContext)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55389);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(actor->getProfile(), nullptr);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_EQ(scr_IfUsageIsKnown(state, self), actor->getProfile()->isUsageKnown());
+
+    EXPECT_TRUE(scr_MakeUsageKnown(state, self));
+    EXPECT_TRUE(scr_IfUsageIsKnown(state, self));
+}
+
 TEST_F(ScriptStateFunctionsFixture, MorphToTargetUsesMorphControlRoleAndPreservesMissingTargetFailure)
 {
     auto& module = beginActiveTestModule();

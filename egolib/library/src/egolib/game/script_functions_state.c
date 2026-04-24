@@ -5,6 +5,15 @@
 
 namespace
 {
+struct SelfStateContext
+{
+    ObjectProfile* profile = nullptr;
+    const ITargetInfo* targetInfo = nullptr;
+    const IInventoryHolder* inventory = nullptr;
+    const IScriptable* scriptable = nullptr;
+    IVisualControl* visual = nullptr;
+};
+
 const ITargetInfo& targetInfo(const Object& object)
 {
     return object;
@@ -23,6 +32,17 @@ const IScriptable& scriptable(const Object& object)
 IVisualControl& visualControl(Object& object)
 {
     return object;
+}
+
+SelfStateContext makeSelfStateContext(Object& object, ObjectProfile& profile)
+{
+    SelfStateContext context;
+    context.profile = &profile;
+    context.targetInfo = static_cast<const ITargetInfo*>(&object);
+    context.inventory = static_cast<const IInventoryHolder*>(&object);
+    context.scriptable = static_cast<const IScriptable*>(&object);
+    context.visual = static_cast<IVisualControl*>(&object);
+    return context;
 }
 
 ObjectRef heldItemRef(const IInventoryHolder& holder, slot_t slot)
@@ -287,7 +307,8 @@ uint8_t scr_Else( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ( ppro->getAIScript().indent >= ppro->getAIScript().indent_last );
+    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    returncode = ( selfContext.profile->getAIScript().indent >= selfContext.profile->getAIScript().indent_last );
 
     SCRIPT_FUNCTION_END();
 }
@@ -997,7 +1018,8 @@ uint8_t scr_IfUsageIsKnown( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = ppro->isUsageKnown();
+    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    returncode = selfContext.profile->isUsageKnown();
 
     SCRIPT_FUNCTION_END();
 }
@@ -1591,7 +1613,8 @@ uint8_t scr_IfModuleHasIDSZ( script_state_t& state, ai_state_t& self )
 
     SCRIPT_FUNCTION_BEGIN();
 
-    returncode = activeModuleHasIdszWithValidMessage(*ppro,
+    const SelfStateContext selfContext = makeSelfStateContext(*pchr, *ppro);
+    returncode = activeModuleHasIdszWithValidMessage(*selfContext.profile,
                                                      static_cast<int>(state.argument),
                                                      Ego::Script::Interpreter::safeCast<IDSZ2>(state.distance));
 

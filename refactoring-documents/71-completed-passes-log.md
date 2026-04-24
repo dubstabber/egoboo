@@ -934,6 +934,12 @@ Continued Tier 1.2 inside `script_functions_spawn.c` by replacing the remaining 
 
 Extended `ScriptStateFunctions.cpp` with focused coverage for usage-known publication during `scr_IdentifyTarget()` and the self-profile-driven `scr_SpawnPoofSpeedSpacingDamage()` path, then kept build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 185 — State self/profile compatibility closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_state.c` by replacing the remaining direct self/profile query pocket with a file-local `SelfStateContext`. Routed `scr_Else()`, `scr_IfUsageIsKnown()`, and `scr_IfModuleHasIDSZ()` through that resolved context without widening any public role seams or changing the existing success/failure behavior.
+
+Extended `ScriptStateFunctions.cpp` with focused coverage for profile-script indent comparison in `scr_Else()` and self-profile usage-known detection, then kept build, the focused `ScriptStateFunctionsFixture` slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log
