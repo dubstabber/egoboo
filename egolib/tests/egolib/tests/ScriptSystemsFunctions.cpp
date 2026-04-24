@@ -1567,6 +1567,47 @@ TEST_F(ScriptSystemsFunctionsFixture, InventoryRoleHelpersReturnFalseWhenTargetI
     EXPECT_EQ(state.argument, sentinelType);
 }
 
+TEST_F(ScriptSystemsFunctionsFixture, InventoryRoleHelpersReturnFalseWhenSelfIsMissing)
+{
+    auto& module = beginActiveTestModule();
+    auto target = makeObject(module, "mp_objects/follower.obj", 5616);
+    auto heldItem = makeAmmoItem(module, 5617);
+
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(heldItem, nullptr);
+    ASSERT_TRUE(heldItem->attachToObject(target->getObjRef(), GRIP_LEFT));
+
+    heldItem->setAmmo(heldItem->getAmmoMax() - 2);
+    heldItem->setKursed(true);
+
+    const uint32_t matchingType = heldItem->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(nullptr, target);
+
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_CostTargetItemID(state, self));
+    EXPECT_EQ(state.argument, matchingType);
+    EXPECT_EQ(heldItem->getAmmo(), heldItem->getAmmoMax() - 2);
+    EXPECT_TRUE(heldItem->isKursed());
+
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDAll(state, self));
+    EXPECT_EQ(state.argument, matchingType);
+    EXPECT_EQ(heldItem->getAmmo(), heldItem->getAmmoMax() - 2);
+    EXPECT_TRUE(heldItem->isKursed());
+
+    state.argument = matchingType;
+    EXPECT_FALSE(scr_RestockTargetAmmoIDFirst(state, self));
+    EXPECT_EQ(state.argument, matchingType);
+    EXPECT_EQ(heldItem->getAmmo(), heldItem->getAmmoMax() - 2);
+    EXPECT_TRUE(heldItem->isKursed());
+
+    EXPECT_FALSE(scr_UnkurseTargetInventory(state, self));
+    EXPECT_EQ(heldItem->getAmmo(), heldItem->getAmmoMax() - 2);
+    EXPECT_TRUE(heldItem->isKursed());
+}
+
 TEST_F(ScriptSystemsFunctionsFixture, RestockTargetAmmoIDAllUsesTargetHandsAndActorInventory)
 {
     auto& module = beginActiveTestModule();

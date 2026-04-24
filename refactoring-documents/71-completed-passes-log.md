@@ -1036,6 +1036,12 @@ Continued Tier 1.2 inside `script_functions_systems.c` by removing `Presentation
 
 Extended `ScriptSystemsFunctions.cpp` with focused terminated-self coverage that pins end-message publication as a quiet false/no-mutation path when self is no longer live. Kept build, the focused end-text/presentation systems slice, and the `test.mod` validator as the acceptance bar.
 
+### Pass 202 — Systems inventory ObjectRef boundary closure (2026-04-24)
+
+Continued Tier 1.2 inside `script_functions_systems.c` by removing the remaining concrete self recovery from the systems inventory compatibility pocket. `InventoryCompatibilityContext` now resolves both actor and target inventories from `ObjectRef` identities via role lookups, so `scr_CostTargetItemID`, both target-ammo restock opcodes, and `scr_UnkurseTargetInventory` no longer need an `Object&` actor adapter while preserving target-held-first, actor-pocket fallback, and target-pocket exclusion behavior.
+
+Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the inventory cluster, then kept build, the focused inventory systems slice, and the `test.mod` validator as the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

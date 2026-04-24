@@ -21,11 +21,6 @@ egoboo_config_t& config()
 
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
-IInventoryHolder& inventoryHolder(Object& object)
-{
-    return object;
-}
-
 IAnimationControl& animationControl(Object& object)
 {
     return object;
@@ -805,13 +800,20 @@ struct InventoryCompatibilityContext
     IInventoryHolder* actorInventory = nullptr;
 };
 
-bool resolveInventoryCompatibilityContext(const ai_state_t& self,
-                                          IInventoryHolder& actorInventory,
+bool resolveInventoryCompatibilityContext(ObjectRef actorRef,
+                                          ObjectRef targetRef,
                                           InventoryCompatibilityContext& context)
 {
-    context.targetInventory = tryInventoryHolder(self.getTarget());
-    context.actorInventory = &actorInventory;
-    return context.targetInventory != nullptr;
+    context.targetInventory = tryInventoryHolder(targetRef);
+    context.actorInventory = tryInventoryHolder(actorRef);
+    return context.targetInventory != nullptr &&
+           context.actorInventory != nullptr;
+}
+
+bool resolveInventoryCompatibilityContext(const ai_state_t& self,
+                                          InventoryCompatibilityContext& context)
+{
+    return resolveInventoryCompatibilityContext(self.getSelf(), self.getTarget(), context);
 }
 
 ObjectRef findMatchingTargetHeldOrActorPocketItemRef(const InventoryCompatibilityContext& context,
@@ -1642,8 +1644,7 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    IInventoryHolder& actorInventory = inventoryHolder(resolvedSelfObject(self));
-    if (!resolveInventoryCompatibilityContext(self, actorInventory, inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryContext))
     {
         return false;
     }
@@ -1655,7 +1656,7 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    return consumeOrPoofItemWithActorPocketCompatibility(itemRef, actorInventory);
+    return consumeOrPoofItemWithActorPocketCompatibility(itemRef, *inventoryContext.actorInventory);
 }
 
 
@@ -2006,7 +2007,7 @@ uint8_t scr_RestockTargetAmmoIDAll( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryContext))
     {
         return false;
     }
@@ -2030,7 +2031,7 @@ uint8_t scr_RestockTargetAmmoIDFirst( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryContext))
     {
         return false;
     }
@@ -2574,7 +2575,7 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
-    if (!resolveInventoryCompatibilityContext(self, inventoryHolder(resolvedSelfObject(self)), inventoryContext))
+    if (!resolveInventoryCompatibilityContext(self, inventoryContext))
     {
         return false;
     }
