@@ -988,6 +988,12 @@ Continued the script return-flow cleanup inside `script_functions_action.c` by r
 
 Kept `SCRIPT_FUNCTION_END()` available for the remaining target/state/spawn/systems files. Build, the focused `ScriptActionFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar.
 
+### Pass 194 — Target script direct-return cleanup (2026-04-24)
+
+Continued the script return-flow cleanup inside `script_functions_target.c` by replacing the legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the target opcode file. Preserved explicit self-resolution, target publication, passage-occupant lookup, quest lookup, and quiet-failure behavior.
+
+Kept `SCRIPT_FUNCTION_END()` available for the remaining state/spawn/systems files. Build, the focused `ScriptTargetFunctionsFixture` slice, and the `test.mod` validator remained the acceptance bar.
+
 ---
 
 ## Files touched most by this pass log

@@ -187,7 +187,6 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character's target from last update was
     /// killed during this update
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -197,9 +196,7 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
     }
 
     // Proceed only if the character's target has just died or is already dead
-    returncode = ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !targetContext.damageable->isAlive() );
-
-    SCRIPT_FUNCTION_END();
+    return ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !targetContext.damageable->isAlive() );
 }
 
 
@@ -210,13 +207,10 @@ uint8_t scr_SetTargetToNearbyEnemy( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the target to a nearby enemy, failing if there are none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, findTargetForSelf(selfContext, NEARBY, IDSZ2::None, TARGET_ENEMIES));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, findTargetForSelf(selfContext, NEARBY, IDSZ2::None, TARGET_ENEMIES));
 }
 
 
@@ -228,7 +222,6 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to the item in the target's left hand,
     /// failing if the target has no left hand item
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -237,9 +230,7 @@ uint8_t scr_SetTargetToTargetLeftHand( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_LEFT);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_LEFT);
 }
 
 
@@ -251,7 +242,6 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
     /// @details This function sets the target to the item in the target's right hand,
     /// failing if the target has no right hand item
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -260,9 +250,7 @@ uint8_t scr_SetTargetToTargetRightHand( script_state_t& state, ai_state_t& self 
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_RIGHT);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromHeldObject(self, *targetContext.inventory, SLOT_RIGHT);
 }
 
 
@@ -273,13 +261,10 @@ uint8_t scr_SetTargetToWhoeverAttacked( script_state_t& state, ai_state_t& self 
     /// @author ZZ
     /// @details This function sets the target to whoever attacked the character last, failing for damage tiles
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfLastAttackerRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfLastAttackerRef(selfContext));
 }
 
 
@@ -290,13 +275,10 @@ uint8_t scr_SetTargetToWhoeverBumped( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the target to whoever bumped the character last. It never fails
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfBumpedRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfBumpedRef(selfContext));
 }
 
 
@@ -307,13 +289,10 @@ uint8_t scr_SetTargetToWhoeverCalledForHelp( script_state_t& state, ai_state_t& 
     /// @author ZZ
     /// @details This function sets the target to whoever called for help last.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfTeamCallerForHelpRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfTeamCallerForHelpRef(selfContext));
 }
 
 
@@ -325,12 +304,9 @@ uint8_t scr_SetTargetToOldTarget( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to the target from last update, used to
     /// undo other set_Target functions
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetResolvedTarget(self, self.getOldTarget());
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, self.getOldTarget());
 }
 
 
@@ -342,7 +318,6 @@ uint8_t scr_IfTargetHasID( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the target has either a parent or type IDSZ
     /// matching tmpargument.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -351,10 +326,7 @@ uint8_t scr_IfTargetHasID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-
-    SCRIPT_FUNCTION_END();
+    return target->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -366,7 +338,6 @@ uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the target has a matching item in his/her
     /// pockets or hands.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -375,24 +346,15 @@ uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    //Assume nothing is found
-    returncode = false;
-
     const IDSZ2 itemId = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
 
     //Check hands
     if (targetContext.info->wieldsItemIDSZ(itemId)) {
-        returncode = true;
+        return true;
     }
 
     //Check inventory
-    if (!returncode) {
-        if (ObjectRef::Invalid != Inventory::findItem(*targetContext.inventory, itemId, false)) {
-            returncode = true;
-        }
-    }
-
-    SCRIPT_FUNCTION_END();
+    return ObjectRef::Invalid != Inventory::findItem(*targetContext.inventory, itemId, false);
 }
 
 
@@ -405,7 +367,6 @@ uint8_t scr_IfTargetHoldingItemID( script_state_t& state, ai_state_t& self )
     /// hands.  It also sets tmpargument to the proper latch button to press
     /// to use that item
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -414,9 +375,7 @@ uint8_t scr_IfTargetHoldingItemID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-    SCRIPT_FUNCTION_END();
+    return target->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -427,7 +386,6 @@ uint8_t scr_IfTargetHasSkillID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if ID matches tmpargument
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -436,9 +394,7 @@ uint8_t scr_IfTargetHasSkillID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-    SCRIPT_FUNCTION_END();
+    return target->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -451,12 +407,11 @@ uint8_t scr_IssueOrder( script_state_t& state, ai_state_t& self )
     /// though each teammate needs to interpret the order using IfOrdered in
     /// its own script.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     issue_order( self.getSelf(), state.argument );
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -469,9 +424,7 @@ uint8_t scr_IfTargetCanOpenStuff( script_state_t& state, ai_state_t& self )
     /// Used by chests and buttons and such so only "smart" creatures can operate
     /// them
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
-    returncode = false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     if (targetContext.info == nullptr || targetContext.inventory == nullptr)
@@ -486,17 +439,15 @@ uint8_t scr_IfTargetCanOpenStuff( script_state_t& state, ai_state_t& self )
         if (rider != nullptr)
         {
             // can the rider open stuff
-            returncode = rider->canOpenStuff();
+            if (rider->canOpenStuff())
+            {
+                return true;
+            }
         }
     }
 
-    if ( !returncode )
-    {
-        // if a rider can't openstuff, can the target openstuff?
-        returncode = targetContext.info->canOpenStuff();
-    }
-
-    SCRIPT_FUNCTION_END();
+    // if a rider can't openstuff, can the target openstuff?
+    return targetContext.info->canOpenStuff();
 }
 
 
@@ -508,13 +459,10 @@ uint8_t scr_SetTargetToWhoeverIsHolding( script_state_t& state, ai_state_t& self
     /// @details This function sets the target to the character's holder or mount,
     /// failing if the character has no mount or holder
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfHolderRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfHolderRef(selfContext));
 }
 
 
@@ -525,7 +473,6 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is on another team
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -535,9 +482,7 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( target->isAlive() && !target->isOnSameTeam(selfContext.info->getTeamRef()) );
-
-    SCRIPT_FUNCTION_END();
+    return ( target->isAlive() && !target->isOnSameTeam(selfContext.info->getTeamRef()) );
 }
 
 
@@ -548,7 +493,6 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is on an enemy team
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -559,11 +503,9 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( target->isAlive() &&
-                   target->isHatedByTeam(selfContext.info->getTeamRef()) &&
-                   !targetContext.damageable->isInvincible() );
-
-    SCRIPT_FUNCTION_END();
+    return target->isAlive() &&
+           target->isHatedByTeam(selfContext.info->getTeamRef()) &&
+           !targetContext.damageable->isInvincible();
 }
 
 
@@ -575,13 +517,10 @@ uint8_t scr_SetTargetToTargetOfLeader( script_state_t& state, ai_state_t& self )
     /// @details This function sets the character's target to the target of its leader,
     /// or it fails with no change if the leader is dead
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetTargetFromScriptableTarget(self, tryScriptable(selfTeamLeaderRef(selfContext)));
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromScriptableTarget(self, tryScriptable(selfTeamLeaderRef(selfContext)));
 }
 
 
@@ -592,12 +531,9 @@ uint8_t scr_IfTargetIsOldTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is the same as it was last update
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = ( self.getTarget() == self.getOldTarget() );
-
-    SCRIPT_FUNCTION_END();
+    return ( self.getTarget() == self.getOldTarget() );
 }
 
 
@@ -609,13 +545,10 @@ uint8_t scr_SetTargetToLeader( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to the leader, proceeding if their is
     /// a valid leader for the character's team
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfTeamLeaderRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfTeamLeaderRef(selfContext));
 }
 
 
@@ -627,12 +560,11 @@ uint8_t scr_SetOldTarget( script_state_t& state, ai_state_t& self )
     /// @details This function sets the old target to the current target.  To allow
     /// greater manipulations of the target
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     self.setOldTarget(self.getTarget());
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -643,7 +575,6 @@ uint8_t scr_IfTargetHasVulnerabilityID( script_state_t& state, ai_state_t& self 
     /// @author ZZ
     /// @details This function proceeds if the target is vulnerable to the given IDSZ.
     
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -652,9 +583,7 @@ uint8_t scr_IfTargetHasVulnerabilityID( script_state_t& state, ai_state_t& self 
         return false;
     }
 
-    returncode = target->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-    SCRIPT_FUNCTION_END();
+    return target->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -665,7 +594,6 @@ uint8_t scr_IfTargetIsHurt( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes only if the target is hurt and alive
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -674,9 +602,7 @@ uint8_t scr_IfTargetIsHurt( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isHurt();
-
-    SCRIPT_FUNCTION_END();
+    return target->isHurt();
 }
 
 
@@ -687,7 +613,6 @@ uint8_t scr_IfTargetIsAPlayer( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is controlled by a human ( may not be local )
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -696,9 +621,7 @@ uint8_t scr_IfTargetIsAPlayer( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isPlayer();
-
-    SCRIPT_FUNCTION_END();
+    return target->isPlayer();
 }
 
 
@@ -709,7 +632,6 @@ uint8_t scr_IfTargetIsAlive( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is alive
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -718,9 +640,7 @@ uint8_t scr_IfTargetIsAlive( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isAlive();
-
-    SCRIPT_FUNCTION_END();
+    return target->isAlive();
 }
 
 
@@ -731,12 +651,9 @@ uint8_t scr_IfTargetIsSelf( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is targeting itself
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = ( self.getTarget() == self.getSelf() );
-
-    SCRIPT_FUNCTION_END();
+    return ( self.getTarget() == self.getSelf() );
 }
 
 
@@ -747,7 +664,6 @@ uint8_t scr_IfTargetIsMale( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds only if the target is male
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -756,9 +672,7 @@ uint8_t scr_IfTargetIsMale( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( target->getGender() == Gender::Male );
-
-    SCRIPT_FUNCTION_END();
+    return ( target->getGender() == Gender::Male );
 }
 
 
@@ -769,7 +683,6 @@ uint8_t scr_IfTargetIsFemale( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is female
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -778,9 +691,7 @@ uint8_t scr_IfTargetIsFemale( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( target->getGender() == Gender::Female );
-
-    SCRIPT_FUNCTION_END();
+    return ( target->getGender() == Gender::Female );
 }
 
 
@@ -791,12 +702,11 @@ uint8_t scr_SetTargetToSelf( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the target to the character itself
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     self.setTarget(self.getSelf());
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -808,7 +718,6 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to whoever is riding the character (left/only grip),
     /// failing if there is no rider
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -817,9 +726,7 @@ uint8_t scr_SetTargetToRider( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = trySetTargetFromHeldObject(self, *selfContext.object, SLOT_LEFT);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromHeldObject(self, *selfContext.object, SLOT_LEFT);
 }
 
 
@@ -831,12 +738,11 @@ uint8_t scr_GetAttackTurn( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpturn to the direction from which the last attack
     /// came. Not particularly useful in most cases, but it could be.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     state.turn = FACING_T(self.directionlast);
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -848,12 +754,11 @@ uint8_t scr_GetDamageType( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the damage type of the last attack that
     /// hit the character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     state.argument = self.damagetypelast;
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -866,19 +771,18 @@ uint8_t scr_TranslateOrder( script_state_t& state, ai_state_t& self )
     /// See CreateOrder for more.  This function sets tmpx, tmpy, tmpargument,
     /// and sets the target ( if valid )
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ObjectRef targetRef = ObjectRef(Ego::Math::clipBits<16>(self.order_value >> 24));
-    returncode = trySetResolvedTarget(self, targetRef);
-    if (returncode)
+    if (!trySetResolvedTarget(self, targetRef))
     {
-        state.x = ((self.order_value >> 14) & 0x03FF) << 6;
-        state.y = ((self.order_value >> 4) & 0x03FF) << 6;
-        state.argument = (self.order_value >> 0) & 0x000F;
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    state.x = ((self.order_value >> 14) & 0x03FF) << 6;
+    state.y = ((self.order_value >> 4) & 0x03FF) << 6;
+    state.argument = (self.order_value >> 0) & 0x000F;
+    return true;
 }
 
 
@@ -889,13 +793,10 @@ uint8_t scr_SetTargetToWhoeverWasHit( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the target to whoever was hit by the character last
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, selfLastHitRef(selfContext));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, selfLastHitRef(selfContext));
 }
 
 
@@ -907,13 +808,10 @@ uint8_t scr_SetTargetToWideEnemy( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to an enemy in the vicinity around the
     /// character, failing if there are none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    returncode = trySetResolvedTarget(self, findTargetForSelf(selfContext, WIDE, IDSZ2::None, TARGET_ENEMIES));
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, findTargetForSelf(selfContext, WIDE, IDSZ2::None, TARGET_ENEMIES));
 }
 
 
@@ -924,7 +822,6 @@ uint8_t scr_IfTargetHasSpecialID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character has a special IDSZ ( in data.txt )
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -933,9 +830,7 @@ uint8_t scr_IfTargetHasSpecialID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-    SCRIPT_FUNCTION_END();
+    return target->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -947,7 +842,6 @@ uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the number of updates before the
     /// character is ungrogged, proceeding if the number is greater than 0
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -958,9 +852,7 @@ uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
 
     state.argument = target->getGrogTimer();
 
-    returncode = ( 0 != state.argument );
-
-    SCRIPT_FUNCTION_END();
+    return ( 0 != state.argument );
 }
 
 
@@ -972,7 +864,6 @@ uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
     /// @details This function sets tmpargument to the number of updates before the
     /// character is undazed, proceeding if the number is greater than 0
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -983,9 +874,7 @@ uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
 
     state.argument = target->getDazeTimer();
 
-    returncode = ( 0 != state.argument );
-
-    SCRIPT_FUNCTION_END();
+    return ( 0 != state.argument );
 }
 
 
@@ -996,7 +885,6 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is on the character's team
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1006,9 +894,7 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isOnSameTeam(selfContext.info->getTeamRef());
-
-    SCRIPT_FUNCTION_END();
+    return target->isOnSameTeam(selfContext.info->getTeamRef());
 }
 
 
@@ -1019,7 +905,6 @@ uint8_t scr_IfTargetHasAnyID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target has any IDSZ that matches the given one
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1028,9 +913,7 @@ uint8_t scr_IfTargetHasAnyID( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-
-    SCRIPT_FUNCTION_END();
+    return target->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -1042,7 +925,6 @@ uint8_t scr_IfTargetIsDefending( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the target is holding up a shield or similar
     /// defense
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1051,9 +933,7 @@ uint8_t scr_IfTargetIsDefending( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ACTION_IS_TYPE(target->getCurrentAnimation(), P);
-
-    SCRIPT_FUNCTION_END();
+    return ACTION_IS_TYPE(target->getCurrentAnimation(), P);
 }
 
 
@@ -1064,7 +944,6 @@ uint8_t scr_IfTargetIsAttacking( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is doing an attack action
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1073,9 +952,7 @@ uint8_t scr_IfTargetIsAttacking( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isAttacking();
-
-    SCRIPT_FUNCTION_END();
+    return target->isAttacking();
 }
 
 
@@ -1086,7 +963,6 @@ uint8_t scr_IfTargetIsKursed( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is kursed
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1095,9 +971,7 @@ uint8_t scr_IfTargetIsKursed( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isKursed();
-
-    SCRIPT_FUNCTION_END();
+    return target->isKursed();
 }
 
 
@@ -1108,7 +982,6 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is dressed in fancy clothes
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -1117,9 +990,7 @@ uint8_t scr_IfTargetIsDressedUp( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = selfContext.appearance->isCurrentSkinDressy();
-
-    SCRIPT_FUNCTION_END();
+    return selfContext.appearance->isCurrentSkinDressy();
 }
 
 
@@ -1130,12 +1001,9 @@ uint8_t scr_IfDistanceIsMoreThanTurn( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds tmpdistance is greater than tmpturn
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = ( state.distance > state.turn );
-
-    SCRIPT_FUNCTION_END();
+    return ( state.distance > state.turn );
 }
 
 
@@ -1148,13 +1016,10 @@ uint8_t scr_SetTargetToLowestTarget( script_state_t& state, ai_state_t& self )
     /// The holder of the target, or the holder of the holder of the target, or
     /// the holder of the holder of ther holder of the target, etc.   This function never fails
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
 	auto itarget = chr_get_lowest_attachment( self.getTarget(), false );
-    returncode = trySetResolvedTarget(self, itarget);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, itarget);
 }
 
 
@@ -1165,7 +1030,6 @@ uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target already wearing a matching item
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1176,9 +1040,7 @@ uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
 
 	auto iitem = Inventory::findItem(*targetContext.inventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
 
-    returncode = isLiveTargetRef(iitem);
-
-    SCRIPT_FUNCTION_END();
+    return isLiveTargetRef(iitem);
 }
 
 
@@ -1190,12 +1052,11 @@ uint8_t scr_SetOwnerToTarget( script_state_t& state, ai_state_t& self )
     /// @details This function must be called before enchanting anything.
     /// The owner is the character that pays the sustain costs and such for the enchantment
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     self.owner = self.getTarget();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1207,12 +1068,9 @@ uint8_t scr_SetTargetToOwner( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to whoever was previously declared as the
     /// owner.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetResolvedTarget(self, self.owner);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, self.owner);
 }
 
 
@@ -1224,7 +1082,6 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to a character that matches the description,
     /// and who is located in the general vicinity of the character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -1233,9 +1090,7 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
                                         WIDE,
                                         IDSZ2(state.argument),
                                         state.distance);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1247,7 +1102,6 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character is more or less facing its
     /// target
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1257,9 +1111,7 @@ uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = isFacing(*selfContext.physical, *targetContext.physical);
-
-    SCRIPT_FUNCTION_END();
+    return isFacing(*selfContext.physical, *targetContext.physical);
 }
 
 
@@ -1271,14 +1123,11 @@ uint8_t scr_SetTargetToDistantEnemy( script_state_t& state, ai_state_t& self )
     /// @details This function finds a character within a certain distance of the
     /// character, failing if there are none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     const auto ichr = findTargetForSelf(selfContext, state.distance, IDSZ2::None, TARGET_ENEMIES);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1289,7 +1138,6 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is riding a mount
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1298,15 +1146,8 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = false;
-
     const ITargetInfo* holderInfo = tryTargetInfo(targetContext.info->getHolderRef());
-    if ( holderInfo != nullptr )
-    {
-        returncode = holderInfo->isMount();
-    }
-
-    SCRIPT_FUNCTION_END();
+    return holderInfo != nullptr && holderInfo->isMount();
 }
 
 
@@ -1318,7 +1159,6 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
     /// @details This function issues an order to the given target
     /// Be careful in using this, always checking IDSZ first
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1327,9 +1167,7 @@ uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = targetContext.scriptable->addAIOrder(state.argument, 0);
-
-    SCRIPT_FUNCTION_END();
+    return targetContext.scriptable->addAIOrder(state.argument, 0);
 }
 
 
@@ -1341,16 +1179,13 @@ uint8_t scr_SetTargetToWhoeverIsInPassage( script_state_t& state, ai_state_t& se
     /// @details This function sets the target to whoever is blocking the given passage
     /// This function lets passage rectangles be used as event triggers
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetTargetFromPassageOccupant(self,
-                                                 state.argument,
-                                                 IDSZ2::None,
-                                                 TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
-                                                 IDSZ2::None);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromPassageOccupant(self,
+                                           state.argument,
+                                           IDSZ2::None,
+                                           TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
+                                           IDSZ2::None);
 }
 
 
@@ -1367,7 +1202,6 @@ uint8_t scr_CreateOrder( script_state_t& state, ai_state_t& self )
 
     uint16_t sTmp = 0;
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     sTmp = ( REF_TO_INT( self.getTarget().get() ) & 0x00FF ) << 24;
@@ -1376,7 +1210,7 @@ uint8_t scr_CreateOrder( script_state_t& state, ai_state_t& self )
     sTmp |= ( state.argument & 0x000F );
     state.argument = sTmp;
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1387,12 +1221,11 @@ uint8_t scr_OrderSpecialID( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function orders all characters with the given special IDSZ.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     issue_special_order( state.argument, state.distance );
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1403,7 +1236,6 @@ uint8_t scr_IfTargetIsSneaking( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target is doing ACTION_WA or ACTION_DA
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1413,9 +1245,7 @@ uint8_t scr_IfTargetIsSneaking( script_state_t& state, ai_state_t& self )
     }
 
     const ModelAction currentAnimation = target->getCurrentAnimation();
-    returncode = ( currentAnimation == ACTION_DA || currentAnimation == ACTION_WA );
-
-    SCRIPT_FUNCTION_END();
+    return ( currentAnimation == ACTION_DA || currentAnimation == ACTION_WA );
 }
 
 
@@ -1426,7 +1256,6 @@ uint8_t scr_IfTargetCanSeeInvisible( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the target can see invisible
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1435,9 +1264,7 @@ uint8_t scr_IfTargetCanSeeInvisible( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->canSeeInvisible();
-
-    SCRIPT_FUNCTION_END();
+    return target->canSeeInvisible();
 }
 
 
@@ -1450,7 +1277,6 @@ uint8_t scr_SetTargetToNearestBlahID( script_state_t& state, ai_state_t& self )
     /// @details This function finds the NEAREST ( exact ) character that fits the given
     /// parameters, failing if it finds none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -1459,9 +1285,7 @@ uint8_t scr_SetTargetToNearestBlahID( script_state_t& state, ai_state_t& self )
                                         NEAREST,
                                         IDSZ2(state.argument),
                                         state.distance);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1472,14 +1296,11 @@ uint8_t scr_SetTargetToNearestEnemy( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function finds the NEAREST ( exact ) enemy, failing if it finds none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     const auto ichr = findTargetForSelf(selfContext, NEAREST, IDSZ2::None, TARGET_ENEMIES);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1490,14 +1311,11 @@ uint8_t scr_SetTargetToNearestFriend( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function finds the NEAREST ( exact ) friend, failing if it finds none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     const auto ichr = findTargetForSelf(selfContext, NEAREST, IDSZ2::None, TARGET_FRIENDS);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1510,7 +1328,6 @@ uint8_t scr_SetTargetToNearestLifeform( script_state_t& state, ai_state_t& self 
     /// @details This function finds the NEAREST ( exact ) friend or enemy, failing if it
     /// finds none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -1518,9 +1335,7 @@ uint8_t scr_SetTargetToNearestLifeform( script_state_t& state, ai_state_t& self 
                                         NEAREST,
                                         IDSZ2::None,
                                         TARGET_ITEMS | TARGET_FRIENDS | TARGET_ENEMIES);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
 
 
@@ -1531,7 +1346,6 @@ uint8_t scr_IfTargetIsFlying( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character target is flying
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1540,9 +1354,7 @@ uint8_t scr_IfTargetIsFlying( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isFlying();
-
-    SCRIPT_FUNCTION_END();
+    return target->isFlying();
 }
 
 
@@ -1553,7 +1365,6 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets tmpargument to the state of the target
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1564,7 +1375,7 @@ uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
 
     state.argument = targetContext.scriptable->getAIStateValue();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1574,7 +1385,6 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
     // tmpargument = GetTargetContent()
     // This sets tmpargument to the current Target's content value
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1585,7 +1395,7 @@ uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
 
     state.argument = targetContext.scriptable->getAIContent();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1596,7 +1406,6 @@ uint8_t scr_IfTargetIsAMount( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes if the Target is a mountable character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1605,9 +1414,7 @@ uint8_t scr_IfTargetIsAMount( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isMount();
-
-    SCRIPT_FUNCTION_END();
+    return target->isMount();
 }
 
 
@@ -1618,7 +1425,6 @@ uint8_t scr_IfTargetIsAPlatform( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function passes if the Target is a platform character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1627,9 +1433,7 @@ uint8_t scr_IfTargetIsAPlatform( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->isPlatform();
-
-    SCRIPT_FUNCTION_END();
+    return target->isPlatform();
 }
 
 
@@ -1641,16 +1445,13 @@ uint8_t scr_SetTargetToPassageID( script_state_t& state, ai_state_t& self )
     /// @details This function finds a character who is both in the passage and who has
     /// an item with the given IDSZ
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetTargetFromPassageOccupant(self,
-                                                 state.argument,
-                                                 IDSZ2::None,
-                                                 TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
-                                                 IDSZ2(state.distance));
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromPassageOccupant(self,
+                                           state.argument,
+                                           IDSZ2::None,
+                                           TARGET_SELF | TARGET_FRIENDS | TARGET_ENEMIES,
+                                           IDSZ2(state.distance));
 }
 
 
@@ -1661,7 +1462,6 @@ uint8_t scr_IfTargetHasNotFullMana( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function passes only if the Target is not at max mana and alive
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1670,9 +1470,7 @@ uint8_t scr_IfTargetHasNotFullMana( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->hasNotFullMana();
-
-    SCRIPT_FUNCTION_END();
+    return target->hasNotFullMana();
 }
 
 
@@ -1683,15 +1481,12 @@ uint8_t scr_SetTargetToLastItemUsed( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This sets the Target to the last item the character used
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     const ObjectRef lastItemUsedRef = selfLastItemUsedRef(selfContext);
-    returncode = lastItemUsedRef != self.getSelf() &&
-                 trySetResolvedTarget(self, lastItemUsedRef);
-
-    SCRIPT_FUNCTION_END();
+    return lastItemUsedRef != self.getSelf() &&
+           trySetResolvedTarget(self, lastItemUsedRef);
 }
 
 
@@ -1702,7 +1497,6 @@ uint8_t scr_IfTargetIsAWeapon( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Proceeds if the AI Target Is a melee or ranged weapon
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1711,9 +1505,7 @@ uint8_t scr_IfTargetIsAWeapon( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = targetContext.info->isWeapon();
-
-    SCRIPT_FUNCTION_END();
+    return targetContext.info->isWeapon();
 }
 
 
@@ -1724,7 +1516,6 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details roceeds if the AI Target has any particle with the [IDAM] expansion
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
@@ -1733,9 +1524,7 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = selfContext.appearance->hasIntellectDamageParticle();
-
-    SCRIPT_FUNCTION_END();
+    return selfContext.appearance->hasIntellectDamageParticle();
 }
 
 
@@ -1746,7 +1535,6 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function gets the last type of damage for the Target
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1757,7 +1545,7 @@ uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
 
     state.argument = targetContext.scriptable->getAILastDamageType();
 
-    SCRIPT_FUNCTION_END();
+    return true;
 }
 
 
@@ -1769,7 +1557,6 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the Target has the unfinIshed quest specified in tmpargument
     /// and sets tmpdistance to the Quest Level of the specified quest.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1778,24 +1565,24 @@ uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = false;
-
     const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    if(targetContext.info->isPlayer()) {
-        const std::shared_ptr<Ego::Player> player = tryPlayer(*targetContext.info);
-        if (player == nullptr)
-        {
-            return false;
-        }
-
-        // only find active quests
-        if(player->getQuestLog().hasActiveQuest(idsz)) {
-            returncode = true;            
-            state.distance = player->getQuestLog()[idsz];
-        }
+    if(!targetContext.info->isPlayer()) {
+        return false;
     }
 
-    SCRIPT_FUNCTION_END();
+    const std::shared_ptr<Ego::Player> player = tryPlayer(*targetContext.info);
+    if (player == nullptr)
+    {
+        return false;
+    }
+
+    // only find active quests
+    if(!player->getQuestLog().hasActiveQuest(idsz)) {
+        return false;
+    }
+
+    state.distance = player->getQuestLog()[idsz];
+    return true;
 }
 
 
@@ -1806,7 +1593,6 @@ uint8_t scr_IfTargetIsOwner( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function proceeds only if the Target is the character's owner
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1815,9 +1601,7 @@ uint8_t scr_IfTargetIsOwner( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = ( target->isAlive() && self.owner == self.getTarget() );
-
-    SCRIPT_FUNCTION_END();
+    return ( target->isAlive() && self.owner == self.getTarget() );
 }
 
 
@@ -1828,7 +1612,6 @@ uint8_t scr_IfTargetCanSeeKurses( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Proceeds if the target can see kursed stuff.
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const ITargetInfo* target = tryResolvedTargetInfo(self);
@@ -1837,9 +1620,7 @@ uint8_t scr_IfTargetCanSeeKurses( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = target->canSeeKurses();
-
-    SCRIPT_FUNCTION_END();
+    return target->canSeeKurses();
 }
 
 
@@ -1851,16 +1632,13 @@ uint8_t scr_SetTargetToBlahInPassage( script_state_t& state, ai_state_t& self )
     /// @details This function sets the target to whatever object with the specified bits
     /// in tmpdistance is blocking the given passage. This function lets passage rectangles be used as event triggers
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    returncode = trySetTargetFromPassageOccupant(self,
-                                                 state.argument,
-                                                 IDSZ2(state.turn),
-                                                 TARGET_SELF | state.distance,
-                                                 IDSZ2::None);
-
-    SCRIPT_FUNCTION_END();
+    return trySetTargetFromPassageOccupant(self,
+                                           state.argument,
+                                           IDSZ2(state.turn),
+                                           TARGET_SELF | state.distance,
+                                           IDSZ2::None);
 }
 
 
@@ -1871,7 +1649,6 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function proceeds if the target is more or less facing the character
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
@@ -1881,23 +1658,18 @@ uint8_t scr_IfTargetIsFacingSelf( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    returncode = isFacing(*targetContext.physical, *selfContext.physical);
-
-    SCRIPT_FUNCTION_END();
+    return isFacing(*targetContext.physical, *selfContext.physical);
 }
 
 
 //--------------------------------------------------------------------------------------------
 uint8_t scr_SetTargetToNearbyMeleeWeapon( script_state_t& state, ai_state_t& self )
 {
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     ObjectRef best_target = findWeaponForSelf(selfContext, WIDE, IDSZ2('X', 'W', 'E', 'P'), false, true);
-    returncode = trySetResolvedTarget(self, best_target);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, best_target);
 }
 
 
@@ -1909,12 +1681,9 @@ uint8_t scr_SetTargetToDistantFriend( script_state_t& state, ai_state_t& self )
     /// @details This function finds a character within a certain distance of the
     /// character, failing if there are none
 
-    uint8_t returncode = true;
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     const auto ichr = findTargetForSelf(selfContext, state.distance, IDSZ2::None, TARGET_FRIENDS);
-    returncode = trySetResolvedTarget(self, ichr);
-
-    SCRIPT_FUNCTION_END();
+    return trySetResolvedTarget(self, ichr);
 }
