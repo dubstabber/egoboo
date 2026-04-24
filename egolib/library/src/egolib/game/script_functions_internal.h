@@ -310,15 +310,5 @@ using namespace script_detail;
 #    pragma warning(disable : 4189) // local variable is initialized but not referenced
 #endif
 
-#define SCRIPT_FUNCTION_END() \
-    return returncode;
-
-#define FUNCTION_BEGIN() \
-    uint8_t returncode = true; \
-    if( nullptr == ( pchr ) ) return false;
-
-#define FUNCTION_END() \
-    return returncode;
-
 #define SET_TARGET_1(ITARGET,PTARGET) if( NULL != PTARGET ) { PTARGET = objectHandler().get(ITARGET); }
 #define SET_TARGET(ITARGET,PTARGET)   self.setTarget(ITARGET); SET_TARGET_1(ITARGET,PTARGET)

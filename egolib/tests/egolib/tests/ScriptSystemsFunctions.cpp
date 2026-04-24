@@ -95,6 +95,26 @@ public:
     }
 };
 
+class ScopedTestModuleMenuOverrideCleanup
+{
+public:
+    ScopedTestModuleMenuOverrideCleanup()
+    {
+        clear();
+    }
+
+    ~ScopedTestModuleMenuOverrideCleanup()
+    {
+        clear();
+    }
+
+private:
+    static void clear()
+    {
+        vfs_delete_file("/modules/test.mod/gamedat/menu.txt");
+    }
+};
+
 struct GraphicsSystemAccess : Ego::GraphicsSystem
 {
     using idlib::singleton<Ego::GraphicsSystem>::instance;
@@ -1081,6 +1101,7 @@ TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAn
 
 TEST_F(ScriptSystemsFunctionsFixture, AddIDSZPublishesExpansionToActiveModuleMenu)
 {
+    const ScopedTestModuleMenuOverrideCleanup generatedMenuCleanup;
     auto& module = beginActiveTestModule();
     auto actor = makeObject(module, "mp_objects/follower.obj", 5624);
 

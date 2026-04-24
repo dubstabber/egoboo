@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 193) completed between 2026-04-13 and 2026-04-24. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 197) completed between 2026-04-13 and 2026-04-24. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -1005,6 +1005,12 @@ Kept `SCRIPT_FUNCTION_END()` available for the remaining spawn/systems files. Bu
 Continued the script return-flow cleanup inside `script_functions_spawn.c` by replacing the legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the spawn opcode file. Preserved explicit self-resolution, poof/player-immunity branches, particle success gates, attached-character placement/termination behavior, child publication, morph, invictus, and stealth return semantics.
 
 Kept `SCRIPT_FUNCTION_END()` available for the remaining systems file. Build, focused `ScriptStateFunctions` / `ModuleSpawnRealization` coverage, and the `test.mod` validator remained the acceptance bar.
+
+### Pass 197 — Systems script direct-return cleanup (2026-04-24)
+
+Finished the split script return-flow cleanup inside `script_functions_systems.c` by replacing the remaining legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the systems opcode file. Removed the now-dead shared return macros from `script_functions_internal.h` while preserving explicit self-resolution, target/passage/quest/enchant/wallet semantics, and quiet-failure behavior.
+
+Made the `AddIDSZ` systems fixture clear its generated `test.mod` menu override before and after the test so stale ignored VFS state cannot leak across focused runs. Build, the full focused `ScriptSystemsFunctionsFixture` slice, residue search, and the `test.mod` validator remained the acceptance bar.
 
 ---
 
