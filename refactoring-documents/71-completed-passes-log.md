@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 167) completed between 2026-04-13 and 2026-04-22. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 192) completed between 2026-04-13 and 2026-04-24. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -975,6 +975,12 @@ Extended `ScriptMovementFunctions.cpp` with focused pathfinding coverage for val
 Finished the remaining script-entry macro cleanup inside `script_functions_bitwise.c` by converting all 12 bitwise alert/state opcodes to direct return flow. Removed the now-dead `SCRIPT_FUNCTION_BEGIN()` and `SCRIPT_REQUIRE_TARGET()` definitions while keeping the still-used `SCRIPT_FUNCTION_END()` helper for the other split script-function files.
 
 Added `ScriptBitwiseFunctions.cpp` coverage for alert bit/mask helpers, state bit/mask helpers, and invalid bit-index exceptions. Build, the focused bitwise test slice, and the `test.mod` validator remained the acceptance bar.
+
+### Pass 192 — Movement script direct-return cleanup (2026-04-24)
+
+Continued the script return-flow cleanup inside `script_functions_movement.c` by replacing the legacy `returncode` / `SCRIPT_FUNCTION_END()` pattern with direct returns across the movement opcode file. Preserved the explicit self-resolution contract from Pass 190 and kept waypoint, pathfinding, teleport, frame, latch, reload, shadow, and velocity side-effect ordering unchanged.
+
+Kept `SCRIPT_FUNCTION_END()` available for the remaining split script-function files. Acceptance for this pass is the build, the focused `ScriptMovementFunctionsFixture` slice, and the `test.mod` validator.
 
 ---
 
