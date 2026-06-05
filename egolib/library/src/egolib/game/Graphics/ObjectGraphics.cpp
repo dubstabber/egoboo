@@ -35,7 +35,7 @@ const std::shared_ptr<Object>& attachmentObject(ObjectRef objectRef)
     return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
 }
 
-const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
 {
     return attachmentObject(object.getHeldObject(slot));
 }
@@ -134,7 +134,7 @@ LocomotionAnimationDecision makeLocomotionAnimationDecision(Object& object,
     return decision;
 }
 
-uint8_t computeReflectionAlpha(const Object& object, uint8_t alpha)
+uint8_t computeReflectionAlpha(const IPhysical& object, uint8_t alpha)
 {
     const float altitudeAboveGround = std::max(0.0f, object.getPosZ() - object.getFloorElevation());
     float alphaFade = (255.0f - altitudeAboveGround) * 0.5f;
@@ -143,7 +143,7 @@ uint8_t computeReflectionAlpha(const Object& object, uint8_t alpha)
     return alpha * alphaFade * idlib::fraction<float, 1, 255>();
 }
 
-TintRenderState makeTintRenderState(const Object& object,
+TintRenderState makeTintRenderState(const IPhysical& object,
                                     uint8_t alpha,
                                     uint8_t light,
                                     uint8_t sheen,

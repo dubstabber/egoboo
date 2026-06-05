@@ -1044,6 +1044,16 @@ Extended `ScriptSystemsFunctions.cpp` with focused invalid-self coverage for the
 
 ---
 
+## Theme 10 — Object role-interface caller migration (2026-06-05)
+
+### Pass 203 — Helper retypes onto `IInventoryHolder` / `IPhysical` (2026-06-05)
+
+Continued Tier 1.2 by retyping file-local / anonymous-namespace helpers from the concrete `Object` to the single role interface each actually uses, narrowing caller coupling with no behavior change. The duplicated `heldItem(...)` helper in `Entities/Object_combat.cpp`, `Entities/Enchant.cpp`, `game/Graphics/ObjectGraphics.cpp`, and `game/Physics/particle_collision.c` — plus the `character` parameter of `usedHeldItemForBlock(...)` — now take `const IInventoryHolder&`. `computeReflectionAlpha`/`makeTintRenderState` (`ObjectGraphics.cpp`) and `publishSpawnWaypoint` (`Script/script.c`) now take `const IPhysical&`; `leftHandRiderRef` (`Script/script.c`) takes `const IInventoryHolder&` and drops its concrete-`Object` adapter hop. Every call site passes a concrete `Object`, so each retype upcasts implicitly — compiler-verified with zero call-site churn.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, and `ctest` steady at the two pre-existing `ScriptLoaderFixture` default-script fallback failures (#526/#527) with no new failures.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:

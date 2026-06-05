@@ -142,9 +142,9 @@ ObjectRef heldItemRef(const IInventoryHolder& holder, slot_t slot)
     return holder.getHeldObject(slot);
 }
 
-ObjectRef leftHandRiderRef(const Object& object)
+ObjectRef leftHandRiderRef(const IInventoryHolder& object)
 {
-    return heldItemRef(inventoryHolder(object), SLOT_LEFT);
+    return heldItemRef(object, SLOT_LEFT);
 }
 
 bool isRuntimeObjectAlive(ObjectRef ref)
@@ -1173,7 +1173,7 @@ void publishSpawnOverrides(ai_state_t& self, const Object& object)
     self.content = object.getProfile()->getContentOverride();
 }
 
-void publishSpawnWaypoint(ai_state_t& self, const Object& object)
+void publishSpawnWaypoint(ai_state_t& self, const IPhysical& object)
 {
     waypoint_list_t::push(self.wp_lst, object.getSpawnPosition().x(), object.getSpawnPosition().y());
 }

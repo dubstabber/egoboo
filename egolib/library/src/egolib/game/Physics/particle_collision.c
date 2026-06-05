@@ -62,12 +62,12 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
 {
     return activeModule().getObjectHandler()[object.getHeldObject(slot)];
 }
 
-bool usedHeldItemForBlock(const Object& character, const IScriptable& scriptableCharacter, slot_t slot, ObjectRef& usedItem)
+bool usedHeldItemForBlock(const IInventoryHolder& character, const IScriptable& scriptableCharacter, slot_t slot, ObjectRef& usedItem)
 {
     usedItem = character.getHeldObject(slot);
     return activeModule().getObjectHandler().exists(usedItem) && scriptableCharacter.getAILastItemUsed() == usedItem;

@@ -35,7 +35,7 @@ IAudioSystem& audioSystem()
     return EngineContext::get().audioSystem();
 }
 
-const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
 {
     return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
 }
