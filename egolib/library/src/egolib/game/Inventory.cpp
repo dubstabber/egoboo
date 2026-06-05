@@ -208,7 +208,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
         //}
 
         // Take the item out of hand
-        item->detatchFromHolder(true, false);
+        item->detachFromHolder(true, false);
 
         // clear the dropped flag
         scriptable(*item).clearAIAlertBits(ALERTIF_DROPPED);

@@ -1048,14 +1048,14 @@ bool ObjectGraphics::handleAnimationFX() const
     if ( HAS_SOME_BITS( framefx, MADFX_DROPLEFT ) )
     {
         if (const std::shared_ptr<Object>& leftHandItem = heldItem(_object, SLOT_LEFT)) {
-            leftHandItem->detatchFromHolder(false, true);
+            leftHandItem->detachFromHolder(false, true);
         }
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPRIGHT ) )
     {
         if (const std::shared_ptr<Object>& rightHandItem = heldItem(_object, SLOT_RIGHT)) {
-            rightHandItem->detatchFromHolder(false, true);
+            rightHandItem->detachFromHolder(false, true);
         }
     }
 

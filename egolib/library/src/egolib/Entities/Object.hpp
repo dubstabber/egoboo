@@ -521,8 +521,6 @@ public:
 
     void setPlayerNumber(PLA_REF playerNumber) { is_which_player = playerNumber; }
 
-    bool isLocalPlayer() const { return islocalplayer; }
-
     void setLocalPlayer(bool localPlayer) { islocalplayer = localPlayer; }
 
     /**
@@ -607,16 +605,11 @@ public:
 
     /**
     * @brief
-    *   This makes this Object detatch from any holder (or dismount of riding a mount)
+    *   This makes this Object detach from any holder (or dismount of riding a mount)
     * @return
     *   true if the detach was successful (could fail because of a kurse for example)
     **/
     bool detachFromHolder(const bool ignoreKurse, const bool doShop) override;
-
-    bool detatchFromHolder(const bool ignoreKurse, const bool doShop)
-    {
-        return detachFromHolder(ignoreKurse, doShop);
-    }
 
     ObjectRef getHeldObject(slot_t slot) const { return holdingwhich[slot]; }
 

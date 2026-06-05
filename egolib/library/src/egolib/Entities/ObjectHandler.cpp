@@ -93,7 +93,7 @@ bool ObjectHandler::remove(ObjectRef ref) {
 #endif
 
 	//Remove us from any holder first
-	_internalCharacterList[ref]->detatchFromHolder(true, false);
+	_internalCharacterList[ref]->detachFromHolder(true, false);
 
 	// If we are inside a list loop, do not actually change the length of the
 	// list. Else this can cause some problems later.

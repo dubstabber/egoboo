@@ -635,7 +635,6 @@ TEST_F(ObjectAccessorFixture, FlagAndPlayerAccessorsRoundTripSelectedState)
 
     EXPECT_EQ(object->getPlayerNumber(), 2);
     EXPECT_TRUE(object->isPlayer());
-    EXPECT_TRUE(object->isLocalPlayer());
     EXPECT_TRUE(object->isInvincible());
     EXPECT_TRUE(object->isKursed());
     EXPECT_TRUE(object->isNameKnown());

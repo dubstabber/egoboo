@@ -316,11 +316,11 @@ void Object::dropAllItems()
 {
     const std::shared_ptr<Object>& leftItem = objectHandler()[getHeldObject(SLOT_LEFT)];
     if (leftItem) {
-        leftItem->detatchFromHolder(true, false);
+        leftItem->detachFromHolder(true, false);
     }
     const std::shared_ptr<Object>& rightItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
     if (rightItem) {
-        rightItem->detatchFromHolder(true, false);
+        rightItem->detachFromHolder(true, false);
     }
 
     const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
@@ -387,7 +387,7 @@ void Object::updateLatchButtons()
 
     if (_inputLatchesPressed[LATCHBUTTON_JUMP] && 0 == jump_timer) {
         if (isBeingHeld()) {
-            detatchFromHolder(true, true);
+            detachFromHolder(true, true);
             detachFromPlatform();
 
             jump_timer = Object::JUMPDELAY;

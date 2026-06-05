@@ -395,7 +395,7 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
     // Drop left weapon if we have no left grip
     if ( leftItem && ( !_profile->isSlotValid(SLOT_LEFT) || _profile->isMount() ) )
     {
-        leftItem->detatchFromHolder(true, true);
+        leftItem->detachFromHolder(true, true);
         leftItem->detachFromPlatform();
 
         if ( isMount() )
@@ -411,7 +411,7 @@ void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
     // Drop right weapon if we have no right grip
     if ( rightItem && !_profile->isSlotValid(SLOT_RIGHT) )
     {
-        rightItem->detatchFromHolder(true, true);
+        rightItem->detachFromHolder(true, true);
         rightItem->detachFromPlatform();
 
         if ( isMount() )

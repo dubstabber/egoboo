@@ -1052,6 +1052,12 @@ Continued Tier 1.2 by retyping file-local / anonymous-namespace helpers from the
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, and `ctest` steady at the two pre-existing `ScriptLoaderFixture` default-script fallback failures (#526/#527) with no new failures.
 
+### Pass 204 — Remove `isLocalPlayer` duplicate and `detatchFromHolder` typo alias (2026-06-06)
+
+Shrank the `Object` public surface by deleting two redundant members. The dead `isLocalPlayer()` getter (zero library callers; a literal duplicate of `isPlayer()`, both returning `islocalplayer`) is removed, and the single test assertion that used it now reads through the canonical `isPlayer()`. The misspelled `detatchFromHolder(...)` alias — a pass-through to the `ILifecycleControl` override `detachFromHolder(...)` — is removed and its 14 call sites (13 library + 1 test) renamed to the correct spelling; a stale "detatch" doc-comment typo was fixed in passing.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

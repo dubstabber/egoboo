@@ -208,17 +208,17 @@ void Object::removeFromGame(Object* obj)
     activeModule().removeShopOwner(objRef);
 
     if (activeModule().getObjectHandler().exists(obj->attachedto)) {
-        obj->detatchFromHolder(true, false);
+        obj->detachFromHolder(true, false);
     }
 
     const std::shared_ptr<Object>& leftItem = heldItem(*obj, SLOT_LEFT);
     if (leftItem && leftItem->isItem()) {
-        leftItem->detatchFromHolder(true, false);
+        leftItem->detachFromHolder(true, false);
     }
 
     const std::shared_ptr<Object>& rightItem = heldItem(*obj, SLOT_RIGHT);
     if (rightItem && rightItem->isItem()) {
-        rightItem->detatchFromHolder(true, false);
+        rightItem->detachFromHolder(true, false);
     }
 
     audioSystem().stopObjectLoopingSounds(objRef);

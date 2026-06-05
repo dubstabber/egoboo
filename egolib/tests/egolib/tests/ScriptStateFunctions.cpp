@@ -1686,7 +1686,7 @@ TEST_F(ScriptStateFunctionsFixture, IfHeldInLeftHandFailsWithoutMatchingLeftHand
 
     EXPECT_FALSE(scr_IfHeldInLeftHand(state, self));
 
-    heldItem->detatchFromHolder(true, false);
+    heldItem->detachFromHolder(true, false);
     EXPECT_FALSE(scr_IfHeldInLeftHand(state, self));
 }
 
