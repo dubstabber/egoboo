@@ -1058,6 +1058,12 @@ Shrank the `Object` public surface by deleting two redundant members. The dead `
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 205 — `override` sweep on `Object` role-interface implementations (2026-06-06)
+
+Marked the 28 `Object` methods that implement one of the seventeen role-interface pure-virtuals but lacked the `override` specifier — the exact set reported by GCC `-Wsuggest-override` (extracted via a one-off `-fsyntax-only` compile against the generated compile-commands database). Covers render (`isPhongMapped`, `hasReflection`, `isDontCullBackfaces`, `getAlpha`/`getLight`/`getSheen`, `getUOffset`/`getVOffset`, `getModelDescriptor`, `isHidden`, `isInsideInventory`), target/state (`isItem`, `isFlying`, `isMount`, `isPlatform`, `isOnWaterTile`, `isPlayer`, `getHolderRef`, `getGender`, `isHurt`, `hasNotFullMana`), and inventory/lifecycle (`isTerminated`, `getHeldObject`, `setHeldObject`, `getInventoryMaxItems`, `getFirstFreeInventorySlot`, `dropKeys`, `dropAllItems`). No behavior change; `override` documents the interface contract and turns any future signature drift into a compile error. Each is a genuine override (the build confirms). `AudioSystem.hpp` carries five further `-Wsuggest-override` hits left for a separate focused pass.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

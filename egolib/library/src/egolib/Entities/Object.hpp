@@ -151,11 +151,11 @@ public:
 
     std::shared_ptr<const Ego::Texture> getSkinTexture() const override;
 
-    bool isPhongMapped() const { return getProfile()->isPhongMapped(); }
+    bool isPhongMapped() const override { return getProfile()->isPhongMapped(); }
 
-    bool hasReflection() const { return getProfile()->hasReflection(); }
+    bool hasReflection() const override { return getProfile()->hasReflection(); }
 
-    bool isDontCullBackfaces() const { return getProfile()->isDontCullBackfaces(); }
+    bool isDontCullBackfaces() const override { return getProfile()->isDontCullBackfaces(); }
 
     float getPosZ() const override { return Ego::Physics::Collidable::getPosZ(); }
 
@@ -222,13 +222,13 @@ public:
     * @brief
     *   True if this Object is a item that can be grabbed
     **/
-    bool isItem() const {return isitem;}
+    bool isItem() const override {return isitem;}
 
     /**
     * @return
     *   true if this Object is currently levitating above the ground
     **/
-    bool isFlying() const;
+    bool isFlying() const override;
 
     /**
     * @brief
@@ -251,7 +251,7 @@ public:
     * @return 
     *   true if it is on a water tile
     **/
-    bool isOnWaterTile() const;
+    bool isOnWaterTile() const override;
 
     /**
     * @brief
@@ -267,9 +267,9 @@ public:
     * @return
     *   true if inside another existing Object's inventory
     **/
-    bool isInsideInventory() const;
+    bool isInsideInventory() const override;
 
-    ObjectRef getHolderRef() const { return attachedto; }
+    ObjectRef getHolderRef() const override { return attachedto; }
 
     void setHolderRef(ObjectRef holderRef) { attachedto = holderRef; }
 
@@ -283,7 +283,7 @@ public:
 
     void setInventoryHolderRef(ObjectRef holderRef) { inwhich_inventory = holderRef; }
 
-    bool isPlatform() const { return platform; }
+    bool isPlatform() const override { return platform; }
 
     void setPlatform(bool platformState) { platform = platformState; }
 
@@ -303,7 +303,7 @@ public:
     *   If this value is true, then this Object is effectively no longer a part of
     *   the game and should not be interacted with.
     **/
-    inline bool isTerminated() const {return _terminateRequested;}
+    inline bool isTerminated() const override {return _terminateRequested;}
 
 	/**
 	* @brief
@@ -342,27 +342,27 @@ public:
     */
     void setLight(const int light) override;
 
-    uint8_t getAlpha() const { return inst.getAlpha(); }
+    uint8_t getAlpha() const override { return inst.getAlpha(); }
 
-    uint8_t getLight() const { return inst.getLight(); }
+    uint8_t getLight() const override { return inst.getLight(); }
 
-    uint8_t getSheen() const { return inst.getSheen(); }
+    uint8_t getSheen() const override { return inst.getSheen(); }
 
     const colorshift_t& getColorShift() const { return inst.getColorShift(); }
 
     void setColorShift(const colorshift_t& colorShift) { inst.setColorShift(colorShift); }
 
-    SFP8_T getUOffset() const { return inst.getUOffset(); }
+    SFP8_T getUOffset() const override { return inst.getUOffset(); }
 
     void setUOffset(SFP8_T value) { inst.setUOffset(value); }
 
-    SFP8_T getVOffset() const { return inst.getVOffset(); }
+    SFP8_T getVOffset() const override { return inst.getVOffset(); }
 
     void setVOffset(SFP8_T value) { inst.setVOffset(value); }
 
     bool hasModelDescriptor() const override { return inst.getModelDescriptor() != nullptr; }
 
-    const std::shared_ptr<Ego::ModelDescriptor>& getModelDescriptor() const { return inst.getModelDescriptor(); }
+    const std::shared_ptr<Ego::ModelDescriptor>& getModelDescriptor() const override { return inst.getModelDescriptor(); }
 
     uint8_t getReflectionAlpha() const override { return inst.getReflectionAlpha(); }
 
@@ -458,7 +458,7 @@ public:
     /**
      * @return true if this Object is mountable by other Objects
      */
-    bool isMount() const {return getProfile()->isMount();}
+    bool isMount() const override {return getProfile()->isMount();}
 
     /**
     * @brief
@@ -515,7 +515,7 @@ public:
     /**
     * @return true if this Object is controlled by a player
     **/
-    bool isPlayer() const {return islocalplayer;}
+    bool isPlayer() const override {return islocalplayer;}
 
     PLA_REF getPlayerNumber() const override { return is_which_player; }
 
@@ -535,7 +535,7 @@ public:
     *   interacted with, is not rendered and is effectively not part of the game until it is
     *   unhidden again. Hidden state is determined by the Objects AI state.
     **/
-    bool isHidden() const;
+    bool isHidden() const override;
 
     bool isNameKnown() const override {return nameknown;}
 
@@ -611,9 +611,9 @@ public:
     **/
     bool detachFromHolder(const bool ignoreKurse, const bool doShop) override;
 
-    ObjectRef getHeldObject(slot_t slot) const { return holdingwhich[slot]; }
+    ObjectRef getHeldObject(slot_t slot) const override { return holdingwhich[slot]; }
 
-    void setHeldObject(slot_t slot, ObjectRef objectRef) { holdingwhich[slot] = objectRef; }
+    void setHeldObject(slot_t slot, ObjectRef objectRef) override { holdingwhich[slot] = objectRef; }
 
     ObjectRef getEquipment(inventory_t slot) const { return equipment[slot]; }
 
@@ -824,7 +824,7 @@ public:
     * @return
     *   The gender of this Object (if applicable)
     **/
-    Gender getGender() const { return gender; }
+    Gender getGender() const override { return gender; }
 
     void setGender(Gender objectGender) { gender = objectGender; }
 
@@ -899,9 +899,9 @@ public:
         setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, height < 0.0f ? 0.0f : height);
     }
 
-    size_t getInventoryMaxItems() const;
+    size_t getInventoryMaxItems() const override;
 
-    size_t getFirstFreeInventorySlot() const;
+    size_t getFirstFreeInventorySlot() const override;
 
     ObjectRef getInventoryItemRef(size_t slotNumber) const override;
 
@@ -1172,9 +1172,9 @@ public:
     *   This function drops all keys ( [KEYA] to [KEYZ] ) that are in a character's
     *   inventory (Not hands).
     **/
-    void dropKeys();
+    void dropKeys() override;
 
-    void dropAllItems();
+    void dropAllItems() override;
 
     std::shared_ptr<const Ego::Texture> getIcon() const;
 
@@ -1214,9 +1214,9 @@ public:
 
     int16_t getDazeTimer() const override { return daze_timer; }
 
-    bool isHurt() const;
+    bool isHurt() const override;
 
-    bool hasNotFullMana() const;
+    bool hasNotFullMana() const override;
 
     void setDazeTimer(int16_t timer) override { daze_timer = timer; }
 
