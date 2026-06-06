@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"  // SKIN_T
 
 #include <cstddef>
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"  // Facing, Vector2f, Vector3f
+#include <cstdint>         // uint8_t (enum forward declarations below)
 
 enum turn_mode_t : uint8_t;
 enum LatchButton : uint8_t;

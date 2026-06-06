@@ -1202,6 +1202,10 @@ Deleted `external/SDL2-2.0.3` and `external/physfs-2.1.1` (1450 files, ~428k lin
 
 Updated vendored `external/googletest` to v1.16.0 in the external submodule. The default build path (`idlib-with-fetch-googletest=OFF`) now builds and passes tests offline with no network fetch. The `-Didlib-with-fetch-googletest=ON` workaround is obsolete. External submodule bumped to SHA `4a97d80`; superproject pointer-bump commit `12bd9463e`.
 
+### T3.3 (uber-header teardown) — Pass 221: Entities role-interface cluster self-contained (2026-06-06)
+
+Began the reframed T3.3 uber-header teardown (`game/egoboo.h`'s `#include egolib/egolib.h` propagates 54 subsystems into ~55 game headers transitively). A keep-going probe build (egolib.h neutralized) measured the true footprint: 185/286 egolib TUs fail, rooted in 37 non-self-contained headers + ~30 sources (full data + symbol→header dictionary in `72-uber-header-teardown.md`). Added an `EGOBOO_NO_UBER_INCLUDE` guard to `egoboo.h` (egolib.h still included by default → tree stays green) plus precise includes for egoboo.h's own thin body. Pass 1 made all 19 `Entities/I*.hpp` role interfaces + `Logic/ObjectSlot.hpp` + `game/Graphics/Vertex.hpp` self-contained and removed their `egoboo.h` include, verified per-header by standalone `-fsyntax-only` under the cut. Build clean, `test.mod` warnings=0 errors=0, ctest 736/738 (only pre-existing #526/#527). Branch `refactor/uber-header-teardown`.
+
 ---
 
 ## Files touched most by this pass log

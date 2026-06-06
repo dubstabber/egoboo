@@ -1,6 +1,10 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"                       // float_t
+#include "egolib/Logic/Gender.hpp"              // Gender
+#include "egolib/IDSZ.hpp"                       // IDSZ2
+#include "egolib/Graphics/ModelDescriptor.hpp"  // ModelAction
+#include "egolib/Logic/ObjectSlot.hpp"          // slot_t
 
 class ITargetInfo
 {

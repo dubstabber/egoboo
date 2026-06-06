@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include <cstdint>  // uint8_t, int16_t
 
 class IVisualControl
 {

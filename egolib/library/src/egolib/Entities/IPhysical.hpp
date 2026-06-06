@@ -1,6 +1,8 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"               // Vector3f, AxisAlignedBox2f, Facing
+#include "egolib/bbox.h"                // bumper_t, oct_bb_t
+#include "egolib/Logic/ObjectSlot.hpp"  // slot_t
 
 class IPhysical
 {

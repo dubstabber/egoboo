@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"  // ENC_REF, PRO_REF
 
 #include <memory>
 

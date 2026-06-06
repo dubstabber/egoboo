@@ -1,7 +1,7 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
-#include "egolib/game/Graphics/Vertex.hpp"
+#include "egolib/_math.h"                       // Matrix4f4f
+#include "egolib/game/Graphics/Vertex.hpp"      // GLvertex
 #include "egolib/Graphics/ModelDescriptor.hpp"
 
 #include <memory>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include <cstdint>  // uint16_t
 
 class IWallet
 {

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/Logic/Damage.hpp"  // DamageType
+#include "egolib/_math.h"           // Facing
 
 class IScriptable
 {

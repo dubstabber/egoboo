@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"  // ObjectRef, SFP8_T
 
 class ILifecycleControl
 {

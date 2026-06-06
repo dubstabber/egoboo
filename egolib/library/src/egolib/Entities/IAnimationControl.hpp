@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/Graphics/ModelDescriptor.hpp"  // ModelAction
 
 class IAnimationControl
 {

@@ -1,6 +1,9 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"                          // Facing, Vector3f
+#include "egolib/typedef.h"                         // ParticleProfileRef
+#include "egolib/Profiles/LocalParticleProfileRef.hpp"  // LocalParticleProfileRef
+#include "egolib/egoboo_setup.h"                    // egoboo_config_t
 
 #include <memory>
 #include <vector>

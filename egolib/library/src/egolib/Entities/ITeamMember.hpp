@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/Profiles/_Include.hpp"  // XPType
 
 class ITeamMember
 {

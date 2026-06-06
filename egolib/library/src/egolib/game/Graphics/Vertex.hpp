@@ -1,6 +1,7 @@
 #pragma once
 
 #include "egolib/typedef.h"
+#include "egolib/Extensions/ogl_extensions.h"  // GLfloat/GLint and GL vertex component types
 
 /**
  * @brief

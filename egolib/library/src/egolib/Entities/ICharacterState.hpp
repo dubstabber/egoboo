@@ -1,6 +1,9 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/Logic/Attribute.hpp"     // Ego::Attribute
+#include "egolib/Logic/Perk.hpp"          // Ego::Perks
+#include "egolib/IDSZ.hpp"                 // IDSZ2
+#include "egolib/Profiles/_Include.hpp"    // XPType
 
 class ICharacterState
 {

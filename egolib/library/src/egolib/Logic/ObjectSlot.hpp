@@ -18,6 +18,9 @@
 //********************************************************************************************
 #pragma once
 
+#include "egolib/Math/_Include.hpp"  // Ego::Math::constrain
+#include <cstdint>                   // uint8_t
+
 #define GRIP_VERTS             4
 
 /// Where an item is being held

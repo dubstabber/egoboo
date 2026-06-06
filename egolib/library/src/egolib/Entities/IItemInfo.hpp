@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/IDSZ.hpp"  // IDSZ2
 
 class IItemInfo
 {

@@ -131,25 +131,52 @@ Add `doc/build-windows-native.md` + `cmake/toolchains/msys2-ucrt64.cmake` for bu
 
 These are unblocked only after Tier 1 lands. They represent the next frontier of maintainability work once the Object/singleton debt is paid down.
 
-### T3.1 Shrink `shared_ptr<Object>` usage
+### T3.1 Shrink `shared_ptr<Object>` usage — ownership model already sound (low priority)
 
-~955 `shared_ptr` call sites, many of them `shared_ptr<Object>`, with `Object` inheriting from `enable_shared_from_this`. Entity ownership is shared-by-default. A dedicated pass should:
+**Scouting correction (2026-06-06):** the scary premise does not hold against live code. `ObjectHandler`
+is already the sole owner (0 co-owning member fields elsewhere); every real observer relationship already
+uses `weak_ptr`; the QuadTrees observe via `weak_ptr`; an `ObjectRef`-based non-owning iteration seam
+exists and is adopted at ~13 sites (2 passes already landed). Of ~329 live `shared_ptr<Object>` hits, ~220
+are zero-cost `const&` borrows. So this has degraded from an ownership redesign to incremental
+refcount-churn cleanup (~21 observer loops) — good opportunistic/filler work, not a heavy thrust.
+
+Remaining incremental opportunities:
+
 
 - Identify which `shared_ptr<Object>` uses are true shared ownership vs. observer patterns.
 - Move observer-style uses to `weak_ptr<Object>` or raw non-owning references.
 - Consider whether `ObjectHandler` can become the sole owning reference, with all call-site refs becoming non-owning.
 
-### T3.2 Script dispatch → registry model
+### T3.2 Script dispatch → registry model — PREMISE STALE (do not pursue as written)
 
-`script_functions_{action,bitwise,movement,spawn,state,systems,target}.c` still implements ~400 script functions as one procedural dispatch split across seven files. Moving to a registry-based model would:
+**Scouting correction (2026-06-06):** dispatch is *already* a registry. `run_function`
+(`Script/script.c:680-701`) does an `std::unordered_map<uint32_t, Function*>` lookup
+(`script.h:660`) populated from a single `Functions.in` X-macro source of truth; there is no
+function-dispatch switch (only 2 incidental switches inside the 7 files). "Extension without touching
+the dispatch layer" is already true via `Functions.in`. The one real sliver of value is a
+*characterization test* asserting registry completeness/alias-routing (the per-function tests call
+`scr_*` directly and bypass the map) — that belongs under T3.4, not here. A self-registration/Command
+rewrite would violate Rule 1 for little gain. The 404 functions remain split across seven files for
+size reasons only.
 
-- Enable Command pattern on script ops.
-- Remove the `switch` density density (~100+ switches in `egolib`).
-- Allow extension without touching the dispatch layer.
+### T3.3 Uber-header teardown — IN FLIGHT (reframed 2026-06-06)
 
-### T3.3 Reduce `egolib.h` transitive reach
+**Original framing was stale.** `egolib/egolib.h` (54 subsystem includes) has only ~24 direct includers,
+several redundant. The real amplifier is the *thin* `game/egoboo.h`, whose only harm is its
+`#include "egolib/egolib.h"` line — and ~55 of its ~60 consumers are **headers** (`Object.hpp`, the 19 role
+interfaces, `mesh.h`, `graphic.h`, …), so the 54 subsystems propagate into essentially the whole game
+library transitively.
 
-`egolib.h` still pulls in 57 subsystems. Only a handful of `.c` files still include it directly. Finish removing direct includes and physically delete the uber-header.
+Reframed goal: make every consumer self-sufficient in its egolib includes, then cut the
+`egoboo.h → egolib.h` link (`egoboo.h` survives as a thin header). Deleting `egolib.h` outright is a later
+optional stretch. Full plan, probe data (185/286 TUs transitively coupled; 37 non-self-contained headers),
+the symbol→header dictionary, the `EGOBOO_NO_UBER_INCLUDE` guard, and the per-pass work-list live in
+`72-uber-header-teardown.md`.
+
+- **Pass 221 (done):** all 19 `Entities/I*.hpp` role interfaces + `Logic/ObjectSlot.hpp` +
+  `game/Graphics/Vertex.hpp` made self-contained and decoupled from `egoboo.h`. Build/validator/ctest green.
+- **Remaining:** the leaf game headers (`mesh.h`/`graphic.h`/`lighting.h`/…), then `Object.hpp` and the
+  Graphics/GUI/Script headers, ~30 source TUs, then the final link-cut payoff pass (+ smoke-run).
 
 ### T3.4 Behavioral test coverage
 

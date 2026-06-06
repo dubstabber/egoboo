@@ -1,6 +1,7 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"               // float_t
+#include "egolib/Logic/ObjectSlot.hpp"  // slot_t
 
 #include <memory>
 #include <vector>
