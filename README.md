@@ -39,8 +39,8 @@ Supported build documents:
 - Linux: `doc/build-linux.md`
 - Windows: `doc/build-windows.md`
 
-Older platform-specific `README.*` files are still present in the repository,
-but the `doc/build-*.md` files are the current source of truth for active build
+Older platform-specific `README.*` files have been quarantined to `doc/legacy/`.
+The `doc/build-*.md` files are the current source of truth for active build
 paths.
 
 Quick start:
@@ -70,7 +70,7 @@ Run the cross-built Windows binary through Wine from Linux:
 The Wine helper currently applies compatibility defaults for the Windows build:
 `EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1`. This helper is a temporary compatibility path, not the long-term Windows support goal.
 
-The current Wine-run Windows build is still not a good gameplay target. See `debug-output.txt` for a recent startup failure involving font-atlas initialization and a later crash during audio loading.
+The current Wine-run Windows build is still not a good gameplay target due to font-atlas initialization failure and audio loading crashes under Wine.
 
 Important output directories:
 

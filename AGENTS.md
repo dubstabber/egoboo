@@ -27,7 +27,7 @@ Keep this file focused on repository expectations and setup. If a specific subdi
 
 ## Project subagents
 
-Project-scoped custom agents live in `.codex/agents/` and share shallow delegation defaults from `.codex/config.toml`.
+Project-scoped custom agents live in `.claude/agents/`.
 
 Available agents:
 

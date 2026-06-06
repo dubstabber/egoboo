@@ -9,7 +9,7 @@ It matches the active CMake build, the current binary output paths, and the Linu
 Clone the repository and initialize submodules:
 
 ```bash
-git clone https://github.com/egoboo/egoboo
+git clone https://github.com/dubstabber/egoboo
 cd egoboo
 git submodule update --init data external idlib idlib-game-engine
 ```

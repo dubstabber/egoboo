@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 197) completed between 2026-04-13 and 2026-04-24. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 220) and Tier 2 build tasks completed between 2026-04-13 and 2026-06-06. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -1183,6 +1183,24 @@ Introduced the 19th `Object` role interface, `IProfiled` (`egolib/Entities/IProf
 **Scope finding (important for planning):** a categorization workflow over all ~346 `getProfile()` sites found the "huge fan-out" is raw site count, not clean-narrowable count. The breakdown: ~137 are `Particle::getProfile()`/`Enchant::getProfile()` (different types), ~78 are internal to `Object`'s own methods, and the rest are locals/loop-vars (not params), `shared_ptr<Object>` params (the T1.2 reference-retype doesn't apply), concrete-`Object`-escape, or **multi-role-blocked** (a single param can't be multiple interface types). Exactly **one** external caller uses `getProfile()` and nothing else, hence the one-caller batch. The next two candidates — `draw_character_xp_bar` (getProfile + `ICharacterState`) and `AddEndMessage` (getProfile + `getObjRef`) — would require co-locating `getProfile()` onto those existing interfaces (interface pollution with the `ObjectProfile` dependency), deliberately deferred pending an explicit decision. **`Object` role-decoupling via single-param narrowing has essentially reached its ceiling; the remaining `getProfile()` coupling is intrinsic to multi-role functions.**
 
 Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527), headless smoke-run reaches the main menu cleanly. `publishSpawnOverrides` runs on object spawn, which `ctest`'s module-spawn / ScriptSystems suites exercise.
+
+## Theme 13 — Tier 2 build and cross-platform cleanup (2026-06-06)
+
+### T2.6/T2.1 — Quarantine legacy READMEs, remove proprietary build artifacts (2026-06-06)
+
+Moved the four deprecated platform READMEs (`README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX`) to `doc/legacy/`. Removed unreferenced proprietary artifacts `distribute.ps1` and `egoboo.gta.runsettings` from the superproject. Commit `63530491d`.
+
+### T2.1 — Drop MSVC-only CMake branches and platform.h warning-pragma island (2026-06-06)
+
+Removed the MSVC-only CPACK block from root `CMakeLists.txt`, the `VS_DEBUGGER_WORKING_DIRECTORY` from `egoboo/CMakeLists.txt` (kept the surrounding `if(WIN32) egoboo_stage_windows_runtime_libraries()` which the mingw cross build needs), and the `#if defined(_MSC_VER)` warning-pragma island from `platform.h`. Commit `ede1ed976`.
+
+### T2.4 — Delete orphaned SDL2-2.0.3 and physfs-2.1.1 from external submodule (2026-06-06)
+
+Deleted `external/SDL2-2.0.3` and `external/physfs-2.1.1` (1450 files, ~428k lines) from the `external` submodule. Linux uses system pkg-config SDL2; Windows cross uses `external/mingw/`; the real PhysFS is `idlib-game-engine/library/physfs-3.0.0`. External submodule bumped to SHA `481b913`; superproject pointer-bump commit `cb836a2f5`.
+
+### T2.3 — Vendor googletest 1.16.0 for offline builds (2026-06-06)
+
+Updated vendored `external/googletest` to v1.16.0 in the external submodule. The default build path (`idlib-with-fetch-googletest=OFF`) now builds and passes tests offline with no network fetch. The `-Didlib-with-fetch-googletest=ON` workaround is obsolete. External submodule bumped to SHA `4a97d80`; superproject pointer-bump commit `12bd9463e`.
 
 ---
 

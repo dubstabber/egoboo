@@ -1,6 +1,6 @@
 # Refactoring Roadmap
 
-Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-04-19. Supersedes and replaces:
+Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-06-06 (updated from 2026-04-19). Supersedes and replaces:
 
 - `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
 - `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
@@ -35,19 +35,26 @@ Passes 75 and 76 completed the remaining broad inventory/team seams, so T1.1 is 
 
 Role extraction is now underway. The public `Object` surface is small enough to keep peeling off bounded interfaces without reopening the earlier field-access work.
 
-Landed so far:
+Landed so far (18 role interfaces):
 
 - `IInventoryHolder` — equipment, held, inventory slot access
 - `IRenderable` — render-facing surface (matrix cache, tint, model descriptor)
 - `IScriptable` — script-visible state and commands
 - `IDamageable` — combat damage application surface
-- `IPhysical` — collision volume, orientation, bumper state
+- `IPhysical` — collision volume, orientation, bumper state, position
 - `ITargetInfo` — bounded target/self query surface for script helpers
 - `ICharacterState` — bounded mutable ammo/mana/kurse/timer/perk/attribute state
 - `ITeamMember` — team mutation, leadership, team-wide XP publication
 - `IWallet` — bounded money query and mutation
 - `IAnimationControl` — bounded script-facing action resolution and animation control
 - `ILifecycleControl` — bounded respawn, detach, drop, crush/item, threshold, and stealth control
+- `IAppearanceProfile` — appearance profile query
+- `IEnchantable` — enchant list and enchant-related state
+- `IMovementControl` — movement and latch control
+- `IVisualControl` — visual state (light, alpha, shadow)
+- `IItemInfo` — item-specific state (isItem, isMount, etc.)
+- `IMorphControl` — morph/polymorph control
+- `IProfiled` — `getProfile()` accessor (Pass 220; only one clean single-role caller exists)
 
 Follow-on work inside this tier:
 
@@ -61,17 +68,16 @@ This remains the SRP/ISP keystone for `Object`.
 
 ### T1.3 Service-interface layer over singletons
 
-~1,150 `::get()` call sites remain (see `CODEBASE-HEALTH-STATUS.md` §4). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
+~912 `::get()` call sites remain (down from ~1,150 at 2026-04-19, ~946 at 2026-04-20). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
 
-- Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, plus engine-routed logging through the installed `EngineContext` log target.
+- Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager` (Pass 211), `IInputSystem` (Pass 212), `IGraphicsSystem` (Pass 213, with headless test mock), `ITextureManager` (Pass 214), `ITextureAtlasManager` (Pass 217), `IGFX` (Passes 218–219, two sub-passes), plus `IBillboardSystem` caller rerouting (Pass 215), `Time` clock abstraction (Pass 216), engine-routed logging, and `egoboo_config_t`.
 - Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.
-- `ParticleHandler` was taken as the next safe small-reach seam ahead of the broader profile/log/config passes; runtime ownership now publishes it through `GameEngine`, while `ParticleHandler::get()` stays as a subsystem-local bootstrap seam.
-- `ProfileSystem` is now published through `EngineContext`, with validator and profile-loading callers migrated onto the installed `IProfileSystem` seam while `ProfileSystem::get()` remains a subsystem-local lifecycle seam inside `Profiles/`.
 - `egoboo_config_t` is now published through `EngineContext` for system/bootstrap lifecycle, module-load sync, lightweight content-bootstrap paths, read-mostly runtime callers, and the former write-heavy audio/video options flow.
-- Keep `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, `ParticleHandler::get()`, `ProfileSystem::get()`, `Log::get()`, and `egoboo_config_t::get()` as subsystem-local bootstrap or lifecycle seams until a DI container is defined or each caller cluster has been migrated.
-- Follow-on config work is now limited to subsystem-local cleanup around audio/image/particle bootstrap and lifecycle edges rather than broad caller migration.
+- Keep subsystem-local `::get()` as bootstrap/lifecycle seams where the singleton predates the EngineContext install. Follow-on work is limited to subsystem-local cleanup around bootstrap and lifecycle edges.
+- **Renderer: DEFERRED** — already an abstract polymorphic facade; migratable surface is ~23 methods (nearly the whole interface), low value/high churn.
+- **CameraSystem: not a clean pass yet** — `ICameraSystem` is too narrow; the methods callers want (`getMainCamera`, `getCameraOptions`, `getCamera`) are not on it.
 
-**Risk:** Medium. First pass defines the pattern; later passes mostly mechanical.
+**Risk:** Medium. Pattern is well-established; remaining passes mostly mechanical.
 
 ### T1.4 Document error-handling policy, retire `egolib_rv`
 
@@ -87,39 +93,37 @@ Three strategies still coexist: C++ exceptions (~290 throw sites, ~76 try/catch)
 
 ## Tier 2 — Build and cross-platform
 
-### T2.1 Retire MSVC from CI
+### T2.1 Retire MSVC from CI — PARTIALLY DONE
 
-`appveyor-windows.yml` still generates a Visual Studio 2017 solution. The maintained Windows path is mingw-w64 cross.
+**Done** (commits `ede1ed976`, `63530491d`):
+- Dropped the MSVC-only CMake branches (root `CMakeLists.txt` CPACK block, `egoboo/CMakeLists.txt` `VS_DEBUGGER_WORKING_DIRECTORY`) and the `platform.h` `#if defined(_MSC_VER)` warning-pragma island.
+- Removed `distribute.ps1`, `egoboo.gta.runsettings`, and quarantined the four legacy platform READMEs (`README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX`) to `doc/legacy/`.
 
-- Replace the Visual Studio generator in `appveyor-windows.yml` with mingw-w64 cross (matching `cmake/toolchains/mingw-w64-x86_64.cmake`).
-- Drop the two MSVC-only CMake branches (`CMakeLists.txt:51-69`, `egoboo/CMakeLists.txt:41-46`) and the `platform.h:125-136` MSVC pragma island.
-- Remove `distribute.ps1`, `external/install-vsix-appveyor.ps1`, `external/external.sln`, `external/SDL2-*/VisualC/`, `egoboo.gta.runsettings`.
+**Remaining:**
+- Replace the Visual Studio 2017 generator in `appveyor-windows.yml` with mingw-w64 cross.
+- Remove `external/install-vsix-appveyor.ps1` and `external/external.sln` (in the `external` submodule).
 
-**Risk:** Low. Deletes unsupported config; repo audit in `CODEBASE-HEALTH-STATUS.md` §8 confirms no active consumer.
+**Risk:** Low.
 
 ### T2.2 Native-Windows open-source build
 
 Add `doc/build-windows-native.md` + `cmake/toolchains/msys2-ucrt64.cmake` for building on a Windows host with MSYS2 UCRT64. This completes the supported matrix alongside Linux native and Linux-hosted cross.
 
-### T2.3 Eliminate configure-time network fetch
+### T2.3 Eliminate configure-time network fetch — DONE
 
-`idlib/CMakeLists.txt` fetches googletest 1.16.0 from GitHub by default. This breaks offline and sandboxed builds.
+**Done** (commit `12bd9463e`): Vendored googletest updated to v1.16.0 in the `external` submodule. The default (`idlib-with-fetch-googletest=OFF`) now builds and tests offline with no network. The `-Didlib-with-fetch-googletest=ON` flag is obsolete.
 
-- Default `idlib-with-fetch-googletest=OFF`.
-- Use the vendored `external/googletest` tree.
+### T2.4 Collapse third-party dependency divergence — DONE
 
-### T2.4 Collapse third-party dependency divergence
-
-- Decide on one SDL2 story (system pkg-config on Linux, MinGW bundle on Windows cross); delete the orphaned `external/SDL2-2.0.3/` tree.
-- Remove `external/physfs-2.1.1` (the real PhysFS is in `idlib-game-engine/library/physfs-3.0.0`).
+**Done** (commit `cb836a2f5`): Deleted orphaned `external/SDL2-2.0.3` and `external/physfs-2.1.1` (1450 files / 428k lines) from the `external` submodule. Linux uses system pkg-config SDL2; Windows cross uses the prebuilt `external/mingw/` bundle; the real PhysFS is `idlib-game-engine/library/physfs-3.0.0`.
 
 ### T2.5 Fix Wine font-atlas / audio crash
 
 `debug-output.txt` shows font atlas init failure in `egolib/Graphics/Font.cpp` and a Wine page-fault inside `Mix_LoadWAV_RW` during audio load. Without a fix, the cross build is not a credible verification substitute — `run-egoboo-windows.sh` currently gates it with `EGOBOO_DISABLE_MIPMAPS=1 EGOBOO_DISABLE_AUDIO=1` as a workaround.
 
-### T2.6 Quarantine legacy platform READMEs
+### T2.6 Quarantine legacy platform READMEs — DONE
 
-Move `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX` to `doc/legacy/` or delete. The canonical docs are `doc/build-linux.md` and `doc/build-windows.md`.
+**Done** (commit `63530491d`): Moved `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX` to `doc/legacy/`. The canonical docs are `doc/build-linux.md` and `doc/build-windows.md`.
 
 ---
 
@@ -149,7 +153,7 @@ These are unblocked only after Tier 1 lands. They represent the next frontier of
 
 ### T3.4 Behavioral test coverage
 
-Current test-to-code ratio is ~3.6% and covers parsers / module smoke / accessor regressions. Gaps:
+Current test-to-code ratio is ~11% and covers parsers, module smoke, accessor regressions, script dispatch, and gameplay surfaces. Gaps:
 
 - Gameplay combat logic
 - Physics / collision behavior

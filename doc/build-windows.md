@@ -20,7 +20,7 @@ Project direction:
 
 Native Windows builds are still a future target. When that path is documented as first-class, it should use an open-source toolchain rather than Visual Studio-specific project generation.
 
-The current Linux-hosted Windows build is useful for debugging and portability work, but it is not yet a healthy runtime baseline. The checked-in `debug-output.txt` captures a recent failure sequence with:
+The current Linux-hosted Windows build is useful for debugging and portability work, but it is not yet a healthy runtime baseline. Known issues include:
 
 - font atlas allocation escalating to a fatal error in `egolib/Graphics/Font.cpp`
 - fallback font activation after `mp_data/IMMORTAL.ttf` fails to load cleanly

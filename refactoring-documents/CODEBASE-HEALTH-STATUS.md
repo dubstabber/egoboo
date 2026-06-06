@@ -7,7 +7,7 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 - `32-project-health-and-solid-assessment.md` (2026-04-16 SOLID/design assessment)
 - `46-cross-platform-and-third-party-independence-status.md` (2026-04-17 portability snapshot)
 
-Snapshot date: 2026-04-20. This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+Snapshot date: 2026-06-06 (updated from 2026-04-20 baseline). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
 ---
 
@@ -15,19 +15,19 @@ Snapshot date: 2026-04-20. This document is intentionally standalone — it does
 
 The codebase is in an **active, well-managed transitional state**. The original C dungeon crawler is being incrementally modernized to C++, and the completed refactoring passes (dozens of in-repo passes so far) have landed real structural wins:
 
-- The two biggest global-state boundaries — `_currentModule` and `_gameEngine` — are fully retired from active runtime code. Remaining mentions are confined to legacy comments, debug labels, and a terminology-only `update_wld` residue in three files.
-- Every historically oversized translation unit has been file-split. No file in the active tree exceeds 2,500 lines.
-- File splitting, context wrappers, and accessor encapsulation work have now progressed into early role extraction on the `Object` god class rather than stopping at the runtime boundary.
+- All three former mutable globals (`_currentModule`, `_gameEngine`, `update_wld`) are fully retired from active runtime code. `update_wld`'s functional replacement `worldUpdateCount()` routes through `GameSessionContext` (~50 call sites).
+- Every historically oversized translation unit has been file-split. No file in the active tree exceeds 3,300 lines (`script_functions_systems.c` at ~3,200 is the largest).
+- File splitting, context wrappers, and accessor encapsulation work have progressed through role extraction on the `Object` god class (18 role interfaces) and deep singleton-seam work on `EngineContext` (14 service interfaces).
 - A native validator tool exists, content parser tests exist, and module load/spawn smoke tests exist.
 
 Core design debt that remains:
 
-- The `Object` class is still monolithic by interface — `Object.hpp` is now 1,636 lines, actually larger than in the April 19 snapshot because role extraction has added interface inheritance and query surfaces faster than legacy members have been retired. Its implementation is now split across seven files (`Object.cpp` plus six `Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp` TUs), and the role-extraction passes have peeled off `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, and `IMorphControl`.
-- Singleton access is still pervasive (~946 `::get()` call sites, down from ~1,150), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, and runtime `egoboo_config_t` access; full DI still does not exist.
+- The `Object` class is still monolithic by interface — `Object.hpp` is now ~1,617 lines. Its implementation is split across seven files (`Object.cpp` plus six `Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp` TUs), and the role-extraction passes have peeled off 18 role interfaces: `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, `IMorphControl`, and `IProfiled`. Single-param role-narrowing has reached its ceiling; remaining coupling is intrinsic to multi-role functions.
+- Singleton access is still pervasive (~912 `::get()` call sites, down from ~1,150 at 2026-04-19), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, runtime `egoboo_config_t`, font, input, graphics system, texture manager, texture atlas, GFX, and billboard system; full DI still does not exist.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure — but a written policy is now published at `doc/error-handling-policy.md` and new code is being held to it.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
 
-Overall maintainability: **2.5 / 5**, unchanged as a score but with meaningful forward motion inside the envelope (test coverage tripled, singleton call sites down ~18%, error-handling policy landed, eight additional role interfaces in place). The trend is unambiguously positive, but core decoupling work (DIP / ISP) remains the critical frontier.
+Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All three mutable globals retired, eighteen role interfaces extracted (single-param narrowing ceiling reached), fourteen service seams landed on `EngineContext`, singleton sites down ~26% (1,239→912), test coverage at ~11%, orphaned third-party deps removed, MSVC CMake branches dropped. The trend is unambiguously positive; the remaining frontier is multi-role Object decoupling, broader DI, and script-dispatch modernization.
 
 ---
 
@@ -83,26 +83,26 @@ Notably absent: physics/collision tests, rendering correctness tests, GUI tests.
 
 ### Files over 1,000 lines (active tree)
 
-Fourteen files remain over the 1k-line threshold. `script_functions.c` (8,183 lines) no longer exists, and `Object.cpp` (3,201 lines) has been split. `Object.hpp` is the surviving "large header" and still sits above the threshold because role extraction is extending its interface before trimming the legacy surface.
+Fourteen files remain over the 1k-line threshold. `script_functions.c` (8,183 lines) and `Object.cpp` (3,201 lines) have been split. `Object.hpp` is the surviving "large header." `script_functions_systems.c` has grown to become the largest TU in the tree as role-extraction helpers have been moved in.
 
 | File                                              |  Lines | Role                                       |
 | ------------------------------------------------- | -----: | ------------------------------------------ |
-| `egolib/vfs.c`                                    |  2,456 | Virtual file system (largest TU in tree)   |
-| `game/script_functions_systems.c`                 |  2,412 | Script dispatch (systems subset)           |
-| `game/script_functions_target.c`                  |  1,870 | Script dispatch (target subset)            |
-| `Entities/Object.hpp`                             |  1,636 | Core entity — still monolithic by interface |
-| `game/script_functions_state.c`                   |  1,600 | Script dispatch (state subset)             |
-| `game/Physics/particle_collision.c`               |  1,520 | Particle collision                         |
-| `game/Graphics/ObjectGraphics.cpp`                |  1,479 | Object rendering                           |
+| `game/script_functions_systems.c`                 |  3,206 | Script dispatch — systems (largest TU)     |
+| `egolib/vfs.c`                                    |  2,456 | Virtual file system                        |
+| `game/script_functions_target.c`                  |  1,676 | Script dispatch — target                   |
+| `Entities/Object.hpp`                             |  1,617 | Core entity — still monolithic by interface |
+| `game/script_functions_spawn.c`                   |  1,576 | Script dispatch — spawn                    |
+| `game/Physics/particle_collision.c`               |  1,525 | Particle collision                         |
+| `game/Graphics/ObjectGraphics.cpp`                |  1,487 | Object rendering                           |
+| `game/script_functions_state.c`                   |  1,478 | Script dispatch — state                    |
 | `game/mesh.c`                                     |  1,370 | Mesh management                            |
-| `game/script_functions_spawn.c`                   |  1,363 | Script dispatch (spawn subset)             |
+| `Script/script.c`                                 |  1,371 | Script runtime                             |
 | `fileutil.c`                                      |  1,327 | File utilities                             |
 | `game/script_compile.c`                           |  1,148 | Script compiler                            |
+| `game/script_functions_action.c`                  |  1,100 | Script dispatch — action                   |
 | `game/Physics/ObjectPhysics.cpp`                  |  1,109 | Object physics                             |
-| `Script/script.c`                                 |  1,075 | Script runtime                             |
-| `game/script_functions_action.c`                  |  1,025 | Script dispatch (action subset)            |
 
-The split script-dispatch TUs have continued to grow as new helpers have been moved in from `Object` and friends rather than authored from scratch — a consequence of role extraction, not a regression. No individual file exceeds 2,500 lines.
+The split script-dispatch TUs have continued to grow as helpers have been moved in from `Object` and friends rather than authored from scratch — a consequence of role extraction, not a regression. No individual file exceeds 3,300 lines.
 
 ### Files that have been decomposed
 
@@ -115,7 +115,7 @@ The split script-dispatch TUs have continued to grow as new helpers have been mo
 | `Entities/Particle.cpp`            |      1,447 | Five files: `Particle_{core,combat,spawn,update}.cpp` + `ParticleHandler.cpp`                                        |
 | `game/Module/Module.cpp`           |      1,225 | Seven files under `Module/`: `Module.cpp` (135) + `Module_{bootstrap,loading,spawn,spawn_plan,spawn_realization,update}.cpp` |
 
-These splits made compilation and navigation tractable, but they did not finish the interface problem. `Object.hpp` has grown (1,527 → 1,636 lines) as new role interfaces are added to its inheritance list faster than the legacy surface is retired; the remaining work is to continue moving callers onto the role interfaces and then prune the redundant methods from `Object` itself.
+These splits made compilation and navigation tractable, but they did not finish the interface problem. `Object.hpp` has stabilized around ~1,617 lines (down from the 1,636 peak as some legacy surface has been pruned). Single-param role-narrowing has reached its ceiling (Pass 220); the remaining `Object` decoupling requires multi-role strategies.
 
 ### Deeply nested / switch-heavy regions
 
@@ -131,27 +131,29 @@ The former deep-nesting concentration in `script_functions.c` is now distributed
 | ---------------- | ------------------: | ------: |
 | `_currentModule` |                 592 |       0 |
 | `_gameEngine`    |                 266 |       0 |
-| `update_wld`     |                  65 |       3 |
+| `update_wld`     |                  65 |       0 |
 
-Both `_currentModule` and `_gameEngine` are fully retired from active runtime code. Remaining references are limited to commented-out documentation inside `egolib/AGENTS.md`. The `update_wld` residue is confined to `Script/script.c`, `game/Graphics/ObjectGraphics.hpp`, and `Entities/Particle.hpp` as a legacy debug label and commentary, not active global coupling.
+All three former mutable globals are fully retired. `_currentModule` and `_gameEngine` have no references anywhere. `update_wld` has 3 stale string-literal / comment artifacts (a format string in `script.c`, Doxygen comments in `ObjectGraphics.hpp` and `Particle.hpp`) but zero active variable references. Its functional replacement `worldUpdateCount()` routes through `GameSessionContext` with ~50 call sites across ~20 files.
 
 This is the largest single structural win since the baseline.
 
 ### Singleton and service-locator access
 
-Raw `::get()` singleton calls now number approximately **946** across the codebase, down from ~1,150 at the previous snapshot and from 1,239 at the April 13 baseline. The decline reflects genuine migration onto `EngineContext`-published services rather than just funnelling — whole caller clusters in physics, script dispatch, GUI, and state-management have moved off the concrete singleton lookups.
+Raw `::get()` singleton calls now number approximately **912** across the codebase, down from ~946 at 2026-04-20, ~1,150 at 2026-04-19, and 1,239 at the April 13 baseline. The decline reflects genuine migration onto `EngineContext`-published services.
 
 Engine-published service seams landed so far:
 
-- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, and `IProfileSystem` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookup.
+- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager`, `IInputSystem`, `IGraphicsSystem`, `ITextureManager`, `ITextureAtlasManager`, `IGFX`, and `IBillboardSystem` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookups.
 - Runtime logging routes through the installed `EngineContext` log target outside the `Log` subsystem's bootstrap/lifecycle code.
-- `egoboo_config_t` is published through `EngineContext` for bootstrap/lifecycle paths, module-load sync, lightweight content bootstrap, and the cross-cutting runtime/UI caller set including the write-heavy audio/video options flow.
+- `egoboo_config_t` is published through `EngineContext` for bootstrap/lifecycle paths, module-load sync, lightweight content bootstrap, and the cross-cutting runtime/UI caller set.
+- Clock callers decoupled from `Core::System` via the `Time` abstraction (Pass 216).
 
 Dominant direct singletons still reachable outside the session/engine wrappers:
 
-- `egoboo_config_t::get()` — confined to subsystem-local bootstrap/lifecycle or singleton-definition code (`AudioSystem`, `ImageManager`, `ParticleHandler`, `Core::System`, `ContentRuntimeBootstrap`, `egoboo_setup.c`).
-- `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, and `ParticleHandler::get()` remain as subsystem-local bootstrap seams inside their own implementations.
-- `ProfileSystem::get()` and `Log::get()` remain as subsystem-local lifecycle/bootstrap seams inside their own implementations.
+- `egoboo_config_t::get()` — confined to subsystem-local bootstrap/lifecycle or singleton-definition code.
+- `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, `ParticleHandler::get()`, `ProfileSystem::get()`, and `Log::get()` remain as subsystem-local bootstrap/lifecycle seams inside their own implementations.
+- `Renderer` — **deferred**: already an abstract polymorphic facade with low value/high churn for an EngineContext seam.
+- `CameraSystem` — **deferred**: `ICameraSystem` is too narrow; needs interface-widening before a clean pass.
 
 ### Smart pointer distribution
 
@@ -252,11 +254,11 @@ Directory-level subsystem map (by line count, large to small):
 
 | Principle | Score | Trend | Why                                                                                                   |
 | --------- | :---: | :---: | ----------------------------------------------------------------------------------------------------- |
-| SRP       | 2 / 5 |   ↗   | `Object` header now 1,636 lines; file splits landed but interface still owns too many responsibilities. |
+| SRP       | 2 / 5 |   ↗   | `Object` header now ~1,617 lines; file splits landed but interface still owns too many responsibilities. |
 | OCP       | 2.5/5 |   →   | `GameState` hierarchy is exemplary; script dispatch and damage systems still closed to extension.     |
 | LSP       |  3/5  |   →   | Shallow entity hierarchies avoid substitution problems by avoiding specialization altogether.          |
-| ISP       | 2.5/5 |   ↗   | Seventeen `Object` role interfaces are now extracted; caller migration is steadily draining the god surface. |
-| DIP       | 2 / 5 |   ↗   | Context wrappers are adopted and seven service seams are landed; broader singleton abstraction remains incomplete. |
+| ISP       |  3/5  |   ↗   | Eighteen `Object` role interfaces extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. |
+| DIP       | 2.5/5 |   ↗   | Context wrappers adopted and fourteen service seams landed; broader singleton abstraction progressing (~912 `::get()` sites). |
 
 ### Patterns used well
 
@@ -268,7 +270,7 @@ Directory-level subsystem map (by line count, large to small):
 
 ### Patterns misapplied
 
-- **Singleton as service locator.** Still ~946 `::get()` calls (down from ~1,150), even though audio/perk/image/particle/profile now have `EngineContext` testing seams.
+- **Singleton as service locator.** Still ~912 `::get()` calls (down from ~1,150), even though fourteen services now have `EngineContext` testing seams.
 - **God object.** `Object` remains the primary SRP / ISP offender.
 - **Anemic domain model.** `ObjectProfile` is still data + bolted-on parsing / export.
 
@@ -286,7 +288,7 @@ Three eras still coexist: legacy `snake_case` with prefixes (`chr_find_target`, 
 
 ### Encapsulation
 
-Passes 52–76 moved raw `Object` state behind accessor methods or narrow helpers, and passes 77 onward have expressed those narrowed surfaces as explicit role interfaces. Role interfaces now extracted: `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, and `IMorphControl` — seventeen seams that cover team, wallet, inventory, rendering, enchant/appearance, movement/animation/visuals, items, lifecycle/morph, targeting, and character-state query. The remaining `Object` surface is mostly alias-style handle returns plus mixed-domain helpers; the raw `ai_state_t` compatibility bridge has been moved into the Script subsystem as `Ego::Script::runtimeState(...)`.
+Passes 52–76 moved raw `Object` state behind accessor methods or narrow helpers, and passes 77 onward have expressed those narrowed surfaces as explicit role interfaces. Role interfaces now extracted: `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, `IMorphControl`, and `IProfiled` — eighteen seams that cover team, wallet, inventory, rendering, enchant/appearance, movement/animation/visuals, items, lifecycle/morph, targeting, character-state query, and profile access. Single-param role-narrowing has reached its ceiling (Pass 220 analysis); remaining coupling is intrinsic to multi-role functions. The raw `ai_state_t` compatibility bridge has been moved into the Script subsystem as `Ego::Script::runtimeState(...)`.
 
 ### Const correctness
 
@@ -340,19 +342,14 @@ Still incomplete. Several logically-const accessors are declared non-const; func
 - **`egolib` is still one monolithic static library** — the explicit source lists make ownership visible but do not enforce dependency direction at link time.
 - **Cartman is not in the build graph** — risks further bit-rot.
 - **No native-Windows open-source build docs or toolchain file.** Only Linux-hosted cross exists.
-- **Wine runtime instability** — font atlas init failure and audio loading crash (see `debug-output.txt`). `run-egoboo-windows.sh` gates with `EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1` as a workaround.
-- **Configure-time network fetch** — `idlib/CMakeLists.txt` fetches googletest 1.16.0 from GitHub by default, breaking offline builds.
-- **`FetchContent` vs. vendored googletest divergence** — `external/googletest` is present but unused by default.
-- **Dual-track SDL2 dependency story** — Linux uses system packages via `pkg-config`; Windows cross uses the prebuilt `external/mingw/` bundle. The vendored `external/SDL2-*` tree (from 2014) is orphaned.
-- **PhysFS version split** — `external/physfs-2.1.1` is dead weight; `idlib-game-engine/library/physfs-3.0.0` is the real one.
-- **Stale CI** — `appveyor-windows.yml` still generates a Visual Studio 2017 solution, contradicting the documented mingw-w64 cross path.
-- **MSVC-only CMake branches** persist (`CMakeLists.txt:51-69`, `egoboo/CMakeLists.txt:41-46`, `platform.h:125-136` pragma island).
+- **Wine runtime instability** — font atlas init failure and audio loading crash. `run-egoboo-windows.sh` gates with `EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1` as a workaround.
+- **Stale CI** — `appveyor-windows.yml` still generates a Visual Studio 2017 solution, contradicting the documented mingw-w64 cross path. `external/install-vsix-appveyor.ps1` and `external/external.sln` remain in the `external` submodule.
 
 ### Proprietary-toolchain artifacts still checked in
 
-`appveyor-windows.yml`, `egoboo.gta.runsettings`, `distribute.ps1`, `external/install-vsix-appveyor.ps1`, `external/external.sln`, `external/SDL2-2.0.3/VisualC/` (+ nested SDL libs), `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX`, `osx/Egoboo.xcodeproj`.
+`appveyor-windows.yml`, `external/install-vsix-appveyor.ps1`, `external/external.sln`, `osx/Egoboo.xcodeproj`.
 
-Removing Visual Studio as a supported target would be low-risk from a source-code standpoint: the remaining MSVC-specific code is one pragma island plus two small CMake branches.
+Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, `distribute.ps1` (removed by T2.6/T2.1); `external/SDL2-2.0.3/`, `external/physfs-2.1.1` (removed by T2.4); `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX` (quarantined to `doc/legacy/` by T2.6); MSVC-only CMake branches and `platform.h` pragma island (removed by T2.1).
 
 ### Platform-dependent code hotspots (small, well-isolated)
 
@@ -371,8 +368,8 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 | SRP adherence              | 2 / 5   |   ↗   | File splits landed; interface decomposition progressing via role interfaces |
 | OCP adherence              | 2.5/5   |   →   | State machine is good; script/damage still closed to extension      |
 | LSP adherence              |  3/5    |   →   | Shallow hierarchies, no real specialization                         |
-| ISP adherence              | 2.5/5   |   ↗   | Seventeen role interfaces extracted on `Object`; migrations ongoing  |
-| DIP adherence              | 2 / 5   |   ↗   | Context wrappers adopted; singleton abstraction not yet             |
+| ISP adherence              |  3/5    |   ↗   | Eighteen role interfaces extracted on `Object`; single-param narrowing ceiling reached |
+| DIP adherence              | 2.5/5   |   ↗   | Context wrappers adopted; fourteen service seams landed; ~912 `::get()` sites remain |
 | Design pattern quality     | 2.5/5   |   →   | State/Iterator well done; Factory/Strategy/Observer missing         |
 | Naming consistency         | 2.5/5   |   →   | Three naming eras coexist                                            |
 | Encapsulation              |  3/5    |   ↗   | Accessor closure plus broadening role extraction on `Object`        |
@@ -380,15 +377,15 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 | Smart pointer discipline   | 2.5/5   |   →   | `shared_ptr` over-used, `unique_ptr` under-used                     |
 | Test coverage              | 2.5/5   |   ↑   | From ~3.6% → ~11%; script dispatch and gameplay surfaces now covered |
 | Build system               | 3.5/5   |   →   | Explicit source lists, validator integrated                         |
-| Global state discipline    |  3/5    |   →   | `_currentModule`/`_gameEngine` retired; singletons declining but dense |
-| File size discipline       | 3.5/5   |   →   | No file exceeds 2,500 lines; script-dispatch TUs growing within budget |
+| Global state discipline    | 3.5/5   |   ↗   | All three mutable globals retired; singletons down to ~912          |
+| File size discipline       | 3.5/5   |   →   | Largest TU is ~3,200 lines; script-dispatch TUs growing within budget |
 | Module boundaries          |  2/5    |   →   | One monolithic static library; directory shape is still indicative  |
 | Language consistency       | 2.5/5   |   →   | C/C++ split roughly 44/56; no net C→C++ migration since last snapshot |
-| Dead code hygiene          |  3/5    |   →   | Lua/Network removed; migrator/ego2xml/legacy READMEs still present  |
+| Dead code hygiene          | 3.5/5   |   ↗   | Lua/Network removed; legacy READMEs quarantined; orphaned SDL2/physfs deleted; migrator/ego2xml still present |
 | Documentation              | 3.5/5   |   ↑   | Error-handling policy landed; refactoring-documents tree authoritative |
 | Cross-platform parity      |  2/5    |   →   | Linux native OK; Wine cross is unstable; no native-Win open-source path |
-| Third-party independence   | 2.5/5   |   →   | Network fetch at configure, dual-track SDL2, vendored PhysFS dup    |
-| **Overall maintainability**| **2.5/5** | → | Unchanged score; clear interior movement since 2026-04-19           |
+| Third-party independence   | 3.5/5   |   ↗   | Network fetch eliminated; orphaned SDL2/PhysFS removed; single SDL2 story per platform |
+| **Overall maintainability**| **3/5** | ↗ | Meaningful forward motion: globals retired, 18 role interfaces, 14 service seams, T2 build cleanup |
 
 ---
 
@@ -405,16 +402,16 @@ Removing Visual Studio as a supported target would be low-risk from a source-cod
 
 ## 11. Key Weaknesses
 
-1. **`Object` is still a god class by interface.** 1,636-line header and dozens of public methods despite seventeen role interfaces already extracted; caller migration is the gating work, not more interface authoring.
-2. **Singleton proliferation persists.** ~946 `::get()` call sites remain. Audio/perk/image/particle/profile now have abstraction boundaries, but the broader codebase still leans on singleton lookup.
+1. **`Object` is still a god class by interface.** ~1,617-line header despite eighteen role interfaces already extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. Further decoupling requires interface pollution or multi-param strategies.
+2. **Singleton proliferation persists.** ~912 `::get()` call sites remain. Fourteen services now have `EngineContext` abstraction boundaries, but subsystem-local bootstrap seams and deferred services (Renderer, CameraSystem) keep the count high.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes or `EngineContext::get()`.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
 5. **Error handling is inconsistent.** Exceptions, `egolib_rv`, and silent failure coexist; `doc/error-handling-policy.md` is now the written target but the migration of existing callers has not yet begun.
 6. **Script system is monolithic.** ~400 script functions in procedural dispatch split across seven files with no extensibility seam.
 7. **Cross-platform parity is weak at runtime.** Wine cross build is unstable; native-Windows open-source path is undocumented.
-8. **Third-party dependency story is split.** Configure-time network fetch, dual-track SDL2 resolution, vendored PhysFS duplication.
-9. **Test coverage is still thin in key areas.** Script dispatch, module load, gameplay alerts, and accessor regressions are covered; physics, rendering, GUI, and AI are not.
-10. **`egolib` is a single static library.** Modular decomposition is expressed in directories and source-list blocks, not in link targets.
+8. **Test coverage is still thin in key areas.** Script dispatch, module load, gameplay alerts, and accessor regressions are covered; physics, rendering, GUI, and AI are not.
+9. **`egolib` is a single static library.** Modular decomposition is expressed in directories and source-list blocks, not in link targets.
+10. **Stale CI.** `appveyor-windows.yml` still generates a Visual Studio 2017 solution.
 
 ---
 
@@ -424,19 +421,19 @@ These items compound the refactoring progress most efficiently given the current
 
 ### Runtime and structure
 
-1. **Continue caller migration onto the landed `Object` role seams** — expand use of `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, and `IMorphControl` instead of `Object` where only bounded role behavior is needed, then prune the redundant `Object` methods those interfaces now cover.
-2. **Close the remaining alias-style handle seams on `Object`** — keep the Script-owned `runtimeState(...)` helper confined to the legacy script runtime while role extraction proceeds.
-3. **Continue the service-interface layer over singletons** — `AudioSystem`, `PerkHandler`, `ImageManager`, `ParticleHandler`, `ProfileSystem`, logging, and the runtime-facing `egoboo_config_t` seam are landed; next is subsystem-local cleanup plus widening the abstractions to the remaining ~946 direct-singleton callers.
-4. **Begin enforcing the error-handling policy** — `doc/error-handling-policy.md` is landed; the next step is a bounded subsystem-by-subsystem migration that retires `egolib_rv` from the C++ code paths.
+1. **Object role-decoupling: next frontier** — single-param narrowing is exhausted (Pass 220 analysis). Next value is either: (a) interface pollution — co-locating `getProfile()` onto existing narrow interfaces to unlock multi-role callers, or (b) multi-param strategies, or (c) the deferred `IMatrixCacheControl` interface for the matrix-cache render-path surface.
+2. **Continue the service-interface layer over singletons** — fourteen services are seamed; next candidates are subsystem-local cleanup and the deferred Renderer (if interface split becomes worthwhile) and CameraSystem (needs interface-widening). ~912 `::get()` sites remain.
+3. **Begin enforcing the error-handling policy** — `doc/error-handling-policy.md` is landed; the next step is a bounded subsystem-by-subsystem migration that retires `egolib_rv` from the C++ code paths.
 
 ### Build and cross-platform
 
-5. **Retire the MSVC path from CI** — replace `appveyor-windows.yml`'s Visual Studio generator with mingw-w64 cross.
-6. **Add a native-Windows open-source build** — `doc/build-windows-native.md` plus an MSYS2 / UCRT64 toolchain file.
-7. **Eliminate configure-time network fetch** — default `idlib-with-fetch-googletest=OFF` and use the vendored `external/googletest`.
-8. **Collapse third-party dependency divergence** — decide on one SDL2 story (system / MinGW bundle only), delete the orphaned `external/SDL2-*` tree, remove `external/physfs-2.1.1`.
-9. **Diagnose Wine runtime blockers** — font atlas init and audio load crash — so the cross build becomes a credible verification substitute.
-10. **Quarantine legacy platform READMEs** — `README.VisualStudio`, `README.Windows`, `README.MinGW`, `README.OSX` belong in `doc/legacy/` or deleted.
+4. **Retire the MSVC path from CI** — replace `appveyor-windows.yml`'s Visual Studio generator with mingw-w64 cross; remove `external/install-vsix-appveyor.ps1` and `external/external.sln`.
+5. **Add a native-Windows open-source build** — `doc/build-windows-native.md` plus an MSYS2 / UCRT64 toolchain file.
+6. **Diagnose Wine runtime blockers** — font atlas init and audio load crash — so the cross build becomes a credible verification substitute.
+
+~~7. Eliminate configure-time network fetch~~ — **DONE** (T2.3, commit `12bd9463e`).
+~~8. Collapse third-party dependency divergence~~ — **DONE** (T2.4, commit `cb836a2f5`).
+~~9. Quarantine legacy platform READMEs~~ — **DONE** (T2.6, commit `63530491d`).
 
 ---
 

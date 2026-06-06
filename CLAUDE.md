@@ -57,7 +57,7 @@ The legacy content set is not internally consistent. Many validator failures are
 
 | Directory | Purpose |
 |-----------|---------|
-| `egolib/` | Main runtime library (~620 source files, 24 subsystems) — where most code lives |
+| `egolib/` | Main runtime library (~640 source files, 25 subsystems) — where most code lives |
 | `egoboo/` | Minimal executable wrapper (`src/game/Main.cpp` creates `GameEngine` and enters main loop) |
 | `idlib/` | Foundation library submodule (math, types, utilities) |
 | `idlib-game-engine/` | Engine framework submodule (graphics, physics, file systems) |
@@ -73,42 +73,49 @@ The superproject passes the top-level `idlib/` into `idlib-game-engine` during C
 
 ### Runtime Architecture
 
-**Boot path**: `Main.cpp` → `Ego::Core::System::initialize()` (VFS, logging, config, SDL) → global `_gameEngine` → `GameEngine::start()` (main loop).
+**Boot path**: `Main.cpp` → `Ego::Core::System::initialize()` (VFS, logging, config, SDL timer/events/video/audio/input) → `EngineContext::get().setEngine(make_unique<GameEngine>())` → `engine().start()` → `GameEngine::initialize()` (GFX/OpenGL, CameraSystem, AudioSystem, UIManager, CollisionSystem, pushes `MainMenuState`) → main loop.
 
 **Main loop**: Fixed update (50 UPS) / fixed render (60 FPS) with frame skipping (max 10 frame skip tolerance).
 
-**State management**: Stack-based game states (`MainMenuState`, `PlayingState`, options, debug, victory states).
+**State management**: Stack-based game states (`MainMenuState`, `PlayingState`, `SelectModuleState`, `SelectPlayersState`, `LoadingState`, `InGameMenuState`, `MapEditorState`, options, debug, victory states).
 
 **Content system**: Directory-based module format with convention-driven files (`menu.txt`, `spawn.txt`, `data.txt`, `script.txt`). Virtual file system (PhysFS) with mount points (`mp_data`, `mp_modules`, `mp_objects`).
 
 ### Global State (major coupling points)
 
-Historically the runtime was wired around three mutable globals. The runtime-context extraction passes (`refactoring-documents/11-`…`45-`) have migrated most consumers onto session/module accessor surfaces. Current in-code reference counts (as of 2026-04-17):
+Historically the runtime was wired around three mutable globals. All three have been fully retired from active runtime code:
 
-- `_gameEngine` — ~6 references; remaining uses are in `Main.cpp`, `GameEngine.{hpp,cpp}`, and `EngineContext.cpp`.
-- `_currentModule` — 0 direct references in runtime code; all consumers now go through session/module accessors. Prefer `GameSessionContext` and `GameModule` surfaces for new code.
-- `update_wld` — ~6 references; remaining uses are in `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`.
+- `_gameEngine` — **0 references.** Fully eliminated. Engine access now routes through `EngineContext::get().setEngine()` / `engine()`.
+- `_currentModule` — **0 references.** All consumers go through `GameSessionContext` and `GameModule` accessor surfaces.
+- `update_wld` — **0 active references.** The global variable is gone; 3 stale string-literal / comment artifacts remain in `script.c`, `ObjectGraphics.hpp`, and `Particle.hpp`. The functional replacement is `worldUpdateCount()` (routing through `GameSessionContext`), which has ~50 call sites across ~20 files.
+
+The remaining coupling hotspot is singleton access: ~912 `::get()` call sites persist. The `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, and GFX; broader DI does not yet exist.
 
 Avoid reintroducing hidden global dependencies. Be careful around code that affects VFS setup, module loading, object profile loading, or script compilation.
 
 ### Egolib Subsystems
 
-AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (objects/particles), FileFormats (MD2, maps, configs), Graphics (fonts, textures, framebuffer), Grid, Image, InputControl, Log, Logic, Math, Mesh, Platform, Profiles, Renderer (OpenGL), Script (bytecode VM, compiler), Time, VFS, game (core gameplay), integrations.
+AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (objects/particles), Extensions (OpenGL), FileFormats (MD2, maps, configs), Graphics (fonts, textures, framebuffer), Grid, Image, InputControl, Log, Logic, Math, Mesh, Platform, Profiles, Renderer (OpenGL), Script (bytecode VM, compiler), Time, VFS, game (core gameplay), integrations.
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying:
-- `egolib/library/src/egolib/vfs.c` (2445 lines, current largest TU)
-- `egolib/library/src/egolib/game/script_functions_{action,bitwise,movement,spawn,state,systems,target}.c` (split from the former 8153-line `script_functions.c`; `_systems.c` and `_target.c` are the largest at ~2100 and ~1780 lines)
-- `egolib/library/src/egolib/game/game.c`
-- `egolib/library/src/egolib/game/graphic.c`
-- `egolib/library/src/egolib/game/Physics/particle_collision.c`
-- `egolib/library/src/egolib/game/mesh.c`
-- `egolib/library/src/egolib/fileutil.c`
-- `egolib/library/src/egolib/Entities/Object.cpp`
-- `egolib/library/src/egolib/game/Module/Module.cpp` (plus sibling TUs `Module_bootstrap.cpp`, `Module_loading.cpp`, `Module_spawn.cpp`, `Module_update.cpp` from the module split pass — see `refactoring-documents/28-module-translation-unit-split-pass.md`)
+Read relevant audit docs before modifying. Files over 1,000 lines (by size):
+- `egolib/library/src/egolib/game/script_functions_systems.c` (~3200 lines, largest TU)
+- `egolib/library/src/egolib/vfs.c` (~2460 lines)
+- `egolib/library/src/egolib/game/script_functions_target.c` (~1680 lines)
+- `egolib/library/src/egolib/Entities/Object.hpp` (~1620 lines, monolithic interface — 18 role interfaces extracted but header still large)
+- `egolib/library/src/egolib/game/script_functions_state.c` (~1480 lines)
+- `egolib/library/src/egolib/game/Physics/particle_collision.c` (~1530 lines)
+- `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1490 lines)
+- `egolib/library/src/egolib/game/mesh.c` (~1370 lines)
+- `egolib/library/src/egolib/game/script_functions_spawn.c` (~1580 lines)
+- `egolib/library/src/egolib/fileutil.c` (~1330 lines)
+- `egolib/library/src/egolib/Script/script.c` (~1370 lines)
 
-These are large, central, and coupled to legacy global state.
+Architecturally central but now small after split passes:
+- `egolib/library/src/egolib/game/game.c` (~550 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
+- `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs)
+- `egolib/library/src/egolib/game/Module/Module.cpp` (~200 lines, split into six `Module_*.cpp` siblings)
 
 ## Refactoring Guidelines
 
