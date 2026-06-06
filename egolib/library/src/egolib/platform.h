@@ -119,23 +119,6 @@ extern "C"
 #define SLASH_CHR SYSTEM_SLASH_CHR
 
 //--------------------------------------------------------------------------------------------
-// Turn off warnings that we don't care about.
-/// @todo MH: This should be reviewed.
-
-#if defined(_MSC_VER)
-    #pragma warning(disable : 4090) ///< '=' : different 'const' qualifiers (totally unimportant in C)
-    #pragma warning(disable : 4200) ///< zero-sized array in struct/union (used in the md2 loader)
-    #pragma warning(disable : 4201) ///< nameless struct/union (nameless unions and nameless structs used in defining the vector structs)
-    #pragma warning(disable : 4204) ///< non-constant aggregate initializer (used to simplify some vector initializations)
-    #pragma warning(disable : 4244) ///< conversion from 'double' to 'float'
-    #pragma warning(disable : 4305) ///< truncation from 'double' to 'float'
-
-    #if !defined(_DEBUG)
-        #pragma warning(disable : 4554) ///< possibly operator precendence error
-    #endif
-#endif
-
-//--------------------------------------------------------------------------------------------
 
 #if !defined(SET_PACKED)
     // Set the packing of a data structure at declaration time.

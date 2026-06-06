@@ -50,25 +50,5 @@ add_subdirectory(egoboo)
 # Add repository tools.
 add_subdirectory(tools)
 
-# Define installer (for MSCV only atm)
-if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
-	set(CPACK_PACKAGE_NAME "Egoboo")
-	set(CPACK_PACKAGE_VENDOR "https://egoboo.org/")
-	if (${IDLIB_PLATFORM_ID} EQUAL ${IDLIB_PLATFORM_ID_X64})
-	  #message("building Windows 10 x64 installer")
-	  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Egoboo - Windows 10 x64 Installer")
-	else()
-	  #message("building Windows 10 x86 installer")
-	  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Egoboo - Windows 10 x86 Installer")
-	endif()
-	set(CPACK_PACKAGE_VERSION "1.0.0")
-	set(CPACK_PACKAGE_VERSION_MAJOR "1")
-	set(CPACK_PACKAGE_VERSION_MINOR "0")
-	set(CPACK_PACKAGE_VERSION_PATCH "0")
-	set(CPACK_PACKAGE_INSTALL_DIRECTORY "Egoboo")
-    
-	set(CPACK_COMPONENTS_ALL applications libraries headers)
-endif()
-
 # This must always be last!
 include(CPack)

@@ -40,9 +40,6 @@ target_link_libraries(egoboo egolib-library)
 # Copy and install runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library with the executable.
 if (WIN32)
   egoboo_stage_windows_runtime_libraries(egoboo idlib-game-engine-library)
-  if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
-    set_target_properties(egoboo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")
-  endif()
 endif()
 
 IF(DOXYGEN_FOUND)
