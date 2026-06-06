@@ -21,6 +21,8 @@
 /// @details Video settings
 /// @author Johan Jansen
 
+#include "egolib/Graphics/Font.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/game/GameStates/AudioOptionsScreen.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"

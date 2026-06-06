@@ -21,6 +21,7 @@
 /// @details Options Screen menu
 /// @author Johan Jansen
 
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/OptionsScreen.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
@@ -30,6 +31,7 @@
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
 
 OptionsScreen::OptionsScreen() :
 	_slidyButtons()

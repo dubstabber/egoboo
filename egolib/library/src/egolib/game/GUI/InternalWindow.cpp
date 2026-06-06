@@ -25,6 +25,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/Graphics/Font.hpp"
 
 static constexpr int BORDER_PIXELS = 5;
 

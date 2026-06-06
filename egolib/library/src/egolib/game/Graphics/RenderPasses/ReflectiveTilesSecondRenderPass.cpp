@@ -1,6 +1,9 @@
+#include "egolib/Time/Time.hpp"
+#include "egolib/Clock.hpp"
 #include "egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/Graphics/RenderPasses.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace Ego {
 namespace Graphics {

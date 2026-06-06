@@ -21,6 +21,7 @@
 /// @brief Abstract implementation render passes
 /// @author Michael Heilmann
 
+#include "egolib/Clock.hpp"
 #include "egolib/game/Graphics/RenderPass.hpp"
 
 namespace Ego {

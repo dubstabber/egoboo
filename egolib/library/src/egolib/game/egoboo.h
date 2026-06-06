@@ -26,20 +26,13 @@
 
 #pragma once
 
-// Precise includes for egoboo.h's own (thin) body, so it no longer depends on
-// the egolib.h uber-header for its own declarations:
+// egoboo.h is now a thin game-specific header: the gfx_rv alias, a handful of
+// gameplay constants, the HUD timer globals, and config_synch. It no longer pulls
+// the egolib.h uber-header (uber-header teardown, T3.3) — every consumer now
+// includes precisely what it needs. These are the only includes its own body needs:
 #include "egolib/typedef.h"       // egolib_rv (for the gfx_rv alias)
 #include "egolib/egoboo_setup.h"  // egoboo_config_t (for config_synch)
 #include <cstdint>                // uint32_t (for timervalue)
-
-// --- uber-header teardown in progress ---
-// egolib.h is included by default so the tree stays green during the migration,
-// but defining EGOBOO_NO_UBER_INCLUDE suppresses it to verify that a consumer
-// header is self-contained (carries its own precise includes). Once every
-// game/Entities header is self-contained, this include and guard are removed.
-#ifndef EGOBOO_NO_UBER_INCLUDE
-#include "egolib/egolib.h"
-#endif
 
 /**
 * @todo

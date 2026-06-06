@@ -21,6 +21,7 @@
 /// @details A button with an small icon on the right side
 /// @author Johan Jansen
 
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GUI/IconButton.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Renderer/DeferredTexture.hpp"

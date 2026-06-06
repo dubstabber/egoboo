@@ -1,4 +1,5 @@
 #include "ProgressBar.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace Ego {
 namespace GUI {

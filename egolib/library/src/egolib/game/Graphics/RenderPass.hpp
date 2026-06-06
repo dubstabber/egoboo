@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include "egolib/Clock.hpp"  // Time::Clock, Time::ClockScope, Time::ClockPolicy
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"

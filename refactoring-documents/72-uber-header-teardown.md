@@ -159,10 +159,32 @@ Cascade win: `Object.hpp` is now down to a single `#error` (direct-include guard
   `slot_t`/`GRIP_VERTS`/`SLOT_LEFT`→`Logic/ObjectSlot.hpp`, `SDLK_LEFT`→an SDL include; `matrix_cache_t` is
   self-defined (cascade). The messiest remaining header.
 
-These remaining 9 are the harder cases (`#error` guards, color/texture/SDL, forward-decl-heavy) — best done with
-the user available, and the **final link-cut** (remove the guard + `#include egolib.h` from `egoboo.h`) should be
-followed by a **smoke-run** (engine-init path is untested by build/validator/ctest). Then narrow `egolib.h`'s ~24
-direct includers and shrink/delete `egolib.h`.
+## Pass 224 + Pass 225 — last headers, then CUT (2026-06-06)
+
+**Pass 224** self-contained the final 10 consumer headers (the 4 `#error`-guarded Entities headers verified
+via `Entities/_Include.hpp`; Billboard/BillboardSystem/UIManager/Material via `integrations/{color,math,video}.hpp`
++ `Time/Time.hpp` + forward decls; CharacterMatrix via `_math.h`/`bbox.h`/`ObjectSlot.hpp`/`<array>`). Leech-fixes:
+`ObjectGraphics.hpp` (+`Profiles/_Include.hpp`), `Material.cpp` (+`Renderer/Renderer.hpp`).
+
+**Pass 225 — THE LINK IS CUT.** Removed `#include "egolib/egolib.h"` + the `EGOBOO_NO_UBER_INCLUDE` guard from
+`game/egoboo.h`; it is now a thin header. A keep-going build surfaced ~20 sites still leeching egolib types
+through the egoboo.h chain — fixed with precise includes (no code changed):
+- 16 source TUs via a 4-agent parallel workflow (source files are include-graph leaves → safe to fix in parallel,
+  each verified with `g++ -fsyntax-only`): `egoboo_setup.c`, `RenderPass.cpp`, 3 RenderPasses TUs, 5 GameStates,
+  5 GUI.
+- 3 headers that were NOT egoboo.h includers but leeched transitively (so they never showed up in the
+  "includes egoboo.h" scan — a blind spot): `Graphics/RenderPass.hpp` (+`Clock.hpp`), `GUI/Button.hpp` +
+  `GUI/Label.hpp` (+`Graphics/Font.hpp`, needed COMPLETE `Ego::Font` for a `LaidTextRenderer` member).
+- executable `egoboo/src/game/Main.cpp` (+`Core/System.hpp`).
+
+**Lesson:** narrowing only headers that *include* egoboo.h missed headers that leeched egolib.h transitively
+*through* an egoboo.h-including header. The keep-going build after the cut is what caught them — always cut +
+keep-going-build to find the true tail.
+
+**State: DONE.** egoboo.h has 0 `egolib.h` dependency; build/validator/ctest 736/738 green across all targets
+(`egoboo`, content-validator, tests). Optional follow-on: `egolib.h` still has ~22 direct includers; narrowing
+them + deleting `egolib.h` is separate and lower-value. A menu smoke-run is advisable as a final boot-path check
+(the cut is pure include hygiene — no runtime behavior changed).
 
 ## Remaining work-list (suggested leaf-upward order)
 

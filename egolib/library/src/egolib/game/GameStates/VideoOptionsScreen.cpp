@@ -21,6 +21,7 @@
 /// @details Video settings
 /// @author Johan Jansen
 
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"
@@ -28,6 +29,10 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
+#include "egolib/Graphics/GraphicsSystemNew.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
+#include "egolib/Graphics/Display.hpp"
+#include "egolib/Graphics/DisplayMode.hpp"
 
 namespace
 {

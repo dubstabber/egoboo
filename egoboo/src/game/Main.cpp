@@ -19,6 +19,7 @@
 /// @author Johan Jansen
 /// @author Michael Heilmann
 
+#include "egolib/Core/System.hpp"  // Ego::Core::System
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"

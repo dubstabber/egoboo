@@ -21,6 +21,7 @@
 /// @details Debugging state where one can debug font layout and rendering
 /// @author Johan Jansen, penguinflyer5234
 
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/DebugFontRenderingState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/Button.hpp"

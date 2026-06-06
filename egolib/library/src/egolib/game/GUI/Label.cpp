@@ -1,3 +1,4 @@
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GUI/Label.hpp"
 
 namespace Ego {

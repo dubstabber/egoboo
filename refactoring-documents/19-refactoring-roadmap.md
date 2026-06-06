@@ -173,10 +173,17 @@ optional stretch. Full plan, probe data (185/286 TUs transitively coupled; 37 no
 the symbol→header dictionary, the `EGOBOO_NO_UBER_INCLUDE` guard, and the per-pass work-list live in
 `72-uber-header-teardown.md`.
 
-- **Pass 221 (done):** all 19 `Entities/I*.hpp` role interfaces + `Logic/ObjectSlot.hpp` +
-  `game/Graphics/Vertex.hpp` made self-contained and decoupled from `egoboo.h`. Build/validator/ctest green.
-- **Remaining:** the leaf game headers (`mesh.h`/`graphic.h`/`lighting.h`/…), then `Object.hpp` and the
-  Graphics/GUI/Script headers, ~30 source TUs, then the final link-cut payoff pass (+ smoke-run).
+- **Passes 221–225 (done) — the egoboo.h→egolib.h link is CUT.** `game/egoboo.h` is now a thin game
+  header (gfx_rv + gameplay constants + HUD timers + config_synch) and no longer includes `egolib.h`, so
+  the game library's headers/TUs no longer transitively inherit the 54-subsystem uber-header. Sequence:
+  Pass 221 role interfaces; Pass 222 mesh/graphic/lighting/script leaf headers; Pass 223
+  camera/module/physics/inventory headers; Pass 224 the last 10 consumer headers (Object/Particle/
+  Billboard/UI/CharacterMatrix); Pass 225 cut the link + fixed the ~20 source/header sites that had
+  leeched egolib types through it (incl. a 4-agent parallel workflow for 16 source TUs). All green
+  (build/validator/ctest 736/738) at every pass.
+- **Remaining (optional stretch):** `egolib.h` still has ~22 direct includers; narrowing them and
+  physically deleting `egolib.h` is a separate, lower-value follow-on. A menu smoke-run is also advisable
+  as a final boot-path confirmation (the cut is pure include hygiene, so no runtime behavior changed).
 
 ### T3.4 Behavioral test coverage
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "egolib/Graphics/Font.hpp"  // Ego::Font (complete; LaidTextRenderer member)
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/Component.hpp"
 

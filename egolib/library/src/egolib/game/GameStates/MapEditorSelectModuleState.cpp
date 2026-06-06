@@ -1,3 +1,4 @@
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/MapEditorState.hpp"
@@ -6,6 +7,7 @@
 #include "egolib/game/GUI/IconButton.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/Profiles/_Include.hpp"
 
 namespace Ego
 {
