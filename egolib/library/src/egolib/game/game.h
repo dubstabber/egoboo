@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/IDSZ.hpp"  // IDSZ2
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Inventory.hpp"

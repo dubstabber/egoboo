@@ -22,7 +22,7 @@
 #pragma once
 
 #include "egolib/Entities/IInventoryHolder.hpp"
-#include "egolib/game/egoboo.h"
+#include "egolib/IDSZ.hpp"  // IDSZ2
 
 class Inventory
 {

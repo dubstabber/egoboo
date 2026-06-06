@@ -1,7 +1,5 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
-
 #include <memory>
 #include <vector>
 

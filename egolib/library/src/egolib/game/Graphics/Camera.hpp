@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/frustum.h"  // Ego::Graphics::Frustum
 #include "egolib/game/physics.h"			//for orientation_t
 #include "egolib/Graphics/Camera.hpp"
 

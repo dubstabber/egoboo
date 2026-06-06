@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
 #include "egolib/bbox.h"
 #include "egolib/game/Physics/PhysicalConstants.hpp"
 

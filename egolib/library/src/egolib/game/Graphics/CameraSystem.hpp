@@ -20,7 +20,7 @@
 /// @author Johan Jansen
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/frustum.h"  // Ego::Graphics::Frustum
 #include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 

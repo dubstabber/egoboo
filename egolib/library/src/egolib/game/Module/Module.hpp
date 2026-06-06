@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"

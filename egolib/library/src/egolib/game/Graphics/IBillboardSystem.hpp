@@ -1,6 +1,7 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/integrations/color.hpp"  // Colour4f
+#include "egolib/typedef.h"                // ObjectRef, BIT_FIELD
 
 #include <memory>
 #include <string>

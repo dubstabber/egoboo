@@ -1,6 +1,8 @@
 #pragma once
 
 #include "egolib/game/Graphics/Md2ModelRenderer.hpp"
+#include "egolib/integrations/video.hpp"  // idlib::vertex_descriptor
+#include <vector>
 
 namespace Ego {
 namespace Graphics {

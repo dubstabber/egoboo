@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"    // AxisAlignedBox2f
+#include "egolib/IDSZ.hpp"   // IDSZ2
 #include "egolib/Mesh/Info.hpp"
 
 //Forward declarations

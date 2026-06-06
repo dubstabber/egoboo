@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include <cstddef>  // size_t
 
 // Forward declaration.
 class MD2Model;

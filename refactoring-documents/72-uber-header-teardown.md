@@ -126,6 +126,44 @@ template specialization — NOT `Mesh/Info.hpp`'s `Ego::MeshInfo`) via `Team.hpp
 `CharacterMatrix.h` was deferred from Pass 2 (it has inline SDL/matrix logic: `matrix_cache_t`,
 `EulerFacing`, `SDLK_LEFT`, grip helpers — needs more includes than a leaf header).
 
+## Pass 3 — camera/module/physics/inventory + leaf interface headers (2026-06-06, Pass 223)
+
+Narrowed 15 more headers off `egoboo.h` (kept thin `egoboo.h` only in `TileList.hpp` for `gfx_rv`):
+`game/Graphics/{Camera,CameraSystem,EntityList,TileList,IBillboardSystem,ICameraSystem,Md2ModelRenderer}.hpp`,
+`game/{game.h,game_internal.h,Inventory.hpp,physics.h,script_functions.h}`,
+`game/Module/{Passage,Module}.hpp`, `game/GameStates/LoadPlayerElement.hpp`. Leech-fix:
+`DefaultMd2ModelRenderer.hpp` (+`integrations/video.hpp` for `idlib::vertex_descriptor`, +`<vector>`).
+Cascade win: `Object.hpp` is now down to a single `#error` (direct-include guard), not real coupling.
+
+**Common leech-fix dictionary (add when a narrowed header's source consumers break):**
+`Ego::trim_ws`→`Core/StringUtilities.hpp`; grid `Info<float/int>`→`FileFormats/map_file.h`;
+`idlib::vertex_descriptor`→`integrations/video.hpp`; Ref types (`ObjectRef`,`BIT_FIELD`,`SKIN_T`,…)→`typedef.h`.
+
+## Status after Pass 3 — headers still pulling `egoboo.h`
+
+**Legitimate thin-`egoboo.h` keeps (use `gfx_rv`; leave until gfx_rv is retired or rehomed):**
+`TileList.hpp`, `graphic_mad.h`, `graphic_prt.h`, `Graphics/IGFX.hpp`, `Graphics/ParticleGraphics.hpp`.
+
+**Still need narrowing before the link can be cut (with their known needs):**
+- `Entities/Object.hpp`, `Entities/ObjectHandler.hpp` — have an `#error` direct-include guard, so verify via
+  `Entities/_Include.hpp`, not standalone. Object.hpp's real coupling is already ~gone (1 guard error only).
+- `Entities/Particle.hpp`, `Entities/ParticleHandler.hpp` — need `prt_ori_t` (in `Profiles/ParticleProfile.hpp`,
+  which itself has an `#error` guard → reach it via `Profiles/_Include.hpp`; verify the alias resolves).
+- `Graphics/ParticleGraphics.hpp` — keeps `egoboo.h` for gfx_rv but also needs `Matrix4f4f`/`Vector3f`/`prt_ori_t`.
+- `Graphics/Billboard.hpp`, `Graphics/BillboardSystem.hpp` — `Colour3f/4f`→`integrations/color.hpp`,
+  `Texture`/`RefKind::Texture`→`typedef.h` + fwd-decl `Ego::Texture`, `Object`/`ObjectRef`→fwd-decl + `typedef.h`,
+  `Vector3f/4f`/`Time`→`_math.h`/`Time/Time.hpp`.
+- `GUI/UIManager.hpp`, `GUI/Material.hpp` — `Colour4f`→`integrations/color.hpp`, `Point2f`/`Rectangle2f`/`Vector2f`→
+  `_math.h`/Math, `ego_frect_t`/`Texture`/`RefKind::Texture`→find homes + `typedef.h`.
+- `game/CharacterMatrix.h` — `EulerFacing`/`Facing`/`Vector3f`/`float_t`→`_math.h`, `oct_bb_t`→`bbox.h`,
+  `slot_t`/`GRIP_VERTS`/`SLOT_LEFT`→`Logic/ObjectSlot.hpp`, `SDLK_LEFT`→an SDL include; `matrix_cache_t` is
+  self-defined (cascade). The messiest remaining header.
+
+These remaining 9 are the harder cases (`#error` guards, color/texture/SDL, forward-decl-heavy) — best done with
+the user available, and the **final link-cut** (remove the guard + `#include egolib.h` from `egoboo.h`) should be
+followed by a **smoke-run** (engine-init path is untested by build/validator/ctest). Then narrow `egolib.h`'s ~24
+direct includers and shrink/delete `egolib.h`.
+
 ## Remaining work-list (suggested leaf-upward order)
 
 1. **Low-level egolib/game leaf headers**: `lighting.h`, `mesh.h` (keystone, 2023), `graphic.h`,

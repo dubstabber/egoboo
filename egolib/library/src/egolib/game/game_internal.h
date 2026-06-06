@@ -32,7 +32,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/link.h"
 #include "egolib/game/script_implementation.h"
-#include "egolib/game/egoboo.h"
+#include "egolib/IDSZ.hpp"  // IDSZ2
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"

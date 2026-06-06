@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include <cstdint>  // uint8_t (return type; state/self/Object are forward-declared below)
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------

@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/game/egoboo.h"  // gfx_rv
+#include "egolib/frustum.h"      // Ego::Graphics::Frustum
 #include "egolib/game/mesh.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
