@@ -6,6 +6,7 @@
 
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
+#include "egolib/Profiles/_Include.hpp"  // ObjectProfile
 
 //Forward declarations
 namespace Ego { namespace Graphics { class ObjectGraphics; } }

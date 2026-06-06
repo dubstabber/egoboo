@@ -22,6 +22,7 @@
 /// @author Michael Heilmann
 
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/Renderer/Renderer.hpp"  // Renderer, idlib::color_blend_parameter, compare_function
 
 namespace Ego {
 namespace GUI {

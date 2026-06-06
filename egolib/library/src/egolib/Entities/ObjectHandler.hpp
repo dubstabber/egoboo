@@ -26,7 +26,6 @@
 #error(do not include directly, include `game/Entities/_Include.hpp` instead)
 #endif
 
-#include "egolib/game/egoboo.h"
 #include "egolib/Core/QuadTree.hpp"
 
 //Forward declarations

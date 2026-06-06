@@ -21,7 +21,10 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"               // EulerFacing, Facing, Vector3f, float_t
+#include "egolib/bbox.h"                // oct_bb_t
+#include "egolib/Logic/ObjectSlot.hpp"  // slot_t, GRIP_VERTS, SLOT_LEFT
+#include <array>                        // grip_verts
 
 //Forward declarations
 class Object;

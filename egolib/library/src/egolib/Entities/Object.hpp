@@ -48,7 +48,6 @@
 #include "egolib/Entities/ITargetInfo.hpp"
 #include "egolib/Entities/IVisualControl.hpp"
 #include "egolib/Entities/IWallet.hpp"
-#include "egolib/game/egoboo.h"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
 #include "egolib/game/graphic_mad.h"

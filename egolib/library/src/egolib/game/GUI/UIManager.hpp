@@ -23,9 +23,14 @@
 /// @author Johan Jansen
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/integrations/color.hpp"  // Colour4f
+#include "egolib/integrations/video.hpp"  // idlib::vertex_descriptor, vertex_buffer
+#include "egolib/integrations/math.hpp"   // Point2f, Rectangle2f, Vector2f
+#include "egolib/Math/Standard.hpp"        // ego_frect_t
+#include "egolib/typedef.h"                // TextureRef, RefKind::Texture
 
 // Forward declarations.
+namespace Ego { class Texture; }
 namespace Ego {
 class Font; 
 namespace GUI {

@@ -24,7 +24,10 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/integrations/color.hpp"  // Colour4f
+#include <memory>                          // std::shared_ptr
+
+namespace Ego { class Texture; }  // used via shared_ptr only
 
 namespace Ego {
 namespace GUI {

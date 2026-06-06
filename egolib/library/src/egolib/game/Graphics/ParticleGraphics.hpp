@@ -1,6 +1,8 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/game/egoboo.h"         // gfx_rv
+#include "egolib/_math.h"                // Matrix4f4f, Vector3f
+#include "egolib/Profiles/_Include.hpp"  // prt_ori_t
 
 // Forward declarations.
 class Camera;

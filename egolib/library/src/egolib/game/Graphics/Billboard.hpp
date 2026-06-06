@@ -1,8 +1,14 @@
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/integrations/color.hpp"  // Colour3f, Colour4f
+#include "egolib/_math.h"                  // Vector3f, Vector4f
+#include "egolib/Time/Time.hpp"            // ::Time::Ticks
+#include "egolib/typedef.h"                // ObjectRef, RefKind, TextureRef
+#include <memory>
 
 // Forward declarations.
+namespace Ego { class Texture; }
+class Object;
 class Camera;
 namespace Ego { class Font; }
 

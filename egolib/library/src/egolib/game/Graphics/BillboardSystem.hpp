@@ -21,10 +21,16 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/integrations/color.hpp"  // Colour4f
+#include "egolib/integrations/video.hpp"  // idlib::vertex_descriptor, vertex_buffer
+#include "egolib/_math.h"                  // Vector3f
+#include "egolib/Time/Time.hpp"            // ::Time::Ticks
+#include "egolib/typedef.h"                // ObjectRef
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 
 // Forward declarations.
+namespace Ego { class Texture; }
+class Object;
 class Camera;
 namespace Ego { 
 class Font; 
