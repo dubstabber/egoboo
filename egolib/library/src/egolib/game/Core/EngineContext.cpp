@@ -11,6 +11,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
 #include <stdexcept>
@@ -29,6 +30,7 @@ IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
+Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 egoboo_config_t* activeConfig = nullptr;
 Log::Target* activeLogTarget = nullptr;
 }
@@ -620,6 +622,50 @@ const Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem() const
         throw std::logic_error("no active billboard system");
     }
     return *currentBillboardSystem;
+}
+
+void EngineContext::installTextureAtlasManager(Ego::Graphics::ITextureAtlasManager& textureAtlasManager)
+{
+    if (activeTextureAtlasManager)
+    {
+        throw std::logic_error("texture atlas manager already installed");
+    }
+    activeTextureAtlasManager = &textureAtlasManager;
+}
+
+void EngineContext::clearTextureAtlasManager()
+{
+    activeTextureAtlasManager = nullptr;
+}
+
+Ego::Graphics::ITextureAtlasManager* EngineContext::tryTextureAtlasManager()
+{
+    return activeTextureAtlasManager;
+}
+
+const Ego::Graphics::ITextureAtlasManager* EngineContext::tryTextureAtlasManager() const
+{
+    return activeTextureAtlasManager;
+}
+
+Ego::Graphics::ITextureAtlasManager& EngineContext::textureAtlasManager()
+{
+    Ego::Graphics::ITextureAtlasManager* currentTextureAtlasManager = tryTextureAtlasManager();
+    if (!currentTextureAtlasManager)
+    {
+        throw std::logic_error("no active texture atlas manager");
+    }
+    return *currentTextureAtlasManager;
+}
+
+const Ego::Graphics::ITextureAtlasManager& EngineContext::textureAtlasManager() const
+{
+    const Ego::Graphics::ITextureAtlasManager* currentTextureAtlasManager = tryTextureAtlasManager();
+    if (!currentTextureAtlasManager)
+    {
+        throw std::logic_error("no active texture atlas manager");
+    }
+    return *currentTextureAtlasManager;
 }
 
 void EngineContext::installConfig(egoboo_config_t& config)

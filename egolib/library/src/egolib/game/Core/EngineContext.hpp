@@ -11,6 +11,7 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 #include "idlib/non_copyable.hpp"
 
 #include <cstdint>
@@ -140,6 +141,15 @@ public:
 
     Ego::Graphics::IBillboardSystem& billboardSystem();
     const Ego::Graphics::IBillboardSystem& billboardSystem() const;
+
+    void installTextureAtlasManager(Ego::Graphics::ITextureAtlasManager& textureAtlasManager);
+    void clearTextureAtlasManager();
+
+    Ego::Graphics::ITextureAtlasManager* tryTextureAtlasManager();
+    const Ego::Graphics::ITextureAtlasManager* tryTextureAtlasManager() const;
+
+    Ego::Graphics::ITextureAtlasManager& textureAtlasManager();
+    const Ego::Graphics::ITextureAtlasManager& textureAtlasManager() const;
 
     void installConfig(egoboo_config_t& config);
     void clearConfig();

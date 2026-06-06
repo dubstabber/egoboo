@@ -173,7 +173,7 @@ void gfx_system_reload_all_textures()
     /// restored from a minimized state. Otherwise, all OpenGL bitmaps return to a random state.
 
     EngineContext::get().textureManager().reupload();
-    Ego::Graphics::TextureAtlasManager::get().reupload();
+    EngineContext::get().textureAtlasManager().reupload();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -338,9 +338,9 @@ uint8_t TileRenderer::size = 0xFF;
 std::shared_ptr<Ego::Texture> TileRenderer::get_texture(uint8_t image, uint8_t size)
 {
 	if (0 == size) {
-		return Ego::Graphics::TextureAtlasManager::get().getSmall(image);
+		return EngineContext::get().textureAtlasManager().getSmall(image);
 	} else if (1 == size) {
-		return Ego::Graphics::TextureAtlasManager::get().getBig(image);
+		return EngineContext::get().textureAtlasManager().getBig(image);
 	}  else {
         return nullptr;
     }
@@ -442,10 +442,14 @@ GameAppImpl::GameAppImpl() :
     {
         std::rethrow_exception(std::current_exception());
     }
+    // Publish the texture atlas manager through the engine context.
+    EngineContext::get().installTextureAtlasManager(Ego::Graphics::TextureAtlasManager::get());
 }
 
 GameAppImpl::~GameAppImpl()
 {
+    // Unpublish the texture atlas manager from the engine context.
+    EngineContext::get().clearTextureAtlasManager();
     // Uninitialize the texture atlas manager.
     Ego::Graphics::TextureAtlasManager::uninitialize();
 }

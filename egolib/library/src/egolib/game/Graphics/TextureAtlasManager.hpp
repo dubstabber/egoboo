@@ -2,11 +2,12 @@
 
 #include "idlib/idlib.hpp"
 #include "egolib/egolib.h"
+#include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 
 namespace Ego {
 namespace Graphics {
 
-class TextureAtlasManager : public idlib::singleton<TextureAtlasManager> {
+class TextureAtlasManager : public idlib::singleton<TextureAtlasManager>, public ITextureAtlasManager {
 protected:
     friend idlib::default_new_functor<TextureAtlasManager>;
     friend idlib::default_delete_functor<TextureAtlasManager>;
@@ -20,13 +21,13 @@ protected:
     virtual ~TextureAtlasManager();
 
 public:
-    std::shared_ptr<Ego::Texture> getSmall(int which) const;
+    std::shared_ptr<Ego::Texture> getSmall(int which) const override;
 
-    std::shared_ptr<Ego::Texture> getBig(int which) const;
+    std::shared_ptr<Ego::Texture> getBig(int which) const override;
 
 
     /// @brief Reupload all textures.
-    void reupload();
+    void reupload() override;
 
     /**
      * @brief
@@ -34,7 +35,7 @@ public:
      *  This turns a big texture tilemap into many smaller textures
      *  for each tile type (tile0.bmp, tile1.bmp etc.)
      */
-    void loadTileSet();
+    void loadTileSet() override;
 
 private:
     // decimate one tiled texture of a mesh

@@ -39,7 +39,6 @@
 #include "egolib/game/game.h"
 #include "egolib/game/link.h"
 #include "egolib/game/Module/Module.hpp"
-#include "egolib/game/Graphics/TextureAtlasManager.hpp"
 
 namespace
 {
@@ -248,7 +247,7 @@ void LoadingState::loadModuleData()
             [this]{
 
                 //Have to do this function in the OpenGL context thread or else it will fail
-                Ego::Graphics::TextureAtlasManager::get().loadTileSet();
+                EngineContext::get().textureAtlasManager().loadTileSet();
 
                 //Hush gong
                 audioSystem().fadeAllSounds();

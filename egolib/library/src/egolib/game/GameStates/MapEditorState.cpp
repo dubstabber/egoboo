@@ -29,7 +29,6 @@
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/game.h"
-#include "egolib/game/Graphics/TextureAtlasManager.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
@@ -172,7 +171,7 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
     config_synch(EngineContext::get().config(), true, false);
 
     //Have to do this function in the OpenGL context thread or else it will fail
-    Ego::Graphics::TextureAtlasManager::get().loadTileSet();
+    EngineContext::get().textureAtlasManager().loadTileSet();
 }
 
 

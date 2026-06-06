@@ -1142,6 +1142,16 @@ Chosen over an `EngineContext` seam: `Core::System` is initialized in the execut
 
 Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 217 — Publish `TextureAtlasManager` through `EngineContext` (2026-06-06)
+
+Seamed the mesh tile-texture atlas, the next graphics service after `TextureManager` (Pass 214). Extracted `Ego::Graphics::ITextureAtlasManager` (the four methods callers use: `getSmall(int)`, `getBig(int)`, `reupload()`, `loadTileSet()`), made `TextureAtlasManager` implement it (4 `override`s), and added the standard `EngineContext` install/clear/try/accessor surface (`textureAtlasManager()`). The interface lives in `game/Graphics/` next to the concrete class and mirrors the `Ego::Graphics::IBillboardSystem` precedent (namespace `Ego::Graphics`, not engine-`Graphics/` like `ITextureManager`). Migrated all 5 game-layer `TextureAtlasManager::get()` call sites — `graphic.c`×3 (`gfx_system_reload_all_textures` reupload, `TileRenderer::get_texture` getSmall/getBig) and the two `loadTileSet()` sites in `GameStates/LoadingState.cpp` and `GameStates/MapEditorState.cpp` — to `EngineContext::get().textureAtlasManager()`. Dropped the now-redundant concrete `TextureAtlasManager.hpp` include from both GameStates TUs (they reach the atlas only through the interface now).
+
+Lifecycle: unlike the App-bootstrap services (installed in `App.cpp`), `TextureAtlasManager` is `initialize()`d/`uninitialize()`d in `graphic.c`'s `GameAppImpl` ctor/dtor (the GFX backing object). Install/clear are therefore paired there — install right after `initialize()`, clear right before `uninitialize()` — keeping the EngineContext pointer's validity an exact mirror of the singleton's own lifecycle (no reliance on `clearEngine()` ordering). `TextureAtlasManager::get()` remains only as the `GameAppImpl` bootstrap seam.
+
+No test mock was needed: a grep of `egolib/tests` confirms no fixture installs or reaches the atlas, and no headless test executes `gfx_system_reload_all_textures`/`TileRenderer::get_texture`/`LoadingState`/`MapEditorState`, so the throw-on-missing accessor is never hit (same load/draw-path-only situation as `TextureManager`).
+
+Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log
