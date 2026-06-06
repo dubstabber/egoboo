@@ -1108,6 +1108,12 @@ First T1.3 service-interface seam of this session. Extracted `Ego::IFontManager`
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0` (fonts are not exercised by validator/tests), `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 212 — Finish `InputSystem` caller migration onto `EngineContext` (2026-06-06)
+
+`InputSystem`'s EngineContext seam already existed (`IInputSystem` + install at `GameEngine.cpp:314`); this pass migrated the remaining cross-subsystem direct `Ego::Input::InputSystem::get()` callers that use only interface methods. Eleven `isKeyDown`/`getModifierKeys` sites in `graphic_hud.c` (6), `graphic_mad.c` (2), `graphic_prt.c`, `graphic_scene.c`, and `Console.cpp` now go through `EngineContext::get().inputSystem()`; `graphic_hud.c` gains the `EngineContext.hpp` include. Deferred: `Camera.cpp` and `InputDevice.cpp` still reach the non-interface `joysticks` data member, and the GameEngine `.mouse/.keyboard` accesses are dead `#if 0` — those need `joysticks` exposed on `IInputSystem` (or removed) first.
+
+Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

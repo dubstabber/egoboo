@@ -594,7 +594,7 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
     static constexpr bool drawCharacter = true;
     
     // Draw the object bounding box as a part of the graphics debug mode F7.
-    if (config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7))
+    if (config().debug_developerMode_enable.getValue() && EngineContext::get().inputSystem().isKeyDown(SDLK_F7))
     {
         Ego::Renderer::get().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
@@ -616,7 +616,7 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
     }
 
     //// The grips and vertrices of all objects.
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F6))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F6))
     {
         draw_chr_attached_grip( pchr );
 

@@ -109,7 +109,7 @@ SDL_Event *Console::handle_event(SDL_Event *event)
 		vkey = event->key.keysym.scancode;
 
 		// Get the key modifiers.
-		ModifierKeys modifierKeys = Input::InputSystem::get().getModifierKeys();
+		ModifierKeys modifierKeys = EngineContext::get().inputSystem().getModifierKeys();
 
 		// Is alt or shift down?
 		is_alt = (ModifierKeys::LeftAlt == (modifierKeys & ModifierKeys::LeftAlt))

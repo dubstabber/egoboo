@@ -153,7 +153,7 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
     GFX::get().getWater().run(cam, tl, el);
     GFX::get().getNonOpaqueEntities().run(cam, tl, el);
 
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F8))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F8))
     {
         draw_passages(cam);
     }

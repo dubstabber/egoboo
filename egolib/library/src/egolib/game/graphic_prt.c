@@ -501,7 +501,7 @@ void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Partic
     //if ( 50 != loc_ppip->vel_hrz_pair.base ) return;
 
     // draw the object bounding box as a part of the graphics debug mode F7
-    if ((config().debug_developerMode_enable.getValue() && Ego::Input::InputSystem::get().isKeyDown(SDLK_F7)))
+    if ((config().debug_developerMode_enable.getValue() && EngineContext::get().inputSystem().isKeyDown(SDLK_F7)))
     {
         // copy the bounding volume
         oct_bb_t tmp_bb = particle->prt_max_cv;

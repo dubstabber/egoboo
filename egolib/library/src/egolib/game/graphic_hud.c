@@ -28,6 +28,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/script_compile.h"
 #include "egolib/game/game.h"
+#include "egolib/game/Core/EngineContext.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -76,7 +77,7 @@ float draw_fps(float y)
 
 float draw_help(float y)
 {
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F1))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F1))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!MOUSE HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change");
@@ -87,14 +88,14 @@ float draw_help(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~A and S keys do stuff");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Right Drag to move camera");
     }
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F2))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F2))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!JOYSTICK HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Hit the buttons");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~You'll figure it out");
     }
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F3))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F3))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!KEYBOARD HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
@@ -115,7 +116,7 @@ float draw_debug(float y)
         return y;
     }
 
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F5))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F5))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-5!!!");
         std::ostringstream os;
@@ -160,7 +161,7 @@ float draw_debug(float y)
         }
     }
 
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F6))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F6))
     {
         std::ostringstream os;
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-6!!!");
@@ -178,7 +179,7 @@ float draw_debug(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
-    if (Ego::Input::InputSystem::get().isKeyDown(SDLK_F7))
+    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F7))
     {
         std::shared_ptr<Camera> camera = CameraSystem::get().getMainCamera();
 
