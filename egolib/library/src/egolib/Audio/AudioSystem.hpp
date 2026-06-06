@@ -145,7 +145,7 @@ public:
      */
     void updateLoopingSounds();
 
-    void update();
+    void update() override;
 
     /**
      * @brief
@@ -157,7 +157,7 @@ public:
 	 * @return
 	 *  the number of sounds stopped by the call to this method
      */
-    size_t stopObjectLoopingSounds(ObjectRef ownerRef, const SoundID soundID = INVALID_SOUND_ID);
+    size_t stopObjectLoopingSounds(ObjectRef ownerRef, const SoundID soundID = INVALID_SOUND_ID) override;
 
     /**
      * @todo
@@ -181,7 +181,7 @@ public:
 	 * @return
 	 *  the channel the sound is played over
 	 */
-    int playSound(const Ego::Vector3f& position, const SoundID soundID);
+    int playSound(const Ego::Vector3f& position, const SoundID soundID) override;
 
     /**
      * @brief
@@ -191,7 +191,7 @@ public:
 	 * @param ownerRef
 	 *  the reference of the object the sound is owned by
      */
-    void playSoundLooped(const SoundID soundID, ObjectRef ownerRef);
+    void playSoundLooped(const SoundID soundID, ObjectRef ownerRef) override;
 
     /// @author ZF
     /// @details This function plays a specified sound at full possible volume and returns which channel it's using
@@ -212,7 +212,7 @@ public:
     * @remark
     *   Default value is a the DEFAULT_MAX_DISTANCE constant found in this class
     **/
-    void setMaxHearingDistance(const float distance);
+    void setMaxHearingDistance(const float distance) override;
 
     /**
     * @brief

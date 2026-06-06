@@ -1082,6 +1082,12 @@ Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0
 
 Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 209 — Complete the `override` sweep (AudioSystem, RuntimeStatistics) (2026-06-06)
+
+Closed the remaining `-Wsuggest-override` gaps in egolib. A full `-Wsuggest-override` build confirmed these were the only ones left after Pass 205's `Object.hpp` sweep: the five `IAudioSystem` implementations in `AudioSystem.hpp` (`update`, `stopObjectLoopingSounds`, `playSound`, `playSoundLooped`, `setMaxHearingDistance`) and `Ego::Script::RuntimeStatistics::append` in `script.c`. egolib is now `-Wsuggest-override`-clean.
+
+Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

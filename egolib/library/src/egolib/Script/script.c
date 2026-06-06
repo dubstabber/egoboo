@@ -43,7 +43,7 @@ namespace Script {
 struct RuntimeStatistics : IRuntimeStatistics<uint32_t>
 {
 public:
-    void append(const std::string& pathname)
+    void append(const std::string& pathname) override
     {
         auto target = std::shared_ptr<vfs_FILE>(vfs_openAppend(pathname),
                                                 [](vfs_FILE *file) { if (nullptr != file) { vfs_close(file); } });
