@@ -49,7 +49,7 @@ ObjectRef GET_INDEX_PCHR(const Object *pobj) {
 ObjectRef GET_INDEX_PCHR(const std::shared_ptr<Object> &pobj) {
     return (nullptr == pobj) ? ObjectRef::Invalid : pobj->getObjRef();
 }
-bool INGAME_PCHR(const Object *pobj)
+bool INGAME_PCHR(const IInventoryHolder *pobj)
 {
     return (nullptr != pobj) && !pobj->isTerminated();
 }

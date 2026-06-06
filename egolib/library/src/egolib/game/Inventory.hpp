@@ -74,7 +74,6 @@ public:
      *  @a true, then in addition the item must be equipped in order to match the search
      *  criterion.
      */
-    static ObjectRef findItem(Object *powner, const IDSZ2& idsz, bool equippedOnly);
     static ObjectRef findItem(const IInventoryHolder& owner, const IDSZ2& idsz, bool equippedOnly);
     /**
      * @brief

@@ -68,14 +68,6 @@ Inventory::Inventory() :
     //ctor
 }
 
-ObjectRef Inventory::findItem(Object *pobj, const IDSZ2& idsz, bool equippedOnly) {
-	if (!pobj || pobj->isTerminated()) {
-		return ObjectRef::Invalid;
-	}
-
-    return findItem(static_cast<const IInventoryHolder&>(*pobj), idsz, equippedOnly);
-}
-
 ObjectRef Inventory::findItem(const IInventoryHolder& owner, const IDSZ2& idsz, bool equippedOnly)
 {
     if (owner.isTerminated())

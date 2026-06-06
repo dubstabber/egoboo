@@ -31,11 +31,12 @@
 
 //Forward declarations
 class Object;
+class IInventoryHolder;
 
 //ZF> Some macros from C Egoboo (TODO: remove these macros)
 ObjectRef GET_INDEX_PCHR(const Object *pobj);
 ObjectRef GET_INDEX_PCHR(const std::shared_ptr<Object> pobj);
-bool INGAME_PCHR(const Object *pobj);
+bool INGAME_PCHR(const IInventoryHolder *pobj);
 
 /**
 * @brief A completely recursive loop safe container for accessing instances of in-game objects

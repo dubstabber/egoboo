@@ -1070,6 +1070,12 @@ Widened `IPhysical` with `getPosition()` — the position-vector accessor previo
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 207 — Narrow `INGAME_PCHR` to `IInventoryHolder`; drop dead `findItem(Object*)` (2026-06-06)
+
+Two `IInventoryHolder`-scoped cleanups. `INGAME_PCHR(const Object*)` — whose body is only a null check plus `isTerminated()` — is retyped to `const IInventoryHolder*` (`ObjectHandler.hpp` gains a `class IInventoryHolder;` forward declaration); its single caller in `Shop.cpp` passes a concrete `Object*` and upcasts implicitly. The unused `Inventory::findItem(Object*, ...)` overload — a concrete-`Object` adapter with zero callers anywhere in the tree (live call sites use the `IInventoryHolder&` and `ObjectRef` overloads) — is deleted outright, removing dead code and one more `Object`-typed entry point.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log
