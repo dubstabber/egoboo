@@ -43,7 +43,7 @@ egoboo_config_t& config()
 
 struct Md2VertexBuffer {
     static void render(GLenum mode, size_t start, size_t length) {
-        auto& md2ModelRenderer = GFX::get().getMd2ModelRenderer();
+        auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
         glBegin(mode); {
             auto *vertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
             for (size_t vertexIndex = start; vertexIndex < start + length; ++vertexIndex) {
@@ -70,7 +70,7 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
     const auto& pmd2 = object.getModelDescriptor()->getMD2();
     auto& renderer = Ego::Renderer::get();
     auto& textureManager = EngineContext::get().textureManager();
-    auto& md2ModelRenderer = GFX::get().getMd2ModelRenderer();
+    auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
 
     std::shared_ptr<const Ego::Texture> ptex = nullptr;
 	if (HAS_SOME_BITS(bits, CHR_PHONG))
@@ -220,7 +220,7 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
     }
 
     auto& renderer = Ego::Renderer::get();
-    auto& md2ModelRenderer = GFX::get().getMd2ModelRenderer();
+    auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
     const std::shared_ptr<MD2Model> &pmd2 = object.getModelDescriptor()->getMD2();
 
     // To make life easier

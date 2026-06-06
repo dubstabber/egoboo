@@ -97,16 +97,16 @@ gfx_rv render_scene_init(Ego::Graphics::TileList& tl, Ego::Graphics::EntityList&
     }
 
     {
-        ClockScope<ClockPolicy::NonRecursive> scope(GFX::get().update_object_instances_timer);
-        if (gfx_error == GFX::get().update_object_instances(cam))
+        ClockScope<ClockPolicy::NonRecursive> scope(EngineContext::get().gfx().updateObjectInstancesTimer());
+        if (gfx_error == EngineContext::get().gfx().update_object_instances(cam))
         {
             retval = gfx_error;
         }
     }
 
     {
-        ClockScope<ClockPolicy::NonRecursive> scope(GFX::get().update_particle_instances_timer);
-        if (gfx_error == GFX::get().update_particle_instances(cam))
+        ClockScope<ClockPolicy::NonRecursive> scope(EngineContext::get().gfx().updateParticleInstancesTimer());
+        if (gfx_error == EngineContext::get().gfx().update_particle_instances(cam))
         {
             retval = gfx_error;
         }
@@ -125,7 +125,7 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
     gfx_rv retval = gfx_success;
     {
         ClockScope<ClockPolicy::NonRecursive> clockScope(render_scene_init_timer);
-        if (gfx_error == render_scene_init(tl, el, GFX::get().getDynalist(), cam))
+        if (gfx_error == render_scene_init(tl, el, EngineContext::get().gfx().getDynalist(), cam))
         {
             retval = gfx_error;
         }

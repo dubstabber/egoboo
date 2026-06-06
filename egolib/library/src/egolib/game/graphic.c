@@ -76,8 +76,8 @@ void reinitClocks() {
 	gfx_make_entityList_timer.reinit();
 	do_grid_lighting_timer.reinit();
 	light_fans_timer.reinit();
-	GFX::get().update_object_instances_timer.reinit();
-	GFX::get().update_particle_instances_timer.reinit();
+	EngineContext::get().gfx().updateObjectInstancesTimer().reinit();
+	EngineContext::get().gfx().updateParticleInstancesTimer().reinit();
 
 	GFX::get().getEntityReflections().clock.reinit();
     GFX::get().getEntityShadows().clock.reinit();

@@ -11,6 +11,7 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 #include "idlib/non_copyable.hpp"
 
@@ -150,6 +151,15 @@ public:
 
     Ego::Graphics::ITextureAtlasManager& textureAtlasManager();
     const Ego::Graphics::ITextureAtlasManager& textureAtlasManager() const;
+
+    void installGFX(IGFX& gfx);
+    void clearGFX();
+
+    IGFX* tryGFX();
+    const IGFX* tryGFX() const;
+
+    IGFX& gfx();
+    const IGFX& gfx() const;
 
     void installConfig(egoboo_config_t& config);
     void clearConfig();

@@ -321,6 +321,7 @@ bool GameEngine::initialize()
 
     // Initialize the GFX system.
     GFX::initialize();
+    EngineContext::get().installGFX(GFX::get());
     EngineContext::get().installBillboardSystem(GFX::get().getBillboardSystem());
 
 	// camera options
@@ -499,6 +500,7 @@ void GameEngine::uninitialize()
     // Uninitialize the GFX system.
     EngineContext::get().clearCameraSystem();
     EngineContext::get().clearBillboardSystem();
+    EngineContext::get().clearGFX();
     GFX::uninitialize();
 
 	// Uninitialize the input system.

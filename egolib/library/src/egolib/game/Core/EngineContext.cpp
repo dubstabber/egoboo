@@ -11,6 +11,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -31,6 +32,7 @@ IProfileSystem* activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
+IGFX* activeGFX = nullptr;
 egoboo_config_t* activeConfig = nullptr;
 Log::Target* activeLogTarget = nullptr;
 }
@@ -67,6 +69,7 @@ void EngineContext::clearEngine()
     clearProfileSystem();
     clearCameraSystem();
     clearBillboardSystem();
+    clearGFX();
     activeEngine.reset();
 }
 
@@ -666,6 +669,50 @@ const Ego::Graphics::ITextureAtlasManager& EngineContext::textureAtlasManager() 
         throw std::logic_error("no active texture atlas manager");
     }
     return *currentTextureAtlasManager;
+}
+
+void EngineContext::installGFX(IGFX& gfx)
+{
+    if (activeGFX)
+    {
+        throw std::logic_error("GFX already installed");
+    }
+    activeGFX = &gfx;
+}
+
+void EngineContext::clearGFX()
+{
+    activeGFX = nullptr;
+}
+
+IGFX* EngineContext::tryGFX()
+{
+    return activeGFX;
+}
+
+const IGFX* EngineContext::tryGFX() const
+{
+    return activeGFX;
+}
+
+IGFX& EngineContext::gfx()
+{
+    IGFX* currentGFX = tryGFX();
+    if (!currentGFX)
+    {
+        throw std::logic_error("no active GFX");
+    }
+    return *currentGFX;
+}
+
+const IGFX& EngineContext::gfx() const
+{
+    const IGFX* currentGFX = tryGFX();
+    if (!currentGFX)
+    {
+        throw std::logic_error("no active GFX");
+    }
+    return *currentGFX;
 }
 
 void EngineContext::installConfig(egoboo_config_t& config)

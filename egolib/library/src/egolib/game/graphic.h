@@ -22,6 +22,7 @@
 #pragma once
 
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/Extensions/ogl_extensions.h"
@@ -177,7 +178,7 @@ public:
     }
 };
 
-struct GFX : public GameApp<GFX>
+struct GFX : public GameApp<GFX>, public IGFX
 {
 private:
     friend idlib::default_new_functor<GFX>;
@@ -199,11 +200,31 @@ private:
     std::unique_ptr<Ego::Graphics::RenderPass> motionBlur;
     std::unique_ptr<Ego::Graphics::RenderPass> heightmap;
 
-public:
+private:
     Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive> update_object_instances_timer;
-    gfx_rv update_object_instances(Camera& cam);
     Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive> update_particle_instances_timer;
-    gfx_rv update_particle_instances(Camera& cam);
+
+public:
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive>& updateObjectInstancesTimer() override
+    {
+        return update_object_instances_timer;
+    }
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive>& updateParticleInstancesTimer() override
+    {
+        return update_particle_instances_timer;
+    }
+    gfx_rv update_object_instances(Camera& cam) override;
+    gfx_rv update_particle_instances(Camera& cam) override;
+
+    // IGFX overrides for services owned by the GameApp<GFX> base.
+    dynalist_t& getDynalist() override
+    {
+        return GameApp<GFX>::getDynalist();
+    }
+    Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const override
+    {
+        return GameApp<GFX>::getMd2ModelRenderer();
+    }
 
 public:
     Ego::Graphics::RenderPass& getNonOpaqueEntities() const
