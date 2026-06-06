@@ -948,10 +948,10 @@ QuestCompatibilityContext makeQuestCompatibilityContext(const ai_state_t& self)
     return context;
 }
 
-ClassChangeCompatibilityContext makeClassChangeCompatibilityContext(Object& selfObject)
+ClassChangeCompatibilityContext makeClassChangeCompatibilityContext(IMorphControl& selfObject)
 {
     ClassChangeCompatibilityContext context;
-    context.selfMorph = static_cast<IMorphControl*>(&selfObject);
+    context.selfMorph = &selfObject;
     return context;
 }
 

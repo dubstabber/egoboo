@@ -23,6 +23,8 @@ public:
     virtual const oct_bb_t& getMinCollisionVolume() const = 0;
     virtual const oct_bb_t& getMaxCollisionVolume() const = 0;
     virtual const oct_bb_t& getSlotCollisionVolume(slot_t slot) const = 0;
+    virtual const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const = 0;
+    virtual uint32_t getPhysicsWeight() const = 0;
 
     virtual Facing getFacingZ() const = 0;
     virtual Facing getPreviousFacingZ() const = 0;

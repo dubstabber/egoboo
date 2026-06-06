@@ -200,7 +200,7 @@ static bool do_chr_prt_collision_get_details( chr_prt_collision_data_t& pdata, c
 static bool attach_prt_to_platform( Ego::Particle * pprt, Object * pplat );
 
 //--------------------------------------------------------------------------------------------
-bool get_prt_mass( Ego::Particle * pprt, Object * pchr, float * wt )
+bool get_prt_mass( Ego::Particle * pprt, const IPhysical * pchr, float * wt )
 {
     /// @author BB
     /// @details calculate a "mass" for each object, taking into account possible infinite masses.
@@ -238,7 +238,7 @@ bool get_prt_mass( Ego::Particle * pprt, Object * pchr, float * wt )
             // this is a particle like the wind particles in the whirlwind
             // make the particle have some kind of predictable constant effect
             // relative to any character;
-            *wt = pchr->phys.weight / 10.0f;
+            *wt = pchr->getPhysicsWeight() / 10.0f;
         }
         else
         {

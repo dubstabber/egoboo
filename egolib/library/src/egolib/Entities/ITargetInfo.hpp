@@ -7,6 +7,8 @@ class ITargetInfo
 public:
     virtual ~ITargetInfo() = default;
 
+    virtual ObjectRef getObjRef() const = 0;
+
     virtual ObjectRef getHolderRef() const = 0;
     virtual slot_t getAttachmentSlot() const = 0;
     virtual PLA_REF getPlayerNumber() const = 0;

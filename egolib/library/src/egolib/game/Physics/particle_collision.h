@@ -23,10 +23,11 @@
 #include "egolib/egolib.h"
 
 class Object;
+class IPhysical;
 namespace Ego { class Particle; }
 
 bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shared_ptr<Ego::Particle> &particle, const float tmin, const float tmax);
 bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b );
 
-bool get_prt_mass(Ego::Particle *pprt, Object *pchr, float *wt);
+bool get_prt_mass(Ego::Particle *pprt, const IPhysical *pchr, float *wt);
 void get_recoil_factors(float wta, float wtb, float * recoil_a, float * recoil_b);

@@ -137,7 +137,7 @@ bool Passage::close()
     return true;    
 }
 
-bool Passage::objectIsInPassage(const Object& object) const
+bool Passage::objectIsInPassage(const IPhysical& object) const
 {
     return idlib::is_intersecting(_area, object.getAxisAlignedBox2D());
 }
@@ -228,7 +228,7 @@ bool Passage::isPointInside(float xpos, float ypos) const
            ypos <= _area.get_max().y();
 }
 
-bool Passage::checkPassageMusic(const Object& object) const
+bool Passage::checkPassageMusic(const IPhysical& object) const
 {
     if (_music == INVALID_SOUND_ID) {
        return false; 

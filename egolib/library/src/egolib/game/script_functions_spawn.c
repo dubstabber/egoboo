@@ -381,9 +381,9 @@ void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMo
     }
 }
 
-ObjectRef resolveHolderOrSelfRef(const Object& object)
+ObjectRef resolveHolderOrSelfRef(const ITargetInfo& object)
 {
-    const ObjectRef holderRef = targetInfo(object).getHolderRef();
+    const ObjectRef holderRef = object.getHolderRef();
     return isLiveSpawnObjectRef(holderRef) ? holderRef : object.getObjRef();
 }
 
@@ -431,11 +431,11 @@ std::shared_ptr<Object> spawnCharacterLikeSelf(const SpawnSelfContext& selfConte
                             facing);
 }
 
-bool publishAttachedChildState(Object& child,
+bool publishAttachedChildState(IScriptable& child,
                                ai_state_t& self)
 {
     self.child = child.getObjRef();
-    inheritSpawnScriptState(scriptable(child), self);
+    inheritSpawnScriptState(child, self);
     return true;
 }
 

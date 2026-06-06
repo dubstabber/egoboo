@@ -7,6 +7,8 @@ class IScriptable
 public:
     virtual ~IScriptable() = default;
 
+    virtual ObjectRef getObjRef() const = 0;
+
     virtual BIT_FIELD getAIAlertBits() const = 0;
     virtual void setAIAlertBits(BIT_FIELD bits) = 0;
     virtual void addAIAlertBits(BIT_FIELD bits) = 0;

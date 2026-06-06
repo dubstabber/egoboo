@@ -756,7 +756,9 @@ public:
 	/** @override */
 	BIT_FIELD test_wall(const Ego::Vector3f& pos) override;
 
-    inline const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const { return _objectPhysics.getAxisAlignedBox2D(); }
+    inline const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const override { return _objectPhysics.getAxisAlignedBox2D(); }
+
+    uint32_t getPhysicsWeight() const override { return phys.weight; }
 
     /**
     * @brief

@@ -1088,6 +1088,18 @@ Closed the remaining `-Wsuggest-override` gaps in egolib. A full `-Wsuggest-over
 
 Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 210 — Widen `IPhysical`/`ITargetInfo`/`IScriptable` and migrate the unlocked callers (2026-06-06)
+
+Acted on the role-interface map's interface-backlog: added the legacy `Object` accessors that were blocking otherwise-clean single-role migrations, each paired with its now-unblocked caller(s).
+
+- `IPhysical` gains `getAxisAlignedBox2D()` and `getPhysicsWeight()` (`Object` forwards to `_objectPhysics` / the `phys.weight` field). This unlocks `Passage::objectIsInPassage` and `Passage::checkPassageMusic` → `const IPhysical&`, and narrows `get_prt_mass(..., Object*, ...)` → `const IPhysical*` (replacing the `pchr->phys.weight` public-field read with `getPhysicsWeight()`).
+- `ITargetInfo` and `IScriptable` gain `getObjRef()` (already triplicated on `IInventoryHolder`/`IRenderable`/`IDamageable`; `Object`'s single override satisfies all five). This unlocks `resolveHolderOrSelfRef(...)` → `const ITargetInfo&` (dropping the `targetInfo()` adapter hop) and `publishAttachedChildState(...)` → `IScriptable&`.
+- `makeClassChangeCompatibilityContext(Object&)` → `IMorphControl&`, dropping its `static_cast<IMorphControl*>`.
+
+Every call site passes a concrete `Object` and upcasts implicitly. (A `getXPForLevel`/`ICharacterState` addition was prototyped then reverted: its only candidate consumer `draw_character_xp_bar` also reads `getMoney`/`getName`, so it stays genuinely multi-role.)
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, full validator steady at 42 modules / 245 pre-existing errors, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log
