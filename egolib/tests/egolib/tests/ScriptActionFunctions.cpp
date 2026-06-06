@@ -28,6 +28,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
@@ -109,6 +110,9 @@ public:
         _fakeGraphicsSystem->context = nullptr;
         _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
 
+        _mockGraphicsSystem = std::make_unique<Ego::Test::MockGraphicsSystem>(&_window);
+        EngineContext::get().installGraphicsSystem(*_mockGraphicsSystem);
+
         engine._currentGameState = std::make_shared<PlayingState>();
         _playingState = std::dynamic_pointer_cast<PlayingState>(engine._currentGameState);
     }
@@ -123,6 +127,8 @@ public:
             engine._uiManager.reset(_previousUiManager);
         }
 
+        EngineContext::get().clearGraphicsSystem();
+        _mockGraphicsSystem.reset();
         CoreSystemAccess::instance.store(_previousCoreSystem);
         GraphicsSystemAccess::instance.store(_previousGraphicsSystem);
         ::operator delete(_fakeCoreSystem);
@@ -148,6 +154,7 @@ public:
 
 private:
     StubGraphicsWindow _window;
+    std::unique_ptr<Ego::Test::MockGraphicsSystem> _mockGraphicsSystem;
     Ego::Core::System* _fakeCoreSystem = nullptr;
     Ego::Core::System* _previousCoreSystem = nullptr;
     Ego::Core::SystemService* _fakeSystemService = nullptr;

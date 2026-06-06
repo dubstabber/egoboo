@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
@@ -92,7 +93,7 @@ VideoOptionsScreen::VideoOptionsScreen() :
         []{
             Actions::toggleFullscreen([](bool enabled)
             {
-                SDL_SetWindowFullscreen(Ego::GraphicsSystem::get().window->get(), enabled ? SDL_WINDOW_FULLSCREEN : 0);
+                SDL_SetWindowFullscreen(EngineContext::get().graphicsSystem().getWindow()->get(), enabled ? SDL_WINDOW_FULLSCREEN : 0);
             });
         }
     );
@@ -230,7 +231,7 @@ void VideoOptionsScreen::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void VideoOptionsScreen::beginState()
 {
     // menu settings
-    Ego::GraphicsSystem::get().window->grab_enabled(false);
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 }
 

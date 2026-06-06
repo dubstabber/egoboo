@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
@@ -51,7 +52,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     if (alpha != 0.0f)
     {
         // Figure out the screen coordinates of its corners
-        auto windowSize = GraphicsSystem::get().window->size();
+        auto windowSize = EngineContext::get().graphicsSystem().getWindow()->size();
 		static const float p = std::pow(2, 6);
         float x = windowSize.x() * p;
         float y = windowSize.y() * p;

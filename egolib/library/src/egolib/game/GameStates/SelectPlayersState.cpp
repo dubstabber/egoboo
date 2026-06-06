@@ -137,7 +137,7 @@ void SelectPlayersState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void SelectPlayersState::beginState()
 {
     // menu settings
-    Ego::GraphicsSystem::get().window->grab_enabled(false);
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
 
     // Begin the main menu song again (in case we just returned from winning a module)
     playMainMenuSong();

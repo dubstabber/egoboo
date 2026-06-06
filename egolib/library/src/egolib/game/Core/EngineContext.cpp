@@ -23,6 +23,7 @@ Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
+Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
@@ -57,6 +58,7 @@ void EngineContext::clearEngine()
     clearPerkHandler();
     clearImageManager();
     clearFontManager();
+    clearGraphicsSystem();
     clearParticleHandler();
     clearProfileSystem();
     clearCameraSystem();
@@ -352,6 +354,50 @@ const Ego::IFontManager& EngineContext::fontManager() const
         throw std::logic_error("no active font manager");
     }
     return *currentFontManager;
+}
+
+void EngineContext::installGraphicsSystem(Ego::IGraphicsSystem& graphicsSystem)
+{
+    if (activeGraphicsSystem)
+    {
+        throw std::logic_error("graphics system already installed");
+    }
+    activeGraphicsSystem = &graphicsSystem;
+}
+
+void EngineContext::clearGraphicsSystem()
+{
+    activeGraphicsSystem = nullptr;
+}
+
+Ego::IGraphicsSystem* EngineContext::tryGraphicsSystem()
+{
+    return activeGraphicsSystem;
+}
+
+const Ego::IGraphicsSystem* EngineContext::tryGraphicsSystem() const
+{
+    return activeGraphicsSystem;
+}
+
+Ego::IGraphicsSystem& EngineContext::graphicsSystem()
+{
+    Ego::IGraphicsSystem* currentGraphicsSystem = tryGraphicsSystem();
+    if (!currentGraphicsSystem)
+    {
+        throw std::logic_error("no active graphics system");
+    }
+    return *currentGraphicsSystem;
+}
+
+const Ego::IGraphicsSystem& EngineContext::graphicsSystem() const
+{
+    const Ego::IGraphicsSystem* currentGraphicsSystem = tryGraphicsSystem();
+    if (!currentGraphicsSystem)
+    {
+        throw std::logic_error("no active graphics system");
+    }
+    return *currentGraphicsSystem;
 }
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)

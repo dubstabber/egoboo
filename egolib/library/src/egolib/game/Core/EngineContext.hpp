@@ -3,6 +3,7 @@
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Graphics/IFontManager.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
@@ -84,6 +85,15 @@ public:
 
     Ego::IFontManager& fontManager();
     const Ego::IFontManager& fontManager() const;
+
+    void installGraphicsSystem(Ego::IGraphicsSystem& graphicsSystem);
+    void clearGraphicsSystem();
+
+    Ego::IGraphicsSystem* tryGraphicsSystem();
+    const Ego::IGraphicsSystem* tryGraphicsSystem() const;
+
+    Ego::IGraphicsSystem& graphicsSystem();
+    const Ego::IGraphicsSystem& graphicsSystem() const;
 
     void installParticleHandler(IParticleHandler& particleHandler);
     void clearParticleHandler();

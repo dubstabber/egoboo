@@ -20,6 +20,7 @@
 #undef protected
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
@@ -136,6 +137,9 @@ protected:
         _fakeGraphicsSystem->window = &_window;
         _fakeGraphicsSystem->context = nullptr;
         _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
+
+        _mockGraphicsSystem = std::make_unique<Ego::Test::MockGraphicsSystem>(&_window);
+        EngineContext::get().installGraphicsSystem(*_mockGraphicsSystem);
     }
 
     void TearDown() override
@@ -147,6 +151,8 @@ protected:
         }
 
         setup_clear_module_vfs_paths();
+        EngineContext::get().clearGraphicsSystem();
+        _mockGraphicsSystem.reset();
         CoreSystemAccess::instance.store(_previousCoreSystem);
         GraphicsSystemAccess::instance.store(_previousGraphicsSystem);
         ::operator delete(_fakeCoreSystem);
@@ -218,6 +224,7 @@ protected:
     }
 
     StubGraphicsWindow _window{ idlib::vector_2s(640, 480) };
+    std::unique_ptr<Ego::Test::MockGraphicsSystem> _mockGraphicsSystem;
     Ego::Core::System* _fakeCoreSystem = nullptr;
     Ego::Core::System* _previousCoreSystem = nullptr;
     Ego::Core::SystemService* _fakeSystemService = nullptr;

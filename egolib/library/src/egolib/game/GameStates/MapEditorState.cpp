@@ -134,7 +134,7 @@ void MapEditorState::beginState()
 {
     // in-game settings
     Ego::GraphicsSystemNew::get().setCursorVisibility(true);
-    Ego::GraphicsSystem::get().window->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
 }
 
 bool MapEditorState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e)

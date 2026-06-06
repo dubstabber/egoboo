@@ -2,6 +2,7 @@
 
 #include "egolib/platform.h"
 #include "egolib/Graphics/GraphicsSystemNew.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/Extensions/ogl_extensions.h"
 
 namespace Ego {
@@ -11,7 +12,7 @@ class GraphicsWindow;
 class GraphicsContext;
 class WindowProperties;
 
-struct GraphicsSystem : public idlib::singleton<GraphicsSystem>
+struct GraphicsSystem : public idlib::singleton<GraphicsSystem>, public IGraphicsSystem
 {
     /// @brief A pointer to the (single) SDL window if it exists, a null pointer otherwise.
     GraphicsWindow *window;
@@ -36,6 +37,9 @@ struct GraphicsSystem : public idlib::singleton<GraphicsSystem>
     /// @hrief Create a graphics window.
     /// @return a pointer to the graphics window on success, a null pointer on failure
     GraphicsWindow *createWindow();
+
+    /// @brief Get the active graphics window (IGraphicsSystem seam).
+    GraphicsWindow *getWindow() const override { return window; }
 };
 
 } // namespace Ego

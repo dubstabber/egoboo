@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/OptionsScreen.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
 #include "egolib/game/GameStates/AudioOptionsScreen.hpp"
 #include "egolib/game/GameStates/InputOptionsScreen.hpp"
@@ -120,7 +121,7 @@ void OptionsScreen::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void OptionsScreen::beginState()
 {
     // menu settings
-    Ego::GraphicsSystem::get().window->grab_enabled(false);
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 
     float offset = 0;

@@ -18,6 +18,7 @@
 //********************************************************************************************
 
 #include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
@@ -107,7 +108,7 @@ Camera::Camera(const CameraOptions &options) :
     resetView();
 
     // Assume that the camera is fullscreen.
-    setScreen(0, 0, Ego::GraphicsSystem::get().window->size().x(), Ego::GraphicsSystem::get().window->size().y());
+    setScreen(0, 0, EngineContext::get().graphicsSystem().getWindow()->size().x(), EngineContext::get().graphicsSystem().getWindow()->size().y());
 }
 
 Camera::~Camera()

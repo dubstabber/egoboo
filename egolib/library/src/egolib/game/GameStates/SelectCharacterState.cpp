@@ -135,5 +135,5 @@ void SelectCharacterState::drawContainer(Ego::GUI::DrawingContext& drawingContex
 void SelectCharacterState::beginState()
 {
     // menu settings
-    Ego::GraphicsSystem::get().window->grab_enabled(false);
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
 }

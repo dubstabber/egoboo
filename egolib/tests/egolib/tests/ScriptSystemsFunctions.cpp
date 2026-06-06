@@ -30,6 +30,7 @@
 #undef protected
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
@@ -304,6 +305,9 @@ public:
         _fakeGraphicsSystem->context = nullptr;
         _previousGraphicsSystem = GraphicsSystemAccess::instance.exchange(_fakeGraphicsSystem);
 
+        _mockGraphicsSystem = std::make_unique<Ego::Test::MockGraphicsSystem>(&_window);
+        context.installGraphicsSystem(*_mockGraphicsSystem);
+
         CameraSystem::initialize();
         context.installCameraSystem(CameraSystem::get());
         context.installBillboardSystem(_billboardSystem);
@@ -336,6 +340,7 @@ public:
         ::operator delete(_fakeSystemService);
         ::operator delete(_fakeGraphicsSystem);
         ::operator delete(_fakeUiManager);
+        _mockGraphicsSystem.reset();
     }
 
     const std::shared_ptr<PlayingState>& playingState() const
@@ -360,6 +365,7 @@ public:
 
 private:
     StubGraphicsWindow _window;
+    std::unique_ptr<Ego::Test::MockGraphicsSystem> _mockGraphicsSystem;
     Ego::Core::System* _fakeCoreSystem = nullptr;
     Ego::Core::System* _previousCoreSystem = nullptr;
     Ego::Core::SystemService* _fakeSystemService = nullptr;

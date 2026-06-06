@@ -1114,6 +1114,14 @@ Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0
 
 Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 213 — Publish `GraphicsSystem` through `EngineContext` (with headless test mock) (2026-06-06)
+
+Seamed the highest-reach tractable graphics singleton. Extracted `Ego::IGraphicsSystem` exposing `getWindow()` (named to avoid the public `window` data-member clash), made `GraphicsSystem` implement it, and added the standard `EngineContext` install/clear/try/accessor surface — installed in `App.cpp` after `GraphicsSystem::initialize()` and torn down in `clearEngine()`. Migrated ~33 `GraphicsSystem::get().window->...` sites across 18 TUs (UIManager, GameEngine, graphic.c, Console, CameraSystem, Camera, ForegroundRenderPass, and eleven GameStates) to `EngineContext::get().graphicsSystem().getWindow()->...`; the lone `App.cpp` self-bootstrap stays on the local handle.
+
+Render/window code is reached transitively by headless test fixtures (`CameraTracking`, `ScriptActionFunctions`, `ScriptSystemsFunctions`) that cannot create a real SDL window. Added a shared `egolib/tests/egolib/tests/TestGraphicsSystem.hpp` `MockGraphicsSystem` — a properly-constructed `IGraphicsSystem` returning each fixture's existing `StubGraphicsWindow` — and installed it into `EngineContext` in those fixtures' setup. (The fixtures' raw-allocated fake `GraphicsSystem`, via `::operator new(sizeof(...))` with no constructor, has an uninitialized vtable and cannot serve the now-virtual `getWindow()`.) This is the pattern that unblocks the remaining big graphics seams (Renderer, GFX, TextureManager).
+
+Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, full validator steady at 42 modules / 245 pre-existing errors, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527) — no SEGFAULTs.
+
 ---
 
 ## Files touched most by this pass log

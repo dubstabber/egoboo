@@ -98,13 +98,13 @@ void UIManager::beginRenderUI() {
     renderer.setAlphaFunction(idlib::compare_function::greater, 0.0f);
 
     /// Set the viewport rectangle.
-    auto drawableSize = GraphicsSystem::get().window->drawable_size();
+    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
     renderer.setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
 
     // Set up an ortho projection for the gui to use.  Controls are free to modify this
     // later, but most of them will need this, so it's done by default at the beginning
     // of a frame.
-    auto windowSize = GraphicsSystem::get().window->size();
+    auto windowSize = EngineContext::get().graphicsSystem().getWindow()->size();
     Matrix4f4f projection = idlib::orthographic_projection_matrix(0.0f, windowSize.x(), windowSize.y(), 0.0f, -1.0f, +1.0f);
     renderer.setProjectionMatrix(projection);
     renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
@@ -124,11 +124,11 @@ void UIManager::endRenderUI() {
 }
 
 int UIManager::getScreenWidth() const {
-    return GraphicsSystem::get().window->size().x();
+    return EngineContext::get().graphicsSystem().getWindow()->size().x();
 }
 
 int UIManager::getScreenHeight() const {
-    return GraphicsSystem::get().window->size().y();
+    return EngineContext::get().graphicsSystem().getWindow()->size().y();
 }
 
 void UIManager::drawImage(const Point2f& position, const Vector2f& size, const std::shared_ptr<const Material>& material) {
@@ -165,7 +165,7 @@ bool UIManager::dumpScreenshot() {
 
     try
     {
-        auto screenshot = GraphicsSystem::get().window->getContents();
+        auto screenshot = EngineContext::get().graphicsSystem().getWindow()->getContents();
         EngineContext::get().imageManager().save_as_png(screenshot, file);
     }
     catch (...)

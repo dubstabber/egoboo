@@ -15,6 +15,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
 {
     // Initialize the graphics system.
     GraphicsSystem::initialize();
+    EngineContext::get().installGraphicsSystem(GraphicsSystem::get());
     // Initialize the image manager.
     ImageManager::initialize();
     EngineContext::get().installImageManager(ImageManager::get());

@@ -345,8 +345,8 @@ bool GameEngine::initialize()
     EngineContext::get().installParticleHandler(ParticleHandler::get());
 
 	// Initialize the console.
-	auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { Ego::GraphicsSystem::get().window->drawable_size()(0),
-		                                                             Ego::GraphicsSystem::get().window->drawable_size()(1) * 0.25 });
+	auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { EngineContext::get().graphicsSystem().getWindow()->drawable_size()(0),
+		                                                             EngineContext::get().graphicsSystem().getWindow()->drawable_size()(1) * 0.25 });
 
 	Ego::Core::Console::initialize(rectangle);
 	Ego::Core::Console::get().ExecuteCommand.subscribe([this](std::string command) {
@@ -420,7 +420,7 @@ bool GameEngine::initialize()
 }
 
 void GameEngine::subscribe() {
-    auto window = Ego::GraphicsSystem::get().window;
+    auto window = EngineContext::get().graphicsSystem().getWindow();
     shown = window->window_shown.subscribe([](const idlib::events::window_shown_event& e) {
         /// @todo Is this still needed?
         gfx_system_reload_all_textures();
@@ -527,7 +527,7 @@ void GameEngine::pushGameState(std::shared_ptr<GameState> gameState)
 void GameEngine::pollEvents()
 {
     Ego::GraphicsSystemNew::get().update();
-    Ego::GraphicsSystem::get().window->update();
+    EngineContext::get().graphicsSystem().getWindow()->update();
     // Message processing loop.
     SDL_Event event;
     while (SDL_PollEvent(&event))

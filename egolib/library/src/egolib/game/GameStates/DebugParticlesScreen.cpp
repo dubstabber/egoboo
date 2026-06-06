@@ -121,6 +121,6 @@ void DebugParticlesScreen::update()
 void DebugParticlesScreen::beginState()
 {
     // menu settings
-    Ego::GraphicsSystem::get().window->grab_enabled(false);
+    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 }

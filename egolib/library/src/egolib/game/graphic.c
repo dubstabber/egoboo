@@ -240,7 +240,7 @@ void gfx_do_clear_screen()
 void gfx_do_flip_pages()
 {
     Ego::Core::Console::get().draw();
-    SDL_GL_SwapWindow(Ego::GraphicsSystem::get().window->get());
+    SDL_GL_SwapWindow(EngineContext::get().graphicsSystem().getWindow()->get());
 }
 
 // UTILITY FUNCTIONS

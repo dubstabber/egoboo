@@ -236,11 +236,11 @@ void Console::draw()
     renderer.setBlendingEnabled(true);
     renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
-    auto drawableSize = GraphicsSystem::get().window->drawable_size();
+    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
     renderer.setViewportRectangle(0, 0, drawableSize(0), drawableSize(1));
 
     // Set the projecton matrix.
-    auto windowSize = GraphicsSystem::get().window->size();
+    auto windowSize = EngineContext::get().graphicsSystem().getWindow()->size();
     Matrix4f4f matrix = idlib::orthographic_projection_matrix(0, windowSize.x(), windowSize.y(), 0, -1, 1);
     renderer.setProjectionMatrix(matrix);
 
@@ -248,7 +248,7 @@ void Console::draw()
     renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
 
-    int windowHeight = GraphicsSystem::get().window->size().y();
+    int windowHeight = EngineContext::get().graphicsSystem().getWindow()->size().y();
 
     if (!windowHeight || !this->on)
     {
