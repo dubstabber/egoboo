@@ -91,3 +91,6 @@ debug-output.txt
 .wine-egoboo/
 data/setup.txt.codex-backup
 egoboo-2.6.8-crossplatform/
+
+# Claude Code transient scheduler lock
+.claude/scheduled_tasks.lock
