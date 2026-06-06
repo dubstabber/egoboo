@@ -23,6 +23,7 @@
 ///          to do its business. This depends on SDL_ttf and OpenGL.
 
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/Time/Time.hpp"
 
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/Graphics/FontManager.hpp"
@@ -168,7 +169,7 @@ void Font::getTextSize(const std::string &text, int *width, int *height) {
     if (width) *width = cache->width;
     if (height) *height = cache->height;
 
-    cache->lastUseInTicks = Core::System::get().getSystemService().getTicks();
+    cache->lastUseInTicks = ::Time::now<::Time::Unit::Ticks>();
 }
 
 void Font::getTextBoxSize(const std::string &text, int spacing, int *width, int *height) {
@@ -194,7 +195,7 @@ void Font::getTextBoxSize(const std::string &text, int spacing, int *width, int 
     if (width) *width = cache->width;
     if (height) *height = cache->height;
 
-    cache->lastUseInTicks = Core::System::get().getSystemService().getTicks();
+    cache->lastUseInTicks = ::Time::now<::Time::Unit::Ticks>();
 }
 
 void Font::drawTextToTexture(Texture *tex, const std::string &text, const Colour3f &colour) {
@@ -239,7 +240,7 @@ void Font::drawText(const std::string &text, int x, int y, const Colour4f &colou
 
     cache->cache->render(x, y, colour);
 
-    cache->lastUseInTicks = Core::System::get().getSystemService().getTicks();
+    cache->lastUseInTicks = ::Time::now<::Time::Unit::Ticks>();
 }
 
 void Font::drawTextBox(const std::string &text, int x, int y, int width, int height, int spacing, const Colour4f &colour) {
@@ -258,7 +259,7 @@ void Font::drawTextBox(const std::string &text, int x, int y, int width, int hei
 
     cache->cache->render(x, y, colour);
 
-    cache->lastUseInTicks = Core::System::get().getSystemService().getTicks();
+    cache->lastUseInTicks = ::Time::now<::Time::Unit::Ticks>();
 }
 
 std::shared_ptr<Font::LaidTextRenderer> Font::layoutText(const std::string &text, int *textWidth, int *textHeight) {

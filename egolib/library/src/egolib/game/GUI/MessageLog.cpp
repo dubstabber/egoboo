@@ -21,6 +21,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/Time/Time.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/font_bmp.h"
 
@@ -45,16 +46,16 @@ void MessageLog::draw(DrawingContext& drawingContext) {
 
     //Render all text and remove old messages
     _messages.remove_if([this, &yOffset](Message& message) {
-        const int millisRemaining = static_cast<int64_t>(message.lifeTime) - Core::System::get().getSystemService().getTicks();
+        const int millisRemaining = static_cast<int64_t>(message.lifeTime) - ::Time::now<::Time::Unit::Ticks>();
         if (millisRemaining <= 0) return true;
         yOffset = uiManager().drawBitmapFontString(Vector2f(getX(), yOffset), message.text, 0, millisRemaining > MESSAGE_FADE_TIME_MS ? 1.0f : millisRemaining / static_cast<float>(MESSAGE_FADE_TIME_MS));
-        return Core::System::get().getSystemService().getTicks() > message.lifeTime;
+        return ::Time::now<::Time::Unit::Ticks>() > message.lifeTime;
     });
 }
 
 void MessageLog::addMessage(const std::string &message) {
     //Insert new message at the back
-    _messages.emplace_back(message, Core::System::get().getSystemService().getTicks() + messageDurationTicks());
+    _messages.emplace_back(message, ::Time::now<::Time::Unit::Ticks>() + messageDurationTicks());
 
     //Remove oldest messages if we have too many (FIFO)
     while (_messages.size() > messageLimit()) {

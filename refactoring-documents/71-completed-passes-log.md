@@ -1134,6 +1134,14 @@ Cleanup ahead of the `GFX` seam: 23 `GFX::get().getBillboardSystem().{makeBillbo
 
 Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527) — `billboardSystem` is installed in the script/combat fixtures, so the migrated `makeBillboard` calls work headless.
 
+### Pass 216 — Decouple clock callers from the `Core::System` singleton via the `Time` abstraction (2026-06-06)
+
+T1.3 follow-on. The 7 `Core::System::get().getSystemService().getTicks()` service-locator calls in `Graphics/Font.cpp` (4, font-cache timing) and `game/GUI/MessageLog.cpp` (3, message expiry) now use the existing `::Time::now<::Time::Unit::Ticks>()` abstraction — behaviorally identical (`Time::now<Ticks>()` is a thin wrapper over the same call). Direct `Core::System::get()` reaches drop 8→1 (only `Time/Time.cpp`, the foundational wrapper, remains).
+
+Chosen over an `EngineContext` seam: `Core::System` is initialized in the executable's `Main.cpp` (it outlives the engine, so it doesn't fit `clearEngine`), `SystemService::getTicks()` is non-virtual (an interface would crash the test fixtures' raw-allocated fake `SystemService`, which has no vtable), and the call is reached transitively via messages across many fixtures. Routing through the `Time` clock abstraction achieves the decoupling with zero behavior change and no lifecycle/mock complexity — and a clock belongs behind a time abstraction, not the engine context. (`::Time::` qualification is required because callers sit in `namespace Ego`, where bare `Time::` would resolve to the unrelated `Ego::Time`.)
+
+Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log
