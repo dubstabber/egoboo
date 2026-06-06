@@ -1100,6 +1100,14 @@ Every call site passes a concrete `Object` and upcasts implicitly. (A `getXPForL
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, full validator steady at 42 modules / 245 pre-existing errors, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+## Theme 11 — T1.3 singleton → EngineContext service seams (2026-06-06)
+
+### Pass 211 — Publish `FontManager` through `EngineContext` (2026-06-06)
+
+First T1.3 service-interface seam of this session. Extracted `Ego::IFontManager` (single method `loadFont`), made `FontManager` implement it, and added the standard `EngineContext` install/clear/try/accessor surface (`fontManager()`) — installed in `App.cpp` right after `FontManager::initialize()` and torn down in `clearEngine()`. Migrated all five `FontManager::get().loadFont(...)` call sites (4 in `game/GUI/UIManager.cpp`, 1 in `Console/Console.cpp`) to `EngineContext::get().fontManager().loadFont(...)`, decoupling the GUI and Console from the concrete `FontManager` singleton (Console now includes `Font.hpp` + `EngineContext.hpp` instead of `FontManager.hpp`). `FontManager::get()` remains only as the App-bootstrap seam.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0` (fonts are not exercised by validator/tests), `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

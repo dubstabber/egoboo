@@ -24,7 +24,8 @@
 #include "egolib/Console/Console.hpp"
 
 #include "egolib/strutil.h"
-#include "egolib/Graphics/FontManager.hpp"
+#include "egolib/Graphics/Font.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Renderer/Renderer.hpp"
@@ -369,7 +370,7 @@ Console::Console(const Rectangle2f& rectangle)
     this->on = false;
 
     // set the console's font
-    this->pfont = FontManager::get().loadFont("mp_data/pc8x8.fon", 12);
+    this->pfont = EngineContext::get().fontManager().loadFont("mp_data/pc8x8.fon", 12);
 
     // set the console's rectangle
     this->rectangle = rectangle;

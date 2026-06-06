@@ -26,12 +26,13 @@
 
 #include "egolib/typedef.h"
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/Graphics/IFontManager.hpp"
 
 namespace Ego {
 
-class FontManager : public idlib::singleton<FontManager> {
+class FontManager : public idlib::singleton<FontManager>, public IFontManager {
 public:
-    std::shared_ptr<Font> loadFont(const std::string &fileName, int pointSize);
+    std::shared_ptr<Font> loadFont(const std::string &fileName, int pointSize) override;
 
 protected:
 	friend idlib::default_new_functor<FontManager>;

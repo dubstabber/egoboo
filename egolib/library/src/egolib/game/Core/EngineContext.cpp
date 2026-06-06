@@ -22,6 +22,7 @@ IAudioSystem* activeAudioSystem = nullptr;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
+Ego::IFontManager* activeFontManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
@@ -55,6 +56,7 @@ void EngineContext::clearEngine()
     clearInputSystem();
     clearPerkHandler();
     clearImageManager();
+    clearFontManager();
     clearParticleHandler();
     clearProfileSystem();
     clearCameraSystem();
@@ -306,6 +308,50 @@ const Ego::IImageManager& EngineContext::imageManager() const
         throw std::logic_error("no active image manager");
     }
     return *currentImageManager;
+}
+
+void EngineContext::installFontManager(Ego::IFontManager& fontManager)
+{
+    if (activeFontManager)
+    {
+        throw std::logic_error("font manager already installed");
+    }
+    activeFontManager = &fontManager;
+}
+
+void EngineContext::clearFontManager()
+{
+    activeFontManager = nullptr;
+}
+
+Ego::IFontManager* EngineContext::tryFontManager()
+{
+    return activeFontManager;
+}
+
+const Ego::IFontManager* EngineContext::tryFontManager() const
+{
+    return activeFontManager;
+}
+
+Ego::IFontManager& EngineContext::fontManager()
+{
+    Ego::IFontManager* currentFontManager = tryFontManager();
+    if (!currentFontManager)
+    {
+        throw std::logic_error("no active font manager");
+    }
+    return *currentFontManager;
+}
+
+const Ego::IFontManager& EngineContext::fontManager() const
+{
+    const Ego::IFontManager* currentFontManager = tryFontManager();
+    if (!currentFontManager)
+    {
+        throw std::logic_error("no active font manager");
+    }
+    return *currentFontManager;
 }
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)

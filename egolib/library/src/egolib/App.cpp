@@ -24,6 +24,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     TextureManager::initialize();
     // Initialize the font manager.
     FontManager::initialize();
+    EngineContext::get().installFontManager(FontManager::get());
 
     auto& renderer = Renderer::get();
     // Set clear colour and clear depth.

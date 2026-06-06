@@ -40,14 +40,14 @@ UIManager::UIManager() :
     _textureQuadVertexDescriptor(descriptor_factory<idlib::vertex_format::P2FT2F>()()),
     _textureQuadVertexBuffer(idlib::video_buffer_manager::get().create_vertex_buffer(4, _textureQuadVertexDescriptor.get_size())) {
     //Load fonts from true-type files
-    _fonts[FONT_DEFAULT] = FontManager::get().loadFont("mp_data/Bo_Chen.ttf", 24);
-    _fonts[FONT_FLOATING_TEXT] = FontManager::get().loadFont("mp_data/FrostysWinterland.ttf", 24);
-    _fonts[FONT_DEBUG] = FontManager::get().loadFont("mp_data/DejaVuSansMono.ttf", 10);
+    _fonts[FONT_DEFAULT] = EngineContext::get().fontManager().loadFont("mp_data/Bo_Chen.ttf", 24);
+    _fonts[FONT_FLOATING_TEXT] = EngineContext::get().fontManager().loadFont("mp_data/FrostysWinterland.ttf", 24);
+    _fonts[FONT_DEBUG] = EngineContext::get().fontManager().loadFont("mp_data/DejaVuSansMono.ttf", 10);
 #if defined(_WIN32)
     // Additional TTF atlas construction is currently unstable in the Windows/Wine startup path.
     _fonts[FONT_GAME] = _fonts[FONT_DEBUG];
 #else
-    _fonts[FONT_GAME] = FontManager::get().loadFont("mp_data/IMMORTAL.ttf", 14);
+    _fonts[FONT_GAME] = EngineContext::get().fontManager().loadFont("mp_data/IMMORTAL.ttf", 14);
 #endif
 
     //Sanity check that all fonts are loaded properly
