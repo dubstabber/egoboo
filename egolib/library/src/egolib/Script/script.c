@@ -1167,7 +1167,7 @@ void publishSpawnIdentity(ai_state_t& self, ObjectRef index)
     self.hitlast = index;
 }
 
-void publishSpawnOverrides(ai_state_t& self, const Object& object)
+void publishSpawnOverrides(ai_state_t& self, const IProfiled& object)
 {
     self.state = object.getProfile()->getStateOverride();
     self.content = object.getProfile()->getContentOverride();

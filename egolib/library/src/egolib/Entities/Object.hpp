@@ -41,6 +41,7 @@
 #include "egolib/Entities/IMorphControl.hpp"
 #include "egolib/Entities/IMovementControl.hpp"
 #include "egolib/Entities/IPhysical.hpp"
+#include "egolib/Entities/IProfiled.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
 #include "egolib/Entities/ITeamMember.hpp"
@@ -102,6 +103,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IMorphControl,
                public IMovementControl,
                public IPhysical,
+               public IProfiled,
                public IRenderable,
                public IScriptable,
                public ITeamMember,
@@ -141,7 +143,7 @@ public:
     * @brief Gets a shared_ptr to the current ObjectProfile associated with this character.
     *        The ObjectProfile can change for polymorphing objects.
     **/
-    const std::shared_ptr<ObjectProfile>& getProfile() const;
+    const std::shared_ptr<ObjectProfile>& getProfile() const override;
 
     /**
     * @return

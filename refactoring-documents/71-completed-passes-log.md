@@ -1174,6 +1174,16 @@ Verified by an adversarial review (override signatures, behavior preservation, c
 
 Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527), headless smoke-run reaches the main menu cleanly. (World-render paths remain test-unreached; migrations are mechanically equivalent virtual-dispatch substitutions.)
 
+## Theme 12 — Front 1 `Object` role-interface decoupling (resumed) (2026-06-06)
+
+### Pass 220 — Extract `IProfiled` (`getProfile()`) role interface (2026-06-06)
+
+Introduced the 19th `Object` role interface, `IProfiled` (`egolib/Entities/IProfiled.hpp`), a single-method seam exposing `const std::shared_ptr<ObjectProfile>& getProfile() const` (forward-declares `ObjectProfile`, includes only `<memory>` — no heavy profile header). `Object` now inherits `IProfiled` (its existing `getProfile()` gets `override`, satisfying the pure-virtual with zero implementation change). Narrowed the one cleanly-eligible caller: the file-local free function `publishSpawnOverrides(ai_state_t&, const Object&)` in `Script/script.c` — which calls only `object.getProfile()` (→`getStateOverride`/`getContentOverride`) — to `const IProfiled&`, mirroring its sibling `publishSpawnWaypoint(ai_state_t&, const IPhysical&)` already narrowed in the same TU. The call site (`publishSpawnOverrides(self, *pchr)`) upcasts the concrete `Object` implicitly (zero churn).
+
+**Scope finding (important for planning):** a categorization workflow over all ~346 `getProfile()` sites found the "huge fan-out" is raw site count, not clean-narrowable count. The breakdown: ~137 are `Particle::getProfile()`/`Enchant::getProfile()` (different types), ~78 are internal to `Object`'s own methods, and the rest are locals/loop-vars (not params), `shared_ptr<Object>` params (the T1.2 reference-retype doesn't apply), concrete-`Object`-escape, or **multi-role-blocked** (a single param can't be multiple interface types). Exactly **one** external caller uses `getProfile()` and nothing else, hence the one-caller batch. The next two candidates — `draw_character_xp_bar` (getProfile + `ICharacterState`) and `AddEndMessage` (getProfile + `getObjRef`) — would require co-locating `getProfile()` onto those existing interfaces (interface pollution with the `ObjectProfile` dependency), deliberately deferred pending an explicit decision. **`Object` role-decoupling via single-param narrowing has essentially reached its ceiling; the remaining `getProfile()` coupling is intrinsic to multi-role functions.**
+
+Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527), headless smoke-run reaches the main menu cleanly. `publishSpawnOverrides` runs on object spawn, which `ctest`'s module-spawn / ScriptSystems suites exercise.
+
 ---
 
 ## Files touched most by this pass log
