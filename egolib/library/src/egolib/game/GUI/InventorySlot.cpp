@@ -1,4 +1,5 @@
 #include "InventorySlot.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -46,7 +47,7 @@ void InventorySlot::draw(DrawingContext& drawingContext) {
     if (item) {
         icon_ref = item->getIcon();
     } else {
-        icon_ref = TextureManager::get().getTexture("mp_data/nullicon");
+        icon_ref = EngineContext::get().textureManager().getTexture("mp_data/nullicon");
     }
 
     bool selected = false;

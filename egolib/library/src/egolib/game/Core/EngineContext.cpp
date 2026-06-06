@@ -24,6 +24,7 @@ Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
+Ego::ITextureManager* activeTextureManager = nullptr;
 IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
@@ -59,6 +60,7 @@ void EngineContext::clearEngine()
     clearImageManager();
     clearFontManager();
     clearGraphicsSystem();
+    clearTextureManager();
     clearParticleHandler();
     clearProfileSystem();
     clearCameraSystem();
@@ -398,6 +400,50 @@ const Ego::IGraphicsSystem& EngineContext::graphicsSystem() const
         throw std::logic_error("no active graphics system");
     }
     return *currentGraphicsSystem;
+}
+
+void EngineContext::installTextureManager(Ego::ITextureManager& textureManager)
+{
+    if (activeTextureManager)
+    {
+        throw std::logic_error("texture manager already installed");
+    }
+    activeTextureManager = &textureManager;
+}
+
+void EngineContext::clearTextureManager()
+{
+    activeTextureManager = nullptr;
+}
+
+Ego::ITextureManager* EngineContext::tryTextureManager()
+{
+    return activeTextureManager;
+}
+
+const Ego::ITextureManager* EngineContext::tryTextureManager() const
+{
+    return activeTextureManager;
+}
+
+Ego::ITextureManager& EngineContext::textureManager()
+{
+    Ego::ITextureManager* currentTextureManager = tryTextureManager();
+    if (!currentTextureManager)
+    {
+        throw std::logic_error("no active texture manager");
+    }
+    return *currentTextureManager;
+}
+
+const Ego::ITextureManager& EngineContext::textureManager() const
+{
+    const Ego::ITextureManager* currentTextureManager = tryTextureManager();
+    if (!currentTextureManager)
+    {
+        throw std::logic_error("no active texture manager");
+    }
+    return *currentTextureManager;
 }
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)

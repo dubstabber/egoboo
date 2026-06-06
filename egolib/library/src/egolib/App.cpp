@@ -23,6 +23,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     Renderer::initialize();
     // Initialize the texture manager.
     TextureManager::initialize();
+    EngineContext::get().installTextureManager(TextureManager::get());
     // Initialize the font manager.
     FontManager::initialize();
     EngineContext::get().installFontManager(FontManager::get());

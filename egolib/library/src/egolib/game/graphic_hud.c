@@ -289,7 +289,7 @@ void draw_blip(float sizeFactor, uint8_t color, float x, float y)
 
     if (x > 0.0f && y > 0.0f)
     {
-        std::shared_ptr<const Ego::Texture> ptex = Ego::TextureManager::get().getTexture("mp_data/blip");
+        std::shared_ptr<const Ego::Texture> ptex = EngineContext::get().textureManager().getTexture("mp_data/blip");
 
 #define BLIPSIZE 6
         Ego::Rectangle<int> bliprect[COLOR_MAX];
@@ -398,7 +398,7 @@ void draw_hud()
 
 void draw_mouse_cursor()
 {
-    const std::shared_ptr<Ego::Texture>& pcursor = Ego::TextureManager::get().getTexture("mp_data/cursor");
+    const std::shared_ptr<Ego::Texture>& pcursor = EngineContext::get().textureManager().getTexture("mp_data/cursor");
 
     if (nullptr == pcursor)
     {

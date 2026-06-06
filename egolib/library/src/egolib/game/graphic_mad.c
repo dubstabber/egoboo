@@ -69,7 +69,7 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
     }
     const auto& pmd2 = object.getModelDescriptor()->getMD2();
     auto& renderer = Ego::Renderer::get();
-    auto& textureManager = Ego::TextureManager::get();
+    auto& textureManager = EngineContext::get().textureManager();
     auto& md2ModelRenderer = GFX::get().getMd2ModelRenderer();
 
     std::shared_ptr<const Ego::Texture> ptex = nullptr;

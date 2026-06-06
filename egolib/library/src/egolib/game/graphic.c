@@ -146,7 +146,7 @@ void gfx_system_release_all_graphics()
 
     if (Ego::TextureManager::is_initialized())
     {
-        Ego::TextureManager::get().release_all();
+        EngineContext::get().textureManager().release_all();
     }
 }
 
@@ -172,7 +172,7 @@ void gfx_system_reload_all_textures()
     /// @details function is called when the graphics mode is changed or the program is
     /// restored from a minimized state. Otherwise, all OpenGL bitmaps return to a random state.
 
-    Ego::TextureManager::get().reupload();
+    EngineContext::get().textureManager().reupload();
     Ego::Graphics::TextureAtlasManager::get().reupload();
 }
 

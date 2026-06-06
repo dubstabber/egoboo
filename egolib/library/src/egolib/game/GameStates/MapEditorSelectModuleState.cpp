@@ -132,7 +132,7 @@ void MapEditorSelectModuleState::drawContainer(Ego::GUI::DrawingContext& drawing
         yPos += 20;
 
         // Draw one skull per rated difficulty
-        const std::shared_ptr<Ego::Texture> &skullTexture = TextureManager::get().getTexture("mp_data/skull");
+        const std::shared_ptr<Ego::Texture> &skullTexture = EngineContext::get().textureManager().getTexture("mp_data/skull");
         for (int i = 0; i < _selectedModule->getRank(); ++i)
         {
             draw_icon_texture(skullTexture, _moduleName->getX() + i*skullTexture->getWidth(), yPos, 0xFF, 0, 20, true);

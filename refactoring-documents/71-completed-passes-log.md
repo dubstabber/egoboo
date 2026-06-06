@@ -1122,6 +1122,12 @@ Render/window code is reached transitively by headless test fixtures (`CameraTra
 
 Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, full validator steady at 42 modules / 245 pre-existing errors, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527) — no SEGFAULTs.
 
+### Pass 214 — Publish `TextureManager` through `EngineContext` (2026-06-06)
+
+Seamed `TextureManager`, the next graphics service after the Pass 213 mock pattern landed. Extracted `Ego::ITextureManager` (the four methods callers use: `getTexture`, `updateDeferredLoading`, `reupload`, `release_all`), made `TextureManager` implement them, added the standard `EngineContext` install/clear/try/accessor surface — installed in `App.cpp` after `TextureManager::initialize()` and cleared in `clearEngine()`. Migrated the 13 game-layer `TextureManager::get()` sites (`CharacterStatus`×3, `graphic_hud`×2, `graphic.c`×2, `UIManager`, `ModuleSelector`, `InventorySlot`, `graphic_mad.c`, `MapEditorSelectModuleState`, `GameEngine`) to `EngineContext::get().textureManager()`. Deliberately left `Renderer/DeferredTexture.cpp` and the root-level `font_bmp.c` on the subsystem-local `TextureManager::get()` to avoid a lower-layer → `game/Core/EngineContext` layer inversion. No test mock was needed — the headless test paths don't reach the texture-loading code (it lives in draw methods).
+
+Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

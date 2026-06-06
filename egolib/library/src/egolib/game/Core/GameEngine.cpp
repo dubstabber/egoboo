@@ -232,7 +232,7 @@ void GameEngine::updateOneFrame()
     pollEvents();
 
     //Deferred loading for any textures requested by other threads
-    Ego::TextureManager::get().updateDeferredLoading();
+    EngineContext::get().textureManager().updateDeferredLoading();
 
     //Update current game state
     _currentGameState->update();

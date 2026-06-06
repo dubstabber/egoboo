@@ -24,10 +24,11 @@
 
 #include "egolib/typedef.h"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/Graphics/ITextureManager.hpp"
 
 namespace Ego {
 
-struct TextureManager : public idlib::singleton<TextureManager> {
+struct TextureManager : public idlib::singleton<TextureManager>, public ITextureManager {
 protected:
 	friend idlib::default_new_functor<TextureManager>;
     friend idlib::default_delete_functor<TextureManager>;
@@ -55,13 +56,13 @@ public:
      * @brief
      *  Reupload all textures.
      */
-    void reupload();
+    void reupload() override;
 
     /**
      * @brief
      *  Release all textures.
      */
-    void release_all();
+    void release_all() override;
 
     /**
      * @brief
@@ -76,9 +77,9 @@ public:
      *  The texture loaded by this texture manager. Could be the error texture if the specified
      *  path cannot be found.
      */
-    const std::shared_ptr<Texture>& getTexture(const std::string &filePath);
+    const std::shared_ptr<Texture>& getTexture(const std::string &filePath) override;
 
-    void updateDeferredLoading();
+    void updateDeferredLoading() override;
 
 private:
     std::forward_list<std::shared_ptr<Texture>> _unload;

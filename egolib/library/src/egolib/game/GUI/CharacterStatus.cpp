@@ -21,6 +21,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/CharacterStatus.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
@@ -60,7 +61,7 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 	Object * pitem = activeModule ? activeModule->getObjectHandler().get(item) : nullptr;
 
 	// grab the icon reference
-	std::shared_ptr<const Texture> icon_ref = (pitem != nullptr) ? pitem->getIcon() : TextureManager::get().getTexture("mp_data/nullicon");
+	std::shared_ptr<const Texture> icon_ref = (pitem != nullptr) ? pitem->getIcon() : EngineContext::get().textureManager().getTexture("mp_data/nullicon");
 
 	// draw the icon
 	if (draw_sparkle == NOSPARKLE) draw_sparkle = (NULL == pitem) ? NOSPARKLE : pitem->getSparkle();
@@ -107,7 +108,7 @@ float CharacterStatus::draw_one_bar(uint8_t bartype, float x_stt, float y_stt, i
 	if (ticks > total_ticks) ticks = total_ticks;
 
 	// grab a pointer to the bar texture
-	const std::shared_ptr<Texture> &tx_ptr = TextureManager::get().getTexture("mp_data/bars");
+	const std::shared_ptr<Texture> &tx_ptr = EngineContext::get().textureManager().getTexture("mp_data/bars");
 
 	// allow the bitmap to be scaled to arbitrary size
 	tx_width = 128.0f;
@@ -255,7 +256,7 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
 	/// @author ZF
 	/// @details This function draws a xp bar and returns the y position for the next one
 
-	const std::shared_ptr<Texture> &texture = TextureManager::get().getTexture("mp_data/xpbar");
+	const std::shared_ptr<Texture> &texture = EngineContext::get().textureManager().getTexture("mp_data/xpbar");
 
 	ticks = std::min(ticks, (uint8_t)NUMTICK);
 

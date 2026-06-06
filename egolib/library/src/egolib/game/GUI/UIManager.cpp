@@ -35,7 +35,7 @@ namespace GUI {
 UIManager::UIManager() :
     _fonts(),
     _renderSemaphore(0),
-    _bitmapFontTexture(TextureManager::get().getTexture("mp_data/font_new_shadow")),
+    _bitmapFontTexture(EngineContext::get().textureManager().getTexture("mp_data/font_new_shadow")),
     _vertexDescriptor(descriptor_factory<idlib::vertex_format::P2F>()()),
     _textureQuadVertexDescriptor(descriptor_factory<idlib::vertex_format::P2FT2F>()()),
     _textureQuadVertexBuffer(idlib::video_buffer_manager::get().create_vertex_buffer(4, _textureQuadVertexDescriptor.get_size())) {
