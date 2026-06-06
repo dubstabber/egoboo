@@ -29,6 +29,7 @@
 //--------------------------------------------------------------------------------------------
 
 class Object;
+class IPhysical;
 namespace Ego { class Particle; }
 
 //--------------------------------------------------------------------------------------------
@@ -188,7 +189,7 @@ bool phys_expand_oct_bb(const oct_bb_t& src, const Ego::Vector3f& vel, const flo
 /// @details use the object velocity to figure out where the volume that the character will
 ///               occupy during this update. Use the loser chr_max_cv and include extra height if
 ///               it is a platform.
-bool phys_expand_chr_bb(Object *pchr, float tmin, float tmax, oct_bb_t& dst);
+bool phys_expand_chr_bb(const IPhysical *pchr, float tmin, float tmax, oct_bb_t& dst);
 bool phys_expand_prt_bb(Ego::Particle *pprt, float tmin, float tmax, oct_bb_t& dst);
 
 bool phys_estimate_collision_normal(const oct_bb_t& obb_a, const oct_bb_t& pobb_b, const float exponent, oct_vec_v2_t& odepth, Ego::Vector3f& nrm, float& depth);

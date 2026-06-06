@@ -159,6 +159,8 @@ public:
 
     float getPosZ() const override { return Ego::Physics::Collidable::getPosZ(); }
 
+    const Ego::Vector3f& getPosition() const override { return Ego::Physics::Collidable::getPosition(); }
+
     /**
     * @return
     *   The elevation of the floor

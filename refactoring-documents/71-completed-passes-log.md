@@ -1064,6 +1064,12 @@ Marked the 28 `Object` methods that implement one of the seventeen role-interfac
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 206 — Add `getPosition()` to `IPhysical`; migrate `phys_expand_chr_bb` (2026-06-06)
+
+Widened `IPhysical` with `getPosition()` — the position-vector accessor previously reachable only on the concrete `Object`/`Collidable` and flagged by the role-interface map as the single highest-leverage blocker across the physics/collision helpers. `Object` supplies the override by forwarding to `Ego::Physics::Collidable::getPosition()`, mirroring its existing explicit `getPosX/Y/Z` overrides (needed because `Collidable` is a sibling base of `IPhysical`, not derived from it). `Object` is the sole `IPhysical` implementer, so the new pure-virtual has no other blast radius. With the accessor in place, `phys_expand_chr_bb(...)` — which touches only `getMaxCollisionVolume`/`getPosition`/`getVelocity` — is retyped from `Object*` to `const IPhysical*` (declaration in `physics.h` gains a `class IPhysical;` forward declaration); its single caller in `CollisionSystem.cpp` passes a concrete `Object*` and upcasts implicitly.
+
+Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

@@ -819,7 +819,7 @@ bool phys_expand_oct_bb(const oct_bb_t& src, const Ego::Vector3f& vel, const flo
 }
 
 //--------------------------------------------------------------------------------------------
-bool phys_expand_chr_bb(Object *pchr, float tmin, float tmax, oct_bb_t& dst)
+bool phys_expand_chr_bb(const IPhysical *pchr, float tmin, float tmax, oct_bb_t& dst)
 {
     // add in the current position to the bounding volume
     auto tmp_oct2 = idlib::translate(pchr->getMaxCollisionVolume(), pchr->getPosition());
