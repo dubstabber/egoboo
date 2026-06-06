@@ -1164,6 +1164,16 @@ No test mock needed: `GFX` is never `initialize()`d by any headless fixture and 
 
 Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527), and a headless smoke-run confirms the game survives `GameEngine::initialize()` and runs the main menu with no `"no active GFX"` throw. (Runtime world-render paths that call the migrated methods are not exercised by tests or the menu smoke-run; the migrations are mechanically equivalent — `EngineContext::get().gfx()` returns the installed `GFX` singleton via virtual dispatch.)
 
+### Pass 219 — Publish `GFX` through `EngineContext` (sub-pass B: render-pass accessors) (2026-06-06)
+
+Second slice of the `GFX` seam, completing the migratable `GFX::get()` surface. Widened `IGFX` with the 11 render-pass accessors callers actually use — `getNonOpaqueEntities`, `getOpaqueEntities`, `getReflective0`, `getReflective1`, `getNonReflective`, `getEntityShadows`, `getWater`, `getEntityReflections`, `getForeground`, `getBackground`, `getHeightmap` (each returning `Ego::Graphics::RenderPass&` const; `RenderPass` is forward-declared `struct` in `IGFX.hpp` to match its definition) — and added `override` to those 11 methods on `GFX`. `getMotionBlur()` is deliberately excluded from the interface (no caller uses it and `motionBlur` is not constructed in the `GFX` ctor), so it keeps no `override`. Migrated the 21 sub-pass-B callers to `EngineContext::get().gfx()`: 11 `.run(camera, tileList, entityList)` render-pass invocations in `graphic_scene.c` and 10 render-pass `.clock.reinit()` calls in `graphic.c`.
+
+After this pass the only remaining `GFX::get()` references are the two install sites in `GameEngine.cpp` (`installGFX(GFX::get())`, `installBillboardSystem(GFX::get().getBillboardSystem())`) and the lone `GFX::get().getBillboardSystem().render_all(*camera)` in `graphic_scene.c` (kept because `render_all(::Camera&)` is not on `IBillboardSystem`). `GFX::get()` otherwise survives only as the bootstrap seam.
+
+Verified by an adversarial review (override signatures, behavior preservation, completeness 21/21, `getMotionBlur` exclusion, tag consistency, layering) that found zero defects.
+
+Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527), headless smoke-run reaches the main menu cleanly. (World-render paths remain test-unreached; migrations are mechanically equivalent virtual-dispatch substitutions.)
+
 ---
 
 ## Files touched most by this pass log

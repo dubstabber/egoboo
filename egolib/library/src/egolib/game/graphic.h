@@ -227,52 +227,52 @@ public:
     }
 
 public:
-    Ego::Graphics::RenderPass& getNonOpaqueEntities() const
+    Ego::Graphics::RenderPass& getNonOpaqueEntities() const override
     {
         return *nonOpaqueEntities;
     }
 
-    Ego::Graphics::RenderPass& getOpaqueEntities() const
+    Ego::Graphics::RenderPass& getOpaqueEntities() const override
     {
         return *opaqueEntities;
     }
 
-    Ego::Graphics::RenderPass& getReflective0() const
+    Ego::Graphics::RenderPass& getReflective0() const override
     {
         return *reflective0;
     }
 
-    Ego::Graphics::RenderPass& getReflective1() const
+    Ego::Graphics::RenderPass& getReflective1() const override
     {
         return *reflective1;
     }
 
-    Ego::Graphics::RenderPass& getNonReflective() const
+    Ego::Graphics::RenderPass& getNonReflective() const override
     {
         return *nonReflective;
     }
 
-    Ego::Graphics::RenderPass& getEntityShadows() const
+    Ego::Graphics::RenderPass& getEntityShadows() const override
     {
         return *entityShadows;
     }
 
-    Ego::Graphics::RenderPass& getWater() const
+    Ego::Graphics::RenderPass& getWater() const override
     {
         return *water;
     }
 
-    Ego::Graphics::RenderPass& getEntityReflections() const
+    Ego::Graphics::RenderPass& getEntityReflections() const override
     {
         return *entityReflections;
     }
 
-    Ego::Graphics::RenderPass& getForeground() const
+    Ego::Graphics::RenderPass& getForeground() const override
     {
         return *foreground;
     }
 
-    Ego::Graphics::RenderPass& getBackground() const
+    Ego::Graphics::RenderPass& getBackground() const override
     {
         return *background;
     }
@@ -282,7 +282,7 @@ public:
         return *motionBlur;
     }
 
-    Ego::Graphics::RenderPass& getHeightmap() const
+    Ego::Graphics::RenderPass& getHeightmap() const override
     {
         return *heightmap;
     }

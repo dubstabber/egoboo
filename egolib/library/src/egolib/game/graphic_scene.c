@@ -137,21 +137,21 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
             el.sort(cam, true);
         }
         animate_all_tiles(*tl.getMesh());
-        GFX::get().getNonReflective().run(cam, tl, el);
-        GFX::get().getReflective0().run(cam, tl, el);
-        GFX::get().getEntityReflections().run(cam, tl, el);
-        GFX::get().getReflective1().run(cam, tl, el);
-        GFX::get().getHeightmap().run(cam, tl, el);
-        GFX::get().getEntityShadows().run(cam, tl, el);
+        EngineContext::get().gfx().getNonReflective().run(cam, tl, el);
+        EngineContext::get().gfx().getReflective0().run(cam, tl, el);
+        EngineContext::get().gfx().getEntityReflections().run(cam, tl, el);
+        EngineContext::get().gfx().getReflective1().run(cam, tl, el);
+        EngineContext::get().gfx().getHeightmap().run(cam, tl, el);
+        EngineContext::get().gfx().getEntityShadows().run(cam, tl, el);
     }
     {
         ClockScope<ClockPolicy::NonRecursive> scope(sortDoListUnreflected_timer);
         el.sort(cam, false);
     }
 
-    GFX::get().getOpaqueEntities().run(cam, tl, el);
-    GFX::get().getWater().run(cam, tl, el);
-    GFX::get().getNonOpaqueEntities().run(cam, tl, el);
+    EngineContext::get().gfx().getOpaqueEntities().run(cam, tl, el);
+    EngineContext::get().gfx().getWater().run(cam, tl, el);
+    EngineContext::get().gfx().getNonOpaqueEntities().run(cam, tl, el);
 
     if (EngineContext::get().inputSystem().isKeyDown(SDLK_F8))
     {
@@ -191,9 +191,9 @@ void gfx_system_render_world(std::shared_ptr<Camera> camera, std::shared_ptr<Ego
 
     Renderer3D::begin3D(*camera);
     {
-        GFX::get().getBackground().run(*camera, *tileList, *entityList);
+        EngineContext::get().gfx().getBackground().run(*camera, *tileList, *entityList);
         render_scene(*camera, *tileList, *entityList);
-        GFX::get().getForeground().run(*camera, *tileList, *entityList);
+        EngineContext::get().gfx().getForeground().run(*camera, *tileList, *entityList);
 
         if (camera->getMotionBlur() > 0)
         {

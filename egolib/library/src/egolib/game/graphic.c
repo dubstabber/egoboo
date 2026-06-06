@@ -79,16 +79,16 @@ void reinitClocks() {
 	EngineContext::get().gfx().updateObjectInstancesTimer().reinit();
 	EngineContext::get().gfx().updateParticleInstancesTimer().reinit();
 
-	GFX::get().getEntityReflections().clock.reinit();
-    GFX::get().getEntityShadows().clock.reinit();
-	GFX::get().getOpaqueEntities().clock.reinit();
-    GFX::get().getNonOpaqueEntities().clock.reinit();
-    GFX::get().getWater().clock.reinit();
-    GFX::get().getReflective0().clock.reinit();
-    GFX::get().getReflective1().clock.reinit();
-    GFX::get().getNonReflective().clock.reinit();
-    GFX::get().getForeground().clock.reinit();
-    GFX::get().getBackground().clock.reinit();
+	EngineContext::get().gfx().getEntityReflections().clock.reinit();
+    EngineContext::get().gfx().getEntityShadows().clock.reinit();
+	EngineContext::get().gfx().getOpaqueEntities().clock.reinit();
+    EngineContext::get().gfx().getNonOpaqueEntities().clock.reinit();
+    EngineContext::get().gfx().getWater().clock.reinit();
+    EngineContext::get().gfx().getReflective0().clock.reinit();
+    EngineContext::get().gfx().getReflective1().clock.reinit();
+    EngineContext::get().gfx().getNonReflective().clock.reinit();
+    EngineContext::get().gfx().getForeground().clock.reinit();
+    EngineContext::get().gfx().getBackground().clock.reinit();
 }
 
 //--------------------------------------------------------------------------------------------

@@ -9,6 +9,7 @@ struct dynalist_t;
 namespace Ego {
 namespace Graphics {
 class Md2ModelRenderer;
+struct RenderPass;
 } // namespace Graphics
 } // namespace Ego
 
@@ -40,4 +41,18 @@ public:
 
     /// @brief The MD2 model renderer.
     virtual Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const = 0;
+
+    // --- Render-pass accessors (sub-pass B). The returned RenderPass is used
+    //     via .run(camera, tileList, entityList) and its public .clock member. ---
+    virtual Ego::Graphics::RenderPass& getNonOpaqueEntities() const = 0;
+    virtual Ego::Graphics::RenderPass& getOpaqueEntities() const = 0;
+    virtual Ego::Graphics::RenderPass& getReflective0() const = 0;
+    virtual Ego::Graphics::RenderPass& getReflective1() const = 0;
+    virtual Ego::Graphics::RenderPass& getNonReflective() const = 0;
+    virtual Ego::Graphics::RenderPass& getEntityShadows() const = 0;
+    virtual Ego::Graphics::RenderPass& getWater() const = 0;
+    virtual Ego::Graphics::RenderPass& getEntityReflections() const = 0;
+    virtual Ego::Graphics::RenderPass& getForeground() const = 0;
+    virtual Ego::Graphics::RenderPass& getBackground() const = 0;
+    virtual Ego::Graphics::RenderPass& getHeightmap() const = 0;
 };
