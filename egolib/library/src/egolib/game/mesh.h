@@ -21,7 +21,13 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/_math.h"                           // Facing
+#include "egolib/Math/_Include.hpp"                  // Vector2f/3f, AxisAlignedBox2f/3f, Matrix4f4f
+#include "egolib/integrations/math.hpp"              // Circle2f
+#include "egolib/bbox.h"                             // oct_bb_t, normal_cache_t
+#include "egolib/Extensions/ogl_extensions.h"        // GLXvector2f/3f
+#include "egolib/FileFormats/map_file.h"             // map_t, MAP_TILE_MAX_*, MAP_FANOFF, TILE/LC masks
+#include "egolib/FileFormats/map_tile_dictionary.h"  // tile_dictionary_t
 #include "egolib/game/lighting.h"
 #include "egolib/Mesh/Info.hpp"
 

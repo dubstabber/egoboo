@@ -21,7 +21,10 @@
 /// @brief Shop interaction
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"  // ObjectRef
+#include <memory>
+
+class Object;  // used only via shared_ptr/ObjectRef
 
 struct Shop {
 private:

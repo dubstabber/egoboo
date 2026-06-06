@@ -21,7 +21,9 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/game/egoboo.h"  // gfx_rv
+
+namespace Ego { class Texture; }  // used by const-reference only
 
 //--------------------------------------------------------------------------------------------
 

@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/game/egoboo.h"                // gfx_rv
+#include "egolib/Extensions/ogl_extensions.h"  // GLXvector4f
 
 class Camera;
 class IRenderable;

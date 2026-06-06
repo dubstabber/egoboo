@@ -25,7 +25,11 @@
 #pragma once
 
 #include "egolib/platform.h"
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"              // ObjectRef
+#include "egolib/Profiles/_Include.hpp"  // XPType
+#include <memory>
+
+class Object;  // used only via shared_ptr/weak_ptr/ObjectRef
 
 /// The description of a single team
 class Team : public idlib::equal_to_expr<Team>

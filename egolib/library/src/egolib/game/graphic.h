@@ -21,11 +21,13 @@
 
 #pragma once
 
+#include "egolib/App.hpp"  // GameApp (GFX base)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/Extensions/ogl_extensions.h"
+#include "egolib/Mesh/Info.hpp"  // Index1D
 
 // Forward declaration.
 class Camera;

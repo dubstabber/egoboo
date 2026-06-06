@@ -22,8 +22,10 @@
 
 #pragma once
 
-#include "egolib/game/egoboo.h"
+#include "egolib/IDSZ.hpp"   // IDSZ2
+#include "egolib/_math.h"    // Vector2f
 #include "egolib/AI/WaypointList.h"
+#include <cmath>             // pow
 
 /// @defgroup _bitwise_functions_ Bitwise Scripting Functions
 /// @details These functions may be necessary to export the bitwise functions for handling alerts to

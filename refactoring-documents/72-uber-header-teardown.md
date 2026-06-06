@@ -107,6 +107,25 @@ Made all **19 role-interface headers** (`Entities/I*.hpp`) self-contained and re
 Note: this is preparatory — `Object.hpp` still pulls `egoboo.h` (directly + via other game headers), so no
 TU's transitive set shrinks yet. The transitive payoff lands only when the link is cut (final pass).
 
+## Pass 2 — graphics/logic/script leaf headers (2026-06-06, Pass 222)
+
+Made 11 more headers self-contained: `game/lighting.h`, `game/mesh.h` (the keystone), `game/graphic.h`,
+`game/graphic_fan.h`, `game/graphic_mad.h`, `game/graphic_prt.h`, `Logic/Team.hpp`, `game/Shop.hpp`,
+`game/link.h`, `game/script_compile.h`, `game/script_implementation.h`. Dropped `egoboo.h` from 9; kept a
+thin `egoboo.h` in `graphic_mad.h`/`graphic_prt.h` (they use `gfx_rv`). Used `class Object;` /
+`class ObjectProfile;` forward decls where only pointer/`shared_ptr`/`ObjectRef` is used.
+
+**Lesson (important):** per-header `-fsyntax-only` selfcheck is necessary but NOT sufficient — it cannot see
+a *source* file that was leeching transitive includes through a header you just narrowed. After narrowing,
+run a **keep-going full build** (`cmake --build build -j4 -- -k`) and grep real `error:` lines to catch
+those. Pass 2 caught exactly one: `FileFormats/SpawnFile/SpawnFileReaderImpl.cpp` lost `Ego::trim_ws`
+(→`Core/StringUtilities.hpp`) and `Info<float>::Grid::Size()` (→`FileFormats/map_file.h`, the grid `Info`
+template specialization — NOT `Mesh/Info.hpp`'s `Ego::MeshInfo`) via `Team.hpp`. Two common leech symbols:
+`Ego::trim_ws` and the unqualified grid `Info<float>`/`Info<int>` template.
+
+`CharacterMatrix.h` was deferred from Pass 2 (it has inline SDL/matrix logic: `matrix_cache_t`,
+`EulerFacing`, `SDLK_LEFT`, grip helpers — needs more includes than a leaf header).
+
 ## Remaining work-list (suggested leaf-upward order)
 
 1. **Low-level egolib/game leaf headers**: `lighting.h`, `mesh.h` (keystone, 2023), `graphic.h`,

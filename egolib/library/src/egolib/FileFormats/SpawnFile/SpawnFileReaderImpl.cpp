@@ -2,6 +2,8 @@
 #include "egolib/fileutil.h"
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"
 #include "egolib/strutil.h"
+#include "egolib/Core/StringUtilities.hpp"  // Ego::trim_ws
+#include "egolib/FileFormats/map_file.h"    // Info<float>::Grid::Size()
 #include "egolib/Logic/Team.hpp"
 
 #pragma push_macro("ERROR")

@@ -22,8 +22,11 @@
 #pragma once
 
 #include "egolib/Script/PDLToken.hpp"
-#include "egolib/game/egoboo.h"
+#include "egolib/typedef.h"  // ObjectProfileRef
+#include "egolib/vfs.h"      // vfs_FILE, C_*_CHAR constants
 #include "egolib/Script/Buffer.hpp"
+
+class ObjectProfile;  // used only via pointer
 #include "egolib/Script/script.h"
 
 //--------------------------------------------------------------------------------------------
