@@ -1076,6 +1076,12 @@ Two `IInventoryHolder`-scoped cleanups. `INGAME_PCHR(const Object*)` — whose b
 
 Acceptance: full egolib build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 208 — Narrow `chr_invalidate_child_instances` to `IInventoryHolder` (2026-06-06)
+
+`chr_invalidate_child_instances(Object&)` in `ObjectGraphics.cpp` reaches its parameter only through `heldItem(...)` (now `IInventoryHolder&`), invalidating the matrix cache on the returned held items; the parameter itself needs nothing beyond the inventory role. Retyped to `const IInventoryHolder&`; its single caller passes the `Object&` member `_object` and upcasts. Completes the `IInventoryHolder` caller migration in this TU.
+
+Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
+
 ---
 
 ## Files touched most by this pass log

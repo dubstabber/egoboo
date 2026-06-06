@@ -940,7 +940,7 @@ void ObjectGraphics::setMatrix(const Matrix4f4f& matrix)
     _reflectionMatrix(2, 3) = 2.0f * _object.getFloorElevation() - _object.getPosZ();
 }
 
-static void chr_invalidate_child_instances(Object &object)
+static void chr_invalidate_child_instances(const IInventoryHolder &object)
 {
     if (const std::shared_ptr<Object>& leftHandItem = heldItem(object, SLOT_LEFT)) {
         leftHandItem->setMatrixCacheValid(false);
