@@ -141,7 +141,7 @@ void gfx_system_release_all_graphics()
 {
     if (GFX::is_initialized())
     {
-        GFX::get().getBillboardSystem().reset();
+        EngineContext::get().billboardSystem().reset();
     }
 
     if (Ego::TextureManager::is_initialized())

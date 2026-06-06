@@ -151,7 +151,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
 
             //Only draw "Immune!" if we are truly completely immune and it was not simply a weak attack
             if(HAS_SOME_BITS(damageModifier, DAMAGEINVICTUS) || damage.base + damage.rand <= damage_threshold) {
-                GFX::get().getBillboardSystem().makeBillboard(_objRef, "Immune!", Ego::Colour4f::white(), Ego::Colour4f(0, 0.5, 0, 1), 3, Ego::Graphics::Billboard::Flags::All);
+                EngineContext::get().billboardSystem().makeBillboard(_objRef, "Immune!", Ego::Colour4f::white(), Ego::Colour4f(0, 0.5, 0, 1), 3, Ego::Graphics::Billboard::Flags::All);
             }
         }
     }
@@ -279,7 +279,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
                     //Size depends on the amount of damage (more = bigger)
                     float size = Ego::Math::constrain(0.35f + std::abs(FP8_TO_FLOAT(actual_damage)) * 0.075f, 0.35f, 1.5f);
 
-                    GFX::get().getBillboardSystem().makeBillboard(_objRef, text_buffer, Ego::Colour4f::white(), friendly_fire ? tint_friend : tint_enemy, lifetime, Ego::Graphics::Billboard::Flags::All, size);
+                    EngineContext::get().billboardSystem().makeBillboard(_objRef, text_buffer, Ego::Colour4f::white(), friendly_fire ? tint_friend : tint_enemy, lifetime, Ego::Graphics::Billboard::Flags::All, size);
                 }
             }
         }
@@ -448,7 +448,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         {
             //Refill to full Life instead!
             _currentLife = getAttribute(Ego::Attribute::MAX_LIFE);
-            GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Too Silly to Die", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
+            EngineContext::get().billboardSystem().makeBillboard(getObjRef(), "Too Silly to Die", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
             DisplayMsg_printf("%s decided not to die after all!", getName(false, true, true).c_str());
             audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_DRUMS));
             return;
@@ -463,7 +463,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         {
             //Refill to full Life instead!
             _currentLife = getAttribute(Ego::Attribute::MAX_LIFE);
-            GFX::get().getBillboardSystem().makeBillboard(getObjRef(), "Guardian Angel", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
+            EngineContext::get().billboardSystem().makeBillboard(getObjRef(), "Guardian Angel", Ego::Colour4f::white(), Ego::Colour4f::white(), 3, Ego::Graphics::Billboard::Flags::All);
             DisplayMsg_printf("%s was saved by a Guardian Angel!", getName(false, true, true).c_str());
             audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_ANGEL_CHOIR));
             return;
@@ -537,7 +537,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
             //Crusader Perk regains 1 mana per Undead kill
             if(actualKiller->hasPerk(Ego::Perks::CRUSADER) && getProfile()->getIDSZ(IDSZ_PARENT).equals('U','N','D','E')) {
                 actualKiller->costMana(-1, actualKiller->getObjRef());
-                GFX::get().getBillboardSystem().makeBillboard(actualKiller->getObjRef(), "Crusader", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
+                EngineContext::get().billboardSystem().makeBillboard(actualKiller->getObjRef(), "Crusader", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
             }
         }
     }

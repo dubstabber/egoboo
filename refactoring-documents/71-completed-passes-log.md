@@ -1128,6 +1128,12 @@ Seamed `TextureManager`, the next graphics service after the Pass 213 mock patte
 
 Acceptance: full egolib + tests build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527).
 
+### Pass 215 — Route `GFX` billboard callers to the existing `EngineContext` billboard seam (2026-06-06)
+
+Cleanup ahead of the `GFX` seam: 23 `GFX::get().getBillboardSystem().{makeBillboard,reset}(...)` sites reached `GFX` only to obtain the billboard system, which already has its own `EngineContext::billboardSystem()` seam. Retyped them to `EngineContext::get().billboardSystem()...` across `Entities/Object_combat.cpp`, `game/Physics/particle_collision.c`, `game/game_combat.c`, `game/graphic.c`, and `game/Core/GameEngine.cpp`. The lone `render_all` caller in `graphic_scene.c` stays on `GFX::get().getBillboardSystem()` because `render_all(::Camera&)` is not on `IBillboardSystem` (and the test `StubBillboardSystem` mock would need it). This drops the GFX-billboard reaches ~24→1, shrinking the GFX caller set before the GFX seam.
+
+Acceptance: build clean (0 errors), `test.mod` validator `warnings=0 errors=0`, `ctest` steady at the two pre-existing `ScriptLoaderFixture` fallback failures (#526/#527) — `billboardSystem` is installed in the script/combat fixtures, so the migrated `makeBillboard` calls work headless.
+
 ---
 
 ## Files touched most by this pass log

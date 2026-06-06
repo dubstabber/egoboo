@@ -321,7 +321,7 @@ bool GameEngine::initialize()
 
     // Initialize the GFX system.
     GFX::initialize();
-    EngineContext::get().installBillboardSystem(GFX::get().getBillboardSystem());
+    EngineContext::get().installBillboardSystem(EngineContext::get().billboardSystem());
 
 	// camera options
 	CameraSystem::initialize();

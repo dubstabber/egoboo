@@ -238,7 +238,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     //If Quick Strike perk triggers then we have fastest possible attack (10% chance)
                     if(pchr->hasPerk(Ego::Perks::QUICK_STRIKE) && pweapon->getProfile()->isMeleeWeapon() && Random::getPercent() <= 10) {
                         pchr->setAnimationSpeed(3.0f);
-                        GFX::get().getBillboardSystem().makeBillboard(pchr->getObjRef(), "Quick Strike!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
+                        EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Quick Strike!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
 
                     //Add some reload time as a true limit to attacks per second
@@ -393,7 +393,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
 
                     //1% chance per Intellect
                     if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::INTELLECT)) {
-                        GFX::get().getBillboardSystem().makeBillboard(pchr->getObjRef(), "Wand Mastery!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 3, Ego::Graphics::Billboard::Flags::All);
+                        EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Wand Mastery!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
                     else {
                         pweapon->setAmmo(pweapon->getAmmo() - 1);  // Ammo usage
@@ -413,7 +413,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                 //1% chance per Agility
                 if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::AGILITY) && pweapon->getAmmo() > 0) {
                     NR_OF_ATTACK_PARTICLES = 2;
-                    GFX::get().getBillboardSystem().makeBillboard(pchr->getObjRef(), "Double Shot!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
+                    EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Double Shot!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
 
                     //Spend one extra ammo
                     pweapon->setAmmo(pweapon->getAmmo() - 1);
