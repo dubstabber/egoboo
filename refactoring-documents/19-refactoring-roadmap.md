@@ -201,9 +201,22 @@ Current test-to-code ratio is ~11% and covers parsers, module smoke, accessor re
 
 Add characterization coverage before the next restructuring wave in each area.
 
-### T3.5 Native-Cartman build integration
+### T3.5 Native-Cartman build integration — SCOUTED (2026-06-07)
 
-`cartman/` exists in-tree but is disconnected from the main CMake graph. Gate it with a CMake option and add it to the build matrix. Prevents further bit-rot.
+`cartman/` (the ~9.3k-LOC SDL map editor) exists in-tree but is disconnected from the main CMake graph (no
+build files at all, last meaningful change 2017-11-29). Gate it with a CMake option and add it to the build
+matrix. Prevents further bit-rot.
+
+**Scouting verdict (full detail + compile-probe data: `73-cartman-build-integration-scouting.md`):
+feasible, MEDIUM effort, low architectural risk — a port, not a rewrite.** Against current egolib it produces
+719 compile errors across 11/16 TUs, but that is mostly *cascade*: the genuine root surface is ~30 errors in
+just 5 headers (14/19 headers + the entire core data/math model already compile clean), dominated by ~4
+**mechanical systematic renames** (`id::`→`idlib::`, bare `singleton<>`→`idlib::singleton<>`, bare math types →
+`Ego::`-qualified, `Ego::Math::Colour4f`→`Ego::Colour4f`) plus a residual of genuine egolib-API-drift fixes
+(GraphicsWindow/window-size, ImageManager, gfx/mesh accessors) concentrated in `cartman_gfx.c`/`cartman_gui.c`/
+`cartman.c`. The CMake target is trivial (links only `egolib-library`; gate `option(EGOBOO_BUILD_CARTMAN OFF)`).
+Main risk: **no automated runtime verification** (GUI editor needs a display + a module). Doing this also
+resolves the 4 dangling `egolib.h` includes left in cartman by Pass 226.
 
 ---
 
