@@ -84,26 +84,11 @@ typedef enum vfs_file_flags
 
 } vfs_file_flagss;
 
-/// What type of file is actually being referenced in u_vfs_fileptr
-typedef enum vfs_file_type
-{
-    VFS_FILE_TYPE_UNKNOWN = 0,
-    VFS_FILE_TYPE_PHYSFS,
-} vfs_file_type;
-
-/// An anonymized pointer type
-typedef union vfs_fileptr_t
-{
-    void *u;
-    PHYSFS_File *p;
-} vfs_file_ptr_t;
-
-/// A container holding either a FILE * or a PHYSFS_File *, and translated error states
+/// A container holding a PHYSFS file handle and translated error states
 struct vsf_file
 {
     BIT_FIELD flags;
-    vfs_file_type type;
-    vfs_fileptr_t ptr;
+    PHYSFS_File *p;
 };
 
 struct s_vfs_path_data
@@ -310,8 +295,7 @@ vfs_FILE *vfs_openRead(const std::string& pathname)
     }
 
     vfs_file->flags = VFS_FILE_FLAG_READING;
-    vfs_file->type = VFS_FILE_TYPE_PHYSFS;
-    vfs_file->ptr.p = ftmp;
+    vfs_file->p = ftmp;
 
     return vfs_file;
 }
@@ -351,8 +335,7 @@ vfs_FILE *vfs_openWrite(const std::string& pathname)
 		return nullptr;
 	}
     vfs_file->flags = VFS_FILE_FLAG_WRITING;
-    vfs_file->type  = VFS_FILE_TYPE_PHYSFS;
-    vfs_file->ptr.p = ftmp;
+    vfs_file->p = ftmp;
 
     return vfs_file;
 }
@@ -383,8 +366,7 @@ vfs_FILE *vfs_openAppend(const std::string& pathname)
         return nullptr;
     }
     vfs_file->flags = VFS_FILE_FLAG_WRITING;
-    vfs_file->type  = VFS_FILE_TYPE_PHYSFS;
-    vfs_file->ptr.p = ftmp;
+    vfs_file->p = ftmp;
 
     return vfs_file;
 }
@@ -562,15 +544,9 @@ int vfs_close(vfs_FILE *file)
     }
 
     int retval = 0;
-    if (VFS_FILE_TYPE_PHYSFS == file->type)
     {
-        retval = PHYSFS_close(file->ptr.p);
+        retval = PHYSFS_close(file->p);
 		delete file;
-    }
-    else
-    {
-        // corrupted data?
-        fprintf(stderr, "Tried to deallocate an invalid vfs file descriptor\n");
     }
 
     return retval;
@@ -586,9 +562,8 @@ int vfs_flush( vfs_FILE * pfile )
     if ( NULL == pfile ) return 0;
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
-        retval = PHYSFS_flush( pfile->ptr.p );
+        retval = PHYSFS_flush( pfile->p );
     }
 
     return retval;
@@ -611,9 +586,8 @@ int vfs_eof( vfs_FILE * pfile )
     }
 
     retval = 1;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
-        retval = PHYSFS_eof( pfile->ptr.p );
+        retval = PHYSFS_eof( pfile->p );
     }
 
     if ( 0 != retval )
@@ -634,7 +608,6 @@ int vfs_error( vfs_FILE * pfile )
     if ( NULL == pfile ) return 0;
 
     retval = 1;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         retval = VFS_FILE_FLAG_ERROR == (pfile->flags & VFS_FILE_FLAG_ERROR);
         //retval = ( NULL != PHYSFS_getLastError() );
@@ -653,9 +626,8 @@ long vfs_tell( vfs_FILE * pfile )
     if ( NULL == pfile ) return 0;
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
-        retval = PHYSFS_tell( pfile->ptr.p );
+        retval = PHYSFS_tell( pfile->p );
     }
 
     return retval;
@@ -671,12 +643,11 @@ int vfs_seek( vfs_FILE * pfile, long offset )
     if ( NULL == pfile ) return 0;
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         // reset the flags
         pfile->flags &= ~(VFS_FILE_FLAG_EOF | VFS_FILE_FLAG_ERROR);
 
-        retval = PHYSFS_seek( pfile->ptr.p, offset );
+        retval = PHYSFS_seek( pfile->p, offset );
         if (retval == 0) pfile->flags &= ~VFS_FILE_FLAG_ERROR;
         else             pfile->flags |= VFS_FILE_FLAG_ERROR;
     }
@@ -700,9 +671,8 @@ long vfs_fileLength( vfs_FILE * pfile )
     if ( NULL == pfile ) return 0;
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
-        retval = PHYSFS_fileLength( pfile->ptr.p );
+        retval = PHYSFS_fileLength( pfile->p );
     }
 
     return retval;
@@ -757,10 +727,9 @@ size_t vfs_read( void * buffer, size_t size, size_t count, vfs_FILE * pfile )
     if ( NULL == pfile ) return 0;
 
     read_length = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         pfile->flags &= ~VFS_FILE_FLAG_ERROR;
-        PHYSFS_sint64 retval = PHYSFS_read( pfile->ptr.p, buffer, size, count );
+        PHYSFS_sint64 retval = PHYSFS_read( pfile->p, buffer, size, count );
 
         if ( retval < 0 ) { error = true; pfile->flags |= VFS_FILE_FLAG_ERROR; }
 
@@ -783,10 +752,9 @@ size_t vfs_write( const void * buffer, size_t size, size_t count, vfs_FILE * pfi
     if ( NULL == pfile ) return 0;
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         pfile->flags &= ~VFS_FILE_FLAG_ERROR;
-        PHYSFS_sint64 write_length = PHYSFS_write( pfile->ptr.p, buffer, size, count );
+        PHYSFS_sint64 write_length = PHYSFS_write( pfile->p, buffer, size, count );
         
         if ( write_length < 0 ) { error = true; pfile->flags |= VFS_FILE_FLAG_ERROR; }
         
@@ -807,9 +775,8 @@ int vfs_read_Sint8( vfs_FILE& file, int8_t * val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_read(file.ptr.p, val, 1, sizeof(int8_t));
+        retval = PHYSFS_read(file.p, val, 1, sizeof(int8_t));
         
         error = ( 1 != retval );
         
@@ -831,9 +798,8 @@ int vfs_read_Uint8( vfs_FILE& file, uint8_t * val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_read(file.ptr.p, val, 1, sizeof(int8_t));
+        retval = PHYSFS_read(file.p, val, 1, sizeof(int8_t));
         
         error = ( 1 != retval );
         
@@ -855,9 +821,8 @@ int vfs_read_Sint16( vfs_FILE& file, int16_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readSLE16( file.ptr.p, val );
+        retval = PHYSFS_readSLE16( file.p, val );
 
         error = ( 0 == retval );
         
@@ -879,9 +844,8 @@ int vfs_read_Uint16( vfs_FILE& file, uint16_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readULE16( file.ptr.p, val );
+        retval = PHYSFS_readULE16( file.p, val );
 
         error = ( 0 == retval );
         
@@ -903,9 +867,8 @@ int vfs_read_Sint32( vfs_FILE& file, int32_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readSLE32( file.ptr.p, val );
+        retval = PHYSFS_readSLE32( file.p, val );
 
         error = ( 0 == retval );
         
@@ -927,9 +890,8 @@ int vfs_read_Uint32( vfs_FILE& file, uint32_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readULE32( file.ptr.p, val );
+        retval = PHYSFS_readULE32( file.p, val );
 
         error = ( 0 == retval );
         
@@ -951,9 +913,8 @@ int vfs_read_Sint64( vfs_FILE& file, int64_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readSLE64( file.ptr.p, (PHYSFS_sint64*)val );
+        retval = PHYSFS_readSLE64( file.p, (PHYSFS_sint64*)val );
 
         error = ( 0 == retval );
         
@@ -975,9 +936,8 @@ int vfs_read_Uint64( vfs_FILE& file, uint64_t * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_readULE64( file.ptr.p, (PHYSFS_uint64 *)val );
+        retval = PHYSFS_readULE64( file.p, (PHYSFS_uint64 *)val );
 
         error = ( 0 == retval );
         
@@ -999,10 +959,9 @@ int vfs_read_float( vfs_FILE& file, float * val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
         union { float f; uint32_t i; } convert;
-        retval = PHYSFS_readULE32( file.ptr.p, &( convert.i ) );
+        retval = PHYSFS_readULE32( file.p, &( convert.i ) );
 
         error = ( 0 == retval );
         
@@ -1029,9 +988,8 @@ int vfs_write<int8_t>( vfs_FILE& file, const int8_t& val )
     BAIL_IF_NOT_INIT();
    
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_write(file.ptr.p, &val, 1, sizeof(int8_t));
+        retval = PHYSFS_write(file.p, &val, 1, sizeof(int8_t));
         
         error = ( 1 != retval );
         
@@ -1053,9 +1011,8 @@ int vfs_write<uint8_t>( vfs_FILE& file, const uint8_t& val )
     BAIL_IF_NOT_INIT();
 
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_write(file.ptr.p, &val, 1, sizeof(uint8_t));
+        retval = PHYSFS_write(file.p, &val, 1, sizeof(uint8_t));
         
         error = ( 1 != retval );
         
@@ -1077,9 +1034,8 @@ int vfs_write<int16_t>( vfs_FILE& file, const int16_t& val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeSLE16( file.ptr.p, val );
+        retval = PHYSFS_writeSLE16( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1101,9 +1057,8 @@ int vfs_write<uint16_t>( vfs_FILE& file, const uint16_t& val )
     BAIL_IF_NOT_INIT();
    
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeULE16( file.ptr.p, val );
+        retval = PHYSFS_writeULE16( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1125,9 +1080,8 @@ int vfs_write<int32_t>( vfs_FILE& file, const int32_t& val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeSLE32( file.ptr.p, val );
+        retval = PHYSFS_writeSLE32( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1149,9 +1103,8 @@ int vfs_write<uint32_t>( vfs_FILE& file, const uint32_t& val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeULE32( file.ptr.p, val );
+        retval = PHYSFS_writeULE32( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1173,9 +1126,8 @@ int vfs_write<int64_t>( vfs_FILE& file, const int64_t& val )
     BAIL_IF_NOT_INIT();
    
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeSLE64( file.ptr.p, val );
+        retval = PHYSFS_writeSLE64( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1197,9 +1149,8 @@ int vfs_write<uint64_t>( vfs_FILE& file, const uint64_t& val )
     BAIL_IF_NOT_INIT();  
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
-        retval = PHYSFS_writeULE64( file.ptr.p, val );
+        retval = PHYSFS_writeULE64( file.p, val );
         
         error = ( 0 == retval );
         
@@ -1221,11 +1172,10 @@ int vfs_write<float>( vfs_FILE& file, const float& val )
     BAIL_IF_NOT_INIT();
     
     retval = 0;
-    if ( VFS_FILE_TYPE_PHYSFS == file.type )
     {
         union { float f; uint32_t i; } convert;
         convert.f = val;
-        retval = PHYSFS_writeULE32( file.ptr.p, convert.i );
+        retval = PHYSFS_writeULE32( file.p, convert.i );
         
         error = ( 0 == retval );
         
@@ -1273,7 +1223,7 @@ int vfs_printf( vfs_FILE * pfile, const char *format, ... )
 
     va_start( args, format );
     {
-        retval = fake_physfs_vprintf( pfile->ptr.p, format, args );
+        retval = fake_physfs_vprintf( pfile->p, format, args );
     }
     va_end( args );
 
@@ -1537,10 +1487,9 @@ int vfs_ungetc( int c, vfs_FILE * pfile )
 
     if ( NULL == pfile ) return 0;
 
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         // fake it
-        int seeked = PHYSFS_seek(pfile->ptr.p, PHYSFS_tell(pfile->ptr.p) - 1);
+        int seeked = PHYSFS_seek(pfile->p, PHYSFS_tell(pfile->p) - 1);
         retval = c;
         
         if (!seeked) pfile->flags |= VFS_FILE_FLAG_ERROR;
@@ -1563,10 +1512,9 @@ int vfs_getc(vfs_FILE *file)
     }
 
     retval = 0;
-    if (VFS_FILE_TYPE_PHYSFS == file->type)
     {
         unsigned char cTmp;
-        retval = PHYSFS_read(file->ptr.p, &cTmp, sizeof(cTmp), 1);
+        retval = PHYSFS_read(file->p, &cTmp, sizeof(cTmp), 1);
 
         if (-1 == retval)
         {
@@ -1599,11 +1547,10 @@ int vfs_putc(int c, vfs_FILE *file)
         return 0;
     }
 
-    if (VFS_FILE_TYPE_PHYSFS == file->type)
     {
         IDLIB_DEBUG_ASSERT(0 <= c && c <= 0xff);
         unsigned char ch = static_cast<unsigned char>(c);
-        retval = PHYSFS_write(file->ptr.p, &ch, 1, sizeof(unsigned char));
+        retval = PHYSFS_write(file->p, &ch, 1, sizeof(unsigned char));
     }
 
     return retval;
@@ -1618,7 +1565,6 @@ int vfs_puts( const char * str , vfs_FILE * pfile )
 
     if ( NULL == pfile || INVALID_CSTR( str ) ) return 0;
 
-    if ( VFS_FILE_TYPE_PHYSFS == pfile->type )
     {
         size_t len = strlen( str );
 
@@ -1660,9 +1606,8 @@ void _vfs_translate_error(vfs_FILE *file)
         return;
     }
 
-    if (VFS_FILE_TYPE_PHYSFS == file->type)
     {
-        if (PHYSFS_eof(file->ptr.p))
+        if (PHYSFS_eof(file->p))
         {
             SET_BIT(file->flags, VFS_FILE_FLAG_EOF);
         }
