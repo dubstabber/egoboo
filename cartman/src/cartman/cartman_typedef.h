@@ -23,6 +23,17 @@
 #pragma once
 
 #include "cartman/cartman_config.h"
+#include "egolib/integrations/math.hpp"   // Ego::Vector*/Point*/Rectangle*/Matrix* aliases
+
+// The egolib math types were moved into the Ego:: namespace during the modernization.
+// Cartman's legacy code refers to them unqualified, so surface them here (cartman_typedef.h
+// is included almost everywhere in cartman). This mirrors the old global-namespace layout
+// and keeps the port to a minimal diff (T3.5; see refactoring-documents/73-...).
+using Ego::Vector2f;
+using Ego::Vector3f;
+using Ego::Point2f;
+using Ego::Rectangle2f;
+using Ego::Matrix4f4f;
 
 // Forward declarations.
 struct camera_t;

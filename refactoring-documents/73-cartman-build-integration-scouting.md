@@ -1,7 +1,8 @@
 # Cartman Build Integration — Scouting (T3.5)
 
-Snapshot date: 2026-06-07. Status: **scouting only — no code changed.** This document records a feasibility
-assessment for roadmap item **T3.5** ("`cartman/` exists in-tree but is disconnected from the main CMake graph.
+Snapshot date: 2026-06-07. Status: **Phase 1 executed** (CMake seam + mechanical rename sweep landed; gated OFF by
+default; 719→60 errors, the residual being genuine API-drift for Phase 2 — see "Phase 1 — EXECUTED" below). This
+document records the original feasibility assessment for roadmap item **T3.5** ("`cartman/` exists in-tree but is disconnected from the main CMake graph.
 Gate it with a CMake option and add it to the build matrix.").
 
 All numbers below are **compile-probe ground truth**, not estimates — each cartman TU/header was syntax-checked
@@ -123,6 +124,49 @@ Always-green, verifiable steps (mirrors the refactoring program's discipline):
 5. **Manual functional smoke** on a real display against a small module; document what works.
 6. Keep `EGOBOO_BUILD_CARTMAN` **OFF by default** until it builds + launches reliably, then flip the default and add
    to the build matrix / docs.
+
+## Phase 1 — EXECUTED (2026-06-07)
+
+Steps 1–2 of the plan are done (CMake seam + mechanical rename sweep + dangling-`egolib.h` removal). Always-green:
+the option is **OFF by default**, so the standard build is unchanged (verified: reconfigure OFF → no `cartman`
+target → egolib-library/egoboo/content-validator/tests all build green).
+
+- **CMake seam**: new gated `cartman/CMakeLists.txt` (`option(EGOBOO_BUILD_CARTMAN OFF)` with an early `return()`
+  when OFF; `add_executable(cartman …)` linking only `egolib-library`); `add_subdirectory(cartman)` in root.
+- **Mechanical rename sweep** (verified-safe, applied across `cartman/src`): `id::`→`idlib::` (20 sites);
+  `Ego::Math::Colour*`→`Ego::Colour*` (26 sites; `Ego::Math::constrain` correctly preserved);
+  `Ego::{fill,set_pixel,blit}`→`idlib::…` (8 sites, image-pixel ops that moved to idlib). Added the bare-math-type
+  `using` block (`Ego::Vector2f/Vector3f/Point2f/Rectangle2f/Matrix4f4f`) + `integrations/math.hpp` to the central
+  `cartman_typedef.h` so the legacy unqualified math names resolve with a minimal diff.
+- **`egolib/egolib.h` removed** from all 4 cartman includers. `cartman_config.h` (included editor-wide via
+  `cartman_typedef.h`) now carries cartman's curated egolib **core include surface** (platform, typedef, idlib,
+  color/math integrations, Renderer, GraphicsSystem/Window, Font, ImageManager, Time, Mesh/Info, FileFormats/map_file);
+  `Clocks.h` → `Time/Time.hpp`; `cartman.c`/`cartman_gfx.c` drop it (reached transitively).
+
+**Error trajectory** (real `EGOBOO_BUILD_CARTMAN=ON` build, ground truth): **719 → 60**. The rename sweep + core
+include surface collapsed essentially all of the cascade. The remaining **60 are genuine egolib API-drift**, the
+**Phase 2 worklist**, concentrated in 5 TUs (cartman_gfx.c 17, cartman.c 15, cartman_gui.c 2, View.cpp 1,
+cartman_input.c 1):
+
+| Genuine-drift symbol | count | likely current API |
+|---|---|---|
+| `Ego::Math::Transform` (+ its `<`-token cascade, ~24) | 7 (+24) | moved/renamed — find the current transform type |
+| `Ego::GraphicsWindow::getSize()` / `getDrawableSize()` | 7 / 5 | accessor renamed (`drawable_size` suggested; **no** `getSize`/`size` in the header — needs the base-class/idlib-game-engine window API) |
+| `Ego::Core` not declared | 6 | needs `Console/Console.hpp` / `Core/System.hpp` or a rename |
+| `Ego::Matrix4f4f::identity` | 5 | `idlib::matrix` identity is a free function now (`idlib::identity<…>()`?) |
+| incomplete `struct GFX` / `Ego::App<GFX>` | 4 | cartman's app object inherits egolib `App<T>`; the App template API drifted |
+| `idlib::axis_aligned_box(point, {brace-init})` | 1 | `Rectangle2f` 2-arg construction changed |
+
+### Bugs / questionable code spotted (for future iterations, per the maintainer's note that cartman was buggy)
+
+Not touched in this port (behavior-preserving include/rename work only) — flagged for a later cleanup pass:
+- **Legacy immediate-mode OpenGL** throughout `cartman_gfx.c` (`glBegin`/`glEnd`/`glVertex*`) — works via
+  `ogl_extensions.h` but is deprecated and will block any renderer modernization.
+- **Pervasive global mutable state** (`camera_t cam;`, the `damagetile*`/`animtile*` globals in `cartman_gfx.c`,
+  the singletons `Input`/`Manager`/`Resources`) and **C-style `NULL`/raw-pointer/`( type )cast` idioms** — the
+  "spaghetti" character the editor was known for; candidates for a modernization pass once it compiles + runs.
+- `GFX` ties the whole editor lifecycle to `Ego::App<GFX>`; the App API drift (above) is the riskiest Phase 2 item
+  because it touches startup/teardown and can't be checked without a runtime launch.
 
 ## How to resume / re-probe
 

@@ -50,7 +50,7 @@ void SideView::render(Gui::Window& window, float zoom_hrz, float zoom_vrt) {
             }
 
             if (mdata.rect_draw) {
-                Ego::Math::Colour4f color;
+                Ego::Colour4f color;
                 float x_min, x_max;
                 float z_min, z_max;
 

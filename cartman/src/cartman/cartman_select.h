@@ -41,7 +41,7 @@ public:
 	}
 	static int at(select_lst_t& self, int index) {
 		if (index < 0 || index >= self.count()) {
-			throw id::runtime_error(__FILE__, __LINE__, "index out of bounds");
+			throw idlib::runtime_error(__FILE__, __LINE__, "index out of bounds");
 		}
 		return self._which[index];
 	}

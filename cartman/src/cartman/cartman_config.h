@@ -25,4 +25,21 @@
 
 #undef CARTMAN_DEBUG
 
-#include "egolib/egolib.h"
+// Cartman historically pulled the whole egolib uber-header (egolib/egolib.h) here.
+// That header was deleted in the uber-header teardown (Pass 226). cartman_config.h is
+// included across the editor (via cartman_typedef.h), so it carries cartman's core
+// egolib dependency surface. This list will be trimmed as the T3.5 port matures --
+// see refactoring-documents/73-cartman-build-integration-scouting.md.
+#include "egolib/platform.h"
+#include "egolib/typedef.h"
+#include "idlib/idlib.hpp"
+#include "egolib/integrations/color.hpp"
+#include "egolib/integrations/math.hpp"
+#include "egolib/Renderer/Renderer.hpp"
+#include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"
+#include "egolib/Graphics/Font.hpp"
+#include "egolib/Image/ImageManager.hpp"
+#include "egolib/Time/Time.hpp"
+#include "egolib/Mesh/Info.hpp"
+#include "egolib/FileFormats/map_file.h"

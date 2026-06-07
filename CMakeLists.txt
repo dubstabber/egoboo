@@ -47,6 +47,9 @@ add_subdirectory(egolib)
 # Add Egoboo.
 add_subdirectory(egoboo)
 
+# Add Cartman (legacy map editor; gated by EGOBOO_BUILD_CARTMAN, OFF by default).
+add_subdirectory(cartman)
+
 # Add repository tools.
 add_subdirectory(tools)
 

@@ -135,14 +135,14 @@ namespace Cartman
 
 namespace Cartman
 {
-    struct Input : id::singleton<Input>
+    struct Input : idlib::singleton<Input>
     {
     public:
         Mouse _mouse;
         Keyboard _keyboard;
     private:
-        friend id::default_new_functor<Input>;
-        friend id::default_delete_functor<Input>;
+        friend idlib::default_new_functor<Input>;
+        friend idlib::default_delete_functor<Input>;
         Input();
         virtual ~Input();
     public:

@@ -17,8 +17,6 @@
 //*
 //********************************************************************************************
 
-#include "egolib/egolib.h"
-
 #include "cartman/cartman.h"
 
 #include "cartman/cartman_map.h"
@@ -1818,7 +1816,7 @@ int SDL_main( int argcnt, char* argtext[] )
     Resources::initialize();
 
     // Initialize the console.
-	auto rectangle = Rectangle2f(id::zero<Point2f>(), { Ego::GraphicsSystem::get().window->getDrawableSize()(0),
+	auto rectangle = Rectangle2f(idlib::zero<Point2f>(), { Ego::GraphicsSystem::get().window->getDrawableSize()(0),
 		                                                Ego::GraphicsSystem::get().window->getDrawableSize()(1) * 0.25 });
 
     Ego::Core::Console::initialize(rectangle);
@@ -1924,7 +1922,7 @@ void cartman_save_mesh( const char * modname, cartman_mpd_t * pmesh )
 
     cartman_mpd_save_vfs( /*modname,*/ pmesh );
 
-    show_name( newloadname, Ego::Math::Colour4f::white() );
+    show_name( newloadname, Ego::Colour4f::white() );
 }
 
 //--------------------------------------------------------------------------------------------

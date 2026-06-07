@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/Time/Time.hpp"   // Time::now, Time::Unit
 #define CLOCKRATE 14
 #define SECONDRATE 1000
 

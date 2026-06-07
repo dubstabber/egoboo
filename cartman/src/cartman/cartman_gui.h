@@ -120,10 +120,10 @@ struct Window {
 
 namespace Cartman { namespace Gui {
 
-struct Manager : public id::singleton<Manager> {
+struct Manager : public idlib::singleton<Manager> {
 protected:
-    friend id::default_new_functor<Manager>;
-    friend id::default_delete_functor<Manager>;
+    friend idlib::default_new_functor<Manager>;
+    friend idlib::default_delete_functor<Manager>;
     Manager();
     ~Manager();
 public:
@@ -178,7 +178,7 @@ struct Cursor {
 
 void do_cursor();
 void draw_slider( int tlx, int tly, int brx, int bry, int* pvalue, int minvalue, int maxvalue );
-void show_name(const std::string& newLoadName, const Ego::Math::Colour4f& textColour);
+void show_name(const std::string& newLoadName, const Ego::Colour4f& textColour);
 
 inline float SCREEN_TO_REAL(float VAL, float CAM, float ZOOM) {
     const auto gridSize = Info<float>::Grid::Size();

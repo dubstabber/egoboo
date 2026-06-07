@@ -248,7 +248,7 @@ bool interpolate_coord( cartman_mpd_t * pmesh, cartman_mpd_tile_t * pfan, int gr
     int cnt, ivrt, idx;
 
     float   vweight = 0.0f;
-	Vector3f vsum    = id::zero<Vector3f>();
+	Vector3f vsum    = idlib::zero<Vector3f>();
 
     Cartman::mpd_vertex_t * pvrt;
 
@@ -404,7 +404,7 @@ bool interpolate_coord( cartman_mpd_t * pmesh, cartman_mpd_tile_t * pfan, int gr
             pvrt = CART_MPD_VERTEX_PTR( pmesh, ivrt );
             if ( NULL != pvrt && VERTEXUNUSED != pvrt->a )
             {
-                float weight = expf( - id::sq( gx - grid_ix ) - id::sq( gy - grid_iy ) );
+                float weight = expf( - idlib::sq( gx - grid_ix ) - idlib::sq( gy - grid_iy ) );
                 vsum += Vector3f(pvrt->x, pvrt->y, pvrt->z) * weight;
                 vweight += weight;
             }
@@ -731,7 +731,7 @@ void mesh_select_move( select_lst_t& plst, float x, float y, float z )
     // get the proper mesh
 	cartman_mpd_t *pmesh = plst.get_mesh();
     if (nullptr == pmesh) {
-        throw id::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
+        throw idlib::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
     }
 
     // limit the movement by the bounds of the mesh
@@ -775,7 +775,7 @@ void mesh_select_set_z_no_bound( select_lst_t& plst, float z )
     // get the mesh
 	cartman_mpd_t *pmesh = plst.get_mesh();
     if (nullptr == pmesh) {
-        throw id::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
+        throw idlib::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
     }
 
     for ( int cnt = 0; cnt < plst.count(); cnt++ )
@@ -791,7 +791,7 @@ void mesh_select_set_z_no_bound( select_lst_t& plst, float z )
 void mesh_select_jitter(select_lst_t& plst) {
 	cartman_mpd_t *pmesh = plst.get_mesh();
     if (nullptr == pmesh)         {
-        throw id::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
+        throw idlib::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
     }
 	for (int i = 0; i < plst.count(); ++i) {
 		int vertex = select_lst_t::at(plst, i);
@@ -803,7 +803,7 @@ void mesh_select_jitter(select_lst_t& plst) {
 void mesh_select_verts_connected(select_lst_t& plst) {
 	cartman_mpd_t *pmesh = plst.get_mesh();
     if (nullptr == pmesh) {
-        throw id::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
+        throw idlib::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
     }
 
     // get vertex list alias
@@ -851,7 +851,7 @@ void mesh_select_weld(select_lst_t& plst)
 {
 	cartman_mpd_t *pmesh = plst.get_mesh();
     if (nullptr == pmesh) {
-        throw id::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
+        throw idlib::runtime_error(__FILE__, __LINE__, "selection list has no mesh");
     }
 
     if ( plst.count() > 1 )

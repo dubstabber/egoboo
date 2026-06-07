@@ -57,8 +57,8 @@ struct simple_vertex_t
 
 #define MAXTILE 256
 
-inline Ego::Math::Colour4f make_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return (Ego::Math::Colour4f)Ego::Math::Colour4b(r, g, b, a);
+inline Ego::Colour4f make_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return (Ego::Colour4f)Ego::Colour4b(r, g, b, a);
 }
 
 #define POINT_SIZE(X) ( (X) * 0.5f + 4.0f )
@@ -68,7 +68,7 @@ inline Ego::Math::Colour4f make_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 
 extern camera_t cam;
 
-struct Resources : id::singleton<Resources> {
+struct Resources : idlib::singleton<Resources> {
     std::shared_ptr<SDL_Surface> bmphitemap;     // Heightmap image
     std::shared_ptr<Ego::Texture> tx_point;      // Vertex image
     std::shared_ptr<Ego::Texture> tx_pointon;    // Vertex image ( select_vertsed )
@@ -128,8 +128,8 @@ void draw_tile_fx( float x, float y, uint8_t fx, float scale );
 // ogl routines
 void ogl_draw_sprite_2d( std::shared_ptr<Ego::Texture> img, float x, float y, float width, float height );
 void ogl_draw_sprite_3d( std::shared_ptr<Ego::Texture> img, cart_vec_t pos, cart_vec_t vup, cart_vec_t vright, float width, float height );
-void ogl_draw_box_xy( float x, float y, float z, float w, float h, Ego::Math::Colour4f& colour );
-void ogl_draw_box_xz( float x, float y, float z, float w, float d, Ego::Math::Colour4f& colour );
+void ogl_draw_box_xy( float x, float y, float z, float w, float h, Ego::Colour4f& colour );
+void ogl_draw_box_xz( float x, float y, float z, float w, float d, Ego::Colour4f& colour );
 void ogl_beginFrame();
 void ogl_endFrame();
 

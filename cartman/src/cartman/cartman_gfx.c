@@ -17,8 +17,6 @@
 //*
 //********************************************************************************************
 
-#include "egolib/egolib.h"
-
 #include "cartman/cartman_gfx.h"
 #include "cartman/cartman.h"
 #include "cartman/cartman_map.h"
@@ -218,7 +216,7 @@ void make_hitemap( cartman_mpd_t * pmesh )
             if ( HAS_BITS( pfan->fx, MAPFX_IMPASS ) ) level = 254;   // Impass
             if ( HAS_BITS( pfan->fx, MAPFX_WALL ) && HAS_BITS( pfan->fx, MAPFX_IMPASS ) ) level = 255;   // Both
 
-            Ego::set_pixel(Resources::get().bmphitemap.get(), Ego::Math::Colour3b((uint8_t)level, (uint8_t)level, (uint8_t)level), { pixx, pixy });
+            idlib::set_pixel(Resources::get().bmphitemap.get(), Ego::Colour3b((uint8_t)level, (uint8_t)level, (uint8_t)level), { pixx, pixy });
         }
     }
 }
@@ -233,7 +231,7 @@ void make_planmap( cartman_mpd_t * pmesh )
 
     Resources::get().bmphitemap = Ego::ImageManager::get().createImage( pmesh->info.getTileCountX() * TINYXY, pmesh->info.getTileCountY() * TINYXY );
 
-    Ego::fill( Resources::get().bmphitemap.get(), Ego::Math::Colour3b::black());
+    idlib::fill( Resources::get().bmphitemap.get(), Ego::Colour3b::black());
 
     puty = 0;
     for ( y = 0; y < pmesh->info.getTileCountY(); y++ )
@@ -246,7 +244,7 @@ void make_planmap( cartman_mpd_t * pmesh )
 
             if ( NULL != tx_tile )
             {
-                Ego::blit(tx_tile->m_source.get(), Resources::get().bmphitemap.get(), Point2f(static_cast<int16_t>(putx), static_cast<int16_t>(puty)));
+                idlib::blit(tx_tile->m_source.get(), Resources::get().bmphitemap.get(), Point2f(static_cast<int16_t>(putx), static_cast<int16_t>(puty)));
             }
             putx += TINYXY;
         }
@@ -269,7 +267,7 @@ void draw_top_fan( select_lst_t& plst, int fan, float zoom_hrz, float zoom_vrt )
     static uint32_t faketoreal[MAP_FAN_VERTICES_MAX];
 
     int cnt, stt, end, vert;
-    Ego::Math::Colour4f color;
+    Ego::Colour4f color;
     float size;
 
     cart_vec_t vup    = { 0, 1, 0};
@@ -324,7 +322,7 @@ void draw_top_fan( select_lst_t& plst, int fan, float zoom_hrz, float zoom_vrt )
     }
     glPopAttrib();
 
-    Ego::Renderer::get().setColour(Ego::Math::Colour4f::white());
+    Ego::Renderer::get().setColour(Ego::Colour4f::white());
     for ( cnt = 0; cnt < pdef->numvertices; cnt++ )
     {
         int point_size;
@@ -375,7 +373,7 @@ void draw_side_fan( select_lst_t& plst, int fan, float zoom_hrz, float zoom_vrt 
     cart_vec_t vpos;
 
     int cnt, stt, end, vert;
-    Ego::Math::Colour4f color;
+    Ego::Colour4f color;
     float size;
     float point_size;
 
@@ -428,7 +426,7 @@ void draw_side_fan( select_lst_t& plst, int fan, float zoom_hrz, float zoom_vrt 
     size = 7;
     point_size = 4.0f * POINT_SIZE( size ) / zoom_hrz;
 
-    Ego::Renderer::get().setColour(Ego::Math::Colour4f::white());
+    Ego::Renderer::get().setColour(Ego::Colour4f::white());
 
     for ( cnt = 0; cnt < pdef->numvertices; cnt++ )
     {
@@ -463,7 +461,7 @@ void draw_schematic(std::shared_ptr<Cartman::Gui::Window> pwin, int fantype, int
     //     The wireframe on the left side of the theSurface.
 
     int cnt, stt, end;
-    Ego::Math::Colour4f color;
+    Ego::Colour4f color;
 
     // aliases
     tile_line_data_t     * plines = NULL;
@@ -759,7 +757,7 @@ void ogl_draw_sprite_2d(std::shared_ptr<Ego::Texture> img, float x, float y, flo
     // Draw the image
 	Ego::Renderer::get().getTextureUnit().setActivated(img.get());
 
-    Ego::Renderer::get().setColour(Ego::Math::Colour4f::white());
+    Ego::Renderer::get().setColour(Ego::Colour4f::white());
 
     glBegin( GL_TRIANGLE_STRIP );
     {
@@ -807,7 +805,7 @@ void ogl_draw_sprite_3d(std::shared_ptr<Ego::Texture> img, cart_vec_t pos, cart_
     // Draw the image
 	Ego::Renderer::get().getTextureUnit().setActivated(img.get());
 
-    Ego::Renderer::get().setColour(Ego::Math::Colour4f::white());
+    Ego::Renderer::get().setColour(Ego::Colour4f::white());
 
     bboard[0][kX] = pos[kX] - w / 2 * vright[kX] + h / 2 * vup[kX];
     bboard[0][kY] = pos[kY] - w / 2 * vright[kY] + h / 2 * vup[kY];
@@ -837,7 +835,7 @@ void ogl_draw_sprite_3d(std::shared_ptr<Ego::Texture> img, cart_vec_t pos, cart_
 
 //--------------------------------------------------------------------------------------------
 
-void ogl_draw_box_xy( float x, float y, float z, float w, float h, Ego::Math::Colour4f& colour )
+void ogl_draw_box_xy( float x, float y, float z, float w, float h, Ego::Colour4f& colour )
 {
     glPushAttrib( GL_ENABLE_BIT );
     {
@@ -856,7 +854,7 @@ void ogl_draw_box_xy( float x, float y, float z, float w, float h, Ego::Math::Co
     glPopAttrib();
 };
 
-void ogl_draw_box_xz( float x, float y, float z, float w, float d, Ego::Math::Colour4f& colour )
+void ogl_draw_box_xz( float x, float y, float z, float w, float d, Ego::Colour4f& colour )
 {
     glPushAttrib( GL_ENABLE_BIT );
     {
@@ -881,11 +879,11 @@ void ogl_beginFrame()
     auto& renderer = Ego::Renderer::get();
     glPushAttrib( GL_ENABLE_BIT );
 	renderer.setDepthTestEnabled(false);
-    renderer.setCullingMode(id::culling_mode::none);
+    renderer.setCullingMode(idlib::culling_mode::none);
     glEnable( GL_TEXTURE_2D );
 
     renderer.setBlendingEnabled(true);
-    renderer.setBlendFunction(id::color_blend_parameter::source0_alpha, id::color_blend_parameter::one_minus_source0_alpha);
+    renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
     auto drawableSize = Ego::GraphicsSystem::get().window->getDrawableSize();
     renderer.setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
@@ -1142,7 +1140,7 @@ void get_small_tiles( SDL_Surface* bmpload )
             {
                 throw std::runtime_error("unable to create surface");
             }
-            Ego::fill(image.get(), Ego::Math::Colour3b::black());
+            idlib::fill(image.get(), Ego::Colour3b::black());
             SDL_SoftStretch( bmpload, &src1, image.get(), NULL );
 
             Resources::get().tx_smalltile[numsmalltile]->load(image);
@@ -1192,7 +1190,7 @@ void get_big_tiles( SDL_Surface* bmpload )
             {
                 throw std::runtime_error("unable to create surface");
             }
-            Ego::fill(image.get(), Ego::Math::Colour3b::black());
+            idlib::fill(image.get(), Ego::Colour3b::black());
             SDL_SoftStretch( bmpload, &src1, image.get(), NULL );
 
             Resources::get().tx_bigtile[numbigtile]->load(image);

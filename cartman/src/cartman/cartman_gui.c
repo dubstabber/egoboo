@@ -34,17 +34,17 @@ namespace Cartman { namespace Gui {
 
 Cursor::Cursor() :
     _surface(Ego::ImageManager::get().createImage(8, 8)) {
-	auto col = Ego::Math::Colour3b::white(); // opaque (255) white (255, 255, 255)
-	auto loc = Ego::Math::Colour3b(24, 24, 24); // opaque (255) black-grey (24, 24, 24)
-	auto clr = Ego::Math::Colour4b(Ego::Math::Colour3b::black(), 64); // almost transparent (64) black (0, 0, 0)
+	auto col = Ego::Colour3b::white(); // opaque (255) white (255, 255, 255)
+	auto loc = Ego::Colour3b(24, 24, 24); // opaque (255) black-grey (24, 24, 24)
+	auto clr = Ego::Colour4b(Ego::Colour3b::black(), 64); // almost transparent (64) black (0, 0, 0)
 
 	auto rtmp = Rectangle2f(Point2f(0, 0), Point2f(8, 1));
-    Ego::fill(_surface.get(), Ego::Math::Colour3b(24, 24, 24), rtmp);
+    idlib::fill(_surface.get(), Ego::Colour3b(24, 24, 24), rtmp);
 
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            if (x + y < 8) Ego::set_pixel(_surface.get(), col, { x, y });
-            else Ego::set_pixel(_surface.get(), clr, { x, y });
+            if (x + y < 8) idlib::set_pixel(_surface.get(), col, { x, y });
+            else idlib::set_pixel(_surface.get(), clr, { x, y });
         }
     }
 }
@@ -177,7 +177,7 @@ void draw_slider(int tlx, int tly, int brx, int bry, int* pvalue, int minvalue, 
     int cnt;
     int value;
 
-    Ego::Math::Colour4f colour = Ego::Math::Colour4f::white();
+    Ego::Colour4f colour = Ego::Colour4f::white();
 
     // Pick a new value
     value = *pvalue;
@@ -199,7 +199,7 @@ void draw_slider(int tlx, int tly, int brx, int bry, int* pvalue, int minvalue, 
     }
 }
 
-void show_name(const std::string& newLoadName, const Ego::Math::Colour4f& textColour) {
+void show_name(const std::string& newLoadName, const Ego::Colour4f& textColour) {
     auto windowSize = Ego::GraphicsSystem::get().window->getSize();
     gfx_font_ptr->drawText(newLoadName, 0, windowSize.y() - 16, textColour);
 }
