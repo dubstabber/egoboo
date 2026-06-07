@@ -218,6 +218,31 @@ just 5 headers (14/19 headers + the entire core data/math model already compile 
 Main risk: **no automated runtime verification** (GUI editor needs a display + a module). Doing this also
 resolves the 4 dangling `egolib.h` includes left in cartman by Pass 226.
 
+### T3.6 `vfs.c` dead-backend elimination — DONE (2026-06-07)
+
+`vfs.c` (the largest non-Object TU, 2,456 lines) carried a fully-dead `cstdio` backend: `vsf_file` was a
+discriminated union over `VFS_FILE_TYPE_CSTDIO` (a libc `FILE *`) vs `VFS_FILE_TYPE_PHYSFS`
+(`PHYSFS_File *`), but `VFS_FILE_TYPE_CSTDIO` is **never assigned anywhere in the tree** — only PHYSFS is.
+Surfaced by the 2026-06-07 next-heavy-front scouting workflow as the highest-value remaining structural
+thrust (heavy, fully headless-verifiable, low-risk) after the Object/singleton, uber-header, and CameraSystem
+fronts were exhausted. Eliminated in **three verified passes** (commits `3e336393b` / `043da643f` /
+`0381d371e`; full detail in `71-completed-passes-log.md`):
+
+- **Pass 1** — deleted the 33 dead `if (VFS_FILE_TYPE_CSTDIO == ...)` branches across ~22 functions plus
+  the CSTDIO enum value and the union's `FILE *c` member (−224 lines).
+- **Pass 2** — collapsed `vsf_file` from a discriminated union to a plain `{ BIT_FIELD flags; PHYSFS_File *p; }`:
+  dropped the now-single-valued `type` field, the `vfs_file_type` enum, the union, the 32 always-true PHYSFS
+  guards, and the unreachable corrupted-`else` (−55 lines).
+- **Pass 3** — deduped the 18 fixed-width `vfs_read_*`/`vfs_write<T>` helpers behind one `vfs_finish_io`
+  error-handling tail (PHYSFS calls kept explicit per width), and fixed the latent `sizeof(int8_t)` in
+  `vfs_read_Uint8` (−256 lines).
+
+Net: **2,456 → 1,922 lines (−534, ~22%)**, zero caller churn (the `vsf_file` struct is opaque — `vfs.h:187`),
+behavior byte-identical. Each pass green on build + validator (`test.mod` 0/0, full errors=245 baseline) +
+ctest 748/750; the cumulative change confirmed by a clean menu smoke-run (exit 124). **Optional deferred
+follow-on:** a Pass 4 RAII wrapper for the residual `vsf_file` (ctor opens / dtor `PHYSFS_close`, eliminating
+the manual `delete file`) — touches lifetime/ownership, so it would need an `AGENTS.md`-mandated note + smoke-run.
+
 ---
 
 ## Items intentionally deferred
