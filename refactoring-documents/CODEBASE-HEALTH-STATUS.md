@@ -23,11 +23,11 @@ The codebase is in an **active, well-managed transitional state**. The original 
 Core design debt that remains:
 
 - The `Object` class is still monolithic by interface — `Object.hpp` is now ~1,617 lines. Its implementation is split across seven files (`Object.cpp` plus six `Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp` TUs), and the role-extraction passes have peeled off 18 role interfaces: `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, `IMorphControl`, and `IProfiled`. Single-param role-narrowing has reached its ceiling; remaining coupling is intrinsic to multi-role functions.
-- Singleton access is still pervasive (~912 `::get()` call sites, down from ~1,150 at 2026-04-19), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, runtime `egoboo_config_t`, font, input, graphics system, texture manager, texture atlas, GFX, and billboard system; full DI still does not exist.
+- Singleton access is still pervasive (~912 `::get()` call sites, down from ~1,150 at 2026-04-19), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, runtime `egoboo_config_t`, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system; full DI still does not exist.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure — but a written policy is now published at `doc/error-handling-policy.md` and new code is being held to it.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
 
-Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All three mutable globals retired, eighteen role interfaces extracted (single-param narrowing ceiling reached), fourteen service seams landed on `EngineContext`, singleton sites down ~26% (1,239→912), test coverage at ~11%, orphaned third-party deps removed, MSVC CMake branches dropped. The trend is unambiguously positive; the remaining frontier is multi-role Object decoupling, broader DI, and script-dispatch modernization.
+Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All three mutable globals retired, eighteen role interfaces extracted (single-param narrowing ceiling reached), fifteen service seams landed on `EngineContext`, singleton sites down ~26% (1,239→912), test coverage at ~11%, orphaned third-party deps removed, MSVC CMake branches dropped. The trend is unambiguously positive; the remaining frontier is multi-role Object decoupling, broader DI, and script-dispatch modernization.
 
 ---
 
@@ -143,7 +143,7 @@ Raw `::get()` singleton calls now number approximately **912** across the codeba
 
 Engine-published service seams landed so far:
 
-- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager`, `IInputSystem`, `IGraphicsSystem`, `ITextureManager`, `ITextureAtlasManager`, `IGFX`, and `IBillboardSystem` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookups.
+- `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager`, `IInputSystem`, `IGraphicsSystem`, `ITextureManager`, `ITextureAtlasManager`, `IGFX`, `IBillboardSystem`, and `ICameraSystem` are now published through `EngineContext`, with non-subsystem callers migrated off the concrete singleton lookups.
 - Runtime logging routes through the installed `EngineContext` log target outside the `Log` subsystem's bootstrap/lifecycle code.
 - `egoboo_config_t` is published through `EngineContext` for bootstrap/lifecycle paths, module-load sync, lightweight content bootstrap, and the cross-cutting runtime/UI caller set.
 - Clock callers decoupled from `Core::System` via the `Time` abstraction (Pass 216).
@@ -153,7 +153,7 @@ Dominant direct singletons still reachable outside the session/engine wrappers:
 - `egoboo_config_t::get()` — confined to subsystem-local bootstrap/lifecycle or singleton-definition code.
 - `AudioSystem::get()`, `PerkHandler::get()`, `ImageManager::get()`, `ParticleHandler::get()`, `ProfileSystem::get()`, and `Log::get()` remain as subsystem-local bootstrap/lifecycle seams inside their own implementations.
 - `Renderer` — **deferred**: already an abstract polymorphic facade with low value/high churn for an EngineContext seam.
-- `CameraSystem` — **deferred**: `ICameraSystem` is too narrow; needs interface-widening before a clean pass.
+- `CameraSystem` — **DONE** (2026-06-07): `ICameraSystem` widened with `getMainCamera`/`getCamera`/`getCameraOptions`/`renderAll`; clean game-layer `.cpp` consumers migrated to `EngineContext::get().cameraSystem()`. Remaining `CameraSystem::get()` sites are principled exceptions (install, `AudioSystem` ×4 layer-inversion, `Object_appearance` ×2 `is_initialized()`-guard, 10 deferred `.c`).
 
 ### Smart pointer distribution
 
@@ -258,7 +258,7 @@ Directory-level subsystem map (by line count, large to small):
 | OCP       | 2.5/5 |   →   | `GameState` hierarchy is exemplary; script dispatch and damage systems still closed to extension.     |
 | LSP       |  3/5  |   →   | Shallow entity hierarchies avoid substitution problems by avoiding specialization altogether.          |
 | ISP       |  3/5  |   ↗   | Eighteen `Object` role interfaces extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. |
-| DIP       | 2.5/5 |   ↗   | Context wrappers adopted and fourteen service seams landed; broader singleton abstraction progressing (~912 `::get()` sites). |
+| DIP       | 2.5/5 |   ↗   | Context wrappers adopted and fifteen service seams landed; broader singleton abstraction progressing (~912 `::get()` sites). |
 
 ### Patterns used well
 
@@ -270,7 +270,7 @@ Directory-level subsystem map (by line count, large to small):
 
 ### Patterns misapplied
 
-- **Singleton as service locator.** Still ~912 `::get()` calls (down from ~1,150), even though fourteen services now have `EngineContext` testing seams.
+- **Singleton as service locator.** Still ~912 `::get()` calls (down from ~1,150), even though fifteen services now have `EngineContext` testing seams.
 - **God object.** `Object` remains the primary SRP / ISP offender.
 - **Anemic domain model.** `ObjectProfile` is still data + bolted-on parsing / export.
 
@@ -369,7 +369,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 | OCP adherence              | 2.5/5   |   →   | State machine is good; script/damage still closed to extension      |
 | LSP adherence              |  3/5    |   →   | Shallow hierarchies, no real specialization                         |
 | ISP adherence              |  3/5    |   ↗   | Eighteen role interfaces extracted on `Object`; single-param narrowing ceiling reached |
-| DIP adherence              | 2.5/5   |   ↗   | Context wrappers adopted; fourteen service seams landed; ~912 `::get()` sites remain |
+| DIP adherence              | 2.5/5   |   ↗   | Context wrappers adopted; fifteen service seams landed; ~912 `::get()` sites remain |
 | Design pattern quality     | 2.5/5   |   →   | State/Iterator well done; Factory/Strategy/Observer missing         |
 | Naming consistency         | 2.5/5   |   →   | Three naming eras coexist                                            |
 | Encapsulation              |  3/5    |   ↗   | Accessor closure plus broadening role extraction on `Object`        |
@@ -403,7 +403,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 ## 11. Key Weaknesses
 
 1. **`Object` is still a god class by interface.** ~1,617-line header despite eighteen role interfaces already extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. Further decoupling requires interface pollution or multi-param strategies.
-2. **Singleton proliferation persists.** ~912 `::get()` call sites remain. Fourteen services now have `EngineContext` abstraction boundaries, but subsystem-local bootstrap seams and deferred services (Renderer, CameraSystem) keep the count high.
+2. **Singleton proliferation persists.** ~912 `::get()` call sites remain. Fifteen services now have `EngineContext` abstraction boundaries, but subsystem-local bootstrap seams and the deferred Renderer keep the count high.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes or `EngineContext::get()`.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
 5. **Error handling is inconsistent.** Exceptions, `egolib_rv`, and silent failure coexist; `doc/error-handling-policy.md` is now the written target but the migration of existing callers has not yet begun.
@@ -422,7 +422,7 @@ These items compound the refactoring progress most efficiently given the current
 ### Runtime and structure
 
 1. **Object role-decoupling: next frontier** — single-param narrowing is exhausted (Pass 220 analysis). Next value is either: (a) interface pollution — co-locating `getProfile()` onto existing narrow interfaces to unlock multi-role callers, or (b) multi-param strategies, or (c) the deferred `IMatrixCacheControl` interface for the matrix-cache render-path surface.
-2. **Continue the service-interface layer over singletons** — fourteen services are seamed; next candidates are subsystem-local cleanup and the deferred Renderer (if interface split becomes worthwhile) and CameraSystem (needs interface-widening). ~912 `::get()` sites remain.
+2. **Continue the service-interface layer over singletons** — fifteen services are seamed; next candidates are subsystem-local cleanup and the deferred Renderer (if interface split becomes worthwhile). ~912 `::get()` sites remain.
 3. **Begin enforcing the error-handling policy** — `doc/error-handling-policy.md` is landed; the next step is a bounded subsystem-by-subsystem migration that retires `egolib_rv` from the C++ code paths.
 
 ### Build and cross-platform
