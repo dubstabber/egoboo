@@ -767,425 +767,169 @@ size_t vfs_write( const void * buffer, size_t size, size_t count, vfs_FILE * pfi
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Sint8( vfs_FILE& file, int8_t * val )
+/// @brief Apply the error-handling tail shared by every fixed-width vfs read/write helper:
+///        update the file's error flag, translate the error on failure, and pass the raw
+///        PhysFS result back to the caller unchanged.
+/// @param file the file
+/// @param ok whether the underlying PhysFS call succeeded
+/// @param retval the raw PhysFS result the public helper returns
+/// @return @a retval
+static int vfs_finish_io( vfs_FILE& file, bool ok, int retval )
 {
-    int retval;
-    bool error = false;
-    
-    BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        retval = PHYSFS_read(file.p, val, 1, sizeof(int8_t));
-        
-        error = ( 1 != retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
+    if ( ok ) file.flags &= ~VFS_FILE_FLAG_ERROR;
+    else      file.flags |= VFS_FILE_FLAG_ERROR;
+    if ( !ok ) _vfs_translate_error( &file );
     return retval;
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Uint8( vfs_FILE& file, uint8_t * val )
+int vfs_read_Sint8( vfs_FILE& file, int8_t *val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        retval = PHYSFS_read(file.p, val, 1, sizeof(int8_t));
-        
-        error = ( 1 != retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_read( file.p, val, 1, sizeof(int8_t) );
+    return vfs_finish_io( file, 1 == retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Sint16( vfs_FILE& file, int16_t * val )
+int vfs_read_Uint8( vfs_FILE& file, uint8_t *val )
 {
-    int retval;
-    bool error = false;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_readSLE16( file.p, val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    int retval = PHYSFS_read( file.p, val, 1, sizeof(uint8_t) );
+    return vfs_finish_io( file, 1 == retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Uint16( vfs_FILE& file, uint16_t * val )
+int vfs_read_Sint16( vfs_FILE& file, int16_t *val )
 {
-	bool error = false;
-    int retval;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_readULE16( file.p, val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    int retval = PHYSFS_readSLE16( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Sint32( vfs_FILE& file, int32_t * val )
+int vfs_read_Uint16( vfs_FILE& file, uint16_t *val )
 {
-    int retval;
-	bool error = false;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_readSLE32( file.p, val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    int retval = PHYSFS_readULE16( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Uint32( vfs_FILE& file, uint32_t * val )
+int vfs_read_Sint32( vfs_FILE& file, int32_t *val )
 {
-    int retval;
-	bool error = false;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_readULE32( file.p, val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    int retval = PHYSFS_readSLE32( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Sint64( vfs_FILE& file, int64_t * val )
+int vfs_read_Uint32( vfs_FILE& file, uint32_t *val )
 {
-    int retval;
-	bool error = false;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_readSLE64( file.p, (PHYSFS_sint64*)val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    int retval = PHYSFS_readULE32( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_read_Uint64( vfs_FILE& file, uint64_t * val )
+int vfs_read_Sint64( vfs_FILE& file, int64_t *val )
 {
-    int retval;
-	bool error = false;
-
     BAIL_IF_NOT_INIT();
+    int retval = PHYSFS_readSLE64( file.p, (PHYSFS_sint64 *)val );
+    return vfs_finish_io( file, 0 != retval, retval );
+}
 
-    retval = 0;
-    {
-        retval = PHYSFS_readULE64( file.p, (PHYSFS_uint64 *)val );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+//--------------------------------------------------------------------------------------------
+int vfs_read_Uint64( vfs_FILE& file, uint64_t *val )
+{
+    BAIL_IF_NOT_INIT();
+    int retval = PHYSFS_readULE64( file.p, (PHYSFS_uint64 *)val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
 int vfs_read_float( vfs_FILE& file, float * val )
 {
-    int retval;
-	bool error = false;
-
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        union { float f; uint32_t i; } convert;
-        retval = PHYSFS_readULE32( file.p, &( convert.i ) );
-
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-
-        *val = convert.f;
-    }
-
-    if ( error ) _vfs_translate_error( &file );
-
-    return retval;
+    union { float f; uint32_t i; } convert;
+    int retval = PHYSFS_readULE32( file.p, &convert.i );
+    *val = convert.f;
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
 
-
 template <>
 int vfs_write<int8_t>( vfs_FILE& file, const int8_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-   
-    retval = 0;
-    {
-        retval = PHYSFS_write(file.p, &val, 1, sizeof(int8_t));
-        
-        error = ( 1 != retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_write( file.p, &val, 1, sizeof(int8_t) );
+    return vfs_finish_io( file, 1 == retval, retval );
 }
 
 template <>
 int vfs_write<uint8_t>( vfs_FILE& file, const uint8_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-
-    retval = 0;
-    {
-        retval = PHYSFS_write(file.p, &val, 1, sizeof(uint8_t));
-        
-        error = ( 1 != retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_write( file.p, &val, 1, sizeof(uint8_t) );
+    return vfs_finish_io( file, 1 == retval, retval );
 }
 
 template <>
 int vfs_write<int16_t>( vfs_FILE& file, const int16_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        retval = PHYSFS_writeSLE16( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_writeSLE16( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<uint16_t>( vfs_FILE& file, const uint16_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-   
-    retval = 0;
-    {
-        retval = PHYSFS_writeULE16( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_writeULE16( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<int32_t>( vfs_FILE& file, const int32_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        retval = PHYSFS_writeSLE32( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_writeSLE32( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<uint32_t>( vfs_FILE& file, const uint32_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        retval = PHYSFS_writeULE32( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_writeULE32( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<int64_t>( vfs_FILE& file, const int64_t& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-   
-    retval = 0;
-    {
-        retval = PHYSFS_writeSLE64( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    int retval = PHYSFS_writeSLE64( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<uint64_t>( vfs_FILE& file, const uint64_t& val )
 {
-    int retval;
-    bool error = false;
-    
-    BAIL_IF_NOT_INIT();  
-    
-    retval = 0;
-    {
-        retval = PHYSFS_writeULE64( file.p, val );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    BAIL_IF_NOT_INIT();
+    int retval = PHYSFS_writeULE64( file.p, val );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 template <>
 int vfs_write<float>( vfs_FILE& file, const float& val )
 {
-    int retval;
-    bool error = false;
-    
     BAIL_IF_NOT_INIT();
-    
-    retval = 0;
-    {
-        union { float f; uint32_t i; } convert;
-        convert.f = val;
-        retval = PHYSFS_writeULE32( file.p, convert.i );
-        
-        error = ( 0 == retval );
-        
-        if (error) file.flags |= VFS_FILE_FLAG_ERROR;
-        else       file.flags &= ~VFS_FILE_FLAG_ERROR;
-    }
-    
-    if ( error ) _vfs_translate_error( &file );
-    
-    return retval;
+    union { float f; uint32_t i; } convert;
+    convert.f = val;
+    int retval = PHYSFS_writeULE32( file.p, convert.i );
+    return vfs_finish_io( file, 0 != retval, retval );
 }
 
 //--------------------------------------------------------------------------------------------
