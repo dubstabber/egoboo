@@ -30,7 +30,7 @@
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/TileList.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
 
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -76,7 +76,7 @@ MapEditorState::MapEditorState(std::shared_ptr<ModuleProfile> module) :
     mapCenter.x() = activeModule.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size() * 0.5f;
     mapCenter.y() = activeModule.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size() * 0.5f;
     mapCenter.z() = activeModule.getMeshPointer()->getElevation(Vector2f(mapCenter.x(), mapCenter.y()), false);
-    CameraSystem::get().getMainCamera()->setPosition(mapCenter);
+    EngineContext::get().cameraSystem().getMainCamera()->setPosition(mapCenter);
 }
 
 void MapEditorState::addModeEditButton(EditorMode mode, const std::string &label)
@@ -117,12 +117,12 @@ void MapEditorState::update()
     module.getWater().update();
 
     //Update camera movement
-    CameraSystem::get().getMainCamera()->updateFreeControl();
+    EngineContext::get().cameraSystem().getMainCamera()->updateFreeControl();
 }
 
 void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 {
-    CameraSystem::get().renderAll(gfx_system_render_world);
+    EngineContext::get().cameraSystem().renderAll(gfx_system_render_world);
 
     // NOTE: deliberately do NOT call draw_hud() here. draw_hud() renders the in-game
     // PLAYER HUD (FPS / help / debug / timer / game-status), all anchored at the top-left
@@ -132,7 +132,7 @@ void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 
     //Draw passages?
     if(_editMode == EditorMode::MAP_EDIT_PASSAGES) {
-        draw_passages(*CameraSystem::get().getMainCamera());
+        draw_passages(*EngineContext::get().cameraSystem().getMainCamera());
     }
 }
 
@@ -171,8 +171,8 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
 
     // set up the cameras *after* game_begin_module() or the player devices will not be initialized
     // and camera_system_begin() will not set up the correct view
-    CameraSystem::get().setNumberOfCameras(1);
-    CameraSystem::get().getMainCamera()->setCameraMovementMode(CameraMovementMode::Free);
+    EngineContext::get().cameraSystem().setNumberOfCameras(1);
+    EngineContext::get().cameraSystem().getMainCamera()->setCameraMovementMode(CameraMovementMode::Free);
 
     // make sure the per-module configuration settings are correct
     config_synch(EngineContext::get().config(), true, false);

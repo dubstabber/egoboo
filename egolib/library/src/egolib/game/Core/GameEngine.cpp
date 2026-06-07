@@ -333,7 +333,7 @@ bool GameEngine::initialize()
 	// camera options
 	CameraSystem::initialize();
     EngineContext::get().installCameraSystem(CameraSystem::get());
-	CameraSystem::get().getCameraOptions().turnMode = EngineContext::get().config().camera_control.getValue();
+	EngineContext::get().cameraSystem().getCameraOptions().turnMode = EngineContext::get().config().camera_control.getValue();
 
 
     // Subscribe to window events.

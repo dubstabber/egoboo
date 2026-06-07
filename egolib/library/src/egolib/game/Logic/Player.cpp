@@ -21,7 +21,7 @@
 /// @author Zefz aka Johan Jansen
 
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -137,7 +137,7 @@ void Player::updateLatches()
     object->resetInputCommands();
 
     // find the camera that is following this character
-    const auto &pcam = CameraSystem::get().getCamera(object->getObjRef());
+    const auto &pcam = EngineContext::get().cameraSystem().getCamera(object->getObjRef());
     if (!pcam) {
         return;
     }
