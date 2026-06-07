@@ -73,9 +73,11 @@ Current test files under `egolib/tests/egolib/tests/`:
 - `ObjectAccessors.cpp` — accessor-encapsulation regression coverage
 - `ScriptActionFunctions.cpp`, `ScriptMovementFunctions.cpp`, `ScriptStateFunctions.cpp`, `ScriptSystemsFunctions.cpp`, `ScriptTargetFunctions.cpp`, `ScriptVariables.cpp` — script-dispatch behavior coverage (new since last snapshot)
 - `GameplayAlertPublication.cpp`, `ShopInteractions.cpp` — gameplay-level behavior coverage (new since last snapshot)
+- `PhysicsIntersection.cpp`, `PhysicsCollisionNormal.cpp`, `BoundingBox.cpp`, `BoundingBoxOps.cpp`, `ParticleRecoil.cpp` — physics / collision / bounding-volume math characterization (T3.4; `PhysicsCollisionNormal`/`BoundingBoxOps`/`ParticleRecoil` added 2026-06-07)
+- `MapTwist.cpp`, `LogicDamageAttribute.cpp` — map twist↔normal math and Damage/Attribute enum-mapping characterization (T3.4, added 2026-06-07)
 - `math/` — math submodule tests
 
-Notably absent: physics/collision tests, rendering correctness tests, GUI tests. Script-VM and gameplay surfaces are now partially covered.
+Notably absent: rendering correctness tests, GUI tests, and gameplay-combat tests that need live `Object`/`Particle` instances. Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, and Damage/Attribute enum logic are now covered by the T3.4 characterization batches; script-VM and gameplay-alert surfaces are partially covered.
 
 ---
 
