@@ -26,6 +26,12 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/egoboo.h"
 
+#include "egolib/Time/Time.hpp"                      // Time
+#include "egolib/Renderer/Renderer.hpp"              // Ego::Renderer
+#include "egolib/Renderer/OpenGL/Utilities.hpp"      // Ego::OpenGL::Utilities
+#include "egolib/Extensions/ogl_extensions.h"        // glBegin, glVertex3f, GL_DEBUG, GL_LINES, GL_POINTS, GL_QUADS, GL_DEBUG_END
+#include "egolib/map_functions.h"                    // XX, YY, ZZ
+
 void LineSegmentList::init()
 {
     for (size_t i = 0; i < capacity; ++i)

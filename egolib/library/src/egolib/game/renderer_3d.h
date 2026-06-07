@@ -22,7 +22,11 @@
 
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/_math.h"                  // Vector3f
+#include "egolib/Math/_Include.hpp"        // AxisAlignedBox3f
+#include "egolib/bbox.h"                   // oct_bb_t
+#include "egolib/integrations/color.hpp"   // Colour4f
+#include <cstddef>                         // size_t
 
 //--------------------------------------------------------------------------------------------
 

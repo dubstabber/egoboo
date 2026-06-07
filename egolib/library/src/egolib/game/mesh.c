@@ -29,6 +29,7 @@
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
+#include "egolib/map_functions.h"  // twist_to_normal, cartman_calc_twist
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------

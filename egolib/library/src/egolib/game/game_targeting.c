@@ -22,6 +22,7 @@
 
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------

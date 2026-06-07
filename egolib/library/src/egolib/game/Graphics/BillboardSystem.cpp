@@ -31,6 +31,7 @@
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Graphics/Font.hpp"  // Ego::Font (complete type)
 
 namespace Ego {
 namespace Graphics {

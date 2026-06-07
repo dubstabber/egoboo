@@ -1,7 +1,6 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include "egolib/egolib.h"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 
 namespace Ego {

@@ -22,6 +22,8 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
+#include "egolib/InputControl/InputSystem.hpp" // Ego::Input::InputSystem
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"
 #include "egolib/Graphics/Viewport.hpp"

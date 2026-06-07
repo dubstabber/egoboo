@@ -20,6 +20,7 @@
 #pragma once
 
 #include "egolib/Logic/TreasureTables.hpp"
+#include "egolib/FileFormats/SpawnFile/spawn_file.h"  // spawn_file_info_t
 
 // module initialization / deinitialization - not accessible by scripts
 void game_load_profile_ai();

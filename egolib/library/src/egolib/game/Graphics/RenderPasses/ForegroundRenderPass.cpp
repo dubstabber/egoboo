@@ -4,6 +4,8 @@
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp"          // Renderer::get()
+#include "egolib/Graphics/GraphicsWindow.hpp"    // Ego::GraphicsWindow
 
 namespace Ego {
 namespace Graphics {

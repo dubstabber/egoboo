@@ -20,7 +20,8 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include "egolib/egolib.h"
+#include "egolib/typedef.h"   // ObjectRef, ParticleRef
+#include <memory>             // std::shared_ptr
 
 class Object;
 class IPhysical;

@@ -1,7 +1,8 @@
 #pragma once
 
 // Include directives and forward declarations.
-#include "egolib/egolib.h"
+#include "egolib/_math.h"   // Point2f
+#include <vector>
 namespace Ego {
 namespace GUI {
 class Component;

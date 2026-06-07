@@ -23,7 +23,9 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include "egolib/egolib.h"
+#include "egolib/_math.h"               // Vector2f, AxisAlignedBox2f
+#include "egolib/Logic/ObjectSlot.hpp"  // grip_offset_t
+#include "egolib/typedef.h"             // ObjectRef
 
 //Forward declarations
 class Object;

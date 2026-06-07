@@ -6,6 +6,7 @@
 #include "egolib/game/graphic_fan.h"
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp" // Ego::Renderer, Renderer::get()
 
 namespace Ego {
 namespace Graphics {

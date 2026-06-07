@@ -23,6 +23,7 @@
 #include "egolib/game/graphic_internal.h"
 
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Logic/Player.hpp"

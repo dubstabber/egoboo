@@ -26,6 +26,8 @@
 #include "egolib/game/game.h"
 #include "egolib/game/egoboo.h"
 #include "egolib/Script/CLogEntry.hpp"
+#include "egolib/Core/StringUtilities.hpp" // Ego::isspace, Ego::iscntrl, Ego::isalpha, Ego::isdigit
+#include "egolib/Profiles/_Include.hpp" // ObjectProfile (complete type)
 
 static bool load_ai_codes_vfs();
 

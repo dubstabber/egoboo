@@ -18,7 +18,8 @@
 //********************************************************************************************
 
 #include "gtest/gtest.h"
-#include "egolib/egolib.h"
+#include "egolib/Core/StringUtilities.hpp"   // Ego::left_trim_ws, Ego::trim_ws
+#include "egolib/strutil.h"                  // add_linebreak_cpp
 
 TEST(string_utilities, text_formatting)
 {

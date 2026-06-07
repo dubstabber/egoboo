@@ -37,6 +37,9 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/Graphics/Viewport.hpp"
+#include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
+#include "egolib/font_bmp.h" // fontyspacing
 
 //For cheats
 #include "egolib/Entities/_Include.hpp"

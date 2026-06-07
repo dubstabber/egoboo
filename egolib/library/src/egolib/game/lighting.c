@@ -23,8 +23,6 @@
 
 #include "egolib/game/lighting.h"
 
-#include "egolib/egolib.h"
-
 //--------------------------------------------------------------------------------------------
 
 float light_a = 0.0f,

@@ -23,7 +23,7 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include "egolib/egolib.h"
+#include "egolib/IDSZ.hpp"   // IDSZ2
 
 namespace Ego
 {

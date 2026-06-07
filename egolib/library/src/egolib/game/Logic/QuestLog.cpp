@@ -22,6 +22,7 @@
 
 #include "egolib/game/Logic/QuestLog.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/fileutil.h"  // ReadContext, make_unique<ReadContext>
 
 namespace Ego
 {

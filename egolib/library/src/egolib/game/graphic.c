@@ -42,6 +42,10 @@
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
+#include "egolib/font_bmp.h"                  // font_bmp_init
+#include "egolib/Graphics/TextureManager.hpp" // Ego::TextureManager
+#include "egolib/Console/Console.hpp"         // Ego::Core::Console
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 
 //--------------------------------------------------------------------------------------------
 

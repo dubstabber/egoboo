@@ -1,6 +1,8 @@
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/FileFormats/wawalite_file.h"          // wawalite_weather_t
+#include "egolib/Profiles/LocalParticleProfileRef.hpp"  // LocalParticleProfileRef
+#include "egolib/typedef.h"                             // PLA_REF
 
 /// The state of the weather.
 struct WeatherState

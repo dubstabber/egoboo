@@ -32,6 +32,7 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 
 VictoryScreen::VictoryScreen(PlayingState *playingState, const bool forceExit) :
 	_playingState(playingState)

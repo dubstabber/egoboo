@@ -1,6 +1,7 @@
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/FileFormats/wawalite_file.h"   // wawalite_fog_t
+#include <cstdint>
 
 /// The in-game fog state
 /// @warn Fog is currently not used

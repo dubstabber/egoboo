@@ -18,6 +18,7 @@
 //********************************************************************************************
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
+#include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
 #include "egolib/Graphics/Viewport.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"

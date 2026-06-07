@@ -30,6 +30,7 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/ModuleSelector.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 
 SelectModuleState::SelectModuleState() : SelectModuleState( std::list<std::string>() )
 {

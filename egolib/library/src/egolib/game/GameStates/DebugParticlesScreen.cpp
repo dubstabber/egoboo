@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/DebugParticlesScreen.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Entities/_Include.hpp"

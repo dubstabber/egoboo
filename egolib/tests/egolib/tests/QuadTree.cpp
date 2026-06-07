@@ -18,7 +18,9 @@
 //********************************************************************************************
 
 #include "gtest/gtest.h"
-#include "egolib/egolib.h"
+#include "egolib/Core/QuadTree.hpp"     // Ego::QuadTree
+#include "egolib/Math/_Include.hpp"     // AxisAlignedBox2f, Point2f
+#include "egolib/Math/Random.hpp"       // Random
 
 namespace Ego { namespace Test { namespace QuadTree {
 

@@ -159,7 +159,7 @@ the dispatch layer" is already true via `Functions.in`. The one real sliver of v
 rewrite would violate Rule 1 for little gain. The 404 functions remain split across seven files for
 size reasons only.
 
-### T3.3 Uber-header teardown — IN FLIGHT (reframed 2026-06-06)
+### T3.3 Uber-header teardown — DONE (2026-06-07)
 
 **Original framing was stale.** `egolib/egolib.h` (54 subsystem includes) has only ~24 direct includers,
 several redundant. The real amplifier is the *thin* `game/egoboo.h`, whose only harm is its
@@ -181,9 +181,13 @@ the symbol→header dictionary, the `EGOBOO_NO_UBER_INCLUDE` guard, and the per-
   Billboard/UI/CharacterMatrix); Pass 225 cut the link + fixed the ~20 source/header sites that had
   leeched egolib types through it (incl. a 4-agent parallel workflow for 16 source TUs). All green
   (build/validator/ctest 736/738) at every pass.
-- **Remaining (optional stretch):** `egolib.h` still has ~22 direct includers; narrowing them and
-  physically deleting `egolib.h` is a separate, lower-value follow-on. A menu smoke-run is also advisable
-  as a final boot-path confirmation (the cut is pure include hygiene, so no runtime behavior changed).
+- **Pass 226 (done) — `egolib.h` DELETED.** The optional stretch was executed: the remaining 18 direct
+  `egolib.h` includers were narrowed to precise includes, the keep-going build's transitive-leech tail (139
+  errors across 30 TUs) was fixed with precise includes via a 28-agent parallel workflow, and `egolib.h` +
+  its `CMakeLists.txt` entry were physically removed. Build/validator/ctest 736/738/smoke-run all green. **The
+  uber-header pattern is now fully gone from the live codebase.** Only the disconnected, unbuildable `cartman`
+  (4 files) + `utilities/migrator` (1 file) retain dangling `egolib.h` includes — out of scope (no CMake, not
+  built; T3.5), to be fixed if/when those tools are rewired. Full detail: `72-uber-header-teardown.md`.
 
 ### T3.4 Behavioral test coverage
 

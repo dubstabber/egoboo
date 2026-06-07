@@ -455,7 +455,6 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/egoboo_setup.c
     src/egolib/egoboo_setup.h
     src/egolib/egolib_config.h
-    src/egolib/egolib.h
     src/egolib/endian.h
     src/egolib/file_common.c
     src/egolib/file_common.h

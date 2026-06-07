@@ -1,4 +1,5 @@
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
+#include "egolib/Renderer/Renderer.hpp" // Renderer::get()
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"

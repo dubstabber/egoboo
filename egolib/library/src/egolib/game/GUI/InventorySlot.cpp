@@ -5,6 +5,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/Graphics/Font.hpp"  // Ego::Font (complete type)
 
 namespace Ego {
 namespace GUI {

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/FileFormats/wawalite_file.h"   // wawalite_water_t, wawalite_water_layer_t
+#include "egolib/_math.h"                        // Ego::Vector2f
+#include <cstdint>
 
 // water constants
 #define MAXWATERLAYER 2                                    ///< Maximum water layers

@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/SelectCharacterState.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"   // Ego::GraphicsWindow
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/SelectModuleState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "egolib/egolib.h"
+#include "egolib/FileFormats/wawalite_file.h"   // wawalite_animtile_t
+#include <array>
+#include <cstdint>
 
 /// The state of the animated tiles.
 struct AnimatedTilesState {

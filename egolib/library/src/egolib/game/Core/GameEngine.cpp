@@ -22,7 +22,13 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/egolib.h"
+#include "egolib/Core/System.hpp"                 // Ego::Core::System
+#include "egolib/Console/Console.hpp"             // Ego::Core::Console
+#include "egolib/Graphics/GraphicsWindow.hpp"     // Ego::GraphicsWindow (complete type)
+#include "egolib/Graphics/GraphicsSystemNew.hpp"  // Ego::GraphicsSystemNew
+#include "egolib/Graphics/Font.hpp"               // Ego::Font (complete type)
+#include "egolib/InputControl/InputSystem.hpp"    // Ego::Input::InputSystem
+#include "egolib/font_bmp.h"                       // font_bmp_load_vfs
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/GameStates/MainMenuState.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"

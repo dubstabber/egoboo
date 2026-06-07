@@ -24,7 +24,6 @@
 
 #include "egolib/game/game.h"
 
-#include "egolib/egolib.h"
 #include "egolib/FileFormats/Globals.hpp"
 
 #include "egolib/game/GameStates/PlayingState.hpp"

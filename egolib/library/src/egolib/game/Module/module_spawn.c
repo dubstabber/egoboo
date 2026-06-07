@@ -17,7 +17,6 @@
 //*
 //********************************************************************************************
 
-#include "egolib/egolib.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 #include "egolib/game/game.h"

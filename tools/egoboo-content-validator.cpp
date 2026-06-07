@@ -1,5 +1,6 @@
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
+#include "egolib/FileFormats/SpawnFile/spawn_file.h"  // spawn_file_info_t (was leeched via the egolib.h uber-header)
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"

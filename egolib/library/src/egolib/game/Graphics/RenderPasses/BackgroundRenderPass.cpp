@@ -3,6 +3,7 @@
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp"  // Renderer::get
 
 namespace Ego {
 namespace Graphics {

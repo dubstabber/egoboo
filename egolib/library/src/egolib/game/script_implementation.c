@@ -28,7 +28,8 @@
 #include "egolib/game/script_implementation.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
-#include "egolib/egolib.h"
+#include "egolib/AI/LineOfSight.hpp"   // line_of_sight_info_t
+#include "egolib/AI/AStar.hpp"         // g_astar
 
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"

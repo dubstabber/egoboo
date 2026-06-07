@@ -22,6 +22,8 @@
 #pragma once
 
 #include "egolib/IDSZ.hpp"  // IDSZ2
+#include "egolib/FileFormats/wawalite_file.h"  // wawalite_camera_t, wawalite_graphics_t, wawalite_data_t, wawalite_physics_t
+#include "egolib/strutil.h"                    // add_linebreak_cpp
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Inventory.hpp"
@@ -36,6 +38,7 @@
 //--------------------------------------------------------------------------------------------
 
 struct prt_bundle_t;
+struct script_state_t;   // used by-reference in expandEscapeCodes() declaration
 
 //--------------------------------------------------------------------------------------------
 //Public Functions

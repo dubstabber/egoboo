@@ -21,6 +21,7 @@
 /// @brief Per-frame update Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/AI/LineOfSight.hpp"  // line_of_sight_info_t
 
 BIT_FIELD Object::getAIAlertBits() const
 {

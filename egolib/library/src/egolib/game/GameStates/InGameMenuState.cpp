@@ -33,6 +33,7 @@
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 
 #ifdef _DEBUG
 #include "egolib/game/GameStates/DebugParticlesScreen.hpp"

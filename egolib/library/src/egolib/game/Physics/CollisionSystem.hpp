@@ -19,9 +19,10 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include "egolib/egolib.h"
+#include <memory>   // std::shared_ptr
 
 //Forward declarations
+class Object;
 namespace Ego { class Particle; }
 
 namespace Ego

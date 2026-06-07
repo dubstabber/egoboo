@@ -186,7 +186,41 @@ keep-going-build to find the true tail.
 them + deleting `egolib.h` is separate and lower-value. A menu smoke-run is advisable as a final boot-path check
 (the cut is pure include hygiene — no runtime behavior changed).
 
-## Remaining work-list (suggested leaf-upward order)
+## Pass 226 — `egolib.h` DELETED — FRONT COMPLETE (2026-06-07)
+
+The "optional follow-on" was executed. `egolib.h` had **18 direct includers** at this point (12 headers + 6 sources —
+fewer than the ~22 quoted above because Passes 221–224 had already narrowed several). Same technique, one level up:
+a temporary `#ifndef EGOLIB_NO_UBER_INCLUDE` guard around `egolib.h`'s body made each includer probe-able hermetically.
+
+- **Phase A — narrow the 18 includers** (precise includes, no code changed). The reusable insight reappeared:
+  put each include at the **lowest correct header** so consumers inherit it — `game/game.h` (uses
+  `wawalite_camera/graphics/data/physics_t` + `add_linebreak_cpp`) got `FileFormats/wawalite_file.h` + `strutil.h`
+  + a `struct script_state_t;` fwd-decl; `Module/module_spawn.h` (declares fns taking `spawn_file_info_t`) got
+  `SpawnFile/spawn_file.h`. Fixing those two cascaded `game_internal.h` + `module_spawn.c` to 0. Found a **pure-leech
+  header** `Module/damagetile_instance.h` with *zero* includes (100% reliant on egolib.h) → 7 precise includes.
+- **Phase B — the cut**: removed all 18 includes; the keep-going build surfaced the true transitive-leech tail —
+  **139 errors across 30 TUs** that pulled egolib types *through* a narrowed header without including egolib.h
+  themselves (same blind spot as Pass 225, scaled up). Fixed with precise includes (no code changed): 1 header
+  (`LoadPlayerElement.hpp` → `Renderer/DeferredTexture.hpp`, cascade-fixed its `.cpp`); **28 source TUs via a
+  28-agent parallel workflow** (each probes with `srccheck`, maps via a shared symbol→home dictionary, self-verifies
+  `errors=0`); plus `tools/egoboo-content-validator.cpp` (→ `spawn_file.h`). New dictionary entries this pass:
+  GL prims + `GL_DEBUG` → `Extensions/ogl_extensions.h`; legacy bitmap-font globals (`fontyspacing`/`asciitofont`/
+  `TABADD`) → `font_bmp.h`; `twist_to_normal`/`XX,YY,ZZ` → `map_functions.h`; `ReadContext` → `fileutil.h`;
+  `Ego::isspace`/`iscntrl`/`isalpha`/`isdigit` → `Core/StringUtilities.hpp`; `ModuleProfile`/`ObjectProfile`
+  complete types → `Profiles/_Include.hpp`; `Ego::OpenGL::Utilities` → `Renderer/OpenGL/Utilities.hpp`.
+- **Delete**: removed `egolib.h` + its `egolib/library/CMakeLists.txt` source-list entry; reconfigure + full build green.
+
+**Verified:** build all 4 targets = 0 errors; `test.mod` warnings=0 errors=0; full validator 42 modules
+errors=245 (pre-existing legacy-content baseline, unchanged by include-only edits); ctest 736/738 (only #526/#527);
+menu smoke-run exit 124, clean boot, error-scan empty.
+
+**The uber-header pattern is fully eliminated from the live codebase** — both `egoboo.h`'s aggregate link (Pass 225)
+and `egolib.h` itself (Pass 226). **This front is complete.** The only remaining `egolib.h` references are in the
+disconnected, unbuildable **cartman** (4 files) and **utilities/migrator** (1 file) — no `CMakeLists.txt`, not in
+the CMake graph, already bit-rotted (tracked under roadmap T3.5). Their dangling includes were intentionally left
+as-is (the user confirmed the delete); they will need include work when/if those tools are rewired into the build.
+
+## Remaining work-list (HISTORICAL — superseded by Pass 226, front complete)
 
 1. **Low-level egolib/game leaf headers**: `lighting.h`, `mesh.h` (keystone, 2023), `graphic.h`,
    `CharacterMatrix.h`, `graphic_mad.h`, `graphic_prt.h`, `graphic_fan.h`. Need Math + bbox + map-format +

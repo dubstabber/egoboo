@@ -31,6 +31,7 @@
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/game.h"	//only for MAX_IMPORTS_PER_OBJECT constant
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
+#include "egolib/Graphics/GraphicsWindow.hpp"	// Ego::GraphicsWindow
 
 SelectPlayersState::SelectPlayersState()
     : _playerButtons(),

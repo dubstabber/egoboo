@@ -38,6 +38,7 @@
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/link.h"
+#include "egolib/Profiles/_Include.hpp"        // ModuleProfile, ObjectProfile (complete types)
 
 namespace
 {

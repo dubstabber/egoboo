@@ -1,5 +1,13 @@
 #pragma once
 
+#include "egolib/FileFormats/wawalite_file.h"           // wawalite_damagetile_t
+#include "egolib/Audio/AudioSystem.hpp"                  // INVALID_SOUND_ID, MAX_WAVE
+#include "egolib/Logic/Damage.hpp"                       // DamageType
+#include "egolib/Profiles/LocalParticleProfileRef.hpp"   // LocalParticleProfileRef
+#include "egolib/Math/_Include.hpp"                      // Ego::Math::constrain
+#include "egolib/typedef.h"                              // IPair
+#include <cstdint>
+
 /// The actual in-game state of the damage tiles
 struct damagetile_instance_t
 {

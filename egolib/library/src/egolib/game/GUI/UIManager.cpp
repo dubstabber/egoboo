@@ -27,6 +27,9 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp"        // Ego::Renderer
+#include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
+#include "egolib/font_bmp.h"                    // fontyspacing, fontxspacing, fontoffset, fontrect, asciitofont, TABADD, font_bmp_length_of_word
 #include "egolib/game/game.h" //TODO: Remove only for DisplayMessagePrintf
 
 namespace Ego {

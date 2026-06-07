@@ -24,6 +24,7 @@
 #pragma once
 
 #include "egolib/game/Logic/QuestLog.hpp"
+#include "egolib/Renderer/DeferredTexture.hpp"   // Ego::DeferredTexture (getIcon return type)
 
 //Forward declarations
 class ObjectProfile;
