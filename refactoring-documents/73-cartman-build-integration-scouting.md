@@ -1,9 +1,11 @@
 # Cartman Build Integration — Scouting (T3.5)
 
-Snapshot date: 2026-06-07. Status: **Phase 2 executed — cartman compiles AND links** (`EGOBOO_BUILD_CARTMAN=ON` →
-0 compile + 0 link errors, 89 MB executable; gated OFF by default so the standard build is untouched). Phase 1 landed
-the CMake seam + mechanical rename sweep (719→60); Phase 2 ported the 60 genuine API-drift errors and resolved the
-link-time ODR collisions — see "Phase 2 — EXECUTED" below. **Remaining: manual runtime/GUI verification only.** This
+Snapshot date: 2026-06-07. Status: **Phase 2 executed AND runtime-verified — cartman compiles, links, RUNS, and
+renders** (`EGOBOO_BUILD_CARTMAN=ON` → 0 compile + 0 link errors, 89 MB executable; GUI launch against `test.mod`
+boots an OpenGL 4.6 context and renders the full editor — see "Phase 3 — RUNTIME VERIFIED"). Gated OFF by default so
+the standard build is untouched. Phase 1 landed the CMake seam + mechanical rename sweep (719→60); Phase 2 ported the
+60 genuine API-drift errors and resolved the link-time ODR collisions (see "Phase 2 — EXECUTED"). **The only remaining
+decision is whether to flip the default ON / add to the build matrix** (deferred — see Phase 3). This
 document records the original feasibility assessment for roadmap item **T3.5** ("`cartman/` exists in-tree but is disconnected from the main CMake graph.
 Gate it with a CMake option and add it to the build matrix.").
 
@@ -223,9 +225,8 @@ pre-existing #526/#527). **Total diff: 6 files, +50/-37, all under `cartman/src/
 
 ### Still open / flagged (Phase 3+)
 
-- **No runtime verification yet (TOP RISK, unchanged):** compile+link green ≠ works. A manual GUI launch on a real
-  display against a module is still required (`cartman <egoboo_path> <module>`). The riskiest semantic surface is the
-  `App<GFX>` startup/teardown and the immediate-mode GL render path.
+- **Runtime verification — DONE (the former TOP RISK is cleared):** see "Phase 3 — RUNTIME VERIFIED" below. cartman
+  boots an OpenGL 4.6 context and renders the full editor (all four viewports + HUD) against `test.mod`.
 - **Pre-existing bug found (NOT from this port):** the no-arg / bad-args path **core-dumps** — `atexit(main_end)` is
   registered *before* `Ego::Core::System::initialize()`, so on the early `return EXIT_FAILURE` (missing module arg)
   `main_end` → `setup_clear_base_vfs_paths()` calls VFS cleanup on an uninitialized VFS and throws
@@ -236,6 +237,39 @@ pre-existing #526/#527). **Total diff: 6 files, +50/-37, all under `cartman/src/
   "Bugs / questionable code" above) for a future modernization pass.
 - `EGOBOO_BUILD_CARTMAN` stays **OFF by default** until a manual functional smoke confirms the editor runs; only then
   flip the default / add to the build matrix / docs.
+
+## Phase 3 — RUNTIME VERIFIED (2026-06-07)
+
+**cartman not only compiles + links, it RUNS and renders the editor.** Launched the GUI against `test.mod` on a real
+display (X11/XWayland) and captured a mid-run screenshot — the former top risk ("compile-green ≠ works") is cleared.
+
+**Launch recipe** (cartman mirrors the egoboo smoke-run env + adds two positional args `<egoboo_path> <module>`;
+`sys_fs_init` honors `EGOBOO_DATA_DIR`, file_linux.c:173, so data discovery matches the game):
+```
+HOME=/tmp/egoboo-home XDG_DATA_HOME=/tmp/egoboo-xdg \
+DISPLAY=:0 SDL_VIDEODRIVER=x11 EGOBOO_DATA_DIR="$PWD/data" EGOBOO_DISABLE_AUDIO=1 \
+timeout -k 3 -s TERM 12 ./build/products/x64/bin/cartman "$PWD/data" test
+```
+(module name is WITHOUT `.mod`; cartman grabs mouse/keyboard for the duration — briefly disruptive. cartman has no
+SIGTERM handler that quits its `for(;;)` loop, so on timeout it's killed → exit 124/137 = "survived the full run";
+any *other* early non-zero exit = a crash. Screenshot mid-run via a backgrounded launch→wait→`spectacle -bnf -o`→kill.)
+
+**Observed (clean boot log + screenshot):** filesystem init (Data dir = `$PWD/data`), SDL timer/events/video/audio/
+input, **OpenGL 4.6 Compatibility context created** (Mesa, AMD Radeon Vega 8), ImageManager (SDL_image 2.8.12),
+FontManager (SDL_ttf 2.24.0); then it ran the full duration with **zero error/exception/crash lines** and the
+screenshot shows the editor fully rendered: the **four viewport windows** (Vertex = wireframe mesh + blue vertex
+markers; Tile/FX = textured tiles incl. the red floor + arrow border; Side = wireframe side projection) plus both HUD
+text blocks (tile-info + minimap triangle top-left; "Brush size / Direct / Ambient / Vertices 16758740" + the
+S/H/I/B/A/D/R/O key legend bottom-left). This visually exercises **every ported path**: `App<GFX>` startup (window+GL),
+`FontManager::loadFont` (all HUD text), the four matrix builders (`idlib::orthographic_projection_matrix`/`look_at_matrix`/
+`scaling_matrix`/`identity` — the correctly-projected views), `GraphicsWindow::size()`/`drawable_size()` (viewport + HUD
+layout), module load (mesh + textures), and Console init.
+
+**Decision deferred to the maintainer — flip `EGOBOO_BUILD_CARTMAN` ON by default?** Runtime is now verified, so the
+plan's step-6 default-flip is unblocked. Left OFF for now (conservative): it keeps the default build fast (cartman is an
+89 MB link) and matches the program's gated-incremental philosophy; only `test.mod` on one platform (Linux/Mesa) has
+been exercised, and the pre-existing no-arg `atexit`/VFS crash is still unfixed. Flip it (and add to the build matrix +
+`doc/build-*.md`) whenever broader module/platform coverage and that bug-fix are desired.
 
 ## How to resume / re-probe
 
