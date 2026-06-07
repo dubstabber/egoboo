@@ -243,7 +243,12 @@ pre-existing #526/#527). **Total diff: 6 files, +50/-37, all under `cartman/src/
 **cartman not only compiles + links, it RUNS and renders the editor.** Launched the GUI against `test.mod` on a real
 display (X11/XWayland) and captured a mid-run screenshot — the former top risk ("compile-green ≠ works") is cleared.
 
-**Launch recipe** (cartman mirrors the egoboo smoke-run env + adds two positional args `<egoboo_path> <module>`;
+**Launcher: `run-cartman.sh <module>`** (added 2026-06-07; mirrors `run-egoboo.sh`). It builds cartman on demand
+(configures `EGOBOO_BUILD_CARTMAN=ON` + builds the target the first time, since the option is OFF in the default
+build), validates the module exists (sidestepping the no-arg `atexit` crash), then launches it. E.g.
+`./run-cartman.sh advent` edits `data/modules/advent.mod`. Verified end-to-end on both `test.mod` and `advent.mod`.
+
+**Raw launch recipe** (what the script wraps; cartman adds two positional args `<egoboo_path> <module>`;
 `sys_fs_init` honors `EGOBOO_DATA_DIR`, file_linux.c:173, so data discovery matches the game):
 ```
 HOME=/tmp/egoboo-home XDG_DATA_HOME=/tmp/egoboo-xdg \
