@@ -123,7 +123,12 @@ void MapEditorState::update()
 void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 {
     CameraSystem::get().renderAll(gfx_system_render_world);
-    draw_hud();
+
+    // NOTE: deliberately do NOT call draw_hud() here. draw_hud() renders the in-game
+    // PLAYER HUD (FPS / help / debug / timer / game-status), all anchored at the top-left
+    // (y=0) — exactly where the editor mode buttons sit — so it drew on top of them and
+    // garbled the UI. The editor's own widgets (mode buttons + minimap) are rendered by
+    // Container::drawAll() after this; the player HUD is not wanted in the editor.
 
     //Draw passages?
     if(_editMode == EditorMode::MAP_EDIT_PASSAGES) {
