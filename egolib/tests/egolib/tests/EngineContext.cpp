@@ -12,6 +12,7 @@
 #include "egolib/Renderer/DeferredTexture.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
 
@@ -194,9 +195,14 @@ public:
     void updateAll(const ego_mesh_t*) override {}
     void setNumberOfCameras(size_t) override {}
     const std::vector<std::shared_ptr<Camera>>& getCameraList() const override { return _cameraList; }
+    std::shared_ptr<Camera> getMainCamera() const override { return nullptr; }
+    std::shared_ptr<Camera> getCamera(ObjectRef) const override { return nullptr; }
+    CameraOptions& getCameraOptions() override { return _cameraOptions; }
+    void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)>) override {}
 
 private:
     std::vector<std::shared_ptr<Camera>> _cameraList;
+    CameraOptions _cameraOptions;
 };
 
 class StubBillboardSystem : public Ego::Graphics::IBillboardSystem

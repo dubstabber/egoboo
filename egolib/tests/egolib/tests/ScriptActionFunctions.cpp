@@ -331,11 +331,31 @@ public:
         return _cameraList;
     }
 
+    std::shared_ptr<Camera> getMainCamera() const override
+    {
+        return _cameraList.empty() ? nullptr : _cameraList.front();
+    }
+
+    std::shared_ptr<Camera> getCamera(ObjectRef) const override
+    {
+        return _cameraList.empty() ? nullptr : _cameraList.front();
+    }
+
+    CameraOptions& getCameraOptions() override
+    {
+        return _cameraOptions;
+    }
+
+    void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)>) override
+    {
+    }
+
     size_t updateAllCalls = 0;
     size_t lastSetCameraCount = 0;
 
 private:
     std::vector<std::shared_ptr<Camera>> _cameraList;
+    CameraOptions _cameraOptions;
 };
 
 class StubBillboardSystem : public Ego::Graphics::IBillboardSystem

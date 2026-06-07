@@ -52,7 +52,7 @@ public:
 	void updateAll( const ego_mesh_t * mesh ) override;
 	void resetAllTargets( const ego_mesh_t * mesh );
 
-	void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction);
+	void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction) override;
 
 	/**
 	 * @brief
@@ -63,7 +63,7 @@ public:
 	 *  the first camera tracking the target.
 	 *  If no camera is tracking the target or the target reference is invalid, the main camera is returned.
 	 */
-	std::shared_ptr<Camera> getCamera(ObjectRef targetRef) const;
+	std::shared_ptr<Camera> getCamera(ObjectRef targetRef) const override;
 
 	/**
 	 * @brief
@@ -81,9 +81,9 @@ public:
     /**
      * @brief write access to global camera options
      */
-    CameraOptions& getCameraOptions();
+    CameraOptions& getCameraOptions() override;
 
-	inline std::shared_ptr<Camera> getMainCamera() const {return _mainCamera;}
+	inline std::shared_ptr<Camera> getMainCamera() const override {return _mainCamera;}
 
 	/**
 	* @brief

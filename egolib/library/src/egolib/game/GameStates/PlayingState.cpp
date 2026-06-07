@@ -35,7 +35,7 @@
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Graphics/Viewport.hpp"
 #include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
@@ -157,7 +157,7 @@ void PlayingState::updateStatusBarPosition()
                 Object* object = tryObservedUiObject(status->getObjectRef());
                 if(object)
                 {
-                    auto camera = CameraSystem::get().getCamera(object->getObjRef());
+                    auto camera = EngineContext::get().cameraSystem().getCamera(object->getObjRef());
 
                     //Shift component down a bit if required
                     status->setPosition({ status->getX(), maxY[camera] + 10.0f });
@@ -188,7 +188,7 @@ void PlayingState::update()
 
 void PlayingState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 {
-    CameraSystem::get().renderAll(gfx_system_render_world);
+    EngineContext::get().cameraSystem().renderAll(gfx_system_render_world);
     draw_hud();
 }
 
@@ -279,7 +279,7 @@ void PlayingState::addStatusMonitor(ObjectRef objectRef)
     }
 
     //Get the camera that is following this object (defaults to main camera)
-    auto camera = CameraSystem::get().getCamera(object->getObjRef());
+    auto camera = EngineContext::get().cameraSystem().getCamera(object->getObjRef());
 
     auto status = std::make_shared<Ego::GUI::CharacterStatus>(objectRef);
 
