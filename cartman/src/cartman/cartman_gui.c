@@ -159,7 +159,7 @@ void Window::renderBackground() const {
 
 void do_cursor() {
     bool left_press;
-    auto windowSize = Ego::GraphicsSystem::get().window->getSize();
+    auto windowSize = Ego::GraphicsSystem::get().window->size();
     // This function implements a mouse cursor
     ui.cursorPosition.x() = Ego::Math::constrain((float)Cartman::Input::get()._mouse.position.x(), 6.0f, windowSize.x() - 6);
     ui.cursorPosition.y() = Ego::Math::constrain((float)Cartman::Input::get()._mouse.position.y(), 6.0f, windowSize.y() - 6);
@@ -200,6 +200,6 @@ void draw_slider(int tlx, int tly, int brx, int bry, int* pvalue, int minvalue, 
 }
 
 void show_name(const std::string& newLoadName, const Ego::Colour4f& textColour) {
-    auto windowSize = Ego::GraphicsSystem::get().window->getSize();
+    auto windowSize = Ego::GraphicsSystem::get().window->size();
     gfx_font_ptr->drawText(newLoadName, 0, windowSize.y() - 16, textColour);
 }

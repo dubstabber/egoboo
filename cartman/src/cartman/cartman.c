@@ -499,7 +499,7 @@ void Cartman::Gui::Window::render()
     {
         auto& renderer = Ego::Renderer::get();
 		renderer.setScissorTestEnabled(true);
-        auto drawableSize = Ego::GraphicsSystem::get().window->getDrawableSize();
+        auto drawableSize = Ego::GraphicsSystem::get().window->drawable_size();
         renderer.setScissorRectangle(position.x(), drawableSize.y() - ( position.y() + size.y() ),
                                      size.x(), size.y());
 
@@ -563,8 +563,8 @@ void unbound_mouse()
     {
         Input::get()._mouse.tlx = 0;
         Input::get()._mouse.tly = 0;
-        Input::get()._mouse.brx = Ego::GraphicsSystem::get().window->getSize().x() - 1;
-        Input::get()._mouse.bry = Ego::GraphicsSystem::get().window->getSize().y() - 1;
+        Input::get()._mouse.brx = Ego::GraphicsSystem::get().window->size().x() - 1;
+        Input::get()._mouse.bry = Ego::GraphicsSystem::get().window->size().y() - 1;
     }
 }
 
@@ -1606,7 +1606,7 @@ void draw_lotsa_stuff( cartman_mpd_t * pmesh )
 #endif
 
     // Tell user what keys are important
-    int y = Ego::GraphicsSystem::get().window->getSize().y() - 120, step = 8;
+    int y = Ego::GraphicsSystem::get().window->size().y() - 120, step = 8;
     gfx_font_ptr->drawText("O = Overlay (Water)", 0, y); y -= step;
     gfx_font_ptr->drawText("R = Reflective", 0, y); y -= step;
     gfx_font_ptr->drawText("D = Draw Reflection", 0, y); y -= step;
@@ -1627,7 +1627,7 @@ void draw_lotsa_stuff( cartman_mpd_t * pmesh )
     gfx_font_ptr->drawText("Brush size   " + std::to_string(brushsize), 0, y); y -= step;
 
     // Cursor
-    //if (mos.x >= 0 && mos.x < Ego::GraphicsSystem::window->getDrawableSize().width() && mos.y >= 0 && mos.y < Ego::GraphicsSystem::window->getDrawableSize().height())
+    //if (mos.x >= 0 && mos.x < Ego::GraphicsSystem::window->drawable_size().width() && mos.y >= 0 && mos.y < Ego::GraphicsSystem::window->drawable_size().height())
     //{
     //    draw_sprite(theSurface, bmpcursor, mos.x, mos.y);
     //}
@@ -1772,7 +1772,9 @@ void main_end( void )
 
 //--------------------------------------------------------------------------------------------
 
-int SDL_main( int argcnt, char* argtext[] )
+// egolib/platform.h does `#undef main` after including SDL, so the program entry
+// point is a plain main() (mirroring egoboo/src/game/Main.cpp); SDL2main is not linked.
+int main( int argcnt, char* argtext[] )
 {
     char modulename[100];
 
@@ -1812,12 +1814,12 @@ int SDL_main( int argcnt, char* argtext[] )
     Cartman::Input::initialize();
     Cartman_MouseData::ctor(&mdata); /// @todo What is this crap?
 
-    GFX::initialize();
+    Cartman::GFX::initialize();
     Resources::initialize();
 
     // Initialize the console.
-	auto rectangle = Rectangle2f(idlib::zero<Point2f>(), { Ego::GraphicsSystem::get().window->getDrawableSize()(0),
-		                                                Ego::GraphicsSystem::get().window->getDrawableSize()(1) * 0.25 });
+	auto rectangle = Rectangle2f(idlib::zero<Point2f>(), { Ego::GraphicsSystem::get().window->drawable_size()(0),
+		                                                Ego::GraphicsSystem::get().window->drawable_size()(1) * 0.25 });
 
     Ego::Core::Console::initialize(rectangle);
 
@@ -1851,7 +1853,7 @@ int SDL_main( int argcnt, char* argtext[] )
     Cartman::Gui::Manager::uninitialize();
     Ego::Core::Console::uninitialize();
     Resources::uninitialize();
-    GFX::uninitialize();
+    Cartman::GFX::uninitialize();
     Cartman::Input::uninitialize();
     Ego::Core::System::uninitialize();
     return EXIT_SUCCESS;
@@ -1942,15 +1944,10 @@ void cartman_check_input( const char * modulename, cartman_mpd_t * pmesh )
 
 //--------------------------------------------------------------------------------------------
 
-bool config_download(egoboo_config_t& cfg)
-{
-    return Ego::Setup::download(cfg);
-}
-
-bool config_upload(egoboo_config_t& cfg)
-{
-    return Ego::Setup::upload(cfg);
-}
+// NOTE: cartman historically defined its own global-namespace config_download/config_upload
+// (thin Ego::Setup::download/upload wrappers). They were never called anywhere in cartman and
+// collided at link time with egolib's own config_download/config_upload (egolib game/egoboo.c)
+// once cartman started linking egolib-library. Removed as dead duplicate code (T3.5 Phase 2).
 
 //--------------------------------------------------------------------------------------------
 

@@ -33,6 +33,7 @@
 #include "egolib/platform.h"
 #include "egolib/typedef.h"
 #include "idlib/idlib.hpp"
+#include "idlib/math.hpp" // idlib::{orthographic_projection_matrix,look_at_matrix,scaling_matrix,identity}
 #include "egolib/integrations/color.hpp"
 #include "egolib/integrations/math.hpp"
 #include "egolib/Renderer/Renderer.hpp"
@@ -43,3 +44,5 @@
 #include "egolib/Time/Time.hpp"
 #include "egolib/Mesh/Info.hpp"
 #include "egolib/FileFormats/map_file.h"
+#include "egolib/Core/System.hpp"    // Ego::Core::System
+#include "egolib/Console/Console.hpp" // Ego::Core::Console

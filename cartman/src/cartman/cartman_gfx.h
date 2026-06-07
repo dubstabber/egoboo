@@ -21,6 +21,7 @@
 
 #include "cartman/cartman_typedef.h"
 #include "cartman/cartman_math.h"
+#include "egolib/App.hpp" // Ego::App<T> application base (template + idlib::singleton lifecycle)
 
 //--------------------------------------------------------------------------------------------
 
@@ -152,8 +153,15 @@ std::shared_ptr<Ego::Texture> tiny_tile_at( cartman_mpd_t * pmesh, Index2D index
 std::shared_ptr<Ego::Texture> tile_at( cartman_mpd_t * pmesh, int fan );
 
 // initialization
+
+// Editor application singleton. Namespaced (Cartman::) to avoid an ODR clash with
+// egolib's own global-namespace `struct GFX` (the game renderer in egolib game/graphic.c),
+// now that cartman links egolib-library. A distinct type yields a distinct
+// Ego::App / idlib::singleton<T> instantiation.
+namespace Cartman {
 struct GFX : Ego::App<GFX>
 {
     GFX();
     ~GFX();
 };
+} // namespace Cartman

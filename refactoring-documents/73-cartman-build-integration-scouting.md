@@ -1,7 +1,9 @@
 # Cartman Build Integration — Scouting (T3.5)
 
-Snapshot date: 2026-06-07. Status: **Phase 1 executed** (CMake seam + mechanical rename sweep landed; gated OFF by
-default; 719→60 errors, the residual being genuine API-drift for Phase 2 — see "Phase 1 — EXECUTED" below). This
+Snapshot date: 2026-06-07. Status: **Phase 2 executed — cartman compiles AND links** (`EGOBOO_BUILD_CARTMAN=ON` →
+0 compile + 0 link errors, 89 MB executable; gated OFF by default so the standard build is untouched). Phase 1 landed
+the CMake seam + mechanical rename sweep (719→60); Phase 2 ported the 60 genuine API-drift errors and resolved the
+link-time ODR collisions — see "Phase 2 — EXECUTED" below. **Remaining: manual runtime/GUI verification only.** This
 document records the original feasibility assessment for roadmap item **T3.5** ("`cartman/` exists in-tree but is disconnected from the main CMake graph.
 Gate it with a CMake option and add it to the build matrix.").
 
@@ -167,6 +169,73 @@ Not touched in this port (behavior-preserving include/rename work only) — flag
   "spaghetti" character the editor was known for; candidates for a modernization pass once it compiles + runs.
 - `GFX` ties the whole editor lifecycle to `Ego::App<GFX>`; the App API drift (above) is the riskiest Phase 2 item
   because it touches startup/teardown and can't be checked without a runtime launch.
+
+## Phase 2 — EXECUTED (2026-06-07)
+
+**cartman now compiles AND links** against current egolib (`EGOBOO_BUILD_CARTMAN=ON`): the editor is a working build
+target after ~8.5 years of bit-rot. Error trajectory: **60 → 0 compile errors → link green** (89 MB executable).
+Always-green discipline held: gated OFF by default, so reconfiguring `EGOBOO_BUILD_CARTMAN=OFF` rebuilds the standard
+targets clean and the standard build is untouched.
+
+### The 60 compile errors — 5 researched fix categories (all behavior-preserving)
+
+Each category was mapped to the *current* egolib/idlib API by reading how egolib's own runtime uses it today
+(UIManager.cpp / Console.cpp / Camera.cpp / GameEngine.cpp / graphic.c), then applied:
+
+1. **`Ego::App<GFX>` template (the 24-error header cascade + 4 incomplete-GFX):** NOT a rename — `Ego::App<T>` still
+   exists (`egolib/App.hpp`, `template<typename T> struct App : idlib::singleton<T>` with the same `(title, version)`
+   ctor). Pure **missing include**: added `#include "egolib/App.hpp"` to `cartman_gfx.h`. (Egolib's own `GFX` moved to
+   the heavyweight `GameApp<GFX>`; the editor correctly stays on the minimal `App<GFX>`.)
+2. **`GraphicsWindow::getSize()`/`getDrawableSize()` (~13 sites):** accessors renamed to `size()` / `drawable_size()`
+   (cartman holds an `Ego::GraphicsWindow*` → base `idlib::window` virtuals; return type still supports `.x()/.y()`
+   and `operator()(0/1)`). Mechanical rename.
+3. **`Ego::Math::Transform::{ortho,scaling,lookAt}` (7 sites):** the old matrix-builder facade is gone; replaced with
+   the idlib free functions `idlib::orthographic_projection_matrix` / `idlib::scaling_matrix` / `idlib::look_at_matrix`
+   (arg order/semantics preserved). Added `#include "idlib/math.hpp"` to `cartman_config.h`.
+4. **`Matrix4f4f::identity()` (5 sites):** the static member is gone; replaced with `idlib::identity<Matrix4f4f>()`.
+5. **`Ego::Core::System` / `Ego::Core::Console` (6 sites):** no API drift — pure **missing includes** (they were
+   reached via the deleted `egolib/egolib.h`). Added `egolib/Core/System.hpp` + `egolib/Console/Console.hpp` to
+   `cartman_config.h`. The `Rectangle2f` 2-arg ctor "error" was collateral from the unresolved `getDrawableSize()`
+   accessor — once renamed, the brace-init construction is byte-identical to egolib's own `GameEngine.cpp` and compiles.
+   (One more missing-include surfaced after the cascade cleared: `Ego::FontManager` → `egolib/Graphics/FontManager.hpp`
+   in `cartman_gfx.c`.)
+
+### The link phase — ODR collisions (the doc's anticipated "resolve link errors")
+
+Linking the full `egolib-library` surfaced symbol clashes between cartman's standalone-program globals and egolib's.
+An **upfront `nm` symbol-diff** (cartman `.o` strong defs ∩ `libegolib-library.a` strong defs) proved there were
+**exactly 4 logical collisions** — no rebuild-discover loop:
+
+- **`main`:** cartman declared `int SDL_main(...)`; with no `SDL2main` linked, nothing provided `main`. egolib's
+  `platform.h` does `#undef main` after `<SDL.h>`, so the fix mirrors `egoboo/src/game/Main.cpp` exactly: rename to a
+  plain `int main(...)`.
+- **`GFX::GFX()` / `GFX::~GFX()`:** cartman's editor `struct GFX` (global namespace) collided with egolib's game
+  `struct GFX`. Both are CRTP singletons, so the clash also threatened `idlib::singleton<GFX>` identity. Fixed by
+  namespacing cartman's type as **`Cartman::GFX`** (distinct type → distinct singleton); call sites qualified.
+- **`config_download` / `config_upload`:** cartman's were dead thin `Ego::Setup::download/upload` wrappers, never
+  called anywhere in cartman, duplicating egolib's real (heavier) versions. **Deleted** as dead duplicate code.
+
+### Verification
+
+Build all (`EGOBOO_BUILD_CARTMAN=ON`) = 0 compile + 0 link errors, cartman binary produced. Reconfigure OFF → default
+build (egolib-library/egoboo/content-validator/tests) exit 0; `test.mod` warnings=0 errors=0; ctest 736/738 (only the
+pre-existing #526/#527). **Total diff: 6 files, +50/-37, all under `cartman/src/cartman/`** — no egolib change.
+
+### Still open / flagged (Phase 3+)
+
+- **No runtime verification yet (TOP RISK, unchanged):** compile+link green ≠ works. A manual GUI launch on a real
+  display against a module is still required (`cartman <egoboo_path> <module>`). The riskiest semantic surface is the
+  `App<GFX>` startup/teardown and the immediate-mode GL render path.
+- **Pre-existing bug found (NOT from this port):** the no-arg / bad-args path **core-dumps** — `atexit(main_end)` is
+  registered *before* `Ego::Core::System::initialize()`, so on the early `return EXIT_FAILURE` (missing module arg)
+  `main_end` → `setup_clear_base_vfs_paths()` calls VFS cleanup on an uninitialized VFS and throws
+  (`vfs_remove_mount_point: ... VFS was not initialized`) → `terminate`. The normal path (valid module) initializes VFS
+  first, so this only hits error exits. A one-line guard (register `atexit` after `System::initialize`, or null-check
+  the VFS in cleanup) would fix it — deferred as a behavior change, flagged here per the maintainer's "expect bugs" note.
+- Legacy immediate-mode OpenGL + pervasive global mutable state + C-style idioms remain (documented under Phase 1's
+  "Bugs / questionable code" above) for a future modernization pass.
+- `EGOBOO_BUILD_CARTMAN` stays **OFF by default** until a manual functional smoke confirms the editor runs; only then
+  flip the default / add to the build matrix / docs.
 
 ## How to resume / re-probe
 

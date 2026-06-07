@@ -28,6 +28,7 @@
 #include "egolib/Image/ImageManager.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/FontManager.hpp" // Ego::FontManager::get().loadFont()
 #include "cartman/Clocks.h"
 
 //--------------------------------------------------------------------------------------------
@@ -63,6 +64,8 @@ static void get_big_tiles( SDL_Surface* bmpload );
 
 //--------------------------------------------------------------------------------------------
 
+namespace Cartman {
+
 GFX::GFX() : Ego::App<GFX>(NAME, VERSION_STR)
 {
     gfx_font_ptr = Ego::FontManager::get().loadFont("editor/pc8x8.fon", 12);
@@ -72,6 +75,8 @@ GFX::~GFX()
 {
     gfx_font_ptr.reset();
 }
+
+} // namespace Cartman
 
 //--------------------------------------------------------------------------------------------
 
@@ -885,17 +890,17 @@ void ogl_beginFrame()
     renderer.setBlendingEnabled(true);
     renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
-    auto drawableSize = Ego::GraphicsSystem::get().window->getDrawableSize();
+    auto drawableSize = Ego::GraphicsSystem::get().window->drawable_size();
     renderer.setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
 
     // Set up an ortho projection for the gui to use.  Controls are free to modify this
     // later, but most of them will need this, so it's done by default at the beginning
     // of a frame
-    auto windowSize = Ego::GraphicsSystem::get().window->getSize();
-	Matrix4f4f projection = Ego::Math::Transform::ortho(0, windowSize.x(), windowSize.y(), 0, -1, 1);
+    auto windowSize = Ego::GraphicsSystem::get().window->size();
+	Matrix4f4f projection = idlib::orthographic_projection_matrix(0, windowSize.x(), windowSize.y(), 0, -1, 1);
     renderer.setProjectionMatrix(projection);
-    renderer.setWorldMatrix(Matrix4f4f::identity());
-    renderer.setViewMatrix(Matrix4f4f::identity());
+    renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
+    renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
 }
 
 //--------------------------------------------------------------------------------------------
@@ -964,10 +969,10 @@ void cartman_begin_ortho_camera_hrz(Cartman::Gui::Window& pwin, camera_t * pcam,
     
 	Matrix4f4f matrix;
     auto &renderer = Ego::Renderer::get();
-    matrix = Ego::Math::Transform::ortho(left, right, bottom, top, front, back);
+    matrix = idlib::orthographic_projection_matrix(left, right, bottom, top, front, back);
     renderer.setProjectionMatrix(matrix);
-    renderer.setWorldMatrix(Ego::Math::Transform::scaling({-1.0f, 1.0f, 1.0f}));
-    renderer.setViewMatrix(Ego::Math::Transform::lookAt({pcam->x, pcam->y, back}, {pcam->x, pcam->y, front}, {0.0f, -1.0f, 0.0f}));
+    renderer.setWorldMatrix(idlib::scaling_matrix({-1.0f, 1.0f, 1.0f}));
+    renderer.setViewMatrix(idlib::look_at_matrix({pcam->x, pcam->y, back}, {pcam->x, pcam->y, front}, {0.0f, -1.0f, 0.0f}));
 }
 
 //--------------------------------------------------------------------------------------------
@@ -1008,10 +1013,10 @@ void cartman_begin_ortho_camera_vrt(Cartman::Gui::Window& pwin, camera_t * pcam,
 	Matrix4f4f matrix;
     auto &renderer = Ego::Renderer::get();
 
-    matrix = Ego::Math::Transform::ortho(left, right, bottom, top, front, back);
+    matrix = idlib::orthographic_projection_matrix(left, right, bottom, top, front, back);
     renderer.setProjectionMatrix(matrix);
-    matrix = Ego::Math::Transform::lookAt({pcam->x, pcam->y, pcam->z}, {pcam->x, pcam->y + back, pcam->z}, {0.0f, 0.0f, 1.0f});
-    renderer.setWorldMatrix(Matrix4f4f::identity());
+    matrix = idlib::look_at_matrix({pcam->x, pcam->y, pcam->z}, {pcam->x, pcam->y + back, pcam->z}, {0.0f, 0.0f, 1.0f});
+    renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
     renderer.setViewMatrix(matrix);
 }
 
@@ -1020,11 +1025,11 @@ void cartman_begin_ortho_camera_vrt(Cartman::Gui::Window& pwin, camera_t * pcam,
 void cartman_end_ortho_camera()
 {
     auto &renderer = Ego::Renderer::get();
-    auto windowSize = Ego::GraphicsSystem::get().window->getSize();
-    Matrix4f4f projection = Ego::Math::Transform::ortho(0, windowSize.x(), windowSize.y(), 0, -1, 1);
+    auto windowSize = Ego::GraphicsSystem::get().window->size();
+    Matrix4f4f projection = idlib::orthographic_projection_matrix(0, windowSize.x(), windowSize.y(), 0, -1, 1);
     renderer.setProjectionMatrix(projection);
-    renderer.setWorldMatrix(Matrix4f4f::identity());
-    renderer.setViewMatrix(Matrix4f4f::identity());
+    renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
+    renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
 }
 
 //--------------------------------------------------------------------------------------------
