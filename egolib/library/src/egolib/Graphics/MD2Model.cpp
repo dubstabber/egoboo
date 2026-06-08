@@ -21,7 +21,7 @@
 /// @brief Logic for loading and parsing MD2 object model files
 
 #include "egolib/Graphics/MD2Model.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/_math.h"
 #include "egolib/bbox.h"
 #include "egolib/vfs.h"
@@ -120,7 +120,7 @@ std::shared_ptr<MD2Model> MD2Model::loadFromFile(const std::string &fileName)
     vfs_FILE *f = vfs_openRead(fileName);
     if(!f)
     {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open model file ", "`", fileName, "`", Log::EndOfEntry);
+		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open model file ", "`", fileName, "`", Log::EndOfEntry);
         return nullptr;
     }
 
@@ -148,7 +148,7 @@ std::shared_ptr<MD2Model> MD2Model::loadFromFile(const std::string &fileName)
     if (md2Header.ident != MD2_MAGIC_NUMBER || md2Header.version != MD2_VERSION)
     {
         vfs_close( f );
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "model ", "`", fileName, "`", " does not have valid header or identifier", Log::EndOfEntry);
+		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "model ", "`", fileName, "`", " does not have valid header or identifier", Log::EndOfEntry);
         return nullptr;
     }
 
@@ -156,7 +156,7 @@ std::shared_ptr<MD2Model> MD2Model::loadFromFile(const std::string &fileName)
     std::shared_ptr<MD2Model> model = std::make_shared<MD2Model>();
     if(!model)
     {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to create MD2 model object", Log::EndOfEntry);
+		Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to create MD2 model object", Log::EndOfEntry);
         return nullptr;
     }
 

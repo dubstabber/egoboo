@@ -23,7 +23,6 @@
 ///          to do its business. This depends on SDL_ttf and OpenGL.
 
 #include "egolib/Graphics/FontManager.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Log/_Include.hpp"
 
@@ -32,11 +31,11 @@
 namespace Ego {
 
 FontManager::FontManager() {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[font manager]: SDL_ttf v", SDL_TTF_MAJOR_VERSION, ".", SDL_TTF_MINOR_VERSION, ".", SDL_TTF_PATCHLEVEL, Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "[font manager]: SDL_ttf v", SDL_TTF_MAJOR_VERSION, ".", SDL_TTF_MINOR_VERSION, ".", SDL_TTF_PATCHLEVEL, Log::EndOfEntry);
     if (TTF_Init() < 0) {
         auto e = Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "[font manager]: unable to initialized SDL_ttf v", SDL_TTF_MAJOR_VERSION, ".", SDL_TTF_MINOR_VERSION, ".", SDL_TTF_PATCHLEVEL, ": ",
                                     SDL_GetError(), Log::EndOfLine);
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
         throw idlib::environment_error(__FILE__, __LINE__, "font manager", e.getText());
     }
 }
@@ -49,7 +48,7 @@ std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int poi
     try {
         return std::shared_ptr<Font>(new Font(fileName, pointSize));
     } catch (const idlib::exception& e) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "[font manager]: failed to load font `", fileName,
                                          "` at ", pointSize, "pt: ", e.to_string(),
                                          ". Trying bundled fallbacks.", Log::EndOfEntry);
@@ -68,18 +67,18 @@ std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int poi
 
             try {
                 auto font = std::shared_ptr<Font>(new Font(fallbackFont, pointSize));
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                                  "[font manager]: using fallback font `",
                                                  fallbackFont, "` for `", fileName, "`",
                                                  Log::EndOfEntry);
                 return font;
             } catch (const idlib::exception& fallbackError) {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
                                                  "[font manager]: fallback font `", fallbackFont,
                                                  "` also failed: ", fallbackError.to_string(),
                                                  Log::EndOfEntry);
             } catch (const std::exception& fallbackError) {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
                                                  "[font manager]: fallback font `", fallbackFont,
                                                  "` also failed: ", fallbackError.what(),
                                                  Log::EndOfEntry);
@@ -88,7 +87,7 @@ std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int poi
 
         throw;
     } catch (const std::exception& e) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "[font manager]: failed to load font `", fileName,
                                          "` at ", pointSize, "pt: ", e.what(),
                                          ". Trying bundled fallbacks.", Log::EndOfEntry);
@@ -107,13 +106,13 @@ std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int poi
 
             try {
                 auto font = std::shared_ptr<Font>(new Font(fallbackFont, pointSize));
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                                  "[font manager]: using fallback font `",
                                                  fallbackFont, "` for `", fileName, "`",
                                                  Log::EndOfEntry);
                 return font;
             } catch (const std::exception& fallbackError) {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
                                                  "[font manager]: fallback font `", fallbackFont,
                                                  "` also failed: ", fallbackError.what(),
                                                  Log::EndOfEntry);

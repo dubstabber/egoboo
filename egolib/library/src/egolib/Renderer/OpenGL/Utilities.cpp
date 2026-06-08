@@ -1,5 +1,5 @@
 #include "egolib/Renderer/OpenGL/Utilities.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Renderer/OpenGL/RendererInfo.hpp"
 #include "egolib/Extensions/ogl_extensions.h"
 #include "egolib/Core/StringUtilities.hpp"
@@ -24,27 +24,27 @@ bool Utilities2::isError()
         switch (error)
         {
             case GL_INVALID_ENUM:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_ENUM", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_ENUM", Log::EndOfEntry);
                 break;
             case GL_INVALID_VALUE:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_VALUE", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_VALUE", Log::EndOfEntry);
                 break;
             case GL_INVALID_OPERATION:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_OPERATION", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_OPERATION", Log::EndOfEntry);
                 break;
             #if defined(GL_INVALID_FRAMEBUFFER_OPERATION)
             case GL_INVALID_FRAMEBUFFER_OPERATION:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_FRAMEBUFFER_OPERATION", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_INVALID_FRAMEBUFFER_OPERATION", Log::EndOfEntry);
                 break;
             #endif
             case GL_OUT_OF_MEMORY:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_OUT_OF_MEMORY", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_OUT_OF_MEMORY", Log::EndOfEntry);
                 break;
             case GL_STACK_UNDERFLOW:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_STACK_UNDERFLOW", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_STACK_UNDERFLOW", Log::EndOfEntry);
                 break;
             case GL_STACK_OVERFLOW:
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_STACK_OVERFLOW", Log::EndOfEntry);
+                Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "GL_STACK_OVERFLOW", Log::EndOfEntry);
                 break;
         };
         clearError();

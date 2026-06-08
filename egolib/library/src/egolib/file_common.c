@@ -23,7 +23,7 @@
 /// OS-specific code goes in *-file.c (such as win-file.c)
 
 #include "egolib/file_common.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 
 #include "egolib/strutil.h"
 #include "egolib/vfs.h"
@@ -128,7 +128,7 @@ bool fs_ensureUserFile( const char * relative_filename, bool required )
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to find file ", "`",
                                     relative_filename, "`", Log::EndOfEntry);
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
 		throw std::runtime_error(e.getText());
     }
 
