@@ -22,7 +22,6 @@
 /// @details
 
 #include "egolib/Script/script.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/AI/AStar.hpp"
 #include "egolib/Script/IRuntimeStatistics.hpp"
@@ -159,7 +158,7 @@ void updateScriptErrorContext(const Object& object)
     script_error_model = object.getProfileID();
     if (script_error_model != ObjectProfileRef::Invalid)
     {
-        script_error_classname = EngineContext::get().profileSystem().getProfile(script_error_model)->getClassName().c_str();
+        script_error_classname = activeProfileSystem().getProfile(script_error_model)->getClassName().c_str();
     }
 }
 
@@ -845,7 +844,7 @@ void script_state_t::onVariableNotDefinedError(uint8_t variableIndex)
     auto variableName = getVariableName(variableIndex);
     Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
     e << "variable " << variableName << "/" << (uint16_t)variableIndex << " not defined" << Log::EndOfEntry;
-    EngineContext::get().logTarget() << e;
+    Log::activeTarget() << e;
     throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
 }
 
@@ -926,7 +925,7 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
             }
             else
             {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+                Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                                  script_error_model, " class name == `", script_error_classname,
                                                  "`: divide by zero", Log::EndOfEntry);
             }
@@ -940,14 +939,14 @@ void script_state_t::run_operand(ai_state_t& aiState, script_info_t& script)
             }
             else
             {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+                Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                                  script_error_model, " class name == `", script_error_classname,
                                                  "`: modulo by zero", Log::EndOfEntry);
             }
             break;
 
         default:
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
+            Log::activeTarget() << Log::Entry::create(Log::Level::Message, __FILE__, __LINE__, "script error - model = ",
                                              script_error_model, " class name == `", script_error_classname,
                                              "`: unknown opcode", Log::EndOfEntry);
             break;
