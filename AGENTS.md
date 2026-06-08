@@ -28,15 +28,18 @@ The superproject passes the top-level `idlib/` into `idlib-game-engine` during C
 
 ## Build Commands
 
-**Never use more than 4 parallel jobs (`-j4` max)**; higher values destabilize this machine.
+**Parallelism (current machine: i7-13700HX, 24 threads, 31 GB RAM):** the build is parallel-safe — use `-j20` (leave a couple of threads free). The older `-j4` cap was a laptop stability limit and no longer applies here. Prefer the Ninja generator with ccache for fast incremental rebuilds: `-G Ninja -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache`.
+
+**Test runner is NOT `-j`-safe:** several fixtures (import/export, quest-log hydration, active-module-menu) share writable user-data paths and race under high `ctest -j`, producing ~4 spurious failures. Run `ctest -j1` (or a low `-j`) for a trustworthy baseline until that fixture isolation is fixed. See the Testing section.
 
 ```bash
 # Initial setup (clone + submodules)
 git submodule update --init data external idlib idlib-game-engine
 
-# Linux build
-cmake -S . -B build
-cmake --build build -j4
+# Linux build (Ninja + ccache recommended)
+cmake -S . -B build -G Ninja \
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake --build build -j20
 
 # Run tests
 ctest --test-dir build --output-on-failure
@@ -44,7 +47,7 @@ ctest --test-dir build --output-on-failure
 # Windows cross-build (mingw-w64)
 cmake -S . -B build-windows \
   -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/mingw-w64-x86_64.cmake"
-cmake --build build-windows -j4
+cmake --build build-windows -j20
 
 # Run the game (Linux) — or follow doc/build-linux.md
 ./run-egoboo.sh
@@ -124,7 +127,7 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/` (40 test files, **811** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
+Google Test framework. Tests in `egolib/tests/` (40 test files, **811** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Run serially (`ctest -j1`) for an accurate baseline** — at high `-j` ~4 additional fixtures fail spuriously due to shared writable-path races (`ImportWorkflowFixture` copy/export, `ModulePlayerStartupFixture` quest-log hydration, `ScriptSystemsFunctionsFixture` AddIDSZ module-menu), all of which pass in isolation. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 
