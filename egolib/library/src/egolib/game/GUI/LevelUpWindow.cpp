@@ -4,6 +4,7 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Time/Time.hpp"  // ::Time::now
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"

@@ -33,7 +33,6 @@
 #include "egolib/game/game.h"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/script_implementation.h"
-#include "egolib/game/CharacterMatrix.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"

@@ -30,6 +30,7 @@
 #include "egolib/InputControl/InputSystem.hpp"    // Ego::Input::InputSystem
 #include "egolib/font_bmp.h"                       // font_bmp_load_vfs
 #include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/BillboardSystem.hpp"  // Ego::Graphics::BillboardSystem (complete type)
 #include "egolib/game/GameStates/MainMenuState.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/Profiles/_Include.hpp"

@@ -18,7 +18,6 @@
 //********************************************************************************************
 #pragma once
 
-#include "egolib/game/mesh.h"
 #include "egolib/game/physics.h"
 
 /**

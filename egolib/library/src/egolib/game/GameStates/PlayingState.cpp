@@ -37,6 +37,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Graphics/Viewport.hpp"
+#include "egolib/Time/Time.hpp"                       // ::Time::now
 #include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 #include "egolib/font_bmp.h" // fontyspacing
