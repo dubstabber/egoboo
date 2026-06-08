@@ -119,7 +119,7 @@ Add `doc/build-windows-native.md` + `cmake/toolchains/msys2-ucrt64.cmake` for bu
 
 ### T2.5 Fix Wine font-atlas / audio crash
 
-`debug-output.txt` shows font atlas init failure in `egolib/Graphics/Font.cpp` and a Wine page-fault inside `Mix_LoadWAV_RW` during audio load. Without a fix, the cross build is not a credible verification substitute — `run-egoboo-windows.sh` currently gates it with `EGOBOO_DISABLE_MIPMAPS=1 EGOBOO_DISABLE_AUDIO=1` as a workaround.
+The historically-observed Wine failure mode is a font atlas init failure in `egolib/Graphics/Font.cpp` and a Wine page-fault inside `Mix_LoadWAV_RW` during audio load. Without a fix, the cross build is not a credible verification substitute — `run-egoboo-windows.sh` currently gates it with `EGOBOO_DISABLE_MIPMAPS=1 EGOBOO_DISABLE_AUDIO=1` as a workaround. (Note: the now-integrated `cartman` editor does boot an OpenGL 4.6 context under Wine, so the GL path is not uniformly broken.)
 
 ### T2.6 Quarantine legacy platform READMEs — DONE
 
@@ -191,15 +191,15 @@ the symbol→header dictionary, the `EGOBOO_NO_UBER_INCLUDE` guard, and the per-
 
 ### T3.4 Behavioral test coverage
 
-Current test-to-code ratio is ~11% and covers parsers, module smoke, accessor regressions, script dispatch, and gameplay surfaces. Gaps:
+Current test-to-code ratio is ~16.9% and covers parsers, module smoke, accessor regressions, script dispatch, gameplay surfaces, physics/collision math, and live-Object combat-damage math. Gaps:
 
-- Gameplay combat logic
-- Physics / collision behavior
+- Full combat *integration* (`Object::damage(...)` side effects: life/mana, alerts, particle spawn) — the pure resistance/reduction/invictus math is now pinned by `CombatDamageResolution.cpp`, but the integrated damage path is not
+- Collision *pipeline* behavior (`do_chr_prt_collision` / `particle_collision.c`) — the pure swept-bounds/normal math is covered, the pipeline is not
 - Rendering correctness (golden-image or matrix-cache comparisons)
-- Script VM behavior
 - GUI state transitions
+- AI
 
-Add characterization coverage before the next restructuring wave in each area.
+Add characterization coverage before the next restructuring wave in each area. (Already landed: physics/collision math, bounding-volume ops, map twist, particle recoil, damage/attribute enums, script loader/VM/dispatch, and live-Object combat-damage math — see `71-completed-passes-log.md`.)
 
 ### T3.5 Native-Cartman build integration — DONE (2026-06-07)
 

@@ -1,4 +1,6 @@
-# Cartman Build Integration — Scouting (T3.5)
+# Cartman Build Integration (T3.5) — Port Record + Open Items
+
+**STATUS: COMPLETE through Phase 3 (runtime-verified 2026-06-07).** cartman is wired into CMake behind `option(EGOBOO_BUILD_CARTMAN OFF)` (`add_subdirectory(cartman)` at root `CMakeLists.txt:51`), compiles+links+runs, and boots an OpenGL 4.6 context rendering all four viewports + HUD. OPEN: the default-flip to ON (deferred) and a pre-existing no-arg `atexit`/VFS crash. ~9,291 LOC / 35 files.
 
 Snapshot date: 2026-06-07. Status: **Phase 2 executed AND runtime-verified — cartman compiles, links, RUNS, and
 renders** (`EGOBOO_BUILD_CARTMAN=ON` → 0 compile + 0 link errors, 89 MB executable; GUI launch against `test.mod`
@@ -16,12 +18,16 @@ without touching the working tree.
 
 ## Verdict
 
+*Pre-port baseline (the original feasibility read; superseded — the port is now DONE through Phase 3, see the STATUS banner above and Phases 1–3 below):*
+
 **Feasible, MEDIUM effort, low architectural risk.** Cartman is a port job, not a rewrite. The core data/math
 model already compiles clean against modern egolib; the bit-rot is concentrated in a handful of headers + the
 gfx/gui/input/main `.c` files and is **dominated by ~4 systematic, mechanical renames**. Recommend gating behind a
 CMake option **OFF by default** and landing the port incrementally.
 
 ## What cartman is
+
+*Pre-port baseline (describes cartman as found, before the T3.5 port — the "no build files", "~9,254 LOC", and "now-deleted `egolib/egolib.h`" claims here are the starting state, NOT current: cartman now has a gated `cartman/CMakeLists.txt`, is in the CMake graph, and has zero `egolib.h` includes):*
 
 - A standalone **map editor** for Egoboo (`SDL_main` entry at `cartman/src/cartman/cartman.c:1777`).
 - **~9,254 LOC**, 35 files (9 `.c`, 7 `.cpp`, 12 `.h`, 7 `.hpp`) under `cartman/src/cartman/`.
@@ -33,6 +39,8 @@ CMake option **OFF by default** and landing the port incrementally.
   direct, **0 direct GL** (GL comes via egolib's `Extensions/ogl_extensions.h`).
 
 ## Bit-rot magnitude (compile-probe)
+
+*Pre-port baseline (the starting error surface; resolved — Phase 1 took 719→60, Phase 2 took 60→0 + link green):*
 
 **719 raw errors across 11 of 16 source TUs**, but this number is misleading — it is dominated by **cascade** from
 a few failing headers. Probing headers in isolation shows the true root surface is small.
@@ -100,6 +108,8 @@ Then `add_subdirectory(cartman)` in the root `CMakeLists.txt` (the `option()` ke
 Mirrors `egoboo/CMakeLists.txt`. **No new third-party dependency** is introduced.
 
 ## Risks
+
+*Pre-port baseline (the risks foreseen before the port; most are now resolved — runtime was verified in Phase 3, the 4 dangling `egolib.h` includes were removed in Phase 1; the immediate-mode-GL / semantic-drift cautions still stand for future modernization):*
 
 - **No automated runtime verification.** Cartman is a GUI editor needing a display *and* a module to edit; there is
   no equivalent of the `--module test.mod` validator or a headless smoke-run. Compile-green ≠ works. Manual launch

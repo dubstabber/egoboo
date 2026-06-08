@@ -16,7 +16,7 @@ Current project direction:
 
 ### License
 Egoboo is made available publicly under the
-[GNU GPLv3 License](https://github.com/dubstabber/egoboo/LICENSE).
+[GNU GPLv3 License](https://github.com/dubstabber/egoboo/blob/master/LICENSE).
 
 ### Contact
 Developers can usually be contacted via GitHub.

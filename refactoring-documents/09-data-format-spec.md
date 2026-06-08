@@ -8,8 +8,8 @@ It is a runtime-compatibility spec for the existing positional format, not a des
 
 - Source file in content: `<object>/data.txt`
 - Primary loader: `ObjectProfile::loadDataFile(...)`
-- Source file: `egolib/library/src/egolib/Profiles/ObjectProfile.cpp`
-- Related export path: `ObjectProfile::exportCharacterToFile(...)`
+- Source file: `egolib/library/src/egolib/Profiles/ObjectProfile_load.cpp` (`ObjectProfile.cpp` was split into `ObjectProfile_core.cpp`, `ObjectProfile_load.cpp`, and `ObjectProfile_export.cpp`)
+- Related export path: `ObjectProfile::exportCharacterToFile(...)` in `egolib/library/src/egolib/Profiles/ObjectProfile_export.cpp`
 
 The loader reads the file sequentially. Field meaning depends on position. Later tagged expansions extend or override parts of the base record.
 

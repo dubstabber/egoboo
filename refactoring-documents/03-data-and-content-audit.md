@@ -41,6 +41,8 @@ Any future asset pipeline must explicitly model:
 
 ## 2. Current content inventory
 
+> Note: the counts below are an audit-time snapshot and have drifted slightly as content was added. Re-derive with `find data ...` for exact current numbers.
+
 ### Modules and objects
 
 - 42 module directories under `data/modules`
@@ -179,7 +181,7 @@ The current scripting path is still active and core to gameplay.
 ### What is present
 
 - custom compiler in `game/script_compile.c`
-- runtime function layer in `game/script_functions.c`
+- runtime function layer, split across seven TUs: `game/script_functions_{action,bitwise,movement,spawn,state,systems,target}.c`
 - additional script support under `Script/`
 - legacy docs in `data/doc/AiDocs.txt`
 
@@ -207,7 +209,7 @@ Otherwise a Lua migration will become a behavior rewrite, not just a scripting m
 
 This repository has already tried to escape the current content model several times.
 
-### Attempt A: `doc/ego2xml/`
+### Attempt A: `doc/ego2xml/` (now archived to `doc/legacy/ego2xml/`)
 
 - old XML-based proposals and example schemas
 - proposal documents date back to 2015
@@ -231,11 +233,11 @@ But current implementation quality is uneven:
 - `ScriptMigrator` parses files and writes a `...txt2` output, but is not integrated into the main workflow
 - `utilities/migrator/README.md` is stale and currently documents a different tool entirely
 
-### Attempt C: `game/Lua/`
+### Attempt C: `game/Lua/` (since-removed Lua/SWIG experiment)
 
-- contains a SWIG interface file and helper scripts
-- not integrated into the current build graph
-- includes headers that look out of date relative to the current source tree
+- was a Lua/SWIG scripting experiment containing a SWIG interface file and helper scripts
+- the `game/Lua/` directory has since been deleted from the active tree; it now survives only under `backup-copy/` (`backup-copy/egolib/library/src/egolib/game/Lua`)
+- was never integrated into the build graph, and included headers that were already out of date relative to the source tree
 
 ### Conclusion
 
@@ -247,7 +249,7 @@ Examples:
 
 - `data/doc/AiDocs.txt`
 - `data/doc/version-1.0/*`
-- `doc/ego2xml/*`
+- `doc/legacy/ego2xml/*` (archived 2015 XML proposal)
 - PDFs and ODT manuals under `doc/` and `data/doc/`
 
 The issue is not "no documentation exists". The issue is:

@@ -335,7 +335,7 @@ Still incomplete. Several logically-const accessors are declared non-const; func
 - `egolib/library/src/egolib/game/Lua/` — **removed**
 - `egolib/library/src/egolib/Network/` — **removed**
 - `utilities/migrator/` — still present, documented as stale
-- `doc/ego2xml/` — still present, documented as stale
+- `doc/ego2xml/` — an abandoned 2015 XML-content proposal; **archived to `doc/legacy/ego2xml/`** (with a `DEPRECATED.md`)
 - `backup-copy/` — read-only snapshot; not part of the build
 
 ### Include hygiene
@@ -410,7 +410,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 | File size discipline       | 3.5/5   |   →   | Largest TU is ~3,200 lines; script-dispatch TUs growing within budget |
 | Module boundaries          |  2/5    |   →   | One monolithic static library; directory shape is still indicative  |
 | Language consistency       | 2.5/5   |   →   | C/C++ split roughly 44/56; no net C→C++ migration since last snapshot |
-| Dead code hygiene          | 3.5/5   |   ↗   | Lua/Network removed; legacy READMEs quarantined; orphaned SDL2/physfs deleted; migrator/ego2xml still present |
+| Dead code hygiene          | 3.5/5   |   ↗   | Lua/Network removed; legacy READMEs + ego2xml quarantined to `doc/legacy/`; orphaned SDL2/physfs deleted; `utilities/migrator` marked deprecated |
 | Documentation              | 3.5/5   |   ↑   | Error-handling policy landed; refactoring-documents tree authoritative |
 | Cross-platform parity      |  2/5    |   →   | Linux native OK; Wine cross is unstable; no native-Win open-source path |
 | Third-party independence   | 3.5/5   |   ↗   | Network fetch eliminated; orphaned SDL2/PhysFS removed; single SDL2 story per platform |
