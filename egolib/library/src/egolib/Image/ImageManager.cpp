@@ -41,6 +41,11 @@ egoboo_config_t& config()
 }
 }
 
+IImageManager& activeImageManager()
+{
+    return ImageManager::get();
+}
+
 ImageManager::Iterator::Iterator(const ImageManager::Loaders::const_iterator& inner) :
     m_inner(inner)
 {}
