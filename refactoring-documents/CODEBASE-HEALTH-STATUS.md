@@ -271,7 +271,7 @@ Directory-level subsystem map (by line count, large to small):
 | `game/Core/GameEngine.hpp`      | Entry + states   |
 | `Entities/Object.hpp`           | Physics, script, graphics, module |
 
-The former top "gravity well", the `egolib/egolib.h` uber-header (54–57 subsystem includes), was **deleted in the T3.3 uber-header teardown** (2026-06-07); its `game/egoboo.h → egolib.h` amplifier link was cut first, then the header itself removed. It has zero includers in the active tree (one stale include lingers only in the unbuilt `utilities/migrator/src/Tool.hpp`). The remaining gravity wells are `game.h`, `GameEngine.hpp`, and `Object.hpp`.
+The former top "gravity well", the `egolib/egolib.h` uber-header (54–57 subsystem includes), was **deleted in the T3.3 uber-header teardown** (2026-06-07); its `game/egoboo.h → egolib.h` amplifier link was cut first, then the header itself removed. It has zero includers anywhere in the tree (the last dangling reference, in the unbuilt `utilities/migrator/src/Tool.hpp`, was replaced with precise standard-library includes on 2026-06-08). The remaining gravity wells are `game.h`, `GameEngine.hpp`, and `Object.hpp`.
 
 ### `idlib` as the target quality level
 

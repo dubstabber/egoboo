@@ -1,6 +1,14 @@
 #pragma once
 
-#include "egolib/egolib.h"
+// (The deleted `egolib/egolib.h` uber-header used to be pulled in here purely for the
+//  standard-library facilities below; this header uses no egolib symbols directly.)
+#include <string>
+#include <memory>
+#include <vector>
+#include <ostream>
+#include <sstream>
+#include <stdexcept>
+
 #include "CommandLine.hpp"
 
 #if defined(_WIN32)
