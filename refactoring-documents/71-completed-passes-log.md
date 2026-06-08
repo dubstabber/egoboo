@@ -1,6 +1,6 @@
 # Completed Passes Log
 
-Chronological summary of the numbered refactoring passes (10 through 226) and Tier 2 build tasks completed between 2026-04-13 and 2026-06-07. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
+Chronological summary of the numbered refactoring passes (10 through 226) and Tier 2 build tasks completed between 2026-04-13 and 2026-06-08. Passes 10 through 69 each had their own per-pass document before 2026-04-18; those documents were consolidated into this log to reduce directory clutter. Later passes append directly here. Full per-pass detail (scope constraints, acceptance commands, follow-on recommendations) remains in git history.
 
 For the current-state snapshot, read `CODEBASE-HEALTH-STATUS.md`. For the forward plan that builds on these passes, read `19-refactoring-roadmap.md`.
 
@@ -64,7 +64,7 @@ Removed direct `_gameEngine` reads from all of `game/GUI/*` and `game/GameStates
 
 ### Pass 22 — Module runtime ownership plan execution (2026-04-15 → 04-16)
 
-Checkpoint plan from `22-module-runtime-ownership-plan.md` executed across passes 23, 26, 27, 28. All checkpoints landed.
+Checkpoint plan from `22-module-runtime-ownership-plan.md` (consolidated into `19-refactoring-roadmap.md`) executed across passes 23, 26, 27, 28. All checkpoints landed.
 
 ### Pass 26 — Audio session leaf cleanup (2026-04-16)
 
@@ -1230,7 +1230,7 @@ Self-contained the final 10 `egoboo.h`-consuming headers: `Entities/{Object,Obje
 - **Phase B — the cut**: removed all 18 includes; a keep-going build surfaced the deep transitive-leech tail — **139 errors across 30 TUs** (files that pulled egolib types *through* a narrowed header without ever including egolib.h themselves). All fixed with precise includes, no code logic touched: 1 header (`GameStates/LoadPlayerElement.hpp` → `Renderer/DeferredTexture.hpp`, which cascade-fixed its `.cpp`), **28 source TUs via a 28-agent parallel workflow** (each agent probed with `srccheck`, mapped symbols via a shared dictionary, self-verified `errors=0`), plus `tools/egoboo-content-validator.cpp` (→ `spawn_file.h`). Recurring homes: `Renderer/Renderer.hpp`, `Graphics/GraphicsWindow.hpp`, `Graphics/GraphicsSystemNew.hpp`, `Extensions/ogl_extensions.h` (GL prims + `GL_DEBUG`), `font_bmp.h` (legacy bitmap-font globals), `map_functions.h` (`twist_to_normal`/`XX/YY/ZZ`), `Profiles/_Include.hpp` (Module/ObjectProfile complete types), `AI/LineOfSight.hpp`, `Time/Time.hpp`, `Core/StringUtilities.hpp` (`Ego::isspace` etc.).
 - **Delete**: removed `egolib.h` + its `egolib/library/CMakeLists.txt` source-list entry.
 
-**Verified** (all green): reconfigure + build all 4 targets (egolib-library, egoboo, content-validator, tests) = 0 errors; `test.mod` warnings=0 errors=0; ctest 736/738 (only pre-existing #526/#527); menu smoke-run exit 124, clean boot (OpenGL/Image/Font/Audio/atlas), error-scan empty. **The uber-header pattern is now fully gone from the live codebase** (both `egoboo.h`'s aggregate link and `egolib.h` itself eliminated). NOTE: disconnected/unbuildable **cartman** (4 files) + **utilities/migrator** (1 file) retain dangling `#include "egolib/egolib.h"` — left as-is (no `CMakeLists.txt`, not in the build graph, already bit-rotted; tracked under T3.5). They will need include fixes when/if those tools are rewired.
+**Verified** (all green): reconfigure + build all 4 targets (egolib-library, egoboo, content-validator, tests) = 0 errors; `test.mod` warnings=0 errors=0; ctest 736/738 (only pre-existing #526/#527); menu smoke-run exit 124, clean boot (OpenGL/Image/Font/Audio/atlas), error-scan empty. **The uber-header pattern is now fully gone from the live codebase** (both `egoboo.h`'s aggregate link and `egolib.h` itself eliminated). NOTE: disconnected/unbuildable **cartman** (4 files) + **utilities/migrator** (1 file) retain dangling `#include "egolib/egolib.h"` — left as-is (no `CMakeLists.txt`, not in the build graph, already bit-rotted; tracked under T3.5). They will need include fixes when/if those tools are rewired. *(Superseded by the T3.5 cartman-integration entries below: cartman is now in the CMake graph behind `option(EGOBOO_BUILD_CARTMAN OFF)` with **zero** `egolib.h` includes — those 4 were removed in Phase 1. As of 2026-06-08 the only dangling `#include "egolib/egolib.h"` left in the tree is `utilities/migrator/src/Tool.hpp`.)*
 
 ---
 

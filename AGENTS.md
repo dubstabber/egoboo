@@ -89,15 +89,15 @@ The runtime was historically wired around three mutable globals, all now retired
 
 - `_gameEngine` — **0 references.** Engine access routes through `EngineContext::get().setEngine()` / `engine()`.
 - `_currentModule` — **0 references.** Consumers go through `GameSessionContext` and `GameModule` accessor surfaces.
-- `update_wld` — **0 active references.** Variable gone; 3 stale string-literal/comment artifacts remain in `script.c`, `ObjectGraphics.hpp`, `Particle.hpp`. Functional replacement is `worldUpdateCount()` (via `GameSessionContext`), ~50 call sites across ~20 files.
+- `update_wld` — **0 active references.** Variable gone; a few stale string-literal/comment artifacts remain in `script.c`, `ObjectGraphics.hpp`, `Particle.hpp`. Functional replacement is `worldUpdateCount()` (via `GameSessionContext`), ~77 call sites across ~31 files.
 
-The remaining coupling hotspot is singleton access: ~912 `::get()` call sites persist. The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, and GFX; broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
+The remaining coupling hotspot is singleton access: ~863 `::get()` call sites persist. The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system (15 service seams); broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
 
 ### High-Risk Hotspots
 
 Read relevant audit docs before modifying. Files over 1,000 lines (by size):
 - `egolib/library/src/egolib/game/script_functions_systems.c` (~3200 lines, largest TU)
-- `egolib/library/src/egolib/vfs.c` (~2460 lines)
+- `egolib/library/src/egolib/vfs.c` (~1920 lines, down from 2,460 after the dead cstdio backend was removed)
 - `egolib/library/src/egolib/game/script_functions_target.c` (~1680 lines)
 - `egolib/library/src/egolib/Entities/Object.hpp` (~1620 lines, monolithic interface — 18 role interfaces extracted but header still large)
 - `egolib/library/src/egolib/game/script_functions_spawn.c` (~1580 lines)
@@ -124,7 +124,7 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/`. Coverage is limited (compilation checks, quad-tree, string utilities, mesh iterators, content parsers, module loading smoke tests). No gameplay logic tests exist.
+Google Test framework. Tests in `egolib/tests/` (40 test files, **811** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 

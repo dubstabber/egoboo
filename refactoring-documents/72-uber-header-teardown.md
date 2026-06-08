@@ -1,6 +1,8 @@
 # Uber-Header Teardown (reframed T3.3)
 
-Snapshot date: 2026-06-06. Owner front: deep coupling reduction. Branch: `refactor/uber-header-teardown`.
+**STATUS: COMPLETE (2026-06-07) — historical record + reusable technique reference.** The `egolib.h` uber-header was deleted; see `71-completed-passes-log.md` and `19-refactoring-roadmap.md` T3.3. The `EGOBOO_NO_UBER_INCLUDE` selfcheck technique and the symbol→home dictionary below remain useful reference.
+
+Snapshot date: 2026-06-06. Owner front: deep coupling reduction. Work merged to `master` (the original `refactor/uber-header-teardown` branch is no longer the live source of truth).
 
 ## Why this supersedes the old T3.3 framing
 
@@ -141,6 +143,8 @@ Cascade win: `Object.hpp` is now down to a single `#error` (direct-include guard
 
 ## Status after Pass 3 — headers still pulling `egoboo.h`
 
+*(historical — front complete; all headers below were since narrowed and the link cut in Passes 224–226.)*
+
 **Legitimate thin-`egoboo.h` keeps (use `gfx_rv`; leave until gfx_rv is retired or rehomed):**
 `TileList.hpp`, `graphic_mad.h`, `graphic_prt.h`, `Graphics/IGFX.hpp`, `Graphics/ParticleGraphics.hpp`.
 
@@ -222,6 +226,8 @@ as-is (the user confirmed the delete); they will need include work when/if those
 
 ## Remaining work-list (HISTORICAL — superseded by Pass 226, front complete)
 
+*(historical — front complete; every item below was executed by Pass 226.)*
+
 1. **Low-level egolib/game leaf headers**: `lighting.h`, `mesh.h` (keystone, 2023), `graphic.h`,
    `CharacterMatrix.h`, `graphic_mad.h`, `graphic_prt.h`, `graphic_fan.h`. Need Math + bbox + map-format +
    GL-vertex includes.
@@ -239,6 +245,8 @@ as-is (the user confirmed the delete); they will need include work when/if those
    Full build + validator + ctest + **smoke-run** (engine-init path is untested by the verify loop).
 
 ## How to resume
+
+*(historical — front complete; retained only as a reusable recipe for the next header-narrowing front.)*
 
 1. Rebuild the checker from `flags.make` (recipe above) → `/tmp/selfcheck.sh`.
 2. Re-run the probe (neutralize the guarded include, keep-going build) to get the *current* reduced
