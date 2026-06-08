@@ -34,7 +34,6 @@ ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
-egoboo_config_t* activeConfig = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -717,26 +716,22 @@ const IGFX& EngineContext::gfx() const
 
 void EngineContext::installConfig(egoboo_config_t& config)
 {
-    if (activeConfig)
-    {
-        throw std::logic_error("config already installed");
-    }
-    activeConfig = &config;
+    Ego::installActiveConfig(config);
 }
 
 void EngineContext::clearConfig()
 {
-    activeConfig = nullptr;
+    Ego::clearActiveConfig();
 }
 
 egoboo_config_t* EngineContext::tryConfig()
 {
-    return activeConfig;
+    return Ego::tryActiveConfig();
 }
 
 const egoboo_config_t* EngineContext::tryConfig() const
 {
-    return activeConfig;
+    return Ego::tryActiveConfig();
 }
 
 egoboo_config_t& EngineContext::config()

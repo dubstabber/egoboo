@@ -502,6 +502,27 @@ public:
     static bool upload(egoboo_config_t& cfg);
 };
 
+/// @brief Install the active Egoboo configuration (the configuration the engine context publishes).
+/// @param config the configuration to install
+/// @throw std::logic_error if a configuration is already installed
+/// @remark Subsystem-owned ownership for the installed configuration pointer (mirrors the Log
+///         active-target ownership move); @c EngineContext delegates its config lifecycle here.
+void installActiveConfig(egoboo_config_t& config);
+
+/// @brief Clear the installed active configuration.
+void clearActiveConfig();
+
+/// @brief The installed active configuration, or @a nullptr if none is installed.
+egoboo_config_t* tryActiveConfig();
+
+/// @brief The active configuration: the installed one, or the default singleton when none is installed.
+/// @remark Lower-layer seam mirroring @c Log::activeTarget(): lets a non-game leaf reach the active
+///         configuration without including the app-layer engine-context service hub. Behaviour-identical
+///         to the engine-context config accessor during runtime/validator/tests, where the installed
+///         configuration is always @c egoboo_config_t::get(); it only differs in the never-installed
+///         bootstrap edge, where it falls back to the default singleton instead of throwing.
+egoboo_config_t& activeConfig();
+
 } // namespace Ego
 
 /// Set in the VFS the basic mount points/search paths.

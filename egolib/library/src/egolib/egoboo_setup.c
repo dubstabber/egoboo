@@ -38,6 +38,36 @@ egoboo_config_t& egoboo_config_t::get()
     return _singleton;
 }
 
+namespace Ego {
+namespace {
+egoboo_config_t* g_activeConfig = nullptr;
+}
+
+void installActiveConfig(egoboo_config_t& config)
+{
+    if (g_activeConfig)
+    {
+        throw std::logic_error("config already installed");
+    }
+    g_activeConfig = &config;
+}
+
+void clearActiveConfig()
+{
+    g_activeConfig = nullptr;
+}
+
+egoboo_config_t* tryActiveConfig()
+{
+    return g_activeConfig;
+}
+
+egoboo_config_t& activeConfig()
+{
+    return g_activeConfig ? *g_activeConfig : egoboo_config_t::get();
+}
+} // namespace Ego
+
 egoboo_config_t::egoboo_config_t() :
     // Graphic configuration section.
     graphic_fullscreen(false,"graphic.fullscreen","enable/disable fullscreen mode."
