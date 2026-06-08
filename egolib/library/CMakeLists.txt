@@ -450,6 +450,10 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/bbox.c
     src/egolib/bbox.h
     src/egolib/PhysicsData.h
+    src/egolib/Physics/Collidable.cpp
+    src/egolib/Physics/Collidable.hpp
+    src/egolib/Physics/ICollisionWorld.cpp
+    src/egolib/Physics/ICollisionWorld.hpp
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
@@ -693,8 +697,6 @@ set(EGOLIB_GAME_MODULE_SOURCES
 
 # -- game/Physics ------------------------------------------------------------
 set(EGOLIB_GAME_PHYSICS_SOURCES
-    src/egolib/game/Physics/Collidable.cpp
-    src/egolib/game/Physics/Collidable.hpp
     src/egolib/game/Physics/CollisionSystem.cpp
     src/egolib/game/Physics/CollisionSystem.hpp
     src/egolib/game/Physics/ObjectPhysics.cpp

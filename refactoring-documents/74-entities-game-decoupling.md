@@ -150,11 +150,21 @@ that **partially stale** and the edge was cut the same day — see the two
   `Particle.hpp` **6 → 4** (both shed `mesh.h` *and* `lighting.h`, reachable from these headers only
   via the `Collidable` base). See the [71-completed-passes-log.md](71-completed-passes-log.md)
   entry "Collidable header made fully game-include-free."
-- **Remaining for a *true* lower-layer `Collidable` (the next front).** `Collidable.hpp` is
-  game-include-free but `Collidable` still lives in `game/Physics/`, and `Collidable.cpp`'s
-  `setPosition`/`setSpawnPosition` call `activeModule()` (GameModule) for the bounds-check + tile
-  lookup. Physically relocating `Collidable` into a lower-layer (`egolib/`) `egolib-physics`
-  sub-library is **blocked on decoupling that `activeModule()` position-validation dependency**
-  (inject the mesh / relocate the validation) — relocating the header alone while the impl reaches
-  up would be a false lower-layer signal. That ownership change is behavior-sensitive and is now
-  protected by the T3.4 net above.
+- **`Collidable` is now a fully lower-layer component (DONE).** The `activeModule()` runtime
+  coupling was decoupled via a lower-layer `Ego::Physics::ICollisionWorld` DIP seam
+  (`egolib/Physics/ICollisionWorld.{hpp,cpp}`; 2 methods `isInside` + `getTileIndex`, installed
+  `active*()` accessor in the Log/service-hub keystone style). `GameModule` implements it and the
+  game session installs/clears it across the `_activeModule` lifetime (beginModule before spawn /
+  quitModule). `Collidable.{hpp,cpp}` then `git mv`'d to `egolib/Physics/` (beside `ICollisionWorld`,
+  the seed of a future `egolib-physics` sub-library); `Collidable.cpp` now references **no game
+  symbol** and has **0 `game/` includes**. `Object.hpp` game/ closure **5 → 4**, `Particle.hpp`
+  **4 → 3** (the base header left the game/ count). Behavior-identical (ctest 815/817, position/
+  respawn + combat-integration fixtures green, menu smoke-run clean). See the
+  [71-completed-passes-log.md](71-completed-passes-log.md) entry "Collidable decoupled from
+  GameModule + relocated to a lower layer."
+- **Across the whole Collidable front:** `Object.hpp` game/ transitive closure **14 → 4**,
+  `Particle.hpp` **13 → 3**. The remaining edges are exactly the by-value composition members +
+  `CharacterMatrix.h`/`egoboo.h` — the deferred hard core. **Next:** `Collidable`'s sibling physics
+  TUs (`CollisionSystem`/`ObjectPhysics`/`ParticlePhysics`/`particle_collision`) are still
+  game-coupled; an actual `egolib-physics` link-target split remains gated on the broader
+  Entities↔game `.cpp` coupling.

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "egolib/Physics/ICollisionWorld.hpp"  // GameModule implements ICollisionWorld
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
@@ -47,7 +48,7 @@ namespace Ego { class Player; }
 namespace Ego { namespace Input { class InputDevice; } }
 
 /// The module data that the game needs.
-class GameModule : private idlib::non_copyable
+class GameModule : private idlib::non_copyable, public Ego::Physics::ICollisionWorld
 {
 public:
     static constexpr float PITDEPTH = -60;  ///< Depth to kill character
@@ -173,7 +174,10 @@ public:
     * @return
     *   true if the specified position is inside the level
     **/
-    bool isInside(const float x, const float y) const;
+    bool isInside(const float x, const float y) const override;
+
+    /// @brief Ego::Physics::ICollisionWorld: the tile index at @a point (delegates to the mesh).
+    Index1D getTileIndex(const Ego::Vector2f& point) const override;
 
     bool isInsidePitBounds(float x, float y) const;
 

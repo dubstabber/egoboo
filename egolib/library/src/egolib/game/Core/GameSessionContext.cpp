@@ -9,6 +9,7 @@
 #include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"  // install/clearCollisionWorld
 #include "egolib/game/game.h"
 
 #include <algorithm>
@@ -214,6 +215,11 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
     _activeModule = std::make_unique<GameModule>(module, seed);
 
+    // Publish the active module as the collision world so the lower-layer Collidable base can
+    // validate positions without reaching up into GameModule. Installed before any spawning,
+    // since spawnAllObjects() sets object positions through Collidable::setPosition.
+    Ego::Physics::installCollisionWorld(_activeModule.get());
+
     // Live spawn still happens after construction because the runtime is not fully decoupled.
     activeModule().spawnAllObjects();
 
@@ -222,6 +228,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 void GameSessionContext::quitModule()
 {
+    Ego::Physics::clearCollisionWorld();
     _activeModule.reset();
 
     scripting_system_end();

@@ -30,7 +30,7 @@
 #include "egolib/Entities/Common.hpp"
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
 #include "egolib/Graphics/Animation2D.hpp"
-#include "egolib/game/Physics/Collidable.hpp"
+#include "egolib/Physics/Collidable.hpp"
 #include "egolib/game/Physics/ParticlePhysics.hpp"
 
 namespace Ego

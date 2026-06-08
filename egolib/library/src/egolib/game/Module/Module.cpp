@@ -90,6 +90,11 @@ bool GameModule::isInside(const float x, const float y) const
     return x >= 0 && x < _mesh->_tmem._edge_x && y >= 0 && y < _mesh->_tmem._edge_y;
 }
 
+Index1D GameModule::getTileIndex(const Ego::Vector2f& point) const
+{
+    return _mesh->getTileIndex(point);
+}
+
 bool GameModule::isInsidePitBounds(float x, float y) const
 {
     const ego_mesh_t& mesh = requireMesh(_mesh);

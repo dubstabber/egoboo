@@ -155,10 +155,24 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
         glDeleteTextures(1, &id);
         throw idlib::runtime_error(__FILE__, __LINE__, "glBindTexture failed");
     }
+    // When mipmaps are disabled (the EGOBOO_DISABLE_MIPMAPS Wine workaround) or the sampler does
+    // not request them, only the base level is uploaded below. The sampler's minification filter
+    // must then NOT request mipmaps: a mipmap min-filter on a texture with no mipmap levels is
+    // "mipmap incomplete" and samples as white -- the white-box font/atlas symptom. Force the mip
+    // filter to none so setSampler picks a non-mipmap GL_TEXTURE_MIN_FILTER consistent with the
+    // (no-mipmap) upload.
+    const bool useMipmaps = !are_mipmaps_disabled_by_environment()
+                         && idlib::texture_filter_method::none != sampler.mip_filter_method();
+    idlib::texture_sampler effectiveSampler = sampler;
+    if (!useMipmaps)
+    {
+        effectiveSampler.mip_filter_method(idlib::texture_filter_method::none);
+    }
+
     // (3) Set the texture sampler.
     try
     {
-        Utilities2::setSampler(std::static_pointer_cast<RendererInfo>(m_renderer->getInfo()), type, sampler);
+        Utilities2::setSampler(std::static_pointer_cast<RendererInfo>(m_renderer->getInfo()), type, effectiveSampler);
     }
     catch (...)
     {
@@ -170,8 +184,7 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
     {
         case idlib::texture_type::_2D:
         {
-            if (!are_mipmaps_disabled_by_environment() &&
-                idlib::texture_filter_method::none != sampler.mip_filter_method())
+            if (useMipmaps)
             {
                 Utilities2::upload_2d_mipmap(pixel_format, newSurface->w, newSurface->h, newSurface->pixels);
             }
@@ -195,7 +208,7 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
     };
 
     // Store the appropriate data.
-    m_sampler = sampler;
+    m_sampler = effectiveSampler;
     m_type = type;
     m_id = id;
     m_width = newSurface->w;

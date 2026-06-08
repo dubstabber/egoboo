@@ -17,21 +17,16 @@
 //*
 //********************************************************************************************
 
-#include "egolib/game/Physics/Collidable.hpp"
+#include "egolib/Physics/Collidable.hpp"
 
-#include "egolib/game/Core/GameSessionContext.hpp"
-// setPosition/setSpawnPosition need the full GameModule definition
-// (isInside/getMeshPointer). GameSessionContext.hpp only forward-declares it,
-// and Collidable.hpp no longer drags Module.hpp in transitively.
-#include "egolib/game/Module/Module.hpp"
+// Position validation (bounds check + tile lookup) goes through the lower-layer collision-world
+// seam rather than reaching up into the game-layer GameModule. The game session installs the
+// active GameModule as the ICollisionWorld for the module's lifetime. This keeps Collidable.cpp
+// free of any game/ dependency, completing the lower-layer extraction of the Collidable base.
+#include "egolib/Physics/ICollisionWorld.hpp"
+#include "egolib/Debug.hpp"  // EGO_DEBUG_VALIDATE
 
-namespace
-{
-GameModule& activeModule()
-{
-    return GameSessionContext::get().activeModule();
-}
-}
+#include <cassert>
 
 namespace Ego
 {
@@ -43,7 +38,7 @@ bool Collidable::setPosition(const Vector3f& pos)
     EGO_DEBUG_VALIDATE(pos);
 
     // Never allow positions outside the map.
-    if (!activeModule().isInside(pos.x(), pos.y()))
+    if (!activeCollisionWorld().isInside(pos.x(), pos.y()))
     {
         return false;
     }
@@ -56,7 +51,7 @@ bool Collidable::setPosition(const Vector3f& pos)
     _oldPosition = _position;
     _position = pos;
 
-    _tile = activeModule().getMeshPointer()->getTileIndex(Vector2f(getPosX(), getPosY()));
+    _tile = activeCollisionWorld().getTileIndex(Vector2f(getPosX(), getPosY()));
 
     Vector2f nrm;
     float pressure = 0.0f;
@@ -71,7 +66,7 @@ bool Collidable::setPosition(const Vector3f& pos)
 
 void Collidable::setSpawnPosition(const Vector3f& pos)
 {
-    assert(activeModule().isInside(pos.x(), pos.y()));
+    assert(activeCollisionWorld().isInside(pos.x(), pos.y()));
     _spawnPosition = pos;
 }
 

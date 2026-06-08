@@ -17,7 +17,7 @@ Verified against the live tree on 2026-06-08. These are the single source of tru
 
 | Metric | Value | Note |
 | ------ | ----: | ---- |
-| Active source files (egolib+egoboo, excl. tests) | **640** | `.c` 61 · `.cpp` 226 · `.h` 58 · `.hpp` 295 |
+| Active source files (egolib+egoboo, excl. tests) | **643** | `.c` 61 · `.cpp` 227 · `.h` 59 · `.hpp` 296 (incl. the new lower-layer `egolib/Physics/ICollisionWorld.{hpp,cpp}`) |
 | Active source lines (egolib+egoboo) | ~121,000 | — |
 | Test lines / ratio | ~20,800 / **~17.1%** | 41 test `.cpp` files, **817** ctest cases (incl. `CombatDamageIntegration.cpp`, 6 cases) |
 | ctest result | **815 / 817** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
@@ -262,7 +262,7 @@ Directory-level subsystem map (by line count, large to small):
 2. **GUI → Game internals.** GUI screens directly read player state, inventory, and session state through session-context accessors.
 3. **Profiles → Runtime singletons.** `ObjectProfile_load.cpp` pulls `PerkHandler`, `ImageManager`, and `ProfileSystem` singletons during parsing.
 4. **FileFormats → Runtime services.** Content parsing remains entangled with VFS mount state.
-5. **Entities ↔ Game Module.** The structural cycle at the runtime-ownership layer has been broken by the session/engine context, but the Entity and Module headers still cross-include via forward-declared surfaces.
+5. **Entities ↔ Game Module.** The structural cycle at the runtime-ownership layer has been broken by the session/engine context. The `Collidable` base class (a major Entities→Module edge, inherited by both `Object` and `Particle`) is now fully decoupled and relocated to the lower layer (`egolib/Physics/`, behind the `ICollisionWorld` seam, 2026-06-08); `Object.hpp`/`Particle.hpp` game/ transitive closures are down to 4/3 (the by-value composition members). The remaining Entity↔game coupling is the non-propagating internal headers + impl `.cpp`s.
 
 ### "Gravity well" headers
 
