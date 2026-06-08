@@ -52,7 +52,8 @@ typedef egolib_rv gfx_rv;
 /// Messaging stuff
 #define DAMAGERAISE 25 ///< Tolerance for damage tiles
 
-#define ONESECOND 50 ///< How many game loop updates represent 1 second (50 UPS = 1 second)
+// ONESECOND (50 UPS) now lives in egolib/egolib_config.h (low layer, reached here
+// transitively via typedef.h) so the Entities layer can use it without game/egoboo.h.
 
 #define WRAP_TOLERANCE 90    ///< Status bar
 

@@ -24,7 +24,7 @@
 #pragma once
 
 #include "egolib/game/Graphics/RenderPass.hpp"
-#include "egolib/game/Graphics/Vertex.hpp"
+#include "egolib/Graphics/Vertex.hpp"
 
 namespace Ego {
 namespace Graphics {

@@ -32,6 +32,7 @@
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/BillboardSystem.hpp"  // Ego::Graphics::BillboardSystem (complete type for render_all)
 #include "egolib/game/Module/Passage.hpp"
 
 #include <algorithm>

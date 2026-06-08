@@ -48,11 +48,8 @@
 #include "egolib/Entities/ITargetInfo.hpp"
 #include "egolib/Entities/IVisualControl.hpp"
 #include "egolib/Entities/IWallet.hpp"
-#include "egolib/game/Module/Module.hpp"
-#include "egolib/game/physics.h"
-#include "egolib/game/graphic_mad.h"
+#include "egolib/PhysicsData.h"  // orientation_t (lower-layer primitive; game/physics.h not needed here)
 #include "egolib/Entities/Common.hpp"
-#include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Physics/Collidable.hpp"
 #include "egolib/game/Physics/ObjectPhysics.hpp"

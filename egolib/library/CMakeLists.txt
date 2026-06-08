@@ -190,6 +190,7 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/SDL/Utilities.hpp
     src/egolib/Graphics/TextureManager.cpp
     src/egolib/Graphics/TextureManager.hpp
+    src/egolib/Graphics/Vertex.hpp
     src/egolib/Graphics/VertexFormat.cpp
     src/egolib/Graphics/VertexFormat.hpp
     src/egolib/Graphics/Viewport.cpp
@@ -448,6 +449,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/App.hpp
     src/egolib/bbox.c
     src/egolib/bbox.h
+    src/egolib/PhysicsData.h
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
@@ -592,7 +594,6 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/TextureAtlasManager.hpp
     src/egolib/game/Graphics/TileList.cpp
     src/egolib/game/Graphics/TileList.hpp
-    src/egolib/game/Graphics/Vertex.hpp
 )
 
 # -- game/GUI ----------------------------------------------------------------

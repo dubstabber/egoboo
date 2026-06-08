@@ -1,10 +1,12 @@
 #pragma once
 
 #include "egolib/_math.h"                       // Matrix4f4f
-#include "egolib/game/Graphics/Vertex.hpp"      // GLvertex
+#include "egolib/Extensions/ogl_extensions.h"   // GLXvector4f + GL component types
 #include "egolib/Graphics/ModelDescriptor.hpp"
 
 #include <memory>
+
+struct GLvertex; // egolib/Graphics/Vertex.hpp — used here only as const GLvertex&
 
 namespace Ego
 {

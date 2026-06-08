@@ -2,7 +2,7 @@
 
 #include "idlib/idlib.hpp"
 #include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Graphics/Vertex.hpp"
+#include "egolib/Graphics/Vertex.hpp"
 
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Graphics/MD2Model.hpp"

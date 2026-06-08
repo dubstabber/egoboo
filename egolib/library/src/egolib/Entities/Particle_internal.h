@@ -31,7 +31,6 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Physics/PhysicalConstants.hpp"
-#include "egolib/game/CharacterMatrix.h"
 
 namespace particle_detail
 {

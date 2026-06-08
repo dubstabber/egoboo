@@ -18,8 +18,7 @@
 //********************************************************************************************
 #pragma once
 
-#include "egolib/game/mesh.h"
-#include "egolib/game/physics.h"
+#include "egolib/PhysicsData.h"  // phys_data_t (lower-layer primitive; game/physics.h not needed here)
 
 /**
  * @brief

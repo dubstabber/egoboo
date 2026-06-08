@@ -26,6 +26,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Logic/Team.hpp"
+#include "egolib/Time/Time.hpp"  // ::Time::now
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/_Include.hpp"
