@@ -46,6 +46,11 @@
 #define MAX_LOCAL_PLAYERS    4
 #define MAX_PLAYER           MAX_LOCAL_PLAYERS      ///< ZF> used to be 8, but caused some memset issues if MAX_PLAYER > MAX_LOCAL_PLAYERS
 
+/// @brief How many game-loop updates represent one second (50 UPS = 1 second).
+///        Lives here (low layer) rather than in game/egoboo.h so Entities-layer
+///        timer code can reach it without pulling the game/ monolith.
+#define ONESECOND 50
+
 /**
  * @brief
  *  The maximum number of object profiles.
