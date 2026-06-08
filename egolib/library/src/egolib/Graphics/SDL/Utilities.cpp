@@ -1,12 +1,11 @@
 #include "egolib/Graphics/SDL/Utilities.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/egoboo_setup.h"
 
 namespace
 {
 egoboo_config_t& config()
 {
-    return EngineContext::get().config();
+    return Ego::activeConfig();
 }
 }
 

@@ -21,20 +21,17 @@
 namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
-IAudioSystem* activeAudioSystem = nullptr;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
-IParticleHandler* activeParticleHandler = nullptr;
-IProfileSystem* activeProfileSystem = nullptr;
+IProfileSystem* g_activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
-egoboo_config_t* activeConfig = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -145,26 +142,22 @@ const Ego::GUI::UIManager& EngineContext::uiManager() const
 
 void EngineContext::installAudioSystem(IAudioSystem& audioSystem)
 {
-    if (activeAudioSystem)
-    {
-        throw std::logic_error("audio system already installed");
-    }
-    activeAudioSystem = &audioSystem;
+    installActiveAudioSystem(audioSystem);
 }
 
 void EngineContext::clearAudioSystem()
 {
-    activeAudioSystem = nullptr;
+    clearActiveAudioSystem();
 }
 
 IAudioSystem* EngineContext::tryAudioSystem()
 {
-    return activeAudioSystem;
+    return tryActiveAudioSystem();
 }
 
 const IAudioSystem* EngineContext::tryAudioSystem() const
 {
-    return activeAudioSystem;
+    return tryActiveAudioSystem();
 }
 
 IAudioSystem& EngineContext::audioSystem()
@@ -453,26 +446,22 @@ const Ego::ITextureManager& EngineContext::textureManager() const
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)
 {
-    if (activeParticleHandler)
-    {
-        throw std::logic_error("particle handler already installed");
-    }
-    activeParticleHandler = &particleHandler;
+    installActiveParticleHandler(particleHandler);
 }
 
 void EngineContext::clearParticleHandler()
 {
-    activeParticleHandler = nullptr;
+    clearActiveParticleHandler();
 }
 
 IParticleHandler* EngineContext::tryParticleHandler()
 {
-    return activeParticleHandler;
+    return tryActiveParticleHandler();
 }
 
 const IParticleHandler* EngineContext::tryParticleHandler() const
 {
-    return activeParticleHandler;
+    return tryActiveParticleHandler();
 }
 
 IParticleHandler& EngineContext::particleHandler()
@@ -497,26 +486,26 @@ const IParticleHandler& EngineContext::particleHandler() const
 
 void EngineContext::installProfileSystem(IProfileSystem& profileSystem)
 {
-    if (activeProfileSystem)
+    if (g_activeProfileSystem)
     {
         throw std::logic_error("profile system already installed");
     }
-    activeProfileSystem = &profileSystem;
+    g_activeProfileSystem = &profileSystem;
 }
 
 void EngineContext::clearProfileSystem()
 {
-    activeProfileSystem = nullptr;
+    g_activeProfileSystem = nullptr;
 }
 
 IProfileSystem* EngineContext::tryProfileSystem()
 {
-    return activeProfileSystem;
+    return g_activeProfileSystem;
 }
 
 const IProfileSystem* EngineContext::tryProfileSystem() const
 {
-    return activeProfileSystem;
+    return g_activeProfileSystem;
 }
 
 IProfileSystem& EngineContext::profileSystem()
@@ -717,26 +706,22 @@ const IGFX& EngineContext::gfx() const
 
 void EngineContext::installConfig(egoboo_config_t& config)
 {
-    if (activeConfig)
-    {
-        throw std::logic_error("config already installed");
-    }
-    activeConfig = &config;
+    Ego::installActiveConfig(config);
 }
 
 void EngineContext::clearConfig()
 {
-    activeConfig = nullptr;
+    Ego::clearActiveConfig();
 }
 
 egoboo_config_t* EngineContext::tryConfig()
 {
-    return activeConfig;
+    return Ego::tryActiveConfig();
 }
 
 const egoboo_config_t* EngineContext::tryConfig() const
 {
-    return activeConfig;
+    return Ego::tryActiveConfig();
 }
 
 egoboo_config_t& EngineContext::config()

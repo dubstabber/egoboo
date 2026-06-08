@@ -1,5 +1,5 @@
 #include "egolib/Graphics/GraphicsSystem.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 
 #include "egolib/Graphics/GraphicsContext.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
@@ -23,13 +23,13 @@ std::pair<GraphicsWindow *, GraphicsContext *> CreateWindowAndContext()
 {
     GraphicsWindow *window = nullptr;
     GraphicsContext *context = nullptr;
-    auto& configuration = EngineContext::get().config();
+    auto& configuration = Ego::activeConfig();
     auto& graphicsSystem = Ego::GraphicsSystemNew::get();
 
     window = graphicsSystem.createWindow();
     if (!window)
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create SDL window: ", SDL_GetError(), Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create SDL window: ", SDL_GetError(), Log::EndOfEntry);
         return std::make_pair<GraphicsWindow *, GraphicsContext *>(nullptr, nullptr);
     }
     else
@@ -40,7 +40,7 @@ std::pair<GraphicsWindow *, GraphicsContext *> CreateWindowAndContext()
         context = graphicsSystem.createContext(window);
         if (!context)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create OpenGLGL context: ", SDL_GetError(), Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create OpenGLGL context: ", SDL_GetError(), Log::EndOfEntry);
             delete window;
             window = nullptr;
             return std::make_pair<GraphicsWindow *, GraphicsContext *>(nullptr, nullptr);
@@ -53,7 +53,7 @@ std::pair<GraphicsWindow *, GraphicsContext *> CreateWindowAndContext()
         SDL_Surface *theSurface = IMG_Load_RW(vfs_openRWopsRead(pathName.c_str()), 1);
         if (!theSurface)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load icon ", "`", pathName, "`: ", SDL_GetError(), Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load icon ", "`", pathName, "`: ", SDL_GetError(), Log::EndOfEntry);
         }
         else
         {
@@ -76,7 +76,7 @@ GraphicsSystem::GraphicsSystem() :
     // Initialize the NEW graphics system.
     GraphicsSystemNew::initialize();
 
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "setting SDL video mode", Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "setting SDL video mode", Log::EndOfEntry);
 
     // Try create window.
     Requirements requirements;
@@ -104,7 +104,7 @@ GraphicsSystem::GraphicsSystem() :
     if (!p.first)
     {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to set any video mode", Log::EndOfEntry);
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
         throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
     }
     else

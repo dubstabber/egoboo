@@ -1,7 +1,8 @@
 #include "egolib/Graphics/SDL/GraphicsWindow.hpp"
 
 #include "egolib/egoboo_setup.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Image/ImageManager.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/Extensions/ogl_extensions.h"
 
@@ -9,7 +10,7 @@ namespace Ego { namespace SDL {
 
 static void UploadColorBufferSettings()
 {
-    auto& configuration = EngineContext::get().config();
+    auto& configuration = Ego::activeConfig();
     int depth = configuration.graphic_colorBuffer_bitDepth.getValue();
     // (1) Shall not above 32 nor below 0.
     if (depth < 0 || depth > 32) depth = 32;
@@ -28,21 +29,21 @@ static void UploadColorBufferSettings()
 
 static void UploadDepthBufferSettings()
 {
-    auto& configuration = EngineContext::get().config();
+    auto& configuration = Ego::activeConfig();
     int depth = configuration.graphic_depthBuffer_bitDepth.getValue();
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depth);
 }
 
 static void UploadStencilBufferSettings()
 {
-    auto& configuration = EngineContext::get().config();
+    auto& configuration = Ego::activeConfig();
     int depth = configuration.graphic_stencilBuffer_bitDepth.getValue();
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, depth);
 }
 
 static void UploadAccumulationBufferSettings()
 {
-    auto& configuration = EngineContext::get().config();
+    auto& configuration = Ego::activeConfig();
     configuration.graphic_accumulationBuffer_bitDepth;
     int depth = configuration.graphic_colorBuffer_bitDepth.getValue();
     int redDepth = depth / 4,
@@ -59,7 +60,7 @@ static void UploadAccumulationBufferSettings()
 GraphicsWindow::GraphicsWindow()
     : Ego::GraphicsWindow(), window(nullptr)
 {
-    auto& config = EngineContext::get().config();
+    auto& config = Ego::activeConfig();
     // (2) Color, depth, and accumulation buffer depth.
     UploadColorBufferSettings();
     UploadDepthBufferSettings();
@@ -127,7 +128,7 @@ GraphicsWindow::GraphicsWindow()
                               320, 240, windowFlags);
     if (nullptr == window)
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                          "unable to create SDL window: ",
                                          SDL_GetError(), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL window");
@@ -137,7 +138,7 @@ GraphicsWindow::GraphicsWindow()
     {
         SDL_DestroyWindow(window);
         window = nullptr;
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                          "unable to create SDL window: ",
                                          SDL_GetError(), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL window");
@@ -234,7 +235,7 @@ void GraphicsWindow::update()
     {
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
         e << "unable to get display index" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
     }
     displayIndex = newDisplayIndex;
     SDL_Event event;
@@ -349,7 +350,7 @@ std::shared_ptr<SDL_Surface> GraphicsWindow::getContents() const
     {
         auto pixel_format = Ego::SDL::getPixelFormat(surface);
         auto pixel_descriptor = Ego::pixel_descriptor::get(pixel_format);
-        return EngineContext::get().imageManager().createImage((size_t)surface->w, (size_t)surface->h, (size_t)surface->pitch, pixel_descriptor, surface->pixels);
+        return Ego::activeImageManager().createImage((size_t)surface->w, (size_t)surface->h, (size_t)surface->pitch, pixel_descriptor, surface->pixels);
     }
     catch (...)
     {

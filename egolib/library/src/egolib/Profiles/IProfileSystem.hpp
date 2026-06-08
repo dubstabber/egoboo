@@ -49,3 +49,10 @@ public:
     virtual const std::shared_ptr<EnchantProfile>& getEnchantProfile(EVE_REF ref) const = 0;
     virtual EVE_REF loadEnchantProfile(const std::string& pathname, EVE_REF overrideRef) = 0;
 };
+
+/// @brief Lower-layer accessor for the active profile system.
+/// @remark Behaviour-equivalent to the EngineContext profile-system accessor: the object installed into
+///         the engine context is always @c ProfileSystem::get() (see @c ContentRuntimeBootstrap), so this
+///         resolves the same instance without a non-game leaf having to reach up into the app-layer
+///         engine-context service hub. Mirrors the @c Log::activeTarget() seam.
+IProfileSystem& activeProfileSystem();

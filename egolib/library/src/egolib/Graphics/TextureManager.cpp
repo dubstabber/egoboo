@@ -23,7 +23,8 @@
 #include "egolib/_math.h"
 #include "egolib/fileutil.h"
 #include "egolib/Graphics/TextureManager.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Image/ImageManager.hpp"
+#include "egolib/Log/_Include.hpp"
 
 /**
  * @brief
@@ -48,11 +49,11 @@ static bool ego_texture_load_vfs(std::shared_ptr<Ego::Texture> texture, const ch
     texture->release();
 
     std::string fullFilename;
-    std::shared_ptr<SDL_Surface> surface = EngineContext::get().imageManager().loadImageWithKnownExtension(filename, &fullFilename);
+    std::shared_ptr<SDL_Surface> surface = Ego::activeImageManager().loadImageWithKnownExtension(filename, &fullFilename);
     const bool retval = surface && texture->load(fullFilename, surface);
     if (!retval) {
         auto resolved = vfs_resolveReadFilename(filename);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load texture file ", "`", resolved.second, "`", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load texture file ", "`", resolved.second, "`", Log::EndOfEntry);
     }
 
     return retval;

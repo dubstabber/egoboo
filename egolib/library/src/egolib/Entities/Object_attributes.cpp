@@ -28,7 +28,7 @@ namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 void publishStealthBillboardIfAvailable(ObjectRef objectRef, const std::string& text)
@@ -218,9 +218,9 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
         return nullptr;
     }
-    const std::shared_ptr<EnchantProfile> &enchantmentProfile = EngineContext::get().profileSystem().getEnchantProfile(enchantProfile);
+    const std::shared_ptr<EnchantProfile> &enchantmentProfile = activeProfileSystem().getEnchantProfile(enchantProfile);
 
-    if(!EngineContext::get().profileSystem().isLoaded(spawnerProfile)) {
+    if(!activeProfileSystem().isLoaded(spawnerProfile)) {
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
         return nullptr;
     }
@@ -378,13 +378,13 @@ void Object::setLife(const float value)
 
 void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
 {
-    if(!EngineContext::get().profileSystem().isLoaded(profileID)) {
+    if(!activeProfileSystem().isLoaded(profileID)) {
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
         return;
     }
 
     _profileID = profileID;
-    _profile = EngineContext::get().profileSystem().getProfile(_profileID);
+    _profile = activeProfileSystem().getProfile(_profileID);
 
     //Exit stealth if we change form
     deactivateStealth();

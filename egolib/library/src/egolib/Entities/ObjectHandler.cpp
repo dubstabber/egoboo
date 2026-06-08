@@ -19,7 +19,6 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/ObjectHandler.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Entities/Object.hpp"
 
@@ -123,14 +122,14 @@ bool ObjectHandler::exists(ObjectRef ref) const {
 std::shared_ptr<Object> ObjectHandler::insert(ObjectProfileRef profileRef, ObjectRef overrideRef)
 {
 	// Make sure the profile is valid.
-	if (!EngineContext::get().profileSystem().isLoaded(profileRef)) {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "tried to spawn object with invalid profile reference ", profileRef, Log::EndOfEntry);
+	if (!activeProfileSystem().isLoaded(profileRef)) {
+		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "tried to spawn object with invalid profile reference ", profileRef, Log::EndOfEntry);
 		return nullptr;
 	}
 
 	// Limit total number of characters active at the same time.
 	if (getObjectCount() > OBJECTS_MAX) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "no free object slots available", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "no free object slots available", Log::EndOfEntry);
 		return nullptr;
 	}
 
@@ -140,7 +139,7 @@ std::shared_ptr<Object> ObjectHandler::insert(ObjectProfileRef profileRef, Objec
 		if (!exists(overrideRef)) {
 			objRef = overrideRef;
 		} else {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to override a object ", overrideRef.get(), ": object already spawned", Log::EndOfEntry);
+			Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to override a object ", overrideRef.get(), ": object already spawned", Log::EndOfEntry);
 			return nullptr;
 		}
 	}
@@ -154,7 +153,7 @@ std::shared_ptr<Object> ObjectHandler::insert(ObjectProfileRef profileRef, Objec
 	if (ObjectRef::Invalid != objRef) {
 		const std::shared_ptr<Object> objPtr = std::make_shared<Object>(profileRef, objRef);
 		if (!objPtr) {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create object", Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create object", Log::EndOfEntry);
 			return nullptr;
 		}
 

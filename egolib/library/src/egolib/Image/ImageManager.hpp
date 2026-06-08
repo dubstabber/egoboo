@@ -144,6 +144,13 @@ public:
     std::shared_ptr<SDL_Surface> loadImageWithKnownExtension(const std::string& basename, std::string* resolvedPath = nullptr) const override;
 };
 
+/// @brief Lower-layer accessor for the active image manager.
+/// @remark Behaviour-equivalent to the EngineContext image-manager accessor: the installed image
+///         manager is always @c ImageManager::get() (see @c App), so this resolves the same instance
+///         without a non-game leaf reaching up into the app-layer engine-context service hub.
+///         Mirrors the @c Log::activeTarget() seam.
+IImageManager& activeImageManager();
+
 } // namespace Ego
 
 /**

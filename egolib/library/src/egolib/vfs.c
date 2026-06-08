@@ -26,7 +26,6 @@
 #include <cstdio>
 
 #include "egolib/vfs.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/file_common.h"
 #include "egolib/Log/_Include.hpp"
@@ -158,7 +157,7 @@ int vfs_init(const char *argv0, const char *root_dir)
     if (!fs_fileIsDirectory(fs_getDataDirectory()))
     {
         auto entry = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "the data path ", "`", fs_getDataDirectory(), "`", " is not a directory", Log::EndOfEntry);
-        if (auto* logTarget = EngineContext::get().tryLogTarget())
+        if (auto* logTarget = Log::tryInstalledTarget())
         {
             *logTarget << entry;
         }
@@ -684,7 +683,7 @@ bool vfs_mkdir(const std::string& pathname) {
     BAIL_IF_NOT_INIT();
     std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
     if (!PHYSFS_mkdir(temporary.c_str())) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_mkdir(", pathname, ") failed: ", vfs_getError());
+        Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_mkdir(", pathname, ") failed: ", vfs_getError());
         return false;
     }
     return true;
@@ -697,7 +696,7 @@ bool vfs_delete_file(const std::string& pathname)
     std::string temporary = to_physfs_path(Ego::VfsPath(pathname).string());
 
     if (!PHYSFS_delete(temporary.c_str())) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_delete(", pathname, ") failed: ", vfs_getError(), Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "PHYSF_delete(", pathname, ") failed: ", vfs_getError(), Log::EndOfEntry);
         return false;
     }
     return true;
@@ -1209,7 +1208,7 @@ int vfs_copyDirectory( const char *sourceDir, const char *destDir )
 
             if ( !vfs_copyFile( srcPath, destPath ) )
             {
-                EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "failed to copy from ", "`", 
+                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "failed to copy from ", "`", 
                                                  srcPath, "`", " to ", "`", destPath, "`", ": ", vfs_getError(),
                                                  Log::EndOfEntry);
             }

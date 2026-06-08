@@ -40,6 +40,11 @@ pro_import_t import_data;
 
 static const std::shared_ptr<ObjectProfile> NULL_PROFILE = nullptr;
 
+IProfileSystem& activeProfileSystem()
+{
+    return ProfileSystem::get();
+}
+
 
 ProfileSystem::ProfileSystem() :
     _profilesLoaded(),

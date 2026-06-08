@@ -21,7 +21,6 @@
 /// @brief Particle update-loop and animation/environment helpers.
 
 #include "egolib/Entities/Particle_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego
 {
@@ -30,7 +29,7 @@ namespace
 {
 IParticleHandler& particleHandler()
 {
-    return EngineContext::get().particleHandler();
+    return activeParticleHandler();
 }
 }
 
@@ -288,7 +287,7 @@ size_t Particle::updateContinuousSpawning()
 
     //Optimization: Only spawn cosmetic sub-particles if we ourselves were rendered
     //This prevents a lot of cosmetic particles from spawning outside visible range
-    const std::shared_ptr<ParticleProfile>& childProfile = EngineContext::get().profileSystem().getParticleProfile(getProfile()->contspawn._lpip.get());
+    const std::shared_ptr<ParticleProfile>& childProfile = activeProfileSystem().getParticleProfile(getProfile()->contspawn._lpip.get());
     if(!childProfile->force && !inst.indolist) {
 
         //Is is something that spawns often? (often = at least once every 2 seconds)

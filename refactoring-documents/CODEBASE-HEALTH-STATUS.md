@@ -9,7 +9,7 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 
 Snapshot date: 2026-06-08 (updated from the 2026-06-06 and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
-**Changes since the 2026-06-06 snapshot:** the uber-header teardown completed and **`egolib/egolib.h` was deleted** (T3.3); `cartman` was wired into the CMake graph behind `option(EGOBOO_BUILD_CARTMAN OFF)` and now compiles/links/runs (T3.5); `vfs.c`'s dead cstdio backend was eliminated (2,456 → 1,921 lines, T3.6); the `CameraSystem` EngineContext seam landed; six T3.4 characterization batches were added (physics collision-normal, bounding-box ops, map twist, particle recoil, damage/attribute enums, and the first live-Object combat-damage batch); and the T3.7 logging-seam include-decoupling front made the `Log` subsystem a clean downward leaf (17 leaf TUs moved off `game/Core/EngineContext.hpp`).
+**Changes since the 2026-06-06 snapshot:** the uber-header teardown completed and **`egolib/egolib.h` was deleted** (T3.3); `cartman` was wired into the CMake graph behind `option(EGOBOO_BUILD_CARTMAN OFF)` and now compiles/links/runs (T3.5); `vfs.c`'s dead cstdio backend was eliminated (2,456 → 1,921 lines, T3.6); the `CameraSystem` EngineContext seam landed; six T3.4 characterization batches were added (physics collision-normal, bounding-box ops, map twist, particle recoil, damage/attribute enums, and the first live-Object combat-damage batch); and the T3.7 logging-seam include-decoupling front made the `Log` subsystem a clean downward leaf (17 leaf TUs moved off `game/Core/EngineContext.hpp`). The T3.7 **service-hub** continuation (2026-06-08) then cut the non-game leaf includers of `game/Core/EngineContext.hpp` from 33 to **8** via free-function `active*()` seams (sugar over the lower-layer singleton for `profileSystem`/`imageManager`; Log-style ownership-move keystones for `config`/`particleHandler`/`audioSystem`), which also reduced egolib `::get()` sites ~895→794 — the remaining 8 are bootstrap installers or are blocked on `perkHandler`/`billboardSystem`/`fontManager` seams and the deeper Entities↔game coupling (branch `refactor/egolib-service-hub-decoupling`, not yet merged).
 
 ### Key Metrics (canonical — other docs should defer here for these volatile numbers)
 
@@ -21,9 +21,9 @@ Verified against the live tree on 2026-06-08. These are the single source of tru
 | Active source lines (egolib+egoboo) | ~121,000 | — |
 | Test lines / ratio | ~20,400 / **~16.9%** | 40 test `.cpp` files, **811** ctest cases |
 | ctest result | **809 / 811** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
-| Singleton `::get()` call sites (egolib) | **~863** | down from ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
+| Singleton `::get()` call sites (egolib) | **~760** | the 2026-06-08 service-hub free-fn seams cut ~100; down from ~863 (2026-06-08 pre-front) / ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
 | `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07) |
-| `game/Core/EngineContext.hpp` includers | 117 total, **33** non-game leaf | down from 51 before T3.7 |
+| `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
 | `Object` role interfaces | **18** | `Entities/I*.hpp` (19 `I*.hpp` files incl. the `IParticleHandler` *service* interface) |
 | Largest TU | `script_functions_systems.c` **3,206** | no other TU exceeds ~1,700 |
 | `Object.hpp` | **1,616** lines | monolithic by interface |

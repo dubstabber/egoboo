@@ -1,6 +1,6 @@
 #include "egolib/Renderer/DeferredTexture.hpp"
 #include "egolib/Graphics/TextureManager.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/egoboo_setup.h"
 #include "egolib/fileutil.h"
 
 namespace Ego {
@@ -44,7 +44,7 @@ std::shared_ptr<const Texture> DeferredTexture::get() const {
     }
 
     //Load and use the optional HD texture if it is available (else fall back to normal texture)
-    if(EngineContext::get().config().graphic_hd_textures_enable.getValue()) {
+    if(Ego::activeConfig().graphic_hd_textures_enable.getValue()) {
 
         if(!_loadedHD) {
             if(ego_texture_exists_vfs(_filePath + "_HD")) {

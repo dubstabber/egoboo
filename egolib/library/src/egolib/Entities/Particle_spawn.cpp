@@ -21,7 +21,6 @@
 /// @brief Particle creation, initialization, and attachment helpers.
 
 #include "egolib/Entities/Particle_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego
 {
@@ -30,7 +29,7 @@ namespace
 {
 IParticleHandler& particleHandler()
 {
-    return EngineContext::get().particleHandler();
+    return activeParticleHandler();
 }
 }
 
@@ -131,8 +130,8 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     //Load particle profile
     _spawnerProfile = spawnProfile.get();
     _particleProfileID = particleProfile;
-    assert(EngineContext::get().profileSystem().isParticleProfileLoaded(_particleProfileID));
-    _particleProfile = EngineContext::get().profileSystem().getParticleProfile(_particleProfileID);
+    assert(activeProfileSystem().isParticleProfileLoaded(_particleProfileID));
+    _particleProfile = activeProfileSystem().getParticleProfile(_particleProfileID);
     assert(_particleProfile != nullptr); //"Tried to spawn particle with invalid PIP_REF"
 
     team = spawnTeam;
@@ -489,7 +488,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
 
     // some code to track all allocated particles, where they came from, how long they are going to last,
     // what they are being used for...
-    const auto& spawnerProfile = EngineContext::get().profileSystem().getProfile(_spawnerProfile);
+    const auto& spawnerProfile = activeProfileSystem().getProfile(_spawnerProfile);
     log_debug( "spawn_one_particle() - spawned a particle %d\n"
         "\tupdate == %d, remaining life == %d\n"
         "\towner == %d (\"%s\")\n"
