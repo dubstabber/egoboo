@@ -24,7 +24,6 @@
 
 #include "egolib/Log/DefaultTarget.hpp"
 #include "egolib/Log/ConsoleColor.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Log {
 
@@ -34,6 +33,15 @@ namespace Log {
  */
 static std::unique_ptr<Log::Target> g_target = nullptr;
 static bool _atexit_registered = false;
+
+/**
+ * @brief
+ *  The engine-published active-target override, if installed.
+ * @remark
+ *  Relocated from the engine context so that the Log subsystem owns active-target
+ *  resolution and no longer depends upward on the engine layer.
+ */
+static Log::Target* g_activeTarget = nullptr;
 
 void initialize(const std::string& filename, Log::Level level) {
 	if (!g_target) {
@@ -62,10 +70,25 @@ Target& get() {
 }
 
 Target* tryActiveTarget() {
-	if (auto* logTarget = EngineContext::get().tryLogTarget()) {
-		return logTarget;
+	if (g_activeTarget) {
+		return g_activeTarget;
 	}
 	return g_target.get();
+}
+
+void installActiveTarget(Target& target) {
+	if (g_activeTarget) {
+		throw std::logic_error("log target already installed");
+	}
+	g_activeTarget = &target;
+}
+
+void clearActiveTarget() {
+	g_activeTarget = nullptr;
+}
+
+Target* tryInstalledTarget() {
+	return g_activeTarget;
 }
 
 Target& activeTarget() {
