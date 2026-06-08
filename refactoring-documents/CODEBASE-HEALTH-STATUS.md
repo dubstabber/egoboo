@@ -83,12 +83,12 @@ Notably absent: physics/collision tests, rendering correctness tests, GUI tests.
 
 ### Files over 1,000 lines (active tree)
 
-Fourteen files remain over the 1k-line threshold. `script_functions.c` (8,183 lines) and `Object.cpp` (3,201 lines) have been split. `Object.hpp` is the surviving "large header." `script_functions_systems.c` has grown to become the largest TU in the tree as role-extraction helpers have been moved in.
+Fourteen files remain over the 1k-line threshold. `script_functions.c` (8,183 lines) and `Object.cpp` (3,201 lines) have been split. `Object.hpp` is the surviving "large header." `script_functions_systems.c` has grown to become the largest TU in the tree as role-extraction helpers have been moved in. `vfs.c` dropped from 2,456 to 1,922 lines (~22%) when its dead cstdio backend was eliminated (2026-06-07, three passes — see `71-completed-passes-log.md`).
 
 | File                                              |  Lines | Role                                       |
 | ------------------------------------------------- | -----: | ------------------------------------------ |
 | `game/script_functions_systems.c`                 |  3,206 | Script dispatch — systems (largest TU)     |
-| `egolib/vfs.c`                                    |  2,456 | Virtual file system                        |
+| `egolib/vfs.c`                                    |  1,922 | Virtual file system (PHYSFS-only since the cstdio-backend elimination) |
 | `game/script_functions_target.c`                  |  1,676 | Script dispatch — target                   |
 | `Entities/Object.hpp`                             |  1,617 | Core entity — still monolithic by interface |
 | `game/script_functions_spawn.c`                   |  1,576 | Script dispatch — spawn                    |
