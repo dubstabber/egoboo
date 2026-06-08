@@ -25,7 +25,7 @@
 
 #include "egolib/Core/StringUtilities.hpp"
 
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/egoboo_setup.h"
 #include "egolib/Log/_Include.hpp"
 
 #include "egolib/vfs.h"
@@ -63,7 +63,7 @@ ModuleProfile::~ModuleProfile()
 bool ModuleProfile::isModuleUnlocked() const
 {
     // First check if we are in developers mode or that the right module has been beaten before.
-    if (EngineContext::get().config().debug_developerMode_enable.getValue())
+    if (Ego::activeConfig().debug_developerMode_enable.getValue())
     {
         return true;
     }
