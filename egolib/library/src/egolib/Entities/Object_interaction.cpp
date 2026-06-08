@@ -174,7 +174,7 @@ int Object::getPrice() const
         iskin = skin;
     }
 
-    std::shared_ptr<ObjectProfile> profile = EngineContext::get().profileSystem().getProfile(slotNumber);
+    std::shared_ptr<ObjectProfile> profile = activeProfileSystem().getProfile(slotNumber);
     if (!profile) {
         return 0;
     }
@@ -261,7 +261,7 @@ void Object::dropMoney(int amount)
         amount -= count * vals[cnt];
 
         for (size_t i = 0; i < count; i++) {
-            EngineContext::get().particleHandler().spawnGlobalParticle(pos, ATK_FRONT, LocalParticleProfileRef(pips[cnt]), i);
+            activeParticleHandler().spawnGlobalParticle(pos, ATK_FRONT, LocalParticleProfileRef(pips[cnt]), i);
         }
     }
 }

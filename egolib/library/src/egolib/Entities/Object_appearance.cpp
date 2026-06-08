@@ -21,7 +21,6 @@
 /// @brief Appearance, visibility, and collision-facing Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 bool Object::setSkin(const size_t skinNumber)
 {
@@ -58,7 +57,7 @@ bool Object::hasIntellectDamageParticle() const
     for (LocalParticleProfileRef iTmp(0); iTmp.get() < MAX_PIP_PER_PROFILE; ++iTmp)
     {
         const std::shared_ptr<ParticleProfile>& particleProfile =
-            EngineContext::get().profileSystem().getParticleProfile(profile->getParticleProfile(iTmp));
+            activeProfileSystem().getParticleProfile(profile->getParticleProfile(iTmp));
         if (particleProfile && particleProfile->_intellectDamageBonus)
         {
             return true;
@@ -144,7 +143,7 @@ std::string Object::getName(bool prefixArticle, bool prefixDefinite, bool capita
         }
     } else {
         if (getProfile()->getSpellEffectType() != ObjectProfile::NO_SKIN_OVERRIDE) {
-            result = EngineContext::get().profileSystem().getProfile(SPELLBOOK)->getClassName();
+            result = activeProfileSystem().getProfile(SPELLBOOK)->getClassName();
         } else {
             result = getProfile()->getClassName();
         }
@@ -340,7 +339,7 @@ std::shared_ptr<const Ego::Texture> Object::getIcon() const
     if (getProfile()->getSpellEffectType() == ObjectProfile::NO_SKIN_OVERRIDE) {
         return getProfile()->getIcon(skin).get_ptr();
     } else {
-        return EngineContext::get().profileSystem().getSpellBookIcon(getProfile()->getSpellEffectType()).get_ptr();
+        return activeProfileSystem().getSpellBookIcon(getProfile()->getSpellEffectType()).get_ptr();
     }
 }
 

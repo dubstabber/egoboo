@@ -118,7 +118,7 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     _terminateRequested(false),
     _objRef(objRef),
     _profileID(proRef),
-    _profile(EngineContext::get().profileSystem().getProfile(_profileID)),
+    _profile(activeProfileSystem().getProfile(_profileID)),
     _showStatus(false),
     _isAlive(true),
     _name("*NONE*"),
@@ -232,7 +232,7 @@ void Object::respawn()
 
     const std::shared_ptr<ObjectProfile>& profile = getProfile();
 
-    EngineContext::get().particleHandler().spawnPoof(selfHandle(*this));
+    activeParticleHandler().spawnPoof(selfHandle(*this));
     disaffirm_attached_particles(getObjRef());
 
     for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {

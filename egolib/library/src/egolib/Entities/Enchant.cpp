@@ -247,7 +247,7 @@ void Enchantment::update()
             Facing facing = target->getFacingZ();
             for (uint8_t i = 0; i < _enchantProfile->contspawn._amount; ++i)
             {
-                EngineContext::get().particleHandler().spawnLocalParticle(target->getPosition(), facing, ObjectProfileRef(_spawnerProfileID), _enchantProfile->contspawn._lpip,
+                activeParticleHandler().spawnLocalParticle(target->getPosition(), facing, ObjectProfileRef(_spawnerProfileID), _enchantProfile->contspawn._lpip,
                                                                           ObjectRef::Invalid, GRIP_LAST,
                                                                           owner != nullptr ? owner->getTeam().toRef() : static_cast<TEAM_REF>(Team::TEAM_DAMAGE),
                                                                           owner != nullptr ? owner->getObjRef() : ObjectRef::Invalid,
@@ -538,7 +538,7 @@ void Enchantment::playEndSound() const
 {
     std::shared_ptr<Object> target = _target.lock();
     if(target) {
-        const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(_spawnerProfileID);
+        const std::shared_ptr<ObjectProfile> &spawnerProfile = activeProfileSystem().getProfile(_spawnerProfileID);
         audioSystem().playSound(target->getPosition(), spawnerProfile->getSoundID(getProfile()->endsound_index));
     }
 }

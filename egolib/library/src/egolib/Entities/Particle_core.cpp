@@ -35,7 +35,7 @@ IAudioSystem& audioSystem()
 
 IParticleHandler& particleHandler()
 {
-    return EngineContext::get().particleHandler();
+    return activeParticleHandler();
 }
 }
 
@@ -248,7 +248,7 @@ void Particle::playSound(int8_t sound)
     }
 
     //If we were spawned by an Object, then use that Object's sound pool
-    const std::shared_ptr<ObjectProfile> &profile = EngineContext::get().profileSystem().getProfile(_spawnerProfile);
+    const std::shared_ptr<ObjectProfile> &profile = activeProfileSystem().getProfile(_spawnerProfile);
     if (profile) {
         audioSystem().playSound(getPosition(), profile->getSoundID(sound));
     }
@@ -339,7 +339,7 @@ bool Particle::canCollide() const
     // Make this optional? Is there any reason to fail if the particle has no profile reference?
     if (getProfile()->spawnenchant)
     {
-        if(EngineContext::get().profileSystem().isEnchantProfileLoaded(EngineContext::get().profileSystem().getProfile(getSpawnerProfile())->getEnchantRef())) {
+        if(activeProfileSystem().isEnchantProfileLoaded(activeProfileSystem().getProfile(getSpawnerProfile())->getEnchantRef())) {
             return true;
         }
     }

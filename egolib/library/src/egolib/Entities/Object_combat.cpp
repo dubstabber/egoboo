@@ -147,7 +147,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
         if ( !isMount() && 0 == damage_timer )
         {
             //Ping!
-            EngineContext::get().particleHandler().spawnDefencePing(selfHandle(*this), attacker);
+            activeParticleHandler().spawnDefencePing(selfHandle(*this), attacker);
 
             //Only draw "Immune!" if we are truly completely immune and it was not simply a weak attack
             if(HAS_SOME_BITS(damageModifier, DAMAGEINVICTUS) || damage.base + damage.rand <= damage_threshold) {
@@ -184,7 +184,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
                 {
                     if ( _profile->getBludType() == ULTRABLUDY || ( base_damage > HURTDAMAGE && DamageType_isPhysical( damagetype ) ) )
                     {
-                        EngineContext::get().particleHandler().spawnParticle( getPosition(), ori.facing_z + direction,
+                        activeParticleHandler().spawnParticle( getPosition(), ori.facing_z + direction,
                                                                               _profile->getSlotNumber(), _profile->getBludParticleProfile(),
                                                                               ObjectRef::Invalid, GRIP_LAST, attackerTeam, _objRef);
                     }
