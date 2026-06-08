@@ -1,6 +1,7 @@
 #include "egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
+#include "egolib/game/graphic_prt.h"  // ParticleGraphicsRenderer
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
 

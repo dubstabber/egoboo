@@ -50,7 +50,6 @@
 #include "egolib/Entities/IWallet.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/physics.h"
-#include "egolib/game/graphic_mad.h"
 #include "egolib/Entities/Common.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Physics/Collidable.hpp"

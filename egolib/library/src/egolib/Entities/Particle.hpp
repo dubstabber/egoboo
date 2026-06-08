@@ -27,7 +27,6 @@
 #endif
 
 #include "egolib/Profiles/_Include.hpp"  // prt_ori_t
-#include "egolib/game/graphic_prt.h"
 #include "egolib/Entities/Common.hpp"
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
 #include "egolib/Graphics/Animation2D.hpp"
