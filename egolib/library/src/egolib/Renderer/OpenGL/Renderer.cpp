@@ -22,7 +22,7 @@
 /// @author Michael Heilmann
 
 #include "egolib/Renderer/OpenGL/Renderer.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "idlib/idlib.hpp"
 #include "egolib/Renderer/OpenGL/Utilities.hpp"
 #include "egolib/Renderer/OpenGL/Texture.hpp"
@@ -369,7 +369,7 @@ void Renderer::setMultisamplesEnabled(bool enabled) {
     SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &multiSamples);
     // If MSAA is not supported => Warn.
     if (!(multiSampleBuffers == 1 && multiSamples > 0)) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "multisample antialiasing not supported", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "multisample antialiasing not supported", Log::EndOfEntry);
         // Otherwise => Enable/disable it depending on the argument of this function.
     } else {
         if (enabled) {

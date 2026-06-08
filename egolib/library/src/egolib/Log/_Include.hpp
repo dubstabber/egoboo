@@ -80,4 +80,34 @@ namespace Log {
 	 */
 	Target& activeTarget();
 
+	/**
+	 * @brief
+	 *  Install the engine-published active log-target override.
+	 * @param target
+	 *  the target to install
+	 * @throw std::logic_error
+	 *  if an active target is already installed
+	 * @remark
+	 *  Ownership of the engine-installed override lives in the Log subsystem so that
+	 *  lower layers can resolve the active target without depending on the engine layer.
+	 */
+	void installActiveTarget(Target& target);
+
+	/**
+	 * @brief
+	 *  Clear the engine-published active log-target override (reverting to the default target).
+	 */
+	void clearActiveTarget();
+
+	/**
+	 * @brief
+	 *  Get the engine-published active log-target override, if one is installed.
+	 * @return
+	 *  the installed override target, or @a nullptr when none is installed
+	 * @remark
+	 *  Unlike #tryActiveTarget(), this does not fall back to the default target; it
+	 *  reports only whether an engine override is currently installed.
+	 */
+	Target* tryInstalledTarget();
+
 } // namespace Log

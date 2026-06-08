@@ -22,7 +22,6 @@
 /// @details
 
 #include "egolib/typedef.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 #include "egolib/Log/_Include.hpp"
 #include "egolib/_math.h"
@@ -32,12 +31,12 @@ idlib::interval<float> pair_to_range(const IPair& source) {
     /// @details convert from a pair to a range
 
     if (source.base < 0) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "randomization error - base ",
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "randomization error - base ",
                                          source.base, " is less than 0", Log::EndOfEntry);
     }
 
     if (source.rand < 0) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "randomization error - rand ",
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "randomization error - rand ",
                                          source.rand, " is less than 0", Log::EndOfEntry);
     }
 

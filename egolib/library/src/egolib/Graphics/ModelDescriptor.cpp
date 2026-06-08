@@ -1,5 +1,5 @@
 #include "ModelDescriptor.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Core/StringUtilities.hpp"
@@ -347,7 +347,7 @@ void ModelDescriptor::ripActions()
         ModelAction action_now = stringToAction(frame.name);
         
         if (action_now == ACTION_COUNT) {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "got no action for frame name ", "`", frame.name, "`", " in model ", "`", _name, "`", ": ignoring model", Log::EndOfEntry);
+			Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "got no action for frame name ", "`", frame.name, "`", " in model ", "`", _name, "`", ": ignoring model", Log::EndOfEntry);
             iframe++;
             continue;
         }
@@ -454,7 +454,7 @@ void ModelDescriptor::parseFrameDescriptors(const char * cFrameName, int frame)
         {
             //Ignore trailing zeros. Some older models appended zeros to all frames
             if(*ptmp != '0') {
-				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,  "model ", "`", _name, "`", ", frame ", frame, ", frame name ", "`", cFrameName,"`", " has unknown frame effects command ", "`", ptmp, "`", Log::EndOfEntry);
+				Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,  "model ", "`", _name, "`", ", frame ", frame, ", frame name ", "`", cFrameName,"`", " has unknown frame effects command ", "`", ptmp, "`", Log::EndOfEntry);
             }
             ptmp++;
         }
@@ -562,7 +562,7 @@ void ModelDescriptor::parseFrameDescriptors(const char * cFrameName, int frame)
 
             if ( bad_form && -1 != token_index )
             {
-				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "model ", "`", _name, "`", ", frame ", frame, ", frame name ", "`", cFrameName, "`", " has a frame effects command in an improper configuration ", "`", tokens[token_index], "`", Log::EndOfEntry);
+				Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "model ", "`", _name, "`", ", frame ", frame, ", frame name ", "`", cFrameName, "`", " has a frame effects command in an improper configuration ", "`", tokens[token_index], "`", Log::EndOfEntry);
             }
         }
     }

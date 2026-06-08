@@ -6,6 +6,7 @@
 #include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Log/Target.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -34,7 +35,6 @@ Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
 egoboo_config_t* activeConfig = nullptr;
-Log::Target* activeLogTarget = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -759,28 +759,29 @@ const egoboo_config_t& EngineContext::config() const
     return *currentConfig;
 }
 
+// The engine-installed log-target override now lives in the Log subsystem
+// (Log::installActiveTarget / Log/_Include.cpp). These EngineContext entry points
+// stay as thin downward delegators so existing engine-layer callers and the
+// installed-vs-uninstalled semantics (notably the raw nullptr returned by
+// tryLogTarget(), which vfs.c's bootstrap guard relies on) are preserved exactly.
 void EngineContext::installLogTarget(Log::Target& logTarget)
 {
-    if (activeLogTarget)
-    {
-        throw std::logic_error("log target already installed");
-    }
-    activeLogTarget = &logTarget;
+    Log::installActiveTarget(logTarget);
 }
 
 void EngineContext::clearLogTarget()
 {
-    activeLogTarget = nullptr;
+    Log::clearActiveTarget();
 }
 
 Log::Target* EngineContext::tryLogTarget()
 {
-    return activeLogTarget;
+    return Log::tryInstalledTarget();
 }
 
 const Log::Target* EngineContext::tryLogTarget() const
 {
-    return activeLogTarget;
+    return Log::tryInstalledTarget();
 }
 
 Log::Target& EngineContext::logTarget()

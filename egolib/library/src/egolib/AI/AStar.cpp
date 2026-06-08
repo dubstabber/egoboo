@@ -22,7 +22,7 @@
 /// @details
 
 #include "egolib/AI/AStar.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 
 #include "egolib/game/renderer_3d.h" // for point debugging
 #include "egolib/Script/script.h"  // for waypoint list control
@@ -63,7 +63,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
     if (Index1D::Invalid == mesh->getTileIndex(Index2D(src_ix, src_iy)))
     {
 #ifdef DEBUG_ASTAR
-        EngineContext::get().logTarget().debug("AStar failed because source position is off the mesh.\n");
+        Log::activeTarget().debug("AStar failed because source position is off the mesh.\n");
 #endif
         return false;
     }
@@ -72,7 +72,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
     if (mesh->tile_has_bits(Index2D(dst_ix, dst_iy), stoppedby) != 0 || Index1D::Invalid == mesh->getTileIndex(Index2D(dst_ix, dst_iy)))
     {
 #ifdef DEBUG_ASTAR
-        EngineContext::get().logTarget().debug("AStar failed because goal position is impassable.\n");
+        Log::activeTarget().debug("AStar failed because goal position is impassable.\n");
 #endif
         return false;
     }
@@ -116,7 +116,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
         // list is completely full... we failed
         if (closedNodes.size() >= MAX_ASTAR_NODES) {
 #ifdef DEBUG_ASTAR
-            EngineContext::get().logTarget().debug("AStar failed because maximum number of nodes were explored (%lu)\n", MAX_ASTAR_NODES);
+            Log::activeTarget().debug("AStar failed because maximum number of nodes were explored (%lu)\n", MAX_ASTAR_NODES);
 #endif
             break;
         }
@@ -266,7 +266,7 @@ bool AStar::get_path(const int pos_x, const int dst_y, waypoint_list_t& wplst)
 #ifdef DEBUG_ASTAR
             // using >> for division only works if you know for certainty that the value
             // you are shifting is not intended to be neative
-            EngineContext::get().logTarget().debug("Waypoint %lu: X: %d, Y: %d \n", waypoint_num, static_cast<int>(way_x / Info<int>::Grid::Size()), static_cast<int>(way_y / Info<int>::Grid::Size()));
+            Log::activeTarget().debug("Waypoint %lu: X: %d, Y: %d \n", waypoint_num, static_cast<int>(way_x / Info<int>::Grid::Size()), static_cast<int>(way_y / Info<int>::Grid::Size()));
             Renderer3D::pointList.add(Vector3f(way_x, way_y, 100.0f), 800);
             Renderer3D::lineSegmentList.add(
                 Vector3f(last_waypoint->ix*Info<float>::Grid::Size() + (Info<int>::Grid::Size() / 2), last_waypoint->iy*Info<float>::Grid::Size() + (Info<int>::Grid::Size() / 2), 200.0f),
