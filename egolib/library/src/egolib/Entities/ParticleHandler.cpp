@@ -22,7 +22,7 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/ParticleHandler.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -63,7 +63,7 @@ namespace
 {
 egoboo_config_t& config()
 {
-    return EngineContext::get().config();
+    return Ego::activeConfig();
 }
 
 GameModule* tryActiveModule()
@@ -117,7 +117,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnLocalParticle
     )
 {
     if(!activeProfileSystem().isLoaded(iprofile)) {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid profile reference ", iprofile, Log::EndOfEntry);
+		Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid profile reference ", iprofile, Log::EndOfEntry);
         return Ego::Particle::INVALID_PARTICLE;
     }
 
@@ -168,7 +168,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
         GameModule* module = tryActiveModule();
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
         const std::string spawnProfileName = activeProfileSystem().isLoaded(spawnProfile) ? activeProfileSystem().getProfile(spawnProfile)->getPathname() : "INVALID";
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
+        Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
                                          ", spawn origin == ", spawnOrigin.get(), " (`", spawnOriginName, "`), spawn profile == ", spawnProfile, " (`", spawnProfileName, "`)",
                                          Log::EndOfEntry);
 
@@ -199,7 +199,7 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
         const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler().get(spawnOrigin)->getName() : "INVALID";
         const std::string particleProfileName = activeProfileSystem().isParticleProfileLoaded(particleProfile) ? activeProfileSystem().getParticleProfile(particleProfile)->_name : "INVALID";
         const std::string spawnProfileName = activeProfileSystem().isLoaded(spawnProfile) ? activeProfileSystem().getProfile(spawnProfile)->getPathname().c_str() : "INVALID";
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
+        Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to allocate particle. ",
                                          "owner == ", spawnOrigin, " (`", spawnOriginName, "`), "
                                          "spawn profile == ", spawnProfile, " (`", spawnProfileName, "`), ",
                                          "particle profile == ", REF_TO_INT(particleProfile), " (`", particleProfileName, "`)",

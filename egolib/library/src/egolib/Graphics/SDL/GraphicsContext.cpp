@@ -1,6 +1,6 @@
 #include "egolib/Graphics/SDL/GraphicsContext.hpp"
 
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Graphics/SDL/GraphicsWindow.hpp"
 #include "egolib/egoboo_setup.h"
 #define GLEW_STATIC
@@ -19,13 +19,13 @@ GraphicsContext::GraphicsContext(GraphicsWindow *window) :
     context = SDL_GL_CreateContext(window->get());
     if (!context)
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
                                          "unable to create SDL/OpenGL context: ",
                                          SDL_GetError(), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to create SDL/OpenGL context");
     }
 
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+    Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
         "OpenGL Context Created", Log::EndOfLine,
         "\tVersion:  ", (const char*)glGetString(GL_VERSION), Log::EndOfLine,
         "\tVendor:   ", (const char*)glGetString(GL_VENDOR), Log::EndOfLine,
@@ -37,12 +37,12 @@ GraphicsContext::GraphicsContext(GraphicsWindow *window) :
     {
         SDL_GL_DeleteContext(context);
         context = nullptr;
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
+        Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__,
             "unable to initialize GLEW: ",
             (const char *)glewGetErrorString(err), Log::EndOfEntry);
         throw idlib::runtime_error(__FILE__, __LINE__, "unable to initialize GLEW");
     }
-    auto& config = EngineContext::get().config();
+    auto& config = Ego::activeConfig();
 
     // (1) Multisample antialiasing.
     // The GL_MULTISAMPLE/GL_MULTISAMPLE_ARB superseed GL_POINT_SMOOTH, GL_LINE_SMOOTH, and GL_POLYGON_SMOOTH.
