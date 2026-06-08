@@ -130,3 +130,23 @@ protected:
     virtual void lockParticles() = 0;
     virtual void unlockParticles() = 0;
 };
+
+/// @brief Install the active particle handler (the handler the engine context publishes).
+/// @param particleHandler the particle handler to install
+/// @throw std::logic_error if a particle handler is already installed
+/// @remark Subsystem-owned ownership for the installed particle-handler pointer (mirrors the Log
+///         active-target ownership move); EngineContext delegates its particle-handler lifecycle here.
+void installActiveParticleHandler(IParticleHandler& particleHandler);
+
+/// @brief Clear the installed active particle handler.
+void clearActiveParticleHandler();
+
+/// @brief The installed active particle handler, or @a nullptr if none is installed.
+IParticleHandler* tryActiveParticleHandler();
+
+/// @brief The active particle handler.
+/// @throw std::logic_error if none is installed
+/// @remark Lower-layer seam mirroring @c Log::activeTarget(): returns the INSTALLED handler (which may be a
+///         test stub), preserving the swappable-install indirection the particle tests assert on, and throws
+///         when none is installed (no lenient singleton fallback) to match the engine-context accessor.
+IParticleHandler& activeParticleHandler();

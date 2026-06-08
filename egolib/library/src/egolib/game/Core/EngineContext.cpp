@@ -28,7 +28,6 @@ Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
-IParticleHandler* activeParticleHandler = nullptr;
 IProfileSystem* g_activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
@@ -452,26 +451,22 @@ const Ego::ITextureManager& EngineContext::textureManager() const
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)
 {
-    if (activeParticleHandler)
-    {
-        throw std::logic_error("particle handler already installed");
-    }
-    activeParticleHandler = &particleHandler;
+    installActiveParticleHandler(particleHandler);
 }
 
 void EngineContext::clearParticleHandler()
 {
-    activeParticleHandler = nullptr;
+    clearActiveParticleHandler();
 }
 
 IParticleHandler* EngineContext::tryParticleHandler()
 {
-    return activeParticleHandler;
+    return tryActiveParticleHandler();
 }
 
 const IParticleHandler* EngineContext::tryParticleHandler() const
 {
-    return activeParticleHandler;
+    return tryActiveParticleHandler();
 }
 
 IParticleHandler& EngineContext::particleHandler()

@@ -27,6 +27,38 @@
 #include "egolib/Logic/Team.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 
+#include <stdexcept>
+
+static IParticleHandler* g_activeParticleHandler = nullptr;
+
+void installActiveParticleHandler(IParticleHandler& particleHandler)
+{
+    if (g_activeParticleHandler)
+    {
+        throw std::logic_error("particle handler already installed");
+    }
+    g_activeParticleHandler = &particleHandler;
+}
+
+void clearActiveParticleHandler()
+{
+    g_activeParticleHandler = nullptr;
+}
+
+IParticleHandler* tryActiveParticleHandler()
+{
+    return g_activeParticleHandler;
+}
+
+IParticleHandler& activeParticleHandler()
+{
+    if (!g_activeParticleHandler)
+    {
+        throw std::logic_error("no active particle handler");
+    }
+    return *g_activeParticleHandler;
+}
+
 namespace
 {
 egoboo_config_t& config()
