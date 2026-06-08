@@ -23,7 +23,6 @@
 /// @brief Implementation of extended functions and variables for OpenGL
 
 #include "egolib/Extensions/ogl_extensions.h"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 #include "egolib/Graphics/PixelFormat.hpp"
@@ -63,7 +62,7 @@ void oglx_caps_t::report() {
         e << "  Stencil Buffer Depth:" << renderer.getStencilBuffer().getDepth() << Log::EndOfLine;
     }
     e << Log::EndOfEntry;
-    EngineContext::get().logTarget() << e;
+    Log::activeTarget() << e;
 }
 
 //--------------------------------------------------------------------------------------------

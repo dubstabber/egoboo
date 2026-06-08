@@ -1,5 +1,5 @@
 #include "PerkHandler.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Graphics/TextureManager.hpp"
 #include "egolib/fileutil.h"
 
@@ -223,7 +223,7 @@ void PerkHandler::initializePerk(const PerkID id, const Ego::Attribute::Attribut
 
     //Check if file actually exists
     if(!ego_texture_exists_vfs(iconPath)) {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "icon ", "`", iconPath, "`", " for perk ", "`", name, "`", Log::EndOfEntry);
+		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "icon ", "`", iconPath, "`", " for perk ", "`", name, "`", Log::EndOfEntry);
     }
 }
 
