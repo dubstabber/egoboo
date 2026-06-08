@@ -243,6 +243,19 @@ ctest 748/750; the cumulative change confirmed by a clean menu smoke-run (exit 1
 follow-on:** a Pass 4 RAII wrapper for the residual `vsf_file` (ctor opens / dtor `PHYSFS_close`, eliminating
 the manual `delete file`) — touches lifetime/ownership, so it would need an `AGENTS.md`-mandated note + smoke-run.
 
+### T3.7 egolib include-level decoupling (logging seam) — DONE for the logging slice (2026-06-08)
+
+The blocker to ever splitting the monolithic `egolib-library` into idlib-shaped sub-libraries is **include coupling, not CMake**. The dominant directional violation is the app-layer service hub `game/Core/EngineContext.hpp`, into which **51 non-game leaf TUs reached UP** (measured), a large share for nothing but `EngineContext::get().logTarget()`. A fresh `scout-next-heavy-front` workflow picked this as the only remaining candidate that is heavy AND fully headless-verifiable AND low-risk AND not stale.
+
+Resolved the **logging slice** in three verified passes (commits on branch `refactor/egolib-include-decoupling`; full detail in `71-completed-passes-log.md`):
+
+- **Passes 1–2** retargeted the 17 leaf TUs whose *only* EngineContext use was logging onto the existing lower-layer `Log::activeTarget()` seam (`egolib/Log/_Include.hpp`) and dropped the `EngineContext.hpp` include. Behavior-identical (the seam resolves through the same installed pointer, adding only a default-target fallback in the uninstalled edge). **51 → 34 leaf→hub upward includes (−17, −33%).**
+- **Pass 3 (keystone)** moved the engine-installed `activeLogTarget` ownership out of `EngineContext.cpp` and into `Log/_Include.cpp` (`g_activeTarget` + `Log::installActiveTarget`/`clearActiveTarget`/`tryInstalledTarget`). `Log/_Include.cpp` no longer includes `EngineContext.hpp` — **the Log subsystem no longer reaches into `game/` anywhere and is now a clean downward leaf** (link-cleavable); this also cut the 18th leaf→hub edge (its own), bringing the count to **34 → 33**. `EngineContext`'s log methods became thin downward delegators (declarations unchanged → all ~120 `EngineContext::get().logTarget()` callers keep working; every throw/nullptr semantic preserved, incl. the `vfs.c` bootstrap guard via the new raw `tryInstalledTarget()`).
+
+All passes green: build + validator `test.mod` 0/0 + ctest 798/800; Pass 3 also smoke-run-verified (clean OpenGL/image/font/audio boot + shutdown).
+
+**Remaining (separate, harder front):** the 33 leaf TUs still including `EngineContext.hpp` are genuine **service**-hub users (`config`/`audioSystem`/`particleHandler`/`profileSystem`/`imageManager`). These are not logging cuts — resolving them needs lower-layer service seams (the deeper DIP/DI work, related to T1.3), not the mechanical logging swap. Migrating the ~115 *game-layer* `logTarget()` callers is intra-layer consistency churn (game → game/Core is not a directional violation) and was deliberately **not** pursued. The optional endpoint — migrate those callers too and delete `EngineContext`'s log API outright (now unblocked by `tryInstalledTarget()`) — is low structural value and deferred.
+
 ---
 
 ## Items intentionally deferred
