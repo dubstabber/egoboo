@@ -7,7 +7,32 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 - `32-project-health-and-solid-assessment.md` (2026-04-16 SOLID/design assessment)
 - `46-cross-platform-and-third-party-independence-status.md` (2026-04-17 portability snapshot)
 
-Snapshot date: 2026-06-06 (updated from 2026-04-20 baseline). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+Snapshot date: 2026-06-08 (updated from the 2026-06-06 and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+
+**Changes since the 2026-06-06 snapshot:** the uber-header teardown completed and **`egolib/egolib.h` was deleted** (T3.3); `cartman` was wired into the CMake graph behind `option(EGOBOO_BUILD_CARTMAN OFF)` and now compiles/links/runs (T3.5); `vfs.c`'s dead cstdio backend was eliminated (2,456 → 1,921 lines, T3.6); the `CameraSystem` EngineContext seam landed; six T3.4 characterization batches were added (physics collision-normal, bounding-box ops, map twist, particle recoil, damage/attribute enums, and the first live-Object combat-damage batch); and the T3.7 logging-seam include-decoupling front made the `Log` subsystem a clean downward leaf (17 leaf TUs moved off `game/Core/EngineContext.hpp`).
+
+### Key Metrics (canonical — other docs should defer here for these volatile numbers)
+
+Verified against the live tree on 2026-06-08. These are the single source of truth; sections below and sibling docs (`01`, `02`, `AGENTS.md`) reference this table rather than re-stating the figures.
+
+| Metric | Value | Note |
+| ------ | ----: | ---- |
+| Active source files (egolib+egoboo, excl. tests) | **640** | `.c` 61 · `.cpp` 226 · `.h` 58 · `.hpp` 295 |
+| Active source lines (egolib+egoboo) | ~121,000 | — |
+| Test lines / ratio | ~20,400 / **~16.9%** | 40 test `.cpp` files, **811** ctest cases |
+| ctest result | **809 / 811** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
+| Singleton `::get()` call sites (egolib) | **~863** | down from ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
+| `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07) |
+| `game/Core/EngineContext.hpp` includers | 117 total, **33** non-game leaf | down from 51 before T3.7 |
+| `Object` role interfaces | **18** | `Entities/I*.hpp` (19 `I*.hpp` files incl. the `IParticleHandler` *service* interface) |
+| Largest TU | `script_functions_systems.c` **3,206** | no other TU exceeds ~1,700 |
+| `Object.hpp` | **1,616** lines | monolithic by interface |
+| `vfs.c` | **1,921** lines | was 2,456 before T3.6 |
+| `shared_ptr` occurrences | ~1,200 | `unique_ptr` ~52, `weak_ptr` ~26 |
+| `throw` sites / `try`-`catch` files | ~570 / ~35 | — |
+| `TODO`/`FIXME`/`HACK` markers | ~59 | — |
+| `egolib/egolib.h` | **DELETED** (T3.3, 2026-06-07) | the uber-header is gone from the active tree |
+| Overall maintainability | **3 / 5** ↗ | up from 2.5 (April 2026) |
 
 ---
 
@@ -15,19 +40,19 @@ Snapshot date: 2026-06-06 (updated from 2026-04-20 baseline). This document is i
 
 The codebase is in an **active, well-managed transitional state**. The original C dungeon crawler is being incrementally modernized to C++, and the completed refactoring passes (dozens of in-repo passes so far) have landed real structural wins:
 
-- All three former mutable globals (`_currentModule`, `_gameEngine`, `update_wld`) are fully retired from active runtime code. `update_wld`'s functional replacement `worldUpdateCount()` routes through `GameSessionContext` (~50 call sites).
-- Every historically oversized translation unit has been file-split. No file in the active tree exceeds 3,300 lines (`script_functions_systems.c` at ~3,200 is the largest).
-- File splitting, context wrappers, and accessor encapsulation work have progressed through role extraction on the `Object` god class (18 role interfaces) and deep singleton-seam work on `EngineContext` (14 service interfaces).
+- All three former mutable globals (`_currentModule`, `_gameEngine`, `update_wld`) are fully retired from active runtime code. `update_wld`'s functional replacement `worldUpdateCount()` routes through `GameSessionContext` (~77 call sites across ~31 files).
+- Every historically oversized translation unit has been file-split. The largest TU is `script_functions_systems.c` at ~3,200 lines; no other exceeds ~1,700 (see the Key Metrics table).
+- File splitting, context wrappers, and accessor encapsulation work have progressed through role extraction on the `Object` god class (18 role interfaces) and deep singleton-seam work on `EngineContext` (15 service interfaces).
 - A native validator tool exists, content parser tests exist, and module load/spawn smoke tests exist.
 
 Core design debt that remains:
 
 - The `Object` class is still monolithic by interface — `Object.hpp` is now ~1,617 lines. Its implementation is split across seven files (`Object.cpp` plus six `Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp` TUs), and the role-extraction passes have peeled off 18 role interfaces: `IInventoryHolder`, `IRenderable`, `IScriptable`, `IDamageable`, `IPhysical`, `ITargetInfo`, `ICharacterState`, `ITeamMember`, `IWallet`, `IAnimationControl`, `IAppearanceProfile`, `IEnchantable`, `IMovementControl`, `IVisualControl`, `IItemInfo`, `ILifecycleControl`, `IMorphControl`, and `IProfiled`. Single-param role-narrowing has reached its ceiling; remaining coupling is intrinsic to multi-role functions.
-- Singleton access is still pervasive (~912 `::get()` call sites, down from ~1,150 at 2026-04-19), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, runtime `egoboo_config_t`, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system; full DI still does not exist.
+- Singleton access is still pervasive (~863 `::get()` call sites, down from ~1,150 at 2026-04-19), and the `EngineContext` service-interface layer now covers audio, perk, image, particle, profile, logging, runtime `egoboo_config_t`, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system; full DI still does not exist.
 - Error handling still mixes C++ exceptions, `egolib_rv` return codes, and silent failure — but a written policy is now published at `doc/error-handling-policy.md` and new code is being held to it.
 - The Linux-hosted Windows cross build is unstable at runtime (font atlas / audio crash under Wine); the native-Windows open-source path is undocumented.
 
-Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All three mutable globals retired, eighteen role interfaces extracted (single-param narrowing ceiling reached), fifteen service seams landed on `EngineContext`, singleton sites down ~26% (1,239→912), test coverage at ~11%, orphaned third-party deps removed, MSVC CMake branches dropped. The trend is unambiguously positive; the remaining frontier is multi-role Object decoupling, broader DI, and script-dispatch modernization.
+Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All three mutable globals retired, eighteen role interfaces extracted (single-param narrowing ceiling reached), fifteen service seams landed on `EngineContext`, singleton sites down ~30% (1,239→~863), test coverage up to ~16.9%, the uber-header `egolib.h` deleted, `cartman` wired into the build (gated off), orphaned third-party deps removed, MSVC CMake branches dropped. The trend is unambiguously positive; the remaining frontier is multi-role Object decoupling, broader DI, and script-dispatch modernization.
 
 ---
 
@@ -39,9 +64,9 @@ Overall maintainability: **3 / 5**, up from 2.5 at the April 2026 baseline. All 
 | -------------------------------- | ----: |
 | C implementation files (`.c`)    |    61 |
 | C++ implementation files (`.cpp`)|   226 |
-| C headers (`.h`)                 |    59 |
-| C++ headers (`.hpp`)             |   286 |
-| **Total active source files**    |**632**|
+| C headers (`.h`)                 |    58 |
+| C++ headers (`.hpp`)             |   295 |
+| **Total active source files**    |**640**|
 
 The `.c` count drifted down from 70 (2026-04-19) as small C utilities were folded into their C++ neighbors; `.h` dropped similarly as legacy headers were deleted. `.cpp` and `.hpp` growth reflects the new role-interface headers and their implementation seams.
 
@@ -54,13 +79,13 @@ The `.c` count drifted down from 70 (2026-04-19) as small C utilities were folde
 | `egolib` + `egoboo` headers (combined)                        |       ~38,800 |
 | `egoboo/src/` (thin executable)                               |           ~90 |
 | Active source + headers total (egolib + egoboo)               |      **119,219** |
-| `egolib/tests/`                                               |        13,094 |
+| `egolib/tests/`                                               |       ~20,400 |
 
 The C vs. C++ split by implementation-file line count is roughly 44% C / 56% C++, essentially flat against the prior snapshot. The aggregate source line count dropped slightly even while role interfaces grew, indicating that the role passes are net-simplifying at the callsite despite adding new headers.
 
 ### Test-to-code ratio
 
-**13,094** test lines against ~119,000 active source lines = **~11.0%**. This is a ~3× jump from the ~3.6% figure at the previous snapshot and crosses the threshold at which tests start protecting behavior rather than only compilation. The jump came from bringing script-dispatch and gameplay surfaces under test rather than from raw parser coverage growth.
+**~20,400** test lines against ~121,000 active source lines = **~16.9%** (40 test `.cpp` files, 811 ctest cases). This is a large jump from the ~3.6% figure at the April baseline and crosses the threshold at which tests start protecting behavior rather than only compilation. The jump came from bringing script-dispatch, gameplay, physics/collision math, and combat-damage surfaces under test rather than from raw parser coverage growth.
 
 Current test files under `egolib/tests/egolib/tests/`:
 
@@ -70,14 +95,17 @@ Current test files under `egolib/tests/egolib/tests/`:
 - `ModuleLoadSmoke.cpp`, `ModuleSpawnPlanning.cpp`, `ModuleSpawnRealization.cpp`, `ModulePlayerStartup.cpp`, `ModuleUpdate.cpp` — module-loading and update smoke coverage
 - `LoadPlayerElement.cpp`, `PlayerQuestLog.cpp` — player startup / quest hydration coverage
 - `EngineContext.cpp` — engine-context seam coverage
-- `ObjectAccessors.cpp` — accessor-encapsulation regression coverage
-- `ScriptActionFunctions.cpp`, `ScriptMovementFunctions.cpp`, `ScriptStateFunctions.cpp`, `ScriptSystemsFunctions.cpp`, `ScriptTargetFunctions.cpp`, `ScriptVariables.cpp` — script-dispatch behavior coverage (new since last snapshot)
-- `GameplayAlertPublication.cpp`, `ShopInteractions.cpp` — gameplay-level behavior coverage (new since last snapshot)
-- `PhysicsIntersection.cpp`, `PhysicsCollisionNormal.cpp`, `BoundingBox.cpp`, `BoundingBoxOps.cpp`, `ParticleRecoil.cpp` — physics / collision / bounding-volume math characterization (T3.4; `PhysicsCollisionNormal`/`BoundingBoxOps`/`ParticleRecoil` added 2026-06-07)
-- `MapTwist.cpp`, `LogicDamageAttribute.cpp` — map twist↔normal math and Damage/Attribute enum-mapping characterization (T3.4, added 2026-06-07)
+- `ObjectAccessors.cpp`, `ObjectHandlerQueries.cpp` — accessor-encapsulation regression and object-handler query coverage
+- `CameraTracking.cpp` — camera-tracking behavior coverage
+- `ImportWorkflow.cpp` — character import/export workflow coverage
+- `ScriptLoader.cpp`, `ScriptRuntime.cpp`, `ScriptActionFunctions.cpp`, `ScriptMovementFunctions.cpp`, `ScriptStateFunctions.cpp`, `ScriptSystemsFunctions.cpp`, `ScriptTargetFunctions.cpp`, `ScriptVariables.cpp`, `ScriptBitwiseFunctions.cpp` — script-loader / VM / dispatch behavior coverage (`ScriptLoader` holds the 2 perennial PrimaryScript-fallback failures)
+- `GameplayAlertPublication.cpp`, `ShopInteractions.cpp` — gameplay-level behavior coverage
+- `PhysicsIntersection.cpp`, `PhysicsCollisionNormal.cpp`, `BoundingBox.cpp`, `BoundingBoxOps.cpp`, `ParticleRecoil.cpp` — physics / collision / bounding-volume math characterization (T3.4)
+- `MapTwist.cpp`, `LogicDamageAttribute.cpp` — map twist↔normal math and Damage/Attribute enum-mapping characterization (T3.4)
+- `CombatDamageResolution.cpp` — combat damage-resolution math on a **live spawned `Object`** (resistance/reduction/invictus); the first live-Object-fixture characterization batch (T3.4, 2026-06-08)
 - `math/` — math submodule tests
 
-Notably absent: rendering correctness tests, GUI tests, and gameplay-combat tests that need live `Object`/`Particle` instances. Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, and Damage/Attribute enum logic are now covered by the T3.4 characterization batches; script-VM and gameplay-alert surfaces are partially covered.
+Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, Damage/Attribute enum logic, and now the **combat damage-resolution math on a live spawned `Object`** (resistance/reduction/invictus, `CombatDamageResolution.cpp` — the first live-Object-fixture batch) are covered by the T3.4 characterization batches; script-VM, module-load, accessor, and gameplay-alert surfaces are partially covered. Notably still absent: rendering correctness tests, GUI tests, and the full combat *integration* path (`Object::damage(...)` side effects, `do_chr_prt_collision` pipelines) which needs richer multi-object/particle setup.
 
 ---
 
@@ -135,13 +163,13 @@ The former deep-nesting concentration in `script_functions.c` is now distributed
 | `_gameEngine`    |                 266 |       0 |
 | `update_wld`     |                  65 |       0 |
 
-All three former mutable globals are fully retired. `_currentModule` and `_gameEngine` have no references anywhere. `update_wld` has 3 stale string-literal / comment artifacts (a format string in `script.c`, Doxygen comments in `ObjectGraphics.hpp` and `Particle.hpp`) but zero active variable references. Its functional replacement `worldUpdateCount()` routes through `GameSessionContext` with ~50 call sites across ~20 files.
+All three former mutable globals are fully retired. `_currentModule` and `_gameEngine` have no references anywhere. `update_wld` has a few stale string-literal / comment artifacts (a format string in `script.c`, Doxygen comments in `ObjectGraphics.hpp` and `Particle.hpp`) but zero active variable references. Its functional replacement `worldUpdateCount()` routes through `GameSessionContext` with ~77 call sites across ~31 files.
 
 This is the largest single structural win since the baseline.
 
 ### Singleton and service-locator access
 
-Raw `::get()` singleton calls now number approximately **912** across the codebase, down from ~946 at 2026-04-20, ~1,150 at 2026-04-19, and 1,239 at the April 13 baseline. The decline reflects genuine migration onto `EngineContext`-published services.
+Raw `::get()` singleton calls now number approximately **863** across egolib, down from ~912 at 2026-06-06, ~946 at 2026-04-20, ~1,150 at 2026-04-19, and 1,239 at the April 13 baseline. The decline reflects genuine migration onto `EngineContext`-published services.
 
 Engine-published service seams landed so far:
 
@@ -195,7 +223,7 @@ A written policy now exists at `doc/error-handling-policy.md`: exceptions for ex
 | `egolib-library`             | Static library       | All runtime code                                                                                     |~120,000  |
 | `egoboo`                     | Executable           | Thin entry point                                                                                     |       90 |
 | `egoboo-content-validator`   | Executable (tool)    | Content validation tool                                                                              |   ~1,200 |
-| `cartman`                    | Not built            | Map editor (disconnected from main CMake graph)                                                      |   ~6,000 |
+| `cartman`                    | Gated off by default | Map editor — wired into CMake behind `option(EGOBOO_BUILD_CARTMAN OFF)`; compiles/links/runs when ON; not in the default build (T3.5) | ~9,300 |
 
 ### `egolib` internal structure — now made explicit in CMake
 
@@ -239,12 +267,11 @@ Directory-level subsystem map (by line count, large to small):
 
 | Header                          | Transitive reach |
 | ------------------------------- | ---------------: |
-| `egolib.h` (uber-header)        | 57 subsystems    |
 | `game.h`                        | Most game code   |
 | `game/Core/GameEngine.hpp`      | Entry + states   |
 | `Entities/Object.hpp`           | Physics, script, graphics, module |
 
-`egolib.h` is still physically present and still pulls in most subsystems. Only a handful of `.c` files still include it directly.
+The former top "gravity well", the `egolib/egolib.h` uber-header (54–57 subsystem includes), was **deleted in the T3.3 uber-header teardown** (2026-06-07); its `game/egoboo.h → egolib.h` amplifier link was cut first, then the header itself removed. It has zero includers in the active tree (one stale include lingers only in the unbuilt `utilities/migrator/src/Tool.hpp`). The remaining gravity wells are `game.h`, `GameEngine.hpp`, and `Object.hpp`.
 
 ### `idlib` as the target quality level
 
@@ -260,7 +287,7 @@ Directory-level subsystem map (by line count, large to small):
 | OCP       | 2.5/5 |   →   | `GameState` hierarchy is exemplary; script dispatch and damage systems still closed to extension.     |
 | LSP       |  3/5  |   →   | Shallow entity hierarchies avoid substitution problems by avoiding specialization altogether.          |
 | ISP       |  3/5  |   ↗   | Eighteen `Object` role interfaces extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. |
-| DIP       | 2.5/5 |   ↗   | Context wrappers adopted and fifteen service seams landed; broader singleton abstraction progressing (~912 `::get()` sites). |
+| DIP       | 2.5/5 |   ↗   | Context wrappers adopted and fifteen service seams landed; broader singleton abstraction progressing (~863 `::get()` sites). |
 
 ### Patterns used well
 
@@ -272,7 +299,7 @@ Directory-level subsystem map (by line count, large to small):
 
 ### Patterns misapplied
 
-- **Singleton as service locator.** Still ~912 `::get()` calls (down from ~1,150), even though fifteen services now have `EngineContext` testing seams.
+- **Singleton as service locator.** Still ~863 `::get()` calls (down from ~1,150), even though fifteen services now have `EngineContext` testing seams.
 - **God object.** `Object` remains the primary SRP / ISP offender.
 - **Anemic domain model.** `ObjectProfile` is still data + bolted-on parsing / export.
 
@@ -313,7 +340,7 @@ Still incomplete. Several logically-const accessors are declared non-const; func
 
 ### Include hygiene
 
-- `egolib.h` (57 includes) still present but rarely referenced by new code
+- The `egolib.h` uber-header is **deleted** (T3.3); includes are now precise. `game/egoboo.h` survives as a thin header (no longer pulls in `egolib.h`)
 - `#pragma once` is universal (all ~340 headers)
 - `GAME_ENTITIES_PRIVATE` boundary guard is consistently used
 
@@ -342,7 +369,7 @@ Still incomplete. Several logically-const accessors are declared non-const; func
 ### Weaknesses
 
 - **`egolib` is still one monolithic static library** — the explicit source lists make ownership visible but do not enforce dependency direction at link time.
-- **Cartman is not in the build graph** — risks further bit-rot.
+- **Cartman is gated off by default** (`option(EGOBOO_BUILD_CARTMAN OFF)`) — now in the CMake graph and building/running when enabled, but excluded from the default build and CI, so still at some bit-rot risk.
 - **No native-Windows open-source build docs or toolchain file.** Only Linux-hosted cross exists.
 - **Wine runtime instability** — font atlas init failure and audio loading crash. `run-egoboo-windows.sh` gates with `EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1` as a workaround.
 - **Stale CI** — `appveyor-windows.yml` still generates a Visual Studio 2017 solution, contradicting the documented mingw-w64 cross path. `external/install-vsix-appveyor.ps1` and `external/external.sln` remain in the `external` submodule.
@@ -371,15 +398,15 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 | OCP adherence              | 2.5/5   |   →   | State machine is good; script/damage still closed to extension      |
 | LSP adherence              |  3/5    |   →   | Shallow hierarchies, no real specialization                         |
 | ISP adherence              |  3/5    |   ↗   | Eighteen role interfaces extracted on `Object`; single-param narrowing ceiling reached |
-| DIP adherence              | 2.5/5   |   ↗   | Context wrappers adopted; fifteen service seams landed; ~912 `::get()` sites remain |
+| DIP adherence              | 2.5/5   |   ↗   | Context wrappers adopted; fifteen service seams landed; ~863 `::get()` sites remain |
 | Design pattern quality     | 2.5/5   |   →   | State/Iterator well done; Factory/Strategy/Observer missing         |
 | Naming consistency         | 2.5/5   |   →   | Three naming eras coexist                                            |
 | Encapsulation              |  3/5    |   ↗   | Accessor closure plus broadening role extraction on `Object`        |
 | Error handling             | 2.5/5   |   ↗   | Policy now written (`doc/error-handling-policy.md`); migration pending |
 | Smart pointer discipline   | 2.5/5   |   →   | `shared_ptr` over-used, `unique_ptr` under-used                     |
-| Test coverage              | 2.5/5   |   ↑   | From ~3.6% → ~11%; script dispatch and gameplay surfaces now covered |
+| Test coverage              |  3/5    |   ↑   | From ~3.6% → ~16.9%; script dispatch, gameplay, physics/collision math, and live-Object combat-damage now covered |
 | Build system               | 3.5/5   |   →   | Explicit source lists, validator integrated                         |
-| Global state discipline    | 3.5/5   |   ↗   | All three mutable globals retired; singletons down to ~912          |
+| Global state discipline    | 3.5/5   |   ↗   | All three mutable globals retired; singletons down to ~863          |
 | File size discipline       | 3.5/5   |   →   | Largest TU is ~3,200 lines; script-dispatch TUs growing within budget |
 | Module boundaries          |  2/5    |   →   | One monolithic static library; directory shape is still indicative  |
 | Language consistency       | 2.5/5   |   →   | C/C++ split roughly 44/56; no net C→C++ migration since last snapshot |
@@ -394,7 +421,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 ## 10. Key Strengths
 
 1. **Global-state boundary eliminated.** `_currentModule` and `_gameEngine` are no longer direct dependencies from any runtime code.
-2. **File splitting is working.** Every former oversized TU has been decomposed; no active file exceeds 2,500 lines.
+2. **File splitting is working.** Every former oversized TU has been decomposed; the largest is now `script_functions_systems.c` (~3,200 lines) and no other exceeds ~1,700.
 3. **Encapsulation discipline is sustained.** The numbered passes show an incremental, verified path from raw field access toward explicit `Object` role seams.
 4. **Game state machine is clean.** The `GameState` hierarchy remains the model of how the rest of the codebase should eventually look.
 5. **Entity container is well-designed.** `ObjectHandler` with RAII iterator locking and quad-tree spatial queries is solid.
@@ -405,13 +432,13 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 ## 11. Key Weaknesses
 
 1. **`Object` is still a god class by interface.** ~1,617-line header despite eighteen role interfaces already extracted; single-param narrowing has reached its ceiling — remaining coupling is multi-role. Further decoupling requires interface pollution or multi-param strategies.
-2. **Singleton proliferation persists.** ~912 `::get()` call sites remain. Fifteen services now have `EngineContext` abstraction boundaries, but subsystem-local bootstrap seams and the deferred Renderer keep the count high.
+2. **Singleton proliferation persists.** ~863 `::get()` call sites remain. Fifteen services now have `EngineContext` abstraction boundaries, but subsystem-local bootstrap seams and the deferred Renderer keep the count high.
 3. **No dependency injection.** Every subsystem reaches directly for concrete service classes or `EngineContext::get()`.
 4. **`shared_ptr<Object>` is pervasive.** Entity ownership is shared-by-default; `enable_shared_from_this<Object>` locks this in.
 5. **Error handling is inconsistent.** Exceptions, `egolib_rv`, and silent failure coexist; `doc/error-handling-policy.md` is now the written target but the migration of existing callers has not yet begun.
 6. **Script system is monolithic.** ~400 script functions in procedural dispatch split across seven files with no extensibility seam.
 7. **Cross-platform parity is weak at runtime.** Wine cross build is unstable; native-Windows open-source path is undocumented.
-8. **Test coverage is still thin in key areas.** Script dispatch, module load, gameplay alerts, and accessor regressions are covered; physics, rendering, GUI, and AI are not.
+8. **Test coverage is still thin in key areas.** Script dispatch, module load, gameplay alerts, accessor regressions, physics/collision math, and live-Object combat-damage math are covered; rendering, GUI, AI, and the full combat *integration* path are not.
 9. **`egolib` is a single static library.** Modular decomposition is expressed in directories and source-list blocks, not in link targets.
 10. **Stale CI.** `appveyor-windows.yml` still generates a Visual Studio 2017 solution.
 
@@ -424,7 +451,7 @@ These items compound the refactoring progress most efficiently given the current
 ### Runtime and structure
 
 1. **Object role-decoupling: next frontier** — single-param narrowing is exhausted (Pass 220 analysis). Next value is either: (a) interface pollution — co-locating `getProfile()` onto existing narrow interfaces to unlock multi-role callers, or (b) multi-param strategies, or (c) the deferred `IMatrixCacheControl` interface for the matrix-cache render-path surface.
-2. **Continue the service-interface layer over singletons** — fifteen services are seamed; next candidates are subsystem-local cleanup and the deferred Renderer (if interface split becomes worthwhile). ~912 `::get()` sites remain.
+2. **Continue the service-interface layer over singletons** — fifteen services are seamed; next candidates are subsystem-local cleanup and the deferred Renderer (if interface split becomes worthwhile). ~863 `::get()` sites remain.
 3. **Begin enforcing the error-handling policy** — `doc/error-handling-policy.md` is landed; the next step is a bounded subsystem-by-subsystem migration that retires `egolib_rv` from the C++ code paths.
 
 ### Build and cross-platform
@@ -448,7 +475,7 @@ These items compound the refactoring progress most efficiently given the current
 - Error-handling policy (new since last snapshot): `doc/error-handling-policy.md`
 - Content-validator baseline (pre-existing failures): `06-validator-baseline.md`
 - Spawn / data format contracts: `08-spawn-format-spec.md`, `09-data-format-spec.md`
-- Chronological record of completed passes 10–136 (runtime context, module ownership, player startup, local-stats retirement, `Object`/`ObjectGraphics` encapsulation, and the expanding `Object` role-interface extraction): `71-completed-passes-log.md`
+- Chronological record of all completed passes (runtime context, module ownership, player startup, local-stats retirement, `Object`/`ObjectGraphics` encapsulation, role-interface extraction, the uber-header teardown through `egolib.h` deletion, the vfs cstdio elimination, cartman build integration, the T3.4 characterization batches, and the T3.7 logging-seam decoupling): `71-completed-passes-log.md`
 - Meta-record of the 2026-04-18 documentation consolidation that collapsed ~50 per-pass docs and four overlapping plans: `70-documentation-consolidation.md`
 
 The quantitative snapshots in the retired documents (17, 18, 32, 46) are preserved in git history and in `01-repository-and-build-audit.md` / the README refresh timestamps, so they remain available for trend analysis without being the active health reference.

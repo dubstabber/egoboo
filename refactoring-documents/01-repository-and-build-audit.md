@@ -22,7 +22,8 @@ The repository root is not a clean picture of the product. It contains live code
 | `backup-copy/` | Untracked, about 2.2G | Local archive copy; doubles visual complexity of the repo |
 | `build/` | Untracked, about 1.7G | Generated build output; should not be read as source |
 | `external/` | Vendored, about 266M | Important for portability, but not part of Egoboo's architectural core |
-| `cartman/` | Source present, but not wired into root build | Editor code exists, but is currently outside the main product build graph |
+| `cartman/` | Wired into the build, gated off by default | Map editor; `add_subdirectory(cartman)` behind `option(EGOBOO_BUILD_CARTMAN OFF)` (T3.5) — compiles/links/runs when enabled, excluded from the default build |
+| `tools/` | Active tool target | The `egoboo-content-validator` (`add_subdirectory(tools)`) |
 
 ## 2. Actual build graph
 
@@ -34,19 +35,20 @@ It does the following:
 2. Adds `idlib-game-engine/`
 3. Adds `egolib/`
 4. Adds `egoboo/`
+5. Adds `cartman/` — behind `option(EGOBOO_BUILD_CARTMAN OFF)`, so excluded from the default build (CMakeLists.txt:51)
+6. Adds `tools/` — the `egoboo-content-validator` (CMakeLists.txt:54)
 
 Important details:
 
 - Tests are force-enabled for both `idlib` and `idlib-game-engine`.
-- `egolib` is built as one static library via recursive globbing of all `*.c`, `*.cpp`, `*.h`, and `*.hpp` files.
+- `egolib` is built as one static library. The former recursive `GLOB_RECURSE` has been replaced with explicit, per-subsystem `set()` source lists, so subsystem ownership is now visible in the build files — but everything still links into a single static library.
 - `egoboo` is essentially a thin wrapper executable linked against `egolib-library`.
 
-### Why this build shape is risky
+### Why this build shape is still imperfect
 
-- Recursive globbing hides subsystem ownership.
-- There is no explicit module graph inside `egolib`.
+- `egolib` is one monolithic static library: the explicit source lists make ownership visible but do not enforce dependency direction at link time.
+- There is no explicit module/link graph inside `egolib` (the `idlib` 11-sub-library shape is the target).
 - Legacy C and newer C++ are compiled into the same library without a clear boundary.
-- The build graph does not communicate intended architecture, only "compile everything".
 
 ## 3. Build documentation
 
@@ -57,7 +59,7 @@ Canonical build paths:
 - Top-level `README.md` describes the out-of-tree CMake build.
 - `run-egoboo.sh` runs the local binary at `build/products/x64/bin/egoboo` with the environment variables Linux execution requires.
 
-Legacy platform READMEs (`README.MinGW`, `README.OSX`, `README.Windows`, `README.VisualStudio`) still exist in the tree but are outside the maintained path; `README.Linux` is a short stub that redirects to `doc/build-linux.md`. Retirement of the legacy READMEs is tracked as roadmap item T2.6.
+Legacy platform READMEs (`README.MinGW`, `README.OSX`, `README.Windows`, `README.VisualStudio`) were quarantined out of the repo root into `doc/legacy/` (T2.6, done); they remain there as deprecated references. The canonical build docs are `doc/build-linux.md` and `doc/build-windows.md`.
 
 ## 4. Fedora portability behavior (preserved)
 
@@ -83,34 +85,23 @@ Current problems:
 - Linux-native, native-Windows, and Linux-hosted Windows builds do not yet behave like variations of one coherent build flow
 - runtime failures under Wine mean the current Windows artifact is not yet a usable gameplay target
 
-The checked-in `debug-output.txt` shows concrete evidence of that runtime state on the current Linux-hosted Windows path:
-
-- font atlas creation escalates until a fatal failure in `egolib/Graphics/Font.cpp`
-- the font manager falls back after failing to load `mp_data/IMMORTAL.ttf`
-- execution then dies with an unhandled page fault under Wine while inside `Mix_LoadWAV_RW`
+The historically-observed Wine failure mode (a font-atlas escalation/fatal failure in `egolib/Graphics/Font.cpp` and an unhandled page fault inside `Mix_LoadWAV_RW` during audio load) is why `run-egoboo-windows.sh` gates the cross build with `EGOBOO_DISABLE_MIPMAPS=1 EGOBOO_DISABLE_AUDIO=1`; diagnosing these is roadmap item T2.5. (The earlier checked-in `debug-output.txt` capture is no longer in the tree.) Note that the now-integrated `cartman` editor *does* boot an OpenGL 4.6 context under Wine, so the cross-build GL path is not uniformly broken.
 
 This is enough to treat the current Windows-on-Linux path as a debugging baseline, not as completed portability work.
 
 ## 6. Submodule state
 
-`.gitmodules` declares `branch = master` for both `idlib` and `idlib-game-engine`. `git submodule status` confirms both submodules track `master`. Refactors across the engine boundary should not silently depend on local submodule state; if submodule branch policy changes, update this section.
+`.gitmodules` declares `branch = master` for both `idlib` and `idlib-game-engine`, but the actual checkouts differ — `idlib` is on `develop` and `idlib-game-engine` on `master` (all four submodules — `idlib`, `idlib-game-engine`, `data`, `external` — are the maintainer's own forks under `github.com/dubstabber/...`, checked out detached). Refactors across the engine boundary should not silently depend on local submodule state; if submodule branch policy changes, update this section.
 
 ## 7. Tooling health
 
 ### Tests
 
-Automated test coverage at the Egoboo layer has grown but is still thin. Current `egolib/tests/egolib/tests/` sources:
-
-- utility: `Compilation.cpp`, `StringUtilities.cpp`, `QuadTree.cpp`, `MeshInfoIterator.cpp`
-- parsers: `ContentParsers.cpp`, `SpawnName.cpp`
-- module load / spawn smoke: `ModuleLoadSmoke.cpp`, `ModuleSpawnPlanning.cpp`, `ModuleSpawnRealization.cpp`, `ModulePlayerStartup.cpp`
-- player startup / quest hydration: `LoadPlayerElement.cpp`, `PlayerQuestLog.cpp`
-- seam/accessor regression: `EngineContext.cpp`, `ObjectAccessors.cpp`
-- math: `math/` submodule tests
+Automated test coverage at the Egoboo layer has grown substantially. `egolib/tests/egolib/tests/` now holds **40 test `.cpp` files / 811 ctest cases** (for the full enumerated list see `CODEBASE-HEALTH-STATUS.md` §2). Coverage now spans utilities, content parsers, module load/spawn, player/quest startup, seam/accessor regression, script loader/VM/dispatch, gameplay alerts and shop interactions, physics/collision and bounding-volume math, map twist and damage/attribute enums, and — via a live spawned `Object` — combat damage-resolution math.
 
 `idlib` has broader utility tests. `idlib-game-engine` has a single compilation-level test source.
 
-Test-to-code ratio is roughly 3.6% (≈4,340 test lines against ≈120,000 active source lines). Still absent: gameplay/combat logic, physics/collision, rendering correctness, script VM, and GUI tests.
+Test-to-code ratio is now roughly **16.9%** (≈20,400 test lines against ≈121,000 active source lines), up from ~3.6% at the April baseline. Still absent: rendering correctness, GUI state transitions, AI, and the full combat *integration* path (`Object::damage(...)` side effects, `do_chr_prt_collision` pipelines).
 
 ### Utilities
 
@@ -122,22 +113,9 @@ Test-to-code ratio is roughly 3.6% (≈4,340 test lines against ≈120,000 activ
 
 ## 8. Large code hotspots
 
-The file-split passes have eliminated every former oversized translation unit. No active file now exceeds 2,500 lines. The current largest TUs are a proxy for where the interface, not the line count, is still the refactoring frontier.
+The file-split passes have decomposed every former oversized translation unit. The single largest TU is now `script_functions_systems.c` (~3,200 lines, grown as role-extraction helpers moved in); the next tier (`vfs.c` ~1,921, `script_functions_target.c` ~1,676, `Object.hpp` ~1,616, `script_functions_spawn.c` ~1,576, `particle_collision.c` ~1,525, `ObjectGraphics.cpp` ~1,487) sits well below that. **The authoritative, live hotspot table lives in `CODEBASE-HEALTH-STATUS.md` §3** (Key Metrics) — this doc defers to it rather than maintaining a parallel copy that drifts.
 
-| File | Approx. lines |
-| --- | ---: |
-| `egolib/library/src/egolib/vfs.c` | 2,445 |
-| `egolib/library/src/egolib/game/script_functions_systems.c` | 2,128 |
-| `egolib/library/src/egolib/game/script_functions_target.c` | 1,776 |
-| `egolib/library/src/egolib/game/script_functions_state.c` | 1,551 |
-| `egolib/library/src/egolib/game/Physics/particle_collision.c` | 1,480 |
-| `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` | 1,459 |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 1,381 |
-| `egolib/library/src/egolib/game/mesh.c` | 1,370 |
-| `egolib/library/src/egolib/fileutil.c` | 1,339 |
-| `egolib/library/src/egolib/game/script_functions_spawn.c` | 1,181 |
-
-`Object.cpp` itself is now 79 lines: the implementation was split across seven per-aspect TUs (`Object_{core,combat,interaction,appearance,update,attributes,lifecycle}.cpp`) while the interface surface in `Object.hpp` stayed fat. That is the ISP/SRP frontier for T1.2 role-interface extraction. Script dispatch is likewise split across seven `script_functions_*.c` files but still one logical subsystem — the extensibility fix is T3.2 (registry model). For the full current hotspot table and the pre-split sizes, see `CODEBASE-HEALTH-STATUS.md` §3.
+`Object.cpp` itself is now ~200 lines: the implementation was split across six per-aspect TUs (`Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp`, plus the separate `ObjectHandler.cpp`) while the interface surface in `Object.hpp` stayed fat. That is the ISP/SRP frontier for T1.2 role-interface extraction. Script dispatch is likewise split across seven `script_functions_*.c` files but still one logical subsystem — the extensibility fix was scoped under T3.2 (the dispatch is in fact already an X-macro registry; see the roadmap note).
 
 ## 9. Practical conclusions for the refactor
 
@@ -149,4 +127,4 @@ Before large-scale code motion:
 4. Treat local portability patches as first-class tracked work items, not invisible environment glue.
 5. Avoid starting the refactor in the largest files without first adding seams around them.
 6. Treat Linux-native, native-Windows, and Linux-hosted Windows builds as one portability problem with shared architectural causes.
-7. Use the current `debug-output.txt` failures as a baseline for Windows runtime stabilization work, not as acceptable known behavior.
+7. Treat the known Wine runtime failures (font-atlas init, `Mix_LoadWAV_RW` audio crash; T2.5) as a stabilization baseline, not as acceptable known behavior.

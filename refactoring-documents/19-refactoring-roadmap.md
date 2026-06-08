@@ -1,6 +1,6 @@
 # Refactoring Roadmap
 
-Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-06-06 (updated from 2026-04-19). Supersedes and replaces:
+Prioritized forward plan for ongoing Egoboo refactoring work. Snapshot date: 2026-06-08 (updated from 2026-06-06 / 2026-04-19). Supersedes and replaces:
 
 - `19-new-refactoring-plan.md` (the original phase A–G plan — build-hygiene and global-state phases are complete)
 - `22-module-runtime-ownership-plan.md` (fully executed; all checkpoints landed)
@@ -68,7 +68,7 @@ This remains the SRP/ISP keystone for `Object`.
 
 ### T1.3 Service-interface layer over singletons
 
-~912 `::get()` call sites remain (down from ~1,150 at 2026-04-19, ~946 at 2026-04-20). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
+~863 `::get()` call sites remain (down from ~912 at 2026-06-06, ~946 at 2026-04-20, ~1,150 at 2026-04-19). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
 
 - Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager` (Pass 211), `IInputSystem` (Pass 212), `IGraphicsSystem` (Pass 213, with headless test mock), `ITextureManager` (Pass 214), `ITextureAtlasManager` (Pass 217), `IGFX` (Passes 218–219, two sub-passes), `ICameraSystem` (CameraSystem Passes 1–2, 2026-06-07 — interface widened + game-layer consumers migrated), plus `IBillboardSystem` caller rerouting (Pass 215), `Time` clock abstraction (Pass 216), engine-routed logging, and `egoboo_config_t`.
 - Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.
@@ -81,7 +81,7 @@ This remains the SRP/ISP keystone for `Object`.
 
 ### T1.4 Document error-handling policy, retire `egolib_rv`
 
-Three strategies still coexist: C++ exceptions (~290 throw sites, ~76 try/catch), `egolib_rv` return codes, silent failure. Deliverables:
+Three strategies still coexist: C++ exceptions (~570 throw sites across egolib, `try`/`catch` in ~35 files), `egolib_rv` return codes, silent failure. Deliverables:
 
 - Landed: `doc/error-handling-policy.md` now defines exceptions for exceptional paths, ordinary return values for expected boundary outcomes, and a no-new-silent-failure rule.
 - Started C++ `egolib_rv` retirement with the smallest public seam: `CameraSystem::renderAll()` now treats a missing render callback as invalid input rather than returning a legacy status code.
@@ -201,14 +201,18 @@ Current test-to-code ratio is ~11% and covers parsers, module smoke, accessor re
 
 Add characterization coverage before the next restructuring wave in each area.
 
-### T3.5 Native-Cartman build integration — SCOUTED (2026-06-07)
+### T3.5 Native-Cartman build integration — DONE (2026-06-07)
 
-`cartman/` (the ~9.3k-LOC SDL map editor) exists in-tree but is disconnected from the main CMake graph (no
-build files at all, last meaningful change 2017-11-29). Gate it with a CMake option and add it to the build
-matrix. Prevents further bit-rot.
+`cartman/` (the ~9.3k-LOC SDL map editor) was disconnected from the main CMake graph (no build files at all,
+last meaningful change 2017-11-29). **It is now wired in behind `option(EGOBOO_BUILD_CARTMAN OFF)`
+(`add_subdirectory(cartman)` at root `CMakeLists.txt:51`) and fully ported to compile + link + run** against
+current egolib (60→0 compile, 0 link, ~89 MB exe; ~9,291 LOC / 35 files; the default build is untouched).
+Phase 3 runtime-verified: the GUI launch boots an OpenGL 4.6 context and renders all four viewports + the HUD.
+The default-flip to ON is deferred (maintainer's call) and a pre-existing no-arg `atexit`/VFS crash remains open.
+Full record: `73-cartman-build-integration-scouting.md`.
 
-**Scouting verdict (full detail + compile-probe data: `73-cartman-build-integration-scouting.md`):
-feasible, MEDIUM effort, low architectural risk — a port, not a rewrite.** Against current egolib it produces
+**Original scouting verdict (historical; full compile-probe data in `73-...`): feasible, MEDIUM effort, low
+architectural risk — a port, not a rewrite.** Against current egolib it had produced
 719 compile errors across 11/16 TUs, but that is mostly *cascade*: the genuine root surface is ~30 errors in
 just 5 headers (14/19 headers + the entire core data/math model already compile clean), dominated by ~4
 **mechanical systematic renames** (`id::`→`idlib::`, bare `singleton<>`→`idlib::singleton<>`, bare math types →

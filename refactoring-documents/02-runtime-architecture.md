@@ -8,10 +8,10 @@ Runtime startup is:
 
 1. `egoboo/src/game/Main.cpp`
 2. `Ego::Core::System::initialize(argv[0])`
-3. Global `_gameEngine = std::make_unique<GameEngine>()`
-4. `GameEngine::start()`
+3. `EngineContext::get().setEngine(std::make_unique<GameEngine>())` — the engine is installed in the `EngineContext` (the former `_gameEngine` global is retired, 0 references)
+4. `engine().start()`, then `EngineContext::get().clearEngine()` on shutdown
 
-This means the executable layer currently does almost nothing except create global runtime state and hand off control.
+This means the executable layer currently does almost nothing except install the engine into the `EngineContext` and hand off control.
 
 ## 2. System initialization
 
@@ -104,7 +104,7 @@ Secondary runtime globals that still exist:
 
 ### Remaining coupling risk
 
-The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count (~1,150 `::get()` call sites) has stayed roughly flat. The context wrappers are themselves singletons and remain the dominant DIP boundary until a service-interface / DI layer replaces them (roadmap T1.3).
+The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count has fallen to ~863 `::get()` call sites (from ~1,150). A service-interface layer is partially in place — 15 services are now seamed through `EngineContext` (`IAudioSystem`, `ICameraSystem`, `IInputSystem`, `IPerkHandler`, `IImageManager`, `IFontManager`, `IGraphicsSystem`, `ITextureManager`, `IParticleHandler`, `IProfileSystem`, `IGFX`, `IBillboardSystem`, `ITextureAtlasManager`, plus config and logging) — but the context wrappers remain the dominant DIP boundary until the remaining `::get()` call sites migrate onto them (roadmap T1.3).
 
 ## 7. Module runtime
 
@@ -204,7 +204,7 @@ The result is not merely mixed language style. It is mixed ownership style:
 
 ### Pain point 1: singleton-mediated dependency graph
 
-Raw-global reach into `_currentModule` / `_gameEngine` is gone, but ~1,150 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to concrete singletons, not declared constructor parameters.
+Raw-global reach into `_currentModule` / `_gameEngine` is gone, but ~863 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to concrete singletons, not declared constructor parameters.
 
 ### Pain point 2: initialization order as architecture
 

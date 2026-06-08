@@ -14,7 +14,7 @@ Additional instructions for work under `egolib/`.
 Read the relevant audit docs before working in these areas:
 
 - `library/src/egolib/game/script_functions_{systems,target,state,spawn,action,movement,bitwise}.c` (split from the former `script_functions.c`; `_systems.c` is the largest TU at ~3200 lines)
-- `library/src/egolib/vfs.c` (~2460 lines)
+- `library/src/egolib/vfs.c` (~1920 lines, down from 2,460 after the dead cstdio backend was removed)
 - `library/src/egolib/game/Physics/particle_collision.c` (~1530 lines)
 - `library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1490 lines)
 - `library/src/egolib/game/mesh.c` (~1370 lines)
@@ -26,7 +26,7 @@ Architecturally central but now small after split passes: `game/game.c` (~550), 
 
 ## Global-state constraints
 
-- The three former mutable globals (`_gameEngine`, `_currentModule`, `update_wld`) are fully retired. Module access routes through `GameSessionContext`; engine access through `EngineContext`. The remaining coupling hotspot is ~912 singleton `::get()` call sites.
+- The three former mutable globals (`_gameEngine`, `_currentModule`, `update_wld`) are fully retired. Module access routes through `GameSessionContext`; engine access through `EngineContext`. The remaining coupling hotspot is ~863 singleton `::get()` call sites.
 - Avoid introducing new hidden global dependencies.
 - If you touch code that affects VFS setup, module loading, object profile loading, or script compilation, validate beyond compilation.
 
