@@ -28,6 +28,7 @@
 #include "egolib/game/Logic/Player.hpp"
 
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 CameraSystem::CameraSystem() :
 	_cameraList(),

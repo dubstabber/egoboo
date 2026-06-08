@@ -28,6 +28,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/egoboo.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/fileutil.h"
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------

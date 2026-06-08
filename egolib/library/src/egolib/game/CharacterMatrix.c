@@ -24,6 +24,7 @@
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

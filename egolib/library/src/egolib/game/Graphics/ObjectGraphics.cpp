@@ -4,6 +4,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h" //only for character_swipe()
+#include "egolib/game/Module/Module.hpp"
 
 namespace Ego
 {

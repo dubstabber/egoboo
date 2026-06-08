@@ -20,6 +20,10 @@
 #include "egolib/game/Physics/Collidable.hpp"
 
 #include "egolib/game/Core/GameSessionContext.hpp"
+// setPosition/setSpawnPosition need the full GameModule definition
+// (isInside/getMeshPointer). GameSessionContext.hpp only forward-declares it,
+// and Collidable.hpp no longer drags Module.hpp in transitively.
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

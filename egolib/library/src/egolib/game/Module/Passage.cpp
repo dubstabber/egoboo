@@ -26,6 +26,7 @@
 #include "egolib/game/game.h"
 #include "egolib/game/mesh.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

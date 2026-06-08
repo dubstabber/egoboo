@@ -32,6 +32,8 @@
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Graphics/VertexFormat.hpp"
 #include "egolib/Graphics/Font.hpp"  // Ego::Font (complete type)
+#include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/mesh.h"
 
 namespace Ego {
 namespace Graphics {

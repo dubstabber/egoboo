@@ -4,6 +4,7 @@
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace Ego {
 namespace Graphics {

@@ -31,6 +31,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/script_compile.h"
+#include "egolib/fileutil.h"
 
 AbstractProfileSystem<EnchantProfile, EnchantProfileRef> EnchantProfileSystem("enchant", "/debug/enchant_profile_usage.txt");
 AbstractProfileSystem<ParticleProfile, ParticleProfileRef> ParticleProfileSystem("particle", "/debug/particle_profile_usage.txt");

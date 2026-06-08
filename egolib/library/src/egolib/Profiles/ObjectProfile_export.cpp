@@ -23,6 +23,7 @@
 #include "egolib/Profiles/ObjectProfile_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Physics/PhysicalConstants.hpp"  // CHR_INFINITE_WEIGHT
+#include "egolib/fileutil.h"
 
 namespace
 {

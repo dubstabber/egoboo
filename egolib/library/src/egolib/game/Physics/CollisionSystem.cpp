@@ -21,6 +21,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/physics.h"  // phys_expand_*/phys_estimate_*/phys_intersect_* + PhysicalConstants
+#include "egolib/game/Module/Module.hpp"
 
 #include "particle_collision.h"
 

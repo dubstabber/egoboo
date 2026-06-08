@@ -21,6 +21,7 @@
 /// @brief Core ObjectProfile helpers, accessors, and lifecycle.
 
 #include "egolib/Profiles/ObjectProfile_internal.h"
+#include "egolib/game/mesh.h"
 
 ObjectProfile::ObjectProfile() :
     _spawnRequestCount(0),

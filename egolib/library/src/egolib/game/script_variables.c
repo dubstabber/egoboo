@@ -6,6 +6,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

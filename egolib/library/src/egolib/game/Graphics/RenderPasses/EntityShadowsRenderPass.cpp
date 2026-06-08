@@ -4,6 +4,7 @@
 #include "egolib/game/graphic_prt.h"  // ParticleGraphicsRenderer
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace Ego {
 namespace Graphics {

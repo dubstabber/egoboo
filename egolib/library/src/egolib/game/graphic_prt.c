@@ -31,6 +31,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Graphics/VertexFormat.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace
 {

@@ -26,6 +26,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 #include <stdexcept>
 

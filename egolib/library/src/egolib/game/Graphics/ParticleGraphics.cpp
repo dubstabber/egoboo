@@ -5,6 +5,7 @@
 #include "egolib/game/lighting.h"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/mesh.h"
 
 namespace Ego {
 namespace Graphics {

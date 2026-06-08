@@ -18,7 +18,22 @@
 //********************************************************************************************
 #pragma once
 
-#include "egolib/game/Module/Module.hpp"
+// The Collidable base is a lower-layer abstract collision interface. It needs only the mesh
+// *primitives* -- Index1D (a by-value member), the idlib vector aliases, and BIT_FIELD -- none
+// of which live in game/. It deliberately does NOT include game/mesh.h: that header was the
+// last game/ dependency on this base class, and because Object.hpp / Particle.hpp derive from
+// Collidable, it propagated the whole game/ mesh+lighting subtree UP into every consumer of
+// those two headers. The one game-mesh type in the interface, mesh_wall_data_t, appears only by
+// reference in the hit_wall() signatures, so a forward declaration suffices here; its full
+// definition is supplied to the deriving implementations (Object_appearance.cpp /
+// Particle_core.cpp) and to Collidable.cpp, which pull game/mesh.h transitively (via Module.hpp).
+#include "egolib/Mesh/Info.hpp"          // Index1D (by-value _tile member -> needs the full type)
+#include "egolib/integrations/math.hpp"  // Ego::Vector2f / Ego::Vector3f
+#include "egolib/typedef.h"              // BIT_FIELD
+
+/// @brief A game-mesh wall-collision cache (defined in egolib/game/mesh.h); referenced in this
+///        interface only by reference, so the Collidable base stays game-include-free.
+struct mesh_wall_data_t;
 
 namespace Ego
 {

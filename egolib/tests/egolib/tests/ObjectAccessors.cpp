@@ -10,6 +10,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/vfs.h"
+#include "egolib/game/Module/Module.hpp"
 
 #include <cstdlib>
 #include <memory>

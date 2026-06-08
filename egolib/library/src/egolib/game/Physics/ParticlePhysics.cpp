@@ -4,6 +4,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Physics/PhysicalConstants.hpp"
 #include "egolib/game/CharacterMatrix.h"
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

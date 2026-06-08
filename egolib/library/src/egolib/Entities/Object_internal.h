@@ -43,6 +43,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace object_detail
 {

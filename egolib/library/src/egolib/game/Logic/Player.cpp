@@ -28,6 +28,7 @@
 #include "egolib/game/game.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/Module/Module.hpp"
 
 namespace
 {

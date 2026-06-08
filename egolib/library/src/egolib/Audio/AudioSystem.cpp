@@ -24,6 +24,7 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/fileutil.h"
 
 #include <cstdlib>
 #include <cstring>

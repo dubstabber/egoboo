@@ -41,6 +41,7 @@
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
+#include "egolib/Audio/AudioSystem.hpp"
 
 namespace
 {

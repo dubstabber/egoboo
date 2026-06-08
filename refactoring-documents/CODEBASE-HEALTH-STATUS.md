@@ -19,8 +19,8 @@ Verified against the live tree on 2026-06-08. These are the single source of tru
 | ------ | ----: | ---- |
 | Active source files (egolib+egoboo, excl. tests) | **640** | `.c` 61 · `.cpp` 226 · `.h` 58 · `.hpp` 295 |
 | Active source lines (egolib+egoboo) | ~121,000 | — |
-| Test lines / ratio | ~20,400 / **~16.9%** | 40 test `.cpp` files, **811** ctest cases |
-| ctest result | **809 / 811** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
+| Test lines / ratio | ~20,800 / **~17.1%** | 41 test `.cpp` files, **817** ctest cases (incl. `CombatDamageIntegration.cpp`, 6 cases) |
+| ctest result | **815 / 817** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
 | Singleton `::get()` call sites (egolib) | **~760** | the 2026-06-08 service-hub free-fn seams cut ~100; down from ~863 (2026-06-08 pre-front) / ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
 | `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07) |
 | `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
@@ -103,6 +103,7 @@ Current test files under `egolib/tests/egolib/tests/`:
 - `PhysicsIntersection.cpp`, `PhysicsCollisionNormal.cpp`, `BoundingBox.cpp`, `BoundingBoxOps.cpp`, `ParticleRecoil.cpp` — physics / collision / bounding-volume math characterization (T3.4)
 - `MapTwist.cpp`, `LogicDamageAttribute.cpp` — map twist↔normal math and Damage/Attribute enum-mapping characterization (T3.4)
 - `CombatDamageResolution.cpp` — combat damage-resolution math on a **live spawned `Object`** (resistance/reduction/invictus); the first live-Object-fixture characterization batch (T3.4, 2026-06-08)
+- `CombatDamageIntegration.cpp` — the integrated `Object::damage(...)`/`kill(...)` side-effect chain on a **live module-spawned `Object`** (life subtraction, hurt/careful timers, attack alert, lethal kill, invictus/dead/zero guards); gates the `ICollidable` extraction (T3.4, 2026-06-08)
 - `math/` — math submodule tests
 
 Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, Damage/Attribute enum logic, and now the **combat damage-resolution math on a live spawned `Object`** (resistance/reduction/invictus, `CombatDamageResolution.cpp` — the first live-Object-fixture batch) are covered by the T3.4 characterization batches; script-VM, module-load, accessor, and gameplay-alert surfaces are partially covered. Notably still absent: rendering correctness tests, GUI tests, and the full combat *integration* path (`Object::damage(...)` side effects, `do_chr_prt_collision` pipelines) which needs richer multi-object/particle setup.

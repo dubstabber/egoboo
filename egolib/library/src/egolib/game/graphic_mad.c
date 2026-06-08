@@ -31,6 +31,7 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Graphics/DefaultMd2ModelRenderer.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace
 {

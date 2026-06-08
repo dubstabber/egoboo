@@ -22,6 +22,7 @@
 
 #include "egolib/Profiles/ObjectProfile_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/fileutil.h"
 
 namespace
 {
