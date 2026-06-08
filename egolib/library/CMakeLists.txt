@@ -449,6 +449,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/App.hpp
     src/egolib/bbox.c
     src/egolib/bbox.h
+    src/egolib/PhysicsData.h
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
