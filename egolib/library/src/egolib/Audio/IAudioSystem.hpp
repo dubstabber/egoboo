@@ -55,3 +55,23 @@ public:
     virtual void setSoundEffectVolume(int value) = 0;
     virtual void update() = 0;
 };
+
+/// @brief Install the active audio system (the audio system the engine context publishes).
+/// @param audioSystem the audio system to install
+/// @throw std::logic_error if an audio system is already installed
+/// @remark Subsystem-owned ownership for the installed audio-system pointer (mirrors the Log
+///         active-target ownership move); EngineContext delegates its audio-system lifecycle here.
+void installActiveAudioSystem(IAudioSystem& audioSystem);
+
+/// @brief Clear the installed active audio system.
+void clearActiveAudioSystem();
+
+/// @brief The installed active audio system, or @a nullptr if none is installed.
+IAudioSystem* tryActiveAudioSystem();
+
+/// @brief The active audio system.
+/// @throw std::logic_error if none is installed
+/// @remark Lower-layer seam mirroring @c Log::activeTarget(): returns the INSTALLED audio system (which may
+///         be a test stub), preserving the swappable-install indirection the audio tests assert on, and
+///         throws when none is installed (no lenient singleton fallback) to match the engine-context accessor.
+IAudioSystem& activeAudioSystem();

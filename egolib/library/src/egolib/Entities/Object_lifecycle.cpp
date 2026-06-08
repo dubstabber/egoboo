@@ -21,13 +21,13 @@
 /// @brief Lifecycle-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 
 namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)

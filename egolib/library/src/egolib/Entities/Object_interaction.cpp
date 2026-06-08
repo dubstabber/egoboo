@@ -21,13 +21,13 @@
 /// @brief Holder, inventory, and latch-input Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 
 namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 auto& objectHandler()

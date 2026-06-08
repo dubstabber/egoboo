@@ -21,7 +21,7 @@
 /// @brief Core Particle helpers, queries, and physics wrappers.
 
 #include "egolib/Entities/Particle_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 
 namespace Ego
 {
@@ -30,7 +30,7 @@ namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 IParticleHandler& particleHandler()

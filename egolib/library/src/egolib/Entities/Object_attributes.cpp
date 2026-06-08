@@ -28,7 +28,7 @@ namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 void publishStealthBillboardIfAvailable(ObjectRef objectRef, const std::string& text)

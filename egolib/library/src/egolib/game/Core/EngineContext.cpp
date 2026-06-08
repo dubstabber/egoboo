@@ -21,7 +21,6 @@
 namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
-IAudioSystem* activeAudioSystem = nullptr;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
@@ -143,26 +142,22 @@ const Ego::GUI::UIManager& EngineContext::uiManager() const
 
 void EngineContext::installAudioSystem(IAudioSystem& audioSystem)
 {
-    if (activeAudioSystem)
-    {
-        throw std::logic_error("audio system already installed");
-    }
-    activeAudioSystem = &audioSystem;
+    installActiveAudioSystem(audioSystem);
 }
 
 void EngineContext::clearAudioSystem()
 {
-    activeAudioSystem = nullptr;
+    clearActiveAudioSystem();
 }
 
 IAudioSystem* EngineContext::tryAudioSystem()
 {
-    return activeAudioSystem;
+    return tryActiveAudioSystem();
 }
 
 const IAudioSystem* EngineContext::tryAudioSystem() const
 {
-    return activeAudioSystem;
+    return tryActiveAudioSystem();
 }
 
 IAudioSystem& EngineContext::audioSystem()

@@ -32,7 +32,7 @@ egoboo_config_t& config()
 
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
