@@ -23,6 +23,7 @@
 #include "egolib/Profiles/ObjectProfile_internal.h"
 #include "egolib/Logic/IPerkHandler.hpp"  // Ego::Perks::IPerkHandler + activePerkHandler
 #include "egolib/fileutil.h"
+#include "egolib/Image/ImageManager.hpp"
 
 namespace
 {

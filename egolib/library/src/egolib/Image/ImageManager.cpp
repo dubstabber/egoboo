@@ -352,3 +352,9 @@ std::shared_ptr<SDL_Surface> gfx_loadImage(const std::string& pathname)
 	}
 	return std::shared_ptr<SDL_Surface>(image, [](SDL_Surface *surface) { SDL_FreeSurface(surface); });
 }
+
+bool ego_texture_exists_vfs(const std::string& filename)
+{
+    // Relocated from fileutil to break the foundation->Image link dependency. Behaviour-identical.
+    return Ego::activeImageManager().imageExistsWithKnownExtension(filename);
+}
