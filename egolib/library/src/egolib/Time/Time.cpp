@@ -22,14 +22,19 @@
 /// @author Michael Heilmann
 
 #include "egolib/Time/Time.hpp"
-#include "egolib/Core/System.hpp"
+
+#include <SDL.h>
 
 
 namespace Time {
 
 template <>
 typename UnitTraits<Unit::Ticks>::Type now<Unit::Ticks>() {
-    return Ego::Core::System::get().getSystemService().getTicks();
+    // SDL_GetTicks() directly: SystemService::getTicks() is exactly this call, and routing
+    // through Ego::Core::System (the game-coupled bootstrap installer) only created an upward
+    // link dependency that kept the foundation-level Time TU bound to Core/System. SDL is a
+    // lower-layer dependency already available here. Behaviour-identical.
+    return SDL_GetTicks();
 }
 
 template <>
