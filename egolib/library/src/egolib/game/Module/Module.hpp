@@ -179,6 +179,17 @@ public:
     /// @brief Ego::Physics::ICollisionWorld: the tile index at @a point (delegates to the mesh).
     Index1D getTileIndex(const Ego::Vector2f& point) const override;
 
+    /// @name Ego::Physics::ICollisionWorld terrain queries (all delegate to the mesh / water).
+    /// @{
+    bool gridIsValid(const Index1D& tile) const override;
+    uint8_t getTwist(const Index1D& tile) const override;
+    uint8_t getFanTwist(const Index1D& tile) const override;
+    uint32_t testFX(const Index1D& tile, uint32_t flags) const override;
+    float getElevation(const Ego::Vector2f& p, bool waterwalk) const override;
+    float getElevation(const Ego::Vector2f& p) const override;
+    bool isWater() const override;
+    /// @}
+
     bool isInsidePitBounds(float x, float y) const;
 
     bool setTileType(Index1D tileIndex, uint16_t tileType);
