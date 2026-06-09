@@ -22,7 +22,9 @@
 
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/game.h"                          // DisplayMsg_printf / disaffirm_attached_particles
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"        // Ego::Graphics::tryActiveBillboardSystem
+#include "egolib/Logic/IPerkHandler.hpp"               // Ego::Perks::activePerkHandler + Perk
+#include "egolib/Log/_Include.hpp"                     // Log::activeTarget
 #include "egolib/game/Graphics/Billboard.hpp"         // Ego::Graphics::Billboard::Flags
 #include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 #include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
@@ -36,7 +38,7 @@ IAudioSystem& audioSystem()
 
 void publishStealthBillboardIfAvailable(ObjectRef objectRef, const std::string& text)
 {
-    if (auto* billboardSystem = EngineContext::get().tryBillboardSystem())
+    if (auto* billboardSystem = Ego::Graphics::tryActiveBillboardSystem())
     {
         billboardSystem->makeBillboard(objectRef,
                                        text,
@@ -180,7 +182,7 @@ std::vector<Ego::Perks::PerkID> Object::getValidPerks() const
         }
 
         //Do we fulfill the requirements for this perk?
-        const Ego::Perks::Perk& perk = EngineContext::get().perkHandler().getPerk(id);
+        const Ego::Perks::Perk& perk = Ego::Perks::activePerkHandler().getPerk(id);
         if(perk.getRequirement() == Ego::Perks::NR_OF_PERKS || hasPerk(perk.getRequirement())) {
             result.push_back(id);
         }
@@ -218,13 +220,13 @@ bool Object::hasNotFullMana() const
 std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner)
 {
     if (enchantProfile >= ENCHANTPROFILES_MAX) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
         return nullptr;
     }
     const std::shared_ptr<EnchantProfile> &enchantmentProfile = activeProfileSystem().getEnchantProfile(enchantProfile);
 
     if(!activeProfileSystem().isLoaded(spawnerProfile)) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
         return nullptr;
     }
 
@@ -382,7 +384,7 @@ void Object::setLife(const float value)
 void Object::polymorphObject(ObjectProfileRef profileID, const SKIN_T newSkin)
 {
     if(!activeProfileSystem().isLoaded(profileID)) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to polymorph object: target profile ", profileID, " does not exist", Log::EndOfEntry);
         return;
     }
 
