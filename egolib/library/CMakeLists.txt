@@ -1008,16 +1008,35 @@ set(EGOLIB_PHYSICS_SOURCES
 # A SIBLING of egolib-physics: both depend one-way on egolib-foundation-base only
 # (nm-verified: zero refs into egolib-physics and zero into egolib-library, in both directions).
 set(EGOLIB_RENDERER_SOURCES
+    src/egolib/Extensions/ogl_extensions.c
     src/egolib/Graphics/Display.cpp
     src/egolib/Graphics/DisplayMode.cpp
     src/egolib/Graphics/GraphicsContext.cpp
+    src/egolib/Graphics/GraphicsSystem.cpp
+    src/egolib/Graphics/GraphicsSystemNew.cpp
     src/egolib/Graphics/GraphicsWindow.cpp
     src/egolib/Graphics/SDL/Display.cpp
     src/egolib/Graphics/SDL/DisplayMode.cpp
     src/egolib/Graphics/SDL/GraphicsContext.cpp
+    src/egolib/Graphics/SDL/GraphicsSystemNew.cpp
+    src/egolib/Graphics/SDL/GraphicsWindow.cpp
     src/egolib/Graphics/SDL/Utilities.cpp
     src/egolib/Graphics/Viewport.cpp
+    src/egolib/Renderer/OpenGL/AccumulationBuffer.cpp
+    src/egolib/Renderer/OpenGL/ColourBuffer.cpp
+    src/egolib/Renderer/OpenGL/DefaultTexture.cpp
+    src/egolib/Renderer/OpenGL/DepthBuffer.cpp
+    src/egolib/Renderer/OpenGL/Renderer.cpp
+    src/egolib/Renderer/OpenGL/RendererInfo.cpp
+    src/egolib/Renderer/OpenGL/StencilBuffer.cpp
+    src/egolib/Renderer/OpenGL/Texture.cpp
+    src/egolib/Renderer/OpenGL/TextureUnit.cpp
+    src/egolib/Renderer/OpenGL/Utilities.cpp
+    src/egolib/Renderer/Renderer.cpp
+    src/egolib/Renderer/RendererInfo.cpp
     src/egolib/game/GUI/DrawingContext.cpp
+    src/egolib/game/Graphics/RenderPass.cpp
+    src/egolib/game/renderer_3d.c
 )
 
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
