@@ -871,8 +871,10 @@ endif()
 # This deepens the first link-split of the historically monolithic egolib-library; idlib's eleven
 # sub-libraries are the target pattern.
 set(EGOLIB_FOUNDATION_BASE_SOURCES
+    src/egolib/AI/WaypointList.c
     src/egolib/Clock.cpp
     src/egolib/Debug.cpp
+    src/egolib/Entities/IObjectWorld.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
     src/egolib/FileFormats/ConfigFile/configfile.c
@@ -893,6 +895,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/template.c
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
+    src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/PixelFormat.cpp
     src/egolib/IDSZ.cpp
     src/egolib/Image/Image.cpp
@@ -912,11 +915,19 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Log/Level.cpp
     src/egolib/Log/Target.cpp
     src/egolib/Log/_Include.cpp
+    src/egolib/Logic/IPerkHandler.cpp
+    src/egolib/Logic/MissileTreatment.cpp
     src/egolib/Logic/TreasureTables.cpp
     src/egolib/Math/Random.cpp
     src/egolib/Math/Standard.cpp
     src/egolib/Mesh/Info.cpp
     src/egolib/Mesh/TileFX.cpp
+    src/egolib/Profiles/EnchantProfile.cpp
+    src/egolib/Profiles/EnchantProfileWriter.cpp
+    src/egolib/Profiles/LocalParticleProfileRef.cpp
+    src/egolib/Profiles/ParticleProfile.cpp
+    src/egolib/Profiles/ParticleProfileWriter.cpp
+    src/egolib/Profiles/RandomName.cpp
     src/egolib/Script/Buffer.cpp
     src/egolib/Script/CLogEntry.cpp
     src/egolib/Script/Constant.cpp
@@ -948,6 +959,9 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/file_common.c
     src/egolib/fileutil.c
     src/egolib/frustum.c
+    src/egolib/game/GUI/InputListener.cpp
+    src/egolib/game/lighting.c
+    src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c
     src/egolib/map_functions.c
     src/egolib/strutil.c
