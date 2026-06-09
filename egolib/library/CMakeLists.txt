@@ -493,6 +493,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/TrigonometricTable.hpp
     src/egolib/typedef.c
     src/egolib/typedef.h
+    src/egolib/Zeitgeist.cpp
+    src/egolib/Zeitgeist.hpp
 )
 
 # -- game/Core ---------------------------------------------------------------
@@ -718,6 +720,7 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
 set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/CharacterMatrix.c
     src/egolib/game/CharacterMatrix.h
+    src/egolib/game/CharacterParticleOps.h
     src/egolib/game/egoboo.c
     src/egolib/game/egoboo_doxygen.h
     src/egolib/game/egoboo.h

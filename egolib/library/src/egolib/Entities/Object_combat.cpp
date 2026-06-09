@@ -21,7 +21,7 @@
 /// @brief Combat- and progression-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/game.h"                    // DisplayMsg_printf
+#include "egolib/game/CharacterParticleOps.h"                    // DisplayMsg_printf
 #include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem
 #include "egolib/egoboo_setup.h"                 // activeConfig
 #include "egolib/game/Graphics/Billboard.hpp"  // Ego::Graphics::Billboard::Flags

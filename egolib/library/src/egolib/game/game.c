@@ -499,34 +499,8 @@ float get_chr_level( ego_mesh_t *mesh, Object *object )
 //--------------------------------------------------------------------------------------------
 // Real-world time hooks and menu music
 //--------------------------------------------------------------------------------------------
-namespace Zeitgeist {
-bool CheckTime(Time time) {
-    Ego::Time::LocalTime localTime;
-    switch (time)
-    {
-    // Halloween is from 31th october 31th (incl.) until the november 1st (incl.).
-    case Time::Halloween:
-        return ((10 == localTime.getMonth() + 1 && localTime.getDayOfMonth() >= 31) ||
-                (11 == localTime.getMonth() + 1 && localTime.getDayOfMonth() <= 1));
-
-    // Chrsitmas is from december 16th (incl.) until january 1st/newyear (excl.).
-    case Time::Christmas:
-        return (12 == localTime.getMonth() + 1 && localTime.getDayOfMonth() >= 16);
-
-    // From 0:00 to 6:00 (spooky time!).
-    case Time::Nighttime:
-        return localTime.getHours() <= 6;
-
-     // Its day whenever it's not night.
-    case Time::Daytime:
-        return localTime.getHours() > 6;
-
-    // Unhandled check.
-    default:
-        throw idlib::unhandled_switch_case_error(__FILE__, __LINE__);
-    }
-}
-}
+// Zeitgeist::CheckTime relocated to egolib/Zeitgeist.cpp (declared via egolib/Zeitgeist.hpp,
+// re-included through game.h). playMainMenuSong() below still uses it unchanged.
 
 //--------------------------------------------------------------------------------------------
 void playMainMenuSong()
