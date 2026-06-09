@@ -199,11 +199,11 @@ The raw occurrence count for `shared_ptr` in headers and source combined is high
 
 ### Error handling
 
-Three competing strategies still coexist:
+Two strategies still coexist (the `egolib_rv` return-code strand is effectively gone):
 
 - C++ exceptions — ~240 `throw` sites, `try`/`catch` in ~54 files
-- C return codes — `egolib_rv`
 - Silent failure via `nullptr`/`false` returns
+- ~~C return codes — `egolib_rv`~~ **effectively retired (2026-06-09 verification):** only 3 occurrences remain in 2 files — the enum in `typedef.h` and the `gfx_rv` graphics-typedef alias in `game/egoboo.h`; no `egolib_rv` *uses* remain in the C++ code paths.
 
 A written policy now exists at `doc/error-handling-policy.md`: exceptions for exceptional failures and invariant violations, expected-failure return types at subsystem boundaries, no silent failure. The migration of existing callers has not yet run — most of the mixed-style code predates the policy — but new code is now held to it.
 
@@ -260,9 +260,9 @@ Directory-level subsystem map (by line count, large to small):
 
 1. **Script → Everything.** Script dispatch (split into seven `.c` files but still one logical subsystem) includes headers spanning Entities, Profiles, Physics, Graphics, GUI, Module, and game state.
 2. **GUI → Game internals.** GUI screens directly read player state, inventory, and session state through session-context accessors.
-3. **Profiles → Runtime singletons.** `ObjectProfile_load.cpp` pulls `PerkHandler`, `ImageManager`, and `ProfileSystem` singletons during parsing.
-4. **FileFormats → Runtime services.** Content parsing remains entangled with VFS mount state.
-5. **Entities ↔ Game Module.** The structural cycle at the runtime-ownership layer has been broken by the session/engine context. The `Collidable` base class (a major Entities→Module edge, inherited by both `Object` and `Particle`) is now fully decoupled and relocated to the lower layer (`egolib/Physics/`, behind the `ICollisionWorld` seam, 2026-06-08); `Object.hpp`/`Particle.hpp` game/ transitive closures are down to 4/3 (the by-value composition members). The remaining Entity↔game coupling is the non-propagating internal headers + impl `.cpp`s.
+3. **Profiles → Runtime services.** ~~`ObjectProfile_load.cpp` pulls `PerkHandler`, `ImageManager`, and `ProfileSystem` singletons during parsing.~~ **Largely addressed (2026-06-09 verification):** `ObjectProfile_load.cpp`/`ObjectProfile_export.cpp` now reach these through the lower-layer `active*()` seams (`Perks::activePerkHandler()`, `activeProfileSystem()`, `Log::activeTarget()`, `Ego::activeConfig()`, `tryActiveAudioSystem()`), not raw `::get()`. Parsing still *uses* runtime services, but the singleton coupling is seamed.
+4. **FileFormats → Runtime services.** **Not actually a singleton violation (2026-06-09 verification):** `FileFormats/*.cpp` have zero `::get()`; the VFS dependency is a legitimate file-I/O abstraction, not runtime-service coupling.
+5. **Entities ↔ Game Module.** The structural cycle at the runtime-ownership layer has been broken by the session/engine context. The `Collidable` base class (a major Entities→Module edge, inherited by both `Object` and `Particle`) is now fully decoupled and relocated to the lower layer (`egolib/Physics/`, behind the `ICollisionWorld` seam, 2026-06-08); `Object.hpp`/`Particle.hpp` game/ transitive closures are down to 4/3 (the by-value composition members). The four `game/Physics/` TUs are now also decoupled from `GameModule`'s object container: they reach it through the lower-layer `Ego::Entities::IObjectWorld` seam (2026-06-09), so `game/Module/Module.hpp` is gone from all four. The remaining Entity↔game coupling is the non-propagating internal headers + impl `.cpp`s, plus the residual `worldUpdateCount()` (`GameSessionContext`) and `game/physics.h` free-function edges on the physics TUs.
 
 ### "Gravity well" headers
 
