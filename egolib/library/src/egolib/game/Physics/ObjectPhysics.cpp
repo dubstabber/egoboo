@@ -22,19 +22,24 @@
 /// @author Johan Jansen aka Zefz
 #include "ObjectPhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
+#include "egolib/game/Core/GameSessionContext.hpp"  // worldUpdateCount() (the unseamed update-counter strand)
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
 #include "egolib/Physics/ICollisionWorld.hpp"    // activeCollisionWorld() terrain queries (the mesh-query seam)
 #include "egolib/Physics/MeshLookupTables.hpp"   // g_meshLookupTables
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/FileFormats/map_file.h"          // Info<float>::Grid::Size (was via Module.hpp -> mesh.h)
+#include "egolib/FileFormats/map_fx.hpp"          // MAPFX_SLIPPY (was via Module.hpp -> mesh.h)
 
 namespace
 {
-GameModule& activeModule()
+/// The entity world the physics step queries (object container), reached through the
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
+/// active GameModule, same as worldUpdateCount()'s session below.
+Ego::Entities::IObjectWorld& objectWorld()
 {
-    return GameSessionContext::get().activeModule();
+    return Ego::Entities::activeObjectWorld();
 }
 
 /// The terrain world the physics step queries (slope/elevation/slippy/water). This is the
@@ -57,7 +62,7 @@ IScriptable& scriptable(Object& object)
 
 const std::shared_ptr<Object>& objectByRef(ObjectRef objectRef)
 {
-    return activeModule().getObjectHandler()[objectRef];
+    return objectWorld().getObjectHandler()[objectRef];
 }
 }
 
@@ -293,7 +298,7 @@ void ObjectPhysics::updatePhysics()
 {
     // Keep inventory items with the carrier
     if(_object.isInsideInventory()) {
-        _object.setPosition(activeModule().getObjectHandler()[_object.getInventoryHolderRef()]->getPosition());
+        _object.setPosition(objectWorld().getObjectHandler()[_object.getInventoryHolderRef()]->getPosition());
         return;
     }
 
@@ -461,7 +466,7 @@ void ObjectPhysics::updateFacing()
             {
                 //Only proceed if we have a valid AI target that is not ourselves
                 const IScriptable& scriptableObject = scriptable(_object);
-                std::shared_ptr<Object> aiTarget = activeModule().getObjectHandler()[scriptableObject.getAITarget()];
+                std::shared_ptr<Object> aiTarget = objectWorld().getObjectHandler()[scriptableObject.getAITarget()];
                 if (aiTarget != nullptr && aiTarget->getObjRef() != _object.getObjRef())
                 {
                     _object.setFacingZ(idlib::canonicalize(rotate(_object.getFacingZ(), vec_to_facing(aiTarget->getPosX() - _object.getPosX(), aiTarget->getPosY() - _object.getPosY()), 8.0f)));
@@ -717,7 +722,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     if ( slot >= SLOT_COUNT ) return false;
 
     // Make sure the character doesn't have something already, and that it has hands
-    if (activeModule().getObjectHandler().exists( _object.getHeldObject(slot) ) || !_object.getProfile()->isSlotValid(slot)) {
+    if (objectWorld().getObjectHandler().exists( _object.getHeldObject(slot) ) || !_object.getProfile()->isSlotValid(slot)) {
         return false;
     }
 
@@ -732,10 +737,10 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
 
     // Go through all nearby objects to find the best match
     std::vector<ObjectRef> nearbyObjectRefs;
-    activeModule().getObjectHandler().findObjectRefs(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, nearbyObjectRefs, false);
+    objectWorld().getObjectHandler().findObjectRefs(slot_pos.x(), slot_pos.y(), MAX_SEARCH_DIST, nearbyObjectRefs, false);
     for (const ObjectRef& objectRef : nearbyObjectRefs)
     {
-        Object* pchr_c = activeModule().getObjectHandler().get(objectRef);
+        Object* pchr_c = objectWorld().getObjectHandler().get(objectRef);
         if (pchr_c == nullptr) {
             continue;
         }
@@ -835,7 +840,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     }
 
     if(bestMatch != nullptr) {
-        const std::shared_ptr<Object> &grabber = activeModule().getObjectHandler()[_object.getObjRef()];
+        const std::shared_ptr<Object> &grabber = objectWorld().getObjectHandler()[_object.getObjRef()];
         if (Shop::canGrabItem(grabber, bestMatch->shared_from_this()))
         {
             // Stick 'em together and quit
