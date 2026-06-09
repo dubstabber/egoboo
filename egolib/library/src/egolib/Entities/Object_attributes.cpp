@@ -21,7 +21,7 @@
 /// @brief Attributes, team, stealth, and enchantment Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/game.h"                          // DisplayMsg_printf / disaffirm_attached_particles
+#include "egolib/game/CharacterParticleOps.h"                          // DisplayMsg_printf / disaffirm_attached_particles
 #include "egolib/Graphics/IBillboardSystem.hpp"        // Ego::Graphics::tryActiveBillboardSystem
 #include "egolib/Logic/IPerkHandler.hpp"               // Ego::Perks::activePerkHandler + Perk
 #include "egolib/Log/_Include.hpp"                     // Log::activeTarget

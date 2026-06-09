@@ -24,6 +24,7 @@
 #include "egolib/IDSZ.hpp"  // IDSZ2
 #include "egolib/FileFormats/wawalite_file.h"  // wawalite_camera_t, wawalite_graphics_t, wawalite_data_t, wawalite_physics_t
 #include "egolib/strutil.h"                    // add_linebreak_cpp
+#include "egolib/game/CharacterParticleOps.h"  // character/particle ops the Entities layer calls back into (split out of game.h)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Inventory.hpp"
@@ -172,9 +173,7 @@ public:
 // The end module text.
 extern EndText g_endText;
 
-// counters for debugging wall collisions
-extern int chr_stoppedby_tests;
-extern int chr_pressure_tests;
+// chr_stoppedby_tests / chr_pressure_tests moved to CharacterParticleOps.h (re-included above)
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -205,30 +204,16 @@ void show_magic_status( int statindex );
 /// End Text
 void reset_end_text();
 
-/// Particles
-/// @brief Get the number of particles attached to an object.
-int number_of_attached_particles(ObjectRef objectRef);
-/// @brief Make sure an object has no particles attached
-/// @return the number of particles removed
-void    disaffirm_attached_particles(ObjectRef objectRef);
-/// @brief Make sure an object has all particles attached
-/// @return the number of particles added
-int reaffirm_attached_particles(ObjectRef objectRef);
-
-//Latches
-bool chr_do_latch_attack( Object * pchr, slot_t which_slot );
-void character_swipe( ObjectRef cnt, slot_t slot );
+// number_of/disaffirm/reaffirm_attached_particles, chr_do_latch_attack, character_swipe,
+// prt_find_target, and chr_get_lowest_attachment moved to CharacterParticleOps.h (re-included above).
 
 /// AI targeting
 bool  chr_check_target( Object * psrc, const Object& ptst, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
 ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
-ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing, const PIP_REF ipip, const TEAM_REF team, ObjectRef dontTarget, ObjectRef oldTarget, Facing *targetAngle);
 
 std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const script_state_t &scriptState, const std::string &text);
 
 uint8_t get_light( int alpha, float seedark_mag );
-
-ObjectRef chr_get_lowest_attachment(ObjectRef object_ref, bool non_item );
 
 bool game_copy_imports(import_list_t& imports);
 
@@ -267,6 +252,4 @@ float get_mesh_max_vertex_2(ego_mesh_t *mesh, Object *object);
 
 void playMainMenuSong();
 
-//Message printing functions (TODO: Rewrite to c++)
-int DisplayMsg_printf(const char *format, ...) GCC_PRINTF_FUNC(1);
-void DisplayMsg_print(const std::string &text);
+// DisplayMsg_printf / DisplayMsg_print moved to CharacterParticleOps.h (re-included above).

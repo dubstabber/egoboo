@@ -21,7 +21,7 @@
 /// @brief Appearance, visibility, and collision-facing Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/game.h"                         // chr_stoppedby_tests / chr_pressure_tests
+#include "egolib/game/CharacterParticleOps.h"                         // chr_stoppedby_tests / chr_pressure_tests
 #include "egolib/game/Graphics/CameraSystem.hpp"      // CameraSystem (attachment placement)
 #include "egolib/game/Graphics/TileList.hpp"          // Ego::Graphics::TileList (complete type)
 #include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT

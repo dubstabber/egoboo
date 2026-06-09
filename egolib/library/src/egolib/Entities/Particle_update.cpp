@@ -21,7 +21,7 @@
 /// @brief Particle update-loop and animation/environment helpers.
 
 #include "egolib/Entities/Particle_internal.h"
-#include "egolib/game/game.h"  // disaffirm_attached_particles
+#include "egolib/game/CharacterParticleOps.h"  // disaffirm_attached_particles
 
 namespace Ego
 {

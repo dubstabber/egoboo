@@ -21,7 +21,7 @@
 /// @brief Lifecycle-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
-#include "egolib/game/game.h"             // disaffirm_attached_particles / reaffirm_attached_particles
+#include "egolib/game/CharacterParticleOps.h"             // disaffirm_attached_particles / reaffirm_attached_particles
 #include "egolib/Audio/IAudioSystem.hpp"
 
 namespace
