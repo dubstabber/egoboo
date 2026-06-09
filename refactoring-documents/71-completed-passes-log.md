@@ -1392,6 +1392,16 @@ Branch `refactor/billboard-enginecontext-seam`. The "next" the entities-game `.c
 
 ---
 
+## Bug fix — off-GL-thread texture-delete crash on module reload (2026-06-09)
+
+Branch `fix/gl-texture-delete-on-loading-thread`. A **pre-existing** crash (not introduced by the refactoring fronts — none of their commits touched the crash path; the background-thread teardown dates to 2026-04-21), surfaced by a maintainer playtest: opening a second module after returning to the menu segfaulted in `glDeleteTextures`.
+
+**Root cause.** `LoadingState::loadModuleData()` runs on a background `std::thread`. There it tears down the previous module (`game_quit_module()` + `billboardSystem().reset()` + `profileSystem().reset()`), which destroys that module's GL textures via `~Texture → Texture::release() → glDeleteTextures`. That thread has **no current GL context**, so the delete is undefined behaviour and crashes the driver. Only the 2nd module load triggers it (the 1st has no prior-module textures to free). Texture *creation* was already safe on the loading thread (`DeferredTexture` defers the GL upload to the main thread); *deletion* had no equivalent.
+
+**Fix** (mirrors the `DeferredTexture` deferral). `Ego::OpenGL::Renderer` gained `queueTextureDeletion(GLuint)` / `drainPendingTextureDeletions()`: `queueTextureDeletion` deletes immediately when `SDL_GL_GetCurrentContext() != nullptr` (the GL thread, matching the existing `TextureManager` check), else pushes the id to a mutex-guarded vector; `drainPendingTextureDeletions` (GL thread) batch-deletes the queued ids. `Texture::release()` and the four `Texture::load()` error-path deletes route through `m_renderer->queueTextureDeletion(...)`; `GameEngine::renderOneFrame()` drains the queue each frame (GL thread, after the frame's draws, before SwapWindow), and `~Renderer` drains once more so nothing leaks at exit while the context is still current. Kept deliberately minimal after an adversarial review of a broader first design caught three defects (a wrong-singleton-type compile error, a new `TextureManager::_unload` data race, and a shutdown UAF): `DefaultTexture` (only the renderer's error textures, destroyed in `~Renderer` on the main thread) keeps its direct delete, and `TextureManager` is untouched — routing `Texture::release()` already makes every `Texture` destruction thread-safe regardless of which container holds it. **Maintainer-confirmed:** module A → menu → module B no longer crashes (3 reloads, clean shutdown). build / validator `test.mod` 0/0 / ctest -j1 815/817 / menu smoke all green.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
