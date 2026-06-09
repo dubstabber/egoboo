@@ -21,7 +21,10 @@
 /// @brief Attributes, team, stealth, and enchantment Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/game.h"                          // DisplayMsg_printf / disaffirm_attached_particles
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Graphics/Billboard.hpp"         // Ego::Graphics::Billboard::Flags
+#include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 #include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
 
 namespace

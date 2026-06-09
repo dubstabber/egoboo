@@ -29,20 +29,8 @@
 #include "egolib/Entities/ObjectHandler.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"
 #include "egolib/Entities/Enchant.hpp"
-#include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/game.h"
 #include "egolib/Graphics/ModelDescriptor.hpp"
-#include "egolib/game/script_implementation.h"
-#include "egolib/game/Graphics/CameraSystem.hpp"
-#include "egolib/game/Graphics/TileList.hpp"
-#include "egolib/game/Graphics/Billboard.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-
-// For the minimap.
-#include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/GameStates/PlayingState.hpp"
-#include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace object_detail
@@ -70,11 +58,6 @@ inline uint32_t worldUpdateCount()
 inline uint32_t characterStatClock()
 {
     return gameSession().characterStatClock();
-}
-
-inline std::shared_ptr<PlayingState> tryActivePlayingState()
-{
-    return EngineContext::get().tryActivePlayingState();
 }
 
 inline const std::shared_ptr<Object>& selfHandle(const Object& object)

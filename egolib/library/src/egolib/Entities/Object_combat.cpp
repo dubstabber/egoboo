@@ -21,7 +21,10 @@
 /// @brief Combat- and progression-oriented Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/game.h"                   // DisplayMsg_printf
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Graphics/Billboard.hpp"  // Ego::Graphics::Billboard::Flags
+#include "egolib/game/Logic/Player.hpp"        // Ego::Player (complete type)
 
 namespace
 {

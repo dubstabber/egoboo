@@ -22,6 +22,22 @@
 
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/AI/LineOfSight.hpp"  // line_of_sight_info_t
+#include "egolib/game/Core/EngineContext.hpp"        // EngineContext::particleHandler / tryActivePlayingState
+#include "egolib/game/GameStates/PlayingState.hpp"   // PlayingState + getMiniMap (minimap reveal)
+#include "egolib/game/GUI/MiniMap.hpp"               // MiniMap::setVisible / setShowPlayerPosition
+#include "egolib/game/Physics/PhysicalConstants.hpp" // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
+
+namespace
+{
+/// @brief Minimap reveal helper. Sole consumer of EngineContext::tryActivePlayingState();
+///        kept TU-local so the 7-TU-propagating Object_internal.h no longer pulls the
+///        minimap reveal chain (EngineContext/GameEngine/PlayingState/MiniMap) into every
+///        Object_*.cpp.
+std::shared_ptr<PlayingState> tryActivePlayingState()
+{
+    return EngineContext::get().tryActivePlayingState();
+}
+} // namespace
 
 BIT_FIELD Object::getAIAlertBits() const
 {
@@ -352,10 +368,10 @@ void Object::update()
 
     // do the mana and life regeneration for "living" characters
     if (isAlive()) {
-        _currentMana += getAttribute(Ego::Attribute::MANA_REGEN) / GameEngine::GAME_TARGET_UPS;
+        _currentMana += getAttribute(Ego::Attribute::MANA_REGEN) / ONESECOND;
         _currentMana = Ego::Math::constrain(_currentMana, 0.0f, getAttribute(Ego::Attribute::MAX_MANA));
 
-        _currentLife += getAttribute(Ego::Attribute::LIFE_REGEN) / GameEngine::GAME_TARGET_UPS;
+        _currentLife += getAttribute(Ego::Attribute::LIFE_REGEN) / ONESECOND;
         _currentLife = Ego::Math::constrain(_currentLife, 0.01f, getAttribute(Ego::Attribute::MAX_LIFE));
     }
 
@@ -422,7 +438,7 @@ void Object::update()
                 //Don't give bonus to ourselves!
                 if(object == this) continue;
 
-                object->_reallyDuration = worldUpdateCount() + GameEngine::GAME_TARGET_UPS*3;    //Apply bonus for 3 seconds
+                object->_reallyDuration = worldUpdateCount() + ONESECOND*3;    //Apply bonus for 3 seconds
             }
         }
     }

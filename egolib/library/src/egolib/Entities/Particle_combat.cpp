@@ -21,6 +21,7 @@
 /// @brief Particle damage application and destruction helpers.
 
 #include "egolib/Entities/Particle_internal.h"
+#include "egolib/game/game.h"  // chr_get_lowest_attachment
 
 namespace Ego
 {

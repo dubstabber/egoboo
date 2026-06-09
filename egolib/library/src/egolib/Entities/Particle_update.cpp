@@ -21,6 +21,7 @@
 /// @brief Particle update-loop and animation/environment helpers.
 
 #include "egolib/Entities/Particle_internal.h"
+#include "egolib/game/game.h"  // disaffirm_attached_particles
 
 namespace Ego
 {
@@ -291,7 +292,7 @@ size_t Particle::updateContinuousSpawning()
     if(!childProfile->force && !inst.indolist) {
 
         //Is is something that spawns often? (often = at least once every 2 seconds)
-        if(contspawn_timer < GameEngine::GAME_TARGET_UPS * 2) {
+        if(contspawn_timer < ONESECOND * 2) {
 
             //Don't spawn this particle
             return spawn_count;
