@@ -29,7 +29,7 @@
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/game.h"
+#include "egolib/game/game.h"  // MAX_IMPORT_PER_PLAYER / MAX_IMPORT_OBJECTS macros + EngineContext conduit
 #include "egolib/game/script_compile.h"
 #include "egolib/fileutil.h"
 

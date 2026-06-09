@@ -31,7 +31,6 @@
 #include "egolib/game/script_functions.h"
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/script_variables.h"
-#include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 
 
