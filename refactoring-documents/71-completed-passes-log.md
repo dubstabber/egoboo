@@ -1500,6 +1500,25 @@ The continuation the IObjectWorld entry named: *"the actual `egolib-physics` `ad
 
 ---
 
+## egolib-physics middle-layer carve — the second link-split (branch `refactor/egolib-physics-middle-carve`, 2026-06-09)
+
+The continuation the foundation carve named: *"an `egolib-physics` sub-library could split out of the foundation (the nucleus is a clean sub-DAG within it)."* Picked by a scout+adversarial-nm workflow (4 parallel feasibility scouts → 3 nm skeptics → synthesis): **both physics skeptics returned `refuted:false`** and the synthesis lead reproduced the full closure on the live `.a`/`.o` artifacts. **Headline: `egolib-foundation-library` (77 TUs) is re-split into `egolib-foundation-base` (73 TUs) + `egolib-physics` (4 TUs), giving the acyclic three-layer chain `egolib-foundation-base ← egolib-physics ← egolib-library`.** This lands the **`egolib-physics` link target** named across ~6 prior decoupling fronts (collisionworld-mesh-seam, IObjectWorld, the physics-nucleus carve, …). A **pure CMake partition — ZERO source edits.**
+
+**The carve (single CMake change in `egolib/library/CMakeLists.txt`):** split the `EGOLIB_FOUNDATION_BASE_SOURCES` list (renamed from `EGOLIB_FOUNDATION_SOURCES`) from a new `EGOLIB_PHYSICS_SOURCES` (the 4 nucleus TUs `Physics/{Collidable,ICollisionWorld,MeshLookupTables,PhysicalConstants}.cpp`); `list(REMOVE_ITEM SOURCE_FILES …)` both out of the upper accumulation; three `add_library()` calls wired `egolib-library → egolib-physics → egolib-foundation-base` (+ idlib). The WIN32 `Shlwapi`/`shlwapi` block was replicated onto all three targets. The target rename `egolib-foundation-library → egolib-foundation-base` is safe: a tree grep found that name referenced **only** within this one CMakeLists (no external consumer). Consumers (egoboo, egolib-tests, content-validator) need **zero** changes — all three sub-libs carry `INTERFACE` include dir `src/` and the link chain is transitive.
+
+**nm acyclicity proof (Python set-intersection on mangled symbols, freshly-built artifacts):**
+- **DOWNWARD** — the 4 physics `.o` reference only foundation-base symbols (`vec_to_facing` in `_math.c`, `twist_to_normal` in `map_functions.c`) plus 2 intra-nucleus symbols (`Ego::Physics::activeCollisionWorld`, `g_environment`); **0** refs into the upper `egolib-library`.
+- **BACK-EDGE** — **0** of the 73 base TUs reference any physics-defined symbol.
+- **BASE closure** — base references **0** physics-only OR library-only symbols (it remains the true bottom).
+- **POSITIVE CONTROL** — the harness correctly detected the two known downward edges (`vec_to_facing`/`twist_to_normal` both `IN-BASE`), proving the 0-results are real and not a false-empty closure (the project's #1 documented failure mode; cf. the zsh word-split trap, sidestepped here by doing the set math in Python, not a shell loop).
+- `game/physics.c` is correctly **NOT** in the nucleus — it needs the upper Entities symbol `Ego::Particle::isTerminated`, so it stays in `egolib-library`.
+
+**Verification (every gate green):** clean from-scratch build (foundation-base 73 + physics 4 + library 215 objects, egoboo/validator/tests linked); `ar t` membership counts exact (73/4/215); nm acyclic as above; validator `test.mod` 0/0 (`errors=245` baseline elsewhere); ctest -j1 **823/825** (only the 2 known `ScriptLoaderFixture` PrimaryScript-fallback failures #613/#614); menu smoke-run clean (exit 124, full OpenGL 4.6 + SDL_image/ttf/mixer boot, graceful shutdown, no crash markers). Committed as one carve commit.
+
+**Next (nm-pre-verified by the same scout, queued as their own bounded fronts):** **(1)** absorb **InputControl** (3 TUs `InputControl/{InputDevice,InputSystem,ControlSettingsFile}.cpp`) into `egolib-foundation-base` — 0 library blockers, only SDL_* + existing-foundation refs; **(2)** absorb **Image + `Graphics/PixelFormat.cpp`** (7 TUs together — Image alone has 6 `pixel_descriptor` blockers, so they must move as a unit) and add SDL2_image to the foundation `target_link_libraries` for hygiene. Deferred larger fronts unchanged: the `game/mesh.c` `ego_mesh_t` chokepoint (blocks AI), the `Core/System` bootstrap edge, the `physics.c`/Entities ownership-inversion.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
