@@ -25,12 +25,9 @@
 #define GAME_ENTITIES_PRIVATE 1
 
 #include "egolib/Entities/Particle.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/game.h"
-#include "egolib/game/Physics/PhysicalConstants.hpp"
 
 namespace particle_detail
 {
