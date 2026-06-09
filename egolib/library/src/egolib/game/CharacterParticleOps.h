@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "egolib/typedef.h"              // ObjectRef, TEAM_REF, PIP_REF, GCC_PRINTF_FUNC
+#include "egolib/typedef.h"              // ObjectRef, TEAM_REF, PIP_REF (+ GCC_PRINTF_FUNC transitively from idlib platform)
 #include "egolib/Logic/ObjectSlot.hpp"   // slot_t
 #include "egolib/_math.h"                // Facing
 #include "egolib/integrations/math.hpp"  // Ego::Vector3f
