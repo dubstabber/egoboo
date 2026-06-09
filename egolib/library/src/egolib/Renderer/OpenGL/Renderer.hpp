@@ -34,6 +34,8 @@
 #include "egolib/Math/_Include.hpp"
 #define GLEW_STATIC
 #include <GL/glew.h>
+#include <mutex>
+#include <vector>
 
 namespace Ego {
 namespace OpenGL {
@@ -197,6 +199,18 @@ public:
     /** @copydoc Ego::Renderer::createTexture */
     virtual std::shared_ptr<Ego::Texture> createTexture() override;
 
+    /// @brief Free an OpenGL texture id, marshalling the delete onto the GL/main thread.
+    ///        If called on the thread that owns the GL context (SDL_GL_GetCurrentContext()
+    ///        != nullptr) the texture is deleted immediately; otherwise the id is queued and
+    ///        deleted by the next drainPendingTextureDeletions() call on the main thread.
+    ///        This lets textures be destroyed safely from the background module-loading thread
+    ///        (where glDeleteTextures would otherwise run without a current context and crash).
+    void queueTextureDeletion(GLuint id);
+
+    /// @brief Delete every texture id queued by queueTextureDeletion() from another thread.
+    ///        MUST be called on the thread that owns the GL context (e.g. once per rendered frame).
+    void drainPendingTextureDeletions();
+
 public:
     /** @copydoc Ego::Renderer::setProjectionMatrix */
     void setProjectionMatrix(const Matrix4f4f& projectionMatrix) override;
@@ -210,6 +224,11 @@ public:
 private:
     std::array<float, 16> toOpenGL(const Matrix4f4f& source);
     GLenum toOpenGL(idlib::color_blend_parameter source);
+
+    /// @brief Texture ids queued for deletion from a non-GL-context thread, deleted on the
+    ///        main thread by drainPendingTextureDeletions(). Guarded by its mutex.
+    std::mutex m_pendingTextureDeletionsMutex;
+    std::vector<GLuint> m_pendingTextureDeletions;
 
 }; // class Renderer
 

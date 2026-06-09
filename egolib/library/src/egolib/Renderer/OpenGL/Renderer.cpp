@@ -60,8 +60,45 @@ Renderer::Renderer() :
 
 Renderer::~Renderer()
 {
+    // Flush any texture deletions queued from a background thread while the GL context is
+    // still current on this (the main) thread, so they are freed rather than leaked at exit.
+    drainPendingTextureDeletions();
     m_defaultTexture2d = nullptr;
     m_defaultTexture1d = nullptr;
+}
+
+void Renderer::queueTextureDeletion(GLuint id)
+{
+    if (0 == id)
+    {
+        return;
+    }
+    // On the thread that owns the GL context: delete immediately. Off-thread (e.g. the module
+    // loading thread tearing down the previous module): defer to the main thread, since
+    // glDeleteTextures with no current context is undefined behaviour and crashes the driver.
+    if (SDL_GL_GetCurrentContext() != nullptr)
+    {
+        glDeleteTextures(1, &id);
+        Utilities::isError();
+        return;
+    }
+    std::lock_guard<std::mutex> lock(m_pendingTextureDeletionsMutex);
+    m_pendingTextureDeletions.push_back(id);
+}
+
+void Renderer::drainPendingTextureDeletions()
+{
+    std::vector<GLuint> ids;
+    {
+        std::lock_guard<std::mutex> lock(m_pendingTextureDeletionsMutex);
+        if (m_pendingTextureDeletions.empty())
+        {
+            return;
+        }
+        ids.swap(m_pendingTextureDeletions);
+    }
+    glDeleteTextures(static_cast<GLsizei>(ids.size()), ids.data());
+    Utilities::isError();
 }
 
 std::shared_ptr<Ego::RendererInfo> Renderer::getInfo() {

@@ -38,6 +38,7 @@
 #include "egolib/InputControl/ControlSettingsFile.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/graphic.h"
+#include "egolib/Renderer/OpenGL/Renderer.hpp"  // drainPendingTextureDeletions (deferred GL deletes)
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
@@ -269,6 +270,14 @@ void GameEngine::renderOneFrame()
     if(_drawCursor)
     {
         draw_mouse_cursor();
+    }
+
+    // Free any GL textures queued for deletion from a background thread (e.g. the module
+    // loading thread tearing down the previous module). We are on the GL/main thread here,
+    // after the frame's draws, so deleting them now is safe and runs every frame.
+    if (Ego::Renderer::is_initialized())
+    {
+        static_cast<Ego::OpenGL::Renderer&>(Ego::Renderer::get()).drainPendingTextureDeletions();
     }
 
     // flip the graphics page
