@@ -24,6 +24,7 @@
 #include "egolib/IDSZ.hpp"  // IDSZ2
 #include "egolib/FileFormats/wawalite_file.h"  // wawalite_camera_t, wawalite_graphics_t, wawalite_data_t, wawalite_physics_t
 #include "egolib/strutil.h"                    // add_linebreak_cpp
+#include "egolib/Zeitgeist.hpp"                 // namespace Zeitgeist (special-time checks, split out of game.h)
 #include "egolib/game/CharacterParticleOps.h"  // character/particle ops the Entities layer calls back into (split out of game.h)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
@@ -218,23 +219,8 @@ uint8_t get_light( int alpha, float seedark_mag );
 bool game_copy_imports(import_list_t& imports);
 
 //--------------------------------------------------------------------------------------------
-/**
- * Zeitgeist connects the game and the real world including. Functionality like audio
- * and video communication and social networking support might be integrated here.
- */
-namespace Zeitgeist {
-// An enumeration of special times.
-enum class Time {
-    Halloween,       // Halloween.
-    Christmas,       // Christmas.
-    Nighttime,       // Nighttime.
-    Daytime,         // Daytime.
-};
-/// @brief Get if the specified time is.
-/// @param time the time
-/// @return @a true if
-bool CheckTime(Time time);
-}
+// namespace Zeitgeist (special-time checks) relocated down to egolib/Zeitgeist.hpp (re-included
+// near the top of this header) so lower-layer code can query it without game.h's conduit.
 //--------------------------------------------------------------------------------------------
 
 // wawalite functions

@@ -493,6 +493,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/TrigonometricTable.hpp
     src/egolib/typedef.c
     src/egolib/typedef.h
+    src/egolib/Zeitgeist.cpp
+    src/egolib/Zeitgeist.hpp
 )
 
 # -- game/Core ---------------------------------------------------------------

@@ -22,7 +22,8 @@
 
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
-#include "egolib/game/game.h"
+#include "egolib/game/Core/EngineContext.hpp"  // EngineContext (audio service access) — was transitively via game.h
+#include "egolib/Zeitgeist.hpp"  // Zeitgeist::CheckTime (seasonal theme selection) — was game.h
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/fileutil.h"
 
