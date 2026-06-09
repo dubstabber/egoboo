@@ -894,6 +894,9 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
     src/egolib/IDSZ.cpp
+    src/egolib/InputControl/ControlSettingsFile.cpp
+    src/egolib/InputControl/InputDevice.cpp
+    src/egolib/InputControl/InputSystem.cpp
     src/egolib/Log/ConsoleColor.cpp
     src/egolib/Log/DefaultTarget.cpp
     src/egolib/Log/EndOfEntry.cpp
