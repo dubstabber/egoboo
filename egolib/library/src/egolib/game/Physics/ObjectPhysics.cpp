@@ -27,7 +27,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
+#include "egolib/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
 #include "egolib/game/Module/Module.hpp"
 
 namespace

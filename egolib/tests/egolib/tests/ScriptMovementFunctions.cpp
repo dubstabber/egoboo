@@ -14,7 +14,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
 

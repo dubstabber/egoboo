@@ -24,7 +24,7 @@
 #include "egolib/game/game.h"                         // chr_stoppedby_tests / chr_pressure_tests
 #include "egolib/game/Graphics/CameraSystem.hpp"      // CameraSystem (attachment placement)
 #include "egolib/game/Graphics/TileList.hpp"          // Ego::Graphics::TileList (complete type)
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
 
 bool Object::setSkin(const size_t skinNumber)
 {

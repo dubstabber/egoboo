@@ -457,6 +457,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/Physics/Collidable.hpp
     src/egolib/Physics/ICollisionWorld.cpp
     src/egolib/Physics/ICollisionWorld.hpp
+    src/egolib/Physics/PhysicalConstants.hpp
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
@@ -708,7 +709,6 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
     src/egolib/game/Physics/particle_collision.h
     src/egolib/game/Physics/ParticlePhysics.cpp
     src/egolib/game/Physics/ParticlePhysics.hpp
-    src/egolib/game/Physics/PhysicalConstants.hpp
 )
 
 # -- game/ top-level files ---------------------------------------------------
