@@ -61,7 +61,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/Logic/Attribute.hpp"
 #include "egolib/Logic/Damage.hpp"
 #include "egolib/Logic/Team.hpp"

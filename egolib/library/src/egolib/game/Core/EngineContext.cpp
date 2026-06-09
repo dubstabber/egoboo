@@ -10,7 +10,7 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
@@ -29,7 +29,6 @@ Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
 IProfileSystem* g_activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
-Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
 }
@@ -572,48 +571,38 @@ const ICameraSystem& EngineContext::cameraSystem() const
     return *currentCameraSystem;
 }
 
+// The billboard-system ownership now lives in the lower-layer egolib/Graphics seam
+// (Ego::Graphics::activeBillboardSystem); these methods are thin delegators so the
+// existing EngineContext callers and the install-via-EngineContext test stubs keep
+// routing through the same single installed pointer.
 void EngineContext::installBillboardSystem(Ego::Graphics::IBillboardSystem& billboardSystem)
 {
-    if (activeBillboardSystem)
-    {
-        throw std::logic_error("billboard system already installed");
-    }
-    activeBillboardSystem = &billboardSystem;
+    Ego::Graphics::installActiveBillboardSystem(billboardSystem);
 }
 
 void EngineContext::clearBillboardSystem()
 {
-    activeBillboardSystem = nullptr;
+    Ego::Graphics::clearActiveBillboardSystem();
 }
 
 Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem()
 {
-    return activeBillboardSystem;
+    return Ego::Graphics::tryActiveBillboardSystem();
 }
 
 const Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem() const
 {
-    return activeBillboardSystem;
+    return Ego::Graphics::tryActiveBillboardSystem();
 }
 
 Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem()
 {
-    Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
-    if (!currentBillboardSystem)
-    {
-        throw std::logic_error("no active billboard system");
-    }
-    return *currentBillboardSystem;
+    return Ego::Graphics::activeBillboardSystem();
 }
 
 const Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem() const
 {
-    const Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
-    if (!currentBillboardSystem)
-    {
-        throw std::logic_error("no active billboard system");
-    }
-    return *currentBillboardSystem;
+    return Ego::Graphics::activeBillboardSystem();
 }
 
 void EngineContext::installTextureAtlasManager(Ego::Graphics::ITextureAtlasManager& textureAtlasManager)

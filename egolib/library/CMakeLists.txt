@@ -168,6 +168,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/GraphicsSystemNew.hpp
     src/egolib/Graphics/GraphicsWindow.cpp
     src/egolib/Graphics/GraphicsWindow.hpp
+    src/egolib/Graphics/IBillboardSystem.cpp
+    src/egolib/Graphics/IBillboardSystem.hpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/IndexFormat.hpp
     src/egolib/Graphics/MD2Model.cpp
