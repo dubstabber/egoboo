@@ -10,6 +10,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"  // install/clearCollisionWorld
+#include "egolib/Entities/IObjectWorld.hpp"     // install/clearObjectWorld
 #include "egolib/game/game.h"
 
 #include <algorithm>
@@ -220,6 +221,12 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // since spawnAllObjects() sets object positions through Collidable::setPosition.
     Ego::Physics::installCollisionWorld(_activeModule.get());
 
+    // Publish the active module as the object world too, so the physics translation units can
+    // reach the object/team containers through the IObjectWorld seam instead of up into
+    // GameModule / GameSessionContext. Same installed pointer, same lifetime as the collision
+    // world above.
+    Ego::Entities::installObjectWorld(_activeModule.get());
+
     // Live spawn still happens after construction because the runtime is not fully decoupled.
     activeModule().spawnAllObjects();
 
@@ -229,6 +236,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 void GameSessionContext::quitModule()
 {
     Ego::Physics::clearCollisionWorld();
+    Ego::Entities::clearObjectWorld();
     _activeModule.reset();
 
     scripting_system_end();
