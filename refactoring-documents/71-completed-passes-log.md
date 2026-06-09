@@ -1519,6 +1519,14 @@ The continuation the foundation carve named: *"an `egolib-physics` sub-library c
 
 ---
 
+## egolib-foundation-base growth absorptions (2026-06-09)
+
+The two nm-pre-verified foundation-growth fronts the physics middle-carve queued. Each is a **pure CMake source-list move** (the named TUs relocate from `egolib-library` into `egolib-foundation-base`; identical object code, just a different archive), verified safe by the same `nm` set-intersection method (a TU is safe to move down iff it references **0** library-only symbols, excluding symbols defined within the moving group itself). Each landed on its own branch with the full gate (build / `ar t` membership / nm acyclic with a live positive control / validator `test.mod` 0/0 / ctest -j1 823/825 / menu smoke exit-124).
+
+- **InputControl absorb** (branch `refactor/egolib-inputcontrol-foundation-absorb`). Moved `InputControl/{ControlSettingsFile,InputDevice,InputSystem}.cpp`. nm pre-check: 61 undefined symbols, **0** library-only blockers (all resolve in base / idlib / std / SDL); the sole cross-edge `game → InputControl` (e.g. `Ego::Input::InputDevice::DeviceList`) becomes a clean `library → foundation` edge. Membership **base 73 → 76, library 215 → 212** (physics 4 unchanged). Acyclic re-proven on fresh artifacts (base needs 0 physics/library symbols; positive control: base references 9 `SDL_*` symbols, so the 0-result is real).
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
