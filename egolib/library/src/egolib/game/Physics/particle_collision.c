@@ -20,7 +20,7 @@
 #include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem
 #include "egolib/game/CharacterParticleOps.h"  // chr_get_lowest_attachment, reaffirm_attached_particles (was game.h)
 #include "egolib/game/graphic.h"
-#include "egolib/game/physics.h"
+#include "egolib/Physics/physics.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
 #include "egolib/Logic/Action.hpp"

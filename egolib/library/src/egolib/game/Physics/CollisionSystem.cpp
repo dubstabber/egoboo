@@ -19,7 +19,7 @@
 #include "CollisionSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object/team/update-tick access (the entity-world seam)
-#include "egolib/game/physics.h"  // phys_expand_*/phys_estimate_*/phys_intersect_* + PhysicalConstants
+#include "egolib/Physics/physics.h"  // phys_expand_*/phys_estimate_*/phys_intersect_* + PhysicalConstants
 #include "egolib/FileFormats/map_file.h"          // Info<float>::Grid::Size (was via Module.hpp -> mesh.h)
 
 #include "particle_collision.h"

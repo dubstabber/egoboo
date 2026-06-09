@@ -463,6 +463,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/Physics/MeshLookupTables.hpp
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/PhysicalConstants.hpp
+    src/egolib/Physics/physics.c
+    src/egolib/Physics/physics.h
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
@@ -754,8 +756,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/link.h
     src/egolib/game/mesh.c
     src/egolib/game/mesh.h
-    src/egolib/game/physics.c
-    src/egolib/game/physics.h
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.c

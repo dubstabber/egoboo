@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "egolib/game/physics.h"
+#include "egolib/Physics/physics.h"
 
 // Characterization tests for the pure-math physics free functions that were not
 // previously covered by PhysicsIntersection.cpp:

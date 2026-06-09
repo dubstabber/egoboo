@@ -17,12 +17,10 @@
 //*
 //********************************************************************************************
 
-/// @file egolib/game/physics.c
+/// @file egolib/Physics/physics.c
 
-#include "egolib/game/physics.h"
-#include "egolib/game/game.h"
-#include "egolib/game/mesh.h"
-#include "egolib/Entities/_Include.hpp"
+#include "egolib/Physics/physics.h"
+#include "egolib/Entities/_Include.hpp"  // IPhysical / Ego::Particle full defs (deref'd by phys_expand_chr_bb/_prt_bb)
 #include "egolib/Float.hpp"
 
 //--------------------------------------------------------------------------------------------

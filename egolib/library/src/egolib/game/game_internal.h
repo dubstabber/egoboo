@@ -37,7 +37,7 @@
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
-#include "egolib/game/physics.h"
+#include "egolib/Physics/physics.h"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
