@@ -145,14 +145,14 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
             break;
         default:
         {
-            glDeleteTextures(1, &id);
+            m_renderer->queueTextureDeletion(id);
             throw idlib::unhandled_switch_case_error(__FILE__, __LINE__);
         }
     };
     glBindTexture(target_gl, id);
     if (Utilities::isError())
     {
-        glDeleteTextures(1, &id);
+        m_renderer->queueTextureDeletion(id);
         throw idlib::runtime_error(__FILE__, __LINE__, "glBindTexture failed");
     }
     // When mipmaps are disabled (the EGOBOO_DISABLE_MIPMAPS Wine workaround) or the sampler does
@@ -176,7 +176,7 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
     }
     catch (...)
     {
-        glDeleteTextures(1, &id);
+        m_renderer->queueTextureDeletion(id);
         std::rethrow_exception(std::current_exception());
     }
     // (4) Upload the texture data.
@@ -201,7 +201,7 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
         break;
         default:
         {
-            glDeleteTextures(1, &id);
+            m_renderer->queueTextureDeletion(id);
             throw idlib::unhandled_switch_case_error(__FILE__, __LINE__);
         }
         break;
@@ -249,9 +249,10 @@ void  Texture::release()
         return;
     }
 
-    // Delete the OpenGL texture and assign the error texture.
-    glDeleteTextures(1, &(m_id));
-    Utilities::isError();
+    // Free the OpenGL texture, marshalling the delete onto the GL/main thread so this is safe
+    // even when the Texture is destroyed on the background module-loading thread (where a direct
+    // glDeleteTextures would run with no current GL context and crash the driver).
+    m_renderer->queueTextureDeletion(m_id);
 
     // Delete the source if it exists
     if (m_source)
