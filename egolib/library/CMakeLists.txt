@@ -924,6 +924,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Log/_Include.cpp
     src/egolib/Logic/IPerkHandler.cpp
     src/egolib/Logic/MissileTreatment.cpp
+    src/egolib/Logic/Perk.cpp
+    src/egolib/Logic/PerkHandler.cpp
     src/egolib/Logic/TreasureTables.cpp
     src/egolib/Math/Random.cpp
     src/egolib/Math/Standard.cpp
@@ -932,6 +934,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Profiles/EnchantProfile.cpp
     src/egolib/Profiles/EnchantProfileWriter.cpp
     src/egolib/Profiles/LocalParticleProfileRef.cpp
+    src/egolib/Profiles/ModuleProfile.cpp
+    src/egolib/Profiles/ObjectProfile_core.cpp
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
     src/egolib/Profiles/RandomName.cpp
