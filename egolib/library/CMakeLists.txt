@@ -996,12 +996,16 @@ elseif (WIN32)
     list(APPEND EGOLIB_FOUNDATION_BASE_SOURCES src/egolib/Platform/file_win.c)
 endif()
 
-# The egolib-physics middle layer: the collision nucleus. Depends one-way on the foundation base.
+# The egolib-physics middle layer: the collision nucleus plus the oct_bb collision-geometry
+# free functions (physics.c) and the Entities physics commons. Depends one-way on the
+# foundation base (physics.c's former Particle::isTerminated edge was inlined away).
 set(EGOLIB_PHYSICS_SOURCES
+    src/egolib/Entities/Common.cpp
     src/egolib/Physics/Collidable.cpp
     src/egolib/Physics/ICollisionWorld.cpp
     src/egolib/Physics/MeshLookupTables.cpp
     src/egolib/Physics/PhysicalConstants.cpp
+    src/egolib/Physics/physics.c
 )
 
 # The egolib-renderer middle layer: SDL display/windowing + the OpenGL rendering backend.

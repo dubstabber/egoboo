@@ -183,8 +183,11 @@ public:
     /**
     * @return
     *   true if this Particle has been terminated and will be removed from the game soon
+    * @remark
+    *   defined inline so lower-layer link consumers (egolib-physics' physics.c) need no
+    *   Particle_core.cpp symbol -- keeps the egolib-physics archive acyclic
     **/
-    bool isTerminated() const;
+    bool isTerminated() const {return _isTerminated;}
 
     /// @author ZZ
     /// @details This function sets one particle's position to be attached to a character.
