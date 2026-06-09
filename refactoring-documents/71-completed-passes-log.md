@@ -1418,6 +1418,17 @@ Branch `refactor/egolib-physics-decoupling`. The original next-heavy-front scout
 
 ---
 
+## T3.4 — collision-pipeline characterization (2026-06-09)
+
+Branch `test/collision-pipeline-characterization`. The net that gates the deferred `ICollisionWorld` mesh-seam extension above. `CollisionPipeline.cpp` (8 cases, ctest **815→823**/825; the 2 reds remain the perennial `ScriptLoaderFixture` cases) pins the two public collision entry points on live module-spawned entities, mirroring the `CombatDamageIntegration` headless fixture (live `test.mod`, `ParticleHandler` + `StubBillboardSystem` installed, audio disabled) plus `CollisionSystem::initialize()`.
+
+- **chr-prt** (`do_chr_prt_collision`): a damage particle subtracts exactly `FP8_TO_FLOAT(base)` life (owner Invalid → no perk/crit branches; reduction primed to 0) and records the hit; the same non-eternal particle cannot re-damage the same target (hasCollided gate); an invincible target deflects (handled, no life loss, no collision recorded); a TEAM_NULL particle cannot damage a TEAM_NULL target (friend-foe gate); a spatially-separated particle early-returns (geometry gate).
+- **chr-chr** (`CollisionSystem`): `detectCollision` overlap math (overlapping vs far-apart), and a plain follower is neither mounted nor platformed.
+
+**Bring-up findings worth keeping** (the determinism levers, documented in-file): the collision volume `chr_min_cv` is computed in the per-frame physics update, so a headless test must call `Object::updateCollisionSize(true)` after spawn or the geometry gate sees a degenerate volume; the follower has no local pips, so a spawned damage particle needs `DAMFX_ARRO` cleared (else non-attached damage is skipped, `particle_collision.c:757`) and `DAMFX_NBLOC` set (else a particle at the target's exact origin degenerates `vec_to_facing(0,0)` into the invictus arc → a `spawnDefencePing` deflect that sets `damage_timer = DEFENDTIME(24)` and blocks the damage block); per-instance `damage`/`team`/`owner` fields are public and overridden directly for determinism.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
