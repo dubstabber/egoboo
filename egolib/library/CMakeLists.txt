@@ -893,7 +893,14 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/template.c
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
+    src/egolib/Graphics/PixelFormat.cpp
     src/egolib/IDSZ.cpp
+    src/egolib/Image/Image.cpp
+    src/egolib/Image/ImageLoader.cpp
+    src/egolib/Image/ImageLoader_SDL.cpp
+    src/egolib/Image/ImageLoader_SDL_image.cpp
+    src/egolib/Image/ImageManager.cpp
+    src/egolib/Image/SDL_Image_Extensions.c
     src/egolib/InputControl/ControlSettingsFile.cpp
     src/egolib/InputControl/InputDevice.cpp
     src/egolib/InputControl/InputSystem.cpp
