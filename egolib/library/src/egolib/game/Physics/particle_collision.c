@@ -28,13 +28,11 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 
 namespace
 {
 /// The entity world the collision step queries (object container), reached through the
-/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
-/// active GameModule, same session as worldUpdateCount() below.
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule).
 Ego::Entities::IObjectWorld& objectWorld()
 {
     return Ego::Entities::activeObjectWorld();
@@ -45,9 +43,11 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
+/// The active world's update tick, reached through the lower-layer activeWorldUpdateCount() seam
+/// (sibling of objectWorld()) rather than GameSessionContext.
 uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return Ego::Entities::activeWorldUpdateCount();
 }
 
 IDamageable& damageable(Object& object)

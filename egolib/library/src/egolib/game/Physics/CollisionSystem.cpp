@@ -18,8 +18,7 @@
 //********************************************************************************************
 #include "CollisionSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
-#include "egolib/game/Core/GameSessionContext.hpp"  // worldUpdateCount() (the unseamed update-counter strand)
+#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object/team/update-tick access (the entity-world seam)
 #include "egolib/game/physics.h"  // phys_expand_*/phys_estimate_*/phys_intersect_* + PhysicalConstants
 #include "egolib/FileFormats/map_file.h"          // Info<float>::Grid::Size (was via Module.hpp -> mesh.h)
 
@@ -36,16 +35,17 @@ static void get_recoil_factors( float wta, float wtb, float * recoil_a, float * 
 namespace
 {
 /// The entity world the collision step queries (object container), reached through the
-/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
-/// active GameModule, same session as worldUpdateCount() below.
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule).
 Ego::Entities::IObjectWorld& objectWorld()
 {
     return Ego::Entities::activeObjectWorld();
 }
 
+/// The active world's update tick, reached through the lower-layer activeWorldUpdateCount() seam
+/// (sibling of objectWorld()) rather than GameSessionContext.
 uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return Ego::Entities::activeWorldUpdateCount();
 }
 }
 

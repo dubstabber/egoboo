@@ -32,6 +32,7 @@ namespace Entities
 namespace
 {
 IObjectWorld* g_activeObjectWorld = nullptr;
+const uint32_t* g_activeWorldUpdateCounter = nullptr;
 }
 
 void installObjectWorld(IObjectWorld* world)
@@ -57,6 +58,25 @@ IObjectWorld& activeObjectWorld()
         throw std::logic_error("no active object world");
     }
     return *g_activeObjectWorld;
+}
+
+void installWorldUpdateCounter(const uint32_t* counter)
+{
+    g_activeWorldUpdateCounter = counter;
+}
+
+void clearWorldUpdateCounter()
+{
+    g_activeWorldUpdateCounter = nullptr;
+}
+
+uint32_t activeWorldUpdateCount()
+{
+    // Unlike activeObjectWorld(), this returns a value (not a null-able object), so the
+    // uninstalled state yields 0 rather than throwing — matching the session counter's
+    // reset-to-0 value outside an active module. The physics call sites only run mid-module
+    // (where activeObjectWorld() is installed), so the 0 branch is not reached in practice.
+    return g_activeWorldUpdateCounter ? *g_activeWorldUpdateCounter : 0u;
 }
 
 } // namespace Entities
