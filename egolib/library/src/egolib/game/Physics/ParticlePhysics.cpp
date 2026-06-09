@@ -1,6 +1,5 @@
 #include "egolib/game/Physics/ParticlePhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/game/CharacterMatrix.h"
@@ -521,7 +520,7 @@ void ParticlePhysics::updateGravity()
         }
 
         //Pull all nearby particles
-        for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
+        for(const std::shared_ptr<Ego::Particle> &particle : activeParticleHandler().iterator())
         {
             //Don't to terminated particles
             if(particle->isTerminated()) continue;
