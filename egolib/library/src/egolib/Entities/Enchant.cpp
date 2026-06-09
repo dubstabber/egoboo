@@ -25,7 +25,6 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Log/_Include.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 
@@ -50,7 +49,7 @@ Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfi
     _enchantProfile(enchantmentProfile),
     _spawnerProfileID(spawnerProfile),
 
-    _lifeTime(enchantmentProfile->lifetime > 0 ? enchantmentProfile->lifetime * GameEngine::GAME_TARGET_UPS : -1),
+    _lifeTime(enchantmentProfile->lifetime > 0 ? enchantmentProfile->lifetime * ONESECOND : -1),
     _spawnParticlesTimer(0),
 
     _target(),
