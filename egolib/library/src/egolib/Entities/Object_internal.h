@@ -29,13 +29,8 @@
 #include "egolib/Entities/ObjectHandler.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"
 #include "egolib/Entities/Enchant.hpp"
-#include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Graphics/ModelDescriptor.hpp"
-#include "egolib/game/script_implementation.h"
-#include "egolib/game/Graphics/CameraSystem.hpp"
-#include "egolib/game/Graphics/TileList.hpp"
-#include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 
