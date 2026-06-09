@@ -487,23 +487,11 @@ private:
 
 };
 
-/// Some look-up tables for meshes (and independent of the particular mesh).
-/// Contains precomputed surface normals and steep hill acceleration.
-/// @todo This should be in map, not in mesh.
-struct MeshLookupTables {
-	Ego::Vector3f twist_nrm[256];
-	/// For surface normal of the mesh.
-	Facing twist_facing_y[256];
-	/// For surface normal of the mesh.
-	Facing twist_facing_x[256];
-	/// Precomputed velocity (acceleration?) for sliding (down?) steep hills.
-	Ego::Vector3f twist_vel[256];
-	/// Is (something) flat?
-	bool twist_flat[256];
-	MeshLookupTables();
-};
-
-extern MeshLookupTables g_meshLookupTables;
+// MeshLookupTables / g_meshLookupTables (the precomputed, mesh-independent twist tables)
+// were relocated down to the lower-layer egolib/Physics/MeshLookupTables.hpp so the physics
+// code can read them without depending on the game/ layer. Re-included here so existing
+// mesh.h consumers are unaffected.
+#include "egolib/Physics/MeshLookupTables.hpp"
 
 //--------------------------------------------------------------------------------------------
 

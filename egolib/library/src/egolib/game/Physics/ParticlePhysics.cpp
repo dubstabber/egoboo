@@ -2,6 +2,8 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Physics/PhysicalConstants.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"    // activeCollisionWorld() terrain queries (the mesh-query seam)
+#include "egolib/Physics/MeshLookupTables.hpp"   // g_meshLookupTables
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/game/Module/Module.hpp"
 
@@ -10,6 +12,13 @@ namespace
 GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
+}
+
+/// The terrain world the physics step queries (slope/elevation/slippy/water), reached
+/// through the lower-layer Ego::Physics::ICollisionWorld seam rather than game/mesh.h.
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
 }
 
 const IPhysical& physical(const Object& object)
@@ -75,8 +84,6 @@ void ParticlePhysics::updateMovement()
     //capture the position
     Vector3f tmp_pos = _particle.getPosition();
 
-    auto mesh = activeModule().getMeshPointer();
-
     bool hit_a_floor = false;
     bool hit_a_wall = false;
     bool touch_a_floor = false;
@@ -96,7 +103,7 @@ void ParticlePhysics::updateMovement()
 
         touch_a_floor = true;
 
-        uint8_t tmp_twist = mesh->get_fan_twist(_particle.getTile());
+        uint8_t tmp_twist = collisionWorld().getFanTwist(_particle.getTile());
 
         if (TWIST_FLAT != tmp_twist)
         {
@@ -418,7 +425,7 @@ void ParticlePhysics::updateFloorFriction()
     else
     {
         //Is the floor slippery?
-        if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
+        if (collisionWorld().gridIsValid(_particle.getTile()) && penviro->is_slippy)
         {
             // It's slippy all right...
             temp_friction_xy = 1.0f - Ego::Physics::g_environment.slippyfriction;
@@ -555,7 +562,7 @@ void ParticlePhysics::updateEnviroment()
     const std::shared_ptr<Object>& platform = activeModule().getObjectHandler()[_particle.onwhichplatform_ref];
 
     //---- character "floor" level
-    penviro->floor_level = activeModule().getMeshPointer()->getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
+    penviro->floor_level = collisionWorld().getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
     penviro->level = penviro->floor_level;
 
     //---- The actual level of the characer.
@@ -582,11 +589,11 @@ void ParticlePhysics::updateEnviroment()
         itile = _particle.getTile();
     }
 
-    penviro->twist = activeModule().getMeshPointer()->get_twist(itile);
+    penviro->twist = collisionWorld().getTwist(itile);
 
     // the "watery-ness" of whatever water might be here
-    penviro->is_watery = activeModule().getWater()._is_water && penviro->inwater;
-    penviro->is_slippy = !penviro->is_watery && (0 != activeModule().getMeshPointer()->test_fx(_particle.getTile(), MAPFX_SLIPPY));
+    penviro->is_watery = collisionWorld().isWater() && penviro->inwater;
+    penviro->is_slippy = !penviro->is_watery && (0 != collisionWorld().testFX(_particle.getTile(), MAPFX_SLIPPY));
 
     //---- traction
     penviro->traction = 1.0f;
@@ -613,7 +620,7 @@ void ParticlePhysics::updateEnviroment()
             penviro->traction /= Ego::Physics::g_environment.hillslide * (1.0f - penviro->zlerp) + 1.0f * penviro->zlerp;
         }
     }
-    else if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()))
+    else if (collisionWorld().gridIsValid(_particle.getTile()))
     {
         penviro->traction = std::abs(g_meshLookupTables.twist_nrm[penviro->twist].z()) * (1.0f - penviro->zlerp) + 0.25f * penviro->zlerp;
 
@@ -641,7 +648,7 @@ void ParticlePhysics::updateEnviroment()
     {
         // Make the characters slide
         float temp_friction_xy = Ego::Physics::g_environment.noslipfriction;
-        if (activeModule().getMeshPointer()->grid_is_valid(_particle.getTile()) && penviro->is_slippy)
+        if (collisionWorld().gridIsValid(_particle.getTile()) && penviro->is_slippy)
         {
             // It's slippy all right...
             temp_friction_xy = Ego::Physics::g_environment.slippyfriction;

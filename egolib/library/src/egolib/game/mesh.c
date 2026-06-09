@@ -185,43 +185,9 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 
 //--------------------------------------------------------------------------------------------
 
-MeshLookupTables g_meshLookupTables;
-
-MeshLookupTables::MeshLookupTables() {
-	Ego::Vector3f grav = idlib::zero<Ego::Vector3f>();
-
-	grav[kZ] = Ego::Physics::g_environment.gravity;
-
-	for (size_t cnt = 0; cnt < 256; cnt++)
-	{
-		Ego::Vector3f nrm;
-
-		twist_to_normal(cnt, nrm, 1.0f);
-
-		twist_nrm[cnt] = nrm;
-
-		twist_facing_x[cnt] = Facing((FACING_T)(-vec_to_facing(nrm[kZ], nrm[kY])));
-		twist_facing_y[cnt] = Facing((FACING_T)(+vec_to_facing(nrm[kZ], nrm[kX])));
-
-		// this is about 5 degrees off of vertical
-		twist_flat[cnt] = false;
-		if (nrm[kZ] > 0.9945f)
-		{
-			twist_flat[cnt] = true;
-		}
-
-		// projection of the gravity parallel to the surface
-		float gdot = grav[kZ] * nrm[kZ];
-
-		// Gravity perpendicular to the mesh.
-		Ego::Vector3f gperp = nrm * gdot;
-
-		// Gravity parallel to the mesh.
-		Ego::Vector3f gpara = grav - gperp;
-
-		twist_vel[cnt] = gpara;
-	}
-}
+// MeshLookupTables g_meshLookupTables and its constructor were relocated to the lower-layer
+// egolib/Physics/MeshLookupTables.cpp (declared via egolib/Physics/MeshLookupTables.hpp,
+// re-included through mesh.h). g_meshLookupTables stays usable here unchanged.
 
 //--------------------------------------------------------------------------------------------
 void ego_mesh_t::make_bbox()

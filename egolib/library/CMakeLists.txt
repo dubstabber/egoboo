@@ -457,6 +457,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/Physics/Collidable.hpp
     src/egolib/Physics/ICollisionWorld.cpp
     src/egolib/Physics/ICollisionWorld.hpp
+    src/egolib/Physics/MeshLookupTables.cpp
+    src/egolib/Physics/MeshLookupTables.hpp
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/PhysicalConstants.hpp
     src/egolib/Clock.cpp

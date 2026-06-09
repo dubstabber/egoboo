@@ -26,6 +26,8 @@
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
+#include "egolib/Physics/ICollisionWorld.hpp"    // activeCollisionWorld() terrain queries (the mesh-query seam)
+#include "egolib/Physics/MeshLookupTables.hpp"   // g_meshLookupTables
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -33,6 +35,14 @@ namespace
 GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
+}
+
+/// The terrain world the physics step queries (slope/elevation/slippy/water). This is the
+/// active GameModule, but reached through the lower-layer Ego::Physics::ICollisionWorld seam
+/// rather than its game/mesh.h surface.
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
 }
 
 uint32_t worldUpdateCount()
@@ -198,7 +208,7 @@ void ObjectPhysics::updateMovement()
 
 void ObjectPhysics::updateHillslide()
 {
-    const uint8_t floorTwist = activeModule().getMeshPointer()->get_twist(_object.getTile());
+    const uint8_t floorTwist = collisionWorld().getTwist(_object.getTile());
 
     //This makes it hard for characters to jump uphill
     if(_object.getVelocity().z() > 0.0f && floorIsSlippy() && !g_meshLookupTables.twist_flat[floorTwist]) {
@@ -269,7 +279,7 @@ void ObjectPhysics::updateVelocityZ()
 
         if (0 == _object.getJumpTimer()) {
             // Reset jumping on flat areas of slippiness
-            if(!floorIsSlippy() || g_meshLookupTables.twist_flat[activeModule().getMeshPointer()->get_twist(_object.getTile())]) {
+            if(!floorIsSlippy() || g_meshLookupTables.twist_flat[collisionWorld().getTwist(_object.getTile())]) {
                 _object.setJumpNumber(_object.getAttribute(Ego::Attribute::NUMBER_OF_JUMPS));
             }
         }
@@ -332,11 +342,11 @@ float ObjectPhysics::recalculateGroundElevation()
 
     //Walking on water?
     if(_object.isOnWaterTile() && _object.getAttribute(Ego::Attribute::WALK_ON_WATER) > 0) {
-        return activeModule().getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), true);
+        return collisionWorld().getElevation(Vector2f(_object.getPosX(), _object.getPosY()), true);
     }
 
     //Standing on regular ground
-    return activeModule().getMeshPointer()->getElevation(Vector2f(_object.getPosX(), _object.getPosY()), false);
+    return collisionWorld().getElevation(Vector2f(_object.getPosX(), _object.getPosY()), false);
 }
 
 float ObjectPhysics::getMaxSpeed() const
@@ -367,7 +377,7 @@ float ObjectPhysics::getMaxSpeed() const
     maxspeed *= speedBonus;
 
     //Are we in water?
-    if(_object.isSubmerged() && activeModule().getWater()._is_water) {
+    if(_object.isSubmerged() && collisionWorld().isWater()) {
         if(_object.hasPerk(Ego::Perks::ATHLETICS)) {
             maxspeed *= 0.25f; //With athletics perk we can have three-quarters speed
         }
@@ -662,7 +672,7 @@ void ObjectPhysics::updateMeshCollision()
         float fnew  = (1.0f - getLerpZ()) / 8.0f;
 
         if (fnew > 0) {
-            const uint8_t floorTwist = activeModule().getMeshPointer()->get_twist(_object.getTile());
+            const uint8_t floorTwist = collisionWorld().getTwist(_object.getTile());
             _object.setMapTwistFacingX(idlib::canonicalize(_object.getMapTwistFacingX() * fkeep + g_meshLookupTables.twist_facing_x[floorTwist] * fnew));
             _object.setMapTwistFacingY(idlib::canonicalize(_object.getMapTwistFacingY() * fkeep + g_meshLookupTables.twist_facing_y[floorTwist] * fnew));
         }
@@ -1093,10 +1103,10 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 bool ObjectPhysics::floorIsSlippy() const
 {
     //Water tiles are never slippy
-    if(_object.isInWater() && activeModule().getWater()._is_water) return false;
+    if(_object.isInWater() && collisionWorld().isWater()) return false;
 
     //Check tile slippy bit
-    return 0 != activeModule().getMeshPointer()->test_fx(_object.getTile(), MAPFX_SLIPPY);
+    return 0 != collisionWorld().testFX(_object.getTile(), MAPFX_SLIPPY);
 }
 
 bool ObjectPhysics::isTouchingGround() const
