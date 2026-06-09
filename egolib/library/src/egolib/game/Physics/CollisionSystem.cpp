@@ -18,9 +18,10 @@
 //********************************************************************************************
 #include "CollisionSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
+#include "egolib/game/Core/GameSessionContext.hpp"  // worldUpdateCount() (the unseamed update-counter strand)
 #include "egolib/game/physics.h"  // phys_expand_*/phys_estimate_*/phys_intersect_* + PhysicalConstants
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/FileFormats/map_file.h"          // Info<float>::Grid::Size (was via Module.hpp -> mesh.h)
 
 #include "particle_collision.h"
 
@@ -34,9 +35,12 @@ static void get_recoil_factors( float wta, float wtb, float * recoil_a, float * 
 
 namespace
 {
-GameModule& activeModule()
+/// The entity world the collision step queries (object container), reached through the
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
+/// active GameModule, same session as worldUpdateCount() below.
+Ego::Entities::IObjectWorld& objectWorld()
 {
-    return GameSessionContext::get().activeModule();
+    return Ego::Entities::activeObjectWorld();
 }
 
 uint32_t worldUpdateCount()
@@ -59,7 +63,7 @@ CollisionSystem::~CollisionSystem()
 void CollisionSystem::update()
 {
     // blank the accumulators
-    for(const std::shared_ptr<Object> &object : activeModule().getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &object : objectWorld().getObjectHandler().iterator())
     {
         object->phys.clear();
     }
@@ -72,7 +76,7 @@ void CollisionSystem::update()
     updateParticleCollisions();
 
     // accumulate the accumulators
-    for(const std::shared_ptr<Object> &pchr : activeModule().getObjectHandler().iterator())
+    for(const std::shared_ptr<Object> &pchr : objectWorld().getObjectHandler().iterator())
     {
         if(pchr->isTerminated()) {
             continue;
@@ -277,7 +281,7 @@ void CollisionSystem::update()
 void CollisionSystem::updateObjectCollisions()
 {
     std::unordered_set<ObjectRef> handledObjects;
-    ObjectHandler& handler = activeModule().getObjectHandler();
+    ObjectHandler& handler = objectWorld().getObjectHandler();
 
     //Detect character -> character collisions
     for(const std::shared_ptr<Object> &object : handler.iterator()) {
@@ -350,7 +354,7 @@ void CollisionSystem::updateParticleCollisions()
         }
 
         //First check if this Particle is still attached to a platform
-        if (particle->onwhichplatform_update < worldUpdateCount() && activeModule().getObjectHandler().exists(particle->onwhichplatform_ref)) {
+        if (particle->onwhichplatform_update < worldUpdateCount() && objectWorld().getObjectHandler().exists(particle->onwhichplatform_ref)) {
             particle->getParticlePhysics().detachFromPlatform();
         }
 
@@ -362,10 +366,10 @@ void CollisionSystem::updateParticleCollisions()
 
         //Detect collisions with nearby Objects
         std::vector<ObjectRef> possibleCollisionRefs;
-         activeModule().getObjectHandler().findObjectRefs(aabb2d, possibleCollisionRefs, true);
+         objectWorld().getObjectHandler().findObjectRefs(aabb2d, possibleCollisionRefs, true);
         for (const ObjectRef& objectRef : possibleCollisionRefs)
         {
-            Object* object = activeModule().getObjectHandler().get(objectRef);
+            Object* object = objectWorld().getObjectHandler().get(objectRef);
             if (object == nullptr || object->isTerminated()) {
                 continue;
             }
@@ -501,8 +505,8 @@ bool CollisionSystem::handlePlatformCollision(const std::shared_ptr<Object> &obj
     const auto ichr_b = objectB->getObjRef();
 
     // only check possible object-platform interactions
-    bool platform_a = objectB->canUsePlatforms() && !activeModule().getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->isPlatform();
-    bool platform_b = objectA->canUsePlatforms() && !activeModule().getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->isPlatform();
+    bool platform_a = objectB->canUsePlatforms() && !objectWorld().getObjectHandler().exists(objectB->onwhichplatform_ref) && objectA->isPlatform();
+    bool platform_b = objectA->canUsePlatforms() && !objectWorld().getObjectHandler().exists(objectA->onwhichplatform_ref) && objectB->isPlatform();
 
     //Only allow scenery objects on top of other scenery objects
     if(objectA->isScenery() != objectB->isScenery()) {

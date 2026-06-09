@@ -23,6 +23,7 @@
 #pragma once
 
 #include "egolib/Physics/ICollisionWorld.hpp"  // GameModule implements ICollisionWorld
+#include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
@@ -48,7 +49,9 @@ namespace Ego { class Player; }
 namespace Ego { namespace Input { class InputDevice; } }
 
 /// The module data that the game needs.
-class GameModule : private idlib::non_copyable, public Ego::Physics::ICollisionWorld
+class GameModule : private idlib::non_copyable,
+                   public Ego::Physics::ICollisionWorld,
+                   public Ego::Entities::IObjectWorld
 {
 public:
     static constexpr float PITDEPTH = -60;  ///< Depth to kill character
@@ -154,7 +157,7 @@ public:
     * @brief
     *   Get list of all teams in this Module. Teams determine who like each other and who don't
     **/
-    std::vector<Team>& getTeamList() {return _teamList;}
+    std::vector<Team>& getTeamList() override {return _teamList;}
 
     ObjectRef getTeamLeaderRef(TEAM_REF teamRef) const;
 
@@ -168,7 +171,7 @@ public:
     * @return
     *   Get the ObjectHandler associated with this Module instance
     **/
-    ObjectHandler& getObjectHandler() {return _gameObjects;}
+    ObjectHandler& getObjectHandler() override {return _gameObjects;}
 
     /**
     * @return

@@ -1,17 +1,20 @@
 #include "egolib/game/Physics/ParticlePhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object/team access (the entity-world seam)
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"    // activeCollisionWorld() terrain queries (the mesh-query seam)
 #include "egolib/Physics/MeshLookupTables.hpp"   // g_meshLookupTables
+#include "egolib/FileFormats/map_fx.hpp"          // TWIST_FLAT, MAPFX_SLIPPY (was via Module.hpp -> mesh.h)
 #include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Module/Module.hpp"
 
 namespace
 {
-GameModule& activeModule()
+/// The entity world the physics step queries (object container + team list), reached through
+/// the lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule /
+/// GameSessionContext).
+Ego::Entities::IObjectWorld& objectWorld()
 {
-    return GameSessionContext::get().activeModule();
+    return Ego::Entities::activeObjectWorld();
 }
 
 /// The terrain world the physics step queries (slope/elevation/slippy/water), reached
@@ -354,10 +357,10 @@ void ParticlePhysics::updateHoming()
     Vector3f vdiff = ptarget->getPosition() - _particle.getPosition();
     vdiff.z() += targetPhysical.getCurrentBump().height * 0.5f;
 
-    float min_length = 2 * 5 * 256 * (FLOAT_TO_FP8(activeModule().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
+    float min_length = 2 * 5 * 256 * (FLOAT_TO_FP8(objectWorld().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
 
     // make a little incertainty about the target
-    float uncertainty = 256.0f * (1.0f - FLOAT_TO_FP8(activeModule().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
+    float uncertainty = 256.0f * (1.0f - FLOAT_TO_FP8(objectWorld().getObjectHandler().get(_particle.owner_ref)->getAttribute(Ego::Attribute::INTELLECT)) / (float)PERFECTBIG);
 
     Vector3f vdither;
     int ival;
@@ -413,7 +416,7 @@ void ParticlePhysics::updateFloorFriction()
     Vector3f floor_acc = idlib::zero<Vector3f>();
     float temp_friction_xy = 1.0f;
 
-    const std::shared_ptr<Object> &platform = activeModule().getObjectHandler()[_particle.onwhichplatform_ref];
+    const std::shared_ptr<Object> &platform = objectWorld().getObjectHandler()[_particle.onwhichplatform_ref];
     if (platform)
     {
         temp_friction_xy = 1.0f - PLATFORM_STICKINESS;
@@ -498,14 +501,14 @@ void ParticlePhysics::updateGravity()
     //Some particles can have a special gravity field that pulls or pushes
     if(_particle.getProfile()->getGravityPull() != 0.0f) {
         float pullDistance = _particle.getProfile()->bump_size * 3.0f;
-        const auto &particleTeam = activeModule().getTeamList()[_particle.team];
+        const auto &particleTeam = objectWorld().getTeamList()[_particle.team];
 
         //Pull all nearby objects
         std::vector<ObjectRef> affectedObjectRefs;
-        activeModule().getObjectHandler().findObjectRefs(_particle.getPosX(), _particle.getPosY(), pullDistance, affectedObjectRefs, false);
+        objectWorld().getObjectHandler().findObjectRefs(_particle.getPosX(), _particle.getPosY(), pullDistance, affectedObjectRefs, false);
         for (const ObjectRef& objectRef : affectedObjectRefs)
         {
-            Object* object = activeModule().getObjectHandler().get(objectRef);
+            Object* object = objectWorld().getObjectHandler().get(objectRef);
             if (object == nullptr || object->isTerminated()) {
                 continue;
             }
@@ -559,7 +562,7 @@ void ParticlePhysics::updateEnviroment()
 
     Ego::prt_environment_t *penviro = &(_particle.enviro);
 
-    const std::shared_ptr<Object>& platform = activeModule().getObjectHandler()[_particle.onwhichplatform_ref];
+    const std::shared_ptr<Object>& platform = objectWorld().getObjectHandler()[_particle.onwhichplatform_ref];
 
     //---- character "floor" level
     penviro->floor_level = collisionWorld().getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
