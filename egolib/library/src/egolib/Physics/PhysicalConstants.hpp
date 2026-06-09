@@ -17,10 +17,15 @@
 //*
 //********************************************************************************************
 
-/// @file egolib/game/PhysicalConstants.cpp
+/// @file egolib/Physics/PhysicalConstants.hpp
 /// @brief invariants & defaults of the game's physics system
 
 #pragma once
+
+#include "egolib/integrations/math.hpp"  // Ego::Vector3f
+
+#include <cstdint>
+#include <limits>
 
 namespace Ego
 {

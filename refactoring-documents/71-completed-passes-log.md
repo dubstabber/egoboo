@@ -1402,6 +1402,22 @@ Branch `fix/gl-texture-delete-on-loading-thread`. A **pre-existing** crash (not 
 
 ---
 
+## egolib-physics decoupling front (2026-06-09)
+
+Branch `refactor/egolib-physics-decoupling`. The original next-heavy-front scout's runner-up, now unblocked (the Entities↔game `.cpp` slice it was gated on landed). Goal: pay down `game/Physics/` → `game/` coupling toward an eventual `egolib-physics` link target, growing the lower-layer nucleus seeded by the Collidable + ICollisionWorld relocation. Five verified passes; build 0 / validator `test.mod` 0/0 / ctest -j1 **815/817** / menu smoke clean throughout.
+
+- **Pass 1 — relocate `PhysicalConstants.hpp` down.** The game's physics invariants/defaults (gravity/friction constants, `Environment` + `g_environment`, `CHR_INFINITE_WEIGHT`/`CHR_MAX_WEIGHT`, `STOP_BOUNCING`, `MOUNTTOLERANCE`) are pure-data but lived in `game/` while being consumed UP from lower layers. `git mv game/Physics/PhysicalConstants.hpp → egolib/Physics/PhysicalConstants.hpp` (joining the nucleus); made it self-contained (it used `Vector3f`/`std::numeric_limits`/`uint32_t` with ZERO includes → added `integrations/math.hpp` + `<limits>` + `<cstdint>`); repointed 12 includers + CMake. **Fixed 5 upward-layering violations** (`Entities/{Object_appearance,Object_attributes,Object_update,Particle_spawn}` + `Profiles/ObjectProfile_export` no longer reach UP into `game/Physics/`).
+- **Pass 2 — `CollisionSystem` + `ParticlePhysics` off EngineContext.** Both used it only for `particleHandler` → `activeParticleHandler()` (the service-hub seam). Both drop `EngineContext.hpp`.
+- **Pass 3 — lower-layer `g_environment`'s definition.** It was still defined in `game/physics.c`, so an `egolib-physics` library would have an undefined reference. Moved the definition into a new `egolib/Physics/PhysicalConstants.cpp`; the PhysicalConstants module (header + storage) is now fully lower-layer.
+- **Pass 4 — `particle_collision.c` off EngineContext.** Its four services all have seams now: `billboardSystem` (×13) → `Ego::Graphics::activeBillboardSystem()`, `particleHandler` (×8) → `activeParticleHandler()`, `profileSystem` (×2) → `activeProfileSystem()`, `audioSystem` (×1, via the file-local helper) → `activeAudioSystem()`. Drops `EngineContext.hpp`.
+- **Pass 5 — `ObjectPhysics` off EngineContext + GameEngine.** Used GameEngine for `engine().getCurrentUpdateFrame()` (×2) — which is *literally* `return GameSessionContext::get().worldUpdateCount();` (GameEngine.cpp:641), the same counter → `worldUpdateCount()` — and `GameEngine::GAME_TARGET_UPS` (×2) → `ONESECOND` (value-identical). Drops both `EngineContext.hpp` and `GameEngine.hpp`.
+
+**Result.** The egolib-physics nucleus is now Collidable + ICollisionWorld + **PhysicalConstants** (header + storage, fully lower-layer). **All four `game/Physics/` impl TUs are EngineContext-free**; their `game/` include total dropped **26 → 19** (CollisionSystem 4→3, ObjectPhysics 7→4, ParticlePhysics 6→4, particle_collision 9→8), and egolib `::get()` fell **752 → 725**. Behavior-identical throughout (relocations + value-identical-counter/constant swaps via equivalent accessors).
+
+**Deferred hard core (the real link-split blocker).** The remaining `game/` edges on the physics TUs are genuine game coupling, not include hygiene: `GameSessionContext::activeModule()` and the **`GameModule` mesh queries** (`getMeshPointer()` → `get_twist`/`getElevation`/`test_fx`/…), `game.h`/`graphic.h`/`physics.h`, `Module.hpp`, `Shop`, `CharacterMatrix`, and `game/Graphics/Billboard*`. Decoupling the mesh queries means **extending the `ICollisionWorld` DIP seam** (today just `isInside`/`getTileIndex`) to cover them — and per the methodology that surgery must be **gated behind collision-pipeline characterization tests** (the pure swept-bounds/normal math is covered; `do_chr_prt_collision`/`particle_collision.c` pipeline behaviour is not). That is the next heavy thrust for this front, distinct from these bounded include/EngineContext wins.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:

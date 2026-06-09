@@ -23,7 +23,7 @@
 
 #include "egolib/bbox.h"
 #include "egolib/PhysicsData.h"  // orientation_t, apos_t, phys_data_t, PLATTOLERANCE, PHYS_PLATFORM_*, PLATFORM_STICKINESS
-#include "egolib/game/Physics/PhysicalConstants.hpp"
+#include "egolib/Physics/PhysicalConstants.hpp"
 
 
 //--------------------------------------------------------------------------------------------

@@ -43,7 +43,7 @@
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GameStates/VictoryScreen.hpp"
-#include "egolib/game/Physics/PhysicalConstants.hpp"
+#include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Script/Interpreter/SafeCast.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 

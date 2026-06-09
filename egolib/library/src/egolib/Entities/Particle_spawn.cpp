@@ -22,7 +22,7 @@
 
 #include "egolib/Entities/Particle_internal.h"
 #include "egolib/game/game.h"                         // prt_find_target
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
 
 namespace Ego
 {

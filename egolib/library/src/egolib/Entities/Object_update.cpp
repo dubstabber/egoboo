@@ -25,7 +25,7 @@
 #include "egolib/game/Core/EngineContext.hpp"        // EngineContext::particleHandler / tryActivePlayingState
 #include "egolib/game/GameStates/PlayingState.hpp"   // PlayingState + getMiniMap (minimap reveal)
 #include "egolib/game/GUI/MiniMap.hpp"               // MiniMap::setVisible / setShowPlayerPosition
-#include "egolib/game/Physics/PhysicalConstants.hpp" // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
+#include "egolib/Physics/PhysicalConstants.hpp" // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 
 namespace
 {

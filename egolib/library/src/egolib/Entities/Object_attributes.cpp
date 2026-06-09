@@ -26,7 +26,7 @@
 #include "egolib/Logic/IPerkHandler.hpp"               // Ego::Perks::activePerkHandler + Perk
 #include "egolib/Log/_Include.hpp"                     // Log::activeTarget
 #include "egolib/game/Graphics/Billboard.hpp"         // Ego::Graphics::Billboard::Flags
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 #include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
 
 namespace

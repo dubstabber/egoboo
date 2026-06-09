@@ -17,7 +17,7 @@
 //*
 //********************************************************************************************
 #include "egolib/game/Physics/particle_collision.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/physics.h"
@@ -39,7 +39,7 @@ GameModule& activeModule()
 
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return activeAudioSystem();
 }
 
 uint32_t worldUpdateCount()
@@ -331,7 +331,7 @@ bool do_prt_platform_detection( const ObjectRef ichr_a, const ParticleRef iprt_b
     pchr_a = activeModule().getObjectHandler().get( ichr_a );
 
     // make sure that B is valid
-    const std::shared_ptr<Ego::Particle> &pprt_b = EngineContext::get().particleHandler()[iprt_b];
+    const std::shared_ptr<Ego::Particle> &pprt_b = activeParticleHandler()[iprt_b];
     if ( !pprt_b || pprt_b->isTerminated() ) return false;
 
     //Already attached to a platform?
@@ -653,12 +653,12 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
         // Tell the players that the attack was somehow deflected
         if (0 == constDamageableCharacter.getDamageTimer())
         {
-            EngineContext::get().particleHandler().spawnDefencePing(activeModule().getObjectHandler()[pdata.pchr->getObjRef()], activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
+            activeParticleHandler().spawnDefencePing(activeModule().getObjectHandler()[pdata.pchr->getObjRef()], activeModule().getObjectHandler()[pdata.pprt->owner_ref]);
             if(using_shield) {
-                EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Blocked!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
+                Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Blocked!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
             }
             else {
-                EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Deflected!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
+                Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Deflected!", Ego::Colour4f::white(), Ego::Colour4f(getBlockActionColour(), 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
             }
         }
     }
@@ -674,7 +674,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
     IScriptable& scriptableCharacter = scriptable(*pdata.pchr);
 
     //Get the Profile of the Object that spawned this particle (i.e the weapon itself, not the holder)
-    const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(pdata.pprt->getSpawnerProfile());
+    const std::shared_ptr<ObjectProfile> &spawnerProfile = activeProfileSystem().getProfile(pdata.pprt->getSpawnerProfile());
     if(spawnerProfile != nullptr) { //global particles do not have a spawner profile, so this is possible
         // Check all enchants to see if they are removed
         for(const std::shared_ptr<Ego::Enchantment> &enchant : pdata.pchr->getActiveEnchants()) {
@@ -733,7 +733,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
         scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setGrogTimer(std::max(static_cast<unsigned>(pdata.pchr->getGrogTimer()), pdata.ppip->grogTime));
 
-        EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Groggy!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
+        Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Groggy!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
     }
 
     // Do daze
@@ -742,7 +742,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
         scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
         pdata.pchr->setDazeTimer(std::max(static_cast<unsigned>(pdata.pchr->getDazeTimer()), pdata.ppip->dazeTime));
 
-        EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Dazed!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
+        Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Dazed!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
     }
 
     //---- Damage the character, if necessary
@@ -779,7 +779,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
                             pdata.pchr->setDazeTimer(pdata.pchr->getDazeTimer() + 3);
 
-                            EngineContext::get().billboardSystem().makeBillboard(powner->getObjRef(), "Crackshot!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
+                            Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Crackshot!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                         }
                     }
 
@@ -788,7 +788,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                         scriptableCharacter.addAIAlertBits(ALERTIF_CONFUSED);
                         pdata.pchr->setGrogTimer(pdata.pchr->getGrogTimer() + 2);
 
-                        EngineContext::get().billboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
+                        Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Brutal Strike!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                         audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                     }
                 }
@@ -817,10 +817,10 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     if(pdata.pprt->damagetype == DAMAGE_ZAP && powner->hasPerk(Ego::Perks::DISINTEGRATE)) {
                         if(Random::nextFloat()*100.0f <= powner->getAttribute(Ego::Attribute::INTELLECT) * 0.025f) {
                             modifiedDamage.base += FLOAT_TO_FP8(100.0f);
-                            EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Disintegrated!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 6, Ego::Graphics::Billboard::Flags::All);
+                            Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Disintegrated!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 6, Ego::Graphics::Billboard::Flags::All);
 
                             //Disintegrate effect
-                            EngineContext::get().particleHandler().spawnGlobalParticle(pdata.pchr->getPosition(), ATK_FRONT, LocalParticleProfileRef(PIP_DISINTEGRATE_START), 0);
+                            activeParticleHandler().spawnGlobalParticle(pdata.pchr->getPosition(), ATK_FRONT, LocalParticleProfileRef(PIP_DISINTEGRATE_START), 0);
                         }
                     }
                 }
@@ -854,7 +854,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             grimReaperDamage.rand = 0.0f;
                             damageableCharacter.damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team,
                                                        activeModule().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
-                            EngineContext::get().billboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
+                            Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                             audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                         }
                     }
@@ -866,7 +866,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     if(powner->hasPerk(Ego::Perks::DEADLY_STRIKE) && powner->getExperienceLevel() >= Random::getPercent() && DamageType_isPhysical(pdata.pprt->damagetype)){
                         //Gain +0.25 damage per Agility
                         modifiedDamage.base += FLOAT_TO_FP8(powner->getAttribute(Ego::Attribute::AGILITY) * 0.25f);
-                        EngineContext::get().billboardSystem().makeBillboard(powner->getObjRef(), "Deadly Strike", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
+                        Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Deadly Strike", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                         audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                     }
                 }
@@ -884,7 +884,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                     scriptableCharacter.addAIAlertBits(ALERTIF_HITVULNERABLE);
 
                     // Initialize for the billboard
-                    EngineContext::get().billboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Super Effective!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
+                    Ego::Graphics::activeBillboardSystem().makeBillboard(pdata.pchr->getObjRef(), "Super Effective!", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
                 }                
             }
 
@@ -901,7 +901,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                 if(Random::getPercent() <= critChance) {
                     modifiedDamage.base += modifiedDamage.rand;
                     modifiedDamage.rand = 0;
-                    EngineContext::get().billboardSystem().makeBillboard(powner->getObjRef(), "Critical Hit!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
+                    Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Critical Hit!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                     audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                 }
             }
@@ -1031,9 +1031,9 @@ bool do_chr_prt_collision_init( const ObjectRef ichr, const ParticleRef iprt, ch
 
     *pdata = chr_prt_collision_data_t();
 
-    if ( !EngineContext::get().particleHandler()[iprt] ) return false;
+    if ( !activeParticleHandler()[iprt] ) return false;
     pdata->iprt = iprt;
-    pdata->pprt = EngineContext::get().particleHandler()[iprt];
+    pdata->pprt = activeParticleHandler()[iprt];
 
     // make sure that it is on
     if ( !activeModule().getObjectHandler().exists( ichr ) ) return false;
@@ -1109,7 +1109,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
             float chance = attacker->getAttribute(Ego::Attribute::INTELLECT) * 0.03f - pdata.pchr->getAttribute(Ego::Attribute::MIGHT)*0.01f;
             if(Random::nextFloat() <= chance) {
                 knockbackFactor += 5.0f;
-                EngineContext::get().billboardSystem().makeBillboard(attacker->getObjRef(), "Telekinetic Staff!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 2, Ego::Graphics::Billboard::Flags::All);
+                Ego::Graphics::activeBillboardSystem().makeBillboard(attacker->getObjRef(), "Telekinetic Staff!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 2, Ego::Graphics::Billboard::Flags::All);
             }
         }
     }
@@ -1313,7 +1313,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
             audioSystem().playSound(cn_data.pchr->getPosition(), audioSystem().getGlobalSound(GSND_DODGE));
 
             // Initialize for the billboard
-            EngineContext::get().billboardSystem().makeBillboard( cn_data.pchr->getObjRef(), "Dodged!", Ego::Colour4f::white(), Ego::Colour4f(1.0f, 0.6f, 0.0f, 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
+            Ego::Graphics::activeBillboardSystem().makeBillboard( cn_data.pchr->getObjRef(), "Dodged!", Ego::Colour4f::white(), Ego::Colour4f(1.0f, 0.6f, 0.0f, 1.0f), 3, Ego::Graphics::Billboard::Flags::All);
         }
 
 
@@ -1368,7 +1368,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
     /// @author ZZ
     /// @details This function is for catching characters on fire and such
 
-    const std::shared_ptr<Ego::Particle> &pprt = EngineContext::get().particleHandler()[particle];
+    const std::shared_ptr<Ego::Particle> &pprt = activeParticleHandler()[particle];
     if(!pprt || pprt->isTerminated()) {
         return 0;
     }
@@ -1395,7 +1395,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
         // Spawn new enchantments
         if (ppip->spawnenchant) 
         {
-            const std::shared_ptr<ObjectProfile> &spawnerProfile = EngineContext::get().profileSystem().getProfile(pprt->getSpawnerProfile());
+            const std::shared_ptr<ObjectProfile> &spawnerProfile = activeProfileSystem().getProfile(pprt->getSpawnerProfile());
             pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), activeModule().getObjectHandler()[pprt->owner_ref], Object::INVALID_OBJECT);
         }
 
@@ -1458,7 +1458,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                 }
 
                 // determine if some of the vertex sites are already occupied
-                for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
+                for(const std::shared_ptr<Ego::Particle> &particle : activeParticleHandler().iterator())
                 {
                     if(particle->isTerminated()) continue;
 
@@ -1489,7 +1489,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                         }
 
                         std::shared_ptr<Ego::Particle> bs_part = 
-                            EngineContext::get().particleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(physicalCharacter.getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
+                            activeParticleHandler().spawnLocalParticle(pchr->getPosition(), idlib::canonicalize(physicalCharacter.getFacingZ()), ObjectProfileRef(pprt->getSpawnerProfile()), ppip->bumpspawn._lpip,
                                                                       character, bestvertex + 1, pprt->team, pprt->owner_ref, particle, cnt, character);
 
                         if (bs_part)

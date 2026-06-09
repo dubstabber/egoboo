@@ -24,7 +24,7 @@
 #include "egolib/game/mesh.h"
 #include "egolib/game/lighting.h"
 #include "egolib/game/physics.h"
-#include "egolib/game/Physics/PhysicalConstants.hpp"
+#include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"

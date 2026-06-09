@@ -22,12 +22,10 @@
 /// @author Johan Jansen aka Zefz
 #include "ObjectPhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
+#include "egolib/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -37,9 +35,9 @@ GameModule& activeModule()
     return GameSessionContext::get().activeModule();
 }
 
-GameEngine& engine()
+uint32_t worldUpdateCount()
 {
-    return EngineContext::get().engine();
+    return GameSessionContext::get().worldUpdateCount();
 }
 
 IScriptable& scriptable(Object& object)
@@ -187,8 +185,8 @@ void ObjectPhysics::updateMovement()
 
     //Determine acceleration/deceleration
     Vector2f acceleration;
-    acceleration.x() = (velocitySetpoint.x() - _object.getVelocity().x()) * (4.0f / GameEngine::GAME_TARGET_UPS);
-    acceleration.y() = (velocitySetpoint.y() - _object.getVelocity().y()) * (4.0f / GameEngine::GAME_TARGET_UPS);
+    acceleration.x() = (velocitySetpoint.x() - _object.getVelocity().x()) * (4.0f / ONESECOND);
+    acceleration.y() = (velocitySetpoint.y() - _object.getVelocity().y()) * (4.0f / ONESECOND);
 
     //How good grip do we have to add additional momentum?
     acceleration *= _traction;
@@ -358,7 +356,7 @@ float ObjectPhysics::getMaxSpeed() const
     }
 
     //Rally Bonus? (+10%)
-    if(_object.hasPerk(Ego::Perks::RALLY) && engine().getCurrentUpdateFrame() < _object.getRallyDuration()) {
+    if(_object.hasPerk(Ego::Perks::RALLY) && worldUpdateCount() < _object.getRallyDuration()) {
         speedBonus += 0.1f;
     }    
 
@@ -500,7 +498,7 @@ bool ObjectPhysics::attachToPlatform(ObjectRef platformRef)
 
     // do the attachment
     _object.onwhichplatform_ref    = platform->getObjRef();
-    _object.onwhichplatform_update = engine().getCurrentUpdateFrame();
+    _object.onwhichplatform_update = worldUpdateCount();
     _object.targetplatform_ref     = ObjectRef::Invalid;
 
     _platformOffset.x() = _object.getPosX() - platform->getPosX();
