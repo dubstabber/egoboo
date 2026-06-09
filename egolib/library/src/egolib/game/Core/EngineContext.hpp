@@ -9,7 +9,7 @@
 #include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"

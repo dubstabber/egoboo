@@ -10,7 +10,7 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
@@ -22,14 +22,12 @@ namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
-Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
 IProfileSystem* g_activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
-Ego::Graphics::IBillboardSystem* activeBillboardSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
 }
@@ -224,48 +222,38 @@ const Ego::Input::IInputSystem& EngineContext::inputSystem() const
     return *currentInputSystem;
 }
 
+// The perk-handler ownership now lives in the lower-layer egolib/Logic seam
+// (Ego::Perks::activePerkHandler); these methods are thin delegators so existing
+// EngineContext callers and the install-via-EngineContext tests keep routing through
+// the same single installed pointer.
 void EngineContext::installPerkHandler(Ego::Perks::IPerkHandler& perkHandler)
 {
-    if (activePerkHandler)
-    {
-        throw std::logic_error("perk handler already installed");
-    }
-    activePerkHandler = &perkHandler;
+    Ego::Perks::installActivePerkHandler(perkHandler);
 }
 
 void EngineContext::clearPerkHandler()
 {
-    activePerkHandler = nullptr;
+    Ego::Perks::clearActivePerkHandler();
 }
 
 Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler()
 {
-    return activePerkHandler;
+    return Ego::Perks::tryActivePerkHandler();
 }
 
 const Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler() const
 {
-    return activePerkHandler;
+    return Ego::Perks::tryActivePerkHandler();
 }
 
 Ego::Perks::IPerkHandler& EngineContext::perkHandler()
 {
-    Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
-    if (!currentPerkHandler)
-    {
-        throw std::logic_error("no active perk handler");
-    }
-    return *currentPerkHandler;
+    return Ego::Perks::activePerkHandler();
 }
 
 const Ego::Perks::IPerkHandler& EngineContext::perkHandler() const
 {
-    const Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
-    if (!currentPerkHandler)
-    {
-        throw std::logic_error("no active perk handler");
-    }
-    return *currentPerkHandler;
+    return Ego::Perks::activePerkHandler();
 }
 
 void EngineContext::installImageManager(Ego::IImageManager& imageManager)
@@ -572,48 +560,38 @@ const ICameraSystem& EngineContext::cameraSystem() const
     return *currentCameraSystem;
 }
 
+// The billboard-system ownership now lives in the lower-layer egolib/Graphics seam
+// (Ego::Graphics::activeBillboardSystem); these methods are thin delegators so the
+// existing EngineContext callers and the install-via-EngineContext test stubs keep
+// routing through the same single installed pointer.
 void EngineContext::installBillboardSystem(Ego::Graphics::IBillboardSystem& billboardSystem)
 {
-    if (activeBillboardSystem)
-    {
-        throw std::logic_error("billboard system already installed");
-    }
-    activeBillboardSystem = &billboardSystem;
+    Ego::Graphics::installActiveBillboardSystem(billboardSystem);
 }
 
 void EngineContext::clearBillboardSystem()
 {
-    activeBillboardSystem = nullptr;
+    Ego::Graphics::clearActiveBillboardSystem();
 }
 
 Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem()
 {
-    return activeBillboardSystem;
+    return Ego::Graphics::tryActiveBillboardSystem();
 }
 
 const Ego::Graphics::IBillboardSystem* EngineContext::tryBillboardSystem() const
 {
-    return activeBillboardSystem;
+    return Ego::Graphics::tryActiveBillboardSystem();
 }
 
 Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem()
 {
-    Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
-    if (!currentBillboardSystem)
-    {
-        throw std::logic_error("no active billboard system");
-    }
-    return *currentBillboardSystem;
+    return Ego::Graphics::activeBillboardSystem();
 }
 
 const Ego::Graphics::IBillboardSystem& EngineContext::billboardSystem() const
 {
-    const Ego::Graphics::IBillboardSystem* currentBillboardSystem = tryBillboardSystem();
-    if (!currentBillboardSystem)
-    {
-        throw std::logic_error("no active billboard system");
-    }
-    return *currentBillboardSystem;
+    return Ego::Graphics::activeBillboardSystem();
 }
 
 void EngineContext::installTextureAtlasManager(Ego::Graphics::ITextureAtlasManager& textureAtlasManager)

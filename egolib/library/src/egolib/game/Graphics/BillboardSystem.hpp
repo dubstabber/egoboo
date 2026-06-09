@@ -26,7 +26,7 @@
 #include "egolib/_math.h"                  // Vector3f
 #include "egolib/Time/Time.hpp"            // ::Time::Ticks
 #include "egolib/typedef.h"                // ObjectRef
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 
 // Forward declarations.
 namespace Ego { class Texture; }

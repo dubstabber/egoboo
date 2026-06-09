@@ -168,6 +168,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/GraphicsSystemNew.hpp
     src/egolib/Graphics/GraphicsWindow.cpp
     src/egolib/Graphics/GraphicsWindow.hpp
+    src/egolib/Graphics/IBillboardSystem.cpp
+    src/egolib/Graphics/IBillboardSystem.hpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/IndexFormat.hpp
     src/egolib/Graphics/MD2Model.cpp
@@ -270,6 +272,7 @@ set(EGOLIB_LOGIC_SOURCES
     src/egolib/Logic/FeedbackType.hpp
     src/egolib/Logic/GameDifficulty.hpp
     src/egolib/Logic/Gender.hpp
+    src/egolib/Logic/IPerkHandler.cpp
     src/egolib/Logic/IPerkHandler.hpp
     src/egolib/Logic/MissileTreatment.cpp
     src/egolib/Logic/MissileTreatment.hpp

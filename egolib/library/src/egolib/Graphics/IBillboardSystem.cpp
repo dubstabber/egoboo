@@ -16,40 +16,51 @@
 //*    along with Egoboo.  If not, see <http://www.gnu.org/licenses/>.
 //*
 //********************************************************************************************
-#pragma once
 
-#include "egolib/Logic/Perk.hpp"
+/// @file egolib/Graphics/IBillboardSystem.cpp
+/// @brief Ownership of the installed active billboard system.
 
-#include <string>
+#include "egolib/Graphics/IBillboardSystem.hpp"
+
+#include <stdexcept>
 
 namespace Ego
 {
-namespace Perks
+namespace Graphics
 {
 
-class IPerkHandler
+namespace
 {
-public:
-    virtual ~IPerkHandler() = default;
+IBillboardSystem* g_activeBillboardSystem = nullptr;
+}
 
-    virtual const Perk& getPerk(PerkID type) const = 0;
-    virtual PerkID fromString(const std::string& name) const = 0;
-};
+void installActiveBillboardSystem(IBillboardSystem& billboardSystem)
+{
+    if (g_activeBillboardSystem)
+    {
+        throw std::logic_error("billboard system already installed");
+    }
+    g_activeBillboardSystem = &billboardSystem;
+}
 
-/// @brief Install @a perkHandler as the active perk handler.
-/// @throw std::logic_error if a perk handler is already installed
-///        (mirrors the previous EngineContext::installPerkHandler semantics).
-void installActivePerkHandler(IPerkHandler& perkHandler);
+void clearActiveBillboardSystem()
+{
+    g_activeBillboardSystem = nullptr;
+}
 
-/// @brief Clear the active perk handler.
-void clearActivePerkHandler();
+IBillboardSystem* tryActiveBillboardSystem()
+{
+    return g_activeBillboardSystem;
+}
 
-/// @brief The installed perk handler, or @a nullptr if none is installed.
-IPerkHandler* tryActivePerkHandler();
+IBillboardSystem& activeBillboardSystem()
+{
+    if (!g_activeBillboardSystem)
+    {
+        throw std::logic_error("no active billboard system");
+    }
+    return *g_activeBillboardSystem;
+}
 
-/// @brief The installed perk handler.
-/// @throw std::logic_error if no perk handler is installed.
-IPerkHandler& activePerkHandler();
-
-} // namespace Perks
+} // namespace Graphics
 } // namespace Ego

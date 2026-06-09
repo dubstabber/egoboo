@@ -33,7 +33,7 @@
 #include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
-#include "egolib/game/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Inventory.hpp"

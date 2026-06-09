@@ -21,7 +21,7 @@
 /// @brief ObjectProfile loading and parsing helpers.
 
 #include "egolib/Profiles/ObjectProfile_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Logic/IPerkHandler.hpp"  // Ego::Perks::IPerkHandler + activePerkHandler
 #include "egolib/fileutil.h"
 
 namespace
@@ -621,13 +621,12 @@ bool ObjectProfile::loadDataFile(const std::string &filePath, const LoadServices
 
 std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& folderPath, ObjectProfileRef ref, bool lightWeight)
 {
-    auto& context = EngineContext::get();
     const LoadServices services{
-        context.logTarget(),
-        context.perkHandler(),
-        context.profileSystem(),
-        context.config(),
-        !lightWeight ? context.tryAudioSystem() : nullptr
+        Log::activeTarget(),
+        Ego::Perks::activePerkHandler(),
+        activeProfileSystem(),
+        Ego::activeConfig(),
+        !lightWeight ? tryActiveAudioSystem() : nullptr
     };
 
     // Assert the reference is valid.
