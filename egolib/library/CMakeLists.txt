@@ -851,14 +851,26 @@ if (WIN32)
   SET_SOURCE_FILES_PROPERTIES(src/egolib/Platform/file_win.c PROPERTIES LANGUAGE CXX)
 endif()
 
-# == egolib-foundation sub-library carve =======================================================
-# The dependency-closed lower layer of egolib: every external symbol of these translation units
-# resolves either within this set or in idlib / the C++ runtime (verified acyclic by an nm
-# symbol-closure analysis -- see refactoring-documents). The rest of egolib
-# (Entities / game / Graphics / the EgoScript VM / ...) depends on this foundation ONE-WAY, so it
-# links as a clean lower archive. This is the first real link-split of the historically monolithic
-# egolib-library; idlib's eleven sub-libraries are the target pattern.
-set(EGOLIB_FOUNDATION_SOURCES
+# == egolib three-layer sub-library carve ======================================================
+# egolib links as an acyclic chain of three static archives (nm symbol-closure verified -- see
+# refactoring-documents):
+#
+#   egolib-foundation-base  <--  egolib-physics  <--  egolib-library
+#
+# * egolib-foundation-base -- the dependency-closed lower layer (Math/Log/Mesh/VFS/FileFormats/Time/
+#   Platform + the Script DDL/PDL lexer + toplevel math/IO). Every external symbol resolves within
+#   this set or in idlib / the C++ runtime.
+# * egolib-physics -- a thin middle layer (the collision nucleus: Collidable, ICollisionWorld,
+#   MeshLookupTables, PhysicalConstants). It references ONLY foundation-base symbols downward
+#   (vec_to_facing in _math.c, twist_to_normal in map_functions.c) plus its own intra-nucleus
+#   symbols; no base TU references a physics symbol back (verified acyclic). game/physics.c is NOT
+#   here -- it needs the upper Entities symbol Ego::Particle::isTerminated and stays in egolib-library.
+# * egolib-library -- the rest (Entities / game / Graphics / the EgoScript VM / ...), depending on
+#   the two lower layers ONE-WAY.
+#
+# This deepens the first link-split of the historically monolithic egolib-library; idlib's eleven
+# sub-libraries are the target pattern.
+set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Clock.cpp
     src/egolib/Debug.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
@@ -895,10 +907,6 @@ set(EGOLIB_FOUNDATION_SOURCES
     src/egolib/Math/Standard.cpp
     src/egolib/Mesh/Info.cpp
     src/egolib/Mesh/TileFX.cpp
-    src/egolib/Physics/Collidable.cpp
-    src/egolib/Physics/ICollisionWorld.cpp
-    src/egolib/Physics/MeshLookupTables.cpp
-    src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Script/Buffer.cpp
     src/egolib/Script/CLogEntry.cpp
     src/egolib/Script/Constant.cpp
@@ -936,40 +944,55 @@ set(EGOLIB_FOUNDATION_SOURCES
     src/egolib/typedef.c
     src/egolib/vfs.c
 )
-# The OS file-system backend belongs in the foundation too: foundation TUs call its fs_* functions,
-# so leaving it in egolib-library would form a foundation->library link cycle on each platform.
+# The OS file-system backend belongs in the foundation base too: foundation TUs call its fs_*
+# functions, so leaving it in egolib-library would form a base->library link cycle on each platform.
 if (UNIX AND NOT APPLE)
-    list(APPEND EGOLIB_FOUNDATION_SOURCES src/egolib/Platform/file_linux.c)
+    list(APPEND EGOLIB_FOUNDATION_BASE_SOURCES src/egolib/Platform/file_linux.c)
 elseif (WIN32)
-    list(APPEND EGOLIB_FOUNDATION_SOURCES src/egolib/Platform/file_win.c)
+    list(APPEND EGOLIB_FOUNDATION_BASE_SOURCES src/egolib/Platform/file_win.c)
 endif()
 
-# Carve the foundation sources out of the monolithic accumulation; whatever remains is egolib-library.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_SOURCES})
+# The egolib-physics middle layer: the collision nucleus. Depends one-way on the foundation base.
+set(EGOLIB_PHYSICS_SOURCES
+    src/egolib/Physics/Collidable.cpp
+    src/egolib/Physics/ICollisionWorld.cpp
+    src/egolib/Physics/MeshLookupTables.cpp
+    src/egolib/Physics/PhysicalConstants.cpp
+)
 
-# Re-assert C-as-C++ on the foundation's C sources (the SOURCE_FILES-scoped property set above is
-# kept, but assert it here so the foundation target is self-contained).
-foreach(_src ${EGOLIB_FOUNDATION_SOURCES})
+# Carve both lower layers out of the monolithic accumulation; whatever remains is egolib-library.
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES})
+
+# Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
+# but assert it here so the foundation-base and physics targets are self-contained). The 4 physics
+# TUs are .cpp so the filter is a no-op for them.
+foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES})
     if(_src MATCHES "\\.[ch]$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
 endforeach()
 
-# Define products.
-add_library(egolib-foundation-library STATIC ${EGOLIB_FOUNDATION_SOURCES})
-target_include_directories(egolib-foundation-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-foundation-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+# Define products: the acyclic chain  egolib-foundation-base <- egolib-physics <- egolib-library.
+add_library(egolib-foundation-base STATIC ${EGOLIB_FOUNDATION_BASE_SOURCES})
+target_include_directories(egolib-foundation-base INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
+add_library(egolib-physics STATIC ${EGOLIB_PHYSICS_SOURCES})
+target_include_directories(egolib-physics INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-physics egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
 add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-library egolib-foundation-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-library egolib-physics idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
-    target_link_libraries(egolib-foundation-library Shlwapi.lib)
+    target_link_libraries(egolib-physics Shlwapi.lib)
+    target_link_libraries(egolib-foundation-base Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
-    target_link_libraries(egolib-foundation-library shlwapi)
+    target_link_libraries(egolib-physics shlwapi)
+    target_link_libraries(egolib-foundation-base shlwapi)
   endif()
 endif()
 
