@@ -895,11 +895,14 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/template.c
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
+    src/egolib/Graphics/Font.cpp
+    src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/PixelFormat.cpp
+    src/egolib/Graphics/TextureManager.cpp
     src/egolib/Graphics/VertexFormat.cpp
     src/egolib/IDSZ.cpp
     src/egolib/Image/Image.cpp
@@ -932,6 +935,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
     src/egolib/Profiles/RandomName.cpp
+    src/egolib/Renderer/DeferredTexture.cpp
+    src/egolib/Renderer/Texture.cpp
     src/egolib/Script/Buffer.cpp
     src/egolib/Script/CLogEntry.cpp
     src/egolib/Script/Constant.cpp
@@ -962,6 +967,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/egoboo_setup.c
     src/egolib/file_common.c
     src/egolib/fileutil.c
+    src/egolib/font_bmp.c
     src/egolib/frustum.c
     src/egolib/game/GUI/InputListener.cpp
     src/egolib/game/GUI/Material.cpp
