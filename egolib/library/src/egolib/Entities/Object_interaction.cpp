@@ -21,6 +21,8 @@
 /// @brief Holder, inventory, and latch-input Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/game/game.h"             // chr_do_latch_attack
+#include "egolib/game/Shop.hpp"           // Shop::drop
 #include "egolib/Audio/IAudioSystem.hpp"
 
 namespace

@@ -29,7 +29,6 @@
 #include "egolib/Entities/ObjectHandler.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"
 #include "egolib/Entities/Enchant.hpp"
-#include "egolib/game/game.h"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
