@@ -896,7 +896,11 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
+    src/egolib/Graphics/IndexFormat.cpp
+    src/egolib/Graphics/MD2Model.cpp
+    src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/PixelFormat.cpp
+    src/egolib/Graphics/VertexFormat.cpp
     src/egolib/IDSZ.cpp
     src/egolib/Image/Image.cpp
     src/egolib/Image/ImageLoader.cpp
@@ -960,6 +964,9 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/fileutil.c
     src/egolib/frustum.c
     src/egolib/game/GUI/InputListener.cpp
+    src/egolib/game/GUI/Material.cpp
+    src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
+    src/egolib/game/Graphics/Md2ModelRenderer.cpp
     src/egolib/game/lighting.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c
