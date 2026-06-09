@@ -35,7 +35,6 @@
 #include "egolib/Log/_Include.hpp"
 
 #include "egolib/endian.h"
-#include "egolib/fileutil.h"
 #include "egolib/strutil.h"
 
 #include "egolib/_math.h"
