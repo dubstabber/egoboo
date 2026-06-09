@@ -22,7 +22,6 @@ namespace
 {
 std::unique_ptr<GameEngine> activeEngine;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
-Ego::Perks::IPerkHandler* activePerkHandler = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
@@ -223,48 +222,38 @@ const Ego::Input::IInputSystem& EngineContext::inputSystem() const
     return *currentInputSystem;
 }
 
+// The perk-handler ownership now lives in the lower-layer egolib/Logic seam
+// (Ego::Perks::activePerkHandler); these methods are thin delegators so existing
+// EngineContext callers and the install-via-EngineContext tests keep routing through
+// the same single installed pointer.
 void EngineContext::installPerkHandler(Ego::Perks::IPerkHandler& perkHandler)
 {
-    if (activePerkHandler)
-    {
-        throw std::logic_error("perk handler already installed");
-    }
-    activePerkHandler = &perkHandler;
+    Ego::Perks::installActivePerkHandler(perkHandler);
 }
 
 void EngineContext::clearPerkHandler()
 {
-    activePerkHandler = nullptr;
+    Ego::Perks::clearActivePerkHandler();
 }
 
 Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler()
 {
-    return activePerkHandler;
+    return Ego::Perks::tryActivePerkHandler();
 }
 
 const Ego::Perks::IPerkHandler* EngineContext::tryPerkHandler() const
 {
-    return activePerkHandler;
+    return Ego::Perks::tryActivePerkHandler();
 }
 
 Ego::Perks::IPerkHandler& EngineContext::perkHandler()
 {
-    Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
-    if (!currentPerkHandler)
-    {
-        throw std::logic_error("no active perk handler");
-    }
-    return *currentPerkHandler;
+    return Ego::Perks::activePerkHandler();
 }
 
 const Ego::Perks::IPerkHandler& EngineContext::perkHandler() const
 {
-    const Ego::Perks::IPerkHandler* currentPerkHandler = tryPerkHandler();
-    if (!currentPerkHandler)
-    {
-        throw std::logic_error("no active perk handler");
-    }
-    return *currentPerkHandler;
+    return Ego::Perks::activePerkHandler();
 }
 
 void EngineContext::installImageManager(Ego::IImageManager& imageManager)

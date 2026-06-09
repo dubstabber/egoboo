@@ -16,40 +16,51 @@
 //*    along with Egoboo.  If not, see <http://www.gnu.org/licenses/>.
 //*
 //********************************************************************************************
-#pragma once
 
-#include "egolib/Logic/Perk.hpp"
+/// @file egolib/Logic/IPerkHandler.cpp
+/// @brief Ownership of the installed active perk handler.
 
-#include <string>
+#include "egolib/Logic/IPerkHandler.hpp"
+
+#include <stdexcept>
 
 namespace Ego
 {
 namespace Perks
 {
 
-class IPerkHandler
+namespace
 {
-public:
-    virtual ~IPerkHandler() = default;
+IPerkHandler* g_activePerkHandler = nullptr;
+}
 
-    virtual const Perk& getPerk(PerkID type) const = 0;
-    virtual PerkID fromString(const std::string& name) const = 0;
-};
+void installActivePerkHandler(IPerkHandler& perkHandler)
+{
+    if (g_activePerkHandler)
+    {
+        throw std::logic_error("perk handler already installed");
+    }
+    g_activePerkHandler = &perkHandler;
+}
 
-/// @brief Install @a perkHandler as the active perk handler.
-/// @throw std::logic_error if a perk handler is already installed
-///        (mirrors the previous EngineContext::installPerkHandler semantics).
-void installActivePerkHandler(IPerkHandler& perkHandler);
+void clearActivePerkHandler()
+{
+    g_activePerkHandler = nullptr;
+}
 
-/// @brief Clear the active perk handler.
-void clearActivePerkHandler();
+IPerkHandler* tryActivePerkHandler()
+{
+    return g_activePerkHandler;
+}
 
-/// @brief The installed perk handler, or @a nullptr if none is installed.
-IPerkHandler* tryActivePerkHandler();
-
-/// @brief The installed perk handler.
-/// @throw std::logic_error if no perk handler is installed.
-IPerkHandler& activePerkHandler();
+IPerkHandler& activePerkHandler()
+{
+    if (!g_activePerkHandler)
+    {
+        throw std::logic_error("no active perk handler");
+    }
+    return *g_activePerkHandler;
+}
 
 } // namespace Perks
 } // namespace Ego
