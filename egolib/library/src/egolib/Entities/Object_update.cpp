@@ -22,6 +22,21 @@
 
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/AI/LineOfSight.hpp"  // line_of_sight_info_t
+#include "egolib/game/Core/EngineContext.hpp"        // EngineContext::particleHandler / tryActivePlayingState
+#include "egolib/game/GameStates/PlayingState.hpp"   // PlayingState + getMiniMap (minimap reveal)
+#include "egolib/game/GUI/MiniMap.hpp"               // MiniMap::setVisible / setShowPlayerPosition
+
+namespace
+{
+/// @brief Minimap reveal helper. Sole consumer of EngineContext::tryActivePlayingState();
+///        kept TU-local so the 7-TU-propagating Object_internal.h no longer pulls the
+///        minimap reveal chain (EngineContext/GameEngine/PlayingState/MiniMap) into every
+///        Object_*.cpp.
+std::shared_ptr<PlayingState> tryActivePlayingState()
+{
+    return EngineContext::get().tryActivePlayingState();
+}
+} // namespace
 
 BIT_FIELD Object::getAIAlertBits() const
 {
