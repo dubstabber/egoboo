@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "egolib/game/physics.h"
+#include "egolib/Physics/physics.h"
 
 namespace
 {

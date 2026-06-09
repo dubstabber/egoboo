@@ -7,7 +7,9 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 - `32-project-health-and-solid-assessment.md` (2026-04-16 SOLID/design assessment)
 - `46-cross-platform-and-third-party-independence-status.md` (2026-04-17 portability snapshot)
 
-Snapshot date: 2026-06-08 (updated from the 2026-06-06 and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+Snapshot date: 2026-06-09 (updated from the 2026-06-08, 2026-06-06, and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+
+**Change since the 2026-06-08 snapshot (2026-06-09):** the **first real link-split of `egolib-library`** landed — a dependency-closed `egolib-foundation-library` (77 TUs: Math/Log/Mesh/VFS/Time/FileFormats/Platform + the Physics nucleus + the Script DDL/PDL lexer + Logic/TreasureTables + toplevel math/IO) that `egolib-library` (the remaining 215 TUs) depends on one-way, verified acyclic by an nm symbol-closure proof (0 cycle edges). Eight verified passes (branch `refactor/egolib-physics-nucleus-carve`); the nm proof first showed the previously-documented *nucleus-only* carve was circular, and two small seams (Time→`SDL_GetTicks()`, `ego_texture_exists_vfs` fileutil→Image) grew the closed foundation from 47→77 TUs before the `add_library` carve. See `19-refactoring-roadmap.md` and `71-completed-passes-log.md`.
 
 **Changes since the 2026-06-06 snapshot:** the uber-header teardown completed and **`egolib/egolib.h` was deleted** (T3.3); `cartman` was wired into the CMake graph behind `option(EGOBOO_BUILD_CARTMAN OFF)` and now compiles/links/runs (T3.5); `vfs.c`'s dead cstdio backend was eliminated (2,456 → 1,921 lines, T3.6); the `CameraSystem` EngineContext seam landed; six T3.4 characterization batches were added (physics collision-normal, bounding-box ops, map twist, particle recoil, damage/attribute enums, and the first live-Object combat-damage batch); and the T3.7 logging-seam include-decoupling front made the `Log` subsystem a clean downward leaf (17 leaf TUs moved off `game/Core/EngineContext.hpp`). The T3.7 **service-hub** continuation (2026-06-08) then cut the non-game leaf includers of `game/Core/EngineContext.hpp` from 33 to **8** via free-function `active*()` seams (sugar over the lower-layer singleton for `profileSystem`/`imageManager`; Log-style ownership-move keystones for `config`/`particleHandler`/`audioSystem`), which also reduced egolib `::get()` sites ~895→794 — the remaining 8 are bootstrap installers or are blocked on `perkHandler`/`billboardSystem`/`fontManager` seams and the deeper Entities↔game coupling (branch `refactor/egolib-service-hub-decoupling`, not yet merged).
 
@@ -221,14 +223,15 @@ A written policy now exists at `doc/error-handling-policy.md`: exceptions for ex
 | ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- | -------: |
 | `idlib`                      | Submodule (11 libs)  | Foundation utilities (math, color, filesystem, parsing, signals, types, chrono, document, hll)      | ~33,000  |
 | `idlib-game-engine`          | Submodule            | OpenGL (GLEW), PhysFS, googletest integration                                                        | ~5,000   |
-| `egolib-library`             | Static library       | All runtime code                                                                                     |~120,000  |
+| `egolib-foundation-library`  | Static library       | Dependency-closed lower layer (77 TUs): Math, Log, Mesh, VFS, Time, FileFormats, Platform, the Physics nucleus, the Script DDL/PDL lexer, Logic/TreasureTables, toplevel math/IO — verified acyclic | ~30,000 |
+| `egolib-library`             | Static library       | The rest of egolib (215 TUs): Entities, game, Graphics, Renderer, Profiles, the EgoScript VM, … — depends on `egolib-foundation-library` one-way | ~90,000  |
 | `egoboo`                     | Executable           | Thin entry point                                                                                     |       90 |
 | `egoboo-content-validator`   | Executable (tool)    | Content validation tool                                                                              |   ~1,200 |
 | `cartman`                    | Gated off by default | Map editor — wired into CMake behind `option(EGOBOO_BUILD_CARTMAN OFF)`; compiles/links/runs when ON; not in the default build (T3.5) | ~9,300 |
 
 ### `egolib` internal structure — now made explicit in CMake
 
-The historical `GLOB_RECURSE` in `egolib/library/CMakeLists.txt` has been replaced with explicit, per-subsystem source lists (one `set()` block per directory, grouped alphabetically). Ownership is visible in the build system even though all objects still link into a single static library.
+The historical `GLOB_RECURSE` in `egolib/library/CMakeLists.txt` has been replaced with explicit, per-subsystem source lists (one `set()` block per directory, grouped alphabetically). Ownership is visible in the build system, and as of 2026-06-09 the build **also enforces a link boundary**: the dependency-closed lower layer is carved into a separate `egolib-foundation-library` (77 TUs) that `egolib-library` depends on one-way (verified acyclic by an nm symbol-closure proof — 0 cycle edges). This is the first genuine link-level modularization of egolib; the remaining higher subsystems still link into the single `egolib-library`.
 
 Directory-level subsystem map (by line count, large to small):
 
@@ -369,7 +372,7 @@ Still incomplete. Several logically-const accessors are declared non-const; func
 
 ### Weaknesses
 
-- **`egolib` is still one monolithic static library** — the explicit source lists make ownership visible but do not enforce dependency direction at link time.
+- **`egolib` is now two link targets, not one** — the dependency-closed lower layer is carved into `egolib-foundation-library` (77 TUs), with `egolib-library` depending on it one-way (verified acyclic). The *higher* subsystems (Entities, game, Graphics, Renderer, Profiles, the EgoScript VM) still share the single `egolib-library` and do not yet enforce dependency direction among themselves at link time — further sub-libraries remain ahead.
 - **Cartman is gated off by default** (`option(EGOBOO_BUILD_CARTMAN OFF)`) — now in the CMake graph and building/running when enabled, but excluded from the default build and CI, so still at some bit-rot risk.
 - **No native-Windows open-source build docs or toolchain file.** Only Linux-hosted cross exists.
 - **Wine runtime instability** — font atlas init failure and audio loading crash. `run-egoboo-windows.sh` gates with `EGOBOO_DISABLE_MIPMAPS=1` and `EGOBOO_DISABLE_AUDIO=1` as a workaround.
@@ -406,10 +409,10 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 | Error handling             | 2.5/5   |   ↗   | Policy now written (`doc/error-handling-policy.md`); migration pending |
 | Smart pointer discipline   | 2.5/5   |   →   | `shared_ptr` over-used, `unique_ptr` under-used                     |
 | Test coverage              |  3/5    |   ↑   | From ~3.6% → ~16.9%; script dispatch, gameplay, physics/collision math, and live-Object combat-damage now covered |
-| Build system               | 3.5/5   |   →   | Explicit source lists, validator integrated                         |
+| Build system               | 3.5/5   |   ↗   | Explicit source lists, validator integrated, first link-split (`egolib-foundation-library`, acyclic) |
 | Global state discipline    | 3.5/5   |   ↗   | All three mutable globals retired; singletons down to ~863          |
 | File size discipline       | 3.5/5   |   →   | Largest TU is ~3,200 lines; script-dispatch TUs growing within budget |
-| Module boundaries          |  2/5    |   →   | One monolithic static library; directory shape is still indicative  |
+| Module boundaries          | 2.5/5   |   ↗   | First real link-split landed (`egolib-foundation-library`, 77 TUs, acyclic); higher subsystems still share one `egolib-library` |
 | Language consistency       | 2.5/5   |   →   | C/C++ split roughly 44/56; no net C→C++ migration since last snapshot |
 | Dead code hygiene          | 3.5/5   |   ↗   | Lua/Network removed; legacy READMEs + ego2xml quarantined to `doc/legacy/`; orphaned SDL2/physfs deleted; `utilities/migrator` marked deprecated |
 | Documentation              | 3.5/5   |   ↑   | Error-handling policy landed; refactoring-documents tree authoritative |
@@ -426,7 +429,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 3. **Encapsulation discipline is sustained.** The numbered passes show an incremental, verified path from raw field access toward explicit `Object` role seams.
 4. **Game state machine is clean.** The `GameState` hierarchy remains the model of how the rest of the codebase should eventually look.
 5. **Entity container is well-designed.** `ObjectHandler` with RAII iterator locking and quad-tree spatial queries is solid.
-6. **Build system makes structure visible.** Explicit per-subsystem source lists are in place even though link-level modularization is still ahead.
+6. **Build system makes structure visible — and now enforces a first link boundary.** Explicit per-subsystem source lists plus the carved `egolib-foundation-library` (the dependency-closed lower layer, verified acyclic) mean dependency direction is enforced at link time for the foundation; further sub-libraries are still ahead.
 7. **Validator exists and is integrated.** `egoboo-content-validator` provides a non-UI verification surface for content loading.
 8. **`idlib` is the target pattern.** Eleven well-scoped sub-libraries demonstrate what `egolib` should eventually look like.
 
@@ -440,7 +443,7 @@ Previously checked in but now removed or quarantined: `egoboo.gta.runsettings`, 
 6. **Script system is monolithic.** ~400 script functions in procedural dispatch split across seven files with no extensibility seam.
 7. **Cross-platform parity is weak at runtime.** Wine cross build is unstable; native-Windows open-source path is undocumented.
 8. **Test coverage is still thin in key areas.** Script dispatch, module load, gameplay alerts, accessor regressions, physics/collision math, and live-Object combat-damage math are covered; rendering, GUI, AI, and the full combat *integration* path are not.
-9. **`egolib` is a single static library.** Modular decomposition is expressed in directories and source-list blocks, not in link targets.
+9. **`egolib` is now two static libraries (was one).** The dependency-closed lower layer is a real link target (`egolib-foundation-library`); the higher subsystems still share `egolib-library`, so most of the modular decomposition is still expressed only in directories and source-list blocks.
 10. **Stale CI.** `appveyor-windows.yml` still generates a Visual Studio 2017 solution.
 
 ---

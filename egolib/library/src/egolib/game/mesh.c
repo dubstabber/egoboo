@@ -23,7 +23,7 @@
 
 #include "egolib/game/mesh.h"
 #include "egolib/game/lighting.h"
-#include "egolib/game/physics.h"
+#include "egolib/Physics/physics.h"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/FileFormats/Globals.hpp"

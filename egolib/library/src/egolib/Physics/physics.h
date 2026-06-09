@@ -17,7 +17,11 @@
 //*
 //********************************************************************************************
 
-/// @file egolib/game/physics.h
+/// @file egolib/Physics/physics.h
+/// @brief Oct-bb (oct_bb_t) collision-geometry free functions (phys_expand_*/phys_estimate_*/
+///        phys_intersect_*). Relocated from egolib/game/physics.h into the lower-layer Physics
+///        nucleus: it includes only lower-layer headers (bbox.h, PhysicsData.h, PhysicalConstants)
+///        and forward-declares the entity types it touches by pointer.
 
 #pragma once
 

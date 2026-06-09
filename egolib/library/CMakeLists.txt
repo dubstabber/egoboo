@@ -463,6 +463,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/Physics/MeshLookupTables.hpp
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/PhysicalConstants.hpp
+    src/egolib/Physics/physics.c
+    src/egolib/Physics/physics.h
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
     src/egolib/Debug.cpp
@@ -754,8 +756,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/link.h
     src/egolib/game/mesh.c
     src/egolib/game/mesh.h
-    src/egolib/game/physics.c
-    src/egolib/game/physics.h
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.c
@@ -851,15 +851,125 @@ if (WIN32)
   SET_SOURCE_FILES_PROPERTIES(src/egolib/Platform/file_win.c PROPERTIES LANGUAGE CXX)
 endif()
 
-# Define product.
+# == egolib-foundation sub-library carve =======================================================
+# The dependency-closed lower layer of egolib: every external symbol of these translation units
+# resolves either within this set or in idlib / the C++ runtime (verified acyclic by an nm
+# symbol-closure analysis -- see refactoring-documents). The rest of egolib
+# (Entities / game / Graphics / the EgoScript VM / ...) depends on this foundation ONE-WAY, so it
+# links as a clean lower archive. This is the first real link-split of the historically monolithic
+# egolib-library; idlib's eleven sub-libraries are the target pattern.
+set(EGOLIB_FOUNDATION_SOURCES
+    src/egolib/Clock.cpp
+    src/egolib/Debug.cpp
+    src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
+    src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
+    src/egolib/FileFormats/ConfigFile/configfile.c
+    src/egolib/FileFormats/Globals.cpp
+    src/egolib/FileFormats/MapTileDefinitionsDictionary.cpp
+    src/egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.cpp
+    src/egolib/FileFormats/SpawnFile/SpawnFileToken.cpp
+    src/egolib/FileFormats/SpawnFile/SpawnFileTokenKind.cpp
+    src/egolib/FileFormats/SpawnFile/SpawnName.cpp
+    src/egolib/FileFormats/SpawnFile/spawn_file.c
+    src/egolib/FileFormats/id_md2.c
+    src/egolib/FileFormats/map_file-v1.c
+    src/egolib/FileFormats/map_file-v2.c
+    src/egolib/FileFormats/map_file-v3.c
+    src/egolib/FileFormats/map_file-v4.c
+    src/egolib/FileFormats/map_file.c
+    src/egolib/FileFormats/map_tile_dictionary.c
+    src/egolib/FileFormats/template.c
+    src/egolib/FileFormats/wawalite_file.c
+    src/egolib/Float.cpp
+    src/egolib/IDSZ.cpp
+    src/egolib/Log/ConsoleColor.cpp
+    src/egolib/Log/DefaultTarget.cpp
+    src/egolib/Log/EndOfEntry.cpp
+    src/egolib/Log/EndOfLine.cpp
+    src/egolib/Log/Entry.cpp
+    src/egolib/Log/Level.cpp
+    src/egolib/Log/Target.cpp
+    src/egolib/Log/_Include.cpp
+    src/egolib/Logic/TreasureTables.cpp
+    src/egolib/Math/Random.cpp
+    src/egolib/Math/Standard.cpp
+    src/egolib/Mesh/Info.cpp
+    src/egolib/Mesh/TileFX.cpp
+    src/egolib/Physics/Collidable.cpp
+    src/egolib/Physics/ICollisionWorld.cpp
+    src/egolib/Physics/MeshLookupTables.cpp
+    src/egolib/Physics/PhysicalConstants.cpp
+    src/egolib/Script/Buffer.cpp
+    src/egolib/Script/CLogEntry.cpp
+    src/egolib/Script/Constant.cpp
+    src/egolib/Script/ConstantPool.cpp
+    src/egolib/Script/DDLToken.cpp
+    src/egolib/Script/DDLTokenDecoder.cpp
+    src/egolib/Script/DDLTokenKind.cpp
+    src/egolib/Script/Errors.cpp
+    src/egolib/Script/IRuntimeStatistics.cpp
+    src/egolib/Script/Interpreter/Configuration.cpp
+    src/egolib/Script/Interpreter/InvalidCastException.cpp
+    src/egolib/Script/Interpreter/SafeCast.cpp
+    src/egolib/Script/Interpreter/Tag.cpp
+    src/egolib/Script/Interpreter/TaggedValue.cpp
+    src/egolib/Script/OpcodeInfo.cpp
+    src/egolib/Script/PDLToken.cpp
+    src/egolib/Script/PDLTokenKind.cpp
+    src/egolib/Script/Scanner.cpp
+    src/egolib/Script/TextFile.cpp
+    src/egolib/Script/TextInputFile.cpp
+    src/egolib/Time/LocalTime.cpp
+    src/egolib/Time/Time.cpp
+    src/egolib/VFS/FsPath.cpp
+    src/egolib/VFS/VfsPath.cpp
+    src/egolib/Zeitgeist.cpp
+    src/egolib/_math.c
+    src/egolib/bbox.c
+    src/egolib/egoboo_setup.c
+    src/egolib/file_common.c
+    src/egolib/fileutil.c
+    src/egolib/frustum.c
+    src/egolib/geometry.c
+    src/egolib/map_functions.c
+    src/egolib/strutil.c
+    src/egolib/typedef.c
+    src/egolib/vfs.c
+)
+# The OS file-system backend belongs in the foundation too: foundation TUs call its fs_* functions,
+# so leaving it in egolib-library would form a foundation->library link cycle on each platform.
+if (UNIX AND NOT APPLE)
+    list(APPEND EGOLIB_FOUNDATION_SOURCES src/egolib/Platform/file_linux.c)
+elseif (WIN32)
+    list(APPEND EGOLIB_FOUNDATION_SOURCES src/egolib/Platform/file_win.c)
+endif()
+
+# Carve the foundation sources out of the monolithic accumulation; whatever remains is egolib-library.
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_SOURCES})
+
+# Re-assert C-as-C++ on the foundation's C sources (the SOURCE_FILES-scoped property set above is
+# kept, but assert it here so the foundation target is self-contained).
+foreach(_src ${EGOLIB_FOUNDATION_SOURCES})
+    if(_src MATCHES "\\.[ch]$")
+        set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
+    endif()
+endforeach()
+
+# Define products.
+add_library(egolib-foundation-library STATIC ${EGOLIB_FOUNDATION_SOURCES})
+target_include_directories(egolib-foundation-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-foundation-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
 add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-library egolib-foundation-library idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
+    target_link_libraries(egolib-foundation-library Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
+    target_link_libraries(egolib-foundation-library shlwapi)
   endif()
 endif()
 

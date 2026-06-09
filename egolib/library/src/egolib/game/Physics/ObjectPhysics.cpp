@@ -22,8 +22,7 @@
 /// @author Johan Jansen aka Zefz
 #include "ObjectPhysics.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
-#include "egolib/game/Core/GameSessionContext.hpp"  // worldUpdateCount() (the unseamed update-counter strand)
+#include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object/team/update-tick access (the entity-world seam)
 #include "egolib/game/Shop.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Physics/PhysicalConstants.hpp"  // g_environment, STOP_BOUNCING, CHR_INFINITE_WEIGHT, MOUNTTOLERANCE
@@ -35,8 +34,7 @@
 namespace
 {
 /// The entity world the physics step queries (object container), reached through the
-/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
-/// active GameModule, same as worldUpdateCount()'s session below.
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule).
 Ego::Entities::IObjectWorld& objectWorld()
 {
     return Ego::Entities::activeObjectWorld();
@@ -50,9 +48,11 @@ Ego::Physics::ICollisionWorld& collisionWorld()
     return Ego::Physics::activeCollisionWorld();
 }
 
+/// The active world's update tick, reached through the lower-layer activeWorldUpdateCount() seam
+/// (sibling of objectWorld()) rather than GameSessionContext.
 uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return Ego::Entities::activeWorldUpdateCount();
 }
 
 IScriptable& scriptable(Object& object)

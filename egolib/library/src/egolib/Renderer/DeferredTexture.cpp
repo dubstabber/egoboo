@@ -2,6 +2,7 @@
 #include "egolib/Graphics/TextureManager.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/fileutil.h"
+#include "egolib/Image/ImageManager.hpp"
 
 namespace Ego {
 

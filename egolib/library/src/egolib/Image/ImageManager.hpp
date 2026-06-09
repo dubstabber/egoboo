@@ -153,6 +153,12 @@ IImageManager& activeImageManager();
 
 } // namespace Ego
 
+/// @brief Whether a texture file exists under @a filename with any image extension known to the
+///        active image manager. Relocated here from fileutil (where it created a foundation->Image
+///        link dependency, blocking the foundation carve) to its natural home next to
+///        activeImageManager(). Kept at global scope to preserve its legacy call sites.
+bool ego_texture_exists_vfs(const std::string& filename);
+
 /**
  * @todo
  *  This is by-passing the image loader, remove.

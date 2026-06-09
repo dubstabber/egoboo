@@ -372,11 +372,6 @@ idlib::interval<float> vfs_get_range(ReadContext& ctxt);
 DamageType vfs_get_next_damage_type(ReadContext& ctxt);
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-// Stuff to remove.
-
-bool ego_texture_exists_vfs(const std::string &filename);
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 // Stuff to encapsulte in a WriterContext.
 bool vfs_put_version(vfs_FILE* filewrite, const int version);
 void vfs_put_int(vfs_FILE* filewrite, const char* text, int value);

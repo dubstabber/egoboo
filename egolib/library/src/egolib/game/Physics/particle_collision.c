@@ -19,8 +19,8 @@
 #include "egolib/game/Physics/particle_collision.h"
 #include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem
 #include "egolib/game/CharacterParticleOps.h"  // chr_get_lowest_attachment, reaffirm_attached_particles (was game.h)
-#include "egolib/game/graphic.h"
-#include "egolib/game/physics.h"
+#include "egolib/Audio/IAudioSystem.hpp"  // GSND_* + activeAudioSystem()/playSound/getGlobalSound (was reached via game/graphic.h)
+#include "egolib/Physics/physics.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"       // activeObjectWorld() object access (the entity-world seam)
 #include "egolib/Logic/Action.hpp"
@@ -28,13 +28,11 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 
 namespace
 {
 /// The entity world the collision step queries (object container), reached through the
-/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule). This is the
-/// active GameModule, same session as worldUpdateCount() below.
+/// lower-layer Ego::Entities::IObjectWorld seam rather than game/ (GameModule).
 Ego::Entities::IObjectWorld& objectWorld()
 {
     return Ego::Entities::activeObjectWorld();
@@ -45,9 +43,11 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
+/// The active world's update tick, reached through the lower-layer activeWorldUpdateCount() seam
+/// (sibling of objectWorld()) rather than GameSessionContext.
 uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return Ego::Entities::activeWorldUpdateCount();
 }
 
 IDamageable& damageable(Object& object)

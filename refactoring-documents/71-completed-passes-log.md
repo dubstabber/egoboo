@@ -1474,6 +1474,32 @@ Branch `refactor/iobjectworld-seam`. Picked by an 8-way scout-next-heavy-front w
 
 ---
 
+## egolib-foundation carve — the first real link-split (branch `refactor/egolib-physics-nucleus-carve`, 2026-06-09)
+
+The continuation the IObjectWorld entry named: *"the actual `egolib-physics` `add_library` link split, gated on a dependency-closed foundation carve."* Executed in eight verified passes. **Headline: the historically monolithic `egolib-library` STATIC archive is now split into `egolib-foundation-library` (77 TUs) + `egolib-library` (215 TUs), one-way dependent and verified acyclic (0 cycle edges by nm proof).** This is the first genuine link-level modularization of egolib; idlib's eleven sub-libraries are the target pattern.
+
+**Decoupling passes (1–4)** — narrowed the physics TUs' `game/` coupling and proved the carve's shape:
+
+- **Pass 1** — `activeWorldUpdateCount()` seam (added to `egolib/Entities/IObjectWorld.{hpp,cpp}`): the 3 physics TUs read the world-update tick through an installed `const uint32_t*` aliasing `GameSessionContext::_worldUpdateCount` (installed/cleared in `beginModule`/`quitModule` beside the object/collision worlds) instead of `GameSessionContext::get()`; `GameSessionContext.hpp` is gone from all three. *A dedicated free-function seam, NOT a `worldUpdateCount()` method on `IObjectWorld`: a `GameModule` override of that name shadows the `module_detail::worldUpdateCount()` free helper inside every GameModule member, which broke the `worldUpdateCount()++` incrementer in `Module_update.cpp` — caught at build, corrected mid-pass.*
+- **Pass 2** — `git mv`'d `game/physics.h`+`physics.c` (the `oct_bb_t` collision-geometry free functions `phys_expand_*`/`phys_estimate_*`/`phys_intersect_*`) into `egolib/Physics/`; stripped the empirically-dead `game.h`/`mesh.h` includes from `physics.c` (kept `Entities/_Include.hpp` — it deref's `IPhysical`/`Particle`). `physics.c` and `CollisionSystem.cpp` reach **zero** `game/` includes. *Scout corrections recorded: the plan called `Entities/_Include.hpp` dead (it is not) and claimed `particle_collision.c` reaches zero game/ includes (it does not).*
+- **Pass 3** — `particle_collision.c` off `game/graphic.h` → direct `egolib/Audio/IAudioSystem.hpp` (it used only `GSND_*`/`activeAudioSystem()`).
+- **Pass 4** — `map_file.c` gratuitous `fileutil.h` drop + **the nm symbol-closure proof that reshaped the carve**. The proof showed a standalone `egolib-physics-nucleus` archive is **circular**: its foundation symbols (`twist_to_normal`/`vec_to_facing`/`oct_bb`/`Log`) and `physics.c`'s Entities symbols (`Particle`/`IPhysical`) all live in the monolith, while the monolith depends back on the nucleus's `Collidable` base. The real first *acyclic* split is a dependency-closed **foundation** library — exactly the gate this front named.
+
+**Foundation-closure verification (methodology worth reusing).** An nm-based fixpoint over the 294 egolib `.o`: partition into candidate-foundation vs rest, build symbol→TU defining maps, then iteratively drop any candidate TU that needs a symbol defined *only* in the rest, until stable. The remaining set is dependency-closed (every external resolves within it or in idlib/std). A first run gave **47 TUs**; the irreducible root blockers were just two code seams:
+
+**Seam passes (5a–5b):**
+
+- **Pass 5a** — `Time::now<Ticks>()` calls `SDL_GetTicks()` directly (exactly what `SystemService::getTicks()` does) instead of routing through `Ego::Core::System` (the game-coupled bootstrap installer that reaches into `game/Core/EngineContext`). Removes the `Time → Core/System → game` link dep.
+- **Pass 5b** — relocated `ego_texture_exists_vfs()` (the lone `activeImageManager()` call) from `fileutil` to its natural home in `Image/ImageManager.{hpp,cpp}` (kept global-scope to preserve its 5 call sites). This was the one root entanglement that, via fileutil's `ReadContext`, had cascade-removed the 6 FileFormats parsers + TreasureTables + SpawnName. With the Script DDL/PDL lexer pulled in (it is itself clean), the foundation grew **47 → 77 TUs**.
+
+**Carve pass (5c):** `list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_SOURCES})` carves the foundation out of the existing accumulation, then two `add_library()` calls; `egolib-library` links `egolib-foundation-library` (+ idlib) one-way. The OS file backend (`file_linux.c`/`file_win.c`) is placed in the foundation **conditionally** (else its `fs_*` callers form a per-OS foundation→library cycle); C-as-C++ re-asserted on the foundation's 23 C sources. Consumers (egoboo, egolib-tests, content-validator) need **zero** changes — they link `egolib-library`, which carries the foundation transitively via INTERFACE. **Verified: in-place AND from-scratch clean builds both green (foundation 77 + library 215 objects, egoboo built); nm proof 0 foundation→library cycle edges; ctest -j1 823/825; validator `test.mod` 0/0; menu smoke clean** at every pass.
+
+**Foundation set:** whole subsystems Math/Log/Mesh/VFS/Time/FileFormats/Platform + the Physics nucleus (`Collidable`/`ICollisionWorld`/`MeshLookupTables`/`PhysicalConstants`) + the **Script DDL/PDL lexer** (everything in `Script/` except the EgoScript VM `script.c`) + `Logic/TreasureTables` + toplevel math/IO (`_math`/`bbox`/`geometry`/`frustum`/`map_functions`/`typedef`/`strutil`/`vfs`/`Zeitgeist`/...). Genuinely-higher TUs correctly stay in `egolib-library`: Image impl (→`Graphics/PixelFormat`), `font_bmp` (→`Renderer/Texture`), `physics.c` (→Entities), `script.c` (the VM).
+
+**Next toward fuller modularization:** Image could join the foundation once `Graphics/PixelFormat` (`pixel_descriptor`) is relocated down; an `egolib-physics` sub-library could split out of the foundation (the nucleus is a clean sub-DAG within it); the residual `Core/System` bootstrap edge and the `physics.c`/Entities ownership-inversion remain the larger lower-layer fronts.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:

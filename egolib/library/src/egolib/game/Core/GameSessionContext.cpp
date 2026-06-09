@@ -227,6 +227,12 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // world above.
     Ego::Entities::installObjectWorld(_activeModule.get());
 
+    // Publish the session-owned world-update counter so the physics translation units read the
+    // current tick through the lower-layer activeWorldUpdateCount() seam instead of reaching into
+    // GameSessionContext. The pointer aliases _worldUpdateCount (this singleton outlives every
+    // module), so reads see the live, still-incrementing value; cleared in quitModule().
+    Ego::Entities::installWorldUpdateCounter(&_worldUpdateCount);
+
     // Live spawn still happens after construction because the runtime is not fully decoupled.
     activeModule().spawnAllObjects();
 
@@ -237,6 +243,7 @@ void GameSessionContext::quitModule()
 {
     Ego::Physics::clearCollisionWorld();
     Ego::Entities::clearObjectWorld();
+    Ego::Entities::clearWorldUpdateCounter();
     _activeModule.reset();
 
     scripting_system_end();
