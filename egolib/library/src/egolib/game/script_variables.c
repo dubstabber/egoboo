@@ -5,7 +5,8 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -583,7 +584,7 @@ int32_t load_VARDATEDAY(script_state_t& scriptState, ai_state_t& aiState, const 
 
 int32_t load_VARSWINGTURN(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    auto camera = CameraSystem::get().getCamera(context.selfRef);
+    auto camera = EngineContext::get().cameraSystem().getCamera(context.selfRef);
     return nullptr != camera ? camera->getSwing() << 2 : 0;
 }
 

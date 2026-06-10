@@ -477,6 +477,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/file_common.h
     src/egolib/fileutil.c
     src/egolib/fileutil.h
+    src/egolib/ReadContext.cpp
     src/egolib/Float.cpp
     src/egolib/Float.hpp
     src/egolib/font_bmp.c
@@ -740,6 +741,10 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/link.h
     src/egolib/game/mesh.c
     src/egolib/game/mesh.h
+    src/egolib/game/mesh_fx.c
+    src/egolib/game/mesh_geometry.c
+    src/egolib/game/mesh_loader.c
+    src/egolib/game/mesh_query.c
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.h
@@ -749,7 +754,10 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_movement.c
     src/egolib/game/script_functions_spawn.c
     src/egolib/game/script_functions_state.c
-    src/egolib/game/script_functions_systems.c
+    src/egolib/game/script_functions_appearance.c
+    src/egolib/game/script_functions_combat.c
+    src/egolib/game/script_functions_commerce.c
+    src/egolib/game/script_functions_quests.c
     src/egolib/game/script_functions_target.c
     src/egolib/game/script_functions.h
     src/egolib/game/script_implementation.c
@@ -889,6 +897,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/Font.cpp
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
+    src/egolib/Graphics/ICameraSystem.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
@@ -964,6 +973,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/egoboo_setup.c
     src/egolib/file_common.c
     src/egolib/fileutil.c
+    src/egolib/ReadContext.cpp
     src/egolib/font_bmp.c
     src/egolib/frustum.c
     src/egolib/game/GUI/InputListener.cpp

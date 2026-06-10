@@ -25,7 +25,8 @@
 #include "egolib/Entities/_Include.hpp"
 
 #include "egolib/game/GUI/Material.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/script_compile.h"
 #include "egolib/game/game.h"
@@ -122,9 +123,9 @@ float draw_debug(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-5!!!");
         std::ostringstream os;
         os << "~~CAM"
-           << " " << CameraSystem::get().getMainCamera()->getPosition()[kX]
-           << " " << CameraSystem::get().getMainCamera()->getPosition()[kY]
-           << " " << CameraSystem::get().getMainCamera()->getPosition()[kZ];
+           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kX]
+           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kY]
+           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kZ];
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         if (activeModule().getPlayerList().size() > 0)
         {
@@ -182,7 +183,7 @@ float draw_debug(float y)
 
     if (EngineContext::get().inputSystem().isKeyDown(SDLK_F7))
     {
-        std::shared_ptr<Camera> camera = CameraSystem::get().getMainCamera();
+        std::shared_ptr<Camera> camera = EngineContext::get().cameraSystem().getMainCamera();
 
         std::ostringstream os;
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-7!!!");

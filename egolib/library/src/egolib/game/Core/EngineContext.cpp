@@ -12,7 +12,7 @@
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
-#include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
 #include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
@@ -27,7 +27,6 @@ Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
-ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
 Ego::Renderer* activeRenderer = nullptr;
@@ -511,46 +510,32 @@ const IProfileSystem& EngineContext::profileSystem() const
 
 void EngineContext::installCameraSystem(ICameraSystem& cameraSystem)
 {
-    if (activeCameraSystem)
-    {
-        throw std::logic_error("camera system already installed");
-    }
-    activeCameraSystem = &cameraSystem;
+    installActiveCameraSystem(cameraSystem);
 }
 
 void EngineContext::clearCameraSystem()
 {
-    activeCameraSystem = nullptr;
+    clearActiveCameraSystem();
 }
 
 ICameraSystem* EngineContext::tryCameraSystem()
 {
-    return activeCameraSystem;
+    return tryActiveCameraSystem();
 }
 
 const ICameraSystem* EngineContext::tryCameraSystem() const
 {
-    return activeCameraSystem;
+    return tryActiveCameraSystem();
 }
 
 ICameraSystem& EngineContext::cameraSystem()
 {
-    ICameraSystem* currentCameraSystem = tryCameraSystem();
-    if (!currentCameraSystem)
-    {
-        throw std::logic_error("no active camera system");
-    }
-    return *currentCameraSystem;
+    return activeCameraSystem();
 }
 
 const ICameraSystem& EngineContext::cameraSystem() const
 {
-    const ICameraSystem* currentCameraSystem = tryCameraSystem();
-    if (!currentCameraSystem)
-    {
-        throw std::logic_error("no active camera system");
-    }
-    return *currentCameraSystem;
+    return activeCameraSystem();
 }
 
 // The billboard-system ownership now lives in the lower-layer egolib/Graphics seam

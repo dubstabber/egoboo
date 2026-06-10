@@ -51,6 +51,8 @@ public:
     std::vector<SoundID> playedSounds;
 
     void update() override {}
+    void loadGlobalSounds() override {}
+    void loadAllMusic() override {}
 };
 
 class InstalledConfigMutationFixture : public ::testing::Test

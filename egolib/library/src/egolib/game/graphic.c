@@ -130,6 +130,11 @@ GFX::GFX() :
 GFX::~GFX()
 {}
 
+void GFX::renderBillboards(Camera& camera)
+{
+    getBillboardSystem().render_all(camera);
+}
+
 void gfx_system_load_assets()
 {
     /// @author ZF

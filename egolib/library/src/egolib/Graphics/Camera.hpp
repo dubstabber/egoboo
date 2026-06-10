@@ -70,6 +70,10 @@ public:
 	 */
 	virtual const Ego::Vector3f& getPosition() const = 0;
 
+	virtual const Ego::Vector3f& getCenter() const = 0;
+
+	virtual Ego::Turns getTurnZ_turns() const = 0;
+
 public:
 
 	/**

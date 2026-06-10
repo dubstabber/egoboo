@@ -160,6 +160,11 @@ public:
         return ParticleProfileSystem.load(pathname, overrideRef);
     }
 
+    void unloadParticleProfile(PIP_REF ref) override
+    {
+        ParticleProfileSystem.unload(ref);
+    }
+
     bool isEnchantProfileLoaded(EVE_REF ref) const override
     {
         return EnchantProfileSystem.isLoaded(ref);

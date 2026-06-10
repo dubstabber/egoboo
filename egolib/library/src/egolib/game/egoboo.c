@@ -27,7 +27,8 @@
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Module/Module.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
+#include "egolib/game/Graphics/ICameraSystem.hpp"
 #include "egolib/game/graphic.h"
 
 //--------------------------------------------------------------------------------------------
@@ -103,7 +104,7 @@ bool config_download(egoboo_config_t& cfg)
     AudioSystem::get().download(cfg);
 
     /// @todo Fix old-style download.
-    CameraSystem::get().getCameraOptions().turnMode = cfg.camera_control.getValue();
+    EngineContext::get().cameraSystem().getCameraOptions().turnMode = cfg.camera_control.getValue();
     gfx_config_t::download(gfx, cfg);
     EngineContext::get().renderer().download(cfg);
 
@@ -113,7 +114,7 @@ bool config_download(egoboo_config_t& cfg)
 bool config_upload(egoboo_config_t& cfg)
 {
     /// @todo Fix old-style upload.
-    cfg.camera_control.setValue(CameraSystem::get().getCameraOptions().turnMode);
+    cfg.camera_control.setValue(EngineContext::get().cameraSystem().getCameraOptions().turnMode);
 
     // Upload configuration.
     AudioSystem::get().upload(cfg);

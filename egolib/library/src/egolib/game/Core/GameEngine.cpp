@@ -397,7 +397,7 @@ bool GameEngine::initialize()
 
     // Initialize the sound system.
     renderPreloadText("Loading audio...");
-    auto& audioSystem = AudioSystem::get();
+    auto& audioSystem = EngineContext::get().audioSystem();
     audioSystem.loadAllMusic();
     playMainMenuSong();
     audioSystem.loadGlobalSounds();

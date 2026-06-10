@@ -213,7 +213,7 @@ void gfx_system_render_world(std::shared_ptr<Camera> camera, std::shared_ptr<Ego
     }
     Renderer3D::end3D();
 
-    GFX::get().getBillboardSystem().render_all(*camera);
+    EngineContext::get().gfx().renderBillboards(*camera);
 }
 
 void draw_passages(Camera& cam)

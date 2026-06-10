@@ -206,13 +206,12 @@ ObjectProfile::ObjectProfile() :
 
 ObjectProfile::~ObjectProfile()
 {
-    // Don't try to release particles if we're in the process of cleaning up
-    if (!ProfileSystem::is_initialized()) return;
+    IProfileSystem* profileSystem = tryActiveProfileSystem();
+    if (!profileSystem) return;
 
-    //Release particle profiles
     for(const auto &element : _particleProfiles)
     {
-        ProfileSystem::get().ParticleProfileSystem.unload(element.second);
+        profileSystem->unloadParticleProfile(element.second);
     }
 }
 

@@ -22,7 +22,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
-#include "egolib/InputControl/InputSystem.hpp" // Ego::Input::InputSystem
+#include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"
@@ -296,7 +296,7 @@ void Camera::updateCenter()
 
 void Camera::updateFreeControl()
 {
-    auto& inputSystem = Ego::Input::InputSystem::get();
+    auto& inputSystem = EngineContext::get().inputSystem();
     float moveSpeed = 25.0f;
     if(inputSystem.isKeyDown(SDLK_LSHIFT) || inputSystem.isKeyDown(SDLK_RSHIFT)) {
         moveSpeed += 25.0f;
@@ -514,7 +514,7 @@ void Camera::update(const ego_mesh_t *mesh)
 void Camera::readInput(const Ego::Input::InputDevice &device)
 {
 
-    auto& inputSystem = Ego::Input::InputSystem::get();
+    auto& inputSystem = EngineContext::get().inputSystem();
     // Autoturn camera only works in single player and when it is enabled.
     bool autoturn_camera = (CameraTurnMode::Good == _turnMode) && (1 == GameSessionContext::get().localPlayerCount());
 

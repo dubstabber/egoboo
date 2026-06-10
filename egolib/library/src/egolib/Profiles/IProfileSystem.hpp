@@ -44,6 +44,7 @@ public:
     virtual bool isParticleProfileLoaded(PIP_REF ref) const = 0;
     virtual const std::shared_ptr<ParticleProfile>& getParticleProfile(PIP_REF ref) const = 0;
     virtual PIP_REF loadParticleProfile(const std::string& pathname, PIP_REF overrideRef) = 0;
+    virtual void unloadParticleProfile(PIP_REF ref) = 0;
 
     virtual bool isEnchantProfileLoaded(EVE_REF ref) const = 0;
     virtual const std::shared_ptr<EnchantProfile>& getEnchantProfile(EVE_REF ref) const = 0;

@@ -18,6 +18,7 @@
 //********************************************************************************************
 #include "egolib/game/Graphics/CameraSystem.hpp"
 
+#include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
 #include "egolib/Graphics/Viewport.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -132,6 +133,13 @@ void CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, std::sh
     // reset the "global" camera pointer to whatever it was
     _mainCamera = storeMainCam;
 
+}
+
+bool CameraSystem::isTileInMainCameraRenderList(const Index1D& tile) const
+{
+    if (!_mainCamera) return false;
+    auto tileList = _mainCamera->getTileList();
+    return tileList && tileList->inRenderList(tile);
 }
 
 size_t CameraSystem::getCameraIndex(ObjectRef targetRef) const {

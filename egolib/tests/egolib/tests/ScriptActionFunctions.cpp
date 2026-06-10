@@ -283,6 +283,9 @@ public:
         ++updateCalls;
     }
 
+    void loadGlobalSounds() override {}
+    void loadAllMusic() override {}
+
     std::vector<SpatialSoundCall> playedSounds;
     std::vector<LoopSoundCall> loopedSounds;
     std::vector<StopLoopCall> stoppedLoopSounds;
@@ -349,6 +352,8 @@ public:
     void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)>) override
     {
     }
+
+    bool isTileInMainCameraRenderList(const Index1D&) const override { return false; }
 
     size_t updateAllCalls = 0;
     size_t lastSetCameraCount = 0;

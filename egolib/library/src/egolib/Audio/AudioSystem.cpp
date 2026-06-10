@@ -21,7 +21,8 @@
 #include "egolib/Audio/AudioSystem.hpp"
 
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Core/EngineContext.hpp"  // EngineContext (audio service access) — was transitively via game.h
 #include "egolib/Zeitgeist.hpp"  // Zeitgeist::CheckTime (seasonal theme selection) — was game.h
 #include "egolib/Entities/_Include.hpp"
@@ -555,7 +556,7 @@ float AudioSystem::getSoundDistance(const Ego::Vector3f& soundPosition)
 {
     //Pick the camera that is nearest to the sound
     float distance = std::numeric_limits<float>::max();
-    for(const std::shared_ptr<Camera> &camera : CameraSystem::get().getCameraList()) {
+    for(const std::shared_ptr<Camera> &camera : activeCameraSystem().getCameraList()) {
         Ego::Vector3f cameraPosition = Ego::Vector3f(camera->getCenter().x(), camera->getCenter().y(), camera->getPosition().z());
 		distance = std::min(distance, idlib::euclidean_norm(cameraPosition - soundPosition));
     }
@@ -569,13 +570,13 @@ void AudioSystem::mixAudioPosition3D(const int channel, float distance, const Eg
     //Calculate the average position and rotation of all cameras
     Ego::Vector2f averageCameraPosition = idlib::zero<Ego::Vector2f>();
     auto averageRotation = Ego::Turns(0.0f);
-    for(const std::shared_ptr<Camera>& camera : CameraSystem::get().getCameraList()) {
+    for(const std::shared_ptr<Camera>& camera : activeCameraSystem().getCameraList()) {
         averageCameraPosition.x() += camera->getCenter().x();
         averageCameraPosition.y() += camera->getCenter().y();
         averageRotation += camera->getTurnZ_turns();
     }
-    averageCameraPosition *= 1.0f / CameraSystem::get().getCameraList().size();
-    averageRotation /= CameraSystem::get().getCameraList().size();
+    averageCameraPosition *= 1.0f / activeCameraSystem().getCameraList().size();
+    averageRotation /= activeCameraSystem().getCameraList().size();
 
     //Scale distance (0 is very close 255 is very far away)
     distance *= 255.0f / _maxSoundDistance;

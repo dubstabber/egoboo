@@ -54,6 +54,8 @@ public:
 
 	void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)> renderFunction) override;
 
+	bool isTileInMainCameraRenderList(const Index1D& tile) const override;
+
 	/**
 	 * @brief
 	 *  Get the first camera tracking a target.

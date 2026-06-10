@@ -197,9 +197,9 @@ public:
      * @return
      *  the center of the camera
      */
-    inline const Ego::Vector3f& getCenter() const { return _center; }
+    inline const Ego::Vector3f& getCenter() const override { return _center; }
     inline uint8_t getTurnTime() const { return _turnTime; }
-    inline Ego::Turns getTurnZ_turns() const { return _turnZ_turns; }
+    inline Ego::Turns getTurnZ_turns() const override { return _turnZ_turns; }
     inline Ego::Radians getTurnZ_radians() const { return _turnZ_radians; }
 
 

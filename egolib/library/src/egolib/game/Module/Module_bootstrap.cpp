@@ -102,7 +102,7 @@ void GameModule::initializeModuleTeamsAndTextures()
 void GameModule::initializeSharedModuleAssets()
 {
     // Load shared runtime assets that module content depends on.
-    AudioSystem::get().loadGlobalSounds();
+    EngineContext::get().audioSystem().loadGlobalSounds();
     EngineContext::get().profileSystem().loadGlobalParticleProfiles();
 }
 

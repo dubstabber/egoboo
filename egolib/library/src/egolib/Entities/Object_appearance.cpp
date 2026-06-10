@@ -22,8 +22,7 @@
 
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/CharacterParticleOps.h"                         // chr_stoppedby_tests / chr_pressure_tests
-#include "egolib/game/Graphics/CameraSystem.hpp"      // CameraSystem (attachment placement)
-#include "egolib/game/Graphics/TileList.hpp"          // Ego::Graphics::TileList (complete type)
+#include "egolib/Graphics/ICameraSystem.hpp"           // tryActiveCameraSystem (wall hit render-list check)
 #include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
 #include "egolib/Physics/ICollisionWorld.hpp"
 
@@ -265,8 +264,8 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     }
 
     float radius = 0.0f;
-    if (CameraSystem::is_initialized() &&
-        CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
+    ICameraSystem* cameraSystem = tryActiveCameraSystem();
+    if (cameraSystem && cameraSystem->isTileInMainCameraRenderList(getTile())) {
         radius = bump_1.size;
     }
 
@@ -287,8 +286,8 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     }
 
     float radius = 0.0f;
-    if (CameraSystem::is_initialized() &&
-        CameraSystem::get().getMainCamera()->getTileList()->inRenderList(getTile())) {
+    ICameraSystem* cameraSystem = tryActiveCameraSystem();
+    if (cameraSystem && cameraSystem->isTileInMainCameraRenderList(getTile())) {
         radius = bump_1.size;
     }
 

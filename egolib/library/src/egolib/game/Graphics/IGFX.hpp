@@ -55,4 +55,6 @@ public:
     virtual Ego::Graphics::RenderPass& getForeground() const = 0;
     virtual Ego::Graphics::RenderPass& getBackground() const = 0;
     virtual Ego::Graphics::RenderPass& getHeightmap() const = 0;
+
+    virtual void renderBillboards(Camera& camera) = 0;
 };

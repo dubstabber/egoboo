@@ -39,6 +39,8 @@ public:
     void setMusicVolume(int) override {}
     void setSoundEffectVolume(int) override {}
     void update() override {}
+    void loadGlobalSounds() override {}
+    void loadAllMusic() override {}
 };
 
 class StubInputSystem : public Ego::Input::IInputSystem
@@ -175,6 +177,7 @@ public:
     bool isParticleProfileLoaded(PIP_REF) const override { return false; }
     const std::shared_ptr<ParticleProfile>& getParticleProfile(PIP_REF) const override { return _particleProfile; }
     PIP_REF loadParticleProfile(const std::string&, PIP_REF) override { return INVALID_PIP_REF; }
+    void unloadParticleProfile(PIP_REF) override {}
     bool isEnchantProfileLoaded(EVE_REF) const override { return false; }
     const std::shared_ptr<EnchantProfile>& getEnchantProfile(EVE_REF) const override { return _enchantProfile; }
     EVE_REF loadEnchantProfile(const std::string&, EVE_REF) override { return INVALID_EVE_REF; }
@@ -199,6 +202,7 @@ public:
     std::shared_ptr<Camera> getCamera(ObjectRef) const override { return nullptr; }
     CameraOptions& getCameraOptions() override { return _cameraOptions; }
     void renderAll(std::function<void(std::shared_ptr<Camera>, std::shared_ptr<Ego::Graphics::TileList>, std::shared_ptr<Ego::Graphics::EntityList>)>) override {}
+    bool isTileInMainCameraRenderList(const Index1D&) const override { return false; }
 
 private:
     std::vector<std::shared_ptr<Camera>> _cameraList;

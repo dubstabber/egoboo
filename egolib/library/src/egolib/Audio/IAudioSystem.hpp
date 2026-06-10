@@ -9,6 +9,7 @@
 
 typedef int MusicID;
 typedef int SoundID;
+static constexpr SoundID INVALID_SOUND_ID = -1;
 
 /// Pre defined global particle sounds
 enum GlobalSound : uint8_t
@@ -54,6 +55,8 @@ public:
     virtual void setMusicVolume(int value) = 0;
     virtual void setSoundEffectVolume(int value) = 0;
     virtual void update() = 0;
+    virtual void loadGlobalSounds() = 0;
+    virtual void loadAllMusic() = 0;
 };
 
 /// @brief Install the active audio system (the audio system the engine context publishes).

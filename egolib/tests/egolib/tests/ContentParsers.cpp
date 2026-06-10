@@ -54,6 +54,8 @@ public:
     void setMusicVolume(int) override {}
     void setSoundEffectVolume(int) override {}
     void update() override {}
+    void loadGlobalSounds() override {}
+    void loadAllMusic() override {}
 
     void reset()
     {

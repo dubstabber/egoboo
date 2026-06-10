@@ -288,6 +288,8 @@ public:
     {
         return *heightmap;
     }
+
+    void renderBillboards(Camera& camera) override;
 };
 
 /// SDL destroys the OpenGL context at various occassions (e.g. when changing the video mode).

@@ -27,7 +27,6 @@
 #include "egolib/Math/_Include.hpp"
 
 static constexpr int INVALID_SOUND_CHANNEL = -1;
-static constexpr SoundID INVALID_SOUND_ID = -1;
 
 /// Data needed to store and manipulate a looped sound
 class LoopingSound
@@ -102,7 +101,7 @@ protected:
     virtual ~AudioSystem();
 
 public:
-    void loadGlobalSounds();
+    void loadGlobalSounds() override;
 
     /**
      * @brief
@@ -137,7 +136,7 @@ public:
 
     /// @author ZF
     /// @details This function loads all of the music sounds
-    void loadAllMusic();
+    void loadAllMusic() override;
 
     /**
      * @brief
