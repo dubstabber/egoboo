@@ -29,7 +29,7 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
-#include "egolib/Graphics/GraphicsSystemNew.hpp"
+
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Graphics/Display.hpp"
 #include "egolib/Graphics/DisplayMode.hpp"
@@ -63,7 +63,7 @@ VideoOptionsScreen::VideoOptionsScreen() :
 
     //Build list of available resolutions
     std::unordered_set<uint32_t> resolutions;
-    const auto& displays = Ego::GraphicsSystemNew::get().getDisplays();
+    const auto& displays = EngineContext::get().graphicsSystem().getDisplays();
     auto displayIt = std::find_if(displays.cbegin(), displays.cend(), [](const auto& display) { return display->isPrimaryDisplay(); });
     if (displayIt == displays.cend())
     {

@@ -38,7 +38,7 @@
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Graphics/Viewport.hpp"
 #include "egolib/Time/Time.hpp"                       // ::Time::now
-#include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
+
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 #include "egolib/font_bmp.h" // fontyspacing
 
@@ -196,7 +196,7 @@ void PlayingState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void PlayingState::beginState()
 {
     // in-game settings
-    Ego::GraphicsSystemNew::get().setCursorVisibility(EngineContext::get().config().debug_hideMouse.getValue());
+    EngineContext::get().graphicsSystem().setCursorVisibility(EngineContext::get().config().debug_hideMouse.getValue());
     EngineContext::get().graphicsSystem().getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
 }
 

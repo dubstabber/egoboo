@@ -35,7 +35,7 @@
 
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
+
 #include "egolib/Graphics/GraphicsWindow.hpp"    // Ego::GraphicsWindow
 
 namespace Ego
@@ -140,7 +140,7 @@ void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void MapEditorState::beginState()
 {
     // in-game settings
-    Ego::GraphicsSystemNew::get().setCursorVisibility(true);
+    EngineContext::get().graphicsSystem().setCursorVisibility(true);
     EngineContext::get().graphicsSystem().getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
 }
 

@@ -23,7 +23,7 @@
 #include "egolib/game/graphic_internal.h"
 
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/Graphics/GraphicsSystemNew.hpp" // Ego::GraphicsSystemNew
+
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Logic/Player.hpp"
@@ -403,11 +403,11 @@ void draw_mouse_cursor()
 
     if (nullptr == pcursor)
     {
-        Ego::GraphicsSystemNew::get().setCursorVisibility(true);
+        EngineContext::get().graphicsSystem().setCursorVisibility(true);
     }
     else
     {
-        Ego::GraphicsSystemNew::get().setCursorVisibility(false);
+        EngineContext::get().graphicsSystem().setCursorVisibility(false);
 
         int x, y;
         SDL_GetMouseState(&x, &y);

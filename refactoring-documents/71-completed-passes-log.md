@@ -1697,3 +1697,16 @@ Migrated 17 `getMeshPointer()` call sites off direct `ego_mesh_t` access and ont
 - Infrastructure (1 site): `GameSessionContext::mesh()` forwarder — last to go.
 
 All passes green: build / ctest -j20 **830/830** / validator `test.mod` 0/0 / menu smoke clean exit.
+
+### IGraphicsSystem widening — route GraphicsSystemNew::get() through EngineContext
+
+Widened `IGraphicsSystem` with 3 methods (`setCursorVisibility`, `update`, `getDisplays`) and implemented them in `GraphicsSystem` by delegating to `GraphicsSystemNew::get()`. Migrated all 6 game-layer `GraphicsSystemNew::get()` callers to `EngineContext::get().graphicsSystem()`:
+- `graphic_hud.c` (2 sites): `setCursorVisibility`
+- `GameEngine.cpp` (1 site): `update`
+- `PlayingState.cpp` (1 site): `setCursorVisibility`
+- `VideoOptionsScreen.cpp` (1 site): `getDisplays`
+- `MapEditorState.cpp` (1 site): `setCursorVisibility`
+
+All 5 migrated files dropped their `GraphicsSystemNew.hpp` include. `GraphicsSystemNew::get()` is now confined to `GraphicsSystem.cpp` (the single delegation/bootstrap file, 6 sites: `createContext`, `createWindow`, `CreateWindowAndContext`, plus the 3 new delegators). Updated `MockGraphicsSystem` in `TestGraphicsSystem.hpp` with no-op implementations for the new interface methods.
+
+Gates green: build / ctest -j20 **830/830** / validator `test.mod` 0/0 / menu smoke clean exit.

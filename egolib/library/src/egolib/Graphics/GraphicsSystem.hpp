@@ -40,6 +40,10 @@ struct GraphicsSystem : public idlib::singleton<GraphicsSystem>, public IGraphic
 
     /// @brief Get the active graphics window (IGraphicsSystem seam).
     GraphicsWindow *getWindow() const override { return window; }
+
+    void setCursorVisibility(bool visibility) override;
+    void update() override;
+    const std::vector<std::shared_ptr<Display>>& getDisplays() const override;
 };
 
 } // namespace Ego

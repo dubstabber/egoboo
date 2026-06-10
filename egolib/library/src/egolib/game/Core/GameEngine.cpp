@@ -25,7 +25,7 @@
 #include "egolib/Core/System.hpp"                 // Ego::Core::System
 #include "egolib/Console/Console.hpp"             // Ego::Core::Console
 #include "egolib/Graphics/GraphicsWindow.hpp"     // Ego::GraphicsWindow (complete type)
-#include "egolib/Graphics/GraphicsSystemNew.hpp"  // Ego::GraphicsSystemNew
+
 #include "egolib/Graphics/Font.hpp"               // Ego::Font (complete type)
 #include "egolib/InputControl/InputSystem.hpp"    // Ego::Input::InputSystem
 #include "egolib/font_bmp.h"                       // font_bmp_load_vfs
@@ -545,7 +545,7 @@ void GameEngine::pushGameState(std::shared_ptr<GameState> gameState)
 
 void GameEngine::pollEvents()
 {
-    Ego::GraphicsSystemNew::get().update();
+    EngineContext::get().graphicsSystem().update();
     EngineContext::get().graphicsSystem().getWindow()->update();
     // Message processing loop.
     SDL_Event event;

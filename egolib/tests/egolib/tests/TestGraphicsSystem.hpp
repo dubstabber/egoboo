@@ -2,7 +2,7 @@
 
 #include "egolib/Graphics/IGraphicsSystem.hpp"
 
-namespace Ego { class GraphicsWindow; }
+namespace Ego { class GraphicsWindow; class Display; }
 
 namespace Ego::Test {
 
@@ -16,6 +16,9 @@ class MockGraphicsSystem : public Ego::IGraphicsSystem {
 public:
     explicit MockGraphicsSystem(Ego::GraphicsWindow* window) : _window(window) {}
     Ego::GraphicsWindow* getWindow() const override { return _window; }
+    void setCursorVisibility(bool) override {}
+    void update() override {}
+    const std::vector<std::shared_ptr<Ego::Display>>& getDisplays() const override { static const std::vector<std::shared_ptr<Ego::Display>> empty; return empty; }
 private:
     Ego::GraphicsWindow* _window;
 };

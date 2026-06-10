@@ -9,7 +9,9 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 
 Snapshot date: 2026-06-10 (updated from the 2026-06-09, 2026-06-08, 2026-06-06, and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
-**Latest (2026-06-10) — broader `getMeshPointer()` cleanup:** migrated 17 call sites off direct `ego_mesh_t` access onto `ICollisionWorld` / `ITerrainQuery` seam interfaces (impl-file sites 32→15). Widened `ICollisionWorld` with 4 map-dimension accessors (`getEdgeX/Y`, `getTileCountX/Y`). Removed 1 dead-code site (broken `DEBUG_WAYPOINTS` block). Remaining 15 sites intentionally deferred (wall collision blocked by `mesh_wall_data_t`, mutating tile ops = game-layer-only, infrastructure forwarder). `::get()` sites now **~666**. Gates green: build, ctest -j20 830/830, validator `test.mod` 0/0, menu smoke clean exit.
+**Latest (2026-06-10) — IGraphicsSystem widening:** widened `IGraphicsSystem` with 3 methods (`setCursorVisibility`, `update`, `getDisplays`), implemented in `GraphicsSystem` by delegating to `GraphicsSystemNew::get()`. Migrated all 6 game-layer `GraphicsSystemNew::get()` callers to `EngineContext::get().graphicsSystem()`. All 5 migrated files dropped their `GraphicsSystemNew.hpp` include. `GraphicsSystemNew::get()` now confined to `GraphicsSystem.cpp` (bootstrap/delegation). Updated `MockGraphicsSystem` with no-op stubs. Gates green: build, ctest -j20 830/830, validator `test.mod` 0/0, menu smoke clean exit.
+
+**Previous (2026-06-10) — broader `getMeshPointer()` cleanup:** migrated 17 call sites off direct `ego_mesh_t` access onto `ICollisionWorld` / `ITerrainQuery` seam interfaces (impl-file sites 32→15). Widened `ICollisionWorld` with 4 map-dimension accessors (`getEdgeX/Y`, `getTileCountX/Y`). Removed 1 dead-code site (broken `DEBUG_WAYPOINTS` block). Remaining 15 sites intentionally deferred (wall collision blocked by `mesh_wall_data_t`, mutating tile ops = game-layer-only, infrastructure forwarder).
 
 **Previous (2026-06-10) — QuestLog foundation absorb:** seam-cut `QuestLog.cpp` (replaced the single `EngineContext::get().logTarget()` call in `exportToFile()` with `Log::activeTarget()`) and moved `QuestLog` + `PlayerQuestLog` (2 TUs) into `egolib-foundation-base`. Current verified layout **`egolib-foundation-base` 119 / `egolib-physics` 6 / `egolib-renderer` 29 / `egolib-library` 138**. Gates green: build, `ar t`, aggregate nm acyclicity with live positive controls, validator `test.mod` 0/0, ctest -j1 828/830, menu smoke exit-124 clean.
 
@@ -36,7 +38,7 @@ Verified against the live tree on 2026-06-10. These are the single source of tru
 | Test lines / ratio | ~21,500 / **~17.5%** | 43 test `.cpp` files, **830** ctest cases (incl. `AITerrainQueries.cpp`, `CombatDamageIntegration.cpp`, and `CollisionPipeline.cpp`) |
 | ctest result | **828 / 830** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
 | Singleton `::get()` call sites (egolib) | **~666** | down from ~760 (2026-06-10 pre-mesh-cleanup) / ~863 (2026-06-08 pre-front) / ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
-| `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07) |
+| `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07); `IGraphicsSystem` widened (2026-06-10) |
 | `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
 | `Object` role interfaces | **18** | `Entities/I*.hpp` (19 `I*.hpp` files incl. the `IParticleHandler` *service* interface) |
 | Largest TU | `script_functions_systems.c` **3,206** | no other TU exceeds ~1,700 |

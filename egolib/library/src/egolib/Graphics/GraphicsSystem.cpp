@@ -3,6 +3,7 @@
 
 #include "egolib/Graphics/GraphicsContext.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
+#include "egolib/Graphics/Display.hpp"
 #include "egolib/Graphics/SDL/Utilities.hpp"
 #include "egolib/egoboo_setup.h"
 
@@ -112,6 +113,21 @@ GraphicsSystem::GraphicsSystem() :
         window = p.first;
         context = p.second;
     }
+}
+
+void GraphicsSystem::setCursorVisibility(bool visibility)
+{
+    GraphicsSystemNew::get().setCursorVisibility(visibility);
+}
+
+void GraphicsSystem::update()
+{
+    GraphicsSystemNew::get().update();
+}
+
+const std::vector<std::shared_ptr<Display>>& GraphicsSystem::getDisplays() const
+{
+    return GraphicsSystemNew::get().getDisplays();
 }
 
 GraphicsSystem::~GraphicsSystem()

@@ -293,7 +293,9 @@ All passes green: build + validator `test.mod` 0/0 + ctest 798/800; Pass 3 also 
 
 **Broader `getMeshPointer()` cleanup — DONE (2026-06-10).** Migrated 17 `getMeshPointer()` call sites off direct `ego_mesh_t` access onto `ICollisionWorld` / `ITerrainQuery` seam interfaces, reducing impl-file call sites from 32 to 15. Widened `ICollisionWorld` with 4 map-dimension accessors (`getEdgeX`, `getEdgeY`, `getTileCountX`, `getTileCountY`). Removed 1 dead-code site (`DEBUG_WAYPOINTS` block in `script_implementation.c`). Remaining 15 sites are intentionally deferred: wall collision (6, blocked by `mesh_wall_data_t`), mutating tile operations (8, game-layer-only, no layering benefit), and the `mesh()` forwarder (1, infrastructure). Gates green: build / ctest -j20 830/830 / validator `test.mod` 0/0 / menu smoke clean exit. Full detail in `71-completed-passes-log.md`.
 
-Remaining ranked fronts: remaining EngineContext routing (`video_buffer_manager`, `GraphicsSystemNew`, `Console`, ~19 sites), and the Entities ownership-inversion (flag-day scale, 123 blockers).
+**IGraphicsSystem widening — DONE (2026-06-10).** Widened `IGraphicsSystem` with `setCursorVisibility`, `update`, `getDisplays`. Implemented in `GraphicsSystem` by delegating to `GraphicsSystemNew::get()`. All 6 game-layer `GraphicsSystemNew::get()` callers migrated to `EngineContext::get().graphicsSystem()`. `GraphicsSystemNew::get()` now confined to `GraphicsSystem.cpp` (bootstrap/delegation only). Five files dropped their `GraphicsSystemNew.hpp` include. Gates green: build / ctest -j20 830/830 / validator `test.mod` 0/0 / menu smoke clean exit.
+
+Remaining ranked fronts: `video_buffer_manager` (12 sites, idlib external singleton, all rendering — low ROI), `Console` (4 game-layer sites — low ROI), `TLT` (4 header-inline sites, const lookup table — zero ROI), and the Entities ownership-inversion (flag-day scale, 123 blockers).
 
 ---
 
