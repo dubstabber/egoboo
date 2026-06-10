@@ -21,7 +21,7 @@
 /// @author Zefz aka Johan Jansen
 
 #include "egolib/game/Logic/QuestLog.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/fileutil.h"  // ReadContext, make_unique<ReadContext>
 
 namespace Ego
@@ -95,7 +95,7 @@ bool QuestLog::exportToFile(const std::string& filePath) const
     // Write a new quest file with all the quests
     vfs_FILE* filewrite = vfs_openWrite(filePath + "/quest.txt");
     if (!filewrite) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create quest file ", "`", filePath, "`", Log::EndOfEntry);
+        Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to create quest file ", "`", filePath, "`", Log::EndOfEntry);
         return false;
     }
 
