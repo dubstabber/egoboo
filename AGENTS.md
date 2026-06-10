@@ -30,7 +30,7 @@ The superproject passes the top-level `idlib/` into `idlib-game-engine` during C
 
 **Parallelism (current machine: i7-13700HX, 24 threads, 31 GB RAM):** the build is parallel-safe — use `-j20` (leave a couple of threads free). The older `-j4` cap was a laptop stability limit and no longer applies here. Prefer the Ninja generator with ccache for fast incremental rebuilds: `-G Ninja -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache`.
 
-**Test runner is NOT `-j`-safe:** several fixtures (import/export, quest-log hydration, active-module-menu) share writable user-data paths and race under high `ctest -j`, producing ~4 spurious failures. Run `ctest -j1` (or a low `-j`) for a trustworthy baseline until that fixture isolation is fixed. See the Testing section.
+**Test runner is `-j`-safe:** each test process gets its own temp directory via `EGOBOO_USER_DIR` (per-PID isolation in `TestEnvironment.hpp`). Temp directories are cleaned up automatically via `atexit`. Use `ctest -j20` freely.
 
 ```bash
 # Initial setup (clone + submodules)
@@ -129,13 +129,14 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/` (42 test files, **825** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Run serially (`ctest -j1`) for an accurate baseline** — at high `-j` ~4 additional fixtures fail spuriously due to shared writable-path races (`ImportWorkflowFixture` copy/export, `ModulePlayerStartupFixture` quest-log hydration, `ScriptSystemsFunctionsFixture` AddIDSZ module-menu), all of which pass in isolation. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
+Google Test framework. Tests in `egolib/tests/` (42 test files, **830** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Parallel-safe at `-j20`** — each test process gets per-PID isolation via `EGOBOO_USER_DIR` (`TestEnvironment.hpp`), with automatic `atexit` cleanup of temp directories. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
 | `EGOBOO_DATA_DIR` | Override game data directory (Linux) |
+| `EGOBOO_USER_DIR` | Override writable user-data directory (used by test harness for per-PID isolation) |
 | `EGOBOO_DISABLE_MIPMAPS` | Wine compatibility |
 | `EGOBOO_DISABLE_AUDIO` | Wine compatibility |
 | `SDL_VIDEODRIVER=x11` | Useful on Wayland systems |
