@@ -7,6 +7,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/module_spawn.h"
+#include "egolib/game/game.h"
 #include "egolib/vfs.h"
 
 #include <cstdlib>
@@ -103,7 +104,8 @@ TEST_F(ModuleSpawnPlanningFixture, DynamicEntriesReuseReservedSlotForRepeatedNam
     const auto plan = module_spawn_plan::buildSpawnPlan(
         entries,
         treasureTables,
-        [](ObjectProfileRef) { return false; });
+        [](ObjectProfileRef) { return false; },
+        FIRST_DYNAMIC_PROFILE_SLOT);
 
     ASSERT_EQ(plan.entries.size(), 3u);
     EXPECT_EQ(plan.entries[0].spawn_comment, "follower.obj");
@@ -130,7 +132,8 @@ TEST_F(ModuleSpawnPlanningFixture, DynamicAllocationSkipsLoadedSlots)
         [](ObjectProfileRef slot)
         {
             return slot == ObjectProfileRef(FIRST_DYNAMIC_PROFILE_SLOT);
-        });
+        },
+        FIRST_DYNAMIC_PROFILE_SLOT);
 
     ASSERT_EQ(plan.entries.size(), 1u);
     EXPECT_EQ(plan.entries[0].spawn_comment, "bumper.obj");
@@ -152,7 +155,8 @@ TEST_F(ModuleSpawnPlanningFixture, PlannedEntriesPreserveOriginalSpawnOrder)
     const auto plan = module_spawn_plan::buildSpawnPlan(
         entries,
         treasureTables,
-        [](ObjectProfileRef) { return false; });
+        [](ObjectProfileRef) { return false; },
+        FIRST_DYNAMIC_PROFILE_SLOT);
 
     ASSERT_EQ(plan.entries.size(), 3u);
     EXPECT_EQ(plan.entries[0].spawn_comment, "mouse.obj");

@@ -618,7 +618,7 @@ set(EGOLIB_GAME_GUI_SOURCES
     src/egolib/game/GUI/CharacterStatus.hpp
     src/egolib/game/GUI/CharacterWindow.cpp
     src/egolib/game/GUI/CharacterWindow.hpp
-    src/egolib/game/GUI/Component.cpp
+    src/egolib/game/GUI/Component_bridge.cpp
     src/egolib/game/GUI/Component.hpp
     src/egolib/game/GUI/Container.cpp
     src/egolib/game/GUI/Container.hpp
@@ -639,7 +639,6 @@ set(EGOLIB_GAME_GUI_SOURCES
     src/egolib/game/GUI/JoinBounds.hpp
     src/egolib/game/GUI/Label.cpp
     src/egolib/game/GUI/Label.hpp
-    src/egolib/game/GUI/Layout.cpp
     src/egolib/game/GUI/Layout.hpp
     src/egolib/game/GUI/LevelUpWindow.cpp
     src/egolib/game/GUI/LevelUpWindow.hpp
@@ -681,7 +680,6 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module_internal.h
     src/egolib/game/Module/Module_loading.cpp
     src/egolib/game/Module/Module_spawn.cpp
-    src/egolib/game/Module/Module_spawn_plan.cpp
     src/egolib/game/Module/Module_spawn_plan.hpp
     src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
@@ -741,7 +739,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/link.h
     src/egolib/game/mesh.c
     src/egolib/game/mesh.h
-    src/egolib/game/mesh_fx.c
     src/egolib/game/mesh_geometry.c
     src/egolib/game/mesh_loader.c
     src/egolib/game/mesh_query.c
@@ -976,12 +973,15 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/ReadContext.cpp
     src/egolib/font_bmp.c
     src/egolib/frustum.c
+    src/egolib/game/GUI/Component.cpp
     src/egolib/game/GUI/InputListener.cpp
+    src/egolib/game/GUI/Layout.cpp
     src/egolib/game/GUI/Material.cpp
     src/egolib/game/Module/AnimatedTiles.cpp
     src/egolib/game/Module/AnimatedTiles.hpp
     src/egolib/game/Module/Fog.cpp
     src/egolib/game/Module/Fog.hpp
+    src/egolib/game/Module/Module_spawn_plan.cpp
     src/egolib/game/Module/Module_spawn_realization.cpp
     src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Water.cpp
@@ -995,6 +995,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/Logic/PlayerQuestLog.cpp
     src/egolib/game/Logic/QuestLog.cpp
     src/egolib/game/lighting.c
+    src/egolib/game/mesh_fx.c
     src/egolib/game/script_compile.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c

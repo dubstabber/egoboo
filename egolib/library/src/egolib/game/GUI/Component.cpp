@@ -125,10 +125,5 @@ bool Component::isVisible() const {
     return _visible && !_destroyed;
 }
 
-void Component::bringToFront() {
-    if (!_parent) return;
-    _parent->bringComponentToFront(shared_from_this());
-}
-
 } // namespace GUI
 } // namespace Ego

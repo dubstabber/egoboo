@@ -351,7 +351,8 @@ void GameModule::spawnAllObjects()
         [](ObjectProfileRef profileSlot)
         {
             return EngineContext::get().profileSystem().isLoaded(profileSlot);
-        });
+        },
+        1 + MAX_IMPORT_PER_PLAYER * MAX_PLAYER);
 
     std::shared_ptr<Object> parent = nullptr;
     for (auto& spawnInfo : spawnPlan.entries)

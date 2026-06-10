@@ -21,10 +21,8 @@
 /// @brief Internal planning helpers for spawn.txt realization.
 
 #include "egolib/game/Module/Module_spawn_plan.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-
 #include "egolib/Log/_Include.hpp"
-#include "egolib/game/Module/module_spawn.h"
+#include "egolib/FileFormats/SpawnFile/SpawnName.hpp"
 
 #include <algorithm>
 #include <unordered_set>
@@ -34,13 +32,12 @@ namespace module_spawn_plan
 namespace
 {
 
-constexpr int FIRST_DYNAMIC_PROFILE_SLOT = 1 + MAX_IMPORT_PER_PLAYER * MAX_PLAYER;
-
 ObjectProfileRef reserveDynamicSlot(const std::string& spawnName,
                                     std::unordered_map<int, std::string>& reservedSlots,
-                                    const SlotLoadedPredicate& isSlotLoaded)
+                                    const SlotLoadedPredicate& isSlotLoaded,
+                                    int firstDynamicSlot)
 {
-    for (ObjectProfileRef profileSlot(FIRST_DYNAMIC_PROFILE_SLOT);
+    for (ObjectProfileRef profileSlot(firstDynamicSlot);
          profileSlot < ObjectProfileRef::Invalid;
          ++profileSlot)
     {
@@ -90,7 +87,8 @@ void resolveDynamicEntries(SpawnPlan& plan)
 
 SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
                          const Ego::TreasureTables& treasureTables,
-                         const SlotLoadedPredicate& isSlotLoaded)
+                         const SlotLoadedPredicate& isSlotLoaded,
+                         int firstDynamicSlot)
 {
     SpawnPlan plan;
     plan.entries.reserve(std::min(entries.size(), static_cast<size_t>(OBJECTS_MAX)));
@@ -101,21 +99,21 @@ SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
     {
         if (plan.entries.size() >= OBJECTS_MAX)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
-                                             "too many objects in file ", "`", "mp_data/spawn,txt", "`",
-                                             ". Maximum number of objects is ", OBJECTS_MAX, Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                   "too many objects in file ", "`", "mp_data/spawn,txt", "`",
+                                   ". Maximum number of objects is ", OBJECTS_MAX, Log::EndOfEntry);
             break;
         }
 
         if (entry.slot >= INVALID_PRO_REF)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
-                                             "invalid slot ", entry.slot, " for ", "`", entry.spawn_comment, "`",
-                                             " in file ", "`", "mp_data/spawn,txt", "`", Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                   "invalid slot ", entry.slot, " for ", "`", entry.spawn_comment, "`",
+                                   " in file ", "`", "mp_data/spawn,txt", "`", Log::EndOfEntry);
             continue;
         }
 
-        convert_spawn_file_load_name(entry, treasureTables);
+        entry.spawn_comment = Ego::SpawnFile::resolveSpawnLoadName(entry.spawn_comment, treasureTables);
 
         if (entry.slot <= -1)
         {
@@ -131,12 +129,12 @@ SpawnPlan buildSpawnPlan(std::vector<spawn_file_info_t> entries,
 
     for (const auto& spawnName : dynamicObjectNames)
     {
-        const ObjectProfileRef profileSlot = reserveDynamicSlot(spawnName, plan.reservedSlots, isSlotLoaded);
+        const ObjectProfileRef profileSlot = reserveDynamicSlot(spawnName, plan.reservedSlots, isSlotLoaded, firstDynamicSlot);
         if (profileSlot == ObjectProfileRef::Invalid)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
-                                             "unable to acquire free dynamic slot for object ",
-                                             spawnName, ". All slots in use?", Log::EndOfEntry);
+            Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                   "unable to acquire free dynamic slot for object ",
+                                   spawnName, ". All slots in use?", Log::EndOfEntry);
         }
     }
 

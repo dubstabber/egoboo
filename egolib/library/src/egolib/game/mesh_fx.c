@@ -21,7 +21,6 @@
 /// @brief ego_tile_info_t, mesh_wall_data_t, mpdfx_list_ary_t, mpdfx_lists_t implementations
 
 #include "egolib/game/mesh.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 //--------------------------------------------------------------------------------------------
 
