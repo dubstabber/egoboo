@@ -1,7 +1,7 @@
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/Button.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 #include <cstddef>
 
@@ -9,7 +9,7 @@ namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return ::activeAudioSystem();
 }
 }
 
@@ -63,7 +63,7 @@ void Button::draw(DrawingContext& drawingContext) {
     //Update slidy button effect
     updateSlidyButtonEffect();
 
-    auto &renderer = EngineContext::get().renderer();
+    auto &renderer = Ego::activeRenderer();
 
     // Draw the button
     renderer.getTextureUnit().setActivated(nullptr);

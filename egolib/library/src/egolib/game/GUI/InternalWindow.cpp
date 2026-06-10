@@ -24,7 +24,7 @@
 #include "egolib/game/GUI/InternalWindow.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/UIManager.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Graphics/Font.hpp"
@@ -35,7 +35,7 @@ namespace
 {
 IAudioSystem& audioSystem()
 {
-    return EngineContext::get().audioSystem();
+    return ::activeAudioSystem();
 }
 }
 

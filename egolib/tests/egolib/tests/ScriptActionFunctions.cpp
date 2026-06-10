@@ -99,6 +99,9 @@ public:
         _previousGameState = engine._currentGameState;
         _previousUiManager = engine._uiManager.release();
         engine._uiManager.reset(_fakeUiManager);
+        // Publish the fake through the GUI-layer seam so widget uiManager() access (Component::uiManager()
+        // -> activeUIManager()) resolves it, mirroring how EngineContext::uiManager() reads engine._uiManager.
+        Ego::GUI::installActiveUIManager(*_fakeUiManager);
 
         _fakeCoreSystem->systemService = _fakeSystemService;
         _fakeCoreSystem->videoService = nullptr;
@@ -125,6 +128,11 @@ public:
         if (_previousUiManager != nullptr)
         {
             engine._uiManager.reset(_previousUiManager);
+            Ego::GUI::installActiveUIManager(*_previousUiManager);
+        }
+        else
+        {
+            Ego::GUI::clearActiveUIManager();
         }
 
         EngineContext::get().clearGraphicsSystem();

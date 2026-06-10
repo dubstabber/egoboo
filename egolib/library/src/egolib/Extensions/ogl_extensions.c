@@ -25,14 +25,13 @@
 #include "egolib/Extensions/ogl_extensions.h"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Renderer/Renderer.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/PixelFormat.hpp"
 #include "egolib/Renderer/OpenGL/Utilities.hpp"
 
 //--------------------------------------------------------------------------------------------
 
 void oglx_caps_t::report() {
-    auto& renderer = EngineContext::get().renderer();
+    auto& renderer = Ego::activeRenderer();
     Log::Entry e(Log::Level::Info, __FILE__, __LINE__);
     {
         const auto info = renderer.getInfo();

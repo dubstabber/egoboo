@@ -37,6 +37,7 @@
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/InputControl/ControlSettingsFile.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
+#include "egolib/game/GUI/ScreenMessage.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Renderer/OpenGL/Renderer.hpp"  // drainPendingTextureDeletions (deferred GL deletes)
 #include "egolib/game/game.h"
@@ -321,6 +322,11 @@ void GameEngine::renderPreloadText(const std::string &text)
 
 bool GameEngine::initialize()
 {
+    // Wire the GUI-layer on-screen status-message seam to the game's DisplayMsg log, so
+    // lower-layer GUI code (e.g. UIManager screenshot status) can post messages without a
+    // direct upward dependency on the game DisplayMsg system.
+    Ego::GUI::installScreenMessageSink([](const std::string& text) { DisplayMsg_print(text); });
+
     /* ********************************************************************************** */
     // >>> This must be done as the crappy old systems do not "pull" their configuration.
     //      More recent systems like video or audio system pull their configuraiton data
@@ -386,6 +392,9 @@ bool GameEngine::initialize()
 
     // setup the system gui
     _uiManager = std::make_unique<Ego::GUI::UIManager>();
+    // Publish it through the GUI-layer seam so lower-layer widgets (Component::uiManager()) can
+    // reach it without depending on this app-layer engine context.
+    Ego::GUI::installActiveUIManager(*_uiManager);
 
     //Tell them we are loading the game (This is earliest point we can render text to screen)
     renderPreloadText("Initializing game...");
@@ -493,7 +502,11 @@ void GameEngine::uninitialize()
     input_settings_save_vfs("controls.txt");
 
     // @todo This should be 'UIManager::uninitialize'.
+    Ego::GUI::clearActiveUIManager();
     _uiManager.reset(nullptr);
+
+    // Tear down the on-screen status-message seam installed in initialize().
+    Ego::GUI::clearScreenMessageSink();
 
     // Uninitialize the collision system.
     Ego::Physics::CollisionSystem::uninitialize();

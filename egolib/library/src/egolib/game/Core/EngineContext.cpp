@@ -26,11 +26,9 @@ std::unique_ptr<GameEngine> activeEngine;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
-Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
-Ego::Renderer* activeRenderer = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -347,48 +345,38 @@ const Ego::IFontManager& EngineContext::fontManager() const
     return *currentFontManager;
 }
 
+// Graphics-system lifecycle delegates to the lower-layer ownership-move seam in
+// egolib/Graphics/IGraphicsSystem.cpp (mirrors the audio-system / Log active-target moves), so
+// lower-layer callers (the GUI toolkit) can reach the installed graphics system without depending
+// on this upper-layer hub. Declarations are unchanged, so all existing callers keep working.
 void EngineContext::installGraphicsSystem(Ego::IGraphicsSystem& graphicsSystem)
 {
-    if (activeGraphicsSystem)
-    {
-        throw std::logic_error("graphics system already installed");
-    }
-    activeGraphicsSystem = &graphicsSystem;
+    Ego::installActiveGraphicsSystem(graphicsSystem);
 }
 
 void EngineContext::clearGraphicsSystem()
 {
-    activeGraphicsSystem = nullptr;
+    Ego::clearActiveGraphicsSystem();
 }
 
 Ego::IGraphicsSystem* EngineContext::tryGraphicsSystem()
 {
-    return activeGraphicsSystem;
+    return Ego::tryActiveGraphicsSystem();
 }
 
 const Ego::IGraphicsSystem* EngineContext::tryGraphicsSystem() const
 {
-    return activeGraphicsSystem;
+    return Ego::tryActiveGraphicsSystem();
 }
 
 Ego::IGraphicsSystem& EngineContext::graphicsSystem()
 {
-    Ego::IGraphicsSystem* currentGraphicsSystem = tryGraphicsSystem();
-    if (!currentGraphicsSystem)
-    {
-        throw std::logic_error("no active graphics system");
-    }
-    return *currentGraphicsSystem;
+    return Ego::activeGraphicsSystem();
 }
 
 const Ego::IGraphicsSystem& EngineContext::graphicsSystem() const
 {
-    const Ego::IGraphicsSystem* currentGraphicsSystem = tryGraphicsSystem();
-    if (!currentGraphicsSystem)
-    {
-        throw std::logic_error("no active graphics system");
-    }
-    return *currentGraphicsSystem;
+    return Ego::activeGraphicsSystem();
 }
 
 void EngineContext::installTextureManager(Ego::ITextureManager& textureManager)
@@ -777,48 +765,38 @@ const Log::Target& EngineContext::logTarget() const
     return *currentLogTarget;
 }
 
+// Renderer lifecycle delegates to the lower-layer ownership-move seam in
+// egolib/Renderer/ActiveRenderer.cpp, so lower-layer callers (texture/font managers, the OpenGL
+// backend) can reach the installed renderer without an upward dependency on this hub. Declarations
+// are unchanged, so all existing callers keep working.
 void EngineContext::installRenderer(Ego::Renderer& renderer)
 {
-    if (activeRenderer)
-    {
-        throw std::logic_error("renderer already installed");
-    }
-    activeRenderer = &renderer;
+    Ego::installActiveRenderer(renderer);
 }
 
 void EngineContext::clearRenderer()
 {
-    activeRenderer = nullptr;
+    Ego::clearActiveRenderer();
 }
 
 Ego::Renderer* EngineContext::tryRenderer()
 {
-    return activeRenderer;
+    return Ego::tryActiveRenderer();
 }
 
 const Ego::Renderer* EngineContext::tryRenderer() const
 {
-    return activeRenderer;
+    return Ego::tryActiveRenderer();
 }
 
 Ego::Renderer& EngineContext::renderer()
 {
-    Ego::Renderer* currentRenderer = tryRenderer();
-    if (!currentRenderer)
-    {
-        throw std::logic_error("no active renderer");
-    }
-    return *currentRenderer;
+    return Ego::activeRenderer();
 }
 
 const Ego::Renderer& EngineContext::renderer() const
 {
-    const Ego::Renderer* currentRenderer = tryRenderer();
-    if (!currentRenderer)
-    {
-        throw std::logic_error("no active renderer");
-    }
-    return *currentRenderer;
+    return Ego::activeRenderer();
 }
 
 uint32_t EngineContext::renderedFrameCount() const

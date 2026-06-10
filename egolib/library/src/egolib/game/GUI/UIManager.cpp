@@ -23,35 +23,67 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/UIManager.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
-#include "egolib/game/graphic.h"
+#include "egolib/Extensions/ogl_extensions.h"   // glPushAttrib/glPopAttrib, GL_DEBUG, GL_*_BIT
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/game/GUI/ScreenMessage.hpp"    // postScreenMessage (decoupled from game DisplayMsg)
 #include "egolib/Graphics/VertexFormat.hpp"
-#include "egolib/Renderer/Renderer.hpp"        // Ego::Renderer
-#include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
+#include "egolib/Renderer/Renderer.hpp"         // Ego::Renderer
+#include "egolib/Graphics/GraphicsWindow.hpp"   // Ego::GraphicsWindow
+#include "egolib/Graphics/IGraphicsSystem.hpp"  // Ego::activeGraphicsSystem
+#include "egolib/Graphics/TextureManager.hpp"   // Ego::TextureManager
+#include "egolib/Graphics/FontManager.hpp"      // Ego::FontManager
+#include "egolib/Image/ImageManager.hpp"        // Ego::activeImageManager
+#include "egolib/Log/_Include.hpp"              // Log::activeTarget
 #include "egolib/font_bmp.h"                    // fontyspacing, fontxspacing, fontoffset, fontrect, asciitofont, TABADD, font_bmp_length_of_word
-#include "egolib/game/game.h" //TODO: Remove only for DisplayMessagePrintf
 
 namespace Ego {
 namespace GUI {
 
+namespace {
+UIManager* g_activeUIManager = nullptr;
+}
+
+void installActiveUIManager(UIManager& uiManager)
+{
+    g_activeUIManager = &uiManager;
+}
+
+void clearActiveUIManager()
+{
+    g_activeUIManager = nullptr;
+}
+
+UIManager* tryActiveUIManager()
+{
+    return g_activeUIManager;
+}
+
+UIManager& activeUIManager()
+{
+    if (!g_activeUIManager)
+    {
+        throw std::logic_error("no active ui manager");
+    }
+    return *g_activeUIManager;
+}
+
 UIManager::UIManager() :
     _fonts(),
     _renderSemaphore(0),
-    _bitmapFontTexture(EngineContext::get().textureManager().getTexture("mp_data/font_new_shadow")),
+    _bitmapFontTexture(TextureManager::get().getTexture("mp_data/font_new_shadow")),
     _vertexDescriptor(descriptor_factory<idlib::vertex_format::P2F>()()),
     _textureQuadVertexDescriptor(descriptor_factory<idlib::vertex_format::P2FT2F>()()),
     _textureQuadVertexBuffer(Ego::activeVideoBufferManager().create_vertex_buffer(4, _textureQuadVertexDescriptor.get_size())) {
     //Load fonts from true-type files
-    _fonts[FONT_DEFAULT] = EngineContext::get().fontManager().loadFont("mp_data/Bo_Chen.ttf", 24);
-    _fonts[FONT_FLOATING_TEXT] = EngineContext::get().fontManager().loadFont("mp_data/FrostysWinterland.ttf", 24);
-    _fonts[FONT_DEBUG] = EngineContext::get().fontManager().loadFont("mp_data/DejaVuSansMono.ttf", 10);
+    _fonts[FONT_DEFAULT] = FontManager::get().loadFont("mp_data/Bo_Chen.ttf", 24);
+    _fonts[FONT_FLOATING_TEXT] = FontManager::get().loadFont("mp_data/FrostysWinterland.ttf", 24);
+    _fonts[FONT_DEBUG] = FontManager::get().loadFont("mp_data/DejaVuSansMono.ttf", 10);
 #if defined(_WIN32)
     // Additional TTF atlas construction is currently unstable in the Windows/Wine startup path.
     _fonts[FONT_GAME] = _fonts[FONT_DEBUG];
 #else
-    _fonts[FONT_GAME] = EngineContext::get().fontManager().loadFont("mp_data/IMMORTAL.ttf", 14);
+    _fonts[FONT_GAME] = FontManager::get().loadFont("mp_data/IMMORTAL.ttf", 14);
 #endif
 
     //Sanity check that all fonts are loaded properly
@@ -59,7 +91,7 @@ UIManager::UIManager() :
     for (int i = 0; i < _fonts.size(); ++i) {
         if (!_fonts[i]) {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "UI manager is missing font with ID ", i, Log::EndOfEntry);
-            EngineContext::get().logTarget() << e;
+            Log::activeTarget() << e;
             throw std::runtime_error(e.getText());
         }
     }
@@ -82,7 +114,7 @@ void UIManager::beginRenderUI() {
         return;
     }
 
-    auto& renderer = EngineContext::get().renderer();
+    auto& renderer = Renderer::get();
 
     // do not use the ATTRIB_PUSH macro, since the glPopAttrib() is in a different function
     GL_DEBUG(glPushAttrib)(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT);
@@ -102,13 +134,13 @@ void UIManager::beginRenderUI() {
     renderer.setAlphaFunction(idlib::compare_function::greater, 0.0f);
 
     /// Set the viewport rectangle.
-    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
+    auto drawableSize = Ego::activeGraphicsSystem().getWindow()->drawable_size();
     renderer.setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
 
     // Set up an ortho projection for the gui to use.  Controls are free to modify this
     // later, but most of them will need this, so it's done by default at the beginning
     // of a frame.
-    auto windowSize = EngineContext::get().graphicsSystem().getWindow()->size();
+    auto windowSize = Ego::activeGraphicsSystem().getWindow()->size();
     Matrix4f4f projection = idlib::orthographic_projection_matrix(0.0f, windowSize.x(), windowSize.y(), 0.0f, -1.0f, +1.0f);
     renderer.setProjectionMatrix(projection);
     renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
@@ -128,11 +160,11 @@ void UIManager::endRenderUI() {
 }
 
 int UIManager::getScreenWidth() const {
-    return EngineContext::get().graphicsSystem().getWindow()->size().x();
+    return Ego::activeGraphicsSystem().getWindow()->size().x();
 }
 
 int UIManager::getScreenHeight() const {
-    return EngineContext::get().graphicsSystem().getWindow()->size().y();
+    return Ego::activeGraphicsSystem().getWindow()->size().y();
 }
 
 void UIManager::drawImage(const Point2f& position, const Vector2f& size, const std::shared_ptr<const Material>& material) {
@@ -169,15 +201,15 @@ bool UIManager::dumpScreenshot() {
 
     try
     {
-        auto screenshot = EngineContext::get().graphicsSystem().getWindow()->getContents();
-        EngineContext::get().imageManager().save_as_png(screenshot, file);
+        auto screenshot = Ego::activeGraphicsSystem().getWindow()->getContents();
+        activeImageManager().save_as_png(screenshot, file);
     }
     catch (...)
     {
-        DisplayMsg_printf("failed to save screenshot to %s", file.c_str());
+        postScreenMessage("failed to save screenshot to " + file);
         return false;
     }
-    DisplayMsg_printf("screenshot saved to %s", file.c_str());
+    postScreenMessage("screenshot saved to " + file);
     return true;
 }
 
@@ -288,7 +320,7 @@ void UIManager::drawQuad2d(const Rectangle2f& target, const Rectangle2f& source)
         float x, y;
         float s, t;
     };
-    auto& renderer = EngineContext::get().renderer();
+    auto& renderer = Renderer::get();
     {
         idlib::vertex_buffer_scoped_lock vblck(*_textureQuadVertexBuffer);
         Vertex *v = vblck.get<Vertex>();

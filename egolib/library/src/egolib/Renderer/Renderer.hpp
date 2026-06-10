@@ -540,4 +540,23 @@ public:
 
 };
 
+/// @brief Install the active renderer (the renderer the engine context publishes).
+/// @param renderer the renderer to install
+/// @throw std::logic_error if a renderer is already installed
+/// @remark Lower-layer ownership-move seam (mirrors the audio/image/graphics seams); EngineContext
+///         delegates its renderer lifecycle here so lower-layer callers (texture/font managers, the
+///         OpenGL backend) can reach the installed renderer without an upward dependency on the
+///         app-layer EngineContext. The installed renderer is always @c Renderer::get() (see @c App).
+void installActiveRenderer(Renderer& renderer);
+
+/// @brief Clear the installed active renderer.
+void clearActiveRenderer();
+
+/// @brief The installed active renderer, or @a nullptr if none is installed.
+Renderer* tryActiveRenderer();
+
+/// @brief The active renderer.
+/// @throw std::logic_error if none is installed
+Renderer& activeRenderer();
+
 } // namespace Ego
