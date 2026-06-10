@@ -336,7 +336,6 @@ set(EGOLIB_PROFILES_SOURCES
     src/egolib/Profiles/ObjectProfile_export.cpp
     src/egolib/Profiles/ObjectProfile.hpp
     src/egolib/Profiles/ObjectProfile_internal.h
-    src/egolib/Profiles/ObjectProfile_load.cpp
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfile.hpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
@@ -536,16 +535,12 @@ set(EGOLIB_GAME_GAMESTATES_SOURCES
     src/egolib/game/GameStates/InputOptionsScreen.hpp
     src/egolib/game/GameStates/LoadingState.cpp
     src/egolib/game/GameStates/LoadingState.hpp
-    src/egolib/game/GameStates/LoadPlayerElement.cpp
-    src/egolib/game/GameStates/LoadPlayerElement.hpp
     src/egolib/game/GameStates/MainMenuState.cpp
     src/egolib/game/GameStates/MainMenuState.hpp
     src/egolib/game/GameStates/MapEditorSelectModuleState.cpp
     src/egolib/game/GameStates/MapEditorSelectModuleState.hpp
     src/egolib/game/GameStates/MapEditorState.cpp
     src/egolib/game/GameStates/MapEditorState.hpp
-    src/egolib/game/GameStates/OptionsConfigActions.cpp
-    src/egolib/game/GameStates/OptionsConfigActions.hpp
     src/egolib/game/GameStates/OptionsScreen.cpp
     src/egolib/game/GameStates/OptionsScreen.hpp
     src/egolib/game/GameStates/PlayingState.cpp
@@ -679,11 +674,7 @@ set(EGOLIB_GAME_LOGIC_SOURCES
 
 # -- game/Module -------------------------------------------------------------
 set(EGOLIB_GAME_MODULE_SOURCES
-    src/egolib/game/Module/AnimatedTiles.cpp
-    src/egolib/game/Module/AnimatedTiles.hpp
     src/egolib/game/Module/damagetile_instance.h
-    src/egolib/game/Module/Fog.cpp
-    src/egolib/game/Module/Fog.hpp
     src/egolib/game/Module/Module.cpp
     src/egolib/game/Module/Module_bootstrap.cpp
     src/egolib/game/Module/Module_internal.h
@@ -691,16 +682,12 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module_spawn.cpp
     src/egolib/game/Module/Module_spawn_plan.cpp
     src/egolib/game/Module/Module_spawn_plan.hpp
-    src/egolib/game/Module/Module_spawn_realization.cpp
-    src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
     src/egolib/game/Module/module_spawn.c
     src/egolib/game/Module/module_spawn.h
     src/egolib/game/Module/Passage.cpp
     src/egolib/game/Module/Passage.hpp
-    src/egolib/game/Module/Water.cpp
-    src/egolib/game/Module/Water.hpp
     src/egolib/game/Module/Weather.cpp
     src/egolib/game/Module/Weather.hpp
 )
@@ -755,7 +742,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/mesh.h
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
-    src/egolib/game/script_compile.c
     src/egolib/game/script_compile.h
     src/egolib/game/script_functions_action.c
     src/egolib/game/script_functions_bitwise.c
@@ -875,6 +861,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/AI/AStar.cpp
     src/egolib/AI/LineOfSight.cpp
     src/egolib/AI/WaypointList.c
+    src/egolib/Audio/IAudioSystem.cpp
     src/egolib/Clock.cpp
     src/egolib/Core/System.cpp
     src/egolib/Debug.cpp
@@ -937,9 +924,11 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Mesh/TileFX.cpp
     src/egolib/Profiles/EnchantProfile.cpp
     src/egolib/Profiles/EnchantProfileWriter.cpp
+    src/egolib/Profiles/IProfileSystem.cpp
     src/egolib/Profiles/LocalParticleProfileRef.cpp
     src/egolib/Profiles/ModuleProfile.cpp
     src/egolib/Profiles/ObjectProfile_core.cpp
+    src/egolib/Profiles/ObjectProfile_load.cpp
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
     src/egolib/Profiles/RandomName.cpp
@@ -979,11 +968,24 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/frustum.c
     src/egolib/game/GUI/InputListener.cpp
     src/egolib/game/GUI/Material.cpp
+    src/egolib/game/Module/AnimatedTiles.cpp
+    src/egolib/game/Module/AnimatedTiles.hpp
+    src/egolib/game/Module/Fog.cpp
+    src/egolib/game/Module/Fog.hpp
+    src/egolib/game/Module/Module_spawn_realization.cpp
+    src/egolib/game/Module/Module_spawn_realization.hpp
+    src/egolib/game/Module/Water.cpp
+    src/egolib/game/Module/Water.hpp
     src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
     src/egolib/game/Graphics/Md2ModelRenderer.cpp
+    src/egolib/game/GameStates/LoadPlayerElement.cpp
+    src/egolib/game/GameStates/LoadPlayerElement.hpp
+    src/egolib/game/GameStates/OptionsConfigActions.cpp
+    src/egolib/game/GameStates/OptionsConfigActions.hpp
     src/egolib/game/Logic/PlayerQuestLog.cpp
     src/egolib/game/Logic/QuestLog.cpp
     src/egolib/game/lighting.c
+    src/egolib/game/script_compile.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c
     src/egolib/map_functions.c

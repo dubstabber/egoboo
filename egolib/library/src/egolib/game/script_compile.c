@@ -22,9 +22,10 @@
 /// @details
 
 #include "egolib/game/script_compile.h"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/egoboo.h"
+#include "egolib/Log/_Include.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Script/CLogEntry.hpp"
 #include "egolib/Core/StringUtilities.hpp" // Ego::isspace, Ego::iscntrl, Ego::isalpha, Ego::isdigit
 #include "egolib/Profiles/_Include.hpp" // ObjectProfile (complete type)
@@ -194,7 +195,7 @@ size_t parser_state_t::load_one_line( size_t read, script_info_t& script )
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
 		e << "compilation error - tab character used to define spacing will cause an error `"
 		  << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-		EngineContext::get().logTarget() << e;
+		Log::activeTarget() << e;
     }
 
     // scan to the beginning of the next line
@@ -370,7 +371,7 @@ Ego::Script::PDLToken line_scanner_state_t::scanWhiteSpaces()
             {
                 Ego::Script::CLogEntry e(Log::Level::Warning, __FILE__, __LINE__, __FUNCTION__, getLocation());
                 e << "tabulator character in source file" << Log::EndOfEntry;
-                EngineContext::get().logTarget() << e;
+                Log::activeTarget() << e;
             }
             numberOfWhiteSpaces++;
             next();
@@ -582,7 +583,7 @@ Ego::Script::PDLToken parser_state_t::parse_indention(script_info_t& script, lin
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
         e << "invalid indention - number of spaces must be even - \n"
           << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
         _error = true;
     }
 
@@ -592,7 +593,7 @@ Ego::Script::PDLToken parser_state_t::parse_indention(script_info_t& script, lin
         Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, _token.get_start_location());
         e << "invalid indention - too many spaces - \n"
           << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
         _error = true;
         indent = 15;
     }
@@ -634,7 +635,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             // Invalid profile as default.
             token.setValue(INVALID_PRO_REF);
             // Convert reference to slot number.
-            for (const auto& element : EngineContext::get().profileSystem().getLoadedProfiles())
+            for (const auto& element : activeProfileSystem().getLoadedProfiles())
             {
                 const auto& profile = element.second;
                 if (profile == nullptr) continue;
@@ -647,7 +648,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             }
 
             // Do we need to load the object?
-            if (!EngineContext::get().profileSystem().isLoaded((PRO_REF)token.getValue()))
+            if (!activeProfileSystem().isLoaded((PRO_REF)token.getValue()))
             {
                 auto loadName = "mp_objects/" + token.get_lexeme();
 
@@ -655,21 +656,21 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
                 for (PRO_REF ipro = MAX_IMPORT_PER_PLAYER * 4; ipro < INVALID_PRO_REF; ipro++)
                 {
                     //skip loaded profiles
-                    if (EngineContext::get().profileSystem().isLoaded(ipro)) continue;
+                    if (activeProfileSystem().isLoaded(ipro)) continue;
 
                     //found a free slot
-                    token.setValue(EngineContext::get().profileSystem().loadOneProfile(loadName, REF_TO_INT(ipro)).get());
+                    token.setValue(activeProfileSystem().loadOneProfile(loadName, REF_TO_INT(ipro)).get());
                     if (token.getValue() == ipro) break;
                 }
             }
 
             // Failed to load object!
-            if (!EngineContext::get().profileSystem().isLoaded((PRO_REF)token.getValue()))
+            if (!activeProfileSystem().isLoaded((PRO_REF)token.getValue()))
             {
                 Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, token.get_start_location());
                 e << "failed to load object " << token.get_lexeme() << " - \n"
                     << " - \n`" << _lineBuffer.toString() << "`" << Log::EndOfEntry;
-                EngineContext::get().logTarget() << e;
+                Log::activeTarget() << e;
             }
             token.category(Ego::Script::PDLTokenKind::Constant);
         }
@@ -681,7 +682,7 @@ Ego::Script::PDLToken parser_state_t::parse_token(ObjectProfile *ppro, script_in
             // Emit a warning that the string is empty.
             Ego::Script::CLogEntry e(Log::Level::Message, __FILE__, __LINE__, __FUNCTION__, token.get_start_location());
             e << "empty string literal\n" << Log::EndOfEntry;
-            EngineContext::get().logTarget() << e;
+            Log::activeTarget() << e;
         }
         return token;
     } else if (state.isOperator()) {
@@ -785,7 +786,7 @@ void parser_state_t::raise(bool raiseException, Log::Level level, const Ego::Scr
         e << ", ";
     }
     e << "received " << "`" << toString(received.category()) << "`" << Log::EndOfEntry;
-    EngineContext::get().logTarget() << e;
+    Log::activeTarget() << e;
     if (raiseException)
     {
         throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::syntactical, received.get_start_location(), e.getText());
@@ -1105,7 +1106,7 @@ bool load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectP
 	if (!load_ai_script_vfs0(ps, loadname, ppro, script)) {
 		Log::Entry e(Log::Level::Info, __FILE__, __LINE__, __FUNCTION__);
 		e << "unable to load script file `" << loadname << "` - loading default script `" << "mp_data/script.txt" << "` instead" << Log::EndOfEntry;
-		EngineContext::get().logTarget() << e;
+		Log::activeTarget() << e;
 		if (!load_ai_script_vfs0(ps, "mp_data/script.txt", ppro, script)) {
 			return false;
 		}

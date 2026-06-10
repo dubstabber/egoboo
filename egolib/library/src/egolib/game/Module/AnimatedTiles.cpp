@@ -1,5 +1,5 @@
 #include "egolib/game/Module/AnimatedTiles.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 AnimatedTilesState::Layer::Layer() :
     update_and(0),
@@ -27,7 +27,7 @@ void AnimatedTilesState::upload(const wawalite_animtile_t& source)
 
 void AnimatedTilesState::Layer::update()
 {
-    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
+    const uint32_t currentUpdateFrame = Ego::Entities::activeWorldUpdateCount();
 
     // skip it if there were no updates
     if (frame_update_old == currentUpdateFrame) return;

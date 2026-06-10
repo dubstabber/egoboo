@@ -50,9 +50,16 @@ public:
     virtual EVE_REF loadEnchantProfile(const std::string& pathname, EVE_REF overrideRef) = 0;
 };
 
-/// @brief Lower-layer accessor for the active profile system.
-/// @remark Behaviour-equivalent to the EngineContext profile-system accessor: the object installed into
-///         the engine context is always @c ProfileSystem::get() (see @c ContentRuntimeBootstrap), so this
-///         resolves the same instance without a non-game leaf having to reach up into the app-layer
-///         engine-context service hub. Mirrors the @c Log::activeTarget() seam.
+/// @brief Install the active profile system.
+/// @throw std::logic_error if already installed
+void installActiveProfileSystem(IProfileSystem& profileSystem);
+
+/// @brief Clear the installed active profile system.
+void clearActiveProfileSystem();
+
+/// @brief The installed active profile system, or @a nullptr if none is installed.
+IProfileSystem* tryActiveProfileSystem();
+
+/// @brief The active profile system.
+/// @throw std::logic_error if none is installed
 IProfileSystem& activeProfileSystem();

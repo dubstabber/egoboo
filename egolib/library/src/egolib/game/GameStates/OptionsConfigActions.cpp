@@ -1,6 +1,6 @@
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"
 
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/egoboo_setup.h"
 
 namespace Ego::GameStates::Internal::OptionsConfigActions
@@ -9,7 +9,7 @@ namespace
 {
 egoboo_config_t& config()
 {
-    return EngineContext::get().config();
+    return Ego::activeConfig();
 }
 }
 
@@ -22,7 +22,7 @@ void applyMusicVolume(int value)
 {
     config().sound_music_volume.setValue(value);
     config().sound_music_enable.setValue(value > 0);
-    EngineContext::get().audioSystem().setMusicVolume(value);
+    activeAudioSystem().setMusicVolume(value);
 }
 
 int soundEffectVolume()
@@ -35,7 +35,7 @@ void applySoundEffectVolume(int value)
     config().sound_effects_volume.setValue(value);
     config().sound_effects_enable.setValue(value > 0);
 
-    auto& audioSystem = EngineContext::get().audioSystem();
+    auto& audioSystem = activeAudioSystem();
     audioSystem.setSoundEffectVolume(value);
     audioSystem.playSoundFull(audioSystem.getGlobalSound(GSND_BUTTON_CLICK));
 }

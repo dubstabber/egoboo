@@ -26,7 +26,6 @@ Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
 Ego::IGraphicsSystem* activeGraphicsSystem = nullptr;
 Ego::ITextureManager* activeTextureManager = nullptr;
-IProfileSystem* g_activeProfileSystem = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
@@ -474,36 +473,27 @@ const IParticleHandler& EngineContext::particleHandler() const
 
 void EngineContext::installProfileSystem(IProfileSystem& profileSystem)
 {
-    if (g_activeProfileSystem)
-    {
-        throw std::logic_error("profile system already installed");
-    }
-    g_activeProfileSystem = &profileSystem;
+    installActiveProfileSystem(profileSystem);
 }
 
 void EngineContext::clearProfileSystem()
 {
-    g_activeProfileSystem = nullptr;
+    clearActiveProfileSystem();
 }
 
 IProfileSystem* EngineContext::tryProfileSystem()
 {
-    return g_activeProfileSystem;
+    return tryActiveProfileSystem();
 }
 
 const IProfileSystem* EngineContext::tryProfileSystem() const
 {
-    return g_activeProfileSystem;
+    return tryActiveProfileSystem();
 }
 
 IProfileSystem& EngineContext::profileSystem()
 {
-    IProfileSystem* currentProfileSystem = tryProfileSystem();
-    if (!currentProfileSystem)
-    {
-        throw std::logic_error("no active profile system");
-    }
-    return *currentProfileSystem;
+    return activeProfileSystem();
 }
 
 const IProfileSystem& EngineContext::profileSystem() const

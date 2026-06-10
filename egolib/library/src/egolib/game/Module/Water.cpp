@@ -1,6 +1,6 @@
 #include "egolib/game/Module/Water.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/graphic.h"
+#include "egolib/egoboo_setup.h"
+#include "egolib/Extensions/ogl_extensions.h"
 
 water_instance_layer_t::water_instance_layer_t() :
     _frame(0),
@@ -75,7 +75,7 @@ void water_instance_t::make(const wawalite_water_t& source)
 
         /// @note claforte@> Probably need to replace this with a
         ///           GL_DEBUG(glColor4f)(spek/256.0f, spek/256.0f, spek/256.0f, 1.0f) call:
-        if (!gfx.gouraudShading_enable)
+        if (!Ego::activeConfig().graphic_gouraudShading_enable.getValue())
             _spek[i] = 0;
         else
             _spek[i] = spek;
@@ -104,7 +104,7 @@ void water_instance_t::upload(const wawalite_water_t& source)
     make(source);
 
     // Allow slow machines to ignore the fancy stuff
-    if (!EngineContext::get().config().graphic_twoLayerWater_enable.getValue() && _layer_count > 1)
+    if (!Ego::activeConfig().graphic_twoLayerWater_enable.getValue() && _layer_count > 1)
     {
         int iTmp = source.layer[0].light_add;
         iTmp = (source.layer[1].light_add * iTmp * idlib::fraction<float, 1, 255>()) + iTmp;
@@ -140,7 +140,7 @@ float water_instance_t::get_level() const
 {
     float level = _layers[0].get_level();
 
-    if (EngineContext::get().config().graphic_twoLayerWater_enable.getValue())
+    if (Ego::activeConfig().graphic_twoLayerWater_enable.getValue())
     {
         for (size_t i = 1; i < (size_t)MAXWATERLAYER; ++i)
         {
