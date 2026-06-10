@@ -7,9 +7,11 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 - `32-project-health-and-solid-assessment.md` (2026-04-16 SOLID/design assessment)
 - `46-cross-platform-and-third-party-independence-status.md` (2026-04-17 portability snapshot)
 
-Snapshot date: 2026-06-09 (updated from the 2026-06-08, 2026-06-06, and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
+Snapshot date: 2026-06-10 (updated from the 2026-06-09, 2026-06-08, 2026-06-06, and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
-**Latest (2026-06-09) — foundation-base growth absorptions:** two nm-pre-verified pure-CMake source-list moves grew the lowest layer: **InputControl** (3 TUs) and **Image + `Graphics/PixelFormat.cpp`** (7 TUs, which must move as a unit — Image alone has 6 `pixel_descriptor` blockers all defined in `PixelFormat.cpp`). Cumulative membership now **`egolib-foundation-base` 83 / `egolib-physics` 4 / `egolib-library` 205** (was 73/4/215 at the physics carve). SDL2_image needed no CMake change (`IMG_*` resolves transitively via `idlib-game-engine-library`, which the base PUBLIC-links). Each acyclic (live positive controls fired), full gate green (build / `ar t` / nm / validator 0/0 / ctest -j1 823/825 / smoke exit-124). Branches `refactor/egolib-inputcontrol-foundation-absorb`, `refactor/egolib-image-foundation-absorb`.
+**Latest (2026-06-10) — Core/System foundation seam:** the small bootstrap edge named by the frontier-absorption pass has landed. `Core/System.cpp` no longer includes `game/Core/EngineContext.hpp`; it installs/clears the existing lower-layer `Log::activeTarget` and `activeConfig` seams directly and downloads setup into `Ego::activeConfig()`. That TU moved into `egolib-foundation-base`, giving the current verified layout **`egolib-foundation-base` 115 / `egolib-physics` 6 / `egolib-renderer` 29 / `egolib-library` 142**. Gates green: build, `ar t`, aggregate nm acyclicity with live positive controls, validator `test.mod` 0/0, ctest -j1 823/825 (only the two known `ScriptLoaderFixture` failures), menu smoke exit-124 clean.
+
+**Previous (2026-06-09) — foundation-base growth absorptions:** two nm-pre-verified pure-CMake source-list moves grew the lowest layer: **InputControl** (3 TUs) and **Image + `Graphics/PixelFormat.cpp`** (7 TUs, which must move as a unit — Image alone has 6 `pixel_descriptor` blockers all defined in `PixelFormat.cpp`). Cumulative membership then reached **`egolib-foundation-base` 83 / `egolib-physics` 4 / `egolib-library` 205** (was 73/4/215 at the physics carve). SDL2_image needed no CMake change (`IMG_*` resolves transitively via `idlib-game-engine-library`, which the base PUBLIC-links). Each acyclic (live positive controls fired), full gate green (build / `ar t` / nm / validator 0/0 / ctest -j1 823/825 / smoke exit-124). Branches `refactor/egolib-inputcontrol-foundation-absorb`, `refactor/egolib-image-foundation-absorb`.
 
 **Change since the foundation carve (2026-06-09):** the link-split deepened to **three layers**. The carved foundation was re-split into `egolib-foundation-base` (73 TUs) + a thin `egolib-physics` middle layer (4 TUs: the collision nucleus `Collidable`/`ICollisionWorld`/`MeshLookupTables`/`PhysicalConstants`), giving the acyclic chain **`egolib-foundation-base ← egolib-physics ← egolib-library`** — landing the long-named `egolib-physics` link target. A pure CMake partition (zero source edits), nm-verified acyclic on fresh artifacts (physics needs only base symbols + 2 intra-nucleus, 0 into the upper library; 0 base→physics back-edges; positive control fired). All gates green (`ar t` 73/4/215, validator `test.mod` 0/0, ctest -j1 823/825, smoke clean). Branch `refactor/egolib-physics-middle-carve`. See `19-refactoring-roadmap.md` and `71-completed-passes-log.md`.
 
@@ -19,14 +21,14 @@ Snapshot date: 2026-06-09 (updated from the 2026-06-08, 2026-06-06, and 2026-04-
 
 ### Key Metrics (canonical — other docs should defer here for these volatile numbers)
 
-Verified against the live tree on 2026-06-08. These are the single source of truth; sections below and sibling docs (`01`, `02`, `AGENTS.md`) reference this table rather than re-stating the figures.
+Verified against the live tree on 2026-06-10. These are the single source of truth; sections below and sibling docs (`01`, `02`, `AGENTS.md`) reference this table rather than re-stating the figures.
 
 | Metric | Value | Note |
 | ------ | ----: | ---- |
 | Active source files (egolib+egoboo, excl. tests) | **643** | `.c` 61 · `.cpp` 227 · `.h` 59 · `.hpp` 296 (incl. the new lower-layer `egolib/Physics/ICollisionWorld.{hpp,cpp}`) |
 | Active source lines (egolib+egoboo) | ~121,000 | — |
-| Test lines / ratio | ~20,800 / **~17.1%** | 41 test `.cpp` files, **817** ctest cases (incl. `CombatDamageIntegration.cpp`, 6 cases) |
-| ctest result | **815 / 817** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
+| Test lines / ratio | ~20,800 / **~17.1%** | 42 test `.cpp` files, **825** ctest cases (incl. `CombatDamageIntegration.cpp` and `CollisionPipeline.cpp`) |
+| ctest result | **823 / 825** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
 | Singleton `::get()` call sites (egolib) | **~760** | the 2026-06-08 service-hub free-fn seams cut ~100; down from ~863 (2026-06-08 pre-front) / ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
 | `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07) |
 | `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
@@ -91,7 +93,7 @@ The C vs. C++ split by implementation-file line count is roughly 44% C / 56% C++
 
 ### Test-to-code ratio
 
-**~20,400** test lines against ~121,000 active source lines = **~16.9%** (40 test `.cpp` files, 811 ctest cases). This is a large jump from the ~3.6% figure at the April baseline and crosses the threshold at which tests start protecting behavior rather than only compilation. The jump came from bringing script-dispatch, gameplay, physics/collision math, and combat-damage surfaces under test rather than from raw parser coverage growth.
+**~20,800** test lines against ~121,000 active source lines = **~17.1%** (42 test `.cpp` files, 825 ctest cases). This is a large jump from the ~3.6% figure at the April baseline and crosses the threshold at which tests start protecting behavior rather than only compilation. The jump came from bringing script-dispatch, gameplay, physics/collision math, combat-damage, and collision-pipeline surfaces under test rather than from raw parser coverage growth.
 
 Current test files under `egolib/tests/egolib/tests/`:
 
@@ -110,9 +112,10 @@ Current test files under `egolib/tests/egolib/tests/`:
 - `MapTwist.cpp`, `LogicDamageAttribute.cpp` — map twist↔normal math and Damage/Attribute enum-mapping characterization (T3.4)
 - `CombatDamageResolution.cpp` — combat damage-resolution math on a **live spawned `Object`** (resistance/reduction/invictus); the first live-Object-fixture characterization batch (T3.4, 2026-06-08)
 - `CombatDamageIntegration.cpp` — the integrated `Object::damage(...)`/`kill(...)` side-effect chain on a **live module-spawned `Object`** (life subtraction, hurt/careful timers, attack alert, lethal kill, invictus/dead/zero guards); gates the `ICollidable` extraction (T3.4, 2026-06-08)
+- `CollisionPipeline.cpp` — live-spawn collision-pipeline characterization for `do_chr_prt_collision` and `CollisionSystem::detectCollision` gates (T3.4, 2026-06-09)
 - `math/` — math submodule tests
 
-Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, Damage/Attribute enum logic, and now the **combat damage-resolution math on a live spawned `Object`** (resistance/reduction/invictus, `CombatDamageResolution.cpp` — the first live-Object-fixture batch) are covered by the T3.4 characterization batches; script-VM, module-load, accessor, and gameplay-alert surfaces are partially covered. Notably still absent: rendering correctness tests, GUI tests, and the full combat *integration* path (`Object::damage(...)` side effects, `do_chr_prt_collision` pipelines) which needs richer multi-object/particle setup.
+Pure physics/collision math (intersection, swept bounds, collision normals, oct-box ops, recoil), map twist math, Damage/Attribute enum logic, combat damage-resolution/integration, and the live collision pipeline are covered by the T3.4 characterization batches; script-VM, module-load, accessor, and gameplay-alert surfaces are partially covered. Notably still absent: rendering correctness tests, GUI tests, and AI.
 
 ---
 
@@ -227,16 +230,17 @@ A written policy now exists at `doc/error-handling-policy.md`: exceptions for ex
 | ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- | -------: |
 | `idlib`                      | Submodule (11 libs)  | Foundation utilities (math, color, filesystem, parsing, signals, types, chrono, document, hll)      | ~33,000  |
 | `idlib-game-engine`          | Submodule            | OpenGL (GLEW), PhysFS, googletest integration                                                        | ~5,000   |
-| `egolib-foundation-base`     | Static library       | Dependency-closed lowest layer (83 TUs): Math, Log, Mesh, VFS, Time, FileFormats, Platform, InputControl, Image, the Script DDL/PDL lexer, Logic/TreasureTables, toplevel math/IO — verified acyclic | ~31,000 |
-| `egolib-physics`             | Static library       | Thin middle layer (4 TUs): the collision nucleus `Collidable`/`ICollisionWorld`/`MeshLookupTables`/`PhysicalConstants` — depends one-way on `egolib-foundation-base` | ~1,000 |
-| `egolib-library`             | Static library       | The rest of egolib (205 TUs): Entities, game, Graphics, Renderer, Profiles, the EgoScript VM, … — depends one-way on `egolib-physics` (and transitively `egolib-foundation-base`) | ~88,000  |
+| `egolib-foundation-base`     | Static library       | Dependency-closed lowest layer (115 TUs): Math, Log, Mesh, VFS, Time, Core/System bootstrap, FileFormats, Platform, InputControl, Image, Profiles data/writers, MD2 + texture/font clusters, Script DDL/PDL lexer, Logic/Perk/TreasureTables, toplevel math/IO — verified acyclic | ~31,000 |
+| `egolib-physics`             | Static library       | Thin middle layer (6 TUs): collision nucleus plus `physics.c` and `Entities/Common.cpp` — depends one-way on `egolib-foundation-base` | ~1,000 |
+| `egolib-renderer`            | Static library       | Renderer middle layer (29 TUs): SDL display/windowing and OpenGL backend — sibling of `egolib-physics`, depends one-way on `egolib-foundation-base` | ~10,000 |
+| `egolib-library`             | Static library       | The rest of egolib (142 TUs): Entities/game core, the EgoScript VM, and remaining higher gameplay/UI code — depends one-way on `egolib-physics` and `egolib-renderer` | ~78,000  |
 | `egoboo`                     | Executable           | Thin entry point                                                                                     |       90 |
 | `egoboo-content-validator`   | Executable (tool)    | Content validation tool                                                                              |   ~1,200 |
 | `cartman`                    | Gated off by default | Map editor — wired into CMake behind `option(EGOBOO_BUILD_CARTMAN OFF)`; compiles/links/runs when ON; not in the default build (T3.5) | ~9,300 |
 
 ### `egolib` internal structure — now made explicit in CMake
 
-The historical `GLOB_RECURSE` in `egolib/library/CMakeLists.txt` has been replaced with explicit, per-subsystem source lists (one `set()` block per directory, grouped alphabetically). Ownership is visible in the build system, and as of 2026-06-09 the build **also enforces a three-layer link boundary**: the dependency-closed lower layer is carved into `egolib-foundation-base` (73 TUs) ← a thin `egolib-physics` middle layer (4 TUs, the collision nucleus) ← `egolib-library`, each depending one-way on the next (verified acyclic by nm symbol-closure proofs — 0 cycle edges). This is the genuine link-level modularization of egolib; the remaining higher subsystems still link into the single `egolib-library`.
+The historical `GLOB_RECURSE` in `egolib/library/CMakeLists.txt` has been replaced with explicit, per-subsystem source lists (one `set()` block per directory, grouped alphabetically). Ownership is visible in the build system, and as of 2026-06-10 the build enforces an acyclic four-archive DAG: `egolib-foundation-base` (115 TUs) ← sibling middle layers `egolib-physics` (6 TUs) and `egolib-renderer` (29 TUs) ← `egolib-library` (142 TUs). The dependency direction is nm symbol-closure verified with live positive controls.
 
 Directory-level subsystem map (by line count, large to small):
 

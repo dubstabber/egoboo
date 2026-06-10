@@ -877,6 +877,7 @@ endif()
 set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/AI/WaypointList.c
     src/egolib/Clock.cpp
+    src/egolib/Core/System.cpp
     src/egolib/Debug.cpp
     src/egolib/Entities/IObjectWorld.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp

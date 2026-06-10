@@ -1496,7 +1496,7 @@ The continuation the IObjectWorld entry named: *"the actual `egolib-physics` `ad
 
 **Foundation set:** whole subsystems Math/Log/Mesh/VFS/Time/FileFormats/Platform + the Physics nucleus (`Collidable`/`ICollisionWorld`/`MeshLookupTables`/`PhysicalConstants`) + the **Script DDL/PDL lexer** (everything in `Script/` except the EgoScript VM `script.c`) + `Logic/TreasureTables` + toplevel math/IO (`_math`/`bbox`/`geometry`/`frustum`/`map_functions`/`typedef`/`strutil`/`vfs`/`Zeitgeist`/...). Genuinely-higher TUs correctly stay in `egolib-library`: Image impl (→`Graphics/PixelFormat`), `font_bmp` (→`Renderer/Texture`), `physics.c` (→Entities), `script.c` (the VM).
 
-**Next toward fuller modularization:** Image could join the foundation once `Graphics/PixelFormat` (`pixel_descriptor`) is relocated down; an `egolib-physics` sub-library could split out of the foundation (the nucleus is a clean sub-DAG within it); the residual `Core/System` bootstrap edge and the `physics.c`/Entities ownership-inversion remain the larger lower-layer fronts.
+**Next toward fuller modularization:** Image could join the foundation once `Graphics/PixelFormat` (`pixel_descriptor`) is relocated down; an `egolib-physics` sub-library could split out of the foundation (the nucleus is a clean sub-DAG within it); the residual `Core/System` bootstrap edge (resolved by the 2026-06-10 seam-swap below) and the `physics.c`/Entities ownership-inversion remain the larger lower-layer fronts.
 
 ---
 
@@ -1515,7 +1515,7 @@ The continuation the foundation carve named: *"an `egolib-physics` sub-library c
 
 **Verification (every gate green):** clean from-scratch build (foundation-base 73 + physics 4 + library 215 objects, egoboo/validator/tests linked); `ar t` membership counts exact (73/4/215); nm acyclic as above; validator `test.mod` 0/0 (`errors=245` baseline elsewhere); ctest -j1 **823/825** (only the 2 known `ScriptLoaderFixture` PrimaryScript-fallback failures #613/#614); menu smoke-run clean (exit 124, full OpenGL 4.6 + SDL_image/ttf/mixer boot, graceful shutdown, no crash markers). Committed as one carve commit.
 
-**Next (nm-pre-verified by the same scout, queued as their own bounded fronts):** **(1)** absorb **InputControl** (3 TUs `InputControl/{InputDevice,InputSystem,ControlSettingsFile}.cpp`) into `egolib-foundation-base` — 0 library blockers, only SDL_* + existing-foundation refs; **(2)** absorb **Image + `Graphics/PixelFormat.cpp`** (7 TUs together — Image alone has 6 `pixel_descriptor` blockers, so they must move as a unit) and add SDL2_image to the foundation `target_link_libraries` for hygiene. Deferred larger fronts unchanged: the `game/mesh.c` `ego_mesh_t` chokepoint (blocks AI), the `Core/System` bootstrap edge, the `physics.c`/Entities ownership-inversion.
+**Next (nm-pre-verified by the same scout, queued as their own bounded fronts):** **(1)** absorb **InputControl** (3 TUs `InputControl/{InputDevice,InputSystem,ControlSettingsFile}.cpp`) into `egolib-foundation-base` — 0 library blockers, only SDL_* + existing-foundation refs; **(2)** absorb **Image + `Graphics/PixelFormat.cpp`** (7 TUs together — Image alone has 6 `pixel_descriptor` blockers, so they must move as a unit) and add SDL2_image to the foundation `target_link_libraries` for hygiene. Deferred larger fronts at that point: the `game/mesh.c` `ego_mesh_t` chokepoint (blocks AI), the `Core/System` bootstrap edge (resolved by the 2026-06-10 seam-swap below), the `physics.c`/Entities ownership-inversion.
 
 ---
 
@@ -1588,6 +1588,21 @@ chain via `Log::activeTarget()`. The physics/Entities ownership-inversion remain
 flag-day, do not attempt incrementally.** A valuable side-find: a **4th racing test fixture** shares the
 writable `.egoboo-runtime/user` path with no env override (`Platform/file_linux.c:190-200`) — fixing fixture
 isolation would make `ctest -j20` trustworthy and every future gate cycle ~70 s faster.
+
+## Core/System bootstrap seam-swap (2026-06-10)
+
+The named quick follow-on from the frontier-absorption pass is done. `Core/System.cpp` now publishes logging
+and configuration through the lower-layer ownership seams directly (`Log::installActiveTarget` /
+`Log::clearActiveTarget`, `Ego::installActiveConfig` / `Ego::clearActiveConfig`, `Ego::activeConfig`) instead
+of including `game/Core/EngineContext.hpp`; behavior is unchanged because `EngineContext` already delegates
+to those same seams.
+
+With that upward include removed, `Core/System.cpp` moved into `EGOLIB_FOUNDATION_BASE_SOURCES`. Current
+archive layout: **`egolib-foundation-base` 115 / `egolib-physics` 6 / `egolib-renderer` 29 /
+`egolib-library` 142**. Verified: build 0, exact `ar t` membership counts, aggregate nm acyclicity
+(base→physics/renderer/library 0; physics↔renderer 0; middle→library 0; live positive controls fired),
+validator `test.mod` 0/0, ctest -j1 **823/825** (only `ScriptLoaderFixture` #613/#614), and menu smoke
+exit-124 clean.
 
 ---
 
