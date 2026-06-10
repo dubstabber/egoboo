@@ -230,11 +230,6 @@ bool Particle::hasValidTarget() const
     return getTarget() != nullptr;
 }
 
-bool Particle::isTerminated() const
-{
-    return _isTerminated;
-}
-
 PIP_REF Particle::getProfileID() const
 {
     return _particleProfileID;
