@@ -2,9 +2,16 @@
 
 #include <SDL.h>
 
+#include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace Ego::Test
 {
@@ -37,6 +44,18 @@ inline void configureDataDirectory()
     if (SDL_setenv("EGOBOO_DATA_DIR", dataDir.c_str(), 1) != 0)
     {
         throw std::runtime_error("unable to set EGOBOO_DATA_DIR for Egoboo tests");
+    }
+
+#ifdef _WIN32
+    const int pid = _getpid();
+#else
+    const int pid = static_cast<int>(getpid());
+#endif
+    const std::string userDir =
+        (std::filesystem::temp_directory_path() / ("egoboo-test-" + std::to_string(pid)) / "user").string();
+    if (SDL_setenv("EGOBOO_USER_DIR", userDir.c_str(), 1) != 0)
+    {
+        throw std::runtime_error("unable to set EGOBOO_USER_DIR for Egoboo tests");
     }
 }
 

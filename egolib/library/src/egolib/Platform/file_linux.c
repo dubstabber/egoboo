@@ -188,7 +188,9 @@ int sys_fs_init(const char *root_dir)
 
     const std::string projectRoot = findProjectRoot(root_dir);
     const std::string runtimeRoot = trimTrailingSlash(projectRoot) + "/.egoboo-runtime";
-    const std::string userPath = runtimeRoot + "/user";
+
+    const char *envUserDir = getenv("EGOBOO_USER_DIR");
+    const std::string userPath = (envUserDir && *envUserDir) ? envUserDir : runtimeRoot + "/user";
     const std::string configPath = runtimeRoot + "/config";
 
     strncpy(_dataPath, dataPath.c_str(), SDL_arraysize(_dataPath));

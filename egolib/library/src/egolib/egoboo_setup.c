@@ -280,6 +280,14 @@ void setup_init_base_vfs_paths()
     //---- tell the vfs to add the basic search paths
     vfs_set_base_search_paths();
 
+    // Ensure user subdirectories exist before mounting (PhysFS silently
+    // rejects mounts of nonexistent directories).
+    const std::string userDir = fs_getUserDirectory();
+    fs_createDirectory(userDir + "modules");
+    fs_createDirectory(userDir + "players");
+    fs_createDirectory(userDir + "import");
+    fs_createDirectory(userDir + "remote");
+
     //---- mount all of the default global directories
 
     // mount the global basicdat directory t the beginning of the list
