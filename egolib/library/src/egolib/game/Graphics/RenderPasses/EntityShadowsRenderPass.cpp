@@ -5,6 +5,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -23,7 +24,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
         return;
     }
     // Get the renderer.
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // Do not write into the depth buffer.
     renderer.setDepthWriteEnabled(false);
     // Enable depth tests.
@@ -129,7 +130,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     }
 
     // Choose texture and matrix
-    Renderer::get().getTextureUnit().setActivated(texture.get());
+    EngineContext::get().renderer().getTextureUnit().setActivated(texture.get());
     {
         idlib::buffer_scoped_lock lock(*_vertexBuffer);
         Vertex *vertices = lock.get<Vertex>();
@@ -207,7 +208,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     float y = pchr->getMatrix()(1, 3);
 
     // Choose texture and matrix
-    Renderer::get().getTextureUnit().setActivated(texture.get());
+    EngineContext::get().renderer().getTextureUnit().setActivated(texture.get());
 
     // GOOD SHADOW
     {
@@ -285,7 +286,7 @@ void EntityShadowsRenderPass::doShadowSprite(float intensity, idlib::vertex_buff
     //Limit the intensity to a valid range
     intensity = Math::constrain(intensity, 0.0f, 1.0f);
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     renderer.setColour(Colour4f(intensity, intensity, intensity, 1.0f));
 
     renderer.render(vertexBuffer, vertexDescriptor, idlib::primitive_type::triangle_fan, 0, 4);

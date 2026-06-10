@@ -171,16 +171,16 @@ void CameraSystem::endCameraMode()
 {
     // make the viewport the entire screen
     auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
-    Ego::Renderer::get().setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
+    EngineContext::get().renderer().setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
 
     // turn off the scissor mode
-    Ego::Renderer::get().setScissorTestEnabled(false);
+    EngineContext::get().renderer().setScissorTestEnabled(false);
 }
 
 
 void CameraSystem::beginCameraMode( const std::shared_ptr<Camera> &camera)
 {
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
     // scissor the output to the this area
     renderer.setScissorTestEnabled(true);

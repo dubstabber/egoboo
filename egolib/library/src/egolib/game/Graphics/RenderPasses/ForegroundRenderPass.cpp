@@ -4,7 +4,7 @@
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
-#include "egolib/Renderer/Renderer.hpp"          // Renderer::get()
+#include "egolib/Renderer/Renderer.hpp"          // EngineContext::get().renderer()
 #include "egolib/Graphics/GraphicsWindow.hpp"    // Ego::GraphicsWindow
 
 namespace Ego {
@@ -28,7 +28,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         return;
     }
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
     renderer.setViewMatrix(camera.getViewMatrix());

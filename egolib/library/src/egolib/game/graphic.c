@@ -124,13 +124,13 @@ void gfx_system_load_assets()
     /// @author ZF
     /// @details This function loads all the graphics based on the game settings
     // Enable prespective correction?
-    Ego::Renderer::get().setPerspectiveCorrectionEnabled(gfx.perspective);
+    EngineContext::get().renderer().setPerspectiveCorrectionEnabled(gfx.perspective);
     // Enable dithering?
-    Ego::Renderer::get().setDitheringEnabled(gfx.dither);
+    EngineContext::get().renderer().setDitheringEnabled(gfx.dither);
     // Enable Gouraud shading?
-    Ego::Renderer::get().setGouraudShadingEnabled(gfx.gouraudShading_enable);
+    EngineContext::get().renderer().setGouraudShadingEnabled(gfx.gouraudShading_enable);
     // Enable antialiasing (via multisamples)?
-    Ego::Renderer::get().setMultisamplesEnabled(gfx.antialiasing);
+    EngineContext::get().renderer().setMultisamplesEnabled(gfx.antialiasing);
 }
 
 //--------------------------------------------------------------------------------------------
@@ -232,7 +232,7 @@ void gfx_config_t::init(gfx_config_t& self)
 //--------------------------------------------------------------------------------------------
 void gfx_do_clear_screen()
 {
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // Clear the depth buffer.
     renderer.setDepthWriteEnabled(true);
 	renderer.getDepthBuffer().clear();
@@ -385,12 +385,12 @@ void TileRenderer::bind(const ego_tile_info_t& tile)
 
 	if (needsBinding)
 	{
-		Ego::Renderer::get().getTextureUnit().setActivated(texture.get());
+		EngineContext::get().renderer().getTextureUnit().setActivated(texture.get());
 		if (texture && texture->hasAlpha())
 		{
 			// MH: Enable alpha blending if the texture requires it.
-			Ego::Renderer::get().setBlendingEnabled(true);
-			Ego::Renderer::get().setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one_minus_source0_alpha);
+			EngineContext::get().renderer().setBlendingEnabled(true);
+			EngineContext::get().renderer().setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one_minus_source0_alpha);
 		}
 	}
 }

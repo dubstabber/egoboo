@@ -6,7 +6,7 @@
 #include "egolib/game/graphic_fan.h"
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
-#include "egolib/Renderer/Renderer.hpp" // Ego::Renderer, Renderer::get()
+#include "egolib/Renderer/Renderer.hpp" // Ego::Renderer, EngineContext::get().renderer()
 
 namespace Ego {
 namespace Graphics {
@@ -25,7 +25,7 @@ void WaterTilesRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         throw idlib::runtime_error(__FILE__, __LINE__, "tile list not bound to a mesh");
     }
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // Set projection matrix.
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     // Set view matrix.
@@ -128,7 +128,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     }
 
     // draw draw front and back faces of polygons
-    Renderer::get().setCullingMode(idlib::culling_mode::none);
+    EngineContext::get().renderer().setCullingMode(idlib::culling_mode::none);
 
     struct Vertex
     {
@@ -206,7 +206,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     // tell the mesh texture code that someone else is controlling the texture
     TileRenderer::invalidate();
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     // set the texture
     renderer.getTextureUnit().setActivated(ptex.get());

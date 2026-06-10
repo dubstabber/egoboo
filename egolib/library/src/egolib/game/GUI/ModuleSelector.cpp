@@ -117,7 +117,7 @@ ModuleSelector::~ModuleSelector() {
 void ModuleSelector::drawContainer(DrawingContext& drawingContext) {
     const Colour4f backDrop = {0.66f, 0.0f, 0.0f, 0.6f};
 
-    auto &renderer = Renderer::get();
+    auto &renderer = EngineContext::get().renderer();
 
     //Draw backdrop
     std::shared_ptr<Material> material = nullptr;

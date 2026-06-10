@@ -24,6 +24,7 @@
 #include "egolib/Renderer/OpenGL/Texture.hpp"
 
 #include "egolib/Renderer/OpenGL/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Renderer/OpenGL/Utilities.hpp"
 #include "egolib/Renderer/OpenGL/RendererInfo.hpp"
 #include "egolib/Renderer/OpenGL/DefaultTexture.hpp"
@@ -222,7 +223,7 @@ void Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& 
 
 bool Texture::load(const std::string& name, const std::shared_ptr<SDL_Surface>& source)
 {
-    auto info = Ego::Renderer::get().getInfo();
+    auto info = EngineContext::get().renderer().getInfo();
     // Determine the texture sampler.
     idlib::texture_sampler sampler(info->getDesiredMinimizationFilter(),
                                    info->getDesiredMaximizationFilter(),

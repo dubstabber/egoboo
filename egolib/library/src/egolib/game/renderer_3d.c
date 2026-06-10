@@ -28,6 +28,7 @@
 
 #include "egolib/Time/Time.hpp"                      // Time
 #include "egolib/Renderer/Renderer.hpp"              // Ego::Renderer
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Renderer/OpenGL/Utilities.hpp"      // Ego::OpenGL::Utilities
 #include "egolib/Extensions/ogl_extensions.h"        // glBegin, glVertex3f, GL_DEBUG, GL_LINES, GL_POINTS, GL_QUADS, GL_DEBUG_END
 #include "egolib/map_functions.h"                    // XX, YY, ZZ
@@ -78,7 +79,7 @@ void LineSegmentList::draw_all(Camera& camera)
     /// @author BB
     /// @details draw some lines for debugging purposes
 
-	auto& renderer = Ego::Renderer::get();
+	auto& renderer = EngineContext::get().renderer();
 
     // disable texturing
 	renderer.getTextureUnit().setActivated(nullptr);
@@ -172,7 +173,7 @@ void PointList::draw_all(Camera& camera)
     /// @author BB
     /// @details draw some points for debugging purposes
 
-	auto& renderer = Ego::Renderer::get();
+	auto& renderer = EngineContext::get().renderer();
 
     // disable texturing
 	renderer.getTextureUnit().setActivated(nullptr);
@@ -225,7 +226,7 @@ PointList Renderer3D::pointList;
 LineSegmentList Renderer3D::lineSegmentList;
 
 void Renderer3D::begin3D(Camera& camera) {
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
     renderer.setViewMatrix(camera.getViewMatrix());
@@ -236,7 +237,7 @@ void Renderer3D::end3D() {}
 
 void Renderer3D::renderAxisAlignedBox(const Ego::AxisAlignedBox3f& bv, const Ego::Colour4f& colour)
 {
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     renderer.setViewMatrix(idlib::identity<Ego::Matrix4f4f>());
     renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
@@ -312,7 +313,7 @@ void Renderer3D::renderAxisAlignedBox(const Ego::AxisAlignedBox3f& bv, const Ego
 
 void Renderer3D::renderOctBB(const oct_bb_t &bb, bool drawSquare, bool drawDiamond, const Ego::Colour4f& squareColour, const Ego::Colour4f& diamondColour)
 {
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     // disable texturing
     renderer.getTextureUnit().setActivated(nullptr);

@@ -8,6 +8,7 @@
 #include "egolib/Log/Target.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
@@ -29,6 +30,7 @@ Ego::ITextureManager* activeTextureManager = nullptr;
 ICameraSystem* activeCameraSystem = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
+Ego::Renderer* activeRenderer = nullptr;
 }
 
 EngineContext& EngineContext::get()
@@ -64,6 +66,7 @@ void EngineContext::clearEngine()
     clearCameraSystem();
     clearBillboardSystem();
     clearGFX();
+    clearRenderer();
     activeEngine.reset();
 }
 
@@ -755,6 +758,50 @@ const Log::Target& EngineContext::logTarget() const
         throw std::logic_error("no active log target");
     }
     return *currentLogTarget;
+}
+
+void EngineContext::installRenderer(Ego::Renderer& renderer)
+{
+    if (activeRenderer)
+    {
+        throw std::logic_error("renderer already installed");
+    }
+    activeRenderer = &renderer;
+}
+
+void EngineContext::clearRenderer()
+{
+    activeRenderer = nullptr;
+}
+
+Ego::Renderer* EngineContext::tryRenderer()
+{
+    return activeRenderer;
+}
+
+const Ego::Renderer* EngineContext::tryRenderer() const
+{
+    return activeRenderer;
+}
+
+Ego::Renderer& EngineContext::renderer()
+{
+    Ego::Renderer* currentRenderer = tryRenderer();
+    if (!currentRenderer)
+    {
+        throw std::logic_error("no active renderer");
+    }
+    return *currentRenderer;
+}
+
+const Ego::Renderer& EngineContext::renderer() const
+{
+    const Ego::Renderer* currentRenderer = tryRenderer();
+    if (!currentRenderer)
+    {
+        throw std::logic_error("no active renderer");
+    }
+    return *currentRenderer;
 }
 
 uint32_t EngineContext::renderedFrameCount() const

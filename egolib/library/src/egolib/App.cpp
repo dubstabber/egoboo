@@ -21,6 +21,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     EngineContext::get().installImageManager(ImageManager::get());
     // Initialize the renderer.
     Renderer::initialize();
+    EngineContext::get().installRenderer(Renderer::get());
     // Initialize the texture manager.
     TextureManager::initialize();
     EngineContext::get().installTextureManager(TextureManager::get());
@@ -28,7 +29,7 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     FontManager::initialize();
     EngineContext::get().installFontManager(FontManager::get());
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // Set clear colour and clear depth.
     renderer.getColourBuffer().setClearValue(Colour4f(0, 0, 0, 0)); // Set black/transparent background.
     renderer.getDepthBuffer().setClearValue(1.0f);
@@ -72,6 +73,7 @@ AppImpl::~AppImpl()
     // Uninitialize the texture manager.
     TextureManager::uninitialize();
     // Uninitialize the renderer.
+    EngineContext::get().clearRenderer();
     Renderer::uninitialize();
     // Uninitialize the image manager.
     EngineContext::get().clearImageManager();

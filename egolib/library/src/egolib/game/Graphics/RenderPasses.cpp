@@ -166,7 +166,7 @@ gfx_rv TileListV2::render_fan(ego_mesh_t& mesh, const Index1D& i) {
         OpenGL::PushClientAttrib pca(GL_CLIENT_VERTEX_ARRAY_BIT);
         {
             // Per-vertex coloring.
-            Renderer::get().setGouraudShadingEnabled(gfx.gouraudShading_enable); // GL_LIGHTING_BIT
+            EngineContext::get().renderer().setGouraudShadingEnabled(gfx.gouraudShading_enable); // GL_LIGHTING_BIT
 
                                                                                       /// @note claforte@> Put this in an initialization function.
             GL_DEBUG(glEnableClientState)(GL_VERTEX_ARRAY);
@@ -196,7 +196,7 @@ gfx_rv TileListV2::render_fan(ego_mesh_t& mesh, const Index1D& i) {
 
     if (EngineContext::get().config().debug_mesh_renderNormals.getValue()) {
         TileRenderer::invalidate();
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         renderer.getTextureUnit().setActivated(nullptr);
         renderer.setColour(Colour4f::white());
         for (size_t i = ptile._vrtstart, j = 0; j < 4; ++i, ++j) {
@@ -272,7 +272,7 @@ gfx_rv TileListV2::render_heightmap_fan(ego_mesh_t& mesh, const Index1D& tileInd
         badvertex++;
     }
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     renderer.setDepthTestEnabled(false);
     renderer.setDepthFunction(idlib::compare_function::always_pass);

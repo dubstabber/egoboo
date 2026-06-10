@@ -21,7 +21,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
         // scan for solid objects
         for (size_t i = 0, n = el.getSize(); i < n; ++i)
         {
-            auto& renderer = Renderer::get();
+            auto& renderer = EngineContext::get().renderer();
             // solid objects draw into the depth buffer for hidden surface removal
             renderer.setDepthWriteEnabled(true);
 

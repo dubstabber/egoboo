@@ -21,6 +21,7 @@
 /// @brief the texture manager.
 
 #include "egolib/_math.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/fileutil.h"
 #include "egolib/Graphics/TextureManager.hpp"
 #include "egolib/Image/ImageManager.hpp"
@@ -100,7 +101,7 @@ void TextureManager::updateDeferredLoading() {
     {
         std::lock_guard<std::mutex> lock(_deferredLoadingMutex);
         for (const std::string &filePath : _requestedLoadDeferredTextures) {
-            auto loadTexture = Ego::Renderer::get().createTexture();
+            auto loadTexture = EngineContext::get().renderer().createTexture();
             ego_texture_load_vfs(loadTexture, filePath.c_str());
             _textureCache[filePath] = loadTexture;
         }
@@ -118,7 +119,7 @@ const std::shared_ptr<Texture>& TextureManager::getTexture(const std::string &fi
 
         if (SDL_GL_GetCurrentContext() != nullptr) {
             //We are the main OpenGL context thread so we can load textures
-            auto loadTexture = Ego::Renderer::get().createTexture();
+            auto loadTexture = EngineContext::get().renderer().createTexture();
             ego_texture_load_vfs(loadTexture, filePath.c_str());
             _textureCache[filePath] = loadTexture;
         } else {

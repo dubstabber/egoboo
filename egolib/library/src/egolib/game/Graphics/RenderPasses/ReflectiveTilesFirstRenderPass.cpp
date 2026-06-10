@@ -3,6 +3,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Graphics/RenderPasses.hpp"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -22,7 +23,7 @@ void ReflectiveTilesFirstRenderPass::doRun(::Camera& camera, const TileList& tl,
 
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         // DO NOT store the surface depth
         renderer.setDepthWriteEnabled(false);
 

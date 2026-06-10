@@ -4,6 +4,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
 #include "egolib/Renderer/Renderer.hpp"  // Renderer::get
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -19,7 +20,7 @@ void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
     auto& session = GameSessionContext::get();
     auto mesh = session.mesh();
     auto& water = session.water();
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
     renderer.setViewMatrix(camera.getViewMatrix());

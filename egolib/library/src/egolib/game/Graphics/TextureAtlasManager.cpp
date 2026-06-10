@@ -1,5 +1,5 @@
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
-#include "egolib/Renderer/Renderer.hpp" // Renderer::get()
+#include "egolib/Renderer/Renderer.hpp" // EngineContext::get().renderer()
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
@@ -62,7 +62,7 @@ void TextureAtlasManager::decimate(const std::shared_ptr<const Ego::Texture>& so
             rectangle.x = std::floor(x);
 
             // Create the destination texture.
-            auto targetTexture = Renderer::get().createTexture();
+            auto targetTexture = EngineContext::get().renderer().createTexture();
 
             // Create the destination surface.
             const auto& pfd = pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>();

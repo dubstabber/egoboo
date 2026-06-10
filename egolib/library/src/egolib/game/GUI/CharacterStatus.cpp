@@ -260,7 +260,7 @@ float CharacterStatus::draw_one_xp_bar(float x, float y, uint8_t ticks)
 
 	ticks = std::min(ticks, (uint8_t)NUMTICK);
 
-	Renderer::get().setColour(Colour4f::white());
+	EngineContext::get().renderer().setColour(Colour4f::white());
 
     Vector2f size;
     uint8_t cnt;

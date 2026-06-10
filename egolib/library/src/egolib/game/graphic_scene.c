@@ -217,9 +217,9 @@ void gfx_system_render_world(std::shared_ptr<Camera> camera, std::shared_ptr<Ego
 
 void draw_passages(Camera& cam)
 {
-    Ego::Renderer::get().setProjectionMatrix(cam.getProjectionMatrix());
-    Ego::Renderer::get().setViewMatrix(cam.getViewMatrix());
-    Ego::Renderer::get().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
+    EngineContext::get().renderer().setProjectionMatrix(cam.getProjectionMatrix());
+    EngineContext::get().renderer().setViewMatrix(cam.getViewMatrix());
+    EngineContext::get().renderer().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
     for (int i = 0; i < activeModule().getPassageCount(); ++i)
     {

@@ -4,6 +4,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Graphics/RenderPasses.hpp"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -14,7 +15,7 @@ ReflectiveTilesSecondRenderPass::ReflectiveTilesSecondRenderPass() :
 
 void ReflectiveTilesSecondRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // Set projection matrix.
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     // Set view matrix.
@@ -43,7 +44,7 @@ void ReflectiveTilesSecondRenderPass::doReflectionsEnabled(::Camera& camera, con
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
         // Enable blending.
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         // Enable blending.
         renderer.setBlendingEnabled(true);
         renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one);
@@ -57,7 +58,7 @@ void ReflectiveTilesSecondRenderPass::doReflectionsDisabled(::Camera& camera, co
 {
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         // Disable blending.
         renderer.setBlendingEnabled(false);
         // Do not display the completely transparent portion:

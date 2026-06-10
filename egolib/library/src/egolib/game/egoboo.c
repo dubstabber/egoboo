@@ -22,6 +22,7 @@
 /// @details
 
 #include "egolib/game/egoboo.h"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/_Include.hpp"
@@ -104,7 +105,7 @@ bool config_download(egoboo_config_t& cfg)
     /// @todo Fix old-style download.
     CameraSystem::get().getCameraOptions().turnMode = cfg.camera_control.getValue();
     gfx_config_t::download(gfx, cfg);
-    Ego::Renderer::get().download(cfg);
+    EngineContext::get().renderer().download(cfg);
 
     return true;
 }
@@ -117,7 +118,7 @@ bool config_upload(egoboo_config_t& cfg)
     // Upload configuration.
     AudioSystem::get().upload(cfg);
     EngineContext::get().particleHandler().upload(cfg);
-    Ego::Renderer::get().upload(cfg);
+    EngineContext::get().renderer().upload(cfg);
 
     return true;
 }

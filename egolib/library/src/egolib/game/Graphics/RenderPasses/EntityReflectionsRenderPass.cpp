@@ -34,7 +34,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
     OpenGL::Utilities::isError();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_CURRENT_BIT);
     {
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         // don't write into the depth buffer (disable glDepthMask for transparent objects)
         // turn off the depth mask by default. Can cause glitches if used improperly.
         renderer.setDepthWriteEnabled(false);

@@ -1,5 +1,6 @@
 #include "ProgressBar.hpp"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace GUI {
@@ -16,7 +17,7 @@ void ProgressBar::draw(DrawingContext& drawingContext) {
         float x, y;
     };
 
-    auto &renderer = Renderer::get();
+    auto &renderer = EngineContext::get().renderer();
     const auto &vd = uiManager()._vertexDescriptor;
     const auto &vb = uiManager()._vertexBuffer;
     renderer.getTextureUnit().setActivated(nullptr);

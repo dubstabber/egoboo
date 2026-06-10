@@ -225,7 +225,7 @@ SDL_Event *Console::handle_event(SDL_Event *event)
 
 void Console::draw()
 {
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     // don't worry about hidden surfaces
     renderer.setDepthTestEnabled(false);

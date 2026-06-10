@@ -186,7 +186,7 @@ bool BillboardSystem::render_one(Billboard& billboard, const Vector3f& cameraUp,
     }
 
     {
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         renderer.setColour(billboard._tint);
         renderer.getTextureUnit().setActivated(texture);
 
@@ -203,7 +203,7 @@ void BillboardSystem::render_all(::Camera& camera)
     {
         OpenGL::PushAttrib pa(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
         {
-            auto& renderer = Renderer::get();
+            auto& renderer = EngineContext::get().renderer();
             // Do not write an incoming fragments depth value into the depth buffer.
             renderer.setDepthWriteEnabled(false);
 
@@ -244,7 +244,7 @@ std::shared_ptr<Billboard> BillboardSystem::makeBillboard(ObjectRef obj_ref, con
     std::shared_ptr<Texture> tex;
     try
     {
-        tex = Ego::Renderer::get().createTexture();
+        tex = EngineContext::get().renderer().createTexture();
     }
     catch (...)
     {

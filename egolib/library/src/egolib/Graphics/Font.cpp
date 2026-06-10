@@ -31,6 +31,7 @@
 #include "egolib/Core/System.hpp"
 #include "egolib/Image/ImageManager.hpp"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/vfs.h"
@@ -105,12 +106,12 @@ Font::LaidTextRenderer::LaidTextRenderer(const std::shared_ptr<Texture> &atlas,
 
 void Font::LaidTextRenderer::render(int x, int y, const Colour4f &colour) {
     struct MatrixStack {
-        MatrixStack() :matrix(Renderer::get().getProjectionMatrix()) {}
-        ~MatrixStack() { Renderer::get().setProjectionMatrix(matrix); }
+        MatrixStack() :matrix(EngineContext::get().renderer().getProjectionMatrix()) {}
+        ~MatrixStack() { EngineContext::get().renderer().setProjectionMatrix(matrix); }
         const Matrix4f4f matrix;
     };
 
-    auto &renderer = Renderer::get();
+    auto &renderer = EngineContext::get().renderer();
     MatrixStack stack;
 
     Vector3f pos(static_cast<float>(x), static_cast<float>(y), 0.0f);
@@ -566,7 +567,7 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
     }
 
     int currentMaxSize = 128;
-    int maxTextureSize = Renderer::get().getInfo()->getMaximumTextureSize();
+    int maxTextureSize = EngineContext::get().renderer().getInfo()->getMaximumTextureSize();
     std::shared_ptr<SDL_Surface> atlas = nullptr;
 
     auto pfd = pixel_descriptor::get<idlib::pixel_format::R8G8B8A8>();
@@ -637,7 +638,7 @@ Font::FontAtlas Font::createFontAtlas(const std::vector<uint16_t> &codepoints) c
         retval.glyphs.insert(std::make_pair(codepoints[i], pos[i]));
     }
 
-    retval.texture = Renderer::get().createTexture();
+    retval.texture = EngineContext::get().renderer().createTexture();
     retval.texture->load("font atlas", atlas);
     retval.texture->setAddressModeS(idlib::texture_address_mode::clamp);
     retval.texture->setAddressModeT(idlib::texture_address_mode::clamp);

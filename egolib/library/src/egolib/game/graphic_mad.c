@@ -69,7 +69,7 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
         return gfx_error;
     }
     const auto& pmd2 = object.getModelDescriptor()->getMD2();
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     auto& textureManager = EngineContext::get().textureManager();
     auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
 
@@ -220,7 +220,7 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
         return gfx_error;
     }
 
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
     const std::shared_ptr<MD2Model> &pmd2 = object.getModelDescriptor()->getMD2();
 
@@ -409,7 +409,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
         {
-            auto& renderer = Ego::Renderer::get();
+            auto& renderer = EngineContext::get().renderer();
             // cull backward facing polygons
             // use couter-clockwise orientation to determine backfaces
             renderer.setCullingMode(idlib::culling_mode::back);
@@ -472,7 +472,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
         {
-            auto& renderer = Ego::Renderer::get();
+            auto& renderer = EngineContext::get().renderer();
 
             if (object.getAlpha() < 0xFF) {
                 // most alpha effects will be messed up by
@@ -549,7 +549,7 @@ gfx_rv ObjectGraphicsRenderer::render_solid(Camera& cam, const IRenderable& obje
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
         {
-            auto& renderer = Ego::Renderer::get();
+            auto& renderer = EngineContext::get().renderer();
             // do not display the completely transparent portion
             // this allows characters that have "holes" in their
             // textures to display the solid portions properly
@@ -597,7 +597,7 @@ void ObjectGraphicsRenderer::draw_chr_bbox(const std::shared_ptr<Object>& pchr)
     // Draw the object bounding box as a part of the graphics debug mode F7.
     if (config().debug_developerMode_enable.getValue() && EngineContext::get().inputSystem().isKeyDown(SDLK_F7))
     {
-        Ego::Renderer::get().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
+        EngineContext::get().renderer().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
         if (drawLeftSlot)
         {
@@ -645,9 +645,9 @@ void ObjectGraphicsRenderer::draw_chr_verts(const std::shared_ptr<Object>& pchr,
 
     // disable the texturing so all the points will be white,
     // not the texture color of the last vertex we drawn
-    Ego::Renderer::get().getTextureUnit().setActivated(nullptr);
+    EngineContext::get().renderer().getTextureUnit().setActivated(nullptr);
 
-	Ego::Renderer::get().setWorldMatrix(pchr->getMatrix());
+	EngineContext::get().renderer().setWorldMatrix(pchr->getMatrix());
     GL_DEBUG( glBegin( GL_POINTS ) );
     {
         for ( cnt = vmin; cnt < vmax; cnt++ )
@@ -664,9 +664,9 @@ void ObjectGraphicsRenderer::draw_one_grip(const Object& object, int slot)
 {
     // disable the texturing so all the points will be white,
     // not the texture color of the last vertex we drawn
-    Ego::Renderer::get().getTextureUnit().setActivated(nullptr);
+    EngineContext::get().renderer().getTextureUnit().setActivated(nullptr);
 
-    Ego::Renderer::get().setWorldMatrix(object.getMatrix());
+    EngineContext::get().renderer().setWorldMatrix(object.getMatrix());
 
     _draw_one_grip_raw(object, slot);
 }
@@ -716,7 +716,7 @@ void ObjectGraphicsRenderer::_draw_one_grip_raw(const Object& object, int slot)
         GL_DEBUG_END();
     }
 
-	Ego::Renderer::get().setColour(Ego::Colour4f::white());
+	EngineContext::get().renderer().setColour(Ego::Colour4f::white());
 }
 
 void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object>& pchr)
@@ -752,7 +752,7 @@ void ObjectGraphicsRenderer::draw_chr_grips( Object * pchr )
     // store the GL_MODELVIEW matrix (this stack has a finite depth, minimum of 32)
     GL_DEBUG( glMatrixMode )( GL_MODELVIEW );
     GL_DEBUG( glPushMatrix )();
-	Ego::Renderer::get().multiplyMatrix(pchr->inst.matrix);
+	EngineContext::get().renderer().multiplyMatrix(pchr->inst.matrix);
 
     if ( profile->isSlotValid(SLOT_LEFT) )
     {

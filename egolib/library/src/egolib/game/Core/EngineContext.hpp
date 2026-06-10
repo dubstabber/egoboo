@@ -22,6 +22,7 @@ class GameEngine;
 class PlayingState;
 struct egoboo_config_t;
 namespace Log { struct Target; }
+namespace Ego { class Renderer; }
 namespace Ego { namespace GUI { class UIManager; } }
 
 class EngineContext : private idlib::non_copyable
@@ -178,6 +179,15 @@ public:
 
     Log::Target& logTarget();
     const Log::Target& logTarget() const;
+
+    void installRenderer(Ego::Renderer& renderer);
+    void clearRenderer();
+
+    Ego::Renderer* tryRenderer();
+    const Ego::Renderer* tryRenderer() const;
+
+    Ego::Renderer& renderer();
+    const Ego::Renderer& renderer() const;
 
     uint32_t renderedFrameCount() const;
 

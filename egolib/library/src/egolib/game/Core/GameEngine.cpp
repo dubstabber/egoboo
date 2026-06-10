@@ -277,7 +277,7 @@ void GameEngine::renderOneFrame()
     // after the frame's draws, so deleting them now is safe and runs every frame.
     if (Ego::Renderer::is_initialized())
     {
-        static_cast<Ego::OpenGL::Renderer&>(Ego::Renderer::get()).drainPendingTextureDeletions();
+        static_cast<Ego::OpenGL::Renderer&>(EngineContext::get().renderer()).drainPendingTextureDeletions();
     }
 
     // flip the graphics page

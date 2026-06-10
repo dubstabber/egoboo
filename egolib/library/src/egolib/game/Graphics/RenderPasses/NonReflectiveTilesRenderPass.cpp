@@ -4,6 +4,7 @@
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Renderer/Renderer.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -16,7 +17,7 @@ void NonReflectiveTilesRenderPass::doRun(::Camera& camera, const TileList& tl, c
 {
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
-        auto& renderer = Renderer::get();
+        auto& renderer = EngineContext::get().renderer();
         // draw draw front and back faces of polygons
         renderer.setCullingMode(idlib::culling_mode::none);
         // Write to the depth buffer.

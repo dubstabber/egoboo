@@ -81,7 +81,7 @@ void UIManager::beginRenderUI() {
         return;
     }
 
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
 
     // do not use the ATTRIB_PUSH macro, since the glPopAttrib() is in a different function
     GL_DEBUG(glPushAttrib)(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT);
@@ -287,7 +287,7 @@ void UIManager::drawQuad2d(const Rectangle2f& target, const Rectangle2f& source)
         float x, y;
         float s, t;
     };
-    auto& renderer = Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     {
         idlib::vertex_buffer_scoped_lock vblck(*_textureQuadVertexBuffer);
         Vertex *v = vblck.get<Vertex>();

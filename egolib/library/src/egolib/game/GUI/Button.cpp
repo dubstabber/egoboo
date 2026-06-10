@@ -62,7 +62,7 @@ void Button::draw(DrawingContext& drawingContext) {
     //Update slidy button effect
     updateSlidyButtonEffect();
 
-    auto &renderer = Renderer::get();
+    auto &renderer = EngineContext::get().renderer();
 
     // Draw the button
     renderer.getTextureUnit().setActivated(nullptr);

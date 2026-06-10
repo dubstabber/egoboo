@@ -91,7 +91,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
     // only render solid sprites
     if (SPRITE_SOLID != pprt->type) return gfx_fail;
 
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -153,7 +153,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
 
     // if the particle instance data is not valid, do not continue
     if (!pprt->inst.valid) return gfx_fail;
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     auto& inst = pprt->inst;
 
     {
@@ -277,7 +277,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt)
     fadeoff *= 0.5f;
     fadeoff = Ego::Math::constrain(fadeoff*idlib::fraction<float, 1, 255>(), 0.0f, 1.0f);
 
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     if (fadeoff > 0.0f)
     {
         renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
@@ -446,7 +446,7 @@ void ParticleGraphicsRenderer::calc_billboard_verts(const Ego::Texture& texture,
 
 void ParticleGraphicsRenderer::render_all_prt_attachment()
 {
-    Ego::Renderer::get().setBlendingEnabled(false);
+    EngineContext::get().renderer().setBlendingEnabled(false);
 
     for(const auto& particle : EngineContext::get().particleHandler().iterator())
     {
@@ -473,7 +473,7 @@ void ParticleGraphicsRenderer::draw_one_attachment_point(const Object& object, i
 
     if (vrt >= object.getVertexCount()) return;
 
-    auto& renderer = Ego::Renderer::get();
+    auto& renderer = EngineContext::get().renderer();
     // disable the texturing so all the points will be white,
     // not the texture color of the last vertex we drawn
     renderer.getTextureUnit().setActivated(nullptr);
@@ -514,8 +514,8 @@ void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Partic
         // shift the source bounding boxes to be centered on the given positions
         auto loc_bb = idlib::translate(exp_bb, particle->getPosition());
 
-        Ego::Renderer::get().getTextureUnit().setActivated(nullptr);
-        Ego::Renderer::get().setColour(Ego::Colour4f::white());
+        EngineContext::get().renderer().getTextureUnit().setActivated(nullptr);
+        EngineContext::get().renderer().setColour(Ego::Colour4f::white());
         Renderer3D::renderOctBB(loc_bb, true, true, Ego::Colour4f::red(), Ego::Colour4f::yellow());
     }
 }
