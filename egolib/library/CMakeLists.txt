@@ -682,7 +682,6 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module_spawn_plan.hpp
     src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
-    src/egolib/game/Module/module_spawn.c
     src/egolib/game/Module/module_spawn.h
     src/egolib/game/Module/Passage.cpp
     src/egolib/game/Module/Passage.hpp
@@ -723,7 +722,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/graphic_internal.h
     src/egolib/game/graphic_lighting.c
     src/egolib/game/graphic_scene.c
-    src/egolib/game/graphic_fan.c
     src/egolib/game/graphic_fan.h
     src/egolib/game/graphic.h
     src/egolib/game/graphic_mad.c
@@ -736,9 +734,8 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/lighting.h
     src/egolib/game/link.c
     src/egolib/game/link.h
-    src/egolib/game/mesh.c
+    src/egolib/game/mesh_bridge.c
     src/egolib/game/mesh.h
-    src/egolib/game/mesh_loader.c
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.h
@@ -980,6 +977,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/Module/Fog.hpp
     src/egolib/game/Module/Module_spawn_plan.cpp
     src/egolib/game/Module/Module_spawn_realization.cpp
+    src/egolib/game/Module/module_spawn.c
     src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Water.cpp
     src/egolib/game/Module/Water.hpp
@@ -992,9 +990,12 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/GameStates/OptionsConfigActions.hpp
     src/egolib/game/Logic/PlayerQuestLog.cpp
     src/egolib/game/Logic/QuestLog.cpp
+    src/egolib/game/graphic_fan.c
     src/egolib/game/lighting.c
+    src/egolib/game/mesh.c
     src/egolib/game/mesh_fx.c
     src/egolib/game/mesh_geometry.c
+    src/egolib/game/mesh_loader.c
     src/egolib/game/mesh_query.c
     src/egolib/game/script_compile.c
     src/egolib/game/script_functions_bitwise.c

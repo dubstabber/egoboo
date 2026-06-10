@@ -22,7 +22,6 @@
 
 #include "egolib/game/mesh.h"
 #include "egolib/FileFormats/Globals.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Log/_Include.hpp"
 
 //--------------------------------------------------------------------------------------------
@@ -97,7 +96,7 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 	{
         Log::Entry entry(Log::Level::Error, __FILE__, __LINE__);
 	    entry << "unable to load mesh of module `" << moduleName << "`" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << entry;
+        Log::activeTarget() << entry;
 		throw idlib::runtime_error(__FILE__, __LINE__, entry.getText());
 	}
 	// Create the mesh from map.
@@ -106,7 +105,7 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 	{
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to convert mesh of module ", "`",
                                     moduleName, "`", Log::EndOfEntry);
-        EngineContext::get().logTarget() << e;
+        Log::activeTarget() << e;
 		throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
 	}
 	mesh->finalize();

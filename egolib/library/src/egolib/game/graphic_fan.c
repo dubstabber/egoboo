@@ -23,17 +23,12 @@
 
 #include "egolib/game/graphic_fan.h"
 
-#include "egolib/game/graphic.h"
-#include "egolib/game/game.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/renderer_3d.h"
 #include "egolib/game/mesh.h"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/FileFormats/Globals.hpp"
 
-void animate_all_tiles( ego_mesh_t& mesh )
+void animate_all_tiles( ego_mesh_t& mesh, AnimatedTilesState& animatedTilesState )
 {
-    AnimatedTilesState& animatedTilesState = GameSessionContext::get().animatedTilesState();
     bool small_tile_update = (animatedTilesState.elements[0].frame_add_old != animatedTilesState.elements[0].frame_add);
     bool big_tile_update = (animatedTilesState.elements[1].frame_add_old != animatedTilesState.elements[1].frame_add);
     // If there are no updates, do nothing.
@@ -45,16 +40,12 @@ void animate_all_tiles( ego_mesh_t& mesh )
         // If the tile is out of range, then skip this tile.
         if (element.i() >= numberOfTiles) continue;
         // Otherwise animate the tile.
-        animate_tile(mesh, element);
+        animate_tile(mesh, element, animatedTilesState);
     }
 }
 
-bool animate_tile( ego_mesh_t& mesh, const Index1D& index )
+bool animate_tile( ego_mesh_t& mesh, const Index1D& index, AnimatedTilesState& animatedTilesState )
 {
-    /// @author BB
-    /// @details animate a given tile
-
-    AnimatedTilesState& animatedTilesState = GameSessionContext::get().animatedTilesState();
 
 	// do nothing if the tile is not animated
     if ( 0 == mesh.test_fx( index, MAPFX_ANIM ) )

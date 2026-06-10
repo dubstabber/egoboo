@@ -138,7 +138,7 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
             ClockScope<ClockPolicy::NonRecursive> clockScope2(sortDoListReflected_timer);
             el.sort(cam, true);
         }
-        animate_all_tiles(*tl.getMesh());
+        animate_all_tiles(*tl.getMesh(), GameSessionContext::get().animatedTilesState());
         EngineContext::get().gfx().getNonReflective().run(cam, tl, el);
         EngineContext::get().gfx().getReflective0().run(cam, tl, el);
         EngineContext::get().gfx().getEntityReflections().run(cam, tl, el);

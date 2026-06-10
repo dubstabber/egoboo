@@ -28,6 +28,7 @@
 //--------------------------------------------------------------------------------------------
 
 class ego_mesh_t;
+struct AnimatedTilesState;
 namespace Ego {
 namespace Graphics
 {
@@ -50,5 +51,5 @@ namespace Graphics
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-void animate_all_tiles(ego_mesh_t& mesh);
-bool animate_tile(ego_mesh_t& mesh, const Index1D& index);
+void animate_all_tiles(ego_mesh_t& mesh, AnimatedTilesState& animatedTilesState);
+bool animate_tile(ego_mesh_t& mesh, const Index1D& index, AnimatedTilesState& animatedTilesState);

@@ -26,8 +26,6 @@
 #include "egolib/Physics/physics.h"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/FileFormats/Globals.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Module/Water.hpp"
 #include "egolib/map_functions.h"  // twist_to_normal, cartman_calc_twist
 
 //--------------------------------------------------------------------------------------------
@@ -405,17 +403,3 @@ BIT_FIELD ego_mesh_t::hit_wall(const Ego::Vector3f& pos, const float radius, con
 	return hit_wall(pos, radius, bits, nrm, pressure, mesh_wall_data_t(this, Ego::Circle2f(Ego::Point2f(pos[kX], pos[kY]), radius)));
 }
 
-//--------------------------------------------------------------------------------------------
-
-float ego_mesh_t::getElevation(const Ego::Vector2f& p, bool waterwalk) const
-{
-    const float floorElevation = getElevation(p);
-    water_instance_t& water = GameSessionContext::get().water();
-
-    if (waterwalk && water._surface_level > floorElevation && water._is_water) {
-        if (0 != test_fx(getTileIndex(p), MAPFX_WATER)) {
-            return water._surface_level;
-        }
-    }
-    return floorElevation;
-}
