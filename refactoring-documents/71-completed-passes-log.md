@@ -1631,6 +1631,26 @@ Entities ownership inversion.
 
 ---
 
+## QuestLog foundation absorb (2026-06-10)
+
+Seam-cut the `QuestLog` and `PlayerQuestLog` TUs into `egolib-foundation-base`. `QuestLog.cpp` had a single
+upward edge — `EngineContext::get().logTarget()` in `exportToFile()` — replaced with the proven
+`Log::activeTarget()` seam (include swapped from `game/Core/EngineContext.hpp` to `Log/_Include.hpp`). All
+other dependencies (`fileutil.h`, `ReadContext`, `IDSZ2`, `vfs_*`, `Log::*`) were already in the base.
+`PlayerQuestLog.cpp` had no blockers (its only dependency is `QuestLog::loadFromFile`, which co-moves).
+
+CMake: removed `QuestLog.cpp`, `QuestLog.hpp`, `PlayerQuestLog.cpp`, `PlayerQuestLog.hpp` from
+`EGOLIB_GAME_LOGIC_SOURCES` and added the two `.cpp` files to `EGOLIB_FOUNDATION_BASE_SOURCES`. Current
+archive layout: **`egolib-foundation-base` 119 / `egolib-physics` 6 / `egolib-renderer` 29 /
+`egolib-library` 138**.
+
+**Verification:** build 0; ctest -j1 **828/830** (only the known `ScriptLoaderFixture` #618/#619); validator
+`test.mod` 0/0 (`errors=245` baseline); exact archive membership 119/6/29/138; aggregate nm acyclicity with
+mangled symbols (all 7 back-edges = 0; positive controls: `vec_to_facing`/`twist_to_normal` in physics→base,
+37 SDL_* undefs in base); menu smoke-run exit 124 with clean startup/shutdown.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:

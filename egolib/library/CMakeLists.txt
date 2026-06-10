@@ -675,10 +675,6 @@ set(EGOLIB_GAME_GUI_SOURCES
 set(EGOLIB_GAME_LOGIC_SOURCES
     src/egolib/game/Logic/Player.cpp
     src/egolib/game/Logic/Player.hpp
-    src/egolib/game/Logic/PlayerQuestLog.cpp
-    src/egolib/game/Logic/PlayerQuestLog.hpp
-    src/egolib/game/Logic/QuestLog.cpp
-    src/egolib/game/Logic/QuestLog.hpp
 )
 
 # -- game/Module -------------------------------------------------------------
@@ -985,6 +981,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/GUI/Material.cpp
     src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
     src/egolib/game/Graphics/Md2ModelRenderer.cpp
+    src/egolib/game/Logic/PlayerQuestLog.cpp
+    src/egolib/game/Logic/QuestLog.cpp
     src/egolib/game/lighting.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c
