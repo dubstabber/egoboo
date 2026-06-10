@@ -19,11 +19,12 @@
 
 /// @file egolib/Physics/MeshLookupTables.hpp
 /// @brief Precomputed, mesh-independent twist lookup tables (surface normals, twist
-///        facings, steep-hill slide velocity, flatness). These are pure terrain-physics
-///        data: indexed by an 8-bit twist value, independent of any particular mesh, and
-///        consumed by the lower-layer physics code. Relocated here from game/mesh.h (whose
-///        own comment noted "this should be in map, not in mesh") so the physics code can
-///        read them without depending on the game/ layer.
+///        facings, flatness). These are pure terrain-geometry data: indexed by an 8-bit
+///        twist value, independent of any particular mesh, derived only from base-layer
+///        math (twist_to_normal / vec_to_facing). Originally in game/mesh.h (whose own
+///        comment noted "this should be in map, not in mesh"); now a foundation-base
+///        module so both the lower-layer mesh geometry (mesh_geometry.c) and the higher
+///        physics/graphics consumers can read it without an upward dependency.
 
 #pragma once
 
@@ -31,15 +32,13 @@
 #include "egolib/integrations/math.hpp"  // Ego::Vector3f
 
 /// Some look-up tables for meshes (and independent of the particular mesh).
-/// Contains precomputed surface normals and steep hill acceleration.
+/// Contains precomputed surface normals and twist facings.
 struct MeshLookupTables {
 	Ego::Vector3f twist_nrm[256];
 	/// For surface normal of the mesh.
 	Facing twist_facing_y[256];
 	/// For surface normal of the mesh.
 	Facing twist_facing_x[256];
-	/// Precomputed velocity (acceleration?) for sliding (down?) steep hills.
-	Ego::Vector3f twist_vel[256];
 	/// Is (something) flat?
 	bool twist_flat[256];
 	MeshLookupTables();
