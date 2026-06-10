@@ -22,17 +22,12 @@
 
 #include "egolib/Physics/MeshLookupTables.hpp"
 
-#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
 #include "egolib/map_functions.h"                // twist_to_normal
-#include "egolib/Math/_Include.hpp"              // idlib::zero, kX/kY/kZ
+#include "egolib/Math/_Include.hpp"              // vec_to_facing, kX/kY/kZ
 
 MeshLookupTables g_meshLookupTables;
 
 MeshLookupTables::MeshLookupTables() {
-	Ego::Vector3f grav = idlib::zero<Ego::Vector3f>();
-
-	grav[kZ] = Ego::Physics::g_environment.gravity;
-
 	for (size_t cnt = 0; cnt < 256; cnt++)
 	{
 		Ego::Vector3f nrm;
@@ -45,21 +40,6 @@ MeshLookupTables::MeshLookupTables() {
 		twist_facing_y[cnt] = Facing((FACING_T)(+vec_to_facing(nrm[kZ], nrm[kX])));
 
 		// this is about 5 degrees off of vertical
-		twist_flat[cnt] = false;
-		if (nrm[kZ] > 0.9945f)
-		{
-			twist_flat[cnt] = true;
-		}
-
-		// projection of the gravity parallel to the surface
-		float gdot = grav[kZ] * nrm[kZ];
-
-		// Gravity perpendicular to the mesh.
-		Ego::Vector3f gperp = nrm * gdot;
-
-		// Gravity parallel to the mesh.
-		Ego::Vector3f gpara = grav - gperp;
-
-		twist_vel[cnt] = gpara;
+		twist_flat[cnt] = (nrm[kZ] > 0.9945f);
 	}
 }

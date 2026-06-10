@@ -858,10 +858,11 @@ endif()
 #   MD2 model + texture/font clusters + toplevel math/IO). Every external symbol resolves within
 #   this set or in idlib / SDL / the C++ runtime.
 # * egolib-physics -- a thin middle layer: the collision nucleus (Collidable, ICollisionWorld,
-#   MeshLookupTables, PhysicalConstants) plus the oct_bb_t collision-geometry free functions
-#   (physics.c) and the Entities physics commons (Common.cpp). It references ONLY
-#   foundation-base symbols downward (vec_to_facing, twist_to_normal, oct_bb_t ops) plus its
-#   own intra-layer symbols; no base TU references a physics symbol back (verified acyclic).
+#   PhysicalConstants) plus the oct_bb_t collision-geometry free functions (physics.c) and the
+#   Entities physics commons (Common.cpp). It references ONLY foundation-base symbols downward
+#   (oct_bb_t ops, etc.) plus its own intra-layer symbols; no base TU references a physics symbol
+#   back (verified acyclic). (The mesh-independent twist lookup tables -- MeshLookupTables -- are
+#   pure base-layer geometry data and live in egolib-foundation-base, read by mesh_geometry.c.)
 # * egolib-renderer -- a SIBLING middle layer (SDL display/windowing + the OpenGL rendering
 #   backend). Depends one-way on the foundation base; zero symbol edges to/from egolib-physics.
 # * egolib-gui -- the generic GUI widget toolkit (Component/Container/Layout + the leaf widgets +
@@ -875,12 +876,10 @@ endif()
 #   the lower layers ONE-WAY.
 #
 # This deepens the link-split of the historically monolithic egolib-library; idlib's eleven
-# sub-libraries are the target pattern.
-#
-# KNOWN pre-existing exception (not introduced by the gui carve): game/mesh_geometry.c (in base) reads
-# g_meshLookupTables (defined in egolib-physics) -- a base->physics back-edge from the mesh_geometry
-# absorption. Fixing it needs the twist tables' geometry data in base (the table init depends on the
-# physics g_environment for twist_vel only). Tracked for a follow-up pass.
+# sub-libraries are the target pattern. The DAG is fully acyclic (no known back-edges): the former
+# mesh_geometry.c -> g_meshLookupTables base->physics edge was resolved by dropping the dead,
+# gravity-dependent twist_vel table (its only physics dependency) and relocating MeshLookupTables to
+# foundation-base.
 set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/AI/AStar.cpp
     src/egolib/AI/LineOfSight.cpp
@@ -949,6 +948,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Math/Standard.cpp
     src/egolib/Mesh/Info.cpp
     src/egolib/Mesh/TileFX.cpp
+    src/egolib/Physics/MeshLookupTables.cpp
     src/egolib/Profiles/EnchantProfile.cpp
     src/egolib/Profiles/EnchantProfileWriter.cpp
     src/egolib/Profiles/IProfileSystem.cpp
@@ -1046,7 +1046,6 @@ set(EGOLIB_PHYSICS_SOURCES
     src/egolib/Entities/Common.cpp
     src/egolib/Physics/Collidable.cpp
     src/egolib/Physics/ICollisionWorld.cpp
-    src/egolib/Physics/MeshLookupTables.cpp
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/physics.c
 )
