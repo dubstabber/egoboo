@@ -219,7 +219,7 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
                 los_info.y1 = target.getPosition()[kY];
                 los_info.z1 = target.getPosition()[kZ] + std::max( 1.0f, target.getCurrentBump().height );
 
-                if ( line_of_sight_info_t::blocked( los_info, module.getMeshPointer() ) ) return;
+                if ( line_of_sight_info_t::blocked( los_info, module ) ) return;
             }
 
             //Set the new best target found

@@ -1604,6 +1604,31 @@ archive layout: **`egolib-foundation-base` 115 / `egolib-physics` 6 / `egolib-re
 validator `test.mod` 0/0, ctest -j1 **823/825** (only `ScriptLoaderFixture` #613/#614), and menu smoke
 exit-124 clean.
 
+## mesh-AI terrain seam (2026-06-10)
+
+The ranked mesh-AI follow-on from the frontier absorption is done. Added the lower-layer
+`Ego::Mesh::ITerrainQuery` interface for the terrain operations AI actually needs:
+`getTileIndex(Index2D)`, `testFX`, `tileHasBits`, and `isFanOff`. `GameModule` implements that interface by
+forwarding to its existing mesh surface, so production behavior remains the active module's terrain data.
+
+`AI/AStar.{hpp,cpp}` and `AI/LineOfSight.{hpp,cpp}` now depend on `ITerrainQuery` instead of
+`std::shared_ptr<const ego_mesh_t>` / `game/mesh.h`. Runtime call sites in script implementation, targeting,
+and Object attribute/update code pass the active `GameModule` as the terrain view. With the game mesh include
+removed, `AStar.cpp` and `LineOfSight.cpp` moved into `EGOLIB_FOUNDATION_BASE_SOURCES`, shrinking the upper
+library again. Current archive layout: **`egolib-foundation-base` 117 / `egolib-physics` 6 /
+`egolib-renderer` 29 / `egolib-library` 140**.
+
+Added focused lower-layer coverage in `egolib/tests/egolib/tests/AITerrainQueries.cpp`: clear LOS, blocked
+LOS with collision data, A* blocked endpoints, A* path around a blocked tile, and A* fan-off exclusion. This
+keeps the AI terrain contract pinned without needing a live `GameModule` fixture.
+
+**Verification:** build 0; `AITerrainQueries` 5/5; ctest -j1 **828/830** (only the known
+`ScriptLoaderFixture` #618/#619 PrimaryScript fallback failures); validator `test.mod` 0/0; exact archive
+membership 117/6/29/140; aggregate nm acyclicity (base→physics/renderer/library 0; physics↔renderer 0;
+middle→library 0; live positive controls fired); menu smoke-run exit 124 with clean startup/shutdown. Deferred:
+broader `mesh.c` relocation, remaining `getMeshPointer()` cleanup, Particle/Object mesh-collision callers, and
+Entities ownership inversion.
+
 ---
 
 ## Files touched most by this pass log

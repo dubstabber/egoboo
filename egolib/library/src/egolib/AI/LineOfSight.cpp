@@ -18,11 +18,12 @@
 //********************************************************************************************
 
 #include "egolib/AI/LineOfSight.hpp"
+#include "egolib/FileFormats/map_file.h"
+#include "egolib/Mesh/ITerrainQuery.hpp"
 #include "egolib/Mesh/Info.hpp"
-#include "egolib/game/mesh.h"
 
-bool line_of_sight_info_t::blocked(line_of_sight_info_t& self, std::shared_ptr<const ego_mesh_t> mesh) {
-    bool mesh_hit = with_mesh(self, mesh);
+bool line_of_sight_info_t::blocked(line_of_sight_info_t& self, const Ego::Mesh::ITerrainQuery& terrain) {
+    bool mesh_hit = with_mesh(self, terrain);
     //if (mesh_hit) {
     //    self.x1 = (self.collide_x + 0.5f) * Info<float>::Grid::Size();
     //    self.y1 = (self.collide_y + 0.5f) * Info<float>::Grid::Size();
@@ -31,7 +32,7 @@ bool line_of_sight_info_t::blocked(line_of_sight_info_t& self, std::shared_ptr<c
     return mesh_hit /*|| chr_hit*/;
 }
 
-bool line_of_sight_info_t::with_mesh(line_of_sight_info_t& self, std::shared_ptr<const ego_mesh_t> mesh) {
+bool line_of_sight_info_t::with_mesh(line_of_sight_info_t& self, const Ego::Mesh::ITerrainQuery& terrain) {
     int Dx, Dy;
     int ix, ix_stt, ix_end;
     int iy, iy_stt, iy_end;
@@ -119,10 +120,10 @@ bool line_of_sight_info_t::with_mesh(line_of_sight_info_t& self, std::shared_ptr
         }
 
         // check to see if the "ray" collides with the mesh
-        Index1D fan = mesh->getTileIndex(Index2D(ix, iy));
+        Index1D fan = terrain.getTileIndex(Index2D(ix, iy));
         if (Index1D::Invalid != fan && fan != fan_last)
         {
-            uint32_t collide_fx = mesh->test_fx(fan, self.stopped_by);
+            uint32_t collide_fx = terrain.testFX(fan, self.stopped_by);
             // collide the ray with the mesh
 
             if (EMPTY_BIT_FIELD != collide_fx)

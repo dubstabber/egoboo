@@ -639,7 +639,7 @@ bool Object::activateStealth()
         lineOfSightInfo.y0         = object->getPosY();
         lineOfSightInfo.z0         = object->getPosZ() + std::max(1.0f, object->bump.height);
         lineOfSightInfo.stopped_by = object->stoppedby;
-        if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule().getMeshPointer())) {
+        if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule())) {
             continue;
         }
 

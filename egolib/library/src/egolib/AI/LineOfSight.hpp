@@ -21,8 +21,13 @@
 
 #include "egolib/typedef.h"
 
-// Forward declarations.
-class ego_mesh_t;
+namespace Ego
+{
+namespace Mesh
+{
+class ITerrainQuery;
+} // namespace Mesh
+} // namespace Ego
 
 /// Data needed to specify a line-of-sight test
 struct line_of_sight_info_t
@@ -36,7 +41,7 @@ struct line_of_sight_info_t
     int       collide_x;
     int       collide_y;
 
-    static bool blocked(line_of_sight_info_t& self, std::shared_ptr<const ego_mesh_t> mesh);
-    static bool with_mesh(line_of_sight_info_t& self, std::shared_ptr<const ego_mesh_t> mesh);
+    static bool blocked(line_of_sight_info_t& self, const Ego::Mesh::ITerrainQuery& terrain);
+    static bool with_mesh(line_of_sight_info_t& self, const Ego::Mesh::ITerrainQuery& terrain);
     static bool with_characters(line_of_sight_info_t& self);
 };

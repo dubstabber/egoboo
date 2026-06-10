@@ -24,6 +24,7 @@
 
 #include "egolib/Physics/ICollisionWorld.hpp"  // GameModule implements ICollisionWorld
 #include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
+#include "egolib/Mesh/ITerrainQuery.hpp"        // GameModule implements ITerrainQuery
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
@@ -51,7 +52,8 @@ namespace Ego { namespace Input { class InputDevice; } }
 /// The module data that the game needs.
 class GameModule : private idlib::non_copyable,
                    public Ego::Physics::ICollisionWorld,
-                   public Ego::Entities::IObjectWorld
+                   public Ego::Entities::IObjectWorld,
+                   public Ego::Mesh::ITerrainQuery
 {
 public:
     static constexpr float PITDEPTH = -60;  ///< Depth to kill character
@@ -182,12 +184,17 @@ public:
     /// @brief Ego::Physics::ICollisionWorld: the tile index at @a point (delegates to the mesh).
     Index1D getTileIndex(const Ego::Vector2f& point) const override;
 
+    /// @brief Ego::Mesh::ITerrainQuery: the tile index at grid coordinate @a tile.
+    Index1D getTileIndex(const Index2D& tile) const override;
+
     /// @name Ego::Physics::ICollisionWorld terrain queries (all delegate to the mesh / water).
     /// @{
     bool gridIsValid(const Index1D& tile) const override;
     uint8_t getTwist(const Index1D& tile) const override;
     uint8_t getFanTwist(const Index1D& tile) const override;
     uint32_t testFX(const Index1D& tile, uint32_t flags) const override;
+    bool tileHasBits(const Index2D& tile, uint32_t flags) const override;
+    bool isFanOff(const Index1D& tile) const override;
     float getElevation(const Ego::Vector2f& p, bool waterwalk) const override;
     float getElevation(const Ego::Vector2f& p) const override;
     bool isWater() const override;

@@ -267,7 +267,7 @@ bool FindPath( waypoint_list_t& wplst,
     los_info.z1 = 0;
 
     // test for the simple case... a straight line
-    straight_line = !line_of_sight_info_t::blocked(los_info, activeModule().getMeshPointer());
+    straight_line = !line_of_sight_info_t::blocked(los_info, activeModule());
 
     if ( !straight_line )
     {
@@ -275,7 +275,7 @@ bool FindPath( waypoint_list_t& wplst,
         printf( "Finding a path from %d,%d to %d,%d: \n", src_ix, src_iy, dst_ix, dst_iy );
 #endif
         //Try to find a path with the AStar algorithm
-        if ( g_astar.find_path( activeModule().getMeshPointer(), stopped_by, src_ix, src_iy, dst_ix, dst_iy ) )
+        if ( g_astar.find_path( activeModule(), stopped_by, src_ix, src_iy, dst_ix, dst_iy ) )
         {
             returncode = g_astar.get_path( dst_x, dst_y, wplst);
         }
@@ -559,7 +559,7 @@ ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& w
             los.y1 = pweapon->getPosY();
             los.z1 = pweapon->getPosZ();
 
-            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, activeModule().getMeshPointer()) )
+            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, activeModule()) )
             {
                 //found a valid weapon!
                 best_target = pweapon->getObjRef();

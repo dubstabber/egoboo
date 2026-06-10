@@ -22,11 +22,17 @@
 /// @details
 
 #include "egolib/AI/AStar.hpp"
+#include "egolib/FileFormats/map_file.h"
 #include "egolib/Log/_Include.hpp"
+#include "egolib/Mesh/ITerrainQuery.hpp"
+#include "egolib/Mesh/Info.hpp"
 
-#include "egolib/game/renderer_3d.h" // for point debugging
-#include "egolib/Script/script.h"  // for waypoint list control
-#include "egolib/game/mesh.h"
+#include <array>
+#include <cmath>
+#include <memory>
+#include <queue>
+#include <unordered_set>
+#include <vector>
 
 AStar::AStar() : 
     final_node(nullptr), 
@@ -51,7 +57,7 @@ struct Distance {
     }
 };
 
-bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t stoppedby, const int src_ix, const int src_iy, int dst_ix, int dst_iy)
+bool AStar::find_path(const Ego::Mesh::ITerrainQuery& terrain, uint32_t stoppedby, const int src_ix, const int src_iy, int dst_ix, int dst_iy)
 {
     /// @author ZF
     /// @details Explores up to MAX_ASTAR_NODES number of nodes to find a path between the source coordinates and destination coordinates.
@@ -60,7 +66,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
     float weight;
 
     // do not start if the initial point is off the mesh
-    if (Index1D::Invalid == mesh->getTileIndex(Index2D(src_ix, src_iy)))
+    if (Index1D::Invalid == terrain.getTileIndex(Index2D(src_ix, src_iy)))
     {
 #ifdef DEBUG_ASTAR
         Log::activeTarget().debug("AStar failed because source position is off the mesh.\n");
@@ -69,7 +75,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
     }
 
     //Is the destination is inside a wall or outside the map?
-    if (mesh->tile_has_bits(Index2D(dst_ix, dst_iy), stoppedby) != 0 || Index1D::Invalid == mesh->getTileIndex(Index2D(dst_ix, dst_iy)))
+    if (terrain.tileHasBits(Index2D(dst_ix, dst_iy), stoppedby) || Index1D::Invalid == terrain.getTileIndex(Index2D(dst_ix, dst_iy)))
     {
 #ifdef DEBUG_ASTAR
         Log::activeTarget().debug("AStar failed because goal position is impassable.\n");
@@ -150,7 +156,7 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
             }
 
             // is the test node on the mesh?
-            Index1D itile = mesh->getTileIndex(Index2D(tmp_x, tmp_y));
+            Index1D itile = terrain.getTileIndex(Index2D(tmp_x, tmp_y));
             if (Index1D::Invalid == itile)
             {
                 continue;
@@ -158,15 +164,14 @@ bool AStar::find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t st
 
             //Dont walk into pits
             //@todo: might need to check tile Z level here instead
-            const ego_tile_info_t& ptile = mesh->getTileInfo(itile);
-            if (ptile.isFanOff())
+            if (terrain.isFanOff(itile))
             {
                 // add the invalid tile to the list as a closed tile
                 continue;
             }
 
             // is this a wall or impassable?
-            if (mesh->tile_has_bits(Index2D(tmp_x, tmp_y), stoppedby))
+            if (terrain.tileHasBits(Index2D(tmp_x, tmp_y), stoppedby))
             {
                 // add the invalid tile to the list as a closed tile
                 continue;

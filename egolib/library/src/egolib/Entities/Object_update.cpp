@@ -480,7 +480,7 @@ void Object::update()
                 lineOfSightInfo.x1 = target->getPosX();
                 lineOfSightInfo.y1 = target->getPosY();
                 lineOfSightInfo.z1 = target->getPosZ() + std::max(1.0f, target->bump.height);
-                if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule().getMeshPointer())) {
+                if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule())) {
                     continue;
                 }
 

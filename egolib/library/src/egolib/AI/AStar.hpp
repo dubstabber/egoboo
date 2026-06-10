@@ -26,8 +26,18 @@
 
 #include "egolib/AI/WaypointList.h"
 
-// Forward declarations.
-class ego_mesh_t;
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+
+namespace Ego
+{
+namespace Mesh
+{
+class ITerrainQuery;
+} // namespace Mesh
+} // namespace Ego
+
 struct waypoint_list_t;
 
 #undef DEBUG_ASTAR     //< Macro for enabling extra debugging info to the A* algorithm
@@ -53,7 +63,7 @@ public:
 
 public:
     AStar();
-    bool find_path(const std::shared_ptr<const ego_mesh_t>& mesh, uint32_t stoppedBy, const int src_ix, const int src_iy, int dst_ix, int dst_iy);
+    bool find_path(const Ego::Mesh::ITerrainQuery& terrain, uint32_t stoppedBy, const int src_ix, const int src_iy, int dst_ix, int dst_iy);
     bool get_path(const int pos_x, const int dst_y, waypoint_list_t& wplst);
 
 private:

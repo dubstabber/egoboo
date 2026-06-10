@@ -95,6 +95,11 @@ Index1D GameModule::getTileIndex(const Ego::Vector2f& point) const
     return _mesh->getTileIndex(point);
 }
 
+Index1D GameModule::getTileIndex(const Index2D& tile) const
+{
+    return _mesh->getTileIndex(tile);
+}
+
 bool GameModule::gridIsValid(const Index1D& tile) const
 {
     return _mesh->grid_is_valid(tile);
@@ -113,6 +118,16 @@ uint8_t GameModule::getFanTwist(const Index1D& tile) const
 uint32_t GameModule::testFX(const Index1D& tile, uint32_t flags) const
 {
     return _mesh->test_fx(tile, flags);
+}
+
+bool GameModule::tileHasBits(const Index2D& tile, uint32_t flags) const
+{
+    return _mesh->tile_has_bits(tile, flags);
+}
+
+bool GameModule::isFanOff(const Index1D& tile) const
+{
+    return _mesh->grid_is_valid(tile) && _mesh->getTileInfo(tile).isFanOff();
 }
 
 float GameModule::getElevation(const Ego::Vector2f& p, bool waterwalk) const

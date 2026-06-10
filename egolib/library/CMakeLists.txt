@@ -304,6 +304,7 @@ set(EGOLIB_MATH_SOURCES
 
 # -- Mesh --------------------------------------------------------------------
 set(EGOLIB_MESH_SOURCES
+    src/egolib/Mesh/ITerrainQuery.hpp
     src/egolib/Mesh/Info.cpp
     src/egolib/Mesh/Info.hpp
     src/egolib/Mesh/TileFX.cpp
@@ -875,6 +876,8 @@ endif()
 # This deepens the first link-split of the historically monolithic egolib-library; idlib's eleven
 # sub-libraries are the target pattern.
 set(EGOLIB_FOUNDATION_BASE_SOURCES
+    src/egolib/AI/AStar.cpp
+    src/egolib/AI/LineOfSight.cpp
     src/egolib/AI/WaypointList.c
     src/egolib/Clock.cpp
     src/egolib/Core/System.cpp
