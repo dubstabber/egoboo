@@ -145,6 +145,26 @@ bool GameModule::isWater() const
     return _water._is_water;
 }
 
+float GameModule::getEdgeX() const
+{
+    return _mesh->_tmem._edge_x;
+}
+
+float GameModule::getEdgeY() const
+{
+    return _mesh->_tmem._edge_y;
+}
+
+size_t GameModule::getTileCountX() const
+{
+    return _mesh->_info.getTileCountX();
+}
+
+size_t GameModule::getTileCountY() const
+{
+    return _mesh->_info.getTileCountY();
+}
+
 bool GameModule::isInsidePitBounds(float x, float y) const
 {
     const ego_mesh_t& mesh = requireMesh(_mesh);

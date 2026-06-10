@@ -57,7 +57,7 @@ Passage::Passage(GameModule &module, const int x0, const int y0, const int x1, c
     //Build the list of all tiles contained within this passage
     for (int y = y0; y <= y1; ++y) {
         for (int x = x0; x <= x1; ++x) {
-            _passageFans.push_back(module.getMeshPointer()->getTileIndex(Index2D(x, y)));
+            _passageFans.push_back(module.getTileIndex(Index2D(x, y)));
         }
     }
 }

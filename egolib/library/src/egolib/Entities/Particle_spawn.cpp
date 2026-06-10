@@ -23,6 +23,7 @@
 #include "egolib/Entities/Particle_internal.h"
 #include "egolib/game/CharacterParticleOps.h"                         // prt_find_target
 #include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::g_environment
+#include "egolib/Physics/ICollisionWorld.hpp"
 
 namespace Ego
 {
@@ -296,8 +297,8 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     tmp_pos[kY] += offset[kY];
 
     //Particles can only spawn inside the map bounds
-    tmp_pos[kX] = Ego::Math::constrain(tmp_pos[kX], 0.0f, activeModule().getMeshPointer()->_tmem._edge_x - 2.0f);
-    tmp_pos[kY] = Ego::Math::constrain(tmp_pos[kY], 0.0f, activeModule().getMeshPointer()->_tmem._edge_y - 2.0f);
+    tmp_pos[kX] = Ego::Math::constrain(tmp_pos[kX], 0.0f, Ego::Physics::activeCollisionWorld().getEdgeX() - 2.0f);
+    tmp_pos[kY] = Ego::Math::constrain(tmp_pos[kY], 0.0f, Ego::Physics::activeCollisionWorld().getEdgeY() - 2.0f);
 
     setPosition(tmp_pos);
     setSpawnPosition(tmp_pos);

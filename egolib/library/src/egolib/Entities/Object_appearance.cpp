@@ -25,6 +25,17 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"      // CameraSystem (attachment placement)
 #include "egolib/game/Graphics/TileList.hpp"          // Ego::Graphics::TileList (complete type)
 #include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
+#include "egolib/Physics/ICollisionWorld.hpp"
+
+namespace
+{
+
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
+}
+
+} // namespace
 
 bool Object::setSkin(const size_t skinNumber)
 {
@@ -73,7 +84,7 @@ bool Object::hasIntellectDamageParticle() const
 
 bool Object::isOnWaterTile() const
 {
-    return 0 != activeModule().getMeshPointer()->test_fx(getTile(), MAPFX_WATER);
+    return 0 != collisionWorld().testFX(getTile(), MAPFX_WATER);
 }
 
 bool Object::isSubmerged() const

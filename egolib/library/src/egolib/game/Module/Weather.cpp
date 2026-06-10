@@ -4,6 +4,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 
 void WeatherState::update()
 {
@@ -41,11 +42,12 @@ void WeatherState::update()
                 if (particle)
                 {
                     // Weather particles spawned at the edge of the map look ugly, so don't spawn them there
-                    if (particle->getPosX() < EDGE || particle->getPosX() > module->getMeshPointer()->_tmem._edge_x - EDGE)
+                    auto& cw = Ego::Physics::activeCollisionWorld();
+                    if (particle->getPosX() < EDGE || particle->getPosX() > cw.getEdgeX() - EDGE)
                     {
                         particle->requestTerminate();
                     }
-                    else if (particle->getPosY() < EDGE || particle->getPosY() > module->getMeshPointer()->_tmem._edge_y - EDGE)
+                    else if (particle->getPosY() < EDGE || particle->getPosY() > cw.getEdgeY() - EDGE)
                     {
                         particle->requestTerminate();
                     }

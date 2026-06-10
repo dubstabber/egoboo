@@ -1665,3 +1665,35 @@ The following translation units or headers were modified by five or more of the 
 - `egolib/library/src/egolib/game/script_functions_*.c`
 - `egolib/tests/egolib/tests/ObjectAccessors.cpp`
 - `egolib/tests/egolib/tests/ModulePlayerStartup.cpp`
+
+---
+
+## Theme — Broader getMeshPointer() cleanup (2026-06-10)
+
+### getMeshPointer() migration — dead code + seam reroutes + ICollisionWorld widening
+
+Migrated 17 `getMeshPointer()` call sites off direct `ego_mesh_t` access and onto DIP seam interfaces, reducing impl-file sites from 32 to 15.
+
+**Pass 0 — Dead code removal:** removed the `#if defined(_DEBUG) && defined(DEBUG_WAYPOINTS)` block in `script_implementation.c` (lines 169–213). `DEBUG_WAYPOINTS` is explicitly `#undef`'d in `egolib_config.h` and the `ego_mesh_hit_wall` free function no longer exists — the block would not compile if enabled.
+
+**Pass 1 — Trivial reroutes (4 sites):** routed through existing `ICollisionWorld` methods using the established file-local `collisionWorld()` helper pattern:
+- `Object_appearance.cpp` `isOnWaterTile()`: `test_fx` → `testFX`
+- `Particle_core.cpp` `isOverWater()`: `test_fx` → `testFX`
+- `graphic.c` tile-validity gate: `grid_is_valid` → `gridIsValid`
+- `Module_spawn.cpp` `tiltCharactersToTerrain`: `get_twist` → `getTwist`
+
+**Pass 2 — ICollisionWorld widening + dimension consumer migration (11 sites):** added 4 new pure-virtual methods to `ICollisionWorld` (`getEdgeX`, `getEdgeY`, `getTileCountX`, `getTileCountY`) with `GameModule` implementations delegating to the mesh. Migrated all edge/tile-count consumers:
+- `Particle_spawn.cpp` (2 sites): position clamping via `getEdgeX/Y`
+- `Weather.cpp` (2 sites): boundary checks via `getEdgeX/Y`
+- `MiniMap.cpp` (2 sites): coordinate scaling via `getEdgeX/Y`
+- `graphic_scene.c` (4 sites): tile list iteration via `getTileCountX/Y`
+- `MapEditorState.cpp` (3 sites): camera centering + quad-tree bounds via `getTileCountX/Y` + `getElevation`
+
+**Pass 3 — Passage constructor reroute (1 site):** `Passage.cpp` ctor switched from `module.getMeshPointer()->getTileIndex(...)` to `module.getTileIndex(...)` (method already public via `ITerrainQuery` override).
+
+**Intentionally deferred (15 remaining sites):**
+- Wall collision (`hit_wall`/`test_wall`, 6 sites): `mesh_wall_data_t` holds raw `ego_mesh_t*` — can't move to lower-layer `ICollisionWorld` without dragging full mesh type down.
+- Mutating tile operations (8 sites in `script_implementation.c` and `Passage.cpp`): pure game-layer mutations (`add_fx`, `clear_fx`, `set_texture`, lighting writes). No layering benefit.
+- Infrastructure (1 site): `GameSessionContext::mesh()` forwarder — last to go.
+
+All passes green: build / ctest -j20 **830/830** / validator `test.mod` 0/0 / menu smoke clean exit.

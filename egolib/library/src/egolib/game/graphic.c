@@ -46,6 +46,17 @@
 #include "egolib/Graphics/TextureManager.hpp" // Ego::TextureManager
 #include "egolib/Console/Console.hpp"         // Ego::Core::Console
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
+#include "egolib/Physics/ICollisionWorld.hpp"
+
+namespace
+{
+
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
+}
+
+} // namespace
 
 //--------------------------------------------------------------------------------------------
 
@@ -314,8 +325,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         }
 
         //Skip objects outside the map
-		auto mesh = activeModule().getMeshPointer();
-        if (!mesh->grid_is_valid(pchr->getTile())) continue;
+        if (!collisionWorld().gridIsValid(pchr->getTile())) continue;
 
         // make sure that the vertices are interpolated
         if (!pchr->updateVertices(-1, -1, true)) {

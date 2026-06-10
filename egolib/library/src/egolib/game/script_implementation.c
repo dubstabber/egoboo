@@ -164,55 +164,8 @@ bool AddWaypoint( waypoint_list_t& wplst, ObjectRef ichr, float pos_x, float pos
     /// @author ZZ
     /// @details This function tells the character where to move next
 
-    bool returncode;
-
-#if defined(_DEBUG) && defined(DEBUG_WAYPOINTS)
-	Vector2f loc_pos;
-    Vector3f nrm;
-    float   pressure;
-
-    // init the vector with the desired position
-    loc_pos.x = pos_x;
-    loc_pos.y = pos_y;
-
-    // is this a safe position?
-    returncode = false;
-
-    ObjectProfile * profile = chr_get_ppro( ichr );
-    if ( nullptr != profile )
-    {
-        if ( CAP_INFINITE_WEIGHT == profile->getWeight() || !ego_mesh_hit_wall( activeModule().getMeshPointer(), loc_pos.v, pchr->getCurrentBump().size, pchr->getStoppedByMask(), nrm.v, &pressure, NULL ) )
-        {
-			// yes it is safe. add it.
-			returncode = true;
-            waypoint_list_t::push( wplst, pos_x, pos_y );
-        }
-        else
-        {
-            // no it is not safe. what to do? nothing, or add the current position?
-			//returncode = true;
-			//waypoint_list_t::push( wplst, pchr->loc_pos.x, pchr->loc_pos.y );
-
-            log_warning( "%s - failed to add a waypoint because object was \"inside\" a wall.\n"
-                         "\tcharacter %d (\"%s\", \"%s\")\n"
-                         "\tWaypoint index %d\n"
-                         "\tWaypoint location (in tiles) <%f,%f>\n"
-                         "\tWall normal <%1.4f,%1.4f>\n"
-                         "\tPressure %f\n",
-                         __FUNCTION__,
-                         ichr, pchr->Name, profile->getClassName().c_str(),
-                         plst->head,
-                         loc_pos.x / GRID_FSIZE, loc_pos.y / GRID_FSIZE,
-                         nrm.x, nrm.y,
-                         idlib::sqrt(pressure) / GRID_FSIZE );
-        }
-    }
-#else
-	returncode = true;
     waypoint_list_t::push( wplst, pos_x, pos_y );
-#endif
-
-    return returncode;
+    return true;
 }
 
 //--------------------------------------------------------------------------------------------

@@ -22,12 +22,19 @@
 
 #include "egolib/Entities/Particle_internal.h"
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 
 namespace Ego
 {
 
 namespace
 {
+
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
+}
+
 IAudioSystem& audioSystem()
 {
     return activeAudioSystem();
@@ -263,8 +270,7 @@ const std::shared_ptr<Object>& Particle::getTarget() const
 
 bool Particle::isOverWater() const
 {
-    auto mesh = activeModule().getMeshPointer();
-    return (0 != mesh->test_fx(getTile(), MAPFX_WATER));
+    return (0 != collisionWorld().testFX(getTile(), MAPFX_WATER));
 }
 
 void Particle::setTarget(const ObjectRef target)

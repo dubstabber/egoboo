@@ -198,6 +198,10 @@ public:
     float getElevation(const Ego::Vector2f& p, bool waterwalk) const override;
     float getElevation(const Ego::Vector2f& p) const override;
     bool isWater() const override;
+    float getEdgeX() const override;
+    float getEdgeY() const override;
+    size_t getTileCountX() const override;
+    size_t getTileCountY() const override;
     /// @}
 
     bool isInsidePitBounds(float x, float y) const;

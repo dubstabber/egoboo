@@ -32,6 +32,7 @@
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 
 static const uint32_t MINIMAP_BLINK_RATE = 500; //milliseconds between each minimap blink
 
@@ -118,8 +119,9 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     //Draw all queued blips
     for (const Blip &blip : _blips) {
         //Adjust the position values so that they fit inside the minimap
-        float x = getX() + (blip.x * getWidth() / activeModule->getMeshPointer()->_tmem._edge_x);
-        float y = getY() + (blip.y * getHeight() / activeModule->getMeshPointer()->_tmem._edge_y);
+        auto& cw = Ego::Physics::activeCollisionWorld();
+        float x = getX() + (blip.x * getWidth() / cw.getEdgeX());
+        float y = getY() + (blip.y * getHeight() / cw.getEdgeY());
 
         if (blip.icon != nullptr) {
             //Center icon on blip position

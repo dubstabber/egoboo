@@ -25,6 +25,7 @@
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Graphics/EntityList.hpp"
@@ -351,23 +352,25 @@ gfx_rv gfx_make_tileList(Ego::Graphics::TileList& tl, Camera& cam)
         static const float offset = 10;
         float centerX = cam.getTrackPosition()[kX] / Info<float>::Grid::Size();
         float centerY = cam.getTrackPosition()[kY] / Info<float>::Grid::Size();
-        startX = Ego::Math::constrain<int>(centerX - offset, 0, activeModule().getMeshPointer()->_info.getTileCountX());
-        startY = Ego::Math::constrain<int>(centerY - offset, 0, activeModule().getMeshPointer()->_info.getTileCountY());
-        endX = Ego::Math::constrain<int>(centerX + offset, 0, activeModule().getMeshPointer()->_info.getTileCountX());
-        endY = Ego::Math::constrain<int>(centerY + offset, 0, activeModule().getMeshPointer()->_info.getTileCountY());
+        auto& cw = Ego::Physics::activeCollisionWorld();
+        startX = Ego::Math::constrain<int>(centerX - offset, 0, cw.getTileCountX());
+        startY = Ego::Math::constrain<int>(centerY - offset, 0, cw.getTileCountY());
+        endX = Ego::Math::constrain<int>(centerX + offset, 0, cw.getTileCountX());
+        endY = Ego::Math::constrain<int>(centerY + offset, 0, cw.getTileCountY());
     }
     else
     {
         startX = 0;
         startY = 0;
-        endX = activeModule().getMeshPointer()->_info.getTileCountX();
-        endY = activeModule().getMeshPointer()->_info.getTileCountY();
+        endX = Ego::Physics::activeCollisionWorld().getTileCountX();
+        endY = Ego::Physics::activeCollisionWorld().getTileCountY();
     }
+    size_t tileCountX = Ego::Physics::activeCollisionWorld().getTileCountX();
     for (size_t x = startX; x < endX; ++x)
     {
         for (size_t y = startY; y < endY; ++y)
         {
-            if (gfx_error == tl.add(x + y * activeModule().getMeshPointer()->_info.getTileCountX(), cam))
+            if (gfx_error == tl.add(x + y * tileCountX, cam))
             {
                 return gfx_error;
             }

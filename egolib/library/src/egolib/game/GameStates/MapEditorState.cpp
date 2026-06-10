@@ -28,6 +28,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/Button.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
@@ -69,13 +70,12 @@ MapEditorState::MapEditorState(std::shared_ptr<ModuleProfile> module) :
     addModeEditButton(EditorMode::MAP_EDIT_PASSAGES, "Passages");
     addModeEditButton(EditorMode::MAP_EDIT_MESH, "Mesh");
 
-    GameModule& activeModule = GameSessionContext::get().activeModule();
-
     //Center the camera in the middle of the map
+    auto& cw = Ego::Physics::activeCollisionWorld();
     Vector3f mapCenter;
-    mapCenter.x() = activeModule.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size() * 0.5f;
-    mapCenter.y() = activeModule.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size() * 0.5f;
-    mapCenter.z() = activeModule.getMeshPointer()->getElevation(Vector2f(mapCenter.x(), mapCenter.y()), false);
+    mapCenter.x() = cw.getTileCountX()*Info<float>::Grid::Size() * 0.5f;
+    mapCenter.y() = cw.getTileCountY()*Info<float>::Grid::Size() * 0.5f;
+    mapCenter.z() = cw.getElevation(Vector2f(mapCenter.x(), mapCenter.y()), false);
     EngineContext::get().cameraSystem().getMainCamera()->setPosition(mapCenter);
 }
 
@@ -104,8 +104,9 @@ void MapEditorState::update()
     inputSystem().update();
 
     //Rebuild the quadtree for fast object lookup
-    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, module.getMeshPointer()->_info.getTileCountX()*Info<float>::Grid::Size(),
-		                                                         module.getMeshPointer()->_info.getTileCountY()*Info<float>::Grid::Size());
+    auto& cw = Ego::Physics::activeCollisionWorld();
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, cw.getTileCountX()*Info<float>::Grid::Size(),
+                                                         cw.getTileCountY()*Info<float>::Grid::Size());
 
     //Always reveal all invisible monsters and objects in Map Editor mode
     LocalPlayerPerceptionState localPlayerPerception = session.localPlayerPerception();

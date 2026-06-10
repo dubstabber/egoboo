@@ -80,6 +80,20 @@ public:
 
     /// @brief Does the active world have a water layer? (the module-wide water flag.)
     virtual bool isWater() const = 0;
+
+    // --- Map dimension queries. ---
+
+    /// @brief The world-space playable bound along the x-axis.
+    virtual float getEdgeX() const = 0;
+
+    /// @brief The world-space playable bound along the y-axis.
+    virtual float getEdgeY() const = 0;
+
+    /// @brief The number of tiles along the x-axis.
+    virtual size_t getTileCountX() const = 0;
+
+    /// @brief The number of tiles along the y-axis.
+    virtual size_t getTileCountY() const = 0;
 };
 
 /// @brief Install @a world as the active collision world. Called by the game session when a

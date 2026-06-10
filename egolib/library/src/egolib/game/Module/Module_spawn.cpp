@@ -25,9 +25,16 @@
 #include "egolib/game/Module/Module_player_startup.hpp"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/Module_spawn_realization.hpp"
+#include "egolib/Physics/ICollisionWorld.hpp"
 
 namespace
 {
+
+Ego::Physics::ICollisionWorld& collisionWorld()
+{
+    return Ego::Physics::activeCollisionWorld();
+}
+
 egoboo_config_t& config()
 {
     return EngineContext::get().config();
@@ -443,7 +450,7 @@ void GameModule::tiltCharactersToTerrain()
 
         if (object->getProfile()->hasStickyButt())
         {
-            uint8_t twist = getMeshPointer()->get_twist(object->getTile());
+            uint8_t twist = collisionWorld().getTwist(object->getTile());
             object->setMapTwistFacingY(Facing(g_meshLookupTables.twist_facing_y[twist]));
             object->setMapTwistFacingX(Facing(g_meshLookupTables.twist_facing_x[twist]));
         }
