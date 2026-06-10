@@ -851,7 +851,7 @@ if (WIN32)
   SET_SOURCE_FILES_PROPERTIES(src/egolib/Platform/file_win.c PROPERTIES LANGUAGE CXX)
 endif()
 
-# == egolib three-layer sub-library carve ======================================================
+# == egolib sub-library carve (link-layer DAG) =================================================
 # egolib links as an acyclic DAG of four static archives (nm symbol-closure verified -- see
 # refactoring-documents):
 #
@@ -862,10 +862,11 @@ endif()
 #   Time/Platform/Image/InputControl + the Script DDL/PDL lexer + Profiles data/writers + the
 #   MD2 model + texture/font clusters + toplevel math/IO). Every external symbol resolves within
 #   this set or in idlib / SDL / the C++ runtime.
-# * egolib-physics -- a thin middle layer (the collision nucleus: Collidable, ICollisionWorld,
-#   MeshLookupTables, PhysicalConstants). It references ONLY foundation-base symbols downward
-#   (vec_to_facing in _math.c, twist_to_normal in map_functions.c) plus its own intra-nucleus
-#   symbols; no base TU references a physics symbol back (verified acyclic).
+# * egolib-physics -- a thin middle layer: the collision nucleus (Collidable, ICollisionWorld,
+#   MeshLookupTables, PhysicalConstants) plus the oct_bb_t collision-geometry free functions
+#   (physics.c) and the Entities physics commons (Common.cpp). It references ONLY
+#   foundation-base symbols downward (vec_to_facing, twist_to_normal, oct_bb_t ops) plus its
+#   own intra-layer symbols; no base TU references a physics symbol back (verified acyclic).
 # * egolib-renderer -- a SIBLING middle layer (SDL display/windowing + the OpenGL rendering
 #   backend). Depends one-way on the foundation base; zero symbol edges to/from egolib-physics.
 # * egolib-library -- the rest (Entities / game / the EgoScript VM / ...), depending on the
@@ -989,7 +990,9 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/vfs.c
 )
 # The OS file-system backend belongs in the foundation base too: foundation TUs call its fs_*
-# functions, so leaving it in egolib-library would form a base->library link cycle on each platform.
+# functions, so leaving it in egolib-library would form a base->library link cycle on the
+# supported platforms (Linux native, Windows). The macOS backend (file_mac.mm) intentionally
+# stays in egolib-library -- macOS is not a supported build config for the carve.
 if (UNIX AND NOT APPLE)
     list(APPEND EGOLIB_FOUNDATION_BASE_SOURCES src/egolib/Platform/file_linux.c)
 elseif (WIN32)
@@ -1011,7 +1014,9 @@ set(EGOLIB_PHYSICS_SOURCES
 # The egolib-renderer middle layer: SDL display/windowing + the OpenGL rendering backend.
 # A SIBLING of egolib-physics: both depend one-way on egolib-foundation-base only
 # (nm-verified: zero refs into egolib-physics and zero into egolib-library, in both directions).
-set(EGOLIB_RENDERER_SOURCES
+# NOTE: named *_LAYER_* to avoid shadowing the EGOLIB_RENDERER_SOURCES subsystem grouping list
+# defined further up (which feeds the SOURCE_FILES accumulation).
+set(EGOLIB_RENDERER_LAYER_SOURCES
     src/egolib/Extensions/ogl_extensions.c
     src/egolib/Graphics/Display.cpp
     src/egolib/Graphics/DisplayMode.cpp
@@ -1044,17 +1049,18 @@ set(EGOLIB_RENDERER_SOURCES
 )
 
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_SOURCES})
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
-foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_SOURCES})
+foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES})
     if(_src MATCHES "\\.[ch]$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
 endforeach()
 
-# Define products: the acyclic chain  egolib-foundation-base <- egolib-physics <- egolib-library.
+# Define products: the acyclic four-archive DAG
+#   egolib-foundation-base <- {egolib-physics, egolib-renderer} <- egolib-library.
 add_library(egolib-foundation-base STATIC ${EGOLIB_FOUNDATION_BASE_SOURCES})
 target_include_directories(egolib-foundation-base INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
@@ -1063,7 +1069,7 @@ add_library(egolib-physics STATIC ${EGOLIB_PHYSICS_SOURCES})
 target_include_directories(egolib-physics INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-physics egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
-add_library(egolib-renderer STATIC ${EGOLIB_RENDERER_SOURCES})
+add_library(egolib-renderer STATIC ${EGOLIB_RENDERER_LAYER_SOURCES})
 target_include_directories(egolib-renderer INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-renderer egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
