@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <process.h>
@@ -15,6 +16,35 @@
 
 namespace Ego::Test
 {
+
+namespace detail
+{
+    inline std::vector<std::filesystem::path>& pendingCleanupPaths()
+    {
+        static std::vector<std::filesystem::path> paths;
+        return paths;
+    }
+
+    inline void atexitCleanup()
+    {
+        for (const auto& p : pendingCleanupPaths())
+        {
+            std::error_code ec;
+            std::filesystem::remove_all(p, ec);
+        }
+    }
+} // namespace detail
+
+inline void scheduleTestDirectoryCleanup(const std::filesystem::path& dir)
+{
+    static bool registered = false;
+    detail::pendingCleanupPaths().push_back(dir);
+    if (!registered)
+    {
+        std::atexit(detail::atexitCleanup);
+        registered = true;
+    }
+}
 
 inline std::filesystem::path findRepositoryRoot()
 {
@@ -51,12 +81,15 @@ inline void configureDataDirectory()
 #else
     const int pid = static_cast<int>(getpid());
 #endif
-    const std::string userDir =
-        (std::filesystem::temp_directory_path() / ("egoboo-test-" + std::to_string(pid)) / "user").string();
+    const auto testRoot =
+        std::filesystem::temp_directory_path() / ("egoboo-test-" + std::to_string(pid));
+    const std::string userDir = (testRoot / "user").string();
     if (SDL_setenv("EGOBOO_USER_DIR", userDir.c_str(), 1) != 0)
     {
         throw std::runtime_error("unable to set EGOBOO_USER_DIR for Egoboo tests");
     }
+
+    scheduleTestDirectoryCleanup(testRoot);
 }
 
 } // namespace Ego::Test
