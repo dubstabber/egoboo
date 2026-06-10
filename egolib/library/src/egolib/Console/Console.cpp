@@ -23,6 +23,7 @@
 
 #include "egolib/Console/Console.hpp"
 
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -268,7 +269,7 @@ void Console::draw()
 
     renderer.setColour(white);
     renderer.setLineWidth(5);
-    auto vertexBuffer = idlib::video_buffer_manager::get().create_vertex_buffer(4, vertexDescriptor.get_size());
+    auto vertexBuffer = Ego::activeVideoBufferManager().create_vertex_buffer(4, vertexDescriptor.get_size());
     {
         idlib::buffer_scoped_lock lock(*vertexBuffer);
         Vertex *vertex = lock.get<Vertex>();

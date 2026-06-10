@@ -10,6 +10,7 @@
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 #include "egolib/egoboo_setup.h"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/Graphics/ICameraSystem.hpp"
@@ -65,6 +66,7 @@ void EngineContext::clearEngine()
     clearCameraSystem();
     clearBillboardSystem();
     clearGFX();
+    clearVideoBufferManager();
     clearRenderer();
     activeEngine.reset();
 }
@@ -658,6 +660,36 @@ const IGFX& EngineContext::gfx() const
         throw std::logic_error("no active GFX");
     }
     return *currentGFX;
+}
+
+void EngineContext::installVideoBufferManager(idlib::video_buffer_manager& mgr)
+{
+    Ego::installActiveVideoBufferManager(mgr);
+}
+
+void EngineContext::clearVideoBufferManager()
+{
+    Ego::clearActiveVideoBufferManager();
+}
+
+idlib::video_buffer_manager* EngineContext::tryVideoBufferManager()
+{
+    return Ego::tryActiveVideoBufferManager();
+}
+
+const idlib::video_buffer_manager* EngineContext::tryVideoBufferManager() const
+{
+    return Ego::tryActiveVideoBufferManager();
+}
+
+idlib::video_buffer_manager& EngineContext::videoBufferManager()
+{
+    return Ego::activeVideoBufferManager();
+}
+
+const idlib::video_buffer_manager& EngineContext::videoBufferManager() const
+{
+    return Ego::activeVideoBufferManager();
 }
 
 void EngineContext::installConfig(egoboo_config_t& config)

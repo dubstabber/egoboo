@@ -86,7 +86,7 @@ The legacy content set is **not** internally consistent. Many validator failures
 
 **Egolib subsystems**: AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (objects/particles), Extensions (OpenGL), FileFormats (MD2, maps, configs), Graphics (fonts, textures, framebuffer), Grid, Image, InputControl, Log, Logic, Math, Mesh, Platform, Profiles, Renderer (OpenGL), Script (bytecode VM, compiler), Time, VFS, game (core gameplay), integrations.
 
-**Link layout**: egolib builds as an acyclic DAG of four static archives, defined in `egolib/library/CMakeLists.txt` and nm-symbol-closure verified (see `refactoring-documents/71-completed-passes-log.md`): `egolib-foundation-base` (119 TUs, the dependency-closed bottom) ◄ `egolib-physics` (6, the collision nucleus + `physics.c`) and ◄ `egolib-renderer` (29, SDL windowing + OpenGL backend; sibling of physics, zero cross-edges) ◄ `egolib-library` (138, the game-core remainder). Consumers link only `egolib-library`. Move-only absorption is exhausted — growing the lower layers now requires seam-cutting. When touching egolib CMake or moving sources, preserve the acyclicity (verify with the nm set-intersection method, with a positive control).
+**Link layout**: egolib builds as an acyclic DAG of four static archives, defined in `egolib/library/CMakeLists.txt` and nm-symbol-closure verified (see `refactoring-documents/71-completed-passes-log.md`): `egolib-foundation-base` (142 TUs, the dependency-closed bottom) ◄ `egolib-physics` (6, the collision nucleus + `physics.c`) and ◄ `egolib-renderer` (29, SDL windowing + OpenGL backend; sibling of physics, zero cross-edges) ◄ `egolib-library` (128, the game-core remainder). Consumers link only `egolib-library`. Move-only absorption is exhausted — growing the lower layers now requires seam-cutting. When touching egolib CMake or moving sources, preserve the acyclicity (verify with the nm set-intersection method, with a positive control).
 
 ### Global State (major coupling points)
 
@@ -96,12 +96,11 @@ The runtime was historically wired around three mutable globals, all now retired
 - `_currentModule` — **0 references.** Consumers go through `GameSessionContext` and `GameModule` accessor surfaces.
 - `update_wld` — **0 active references.** Variable gone; a few stale string-literal/comment artifacts remain in `script.c`, `ObjectGraphics.hpp`, `Particle.hpp`. Functional replacement is `worldUpdateCount()` (via `GameSessionContext`), ~77 call sites across ~31 files.
 
-The remaining coupling hotspot is singleton access: ~863 `::get()` call sites persist. The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system (15 service seams); broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
+The remaining coupling hotspot is singleton access: ~673 `::get()` call sites persist (down from ~863; the bulk are the intentional `EngineContext::get()` (494) and `GameSessionContext::get()` (129) seam calls). Actionable direct singletons: `video_buffer_manager::get()` (12), `InputSystem::get()` (8), `GraphicsSystemNew::get()` (6), `egoboo_config_t::get()` (6, already seamed), `TLT::get()` (5, const table). The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system (15 service seams); broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
 
 ### High-Risk Hotspots
 
 Read relevant audit docs before modifying. Files over 1,000 lines (by size):
-- `egolib/library/src/egolib/game/script_functions_systems.c` (~3200 lines, largest TU)
 - `egolib/library/src/egolib/vfs.c` (~1920 lines, down from 2,460 after the dead cstdio backend was removed)
 - `egolib/library/src/egolib/game/script_functions_target.c` (~1680 lines)
 - `egolib/library/src/egolib/Entities/Object.hpp` (~1620 lines, monolithic interface — 18 role interfaces extracted but header still large)
@@ -112,6 +111,10 @@ Read relevant audit docs before modifying. Files over 1,000 lines (by size):
 - `egolib/library/src/egolib/Script/script.c` (~1370 lines)
 - `egolib/library/src/egolib/game/mesh.c` (~1370 lines)
 - `egolib/library/src/egolib/fileutil.c` (~1330 lines)
+- `egolib/library/src/egolib/game/script_functions_combat.c` (~1240 lines, new entrant)
+- `egolib/library/src/egolib/game/script_functions_action.c` (~1100 lines)
+
+Note: `script_functions_systems.c` (formerly ~3200 lines, the largest TU) has been fully decomposed into the 10 `script_functions_*.c` files above across Passes 102–167.
 
 Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/game/game.c` (~550 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)

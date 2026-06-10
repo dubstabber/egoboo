@@ -24,6 +24,7 @@
 #include "egolib/game/GUI/InventorySlot.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #undef private

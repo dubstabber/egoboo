@@ -1,4 +1,5 @@
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Renderer/Renderer.hpp"

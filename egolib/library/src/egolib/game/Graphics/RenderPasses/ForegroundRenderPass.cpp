@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
@@ -13,7 +14,7 @@ namespace Graphics {
 ForegroundRenderPass::ForegroundRenderPass() :
     RenderPass("foreground"),
     _vertexDescriptor(descriptor_factory<idlib::vertex_format::P3FT2F>()()),
-    _vertexBuffer(idlib::video_buffer_manager::get().create_vertex_buffer(4, _vertexDescriptor.get_size()))
+    _vertexBuffer(Ego::activeVideoBufferManager().create_vertex_buffer(4, _vertexDescriptor.get_size()))
 {}
 
 void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)

@@ -1,4 +1,5 @@
 #include "egolib/game/GUI/Container.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 
 namespace Ego {
 namespace GUI {

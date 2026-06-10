@@ -24,6 +24,7 @@
 
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -41,7 +42,7 @@ UIManager::UIManager() :
     _bitmapFontTexture(EngineContext::get().textureManager().getTexture("mp_data/font_new_shadow")),
     _vertexDescriptor(descriptor_factory<idlib::vertex_format::P2F>()()),
     _textureQuadVertexDescriptor(descriptor_factory<idlib::vertex_format::P2FT2F>()()),
-    _textureQuadVertexBuffer(idlib::video_buffer_manager::get().create_vertex_buffer(4, _textureQuadVertexDescriptor.get_size())) {
+    _textureQuadVertexBuffer(Ego::activeVideoBufferManager().create_vertex_buffer(4, _textureQuadVertexDescriptor.get_size())) {
     //Load fonts from true-type files
     _fonts[FONT_DEFAULT] = EngineContext::get().fontManager().loadFont("mp_data/Bo_Chen.ttf", 24);
     _fonts[FONT_FLOATING_TEXT] = EngineContext::get().fontManager().loadFont("mp_data/FrostysWinterland.ttf", 24);
@@ -63,7 +64,7 @@ UIManager::UIManager() :
         }
     }
 #endif
-    _vertexBuffer = idlib::video_buffer_manager::get().create_vertex_buffer(4, _vertexDescriptor.get_size());
+    _vertexBuffer = Ego::activeVideoBufferManager().create_vertex_buffer(4, _vertexDescriptor.get_size());
 }
 
 UIManager::~UIManager() {

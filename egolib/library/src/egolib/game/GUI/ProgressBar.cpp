@@ -1,4 +1,5 @@
 #include "ProgressBar.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 

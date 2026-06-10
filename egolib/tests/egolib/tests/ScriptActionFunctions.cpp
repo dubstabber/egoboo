@@ -23,9 +23,9 @@
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
+#include "egolib/game/Core/GameEngine.hpp"
 #undef private
 #undef protected
-#include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "TestGraphicsSystem.hpp"

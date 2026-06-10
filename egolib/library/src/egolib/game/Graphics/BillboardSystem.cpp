@@ -22,6 +22,7 @@
 
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -116,7 +117,7 @@ std::shared_ptr<Billboard> BillboardSystem::makeBillboard(::Time::Seconds lifeti
 BillboardSystem::BillboardSystem() :
     _billboardList(),
     vertexDescriptor(Ego::descriptor_factory<idlib::vertex_format::P3FT2F>()()),
-    vertexBuffer(idlib::video_buffer_manager::get().create_vertex_buffer(4, vertexDescriptor.get_size()))
+    vertexBuffer(Ego::activeVideoBufferManager().create_vertex_buffer(4, vertexDescriptor.get_size()))
 {}
 
 BillboardSystem::~BillboardSystem()

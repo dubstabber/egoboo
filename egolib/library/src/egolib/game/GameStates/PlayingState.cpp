@@ -23,6 +23,7 @@
 
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/GameStates/VictoryScreen.hpp"
 #include "egolib/game/Core/GameEngine.hpp"

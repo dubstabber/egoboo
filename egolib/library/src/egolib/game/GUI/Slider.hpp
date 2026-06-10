@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/Component.hpp"
+#include "egolib/Renderer/DeferredTexture.hpp"
 
 #pragma once
 

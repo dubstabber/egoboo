@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
@@ -137,7 +138,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
         float s, t;
     };
     auto vd = descriptor_factory<idlib::vertex_format::P3FC4FT2F>()();
-    auto vb = idlib::video_buffer_manager::get().create_vertex_buffer(4, vd.get_size());
+    auto vb = Ego::activeVideoBufferManager().create_vertex_buffer(4, vd.get_size());
     Vertex *v = static_cast<Vertex *>(vb->lock());
 
     // Original points

@@ -1,17 +1,16 @@
 #pragma once
 
 #include "egolib/game/GUI/DrawingContext.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/InputListener.hpp"
-#include "egolib/game/graphic.h"
+#include "egolib/integrations/math.hpp"
+
+class GameEngine;
 
 namespace Ego {
 namespace GUI {
 
-// Forward declarations.
 class Container;
+class UIManager;
 
 class Component : public InputListener, public std::enable_shared_from_this<Component>, private idlib::non_copyable {
 public:
@@ -96,21 +95,10 @@ public:
     void bringToFront();
 
 protected:
-    GameEngine& engine() {
-        return EngineContext::get().engine();
-    }
-
-    const GameEngine& engine() const {
-        return EngineContext::get().engine();
-    }
-
-    UIManager& uiManager() {
-        return EngineContext::get().uiManager();
-    }
-
-    const UIManager& uiManager() const {
-        return EngineContext::get().uiManager();
-    }
+    GameEngine& engine();
+    const GameEngine& engine() const;
+    UIManager& uiManager();
+    const UIManager& uiManager() const;
 
 private:
     bool _destroyed;

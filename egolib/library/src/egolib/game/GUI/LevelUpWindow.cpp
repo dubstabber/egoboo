@@ -1,4 +1,7 @@
 #include "LevelUpWindow.hpp"
+#include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/Image.hpp"

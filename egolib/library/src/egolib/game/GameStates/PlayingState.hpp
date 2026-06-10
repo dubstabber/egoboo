@@ -24,6 +24,7 @@
 #pragma once
 
 #include "egolib/game/GameStates/GameState.hpp"
+#include "egolib/typedef.h"
 
 //Forward declarations
 class Object;

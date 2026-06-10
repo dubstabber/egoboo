@@ -23,6 +23,7 @@
 
 #include "egolib/game/GameStates/MapEditorState.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GameStates/InGameMenuState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"

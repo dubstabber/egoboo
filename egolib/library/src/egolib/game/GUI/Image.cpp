@@ -1,4 +1,7 @@
 #include "egolib/game/GUI/Image.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/Material.hpp"
 
 namespace Ego {

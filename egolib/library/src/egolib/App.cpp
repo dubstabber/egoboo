@@ -8,6 +8,7 @@
 #include "egolib/Graphics/FontManager.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 #include "egolib/Extensions/ogl_extensions.h"
+#include "idlib/game-engine/video/video_buffer_manager.hpp"
 
 namespace Ego {
 
@@ -19,9 +20,10 @@ AppImpl::AppImpl(const std::string& title, const std::string& version)
     // Initialize the image manager.
     ImageManager::initialize();
     EngineContext::get().installImageManager(ImageManager::get());
-    // Initialize the renderer.
+    // Initialize the renderer (this also initializes video_buffer_manager).
     Renderer::initialize();
     EngineContext::get().installRenderer(Renderer::get());
+    EngineContext::get().installVideoBufferManager(idlib::video_buffer_manager::get());
     // Initialize the texture manager.
     TextureManager::initialize();
     EngineContext::get().installTextureManager(TextureManager::get());

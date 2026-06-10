@@ -1,4 +1,6 @@
 #include "CharacterWindow.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Button.hpp"

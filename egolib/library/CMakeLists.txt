@@ -177,6 +177,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/MD2Model.hpp
     src/egolib/Graphics/ModelDescriptor.cpp
+    src/egolib/Graphics/VideoBufferManagerSeam.cpp
+    src/egolib/Graphics/VideoBufferManagerSeam.hpp
     src/egolib/Graphics/ModelDescriptor.hpp
     src/egolib/Graphics/PixelFormat.cpp
     src/egolib/Graphics/PixelFormat.hpp
@@ -745,11 +747,16 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_movement.c
     src/egolib/game/script_functions_spawn.c
     src/egolib/game/script_functions_state.c
+    src/egolib/game/script_functions_alerts.c
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
+    src/egolib/game/script_functions_enchant.c
+    src/egolib/game/script_functions_stat_gifts.c
     src/egolib/game/script_functions_commerce.c
     src/egolib/game/script_functions_quests.c
     src/egolib/game/script_functions_target.c
+    src/egolib/game/script_functions_target_select.c
+    src/egolib/game/script_functions_target_impl.h
     src/egolib/game/script_functions.h
     src/egolib/game/script_implementation.c
     src/egolib/game/script_implementation.h
@@ -893,6 +900,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/PixelFormat.cpp
+    src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/TextureManager.cpp
     src/egolib/Graphics/VertexFormat.cpp
     src/egolib/IDSZ.cpp

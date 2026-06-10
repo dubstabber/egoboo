@@ -2,6 +2,7 @@
 /// @brief Animation, speech, sound, visual effects, and messaging functions
 
 #include "egolib/game/script_functions_internal.h"
+#include "egolib/game/GUI/UIManager.hpp"
 
 namespace
 {

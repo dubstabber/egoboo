@@ -23,6 +23,7 @@
 
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 
 #include "egolib/game/renderer_3d.h"
 #include "egolib/game/game.h"
@@ -123,7 +124,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
 
             // billboard for the particle
             auto vd = Ego::descriptor_factory<idlib::vertex_format::P3FT2F>()();
-            auto vb = idlib::video_buffer_manager::get().create_vertex_buffer(4, vd.get_size());
+            auto vb = Ego::activeVideoBufferManager().create_vertex_buffer(4, vd.get_size());
             calc_billboard_verts(*texture, *vb, pinst, pinst.size, false);
 
             renderer.render(*vb, vd, idlib::primitive_type::triangle_fan, 0, 4);
@@ -241,7 +242,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
             }
 
             auto vd = Ego::descriptor_factory<idlib::vertex_format::P3FT2F>()();
-            auto vb = idlib::video_buffer_manager::get().create_vertex_buffer(4, vd.get_size());
+            auto vb = Ego::activeVideoBufferManager().create_vertex_buffer(4, vd.get_size());
             calc_billboard_verts(*texture, *vb, inst, inst.size, false);
 
             renderer.setColour(particleColour);
@@ -352,7 +353,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt)
                 // Calculate the position of the four corners of the billboard
                 // used to display the particle.
                 auto vd = Ego::descriptor_factory<idlib::vertex_format::P3FT2F>()();
-                auto vb = idlib::video_buffer_manager::get().create_vertex_buffer(4, vd.get_size());
+                auto vb = Ego::activeVideoBufferManager().create_vertex_buffer(4, vd.get_size());
                 calc_billboard_verts(*texture, *vb, inst, inst.size, true);
 
                 renderer.setColour(particle_colour); // GL_CURRENT_BIT

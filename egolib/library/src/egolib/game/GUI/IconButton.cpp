@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/IconButton.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Renderer/DeferredTexture.hpp"

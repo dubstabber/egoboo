@@ -24,6 +24,7 @@
 #pragma once
 
 #include "egolib/game/GUI/Component.hpp"
+#include "egolib/game/graphic.h"
 
 class GameModule;
 struct EnemySenseState;

@@ -23,7 +23,10 @@
 #pragma once
 
 #include "egolib/game/GUI/InternalWindow.hpp"
+#include "egolib/typedef.h"
 #include "egolib/game/GUI/TabPanel.hpp"
+#include "egolib/Logic/Damage.hpp"
+#include "egolib/Logic/Attribute.hpp"
 
 // Forward declarations.
 class Object;

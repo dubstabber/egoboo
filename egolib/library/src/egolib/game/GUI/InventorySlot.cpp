@@ -1,4 +1,6 @@
 #include "InventorySlot.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum

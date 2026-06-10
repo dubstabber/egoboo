@@ -22,6 +22,9 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/Slider.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/Material.hpp"
 
 namespace Ego {

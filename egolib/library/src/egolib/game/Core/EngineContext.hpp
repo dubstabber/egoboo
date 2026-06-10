@@ -21,6 +21,7 @@
 class GameEngine;
 class PlayingState;
 struct egoboo_config_t;
+namespace idlib { class video_buffer_manager; }
 namespace Log { struct Target; }
 namespace Ego { class Renderer; }
 namespace Ego { namespace GUI { class UIManager; } }
@@ -161,6 +162,15 @@ public:
 
     IGFX& gfx();
     const IGFX& gfx() const;
+
+    void installVideoBufferManager(idlib::video_buffer_manager& mgr);
+    void clearVideoBufferManager();
+
+    idlib::video_buffer_manager* tryVideoBufferManager();
+    const idlib::video_buffer_manager* tryVideoBufferManager() const;
+
+    idlib::video_buffer_manager& videoBufferManager();
+    const idlib::video_buffer_manager& videoBufferManager() const;
 
     void installConfig(egoboo_config_t& config);
     void clearConfig();

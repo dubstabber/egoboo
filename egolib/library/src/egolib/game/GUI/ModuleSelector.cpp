@@ -22,6 +22,8 @@
 /// @author Johan Jansen
 
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GUI/ModuleSelector.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/Button.hpp"

@@ -1,6 +1,7 @@
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/graphic.h"
 #include "egolib/game/GameStates/MapEditorState.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
 #include "egolib/game/GUI/Button.hpp"

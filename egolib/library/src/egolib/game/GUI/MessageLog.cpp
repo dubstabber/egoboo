@@ -21,6 +21,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/Time/Time.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/font_bmp.h"

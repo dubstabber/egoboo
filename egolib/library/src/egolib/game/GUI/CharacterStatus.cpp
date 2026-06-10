@@ -21,6 +21,8 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/CharacterStatus.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"

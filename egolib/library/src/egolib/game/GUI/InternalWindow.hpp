@@ -23,8 +23,10 @@
 #pragma once
 
 #include "egolib/game/GUI/Container.hpp"
+#include "egolib/Renderer/DeferredTexture.hpp"
 
 namespace Ego {
+class Font;
 namespace GUI {
 // Forward declarations.
 class Image;

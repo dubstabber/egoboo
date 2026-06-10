@@ -23,6 +23,7 @@
 ///          to do its business. This depends on SDL_ttf and OpenGL.
 
 #include "egolib/Graphics/Font.hpp"
+#include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/Time/Time.hpp"
 
 #include "egolib/Core/StringUtilities.hpp"
@@ -457,7 +458,7 @@ std::shared_ptr<Font::LaidTextRenderer> Font::layoutToBuffer(const std::string &
     LaidOutText laidText = layout(text, options);
 
     const auto &vertexDesc = VertexFormatFactory::get(idlib::vertex_format::P3FT2F);
-    auto buffer = idlib::video_buffer_manager::get().create_vertex_buffer(4 * laidText.codepoints.size(), vertexDesc.get_size());
+    auto buffer = Ego::activeVideoBufferManager().create_vertex_buffer(4 * laidText.codepoints.size(), vertexDesc.get_size());
 
     TextVertex *vertices = reinterpret_cast<TextVertex *>(buffer->lock());
     float texWidth = laidText.atlas.texture->getWidth();
