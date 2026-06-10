@@ -172,6 +172,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/GraphicsWindow.hpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/IBillboardSystem.hpp
+    src/egolib/Graphics/IGraphicsSystem.cpp
+    src/egolib/Graphics/IGraphicsSystem.hpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/IndexFormat.hpp
     src/egolib/Graphics/MD2Model.cpp
@@ -372,6 +374,7 @@ set(EGOLIB_RENDERER_SOURCES
     src/egolib/Renderer/OpenGL/TextureUnit.hpp
     src/egolib/Renderer/OpenGL/Utilities.cpp
     src/egolib/Renderer/OpenGL/Utilities.hpp
+    src/egolib/Renderer/ActiveRenderer.cpp
     src/egolib/Renderer/Renderer.cpp
     src/egolib/Renderer/Renderer.hpp
     src/egolib/Renderer/RendererInfo.cpp
@@ -657,6 +660,8 @@ set(EGOLIB_GAME_GUI_SOURCES
     src/egolib/game/GUI/Panel.hpp
     src/egolib/game/GUI/ProgressBar.cpp
     src/egolib/game/GUI/ProgressBar.hpp
+    src/egolib/game/GUI/ScreenMessage.cpp
+    src/egolib/game/GUI/ScreenMessage.hpp
     src/egolib/game/GUI/ScrollableList.cpp
     src/egolib/game/GUI/ScrollableList.hpp
     src/egolib/game/GUI/Slider.cpp
@@ -841,11 +846,12 @@ if (WIN32)
 endif()
 
 # == egolib sub-library carve (link-layer DAG) =================================================
-# egolib links as an acyclic DAG of four static archives (nm symbol-closure verified -- see
+# egolib links as an acyclic DAG of FIVE static archives (nm symbol-closure verified -- see
 # refactoring-documents):
 #
 #   egolib-foundation-base  <--  egolib-physics   <--  egolib-library
 #   egolib-foundation-base  <--  egolib-renderer  <--  egolib-library
+#   egolib-foundation-base  <--  egolib-renderer  <--  egolib-gui  <--  egolib-library
 #
 # * egolib-foundation-base -- the dependency-closed bottom layer (Math/Log/Mesh/VFS/FileFormats/
 #   Time/Platform/Image/InputControl + the Script DDL/PDL lexer + Profiles data/writers + the
@@ -858,11 +864,23 @@ endif()
 #   own intra-layer symbols; no base TU references a physics symbol back (verified acyclic).
 # * egolib-renderer -- a SIBLING middle layer (SDL display/windowing + the OpenGL rendering
 #   backend). Depends one-way on the foundation base; zero symbol edges to/from egolib-physics.
-# * egolib-library -- the rest (Entities / game / the EgoScript VM / ...), depending on the
-#   lower layers ONE-WAY.
+# * egolib-gui -- the generic GUI widget toolkit (Component/Container/Layout + the leaf widgets +
+#   UIManager + DrawingContext/Material). A middle layer ABOVE egolib-renderer (it draws through the
+#   OpenGL backend / active-renderer seam) and egolib-foundation-base. Carries NO game-session/
+#   object-state dependency -- it reaches engine services through the lower-layer active*() seams
+#   (activeRenderer / activeGraphicsSystem / activeAudioSystem / activeConfig / activeImageManager /
+#   activeUIManager / postScreenMessage). The game-coupled widgets (CharacterStatus, CharacterWindow,
+#   MiniMap, InventorySlot, ModuleSelector, LevelUpWindow) stay in egolib-library.
+# * egolib-library -- the rest (Entities / game / the EgoScript VM / GameStates / ...), depending on
+#   the lower layers ONE-WAY.
 #
-# This deepens the first link-split of the historically monolithic egolib-library; idlib's eleven
+# This deepens the link-split of the historically monolithic egolib-library; idlib's eleven
 # sub-libraries are the target pattern.
+#
+# KNOWN pre-existing exception (not introduced by the gui carve): game/mesh_geometry.c (in base) reads
+# g_meshLookupTables (defined in egolib-physics) -- a base->physics back-edge from the mesh_geometry
+# absorption. Fixing it needs the twist tables' geometry data in base (the table init depends on the
+# physics g_environment for twist_vel only). Tracked for a follow-up pass.
 set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/AI/AStar.cpp
     src/egolib/AI/LineOfSight.cpp
@@ -896,6 +914,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/ICameraSystem.cpp
+    src/egolib/Graphics/IGraphicsSystem.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
@@ -940,6 +959,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfileWriter.cpp
     src/egolib/Profiles/RandomName.cpp
+    src/egolib/Renderer/ActiveRenderer.cpp
     src/egolib/Renderer/DeferredTexture.cpp
     src/egolib/Renderer/Texture.cpp
     src/egolib/Script/Buffer.cpp
@@ -975,10 +995,6 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/ReadContext.cpp
     src/egolib/font_bmp.c
     src/egolib/frustum.c
-    src/egolib/game/GUI/Component.cpp
-    src/egolib/game/GUI/InputListener.cpp
-    src/egolib/game/GUI/Layout.cpp
-    src/egolib/game/GUI/Material.cpp
     src/egolib/game/Module/AnimatedTiles.cpp
     src/egolib/game/Module/AnimatedTiles.hpp
     src/egolib/game/Module/Fog.cpp
@@ -1067,24 +1083,54 @@ set(EGOLIB_RENDERER_LAYER_SOURCES
     src/egolib/Renderer/OpenGL/Utilities.cpp
     src/egolib/Renderer/Renderer.cpp
     src/egolib/Renderer/RendererInfo.cpp
-    src/egolib/game/GUI/DrawingContext.cpp
     src/egolib/game/Graphics/RenderPass.cpp
     src/egolib/game/renderer_3d.c
 )
 
+# The egolib-gui middle layer: the generic GUI widget toolkit (Component/Container/Layout + the
+# leaf widgets + UIManager). Depends one-way on egolib-foundation-base AND egolib-renderer (it draws
+# through the OpenGL backend and the active renderer/graphics seams). It is the cohesive toolkit that
+# carries NO game-session/object-state dependency; the game-coupled widgets (CharacterStatus,
+# CharacterWindow, MiniMap, InventorySlot, ModuleSelector, LevelUpWindow) stay in egolib-library.
+# nm-verified: zero refs into egolib-library/egolib-physics; nothing below it depends on it.
+set(EGOLIB_GUI_LAYER_SOURCES
+    src/egolib/game/GUI/Component.cpp
+    src/egolib/game/GUI/Component_bridge.cpp
+    src/egolib/game/GUI/Container.cpp
+    src/egolib/game/GUI/DrawingContext.cpp
+    src/egolib/game/GUI/IconButton.cpp
+    src/egolib/game/GUI/Image.cpp
+    src/egolib/game/GUI/InputListener.cpp
+    src/egolib/game/GUI/InternalDebugWindow.cpp
+    src/egolib/game/GUI/InternalWindow.cpp
+    src/egolib/game/GUI/Label.cpp
+    src/egolib/game/GUI/Layout.cpp
+    src/egolib/game/GUI/Material.cpp
+    src/egolib/game/GUI/MessageLog.cpp
+    src/egolib/game/GUI/OptionsButton.cpp
+    src/egolib/game/GUI/Panel.cpp
+    src/egolib/game/GUI/ProgressBar.cpp
+    src/egolib/game/GUI/ScreenMessage.cpp
+    src/egolib/game/GUI/ScrollableList.cpp
+    src/egolib/game/GUI/Slider.cpp
+    src/egolib/game/GUI/TabPanel.cpp
+    src/egolib/game/GUI/UIManager.cpp
+    src/egolib/game/GUI/Button.cpp
+)
+
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES})
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
-foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES})
+foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES})
     if(_src MATCHES "\\.[ch]$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
 endforeach()
 
-# Define products: the acyclic four-archive DAG
-#   egolib-foundation-base <- {egolib-physics, egolib-renderer} <- egolib-library.
+# Define products: the acyclic five-archive DAG
+#   egolib-foundation-base <- {egolib-physics, egolib-renderer <- egolib-gui} <- egolib-library.
 add_library(egolib-foundation-base STATIC ${EGOLIB_FOUNDATION_BASE_SOURCES})
 target_include_directories(egolib-foundation-base INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
@@ -1097,19 +1143,27 @@ add_library(egolib-renderer STATIC ${EGOLIB_RENDERER_LAYER_SOURCES})
 target_include_directories(egolib-renderer INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-renderer egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
+# egolib-gui: the generic GUI widget toolkit, a middle layer above egolib-renderer (it draws through
+# the OpenGL backend) and egolib-foundation-base. Depends one-way on both; egolib-library depends on it.
+add_library(egolib-gui STATIC ${EGOLIB_GUI_LAYER_SOURCES})
+target_include_directories(egolib-gui INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-gui egolib-renderer egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
 add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-library egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
     target_link_libraries(egolib-physics Shlwapi.lib)
     target_link_libraries(egolib-renderer Shlwapi.lib)
+    target_link_libraries(egolib-gui Shlwapi.lib)
     target_link_libraries(egolib-foundation-base Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
     target_link_libraries(egolib-physics shlwapi)
     target_link_libraries(egolib-renderer shlwapi)
+    target_link_libraries(egolib-gui shlwapi)
     target_link_libraries(egolib-foundation-base shlwapi)
   endif()
 endif()

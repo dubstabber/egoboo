@@ -25,6 +25,8 @@
 
 #include "egolib/game/GUI/Container.hpp"
 
+class GameEngine;
+
 class GameState : public Ego::GUI::Container {
 
 public:
@@ -40,6 +42,12 @@ public:
     virtual void beginState();
 
 protected:
+
+    /// @brief The running game engine.
+    /// @remark Lives on GameState (egolib-library) rather than the lower-layer GUI Component, since
+    ///         GameEngine is a game-layer type; the generic GUI widget toolkit must not depend on it.
+    GameEngine& engine();
+    const GameEngine& engine() const;
 
     virtual void drawContainer(Ego::GUI::DrawingContext& drawingContext) override = 0;
 

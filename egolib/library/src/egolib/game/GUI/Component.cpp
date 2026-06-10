@@ -1,6 +1,5 @@
 #include "egolib/game/GUI/Component.hpp"
 #include "egolib/game/GUI/Container.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
 namespace Ego {
@@ -127,20 +126,12 @@ bool Component::isVisible() const {
     return _visible && !_destroyed;
 }
 
-GameEngine& Component::engine() {
-    return EngineContext::get().engine();
-}
-
-const GameEngine& Component::engine() const {
-    return EngineContext::get().engine();
-}
-
 UIManager& Component::uiManager() {
-    return EngineContext::get().uiManager();
+    return activeUIManager();
 }
 
 const UIManager& Component::uiManager() const {
-    return EngineContext::get().uiManager();
+    return activeUIManager();
 }
 
 } // namespace GUI

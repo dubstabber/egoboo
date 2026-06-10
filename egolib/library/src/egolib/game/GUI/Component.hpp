@@ -4,8 +4,6 @@
 #include "egolib/game/GUI/InputListener.hpp"
 #include "egolib/integrations/math.hpp"
 
-class GameEngine;
-
 namespace Ego {
 namespace GUI {
 
@@ -95,8 +93,6 @@ public:
     void bringToFront();
 
 protected:
-    GameEngine& engine();
-    const GameEngine& engine() const;
     UIManager& uiManager();
     const UIManager& uiManager() const;
 

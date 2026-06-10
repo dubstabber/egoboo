@@ -295,6 +295,9 @@ public:
 
         GameEngine& engine = context.engine();
         engine._uiManager.reset(_fakeUiManager);
+        // Publish the fake through the GUI-layer seam so widget uiManager() access (Component::uiManager()
+        // -> activeUIManager()) resolves it, mirroring how EngineContext::uiManager() reads engine._uiManager.
+        Ego::GUI::installActiveUIManager(*_fakeUiManager);
 
         _fakeCoreSystem->systemService = _fakeSystemService;
         _fakeCoreSystem->videoService = nullptr;
@@ -320,6 +323,7 @@ public:
     ~ScopedPlayingStateHarness()
     {
         auto& context = EngineContext::get();
+        Ego::GUI::clearActiveUIManager();
         if (GameEngine* engine = EngineContext::get().tryEngine())
         {
             engine->_currentGameState.reset();

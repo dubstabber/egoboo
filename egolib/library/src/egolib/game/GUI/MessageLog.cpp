@@ -23,7 +23,7 @@
 #include "egolib/game/GUI/MessageLog.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/Time/Time.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/egoboo_setup.h"
 #include "egolib/font_bmp.h"
 
 namespace Ego {
@@ -34,12 +34,12 @@ MessageLog::MessageLog() :
 
 uint32_t MessageLog::messageDurationTicks() const
 {
-    return EngineContext::get().config().hud_messageDuration.getValue() * 10;
+    return Ego::activeConfig().hud_messageDuration.getValue() * 10;
 }
 
 size_t MessageLog::messageLimit() const
 {
-    return static_cast<size_t>(EngineContext::get().config().hud_simultaneousMessages_max.getValue());
+    return static_cast<size_t>(Ego::activeConfig().hud_simultaneousMessages_max.getValue());
 }
 
 void MessageLog::draw(DrawingContext& drawingContext) {

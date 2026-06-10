@@ -177,5 +177,23 @@ private:
     std::shared_ptr<idlib::vertex_buffer> _textureQuadVertexBuffer;
 };
 
+/// @brief Install the active UI manager (the engine's UIManager).
+/// @remark GUI-layer seam letting lower-layer GUI widgets reach the active UIManager (for drawing)
+///         without an upward dependency on the app-layer EngineContext. GameEngine installs its
+///         _uiManager here at creation and clears it at teardown. EngineContext::uiManager() keeps
+///         its own GameEngine-derived path (the script-function test fixtures manipulate the engine's
+///         _uiManager directly), so both resolve the same instance in the running engine.
+void installActiveUIManager(UIManager& uiManager);
+
+/// @brief Clear the installed active UI manager.
+void clearActiveUIManager();
+
+/// @brief The installed active UI manager, or @a nullptr if none is installed.
+UIManager* tryActiveUIManager();
+
+/// @brief The active UI manager.
+/// @throw std::logic_error if none is installed
+UIManager& activeUIManager();
+
 } // namespace GUI
 } // namespace Ego

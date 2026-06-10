@@ -23,7 +23,6 @@
 
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Renderer/Renderer.hpp"  // Renderer, idlib::color_blend_parameter, compare_function
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace Ego {
 namespace GUI {
@@ -33,7 +32,7 @@ Material::Material(const std::shared_ptr<const Texture>& texture, const Colour4f
 	{}
 
 void Material::apply() const {
-	auto& renderer = EngineContext::get().renderer();
+	auto& renderer = Ego::activeRenderer();
 	
 	// (1) texture
 	renderer.getTextureUnit().setActivated(_texture.get());

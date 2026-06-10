@@ -22,11 +22,22 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/GameState.hpp"
+#include "egolib/game/Core/EngineContext.hpp"
 
 GameState::GameState() :
 	_terminateStateRequested(false)
 {
 	//ctor
+}
+
+GameEngine& GameState::engine()
+{
+	return EngineContext::get().engine();
+}
+
+const GameEngine& GameState::engine() const
+{
+	return EngineContext::get().engine();
 }
 
 void GameState::endState()
