@@ -86,6 +86,8 @@ The legacy content set is **not** internally consistent. Many validator failures
 
 **Egolib subsystems**: AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (objects/particles), Extensions (OpenGL), FileFormats (MD2, maps, configs), Graphics (fonts, textures, framebuffer), Grid, Image, InputControl, Log, Logic, Math, Mesh, Platform, Profiles, Renderer (OpenGL), Script (bytecode VM, compiler), Time, VFS, game (core gameplay), integrations.
 
+**Link layout**: egolib builds as an acyclic DAG of four static archives, defined in `egolib/library/CMakeLists.txt` and nm-symbol-closure verified (see `refactoring-documents/71-completed-passes-log.md`): `egolib-foundation-base` (114 TUs, the dependency-closed bottom) ◄ `egolib-physics` (6, the collision nucleus + `physics.c`) and ◄ `egolib-renderer` (29, SDL windowing + OpenGL backend; sibling of physics, zero cross-edges) ◄ `egolib-library` (143, the game-core remainder). Consumers link only `egolib-library`. Move-only absorption is exhausted — growing the lower layers now requires seam-cutting. When touching egolib CMake or moving sources, preserve the acyclicity (verify with the nm set-intersection method, with a positive control).
+
 ### Global State (major coupling points)
 
 The runtime was historically wired around three mutable globals, all now retired from active runtime code:
@@ -127,7 +129,7 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/` (40 test files, **811** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Run serially (`ctest -j1`) for an accurate baseline** — at high `-j` ~4 additional fixtures fail spuriously due to shared writable-path races (`ImportWorkflowFixture` copy/export, `ModulePlayerStartupFixture` quest-log hydration, `ScriptSystemsFunctionsFixture` AddIDSZ module-menu), all of which pass in isolation. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
+Google Test framework. Tests in `egolib/tests/` (42 test files, **825** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Run serially (`ctest -j1`) for an accurate baseline** — at high `-j` ~4 additional fixtures fail spuriously due to shared writable-path races (`ImportWorkflowFixture` copy/export, `ModulePlayerStartupFixture` quest-log hydration, `ScriptSystemsFunctionsFixture` AddIDSZ module-menu), all of which pass in isolation. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 

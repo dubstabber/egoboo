@@ -1528,6 +1528,69 @@ The two nm-pre-verified foundation-growth fronts the physics middle-carve queued
 
 ---
 
+## egolib frontier absorption — the third link-split: egolib-renderer (2026-06-09/10)
+
+Branch `refactor/egolib-frontier-absorb`, seven passes. Picked by a 5-scout scout-next-heavy-front workflow
+(fresh nm fixpoint over all 205 library TUs + one deep scout per deferred front + a generalist sweep →
+ranking synthesis → **six adversarial skeptics, every one `refuted:false` at high confidence**, each with an
+independently-written from-scratch nm parser reproducing the scout's numbers exactly on live artifacts —
+the strongest cross-verification this thread has had). Headline: **the 60-TU nm-clean frontier of
+`egolib-library` moved down, plus the physics pair behind a 1-symbol seam — `egolib-library` 205 → 143 TUs
+(−30%), and a fourth archive `egolib-renderer` exists. The link layout is now an acyclic DAG:**
+
+```
+egolib-foundation-base (114)  ◄──  egolib-physics (6)    ◄──  egolib-library (143)
+egolib-foundation-base (114)  ◄──  egolib-renderer (29)  ◄──  egolib-library (143)
+```
+
+**Foundation absorptions (P1–P4, 31 TUs, pure CMake source-list moves, 0 cumulative blockers at every step):**
+- **P1 (14):** `Profiles/{EnchantProfile,EnchantProfileWriter,LocalParticleProfileRef,ParticleProfile,ParticleProfileWriter,RandomName}.cpp`, the seam interfaces `Entities/IObjectWorld.cpp` + `Graphics/IBillboardSystem.cpp` + `Logic/IPerkHandler.cpp`, `Logic/MissileTreatment.cpp`, `game/GUI/InputListener.cpp`, `AI/WaypointList.c`, `game/lighting.c`, `game/script_functions_bitwise.c` (83→97). Subsumes the mesh-AI front's "Pass 1" and pre-resolves `mesh.c`'s `lighting_cache_t::init` blocker downward.
+- **P2 (7):** the MD2 model cluster `Graphics/{MD2Model,ModelDescriptor,VertexFormat,IndexFormat}.cpp`, `game/Graphics/{Md2ModelRenderer,DefaultMd2ModelRenderer}.cpp`, `game/GUI/Material.cpp` (97→104).
+- **P3 (6):** the texture/font cluster `Renderer/{Texture,DeferredTexture}.cpp`, `Graphics/{TextureManager,Font,FontManager}.cpp`, `font_bmp.c` (104→110). Co-moving `Renderer/Texture.cpp` clears `font_bmp.c`'s two `Ego::Texture::getSource{Width,Height}` blockers — **the long-documented `font_bmp` "genuinely-higher" exception is retired.**
+- **P4 (4):** `Profiles/{ObjectProfile_core,ModuleProfile}.cpp`, `Logic/{Perk,PerkHandler}.cpp` (110→114).
+
+**The egolib-renderer carve (P5–P6, 29 TUs — the third link-split).** The frontier's display/GL cluster is
+plumbing, not foundation, so it became its own middle layer rather than bloating the base: a new STATIC
+archive `egolib-renderer`, **sibling of `egolib-physics`** — both depend one-way on `egolib-foundation-base`,
+with **zero symbol edges between renderer and physics in either direction** (nm-verified; fold-into-base was
+the documented fallback, with identical nm math). P5 moved the 10-TU SDL display/window cluster
+(`Graphics/{Display,DisplayMode,GraphicsContext,GraphicsWindow,Viewport}.cpp`, `Graphics/SDL/{Display,DisplayMode,GraphicsContext,Utilities}.cpp`, `game/GUI/DrawingContext.cpp`); P6 the 19-TU OpenGL backend
+(`Renderer/{Renderer,RendererInfo}.cpp`, the 10 `Renderer/OpenGL/*` TUs, `Graphics/{GraphicsSystem,GraphicsSystemNew}.cpp`, `Graphics/SDL/{GraphicsSystemNew,GraphicsWindow}.cpp`, `Extensions/ogl_extensions.c`, `game/Graphics/RenderPass.cpp`, `game/renderer_3d.c`) — the 8-TU mutually-recursive renderer SCC and the
+`{ogl_extensions, OpenGL/Utilities}` SCC moved atomically within the pass. Consumers needed **zero** changes
+(`egolib-library` PUBLIC-links the new target; INTERFACE include dirs identical). The duplicate-basename trap
+(9 basenames × 2 members in the old monolith — `Texture.cpp.o`, `GraphicsWindow.cpp.o`, `Utilities.cpp.o`, …)
+was sidestepped in gating by doing nm math on **archive-level aggregate** symbol sets, which need no member
+attribution.
+
+**The physics pair (P7, the one source edit).** `Particle::isTerminated()` was inlined into
+`Entities/Particle.hpp` (out-of-line definition deleted from `Particle_core.cpp`; body `return _isTerminated;`
+— semantics identical, in-class definition implicitly inline). That was the pair's **only** residual blocker
+(nm-verified exactly `_ZNK3Ego8Particle12isTerminatedEv`), so `Physics/physics.c` + `Entities/Common.cpp`
+joined `EGOLIB_PHYSICS_SOURCES` (4→6) — **the documented "physics.c needs Ego::Particle::isTerminated"
+blocker is retired; the `oct_bb_t` collision-geometry free functions now live in the archive named for them.**
+
+**Verification (every pass):** build 0 errors → `ar t` membership exact (97/104/110/114 × 4/6 × 10/29 ×
+191→143) → nm acyclicity across all archives with **live positive controls** (physics→base edges incl.
+`vec_to_facing`+`twist_to_normal`, 2→6 syms after P7; base undefined `SDL_*` 31→32; renderer→base 11→36 syms)
+→ validator `test.mod` 0/0 → ctest -j1 **823/825** (only `ScriptLoaderFixture` #613/#614) → menu smoke-run
+exit 124 clean. A 4-dimension adversarial review (CMake/layering audit, behavior-preservation hunt,
+from-scratch rebuild, Windows cross-build check) gated the merge.
+
+**Terminal finding — move-only absorption is EXHAUSTED.** The fixpoint proved the remaining `egolib-library`
+(143 TUs) is one large mutually-recursive game-core SCC plus 4 blocked satellites (`Core/System.cpp` —
+residual 6, needs only the `EngineContext`→`Log::activeTarget()`/`installActiveConfig` seam swap, the named
+quick follow-on; `OptionsButton`, `Panel`, `DebugParticlesScreen`). **Every future link-split gain now
+requires seam-cutting, not list-moving.** Next fronts as ranked by the scout cycle: the mesh-AI chain
+(`mesh.c` residual is now 4 blockers — the `EngineContext::get/logTarget` pattern + `GameSessionContext::get`/
+water — after `lighting.c` landed in base); the `Core/System.cpp` seam-swap (+1 satellite); the questlog
+chain via `Log::activeTarget()`. The physics/Entities ownership-inversion remainder (by-value
+`ObjectPhysics`/`ObjectGraphics`/`ParticleGraphics` members) re-measured at **123 blockers — correctly
+flag-day, do not attempt incrementally.** A valuable side-find: a **4th racing test fixture** shares the
+writable `.egoboo-runtime/user` path with no env override (`Platform/file_linux.c:190-200`) — fixing fixture
+isolation would make `ctest -j20` trustworthy and every future gate cycle ~70 s faster.
+
+---
+
 ## Files touched most by this pass log
 
 The following translation units or headers were modified by five or more of the passes above. Consult git history if you need the exact sequence of changes:
