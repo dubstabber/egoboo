@@ -560,7 +560,6 @@ set(EGOLIB_GAME_GAMESTATES_SOURCES
 
 # -- game/Graphics -----------------------------------------------------------
 set(EGOLIB_GAME_GRAPHICS_SOURCES
-    src/egolib/game/Graphics/Billboard.cpp
     src/egolib/game/Graphics/Billboard.hpp
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
@@ -739,9 +738,7 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/link.h
     src/egolib/game/mesh.c
     src/egolib/game/mesh.h
-    src/egolib/game/mesh_geometry.c
     src/egolib/game/mesh_loader.c
-    src/egolib/game/mesh_query.c
     src/egolib/game/renderer_3d.c
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.h
@@ -986,6 +983,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Water.cpp
     src/egolib/game/Module/Water.hpp
+    src/egolib/game/Graphics/Billboard.cpp
     src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
     src/egolib/game/Graphics/Md2ModelRenderer.cpp
     src/egolib/game/GameStates/LoadPlayerElement.cpp
@@ -996,6 +994,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/Logic/QuestLog.cpp
     src/egolib/game/lighting.c
     src/egolib/game/mesh_fx.c
+    src/egolib/game/mesh_geometry.c
+    src/egolib/game/mesh_query.c
     src/egolib/game/script_compile.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c

@@ -23,6 +23,8 @@
 #include "egolib/game/mesh.h"
 #include "egolib/map_functions.h"  // cartman_calc_twist, CARTMAN_FIXNUM, CARTMAN_SLOPE
 
+MeshStats g_meshStats;
+
 //--------------------------------------------------------------------------------------------
 
 bool ego_mesh_t::tile_has_bits( const Index2D& i, const BIT_FIELD bits ) const

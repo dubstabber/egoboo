@@ -39,8 +39,6 @@ const std::shared_ptr<ego_tile_info_t> ego_tile_info_t::NULL_TILE = nullptr;
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
-MeshStats g_meshStats;
-
 //--------------------------------------------------------------------------------------------
 
 BIT_FIELD ego_mesh_t::test_wall(const BIT_FIELD bits, const mesh_wall_data_t& data) const

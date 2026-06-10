@@ -1,54 +1,107 @@
 ---
 name: nm-fixpoint-2026-06
-description: nm fixpoint analysis of all 138 egolib-library TUs — blocker counts, top seam-cut candidates, EngineContext/GameSessionContext as bottleneck pattern
+description: nm fixpoint on 138 true egolib-library TUs (post mesh-AI+QuestLog absorptions, 2026-06-10 state). 0-blocker list, seam-cut candidates, stale artifact warning.
 metadata:
   type: project
 ---
 
-## nm fixpoint analysis (2026-06-10)
+## Archive layout (confirmed 2026-06-10 end-of-day)
 
-Build: `/home/hwang/Projects/egoboo/build` (Linux, Ninja). Method: extracted defined symbols from each lower layer (`egolib-foundation-base` 6500 syms, `egolib-physics` 715, `egolib-renderer` 1784 = 7556 combined), then for each of the 138 exclusive library TUs counted how many of their undefined symbols land only in the library-only set (9834 symbols).
+`egolib-foundation-base` 119 TUs ← {`egolib-physics` 6, `egolib-renderer` 29} ← `egolib-library` 138 TUs.
 
-### Zero-blocker TU
+Passes that landed on 2026-06-10 after the frontier absorption:
+- Core/System.cpp bootstrap seam-swap → base (115→117 base after mesh-AI, then QuestLog to 119)
+- mesh-AI terrain seam: AStar.cpp + LineOfSight.cpp → base (117→119 wait, above is sequential)
+- QuestLog + PlayerQuestLog absorb → base (seam cut via Log::activeTarget())
+- getMeshPointer() broader cleanup (17 sites migrated, not an absorb)
 
-Only one genuine zero-blocker among the 138: `game/GameStates/LoadPlayerElement.cpp` (71 lines). All its undefined symbols (`QuestLog`, `ObjectProfile::getIcon`, `RandomName`) resolve into `egolib-foundation-base`. This is directly absorbable NOW but it's a leaf with no reverse-absorption value.
+## IMPORTANT: Stale artifact warning
 
-### Key bottleneck symbols
+The nm analysis requires filtering against ALL lower-layer `.o` paths (base + physics + renderer).
+`egolib-library.dir` contains 46 stale `.o` files from pre-move builds (older timestamps).
+Use `comm -23 lib_rel.txt all_lower_rel.txt` to find the true 167→138 actual library set.
+Using basename overlap (47 stale) instead of path overlap gives incorrect results.
 
-- `EngineContext::get()` — defined in `game/Core/EngineContext.cpp` (9 blockers of its own: AudioSystem, ParticleHandler, GameEngine). **91 of 138 TUs** reference it; it IS the primary dam.
-- `GameSessionContext::get()` — defined in `game/Core/GameSessionContext.cpp` (19 blockers). **74 of 138 TUs** reference it.
-- `gfx` (BSS global, defined in `game/graphic.c`) — 15 TUs reference it.
+The `/tmp/` files from the analysis session:
+- `/tmp/lower_defined.txt` — symbols defined in base+physics (7781 symbols)
+- `/tmp/true_library_only_symbols.txt` — symbols only in library (9286 symbols)
+- `/tmp/all_lower_rel.txt` — relative .o paths in all lower layers (166 entries)
 
-### Top seam-cut candidates (1-3 blockers, excluding LoadPlayerElement)
+## 0-blocker TUs in egolib-library (pure CMake moves, no source edits)
 
-| TU | Blockers | Blocking symbols | Assessment |
-|---|---|---|---|
-| `game/Graphics/Billboard.cpp` | 1 | `chr_getMatUp(Object*, Vector3f&)` | chr_getMatUp is in CharacterMatrix.c (10 blockers itself); extract a free-function shim or move chr_getMatUp to base |
-| `game/GUI/Component.cpp` | 1 | `Container::bringComponentToFront()` | circular GUI dep; Component is base class, Container is subclass — forward-declare or split header |
-| `Profiles/ObjectProfile_export.cpp` | 1 | `Object::getBaseAttribute()` | Object is deep library; pass attribute value as parameter to break dep |
-| `game/Graphics/RenderPasses/NonReflectiveTilesRenderPass.cpp` | 2 | `TileListV2::render()`, `TileList::getMesh()` | both in RenderPasses.cpp/TileList.cpp (7-3 blockers); cluster move only |
-| `game/GUI/Layout.cpp` | 2 | `Component::getWidth()`, `Component::getHeight()` | trivially inline; move getWidth/Height to Component header |
-| `game/Module/AnimatedTiles.cpp` | 2 | `GameSessionContext::worldUpdateCount()`, `GameSessionContext::get()` | worldUpdateCount seam already done elsewhere; pass frame counter as param or inject IWorldTime |
-| `game/Module/Fog.cpp` | 2 | `EngineContext::get()`, `EngineContext::config()` | config used for fog_enable flag; inject config at construction |
-| `game/Module/Module_spawn_realization.cpp` | 2 | `EngineContext::get()`, `EngineContext::logTarget()` | logging only; inject ILogTarget |
-| `Profiles/ObjectProfile_load.cpp` | 2 | `activeProfileSystem()`, `tryActiveAudioSystem()` | both singleton shims; pass as parameters |
-| `game/GameStates/OptionsConfigActions.cpp` | 3 | `EngineContext::get()`, `::config()`, `::audioSystem()` | inject config+audio |
-| `game/Graphics/TileList.cpp` | 3 | `GameSessionContext::get()`, `::mesh()`, `ego_tile_info_t::testFX()` | testFX defined in mesh.c; cluster move with mesh |
-| `game/Module/Module_spawn_plan.cpp` | 3 | `convert_spawn_file_load_name()`, `EngineContext::get()`, `::logTarget()` | convert_spawn is in module_spawn.c (4 blockers) |
-| `game/Module/Water.cpp` | 3 | `gfx`, `EngineContext::get()`, `::config()` | gfx is the dam; Water + Fog could move together if gfx is seamed |
-| `game/script_compile.c` | 3 | `EngineContext::get()`, `::profileSystem()`, `::logTarget()` | inject IProfileSystem + ILogTarget |
+Only ONE after removing stale artifacts and renderer-already-assigned TUs:
 
-### mesh.c specifically (4 blockers)
+| TU | Notes |
+|---|---|
+| `game/mesh_fx.c` | 0 library-only blockers. Includes `game/mesh.h` + `EngineContext.hpp` but those symbols are all in lower layers. Can move to foundation-base as-is. |
 
-Blockers: `EngineContext::get()`, `EngineContext::logTarget()`, `GameSessionContext::get()`, `GameSessionContext::water()`.
+All other `Graphics/` and `Renderer/` TUs showing as 0-blocker were stale artifacts from the egolib-renderer carve — they ARE already in egolib-renderer.
 
-- `EngineContext::logTarget()` is only for error messages in mesh load path — trivially injectable.
-- `GameSessionContext::water()` is only at `getElevation()` (line 1329) for waterwalk elevation test — pass `water_instance_t*` as param or add an `IWaterElevation` seam.
-- `getMeshPointer()` has 41 call sites scattered across: Object_appearance.cpp (4), Particle_core.cpp (4), Particle_spawn.cpp (2), graphic_scene.c (7), GameStates/MapEditorState.cpp (5), Module_spawn.cpp (1), script_implementation.c (6), graphic.c (1), GUI/MiniMap.cpp (2), Module/Passage.cpp (4), Module/Weather.cpp (2), GameSessionContext.cpp (1, it's the mesh() accessor itself). Most callers are deep library TUs with many other blockers — cleaning getMeshPointer doesn't unlock much on its own.
+## 1-3 blocker TUs (seam-cut candidates)
 
-### Strategic observation
+| TU | Blockers | Blocker symbols |
+|---|---|---|
+| `game/Graphics/Billboard.cpp` | 1 | Object full type (isTerminated/isBeingHeld/isInsideInventory) |
+| `game/GUI/Component.cpp` | 1 | `Ego::GUI::Container::bringComponentToFront` |
+| `Profiles/ObjectProfile_export.cpp` | 1 | `Object::getBaseAttribute()` |
+| `game/GUI/Layout.cpp` | 2 | `Component::getWidth/getHeight` |
+| `game/Graphics/TileList.cpp` | 3 | (game-layer) |
+| `game/Module/module_spawn.c` | 3 | (game-layer) |
+| `game/Module/Module_spawn_plan.cpp` | 3 | game.h constants, EngineContext::logTarget, convert_spawn_file_load_name |
 
-`EngineContext` and `GameSessionContext` are the true bottlenecks. Moving either to `egolib-foundation-base` would unblock 74-91 TUs, but both have their own complex blocker chains (AudioSystem, ParticleHandler, GameModule, etc.). The highest-value seam-cut strategy is to inject their individual services (logTarget, config, worldUpdateCount) at construction/call sites, converting from pull-singletons to pushed-interfaces — matching the pattern already used for ITerrainQuery and QuestLog.
+## Top seam-cut candidates (ranked)
 
-**Why:** EngineContext::get() is referenced by 91/138 library TUs; it IS the dam blocking the entire next wave of absorptions.
-**How to apply:** When scouting next seam, focus on EngineContext::logTarget injection (pure logging, no runtime deps) as a preparatory pass that would reduce blocker counts across the most TUs.
+### TIER 1 — Trivial 0-blocker absorb (pure CMake)
+- `game/mesh_fx.c` → `egolib-foundation-base`. No source edits needed. The EngineContext.hpp include is present but all symbols resolved from lower layers.
+
+### TIER 2 — Small seam cuts (1-3 changes each)
+- `game/Module/Module_spawn_plan.cpp` (3 blockers): (a) Remove game.h from Module_spawn_plan.hpp (only uses MAX_IMPORT_PER_PLAYER — relocate to egolib_config.h); (b) replace EngineContext::logTarget() with Log::activeTarget() for 3 log calls; (c) convert_spawn_file_load_name as callback param. 1 caller (module_spawn.cpp) needs updating.
+- `game/GUI/Component.cpp` (1 blocker): `Container::bringComponentToFront` — check if it can be moved to Container.hpp inline or forwardable.
+- `game/GUI/Layout.cpp` (2 blockers): `Component::getWidth/getHeight` — both are in the Component interface; may need Component.hpp cleanup first.
+
+### TIER 3 — Component.hpp cluster (medium, unlocks 2 TUs)
+Remove from `Component.hpp`:
+- `#include "egolib/game/Core/GameEngine.hpp"` — `engine()` helper has 0 callers in `game/GUI/*.cpp`
+- `#include "egolib/game/graphic.h"` — 0 symbols used in Component.hpp body
+Move `uiManager()` protected inline from Component.hpp to Container.hpp.
+Net: Component.cpp + Layout.cpp become absorbable (2 TUs). Container.cpp remains blocked (uses EngineContext::uiManager() in drawAll()).
+
+### TIER 4 — ObjectProfile_export (medium)
+`Profiles/ObjectProfile_export.cpp` (1 blocker): `Object::getBaseAttribute()`. Remove gratuitous GameEngine.hpp from ObjectProfile_internal.h; still blocked by Object.hpp unless Object attrs get an interface.
+
+## Key non-seam blockers (avoid)
+
+- **game/CharacterMatrix.c** (10 blockers): GameSessionContext, graphic_mad.h, renderer_3d.h, Module.hpp
+- **Object.hpp** (library-layer): by-value ObjectPhysics/ObjectGraphics/Inventory composition = flag-day
+- **Container.cpp**: EngineContext::uiManager() blocks whole Container/GameState/Panel cluster
+
+## ::get() census (current, 668 total)
+
+| Singleton | Count |
+|---|---|
+| EngineContext | 472 |
+| GameSessionContext | 123 |
+| video_buffer_manager | 12 |
+| InputSystem | 8 |
+| GraphicsSystemNew | 6 |
+| TLT | 5 |
+| egoboo_config_t | 5 |
+| TextureManager | 4 |
+| Console | 4 |
+
+EngineContext (472) and GameSessionContext (123) are the primary dams — 88% of all ::get() calls.
+video_buffer_manager (12) is the next highest non-routed singleton.
+
+## Split file status (2026-06-10)
+
+- **mesh.c**: SPLIT into 5 TUs (mesh.c 423L, mesh_fx.c 281L, mesh_geometry.c 366L, mesh_loader.c 114L, mesh_query.c 259L). Total 1443L vs original ~1370L (slight growth from headers). mesh_fx.c is foundation-base-ready (0 blockers). mesh_loader.c has 5 blockers (ego_mesh_t ctor/dtor/finalize + EngineContext::logTarget). mesh_query.c has 5 blockers (g_meshStats + ego_tile_info_t ops).
+- **fileutil.c**: NOT SPLIT. Still monolithic at 598L. ReadContext.cpp is a separate 752L TU.
+
+## Next roadmap sequencing
+
+After the 2026-06-10 completions (mesh-AI terrain seam, getMeshPointer cleanup, QuestLog absorb), the nm fixpoint shows:
+1. mesh_fx.c absorption (trivial, 0 blockers, pure CMake)
+2. Component.hpp gratuitous include cleanup (unlocks 2 GUI TUs)
+3. Module_spawn_plan seam (3 targeted edits)
+4. egoboo.h → fileutil.c split (fileutil.c is 598L, still large but not urgent — no 0-blocker gain)
+5. Entities ownership inversion (123 blockers, flag-day, DO NOT attempt)

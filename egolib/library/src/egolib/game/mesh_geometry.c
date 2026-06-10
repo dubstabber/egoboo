@@ -22,7 +22,6 @@
 
 #include "egolib/game/mesh.h"
 #include "egolib/FileFormats/Globals.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/map_functions.h"  // cartman_calc_twist
 
@@ -30,7 +29,7 @@
 
 static void warnNumberOfVertices(const char *file, int line, size_t numberOfVertices)
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+    Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                      "mesh has too many vertices - ", numberOfVertices,
                                      " number of vertices requested, but maximum number of vertices is ",
                                      MAP_VERTICES_MAX);
@@ -76,7 +75,7 @@ void tile_mem_t::computeVertexIndices(const tile_dictionary_t& dict)
 	}
 
 	if (vertexIndex != _info.getVertexCount()) {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "wrong number of vertices: received ",
+		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "wrong number of vertices: received ",
                                          vertexIndex, ", expected ", _info.getVertexCount(), Log::EndOfEntry);
 	}
 }
