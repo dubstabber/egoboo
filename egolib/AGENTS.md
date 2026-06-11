@@ -11,28 +11,22 @@ Additional instructions for work under `egolib/`.
 
 ## High-risk hotspots
 
-Read the relevant audit docs before working in these areas:
-
-- `library/src/egolib/game/script_functions_{systems,target,state,spawn,action,movement,bitwise}.c` (split from the former `script_functions.c`; `_systems.c` is the largest TU at ~3200 lines)
-- `library/src/egolib/vfs.c` (~1920 lines, down from 2,460 after the dead cstdio backend was removed)
-- `library/src/egolib/game/Physics/particle_collision.c` (~1530 lines)
-- `library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1490 lines)
-- `library/src/egolib/game/mesh.c` (~1370 lines)
-- `library/src/egolib/Script/script.c` (~1370 lines)
-- `library/src/egolib/fileutil.c` (~1330 lines)
-- `library/src/egolib/Entities/Object.hpp` (~1620 lines, monolithic interface)
-
-Architecturally central but now small after split passes: `game/game.c` (~550), `Entities/Object.cpp` (~200), `game/Module/Module.cpp` (~200).
+The live list of large TUs (files >1000 lines) and the link-layout/global-state figures live in **one
+authoritative place** — root `AGENTS.md` ("High-Risk Hotspots", "Link layout", "Global State") plus
+`refactoring-documents/CODEBASE-HEALTH-STATUS.md` §3. This file deliberately keeps **no parallel copy** of
+those numbers (it drifted stale once). Before working in the large script-dispatch (`game/script_functions_*.c`),
+`Entities/Object.hpp`, physics-collision (`particle_collision.c`/`ObjectPhysics.cpp`), `vfs.c`, or
+`game/Graphics/ObjectGraphics.cpp` areas, read those docs first.
 
 ## Global-state constraints
 
-- The three former mutable globals (`_gameEngine`, `_currentModule`, `update_wld`) are fully retired. Module access routes through `GameSessionContext`; engine access through `EngineContext`. The remaining coupling hotspot is ~863 singleton `::get()` call sites.
+- The three former mutable globals (`_gameEngine`, `_currentModule`, `update_wld`) are fully retired. Module access routes through `GameSessionContext`; engine access through `EngineContext`. (Current `::get()` figures: see root `AGENTS.md` "Global State".)
 - Avoid introducing new hidden global dependencies.
 - If you touch code that affects VFS setup, module loading, object profile loading, or script compilation, validate beyond compilation.
 
 ## Validation expectations
 
-- Never use more than 4 parallel jobs for CMake builds on this machine.
+- The build is parallel-safe on this machine (i7-13700HX, 24 threads) — use `-j20`. (The old `-j4` cap was a laptop stability limit and no longer applies.)
 - Prefer targeted CMake builds for touched targets.
 - If your change can affect content loading, module loading, VFS behavior, object profiles, or scripts, run at least:
   - `./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`

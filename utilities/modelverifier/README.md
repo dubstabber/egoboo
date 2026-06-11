@@ -6,7 +6,7 @@ It requires Perl.
 
 ## Usage
 
-`perl modelviewer.pl [-no-warnings] [-no-list] <path to Egoboo's data>`
+`perl modelverifier.pl [-no-warnings] [-no-list] <path to Egoboo's data>`
 
 `--no-warnings` turns off warnings.
 

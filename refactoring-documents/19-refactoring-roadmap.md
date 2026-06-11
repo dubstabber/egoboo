@@ -59,7 +59,7 @@ Landed so far (18 role interfaces):
 Follow-on work inside this tier:
 
 - Migrate more callers to the landed role surfaces instead of `Object`.
-- Keep the remaining mixed-domain `script_functions_systems.c` helpers focused on bounded caller migration; quest/profile/armor policy coupling still remains deferred.
+- Keep the remaining mixed-domain script-dispatch helpers (now spread across the `script_functions_*.c` family — `script_functions_systems.c` itself has been decomposed and deleted) focused on bounded caller migration; quest/profile/armor policy coupling still remains deferred.
 - Keep the raw `ai_state_t` bridge confined to `Ego::Script::runtimeState(...)` until `Script/script.c` no longer consumes raw script-runtime state.
 
 This remains the SRP/ISP keystone for `Object`.
@@ -68,7 +68,7 @@ This remains the SRP/ISP keystone for `Object`.
 
 ### T1.3 Service-interface layer over singletons
 
-~863 `::get()` call sites remain (down from ~912 at 2026-06-06, ~946 at 2026-04-20, ~1,150 at 2026-04-19). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
+~632 `::get()` call sites remain (down from ~863 at 2026-06-06, ~912 earlier, ~946 at 2026-04-20, ~1,150 at 2026-04-19). Keep taking the smallest-reach singleton and applying the same DIP seam pattern one service at a time:
 
 - Landed so far: `IAudioSystem`, `IPerkHandler`, `IImageManager`, `IParticleHandler`, `IProfileSystem`, `IFontManager` (Pass 211), `IInputSystem` (Pass 212), `IGraphicsSystem` (Pass 213, with headless test mock), `ITextureManager` (Pass 214), `ITextureAtlasManager` (Pass 217), `IGFX` (Passes 218–219, two sub-passes), `ICameraSystem` (CameraSystem Passes 1–2, 2026-06-07 — interface widened + game-layer consumers migrated), plus `IBillboardSystem` caller rerouting (Pass 215), `Time` clock abstraction (Pass 216), engine-routed logging, and `egoboo_config_t`.
 - Bootstrap ownership now publishes audio through `GameEngine`, and perk/image services through `ContentRuntimeBootstrap` or `App`/`GFX` as appropriate.

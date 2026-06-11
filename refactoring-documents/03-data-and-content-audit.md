@@ -181,7 +181,7 @@ The current scripting path is still active and core to gameplay.
 ### What is present
 
 - custom compiler in `game/script_compile.c`
-- runtime function layer, split across seven TUs: `game/script_functions_{action,bitwise,movement,spawn,state,systems,target}.c`
+- runtime function layer, split across fourteen TUs: `game/script_functions_{action,alerts,appearance,bitwise,combat,commerce,enchant,movement,quests,spawn,state,stat_gifts,target,target_select}.c`
 - additional script support under `Script/`
 - legacy docs in `data/doc/AiDocs.txt`
 

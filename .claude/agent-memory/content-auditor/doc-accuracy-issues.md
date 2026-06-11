@@ -1,64 +1,40 @@
 ---
 name: doc-accuracy-issues
-description: Stale paths, wrong claims, and confirmed accurate items found in build docs and AGENTS.md; audited June 2026
+description: Open + resolved doc-accuracy issues in build docs / AGENTS.md; last audited 2026-06-11
 metadata:
   type: project
 ---
 
-## Confirmed stale / wrong
+## Open issues
 
-### egolib/AGENTS.md hotspot list
-- Lists `library/src/egolib/game/script_functions.c` — this file NO LONGER EXISTS.
-- The monolith was split into seven files: script_functions_action.c, _bitwise.c, _movement.c, _spawn.c, _state.c, _systems.c, _target.c
-- CLAUDE.md already reflects the correct split; egolib/AGENTS.md does not.
+### build-windows.md — missing DLLs in external/mingw/bin (STILL OPEN, verified 2026-06-11)
+- The DLL-copy mechanism implies the bundle contains SDL2_image.dll and SDL2_mixer.dll, but
+  `external/mingw/bin/` has SDL2.dll, SDL2_ttf.dll, and codec DLLs — **no SDL2_image.dll, no SDL2_mixer.dll**.
+- `idlib-game-engine/library/CMakeLists.txt` uses `if (EXISTS ...)` guards per DLL, so it degrades silently
+  (build does not hard-fail, but the cross-built Windows binary may be missing image/audio at runtime).
 
-### AGENTS.md (root) — agent path wrong
-- Line 30: "Project-scoped custom agents live in `.codex/agents/` and share shallow delegation defaults from `.codex/config.toml`."
-- Actual location: `.claude/agents/` (five .md files confirmed). No `.codex/` directory exists.
+## Resolved (2026-06-11 — re-verified against the live tree, all fixed)
 
-### README.md — GitHub URL inconsistency
-- clone URL uses `github.com/dubstabber/egoboo` (fork URL)
-- build-linux.md uses `github.com/egoboo/egoboo` (upstream URL)
-- License link also uses `dubstabber/egoboo`
-- These are different repos; at minimum they should be consistent.
+- **egolib/AGENTS.md hotspot list** — no longer references the deleted `script_functions.c`/`_systems.c`; the
+  file now points to root `AGENTS.md` + `CODEBASE-HEALTH-STATUS.md` §3 instead of keeping a drift-prone copy.
+- **root AGENTS.md agent path** — now correctly `.claude/agents/` (was the wrong `.codex/agents/`).
+- **README.md vs build-linux.md GitHub URL** — both now use `github.com/dubstabber/egoboo` (consistent).
+- **debug-output.txt** — the file now exists and is no longer referenced as a dangling startup-failure artifact.
 
-### build-windows.md — missing DLLs in external/mingw/bin
-- Doc says the bundle is expected to contain SDL2_image.dll and SDL2_mixer.dll (implied by the DLL copy mechanism)
-- Actual external/mingw/bin/ has: SDL2.dll, SDL2_ttf.dll, and various codec DLLs — but NO SDL2_image.dll and NO SDL2_mixer.dll
-- The CMake code in idlib-game-engine/library/CMakeLists.txt uses `if (EXISTS ...)` guards for each, so it degrades silently
-- This is a real gap in the bundle but the build won't hard-fail on it
+## Confirmed accurate (reference — re-check before asserting doc accuracy)
 
-### debug-output.txt — referenced but missing
-- build-windows.md and README.md both reference `debug-output.txt` for a recent Windows startup failure
-- The file does not exist in the repository root
+- **doc/build-linux.md** — submodule-init command, CMake configure/build commands, output paths, run
+  instructions, `EGOBOO_DATA_DIR`/`SDL_VIDEODRIVER=x11`, Fedora package list, the PhysFS-bundled claim
+  (physfs-3.0.0 built from source in idlib-game-engine), and the validator flags all match current state.
+- **doc/build-windows.md** — toolchain path `cmake/toolchains/mingw-w64-x86_64.cmake` exists;
+  `EGOBOO_MINGW_DEPENDENCY_ROOT` default `external/mingw`; shlwapi/winmm handled internally; cross-build test
+  exclusion accurate.
+- **doc/error-handling-policy.md** — `idlib::argument_null_error` exists; policy is internally consistent.
+  (Note: the `egolib_rv`/`gfx_rv` retirement has progressed since — see roadmap T1.4; treat the policy as the
+  target, not a live-count source.)
+- **cmake/toolchains/mingw-w64-x86_64.cmake** — sets C/C++/RC compilers via the x86_64-w64-mingw32 prefix,
+  `CMAKE_FIND_ROOT_PATH=/usr/x86_64-w64-mingw32`, infers AR/RANLIB from the prefix (correct).
 
-## Confirmed accurate
-
-### doc/build-linux.md
-- Submodule init command is correct: `git submodule update --init data external idlib idlib-game-engine`
-- CMake configure/build commands, output paths, and run instructions all match current state
-- EGOBOO_DATA_DIR and SDL_VIDEODRIVER=x11 env var usage is accurate
-- Fedora package list is accurate for current dependencies
-- PhysFS claim ("fetched and built by CMake from the vendored idlib-game-engine setup") is substantively correct — physfs-3.0.0 is bundled in idlib-game-engine/library/ and built from source; no system physfs needed
-- Validator flags (--verbose, --skip-scripts) and scope description are accurate
-- Pointer to idlib-game-engine/library/CMakeLists.txt as "real dependency contract" is correct
-
-### doc/build-windows.md
-- Toolchain file path `cmake/toolchains/mingw-w64-x86_64.cmake` is correct and file exists
-- EGOBOO_MINGW_DEPENDENCY_ROOT default is `external/mingw` (confirmed in idlib-game-engine/library/CMakeLists.txt)
-- shlwapi and winmm are handled internally (egolib/library/CMakeLists.txt and idlib-game-engine respectively)
-- Cross-build test exclusion behavior is accurate
-- `--recursive` in "if the build fails" troubleshooting step is technically broader than needed (build-linux.md uses the more precise named-submodule form), but not wrong
-
-### doc/error-handling-policy.md
-- idlib::argument_null_error exists (confirmed at idlib/library/src/idlib/exception/argument_null_error.hpp)
-- egolib_rv / gfx_rv are actively present (20 files still use them)
-- Policy content is internally consistent and matches actual migration posture
-
-### cmake/toolchains/mingw-w64-x86_64.cmake
-- Sets C, C++, and RC compilers correctly using x86_64-w64-mingw32 prefix
-- Sets CMAKE_FIND_ROOT_PATH to /usr/x86_64-w64-mingw32
-- Does NOT set AR or RANLIB; CMake infers them from the prefix (correct behavior)
-
-**Why:** Useful as a reference when writing new build instructions or editing any of these doc files.
-**How to apply:** Check this before asserting doc accuracy or proposing doc edits.
+**How to apply:** Check this before asserting doc accuracy or proposing build-doc edits. Volatile counts
+(archive TUs, file sizes, `::get()`, test totals) are NOT tracked here — they live in
+`refactoring-documents/CODEBASE-HEALTH-STATUS.md`; ground-truth them against the live tree.

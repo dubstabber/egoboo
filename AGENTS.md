@@ -12,7 +12,7 @@ Current direction: modernize the mixed C/C++ runtime, make native Windows and Li
 
 | Directory | Purpose |
 |-----------|---------|
-| `egolib/` | Main runtime library (~640 source files, 25 subsystems) — where most code lives |
+| `egolib/` | Main runtime library (~680 source files, 25 subsystems) — where most code lives |
 | `egoboo/` | Minimal executable wrapper (`src/game/Main.cpp` creates `GameEngine` and enters main loop) |
 | `idlib/` | Foundation library submodule (math, types, utilities) |
 | `idlib-game-engine/` | Engine framework submodule (graphics, physics, file systems) |
@@ -86,7 +86,7 @@ The legacy content set is **not** internally consistent. Many validator failures
 
 **Egolib subsystems**: AI, Audio, Configuration, Console, Core (quad-trees, thread pool), Entities (objects/particles), Extensions (OpenGL), FileFormats (MD2, maps, configs), Graphics (fonts, textures, framebuffer), Grid, Image, InputControl, Log, Logic, Math, Mesh, Platform, Profiles, Renderer (OpenGL), Script (bytecode VM, compiler), Time, VFS, game (core gameplay), integrations.
 
-**Link layout**: egolib builds as an acyclic DAG of **five** static archives, defined in `egolib/library/CMakeLists.txt` and nm-symbol-closure verified (see `refactoring-documents/71-completed-passes-log.md`): `egolib-foundation-base` (142 TUs, the dependency-closed bottom) ◄ `egolib-physics` (5, the collision nucleus + `physics.c`) and ◄ `egolib-renderer` (28, SDL windowing + OpenGL backend; sibling of physics, zero cross-edges) ◄ `egolib-gui` (22, the generic GUI widget toolkit — Component/Container/widgets/UIManager — above renderer, game-state-free) ◄ `egolib-library` (116, the game-core remainder). Consumers link only `egolib-library`. The DAG is **fully acyclic — zero known back-edges** (all 5 layers verify 0 forbidden edges). Move-only absorption is exhausted — growing the lower layers now requires seam-cutting (e.g. the gui carve needed `activeRenderer`/`activeGraphicsSystem`/`activeUIManager` seams). When touching egolib CMake or moving sources, preserve the acyclicity — re-run the per-archive nm back-edge check (mangled symbols, set math, with a positive control); do not trust prior "acyclic" claims.
+**Link layout**: egolib builds as an acyclic DAG of **five** static archives, defined in `egolib/library/CMakeLists.txt` and nm-symbol-closure verified (see `refactoring-documents/71-completed-passes-log.md`): `egolib-foundation-base` (144 TUs, the dependency-closed bottom) ◄ `egolib-physics` (5, the collision nucleus + `physics.c`) and ◄ `egolib-renderer` (28, SDL windowing + OpenGL backend; sibling of physics, zero cross-edges) ◄ `egolib-gui` (22, the generic GUI widget toolkit — Component/Container/widgets/UIManager — above renderer, game-state-free) ◄ `egolib-library` (117, the game-core remainder). Consumers link only `egolib-library`. The DAG is **fully acyclic — zero known back-edges** (all 5 layers verify 0 forbidden edges). Move-only absorption is exhausted — growing the lower layers now requires seam-cutting (e.g. the gui carve needed `activeRenderer`/`activeGraphicsSystem`/`activeUIManager` seams). When touching egolib CMake or moving sources, preserve the acyclicity — re-run the per-archive nm back-edge check (mangled symbols, set math, with a positive control); do not trust prior "acyclic" claims.
 
 ### Global State (major coupling points)
 
@@ -96,30 +96,28 @@ The runtime was historically wired around three mutable globals, all now retired
 - `_currentModule` — **0 references.** Consumers go through `GameSessionContext` and `GameModule` accessor surfaces.
 - `update_wld` — **0 active references.** Variable gone; a few stale string-literal/comment artifacts remain in `script.c`, `ObjectGraphics.hpp`, `Particle.hpp`. Functional replacement is `worldUpdateCount()` (via `GameSessionContext`), ~77 call sites across ~31 files.
 
-The remaining coupling hotspot is singleton access: ~673 `::get()` call sites persist (down from ~863; the bulk are the intentional `EngineContext::get()` (494) and `GameSessionContext::get()` (129) seam calls). Actionable direct singletons: `video_buffer_manager::get()` (12), `InputSystem::get()` (8), `GraphicsSystemNew::get()` (6), `egoboo_config_t::get()` (6, already seamed), `TLT::get()` (5, const table). The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system (15 service seams); broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
+The remaining coupling hotspot is singleton access: ~632 `::get()` call sites persist (down from ~863; the bulk are the intentional `EngineContext::get()` (451) and `GameSessionContext::get()` (129) seam calls). Actionable direct singletons: `video_buffer_manager::get()` (1), `InputSystem::get()` (8), `GraphicsSystemNew::get()` (6), `egoboo_config_t::get()` (6, already seamed), `TLT::get()` (5, const table). The `EngineContext` service-interface layer covers audio, perk, image, particle, profile, logging, config, font, input, graphics system, texture manager, texture atlas, GFX, billboard system, and camera system (15 service seams); broader DI does not yet exist. Avoid reintroducing hidden global dependencies. Be careful around code affecting VFS setup, module loading, object profile loading, or script compilation.
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying. Files over 1,000 lines (by size):
-- `egolib/library/src/egolib/vfs.c` (~1920 lines, down from 2,460 after the dead cstdio backend was removed)
-- `egolib/library/src/egolib/game/script_functions_target.c` (~1680 lines)
-- `egolib/library/src/egolib/Entities/Object.hpp` (~1620 lines, monolithic interface — 18 role interfaces extracted but header still large)
-- `egolib/library/src/egolib/game/script_functions_spawn.c` (~1580 lines)
-- `egolib/library/src/egolib/game/Physics/particle_collision.c` (~1530 lines)
-- `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1490 lines)
-- `egolib/library/src/egolib/game/script_functions_state.c` (~1480 lines)
-- `egolib/library/src/egolib/Script/script.c` (~1370 lines)
-- `egolib/library/src/egolib/game/mesh.c` (~1370 lines)
-- `egolib/library/src/egolib/fileutil.c` (~1330 lines)
-- `egolib/library/src/egolib/game/script_functions_combat.c` (~1240 lines, new entrant)
-- `egolib/library/src/egolib/game/script_functions_action.c` (~1100 lines)
+Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly ten:
+- `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; now the single largest TU in the tree)
+- `egolib/library/src/egolib/game/script_functions_spawn.c` (~1576 lines)
+- `egolib/library/src/egolib/game/Physics/particle_collision.c` (~1528 lines)
+- `egolib/library/src/egolib/vfs.c` (~1500 lines, split this session into vfs.c + vfs_rwops.c + vfs_mount.c)
+- `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1488 lines)
+- `egolib/library/src/egolib/Script/script.c` (~1369 lines)
+- `egolib/library/src/egolib/game/script_compile.c` (~1151 lines)
+- `egolib/library/src/egolib/game/Physics/ObjectPhysics.cpp` (~1138 lines)
+- `egolib/library/src/egolib/game/script_functions_action.c` (~1101 lines)
+- `egolib/library/src/egolib/game/script_functions_target.c` (~1044 lines)
 
-Note: `script_functions_systems.c` (formerly ~3200 lines, the largest TU) has been fully decomposed into the 10 `script_functions_*.c` files above across Passes 102–167.
+Note: `script_functions_systems.c` (formerly ~3,200 lines) has been fully decomposed and deleted, spread across 14 `script_functions_*.c` files (action, alerts, appearance, bitwise, combat, commerce, enchant, movement, quests, spawn, state, stat_gifts, target, target_select). The largest TU is now `Entities/Object.hpp`, not this deleted file.
 
 Architecturally central but now small after split passes:
-- `egolib/library/src/egolib/game/game.c` (~550 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
+- `egolib/library/src/egolib/game/game.c` (~522 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
 - `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs)
-- `egolib/library/src/egolib/game/Module/Module.cpp` (~200 lines, split into six `Module_*.cpp` siblings)
+- `egolib/library/src/egolib/game/Module/Module.cpp` (~277 lines, split into six `Module_*.cpp` siblings)
 
 ## Refactoring Guidelines
 
@@ -132,7 +130,7 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/` (42 test files, **830** ctest cases; the only 2 expected failures are the perennial `ScriptLoaderFixture` PrimaryScript-fallback cases). **Parallel-safe at `-j20`** — each test process gets per-PID isolation via `EGOBOO_USER_DIR` (`TestEnvironment.hpp`), with automatic `atexit` cleanup of temp directories. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
+Google Test framework. Tests in `egolib/tests/` (44 test files, **875** ctest cases; full run is 875/875 PASS on this machine — the two historical `ScriptLoaderFixture` PrimaryScript-fallback cases now pass here). **Parallel-safe at `-j20`** — each test process gets per-PID isolation via `EGOBOO_USER_DIR` (`TestEnvironment.hpp`), with automatic `atexit` cleanup of temp directories. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 

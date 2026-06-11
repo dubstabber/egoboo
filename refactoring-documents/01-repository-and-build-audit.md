@@ -41,12 +41,12 @@ It does the following:
 Important details:
 
 - Tests are force-enabled for both `idlib` and `idlib-game-engine`.
-- `egolib` is built as one static library. The former recursive `GLOB_RECURSE` has been replaced with explicit, per-subsystem `set()` source lists, so subsystem ownership is now visible in the build files — but everything still links into a single static library.
+- `egolib` now builds as a fully-acyclic five-archive DAG (egolib-foundation-base, egolib-physics, egolib-renderer, egolib-gui, egolib-library), defined in `egolib/library/CMakeLists.txt`. The former recursive `GLOB_RECURSE` has been replaced with explicit, per-subsystem `set()` source lists, so subsystem ownership is now visible in the build files — but everything still links into a single static library.
 - `egoboo` is essentially a thin wrapper executable linked against `egolib-library`.
 
 ### Why this build shape is still imperfect
 
-- `egolib` is one monolithic static library: the explicit source lists make ownership visible but do not enforce dependency direction at link time.
+- `egolib` is now split into five static archives forming an acyclic DAG (nm-symbol-closure verified), so dependency direction IS enforced at link time; consumers link only `egolib-library`.
 - There is no explicit module/link graph inside `egolib` (the `idlib` 11-sub-library shape is the target).
 - Legacy C and newer C++ are compiled into the same library without a clear boundary.
 
@@ -113,7 +113,7 @@ Test-to-code ratio is now roughly **16.9%** (≈20,400 test lines against ≈121
 
 ## 8. Large code hotspots
 
-The file-split passes have decomposed every former oversized translation unit. The single largest TU is now `script_functions_systems.c` (~3,200 lines, grown as role-extraction helpers moved in); the next tier (`vfs.c` ~1,921, `script_functions_target.c` ~1,676, `Object.hpp` ~1,616, `script_functions_spawn.c` ~1,576, `particle_collision.c` ~1,525, `ObjectGraphics.cpp` ~1,487) sits well below that. **The authoritative, live hotspot table lives in `CODEBASE-HEALTH-STATUS.md` §3** (Key Metrics) — this doc defers to it rather than maintaining a parallel copy that drifts.
+The file-split passes have decomposed every former oversized translation unit. `script_functions_systems.c` has been fully decomposed and deleted. The single largest TU is now `Object.hpp` (~1,613 lines); the next tier is `script_functions_spawn.c` ~1,576, `particle_collision.c` ~1,528, `vfs.c` ~1,500 (split this session into vfs.c + vfs_rwops.c + vfs_mount.c), `ObjectGraphics.cpp` ~1,488, `script.c` ~1,369, `script_compile.c` ~1,151 sits well below that. **The authoritative, live hotspot table lives in `CODEBASE-HEALTH-STATUS.md` §3** (Key Metrics) — this doc defers to it rather than maintaining a parallel copy that drifts.
 
 `Object.cpp` itself is now ~200 lines: the implementation was split across six per-aspect TUs (`Object_{appearance,attributes,combat,interaction,lifecycle,update}.cpp`, plus the separate `ObjectHandler.cpp`) while the interface surface in `Object.hpp` stayed fat. That is the ISP/SRP frontier for T1.2 role-interface extraction. Script dispatch is likewise split across seven `script_functions_*.c` files but still one logical subsystem — the extensibility fix was scoped under T3.2 (the dispatch is in fact already an X-macro registry; see the roadmap note).
 
