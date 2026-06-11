@@ -2126,3 +2126,61 @@ ctest **875/875**. No GL gate — the carve changes only archive membership + 1 
 the widgets' render code is byte-identical and the seam goes through the already-installed
 `IPlayingStateController`. This is the first carve where measuring REVERSE edges yielded a near-trivial
 blocker (1), confirming the HUD widgets are genuinely top-of-call-graph.
+
+## egolib-game-graphics carve — the NINTH link-split (2026-06-11, branch `refactor/egolib-game-graphics-carve`)
+
+Paired with a VM safety-net test landed first (commit `7495f2955`): `ScriptRuntimeFixture.
+RunCharacterScriptExecutesCompiledOperationAndFunction` compiles a 2-instruction EgoScript from source
+(`tmpargument = 12` → `SetContent`) into a spawned object and runs it through `scr_run_chr_script`;
+`ai_state.content == 12` proves BOTH dispatch branches (`run_operation` + `run_function_call`) of the
+`script.c` `runCharacterScript` loop executed real bytecode — the last fully-uncovered VM path (the other
+runtime tests clear `_instructions`). ctest 875 → **876**.
+
+**Measurement (archive-member nm).** Lesson re-learned the hard way: the `CMakeFiles/egolib-library.dir/`
+object dir held **224 stale `.o`** from before the upper carves, polluting an object-glob measurement
+(phantom `MapEditorState` edges). The real `libegolib-library.a` had **77 members** — always measure
+against the live `.a`. Cluster = `Camera`/`CameraSystem`/`BillboardSystem`/`RenderPasses`/
+`TextureAtlasManager` + the 11 `RenderPasses/*` (16 TUs). **15 reverse edges** library→cluster, from
+exactly 2 TUs: `graphic.c` (14: the 11 RenderPass ctors via `GFX::GFX` make_unique + BillboardSystem ctor +
+`render_all` via `GFX::renderBillboards` + TextureAtlasManager via `GameAppImpl`) and `GameEngine.cpp` (1:
+`CameraSystem::CameraSystem` via the `idlib::singleton` `initialize`/`get` instantiation). `EntityList`/
+`TileList`/`ObjectGraphics`/`ParticleGraphics` excluded (Entities/GameSession coupling) and confirmed NOT
+to reference the cluster. Positive controls real (library→{hud,scriptvm,gamestates}=0); negative 318/427.
+
+**Seam type: CONSTRUCTION, not call-dispatch.** Runtime access already routed through the `IGFX`/
+`ICameraSystem`/`IBillboardSystem` interfaces (EngineContext); the only concrete references were the
+*construction* of the singletons, triggered order-sensitively mid-`GameEngine::initialize()` (after the
+gfx-config download, before `gfx_system_init_all_graphics`/the console rect). So moving the install to
+`Main.cpp` pre-`start()` was unsafe.
+
+### P1 — relocate-down + bootstrap-hook seam (commit `6a0a9808e`, behavior-preserving, no link change)
+New `egolib/game/Graphics/GraphicsBootstrap.{hpp,cpp}` (stays in egolib-library): a `std::function`
+register/run holder (`registerGraphicsBootstrap`/`runGraphicsBootstrap{Init,Teardown}`, null-safe) plus
+declarations of the upper-defined `installDefaultGraphicsSystems`/`clear`. New `graphic_init.cpp`: the
+`GFX::GFX`/`~GFX`/`renderBillboards` + `GameAppImpl` ctor/dtor/accessors relocated out of `graphic.c`,
+and `installDefaultGraphicsSystems()` registering the construct+install / clear+destroy hooks (the
+former `GameEngine` init/teardown blocks verbatim). `GameEngine.cpp` calls `runGraphicsBootstrap*` at the
+identical call sites (ordering byte-identical); `graphic.c` keeps only the `RenderPass` base
+(`reinitClocks` touches `RenderPass::clock` via IGFX); `egoboo/Main.cpp` registers the bootstrap before
+`start()`, next to `installDefaultScriptSystem`. Still all in egolib-library here. ctest 876/876,
+validator 0/0.
+
+### P2 — split `egolib-game-graphics` (commit `e35e9edaa`, pure CMake, zero source edits)
+`EGOLIB_GAME_GRAPHICS_LAYER_SOURCES` (the 16 cluster files + `graphic_init.cpp` = **17 TUs**) `REMOVE_ITEM`'d
+from `SOURCE_FILES`; `add_library(egolib-game-graphics STATIC)` PUBLIC-links `egolib-library`.
+`egolib-hud-widgets` re-pointed to link `egolib-game-graphics` (scriptvm/gamestates get it transitively;
+also listed explicitly). `egolib-library` drops **77 → 62** (−16 cluster, +1 GraphicsBootstrap.cpp).
+`GraphicsBootstrap` holder + the 4 excluded Graphics TUs stay in library; `cartman`/content-validator stay
+on egolib-library only and link clean (proof the remainder is cluster-free).
+
+Layout: **base 146 ◄ {physics 5, renderer 28 ◄ gui 22} ◄ library 62 ◄ game-graphics 17 ◄ hud-widgets 6 ◄
+{scriptvm 17, gamestates 19}.**
+
+Full gate green: in-place + from-scratch clean builds (egoboo/cartman/content-validator/tests); exact `ar t`
+(library 62, game-graphics 17); nm-acyclic (**0 forbidden back-edges across all 9 archives**; headline
+library→game-graphics 0, game-graphics→{hud,scriptvm,gamestates} 0, library→{hud,scriptvm,gamestates} 0;
+forward control game-graphics→library 61); ctest **876/876**; validator `test.mod` 0/0. No GL gate — the
+construction code is byte-identical and runs at the original call site through the hook; live-render smoke
+n/a (no usable GL context in this environment). First carve to use a *construction-injection* seam
+(`std::function` bootstrap hook) rather than a method-dispatch interface — the right tool when the reverse
+edges are object *constructors* triggered order-sensitively from below.

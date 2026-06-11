@@ -1,7 +1,10 @@
 # Pass 74 — egolib-game-graphics: the NINTH archive carve (plan + measured surface)
 
-Status: **in progress** (branch `refactor/egolib-game-graphics-carve`). Paired with a VM
-compile→execute characterization test (safety-net, landed first).
+Status: **COMPLETE** (branch `refactor/egolib-game-graphics-carve`; commits `7495f2955` VM test,
+`6a0a9808e` P1 relocate-down, `e35e9edaa` P2 CMake split). Realized: 15 reverse edges cut (as
+predicted), egolib-game-graphics = 17 TUs, egolib-library 77 → 62, 0 forbidden edges across all 9
+archives, ctest 876/876, validator 0/0. See `71-completed-passes-log.md` for the full landed record.
+Paired with a VM compile→execute characterization test (safety-net, landed first).
 
 ## Goal
 
