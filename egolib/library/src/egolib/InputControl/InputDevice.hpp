@@ -10,6 +10,8 @@ namespace Ego
 namespace Input
 {
 
+class IInputSystem;
+
 class InputDevice
 {
 public:
@@ -54,7 +56,10 @@ public:
 
     bool isButtonPressed(const InputButton button) const;
 
-    Vector2f getInputMovement() const;
+    /// @param inputSystem the active input system (injected — InputDevice lives in
+    ///   egolib-foundation-base, below the EngineContext seam, so it cannot reach the input
+    ///   singleton through the engine context; the caller passes it down instead).
+    Vector2f getInputMovement(const IInputSystem& inputSystem) const;
 
     void setInputMapping(const InputButton button, const SDL_Keycode key);
 

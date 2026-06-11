@@ -63,7 +63,7 @@ InputDevice::InputDeviceType InputDevice::getDeviceType() const
     return _type;
 }
 
-Vector2f InputDevice::getInputMovement() const
+Vector2f InputDevice::getInputMovement(const IInputSystem& inputSystem) const
 {
     Vector2f result = idlib::zero<Vector2f>();
 
@@ -90,7 +90,7 @@ Vector2f InputDevice::getInputMovement() const
         // Mouse routines
         case Ego::Input::InputDevice::InputDeviceType::MOUSE:
         {
-			const float dist = idlib::euclidean_norm(InputSystem::get().getMouseMovement());
+			const float dist = idlib::euclidean_norm(inputSystem.getMouseMovement());
             if (dist > 0)
             {
                 float scale = InputSystem::MOUSE_SENSITIVITY / dist;
@@ -104,7 +104,7 @@ Vector2f InputDevice::getInputMovement() const
                     scale /= InputSystem::MOUSE_SENSITIVITY;
                 }
 
-                result = InputSystem::get().getMouseMovement() * scale;
+                result = inputSystem.getMouseMovement() * scale;
             }
         }
         break;

@@ -100,12 +100,11 @@ The remaining coupling hotspot is singleton access: ~632 `::get()` call sites pe
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly ten:
+Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly nine:
 - `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; now the single largest TU in the tree)
 - `egolib/library/src/egolib/game/script_functions_spawn.c` (~1576 lines)
 - `egolib/library/src/egolib/game/Physics/particle_collision.c` (~1528 lines)
 - `egolib/library/src/egolib/vfs.c` (~1500 lines, split this session into vfs.c + vfs_rwops.c + vfs_mount.c)
-- `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~1488 lines)
 - `egolib/library/src/egolib/Script/script.c` (~1156 lines, now in `egolib-scriptvm`; `ai_state_t` state methods split out to `Entities/AiState.cpp`)
 - `egolib/library/src/egolib/game/script_compile.c` (~1151 lines)
 - `egolib/library/src/egolib/game/Physics/ObjectPhysics.cpp` (~1138 lines)
@@ -118,6 +117,7 @@ Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/game/game.c` (~522 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
 - `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs)
 - `egolib/library/src/egolib/game/Module/Module.cpp` (~277 lines, split into six `Module_*.cpp` siblings)
+- `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~741 lines, split off `ObjectGraphics_animation.cpp` (~587, the animation state machine) + shared `ObjectGraphics_internal.hpp`; both TUs stay in egolib-library)
 
 ## Refactoring Guidelines
 
