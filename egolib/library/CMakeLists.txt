@@ -63,6 +63,7 @@ set(EGOLIB_CORE_SOURCES
 
 # -- Entities ----------------------------------------------------------------
 set(EGOLIB_ENTITIES_SOURCES
+    src/egolib/Entities/AiState.cpp
     src/egolib/Entities/Common.cpp
     src/egolib/Entities/Common.hpp
     src/egolib/Entities/Enchant.cpp
