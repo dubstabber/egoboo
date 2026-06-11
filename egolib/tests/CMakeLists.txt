@@ -16,7 +16,10 @@ include_directories(${PROJECT_SOURCE_DIR})
 file(GLOB_RECURSE test_files CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/egolib/tests/*.cpp)
 
 add_executable(egolib-tests-executable ${test_files})
-target_link_libraries(egolib-tests-executable egolib-gamestates)
+# egolib-gamestates provides egolib-library + lower transitively; egolib-scriptvm (its sibling above
+# library) provides the EgoScript VM — the global ScriptSystemEnvironment installs the adapter and
+# ScriptRuntime.cpp calls scr_* directly.
+target_link_libraries(egolib-tests-executable egolib-gamestates egolib-scriptvm)
 target_link_libraries(egolib-tests-executable GTest::gtest_main)
 
 include(GoogleTest)
