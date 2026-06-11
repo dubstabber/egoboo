@@ -593,7 +593,9 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/Md2ModelRenderer.cpp
     src/egolib/game/Graphics/Md2ModelRenderer.hpp
     src/egolib/game/Graphics/ObjectGraphics.cpp
+    src/egolib/game/Graphics/ObjectGraphics_animation.cpp
     src/egolib/game/Graphics/ObjectGraphics.hpp
+    src/egolib/game/Graphics/ObjectGraphics_internal.hpp
     src/egolib/game/Graphics/ParticleGraphics.cpp
     src/egolib/game/Graphics/ParticleGraphics.hpp
     src/egolib/game/Graphics/RenderPass.cpp
