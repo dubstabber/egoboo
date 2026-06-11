@@ -63,6 +63,7 @@ set(EGOLIB_CORE_SOURCES
 
 # -- Entities ----------------------------------------------------------------
 set(EGOLIB_ENTITIES_SOURCES
+    src/egolib/Entities/AiState.cpp
     src/egolib/Entities/Common.cpp
     src/egolib/Entities/Common.hpp
     src/egolib/Entities/Enchant.cpp
@@ -416,6 +417,9 @@ set(EGOLIB_SCRIPT_SOURCES
     src/egolib/Script/Interpreter/TaggedValue.hpp
     src/egolib/Script/IRuntimeStatistics.cpp
     src/egolib/Script/IRuntimeStatistics.hpp
+    src/egolib/Script/IScriptSystem.cpp
+    src/egolib/Script/IScriptSystem.hpp
+    src/egolib/Script/ScriptSystemAdapter.cpp
     src/egolib/Script/OpcodeInfo.cpp
     src/egolib/Script/OpcodeInfo.hpp
     src/egolib/Script/PDLToken.cpp
@@ -897,6 +901,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Core/System.cpp
     src/egolib/Debug.cpp
     src/egolib/Entities/IObjectWorld.cpp
+    src/egolib/Script/IScriptSystem.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
     src/egolib/FileFormats/ConfigFile/configfile.c
@@ -1157,14 +1162,45 @@ set(EGOLIB_GAMESTATES_LAYER_SOURCES
     src/egolib/game/GameStates/VideoOptionsScreen.cpp
 )
 
+# The egolib-scriptvm layer: the EgoScript bytecode VM — script.c (the interpreter + Runtime),
+# the script_implementation/script_variables support, and the script_functions_*.c dispatch family
+# (minus script_functions_bitwise.c, whose pure bit-ops already live in egolib-foundation-base),
+# plus the VM-side ScriptSystemAdapter. Like egolib-gamestates it sits ABOVE egolib-library: the VM
+# reaches DOWN into the game-core library (85 forward edges), and game-core no longer references the
+# VM — the former reverse edges were seam-cut by relocating ai_state_t's state methods down into
+# Entities/AiState.cpp (P1) and routing the 3 driver entries (scr_run_chr_script / set_alerts /
+# scripting_system_end) through the Ego::Script::IScriptSystem interface (P2). The lower-layer
+# accessor IScriptSystem.cpp stays in egolib-foundation-base; only the adapter that forwards to
+# script.c lives here. egolib-scriptvm is a SIBLING of egolib-gamestates (nm-verified: zero edges
+# in either direction). nm-verified acyclic: egolib-library has zero references into this layer.
+set(EGOLIB_SCRIPTVM_LAYER_SOURCES
+    src/egolib/Script/script.c
+    src/egolib/game/script_implementation.c
+    src/egolib/game/script_variables.c
+    src/egolib/game/script_functions_action.c
+    src/egolib/game/script_functions_alerts.c
+    src/egolib/game/script_functions_appearance.c
+    src/egolib/game/script_functions_combat.c
+    src/egolib/game/script_functions_commerce.c
+    src/egolib/game/script_functions_enchant.c
+    src/egolib/game/script_functions_movement.c
+    src/egolib/game/script_functions_quests.c
+    src/egolib/game/script_functions_spawn.c
+    src/egolib/game/script_functions_state.c
+    src/egolib/game/script_functions_stat_gifts.c
+    src/egolib/game/script_functions_target.c
+    src/egolib/game/script_functions_target_select.c
+    src/egolib/Script/ScriptSystemAdapter.cpp
+)
+
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
-# egolib-gamestates is carved out too, but it sits ABOVE egolib-library (it links egolib-library),
-# so its sources leave the egolib-library archive and form their own upper-layer target.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES})
+# egolib-gamestates and egolib-scriptvm are carved out too, but they sit ABOVE egolib-library (they
+# link egolib-library), so their sources leave the egolib-library archive and form upper-layer targets.
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
-foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES})
+foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
     if(_src MATCHES "\\.[ch]$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
@@ -1194,6 +1230,17 @@ add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
+# egolib-scriptvm: the EgoScript VM — an upper layer ABOVE egolib-library and a SIBLING of
+# egolib-gamestates (zero link edges to/from gamestates in either direction). It links egolib-library
+# (its 85 forward edges into game-core) and, transitively, the lower layers. Consumers that actually
+# drive the VM — egoboo (Main.cpp installs the adapter) and the test executable (its global
+# environment installs it; ScriptRuntime.cpp calls scr_* directly) — link egolib-scriptvm alongside
+# egolib-gamestates. cartman and the content-validator use no VM path and stay on egolib-library.
+# nm-verified acyclic: egolib-library has zero references into this layer.
+add_library(egolib-scriptvm STATIC ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
+target_include_directories(egolib-scriptvm INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-scriptvm egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
 # egolib-gamestates: the concrete GameState screens — the one layer ABOVE egolib-library. It links
 # egolib-library (and, transitively, the lower layers). Consumers (egoboo, the test executable,
 # cartman) link egolib-gamestates, which provides egolib-library transitively. nm-verified acyclic:
@@ -1204,6 +1251,7 @@ target_link_libraries(egolib-gamestates egolib-library egolib-gui egolib-physics
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
+    target_link_libraries(egolib-scriptvm Shlwapi.lib)
     target_link_libraries(egolib-gamestates Shlwapi.lib)
     target_link_libraries(egolib-physics Shlwapi.lib)
     target_link_libraries(egolib-renderer Shlwapi.lib)
@@ -1211,6 +1259,7 @@ if (WIN32)
     target_link_libraries(egolib-foundation-base Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
+    target_link_libraries(egolib-scriptvm shlwapi)
     target_link_libraries(egolib-gamestates shlwapi)
     target_link_libraries(egolib-physics shlwapi)
     target_link_libraries(egolib-renderer shlwapi)

@@ -3,6 +3,7 @@
 
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Script/script.h"
+#include "egolib/Script/IScriptSystem.hpp"  // activeScriptSystem() driver seam
 #include "egolib/egoboo_setup.h"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -246,7 +247,7 @@ void GameSessionContext::quitModule()
     Ego::Entities::clearWorldUpdateCounter();
     _activeModule.reset();
 
-    scripting_system_end();
+    Ego::Script::activeScriptSystem().endScriptingSystem();
 
     EngineContext::get().profileSystem().reset();
     game_reset_players();

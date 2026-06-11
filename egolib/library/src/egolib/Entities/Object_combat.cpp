@@ -22,6 +22,7 @@
 
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/game/CharacterParticleOps.h"                    // DisplayMsg_printf
+#include "egolib/Script/IScriptSystem.hpp"                       // activeScriptSystem() driver seam
 #include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem
 #include "egolib/egoboo_setup.h"                 // activeConfig
 #include "egolib/game/Graphics/Billboard.hpp"  // Ego::Graphics::Billboard::Flags
@@ -582,7 +583,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
     // Let it's AI script run one last time
     _hasBeenKilled = true;
     ai.timer = worldUpdateCount() + 1;            // Prevent IfTimeOut in scr_run_chr_script()
-    scr_run_chr_script(this);
+    Ego::Script::activeScriptSystem().runCharacterScript(this);
 }
 
 void Object::giveExperience(const int amount, const XPType xptype, const bool overrideInvincibility)

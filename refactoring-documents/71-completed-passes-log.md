@@ -2001,3 +2001,88 @@ confirmed high/critical**; its medium/low findings were addressed: the empty-`st
 *forward*-direction — re-measure their *reverse* edges before declaring them blocked; they may be tractable as
 further above-library layers. Otherwise the `Object` god-class multi-role decoupling (T1.2) or the deferred
 Entities ownership-inversion (flag-day).
+
+---
+
+## egolib-scriptvm carve — the SEVENTH link-split (2026-06-11, branch `refactor/egolib-scriptvm-carve`)
+
+The second *upward* split and the seventh egolib archive. Acts on the gamestates strategic
+note's own prediction ("ScriptVM may be tractable as an upward layer; re-measure reverse edges").
+
+### Scouting / verification (9-agent workflow, all 3 refuters `refuted:false`)
+
+A deterministic inline nm pass measured the **reverse** edges (rest-of-`egolib-library` → cluster)
+for four candidate upward-layer clusters, then a 9-agent workflow (5 deep-feasibility probes +
+3 independent adversarial refuters + a synthesizer) verified the winner by reading code:
+
+| candidate | TUs | reverse edges | verdict |
+|-----------|-----|---------------|---------|
+| graphics-render FULL | 27 | 45 | dead — `ObjectGraphics`/`ParticleGraphics` entity-coupled |
+| graphics-render NARROW | 18 | 16 | feasible-with-seams (the next/8th carve candidate) |
+| **ScriptVM** | 16 | **10** | **chosen** — dominated by `ai_state_t` relocation + 3 drivers |
+| HUD widgets | 6 | 2 | trivially clean but small (a future easy carve) |
+
+The 10 ScriptVM reverse edges (all defined in `script.c.o`): 7 `ai_state_t::*` methods (ctor/dtor/
+reset/spawn/add_order/set_bumplast/set_changed, referenced by `Object_lifecycle`/`Object_update`/
+`Object_attributes`) + 3 driver entries (`scr_run_chr_script(Object*)` ← `Object_combat`/`game_loop`;
+`set_alerts` ← `game_loop`; `scripting_system_end` ← `GameSessionContext`). 85 forward edges
+(cluster → library) are fine for an above-library layer. R1 ("could not refute after 5 attacks")
+confirmed `ai_state_t`'s methods are pure data ops with zero interpreter coupling; R2 flagged the
+test-harness install gap; R3 reproduced the exact 10-edge set and confirmed cluster↔gamestates = 0.
+
+### P1 — relocate `ai_state_t` lifecycle/state down (commit `caba9fc26`)
+
+`ai_state_t : public AI::State<ObjectRef>` is embedded by-value in `Object` (`Object.hpp:1437`) but
+its 7 referenced methods are pure state ops. Moved them — plus their private spawn/bump helpers
+(`isRuntimeObjectRefValid`, `tryRuntimeSpawnObject`, `publishSpawn{Identity,Overrides,Waypoint,
+OrderDefaults}`, `shouldPublishBumpAlert`, each used only by the moved methods, verified by grep) —
+from `Script/script.c` into a new `egolib/Entities/AiState.cpp` that **stays in egolib-library**
+beside `Object` (it needs `GameSessionContext`/`Object`, which are library). Declarations stay in
+`script.h`; `get_wp`/`ensure_wp` (not reverse edges) and the interpreter-coupled `set_alerts` stay
+in `script.c`. nm: reverse edges **10 → 3**; `AiState.cpp.o → cluster` = **0** (no new edge).
+Gate: build clean, ctest 875/875 (live-Object spawn tests exercise the relocated ctor/reset/spawn),
+validator `test.mod` 0/0.
+
+### P2 — `IScriptSystem` driver seam (commit `e71d78280`)
+
+Routed the 3 driver entries through a lower-layer interface, mirroring `Ego::Entities::IObjectWorld`:
+- `Script/IScriptSystem.hpp` — 3-method interface (`runCharacterScript(Object*)`/`setAlerts(ObjectRef)`/
+  `endScriptingSystem()`; `Object` fwd-declared + `ObjectRef` from `typedef.h` → no game/ include) +
+  install/clear/try/`activeScriptSystem()` accessors + `installDefaultScriptSystem()` boot entry.
+- `Script/IScriptSystem.cpp` — accessor ownership (`g_activeScriptSystem`); placed in
+  **egolib-foundation-base** beside `IObjectWorld.cpp`; `activeScriptSystem()` throws when uninstalled.
+- `Script/ScriptSystemAdapter.cpp` — the VM-side adapter forwarding to `script.c`; in library for P2,
+  joins scriptvm in P3 (where its refs to the 3 functions become intra-layer).
+- The 3 library call sites (`game_loop.c` ×2, `Object_combat.cpp`, `GameSessionContext.cpp`) now call
+  `Ego::Script::activeScriptSystem().<method>()`.
+- **Boot install injected from ABOVE library**: `egoboo/Main.cpp` (the game) and a gtest global
+  environment `ScriptSystemEnvironment.cpp` (the test executable — R2's required gap-fix, since tests
+  drive `quitModule→endScriptingSystem` and `kill→runCharacterScript` and would otherwise throw).
+nm: the 3 driver symbols are now referenced **only by `ScriptSystemAdapter.cpp.o`**; the real
+consumers are cut. ctest 875/875 (harness install verified), validator 0/0.
+
+### P3 — carve `egolib-scriptvm` (commit `293d626b9`)
+
+`EGOLIB_SCRIPTVM_LAYER_SOURCES` = the 16 VM TUs (`script.c` + `script_implementation.c` +
+`script_variables.c` + the 13 `script_functions_*.c`; `script_functions_bitwise.c` already in base) +
+`ScriptSystemAdapter.cpp`. `REMOVE_ITEM`'d from `SOURCE_FILES`; `add_library(egolib-scriptvm STATIC)`
+PUBLIC-links `egolib-library`. `egoboo` + `egolib-tests-executable` link `egolib-scriptvm` alongside
+`egolib-gamestates`; `cartman` + the content-validator (no VM path — grep-confirmed they call no
+`quitModule`/`kill`/`scr_*`) stay on `egolib-library`. **scriptvm and gamestates are SIBLINGS** above
+library (nm: 0 edges either way).
+
+Layout: **base 146 ◄ {physics 5, renderer 28 ◄ gui 22} ◄ library 83 ◄ {scriptvm 17, gamestates 19}.**
+
+Full gate: in-place + from-scratch clean builds; exact `ar t` (146/5/28/22/83/17/19); nm acyclic
+(0 forbidden back-edges across all 7 archives; positive controls real — scriptvm→library 85,
+library→scriptvm 0, gamestates↔scriptvm 0/0); validator `test.mod` 0/0; ctest 875/875 (3×);
+validator/cartman confirmed linking without scriptvm. Smoke-run n/a (no usable GL context in the
+Wayland session — boot reaches the video-mode stage after all VFS/config/profile-load init; the
+relocated/seamed paths are covered by the live-spawn ctest cases + the validator instead).
+
+**Lesson reaffirmed:** measure REVERSE edges, not forward, for an above-library carve; the original
+"ScriptVM 91 back-edges, blocked" verdict was the forward count. The two-tool kit: relocate-down for
+mislocated definitions (`ai_state_t`, a pure win valuable on its own), interface-seam for genuine
+upward calls (the 3 drivers). The test executable is a second install site whenever a seam is driven
+by a runtime path the tests exercise (the IObjectWorld precedent auto-installs from library, but a
+VM-above-library adapter cannot — it must be injected from above, like the main-menu factory).

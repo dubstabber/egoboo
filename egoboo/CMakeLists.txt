@@ -35,7 +35,9 @@ list(APPEND SOURCE_FILES ${H_FILES})
 add_executable(egoboo ${SOURCE_FILES})
 
 # Link libraries.
-target_link_libraries(egoboo egolib-gamestates)
+# egolib-gamestates provides egolib-library + lower transitively; egolib-scriptvm (its sibling above
+# library) provides the EgoScript VM, which Main.cpp installs via Ego::Script::installDefaultScriptSystem().
+target_link_libraries(egoboo egolib-gamestates egolib-scriptvm)
 
 # Copy and install runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library with the executable.
 if (WIN32)

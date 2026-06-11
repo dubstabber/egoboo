@@ -22,6 +22,7 @@
 
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/game/game_internal.h"
+#include "egolib/Script/IScriptSystem.hpp"  // activeScriptSystem() driver seam
 
 int chr_stoppedby_tests = 0;
 int chr_pressure_tests = 0;
@@ -493,7 +494,7 @@ void MainLoop::let_all_characters_think()
         if (object->isAlive() || is_crushed || is_cleanedup )
         {
             // Figure out alerts that weren't already set
-            set_alerts(object->getObjRef());
+            Ego::Script::activeScriptSystem().setAlerts(object->getObjRef());
 
             // Cleaned up characters shouldn't be alert to anything else
             if (is_cleanedup) {
@@ -507,7 +508,7 @@ void MainLoop::let_all_characters_think()
                 scriptableObject.setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
             }
 
-            scr_run_chr_script(object.get());
+            Ego::Script::activeScriptSystem().runCharacterScript(object.get());
         }
     }
 }
