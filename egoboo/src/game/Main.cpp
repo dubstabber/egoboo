@@ -24,6 +24,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GameStates/MainMenuState.hpp"  // initial-state factory (injected into GameEngine)
+#include "egolib/Script/IScriptSystem.hpp"            // installDefaultScriptSystem() (injected from above egolib-library)
 
 /**
  * @brief
@@ -47,6 +48,10 @@ int main(int argc, char **argv)
             engineContext.engine().setMainMenuStateFactory([]() -> std::shared_ptr<GameState> {
                 return std::make_shared<MainMenuState>();
             });
+            // Install the VM-backed script system from above egolib-library (the adapter lives in
+            // the egolib-scriptvm archive, so the install must come from here, not from inside the
+            // library — same shape as the main-menu-state factory injection above).
+            Ego::Script::installDefaultScriptSystem();
             engineContext.engine().start();
             engineContext.clearEngine();
         }

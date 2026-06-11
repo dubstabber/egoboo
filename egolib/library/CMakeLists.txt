@@ -417,6 +417,9 @@ set(EGOLIB_SCRIPT_SOURCES
     src/egolib/Script/Interpreter/TaggedValue.hpp
     src/egolib/Script/IRuntimeStatistics.cpp
     src/egolib/Script/IRuntimeStatistics.hpp
+    src/egolib/Script/IScriptSystem.cpp
+    src/egolib/Script/IScriptSystem.hpp
+    src/egolib/Script/ScriptSystemAdapter.cpp
     src/egolib/Script/OpcodeInfo.cpp
     src/egolib/Script/OpcodeInfo.hpp
     src/egolib/Script/PDLToken.cpp
@@ -898,6 +901,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Core/System.cpp
     src/egolib/Debug.cpp
     src/egolib/Entities/IObjectWorld.cpp
+    src/egolib/Script/IScriptSystem.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
     src/egolib/FileFormats/ConfigFile/configfile.c
