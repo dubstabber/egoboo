@@ -26,7 +26,7 @@
 
 #include "egolib/FileFormats/Globals.hpp"
 
-#include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/IPlayingStateController.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/link.h"
@@ -71,12 +71,12 @@ inline uint32_t& characterStatClock()
     return gameSession().characterStatClock();
 }
 
-inline std::shared_ptr<PlayingState> activePlayingState()
+inline std::shared_ptr<IPlayingStateController> activePlayingState()
 {
     return EngineContext::get().activePlayingState();
 }
 
-inline std::shared_ptr<PlayingState> tryActivePlayingState()
+inline std::shared_ptr<IPlayingStateController> tryActivePlayingState()
 {
     return EngineContext::get().tryActivePlayingState();
 }

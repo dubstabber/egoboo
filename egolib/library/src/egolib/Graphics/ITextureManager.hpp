@@ -27,4 +27,24 @@ public:
     virtual void release_all() = 0;
 };
 
+/// @brief Ownership-move seam for the active texture manager (mirrors
+///        Ego::activeGraphicsSystem / Ego::activeRenderer). EngineContext owns the
+///        install/clear and delegates here, so lower-layer callers can reach the
+///        installed texture manager without depending on the app-layer EngineContext.
+
+/// @brief Install the active texture manager.
+/// @param textureManager the texture manager to install
+/// @throw std::logic_error if a texture manager is already installed
+void installActiveTextureManager(ITextureManager& textureManager);
+
+/// @brief Clear the installed active texture manager.
+void clearActiveTextureManager();
+
+/// @brief The installed active texture manager, or @a nullptr if none is installed.
+ITextureManager* tryActiveTextureManager();
+
+/// @brief The active texture manager.
+/// @throw std::logic_error if none is installed
+ITextureManager& activeTextureManager();
+
 } // namespace Ego

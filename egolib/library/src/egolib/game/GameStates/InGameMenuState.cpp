@@ -22,7 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/InGameMenuState.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/game/GameStates/MainMenuState.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/LoadingState.hpp"
@@ -49,7 +49,7 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     const std::list<std::string> importPlayers = activeModule.getImportPlayers();
 
     // Add the buttons
-    int yOffset = EngineContext::get().graphicsSystem().getWindow()->size().y() - 80;
+    int yOffset = Ego::activeGraphicsSystem().getWindow()->size().y() - 80;
     auto exitButton = std::make_shared<Ego::GUI::Button>(exportValid ? "Save and Exit" : "Abort and Exit", SDLK_q);
     exitButton->setPosition({ 20, yOffset });
     exitButton->setSize({ 200, 30 });
@@ -126,7 +126,7 @@ void InGameMenuState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void InGameMenuState::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 
     //Sliding buttons effect

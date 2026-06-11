@@ -174,6 +174,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/IBillboardSystem.hpp
     src/egolib/Graphics/IGraphicsSystem.cpp
     src/egolib/Graphics/IGraphicsSystem.hpp
+    src/egolib/Graphics/ITextureManager.cpp
+    src/egolib/Graphics/ITextureManager.hpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/IndexFormat.hpp
     src/egolib/Graphics/MD2Model.cpp
@@ -740,6 +742,7 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/graphic_mad.h
     src/egolib/game/graphic_prt.c
     src/egolib/game/graphic_prt.h
+    src/egolib/game/IPlayingStateController.hpp
     src/egolib/game/Inventory.cpp
     src/egolib/game/Inventory.hpp
     src/egolib/game/lighting.c
@@ -919,6 +922,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/ICameraSystem.cpp
     src/egolib/Graphics/IGraphicsSystem.cpp
+    src/egolib/Graphics/ITextureManager.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
@@ -1124,8 +1128,39 @@ set(EGOLIB_GUI_LAYER_SOURCES
     src/egolib/game/GUI/Button.cpp
 )
 
+# The egolib-gamestates layer: the concrete GameState screens (menus, options, select, loading,
+# playing, map-editor, debug, victory). This is the ONE layer that sits ABOVE egolib-library: the
+# screens orchestrate the game (they reach DOWN into the game-core library), and game-core no longer
+# references any concrete screen (the former reverse edges were seam-cut via IPlayingStateController,
+# the GameEngine main-menu-state factory, and the dynamic_cast-to-interface). The GameState BASE
+# (GameState.cpp) stays in egolib-library — the screens derive from it downward. nm-verified: zero
+# egolib-library -> egolib-gamestates link edges.
+set(EGOLIB_GAMESTATES_LAYER_SOURCES
+    src/egolib/game/GameStates/AudioOptionsScreen.cpp
+    src/egolib/game/GameStates/DebugFontRenderingState.cpp
+    src/egolib/game/GameStates/DebugMainMenuState.cpp
+    src/egolib/game/GameStates/DebugModuleLoadingState.cpp
+    src/egolib/game/GameStates/DebugObjectLoadingState.cpp
+    src/egolib/game/GameStates/DebugParticlesScreen.cpp
+    src/egolib/game/GameStates/InGameMenuState.cpp
+    src/egolib/game/GameStates/InputOptionsScreen.cpp
+    src/egolib/game/GameStates/LoadingState.cpp
+    src/egolib/game/GameStates/MainMenuState.cpp
+    src/egolib/game/GameStates/MapEditorSelectModuleState.cpp
+    src/egolib/game/GameStates/MapEditorState.cpp
+    src/egolib/game/GameStates/OptionsScreen.cpp
+    src/egolib/game/GameStates/PlayingState.cpp
+    src/egolib/game/GameStates/SelectCharacterState.cpp
+    src/egolib/game/GameStates/SelectModuleState.cpp
+    src/egolib/game/GameStates/SelectPlayersState.cpp
+    src/egolib/game/GameStates/VictoryScreen.cpp
+    src/egolib/game/GameStates/VideoOptionsScreen.cpp
+)
+
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES})
+# egolib-gamestates is carved out too, but it sits ABOVE egolib-library (it links egolib-library),
+# so its sources leave the egolib-library archive and form their own upper-layer target.
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
@@ -1158,15 +1193,25 @@ target_link_libraries(egolib-gui egolib-renderer egolib-foundation-base idlib-ga
 add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
+# egolib-gamestates: the concrete GameState screens — the one layer ABOVE egolib-library. It links
+# egolib-library (and, transitively, the lower layers). Consumers (egoboo, the test executable,
+# cartman) link egolib-gamestates, which provides egolib-library transitively. nm-verified acyclic:
+# egolib-library has zero references into this layer.
+add_library(egolib-gamestates STATIC ${EGOLIB_GAMESTATES_LAYER_SOURCES})
+target_include_directories(egolib-gamestates INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-gamestates egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
+    target_link_libraries(egolib-gamestates Shlwapi.lib)
     target_link_libraries(egolib-physics Shlwapi.lib)
     target_link_libraries(egolib-renderer Shlwapi.lib)
     target_link_libraries(egolib-gui Shlwapi.lib)
     target_link_libraries(egolib-foundation-base Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
+    target_link_libraries(egolib-gamestates shlwapi)
     target_link_libraries(egolib-physics shlwapi)
     target_link_libraries(egolib-renderer shlwapi)
     target_link_libraries(egolib-gui shlwapi)

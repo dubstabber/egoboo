@@ -184,7 +184,14 @@ void configurePitFall(const ModuleEffectsContext& context, const Ego::Vector3f& 
 
 void pushModuleEndVictoryScreen()
 {
-    engine().pushGameState(std::make_shared<VictoryScreen>(nullptr, true));
+    // Victory is owned by the active in-game state: route through the controller seam so this
+    // game-core TU does not depend on the concrete VictoryScreen (which lives in egolib-gamestates).
+    // scr_EndModule (the only caller) runs inside the gameplay update loop, where the active state is
+    // always the PlayingState, so the guard is effectively always taken in real play.
+    if (auto controller = EngineContext::get().tryActivePlayingState())
+    {
+        controller->endModuleInVictory();
+    }
 }
 
 bool resolvePassageCompatibilityContext(const ai_state_t& self,

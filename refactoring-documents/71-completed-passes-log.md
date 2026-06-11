@@ -1942,3 +1942,62 @@ narrow init-flag/macro seam).
 
 **Next slice (deferred):** the `SearchContext` class (file enumeration; spans `vfs.c` ~978–1198 + the
 `hasData`/`getData` pair) → `vfs_search.c` — also non-contiguous.
+
+---
+
+## egolib-gamestates carve — the SIXTH link-split, the first ABOVE egolib-library (2026-06-11)
+
+The "de-risk → carve GameStates" program, executed to completion — and in the process **refuting the
+strategic note's "Front B blocked at flag-day scale" verdict** (it had measured the FORWARD edge direction
+and assumed a below-library carve). GameStates is topologically at the *top* of the call graph, so it carves
+**above** `egolib-library`: the screens orchestrate the game and reach *down* into game-core, and the only
+blocker is the small set of `library → screen` **reverse** edges (nm-measured on the live archives, including
+the `.c` TUs and after stale-`.o` filtering: **7 staying TUs / 8 symbols** — `PlayingState::{getMiniMap,
+getMessageLog,getStatusCharacterRef,addStatusMonitor,displayCharacterWindow}`, `VictoryScreen`/`MainMenuState`
+ctors, `typeinfo PlayingState`).
+
+**Pass 1 (de-risk step 3) — EngineContext seam for the menu cohort.** Migrated the 10 menu screens
+(`AudioOptionsScreen`, `OptionsScreen`, `VideoOptionsScreen`, `Select{Character,Module,Players}State`,
+`MapEditorSelectModuleState`, `MainMenuState`, `InGameMenuState`, `VictoryScreen`) off
+`EngineContext::get().{config,graphicsSystem,profileSystem,textureManager}()` onto the lower-layer `active*()`
+seams (`Ego::activeConfig`/`activeGraphicsSystem`/`activeTextureManager`, global `::activeProfileSystem`),
+dropping `EngineContext.hpp`. Added the one missing seam, **`Ego::activeTextureManager()`** — a new
+`egolib/Graphics/ITextureManager.cpp` (foundation-base, mirrors `IGraphicsSystem.cpp`'s ownership-move);
+`EngineContext`'s texture-manager methods became thin delegators (no test stub, zero risk). nm: all 10 screens
+`EngineContext`-free; cohort external reverse edges 17 → 12.
+
+**The carve (3 reverse-edge seam-cuts, then the CMake split).**
+- **`IPlayingStateController`** (`egolib/game/IPlayingStateController.hpp`, library layer) — the in-game control
+  surface game-core reaches into (`getMiniMap`/`getMessageLog`/`getStatusCharacterRef`/`addStatusMonitor`/
+  `displayCharacterWindow`/`endModuleInVictory`). `PlayingState` implements it. `GameEngine::getActivePlayingState()`
+  + `EngineContext::{try,}activePlayingState()` + the `game_internal.h`/`script_functions_internal.h` inline
+  wrappers now return `shared_ptr<IPlayingStateController>` via `dynamic_pointer_cast<IPlayingStateController>(
+  getActiveGameState())`. **Key trick:** the cast's source/target typeinfos (`GameState`, `IPlayingStateController`)
+  are *both* lower-layer, so the cast site references **no** concrete-`PlayingState` symbol — yet the runtime RTTI
+  walks the real object, preserving the EXACT old "is the active state a PlayingState?" null/non-null semantics
+  with **no** install/clear lifecycle. The 7 consumers (`Object_update`, `Player`, `game_loop.c`,
+  `script_functions_{appearance,quests,commerce}.c`) route through the interface.
+- **`GameEngine` main-menu-state factory** — `std::function<std::shared_ptr<GameState>()> _mainMenuStateFactory`,
+  injected from `egoboo/Main.cpp::setMainMenuStateFactory` before `start()`; the two `pushGameState(make_shared<
+  MainMenuState>())` sites call it (guarded with a clear `std::logic_error` if uninstalled). `GameEngine` no
+  longer `#include`s/constructs `MainMenuState`.
+- **`endModuleInVictory`** — `script_functions_commerce.c::pushModuleEndVictoryScreen()` routes through the
+  active controller instead of constructing `VictoryScreen`; `PlayingState::endModuleInVictory()` does the push.
+- **CMake:** `EGOLIB_GAMESTATES_LAYER_SOURCES` (19 `.cpp`), `REMOVE_ITEM`'d from `SOURCE_FILES`;
+  `add_library(egolib-gamestates STATIC ...)` linking `egolib-library` (upward). `egoboo` + `egolib-tests-executable`
+  link `egolib-gamestates`; `cartman` stays on `egolib-library`. `GameState` base stays in `egolib-library`.
+
+**Layout: base 145 ◄ {physics 5, renderer 28 ◄ gui 22} ◄ library 98 ◄ gamestates 19.** Gates at every step:
+in-place **and** from-scratch clean builds; exact `ar t` (145/5/28/22/98/19); nm-acyclic (`egolib-library →
+egolib-gamestates` = **0** undefined refs; positive control `gamestates → library` = 67; all four lower
+archives → gamestates = 0); validator `test.mod` 0/0; ctest **875/875**. A 4-lens adversarial-review workflow
+(behavior / layering / cmake / completeness, with verification of high-severity findings) returned **zero
+confirmed high/critical**; its medium/low findings were addressed: the empty-`std::function` factory landmine
+→ guarded with a named error; a gratuitous `cartman` link-altitude bump → reverted to `egolib-library`; the
+`pushModuleEndVictoryScreen` guard + a stale `getActivePlayingState()` doc comment → documented; a dead
+`VictoryScreen.hpp` upward include in `script_functions_internal.h` → removed.
+
+**Next upward-carve candidates:** the strategic note's ScriptVM (91) / game-graphics-render (74) counts were
+*forward*-direction — re-measure their *reverse* edges before declaring them blocked; they may be tractable as
+further above-library layers. Otherwise the `Object` god-class multi-role decoupling (T1.2) or the deferred
+Entities ownership-inversion (flag-day).

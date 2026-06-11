@@ -202,7 +202,7 @@ void MainLoop::check_stats()
     // Show map cheat
     if (config().debug_developerMode_enable.getValue() && input.isKeyDown(SDLK_m) && input.isKeyDown(SDLK_LSHIFT))
     {
-        std::shared_ptr<PlayingState> playingState = activePlayingState();
+        auto playingState = activePlayingState();
         playingState->getMiniMap()->setVisible(true);
         playingState->getMiniMap()->setShowPlayerPosition(true);
         stat_check_delay = 150;

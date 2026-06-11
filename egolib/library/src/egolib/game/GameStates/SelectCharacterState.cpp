@@ -23,7 +23,8 @@
 
 #include "egolib/game/GameStates/SelectCharacterState.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"   // Ego::GraphicsWindow
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/GameStates/SelectModuleState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -90,7 +91,7 @@ SelectCharacterState::SelectCharacterState(std::shared_ptr<LoadPlayerElement> &s
 	scrollableList->setPosition(playersLabel->getPosition() + Ego::Vector2f(20, playersLabel->getHeight() + 20));
 
 	//Make a button for each loadable character
-    for (const std::shared_ptr<LoadPlayerElement> &character : EngineContext::get().profileSystem().getSavedPlayers())
+    for (const std::shared_ptr<LoadPlayerElement> &character : ::activeProfileSystem().getSavedPlayers())
 	{
 		auto characterButton = std::make_shared<Ego::GUI::IconButton>(character->getName(), character->getIcon());
         characterButton->setSize({ 200, 40 });
@@ -136,5 +137,5 @@ void SelectCharacterState::drawContainer(Ego::GUI::DrawingContext& drawingContex
 void SelectCharacterState::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
 }

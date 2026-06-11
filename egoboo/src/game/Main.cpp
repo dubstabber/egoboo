@@ -23,6 +23,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
+#include "egolib/game/GameStates/MainMenuState.hpp"  // initial-state factory (injected into GameEngine)
 
 /**
  * @brief
@@ -43,6 +44,9 @@ int main(int argc, char **argv)
         {
             EngineContext& engineContext = EngineContext::get();
             engineContext.setEngine(std::make_unique<GameEngine>());
+            engineContext.engine().setMainMenuStateFactory([]() -> std::shared_ptr<GameState> {
+                return std::make_shared<MainMenuState>();
+            });
             engineContext.engine().start();
             engineContext.clearEngine();
         }

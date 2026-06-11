@@ -23,7 +23,7 @@
 #include "egolib/Entities/Object_internal.h"
 #include "egolib/AI/LineOfSight.hpp"  // line_of_sight_info_t
 #include "egolib/game/Core/EngineContext.hpp"        // EngineContext::particleHandler / tryActivePlayingState
-#include "egolib/game/GameStates/PlayingState.hpp"   // PlayingState + getMiniMap (minimap reveal)
+#include "egolib/game/IPlayingStateController.hpp"   // IPlayingStateController + getMiniMap (minimap reveal)
 #include "egolib/game/GUI/MiniMap.hpp"               // MiniMap::setVisible / setShowPlayerPosition
 #include "egolib/Physics/PhysicalConstants.hpp" // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 
@@ -33,7 +33,7 @@ namespace
 ///        kept TU-local so the 7-TU-propagating Object_internal.h no longer pulls the
 ///        minimap reveal chain (EngineContext/GameEngine/PlayingState/MiniMap) into every
 ///        Object_*.cpp.
-std::shared_ptr<PlayingState> tryActivePlayingState()
+std::shared_ptr<IPlayingStateController> tryActivePlayingState()
 {
     return EngineContext::get().tryActivePlayingState();
 }
@@ -395,7 +395,7 @@ void Object::update()
         {
             //Cartography perk reveals the minimap
             if(hasPerk(Ego::Perks::CARTOGRAPHY)) {
-                if (std::shared_ptr<PlayingState> playingState = tryActivePlayingState())
+                if (auto playingState = tryActivePlayingState())
                 {
                     playingState->getMiniMap()->setVisible(true);
                 }
@@ -403,7 +403,7 @@ void Object::update()
 
             //Navigation reveals the players position on the minimap
             if(hasPerk(Ego::Perks::NAVIGATION)) {
-                if (std::shared_ptr<PlayingState> playingState = tryActivePlayingState())
+                if (auto playingState = tryActivePlayingState())
                 {
                     playingState->getMiniMap()->setShowPlayerPosition(true);
                 }

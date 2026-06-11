@@ -31,8 +31,8 @@
 #include "egolib/font_bmp.h"                       // font_bmp_load_vfs
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"  // Ego::Graphics::BillboardSystem (complete type)
-#include "egolib/game/GameStates/MainMenuState.hpp"
-#include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/GameStates/GameState.hpp"
+#include "egolib/game/IPlayingStateController.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/FileFormats/Globals.hpp"
 #include "egolib/InputControl/ControlSettingsFile.hpp"
@@ -227,7 +227,8 @@ void GameEngine::updateOneFrame()
         // No more states? Default back to main menu
         if(_gameStateStack.empty())
         {
-            pushGameState(std::make_shared<MainMenuState>());
+            if (!_mainMenuStateFactory) throw std::logic_error("main-menu-state factory not installed before start()");
+            pushGameState(_mainMenuStateFactory());
         }
         else
         {
@@ -440,8 +441,9 @@ bool GameEngine::initialize()
     renderPreloadText("Finished!");
     vfs_empty_temp_directories();
 
-    //Start the main menu
-    pushGameState(std::make_shared<MainMenuState>());
+    //Start the main menu (factory injected by the bootstrap before start())
+    if (!_mainMenuStateFactory) throw std::logic_error("main-menu-state factory not installed before start()");
+    pushGameState(_mainMenuStateFactory());
 
     return true;
 }
@@ -639,9 +641,14 @@ int GameEngine::getFrameSkip() const
     return _frameSkip;
 }
 
-std::shared_ptr<PlayingState> GameEngine::getActivePlayingState() const
+std::shared_ptr<IPlayingStateController> GameEngine::getActivePlayingState() const
 {
-    return std::dynamic_pointer_cast<PlayingState>(getActiveGameState());
+    return std::dynamic_pointer_cast<IPlayingStateController>(getActiveGameState());
+}
+
+void GameEngine::setMainMenuStateFactory(std::function<std::shared_ptr<GameState>()> factory)
+{
+    _mainMenuStateFactory = std::move(factory);
 }
 
 std::shared_ptr<GameState> GameEngine::getActiveGameState() const

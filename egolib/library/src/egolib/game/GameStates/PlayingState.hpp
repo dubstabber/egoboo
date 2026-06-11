@@ -24,6 +24,7 @@
 #pragma once
 
 #include "egolib/game/GameStates/GameState.hpp"
+#include "egolib/game/IPlayingStateController.hpp"
 #include "egolib/typedef.h"
 
 //Forward declarations
@@ -36,7 +37,7 @@ class CharacterStatus;
 class MessageLog;
 } }
 
-class PlayingState : public GameState
+class PlayingState : public GameState, public IPlayingStateController
 {
 public:
     PlayingState();
@@ -53,15 +54,17 @@ public:
 
     bool notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e) override;
 
-    const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const;
+    const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const override;
 
-    void addStatusMonitor(ObjectRef objectRef);
+    void addStatusMonitor(ObjectRef objectRef) override;
 
-    ObjectRef getStatusCharacterRef(size_t index);
+    ObjectRef getStatusCharacterRef(size_t index) override;
 
-    void displayCharacterWindow(uint8_t statusNumber);
+    void displayCharacterWindow(uint8_t statusNumber) override;
 
-    const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const;
+    const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const override;
+
+    void endModuleInVictory() override;
 
 protected:
     void drawContainer(Ego::GUI::DrawingContext& drawingContext) override;

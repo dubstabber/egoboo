@@ -22,7 +22,8 @@
 /// @author Johan Jansen
 
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/GameStates/SelectModuleState.hpp"
 #include "egolib/game/GameStates/LoadingState.hpp"
 #include "egolib/game/game.h"
@@ -122,7 +123,7 @@ void SelectModuleState::setModuleFilter(const ModuleFilter filter)
 	_validModules.clear();
 
 	//Build list of valid modules
-    for (const std::shared_ptr<ModuleProfile> &module : EngineContext::get().profileSystem().getModuleProfiles())
+    for (const std::shared_ptr<ModuleProfile> &module : ::activeProfileSystem().getModuleProfiles())
 	{
 		// if this module is not valid given the game options and the
 		// selected players, skip it
@@ -207,5 +208,5 @@ void SelectModuleState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void SelectModuleState::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
 }

@@ -22,7 +22,8 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/SelectPlayersState.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/GameStates/SelectModuleState.hpp"
 #include "egolib/game/GameStates/SelectCharacterState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -39,7 +40,7 @@ SelectPlayersState::SelectPlayersState()
 {
     // Module loading clears the lightweight saved-player cache, so rebuild it
     // whenever we enter the load-game flow from the menus.
-    EngineContext::get().profileSystem().loadAllSavedCharacters("mp_players");
+    ::activeProfileSystem().loadAllSavedCharacters("mp_players");
 
     const int SCREEN_WIDTH = uiManager().getScreenWidth();
     const int SCREEN_HEIGHT = uiManager().getScreenHeight();
@@ -120,7 +121,7 @@ SelectPlayersState::SelectPlayersState()
     }
 
     //Mark all loadable characters initially as unselected
-    for (const std::shared_ptr<LoadPlayerElement> &save : EngineContext::get().profileSystem().getSavedPlayers())
+    for (const std::shared_ptr<LoadPlayerElement> &save : ::activeProfileSystem().getSavedPlayers())
     {
         save->setSelected(false);
     }
@@ -138,7 +139,7 @@ void SelectPlayersState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void SelectPlayersState::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
 
     // Begin the main menu song again (in case we just returned from winning a module)
     playMainMenuSong();

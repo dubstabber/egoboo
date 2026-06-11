@@ -68,7 +68,7 @@ struct ClassChangeCompatibilityContext
 struct PresentationEffectsContext
 {
     ObjectRef selfRef = ObjectRef::Invalid;
-    std::shared_ptr<PlayingState> playingState;
+    std::shared_ptr<IPlayingStateController> playingState;
     std::shared_ptr<Ego::GUI::MiniMap> minimap;
 };
 
