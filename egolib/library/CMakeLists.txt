@@ -576,6 +576,9 @@ set(EGOLIB_GAME_GAMESTATES_SOURCES
 
 # -- game/Graphics -----------------------------------------------------------
 set(EGOLIB_GAME_GRAPHICS_SOURCES
+    src/egolib/game/Graphics/GraphicsBootstrap.cpp
+    src/egolib/game/Graphics/GraphicsBootstrap.hpp
+    src/egolib/game/Graphics/graphic_init.cpp
     src/egolib/game/Graphics/Billboard.hpp
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp

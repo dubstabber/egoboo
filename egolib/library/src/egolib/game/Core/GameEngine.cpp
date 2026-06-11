@@ -29,7 +29,7 @@
 #include "egolib/Graphics/Font.hpp"               // Ego::Font (complete type)
 #include "egolib/InputControl/InputSystem.hpp"    // Ego::Input::InputSystem
 #include "egolib/font_bmp.h"                       // font_bmp_load_vfs
-#include "egolib/game/Graphics/CameraSystem.hpp"
+#include "egolib/game/Graphics/GraphicsBootstrap.hpp"  // runGraphicsBootstrapInit/Teardown
 #include "egolib/game/Graphics/BillboardSystem.hpp"  // Ego::Graphics::BillboardSystem (complete type)
 #include "egolib/game/GameStates/GameState.hpp"
 #include "egolib/game/IPlayingStateController.hpp"
@@ -343,15 +343,11 @@ bool GameEngine::initialize()
     // <<<
     /* ********************************************************************************** */
 
-    // Initialize the GFX system.
-    GFX::initialize();
-    EngineContext::get().installGFX(GFX::get());
-    EngineContext::get().installBillboardSystem(GFX::get().getBillboardSystem());
-
-	// camera options
-	CameraSystem::initialize();
-    EngineContext::get().installCameraSystem(CameraSystem::get());
-	EngineContext::get().cameraSystem().getCameraOptions().turnMode = EngineContext::get().config().camera_control.getValue();
+    // Initialize the GFX + camera systems. Their concrete construction (the GFX GameApp, the
+    // 11 RenderPasses, the BillboardSystem, the CameraSystem, the TextureAtlasManager) lives in
+    // egolib-game-graphics, ABOVE egolib-library; GameEngine triggers it here — at the original
+    // call site, preserving ordering — through the bootstrap hook registered from Main.cpp.
+    Ego::Graphics::runGraphicsBootstrapInit();
 
 
     // Subscribe to window events.
@@ -529,11 +525,9 @@ void GameEngine::uninitialize()
     // Unsubscribe from window events.
     unsubscribe();
     
-    // Uninitialize the GFX system.
-    EngineContext::get().clearCameraSystem();
-    EngineContext::get().clearBillboardSystem();
-    EngineContext::get().clearGFX();
-    GFX::uninitialize();
+    // Uninitialize the GFX + camera systems (teardown hook; mirror of runGraphicsBootstrapInit,
+    // implemented in egolib-game-graphics).
+    Ego::Graphics::runGraphicsBootstrapTeardown();
 
 	// Uninitialize the input system.
     EngineContext::get().clearInputSystem();

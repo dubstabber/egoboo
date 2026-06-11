@@ -25,6 +25,7 @@
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/GameStates/MainMenuState.hpp"  // initial-state factory (injected into GameEngine)
 #include "egolib/Script/IScriptSystem.hpp"            // installDefaultScriptSystem() (injected from above egolib-library)
+#include "egolib/game/Graphics/GraphicsBootstrap.hpp" // installDefaultGraphicsSystems() (injected from egolib-game-graphics)
 
 /**
  * @brief
@@ -52,6 +53,11 @@ int main(int argc, char **argv)
             // the egolib-scriptvm archive, so the install must come from here, not from inside the
             // library — same shape as the main-menu-state factory injection above).
             Ego::Script::installDefaultScriptSystem();
+            // Register the graphics-systems bootstrap (GFX GameApp + camera + billboard + atlas).
+            // It is constructed in egolib-game-graphics (above egolib-library), so — like the
+            // script adapter — the install must come from here; GameEngine::initialize() runs the
+            // registered hook at the original call site, preserving init ordering.
+            Ego::Graphics::installDefaultGraphicsSystems();
             engineContext.engine().start();
             engineContext.clearEngine();
         }
