@@ -15,6 +15,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
+#include "egolib/game/script_compile.h"  // parser_state_t, load_ai_script_vfs
 #include "egolib/vfs.h"
 
 namespace
@@ -195,6 +196,52 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptResetsInvisibleTargetAndAppliesWa
     EXPECT_EQ(aiState.getTarget(), actor->getObjRef());
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), 1.0f);
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), 0.0f);
+}
+
+// Characterizes the script.c instruction-dispatch loop (runCharacterScript, the
+// run_operation / run_function_call jump table) executing REAL compiled bytecode.
+// The other runtime tests clear _instructions and exercise only the pre/post-loop
+// logic, leaving the dispatch loop — the path most dangerous to refactor in the
+// freshly-carved egolib-scriptvm layer — uncovered. Here a two-instruction script
+// is compiled from source: an operation (tmpargument = 12, dispatched via
+// run_operation) feeds a function call (SetContent, dispatched via
+// run_function_call) that copies the operand into the persistent ai_state.content.
+// content becoming 12 proves BOTH dispatch branches ran the compiled instructions.
+TEST_F(ScriptRuntimeFixture, RunCharacterScriptExecutesCompiledOperationAndFunction)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5901);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_FALSE(actor->isTerminated());
+
+    static const char kScript[] =
+        "tmpargument = 12\n"
+        "SetContent\n";
+    const std::string scriptPath = "script-runtime-tests/content-script.txt";
+    if (!vfs_exists("script-runtime-tests"))
+    {
+        ASSERT_TRUE(vfs_mkdir("script-runtime-tests"));
+    }
+    ASSERT_TRUE(vfs_writeEntireFile(scriptPath, kScript, sizeof(kScript) - 1));
+
+    // Compile our script into the object's profile AI script (what the runtime reads
+    // via context.scriptInfo()), replacing the follower's own compiled instructions.
+    auto& aiScript = actor->getProfile()->getAIScript();
+    parser_state_t& parser = parser_state_t::get();
+    ASSERT_TRUE(load_ai_script_vfs(parser, scriptPath, actor->getProfile().get(), aiScript));
+    ASSERT_FALSE(aiScript._instructions.isEmpty());
+
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    aiState.content = -1;   // sentinel distinct from the script's value
+    aiState.terminate = false;
+
+    scr_run_chr_script(actor.get());
+
+    // If the loop had not dispatched the compiled instructions (or had silently
+    // fallen back to the default script, which has no top-level SetContent), content
+    // would remain at the sentinel.
+    EXPECT_EQ(aiState.content, 12);
 }
 
 TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentObjects)
