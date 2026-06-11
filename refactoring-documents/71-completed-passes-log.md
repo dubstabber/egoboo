@@ -1868,3 +1868,35 @@ calls it) — the wrong shape for a below-remainder layer. **Next (Pass 3 candid
 cohort by seaming the LIGHT 2–4-`EngineContext` screens (`AudioOptionsScreen`, `MainMenuState`,
 `OptionsScreen`, `Select{Character,Module,Players}State`, `VideoOptionsScreen`, `MapEditorSelectModuleState`)
 onto the existing `active*()` seams, then reassess whether the cohort is large enough to be worth a layer.
+
+---
+
+## vfs.c split — Pass A: extract the SDL_RWops adapter (2026-06-11, branch refactor/vfs-split)
+
+First (lowest-risk) slice of splitting `vfs.c` (the largest TU, 1,920 lines) along its four
+mutually-independent clusters, picked by a scout-next-heavy-front workflow as the cleanest available
+file-split. The SDL_RWops adapter is a self-contained island: it wraps a `vfs_FILE` as an `SDL_RWops`
+for SDL loaders, touches **no** VFS mount state, and uses `vfs_FILE` only opaquely through the public
+`vfs.h` API — so it needs no VFS-internal header (the scout's proposed premature `vfs_internal.h`
+scaffolding was correctly dropped per the adversarial verifier).
+
+**Change:** moved the 10 RWops functions (6 static helpers `vfs_rwops_{size,seek,read,write,close,create}`
++ the 4 public `vfs_openRWops{,Read,Write,Append}` declared in `vfs.h`) out of `vfs.c` into a new sibling
+`egolib/vfs_rwops.c`. The new TU includes `egolib/vfs.h` (for `vfs_FILE`, the public `vfs_*` API, and the
+`struct SDL_RWops;` forward decl) plus **`<SDL.h>`** for the full `SDL_RWops` definition it dereferences
+(`vfs.h` only forward-declares it — the verifier's key catch), `<cstdlib>` (malloc/free), `<cstdio>`
+(`SEEK_*`). Registered `vfs_rwops.c` in BOTH `EGOLIB_VFS_SOURCES` (compilation) and
+`EGOLIB_FOUNDATION_BASE_SOURCES` (membership), keeping it in `egolib-foundation-base`.
+
+**Result:** `vfs.c` 1,920 → 1,786 lines (−134). Topology-neutral — `vfs_rwops.c.o` builds into
+`egolib-foundation-base` and its only undefined symbols are `vfs_*` (defined in `vfs.c`, same archive) +
+SDL/libstdc++/libc (lower/external); zero upward edge, DAG still acyclic.
+
+**Verification:** build 0; nm (vfs_rwops.o defines the 4 public `vfs_openRWops*`, no upward undefined
+symbols); ctest -j20 **875/875**; validator `test.mod` 0/0. Behavior-identical (pure code move).
+
+**Next slices (deferred):** the mount-management cluster (`vfs_add_mount_point`/`remove` +
+`_vfs_mount_info_*` + the shared `_vfs_mount_infos`/`_vfs_initialized`/`_vfs_atexit_registered` statics →
+`vfs_mount.c`) — the only cluster touching the shared mutable mount state, so it needs a narrow
+`extern`-ing seam (a private internal header) and is higher-risk; and the `SearchContext` class →
+`vfs_search.c`.
