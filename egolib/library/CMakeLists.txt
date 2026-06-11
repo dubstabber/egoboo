@@ -446,6 +446,8 @@ set(EGOLIB_TIME_SOURCES
 set(EGOLIB_VFS_SOURCES
     src/egolib/vfs.c
     src/egolib/vfs_rwops.c
+    src/egolib/vfs_mount.c
+    src/egolib/vfs_internal.h
     src/egolib/vfs.h
     src/egolib/VFS/FsPath.cpp
     src/egolib/VFS/FsPath.hpp
@@ -1032,6 +1034,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/typedef.c
     src/egolib/vfs.c
     src/egolib/vfs_rwops.c
+    src/egolib/vfs_mount.c
 )
 # The OS file-system backend belongs in the foundation base too: foundation TUs call its fs_*
 # functions, so leaving it in egolib-library would form a base->library link cycle on the
