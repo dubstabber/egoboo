@@ -157,7 +157,7 @@ void Player::updateLatches()
 
     if(fast_camera_turn || !getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::CAMERA_CONTROL))
     {
-        joy_pos = getInputDevice().getInputMovement();
+        joy_pos = getInputDevice().getInputMovement(EngineContext::get().inputSystem());
 
         //Rotate movement input from body frame to earth frame
         movementInput.x() = ( joy_pos[XX] * fcos + joy_pos[YY] * fsin );
