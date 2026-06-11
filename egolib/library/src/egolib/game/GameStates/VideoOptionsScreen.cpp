@@ -23,7 +23,7 @@
 
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/VideoOptionsScreen.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
@@ -63,7 +63,7 @@ VideoOptionsScreen::VideoOptionsScreen() :
 
     //Build list of available resolutions
     std::unordered_set<uint32_t> resolutions;
-    const auto& displays = EngineContext::get().graphicsSystem().getDisplays();
+    const auto& displays = Ego::activeGraphicsSystem().getDisplays();
     auto displayIt = std::find_if(displays.cbegin(), displays.cend(), [](const auto& display) { return display->isPrimaryDisplay(); });
     if (displayIt == displays.cend())
     {
@@ -98,7 +98,7 @@ VideoOptionsScreen::VideoOptionsScreen() :
         []{
             Actions::toggleFullscreen([](bool enabled)
             {
-                SDL_SetWindowFullscreen(EngineContext::get().graphicsSystem().getWindow()->get(), enabled ? SDL_WINDOW_FULLSCREEN : 0);
+                SDL_SetWindowFullscreen(Ego::activeGraphicsSystem().getWindow()->get(), enabled ? SDL_WINDOW_FULLSCREEN : 0);
             });
         }
     );
@@ -236,7 +236,7 @@ void VideoOptionsScreen::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void VideoOptionsScreen::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 }
 

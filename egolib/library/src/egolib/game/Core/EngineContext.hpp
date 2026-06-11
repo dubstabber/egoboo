@@ -19,7 +19,7 @@
 #include <memory>
 
 class GameEngine;
-class PlayingState;
+class IPlayingStateController;
 struct egoboo_config_t;
 namespace idlib { class video_buffer_manager; }
 namespace Log { struct Target; }
@@ -201,8 +201,8 @@ public:
 
     uint32_t renderedFrameCount() const;
 
-    std::shared_ptr<PlayingState> tryActivePlayingState() const;
-    std::shared_ptr<PlayingState> activePlayingState() const;
+    std::shared_ptr<IPlayingStateController> tryActivePlayingState() const;
+    std::shared_ptr<IPlayingStateController> activePlayingState() const;
 
 private:
     EngineContext() = default;

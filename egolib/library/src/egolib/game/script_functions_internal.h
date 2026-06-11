@@ -27,7 +27,7 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/script_functions.h"
 #include "egolib/game/script_implementation.h"
-#include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/IPlayingStateController.hpp"
 #include "egolib/game/link.h"
 #include "egolib/game/game.h"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -42,7 +42,6 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
 #include "egolib/game/Module/Module.hpp"
-#include "egolib/game/GameStates/VictoryScreen.hpp"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Script/Interpreter/SafeCast.hpp"
 #include "egolib/game/GUI/MiniMap.hpp"
@@ -96,7 +95,7 @@ inline GameEngine& engine()
     return EngineContext::get().engine();
 }
 
-inline std::shared_ptr<PlayingState> activePlayingState()
+inline std::shared_ptr<IPlayingStateController> activePlayingState()
 {
     return EngineContext::get().activePlayingState();
 }

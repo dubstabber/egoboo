@@ -1,6 +1,7 @@
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/Graphics/ITextureManager.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GameStates/MapEditorState.hpp"
 #include "egolib/game/GUI/ScrollableList.hpp"
@@ -33,7 +34,7 @@ MapEditorSelectModuleState::MapEditorSelectModuleState() :
     scrollableList->setPosition(Point2f(8, 8));
     scrollableList->setSize(Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 56));
 
-    for (const auto &loadModule : EngineContext::get().profileSystem().getModuleProfiles())
+    for (const auto &loadModule : ::activeProfileSystem().getModuleProfiles())
     {
     	const std::string folderName = loadModule->getPath().substr(loadModule->getPath().find_last_of('/') + 1);
 
@@ -135,7 +136,7 @@ void MapEditorSelectModuleState::drawContainer(Ego::GUI::DrawingContext& drawing
         yPos += 20;
 
         // Draw one skull per rated difficulty
-        const std::shared_ptr<Ego::Texture> &skullTexture = EngineContext::get().textureManager().getTexture("mp_data/skull");
+        const std::shared_ptr<Ego::Texture> &skullTexture = Ego::activeTextureManager().getTexture("mp_data/skull");
         for (int i = 0; i < _selectedModule->getRank(); ++i)
         {
             draw_icon_texture(skullTexture, _moduleName->getX() + i*skullTexture->getWidth(), yPos, 0xFF, 0, 20, true);

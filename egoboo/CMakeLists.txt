@@ -35,7 +35,7 @@ list(APPEND SOURCE_FILES ${H_FILES})
 add_executable(egoboo ${SOURCE_FILES})
 
 # Link libraries.
-target_link_libraries(egoboo egolib-library)
+target_link_libraries(egoboo egolib-gamestates)
 
 # Copy and install runtime dependencies (e.g. SDL2 DLLs) of idlib-game-engine-library with the executable.
 if (WIN32)

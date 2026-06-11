@@ -27,7 +27,8 @@
 #include "egolib/game/GameStates/SelectPlayersState.hpp"
 #include "egolib/game/GameStates/OptionsScreen.hpp"
 #include "egolib/game/GameStates/MapEditorSelectModuleState.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
+#include "egolib/egoboo_setup.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 #include "egolib/game/game.h"
@@ -125,7 +126,7 @@ MainMenuState::MainMenuState() :
 
     yOffset -= newGameButton->getHeight() + 10;
     
-    if (EngineContext::get().config().debug_developerMode_enable.getValue())
+    if (Ego::activeConfig().debug_developerMode_enable.getValue())
     {
         auto debugButton = std::make_shared<Ego::GUI::Button>("Debug", SDLK_UNKNOWN);
         debugButton->setPosition({ 20, yOffset });
@@ -180,7 +181,7 @@ void MainMenuState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void MainMenuState::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 
     //Play the Egoboo theme music

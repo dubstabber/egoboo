@@ -24,7 +24,7 @@
 #include "egolib/Graphics/Font.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/game/GameStates/AudioOptionsScreen.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/game/GameStates/OptionsConfigActions.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Image.hpp"
@@ -164,6 +164,6 @@ void AudioOptionsScreen::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void AudioOptionsScreen::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 }

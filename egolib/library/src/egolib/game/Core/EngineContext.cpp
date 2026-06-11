@@ -27,7 +27,6 @@ std::unique_ptr<GameEngine> activeEngine;
 Ego::Input::IInputSystem* activeInputSystem = nullptr;
 Ego::IImageManager* activeImageManager = nullptr;
 Ego::IFontManager* activeFontManager = nullptr;
-Ego::ITextureManager* activeTextureManager = nullptr;
 Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
 IGFX* activeGFX = nullptr;
 }
@@ -382,48 +381,38 @@ const Ego::IGraphicsSystem& EngineContext::graphicsSystem() const
     return Ego::activeGraphicsSystem();
 }
 
+// Texture-manager lifecycle delegates to the lower-layer ownership-move seam in
+// egolib/Graphics/ITextureManager.cpp (mirrors the graphics-system / audio-system / Log
+// active-target moves), so lower-layer callers can reach the installed texture manager without
+// depending on this upper-layer hub. Declarations are unchanged, so all existing callers keep working.
 void EngineContext::installTextureManager(Ego::ITextureManager& textureManager)
 {
-    if (activeTextureManager)
-    {
-        throw std::logic_error("texture manager already installed");
-    }
-    activeTextureManager = &textureManager;
+    Ego::installActiveTextureManager(textureManager);
 }
 
 void EngineContext::clearTextureManager()
 {
-    activeTextureManager = nullptr;
+    Ego::clearActiveTextureManager();
 }
 
 Ego::ITextureManager* EngineContext::tryTextureManager()
 {
-    return activeTextureManager;
+    return Ego::tryActiveTextureManager();
 }
 
 const Ego::ITextureManager* EngineContext::tryTextureManager() const
 {
-    return activeTextureManager;
+    return Ego::tryActiveTextureManager();
 }
 
 Ego::ITextureManager& EngineContext::textureManager()
 {
-    Ego::ITextureManager* currentTextureManager = tryTextureManager();
-    if (!currentTextureManager)
-    {
-        throw std::logic_error("no active texture manager");
-    }
-    return *currentTextureManager;
+    return Ego::activeTextureManager();
 }
 
 const Ego::ITextureManager& EngineContext::textureManager() const
 {
-    const Ego::ITextureManager* currentTextureManager = tryTextureManager();
-    if (!currentTextureManager)
-    {
-        throw std::logic_error("no active texture manager");
-    }
-    return *currentTextureManager;
+    return Ego::activeTextureManager();
 }
 
 void EngineContext::installParticleHandler(IParticleHandler& particleHandler)
@@ -807,7 +796,7 @@ uint32_t EngineContext::renderedFrameCount() const
     return engine().getNumberOfFramesRendered();
 }
 
-std::shared_ptr<PlayingState> EngineContext::tryActivePlayingState() const
+std::shared_ptr<IPlayingStateController> EngineContext::tryActivePlayingState() const
 {
     const GameEngine* currentEngine = tryEngine();
     if (!currentEngine)
@@ -817,9 +806,9 @@ std::shared_ptr<PlayingState> EngineContext::tryActivePlayingState() const
     return currentEngine->getActivePlayingState();
 }
 
-std::shared_ptr<PlayingState> EngineContext::activePlayingState() const
+std::shared_ptr<IPlayingStateController> EngineContext::activePlayingState() const
 {
-    std::shared_ptr<PlayingState> state = tryActivePlayingState();
+    std::shared_ptr<IPlayingStateController> state = tryActivePlayingState();
     if (!state)
     {
         throw std::logic_error("no active playing state");

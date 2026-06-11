@@ -21,6 +21,8 @@
 
 #include "egolib/egoboo_setup.h"
 
+#include <functional>
+
 //Forward declarations
 class GameState;
 class CameraSystem;
@@ -35,7 +37,7 @@ namespace GUI {
 class UIManager;
 } // namespace GUI
 } // namespace Ego
-class PlayingState;
+class IPlayingStateController;
 
 class GameEngine
 {
@@ -111,6 +113,14 @@ public:
     void pushGameState(std::shared_ptr<GameState> gameState);
 
     /**
+    * @brief
+    *	Install the factory that creates the initial/fallback main-menu state. Injected by the
+    *	bootstrap (egoboo Main.cpp) so the engine does not depend on the concrete MainMenuState type
+    *	(which lives in the higher GameStates layer). Must be set before start().
+    **/
+    void setMainMenuStateFactory(std::function<std::shared_ptr<GameState>()> factory);
+
+    /**
     * @return
     *	Get estimated number of Frame Renders Per Second
     **/
@@ -179,11 +189,12 @@ public:
         return _startupTimestamp;
     }
 
-    /// @brief Gets the current GameState as a PlayingState instance.
-	/// @return the current GameState if it is a PlayingState or nullptr otherwise
-	/// @remark There is always a GameState instance.
-	/// However, this instance is not necessarily a PlayingState instance.
-    std::shared_ptr<PlayingState> getActivePlayingState() const;
+    /// @brief Gets the active in-game control surface (IPlayingStateController).
+	/// @return the active GameState as an IPlayingStateController if it implements it
+	///         (i.e. it is the PlayingState), or nullptr otherwise
+	/// @remark There is always a GameState instance, but it does not necessarily
+	///         implement IPlayingStateController (only the in-game PlayingState does).
+    std::shared_ptr<IPlayingStateController> getActivePlayingState() const;
 
 	/// @brief Gets the current GameState instance.
 	/// @return the current GameState
@@ -257,6 +268,7 @@ private:
     std::forward_list<std::shared_ptr<GameState>> _gameStateStack;
     std::shared_ptr<GameState> _currentGameState;
     bool _clearGameStateStackRequested;
+    std::function<std::shared_ptr<GameState>()> _mainMenuStateFactory;
 
     egoboo_config_t _config;
     bool _drawCursor;

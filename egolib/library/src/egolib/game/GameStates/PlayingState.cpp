@@ -346,3 +346,8 @@ const std::shared_ptr<Ego::GUI::MessageLog>& PlayingState::getMessageLog() const
 {
     return _messageLog;
 }
+
+void PlayingState::endModuleInVictory()
+{
+    engine().pushGameState(std::make_shared<VictoryScreen>(nullptr, true));
+}

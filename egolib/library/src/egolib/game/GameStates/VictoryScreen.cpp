@@ -22,7 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GameStates/VictoryScreen.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/SelectPlayersState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -40,7 +40,7 @@ VictoryScreen::VictoryScreen(PlayingState *playingState, const bool forceExit) :
     const bool exportValid = GameSessionContext::get().activeModule().isExportValid();
 
 	//Add the buttons
-	int yOffset = EngineContext::get().graphicsSystem().getWindow()->size().y() - 80;
+	int yOffset = Ego::activeGraphicsSystem().getWindow()->size().y() - 80;
 	auto exitButton = std::make_shared<Ego::GUI::Button>(exportValid ? "Save and Exit" : "Exit Game", SDLK_SPACE);
     exitButton->setSize({ 200, 30 });
     exitButton->setPosition({ 20, yOffset });
@@ -82,6 +82,6 @@ void VictoryScreen::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void VictoryScreen::beginState()
 {
     // menu settings
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(false);
+    Ego::activeGraphicsSystem().getWindow()->grab_enabled(false);
     engine().enableMouseCursor();
 }

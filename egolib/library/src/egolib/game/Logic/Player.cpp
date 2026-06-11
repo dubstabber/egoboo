@@ -27,7 +27,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/GameStates/PlayingState.hpp"
+#include "egolib/game/IPlayingStateController.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -242,7 +242,7 @@ void Player::updateLatches()
         GameModule& module = gameSession().activeModule();
         for(uint8_t ipla = 0; ipla < module.getPlayerList().size(); ++ipla) {
             if(module.getPlayer(ipla).get() == this) {
-                if (std::shared_ptr<PlayingState> playingState = EngineContext::get().tryActivePlayingState())
+                if (auto playingState = EngineContext::get().tryActivePlayingState())
                 {
                     playingState->displayCharacterWindow(ipla);
                 }
