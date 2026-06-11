@@ -17,40 +17,42 @@
 //*
 //********************************************************************************************
 
-/// @file egolib/game/GameStates/GameState.hpp
-/// @details Abstract interface class for a GameState
-/// @author Johan Jansen
+/// @file egolib/game/Core/ActiveGameEngine.cpp
+/// @brief Definition of the active-game-engine ownership-move seam.
 
-#include "egolib/game/GameStates/GameState.hpp"
 #include "egolib/game/Core/ActiveGameEngine.hpp"
 
-GameState::GameState() :
-	_terminateStateRequested(false)
+#include <stdexcept>
+
+namespace
 {
-	//ctor
+GameEngine* g_activeGameEngine = nullptr;
 }
 
-GameEngine& GameState::engine()
+void installActiveGameEngine(GameEngine& engine)
 {
-	return activeGameEngine();
+    if (g_activeGameEngine)
+    {
+        throw std::logic_error("game engine already installed");
+    }
+    g_activeGameEngine = &engine;
 }
 
-const GameEngine& GameState::engine() const
+void clearActiveGameEngine()
 {
-	return activeGameEngine();
+    g_activeGameEngine = nullptr;
 }
 
-void GameState::endState()
+GameEngine* tryActiveGameEngine()
 {
-	_terminateStateRequested = true;
+    return g_activeGameEngine;
 }
 
-bool GameState::isEnded() const
+GameEngine& activeGameEngine()
 {
-	return _terminateStateRequested;
-}
-
-void GameState::beginState()
-{
-	//default does nothing
+    if (!g_activeGameEngine)
+    {
+        throw std::logic_error("no active game engine");
+    }
+    return *g_activeGameEngine;
 }

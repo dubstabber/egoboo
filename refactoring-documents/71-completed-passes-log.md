@@ -1810,3 +1810,61 @@ a usable gate in this sandbox (SDL_ttf fonts fail on pristine master too).
 vtable/typeinfo back-edges into the game-core remainder, then measure the most-isolated leaf screen's
 residual coupling — the first bounded seam-cut toward an eventual `egolib-gamestates` link-split (Front B,
 refuted as a direct move: GameStates measured at 63 back-edges, needs seam-cutting first).
+
+---
+
+## Pass 2: GameState base seam-cut — activeGameEngine() ownership-move seam (2026-06-11, branch refactor/gamestates-decoupling)
+
+Step 2 of the "de-risk → carve GameStates" program: **free the `GameState` base class of its only
+game-core coupling**, making it relocatable toward an eventual `egolib-gamestates` archive. A
+plan-gamestate-seam workflow (measure + design + adversarial-refute across 9 break-vectors) confirmed the
+bounded scope and the install point before any edit.
+
+**Measured starting point (nm on the live `egolib-library.a`):** `GameState.hpp` was *already* lower-layer
+clean (includes only `GUI/Container.hpp` — in egolib-gui — and forward-declares `class GameEngine;`). The
+**only** game-core coupling was in `GameState.cpp`: `engine()` did `return EngineContext::get().engine();`,
+giving `GameState.cpp.o` exactly two game-core undefined symbols — `EngineContext::get()` and
+`EngineContext::engine()`.
+
+**The seam-cut (the proven ownership-move keystone pattern — mirrors `Ego::activeRenderer` /
+`activeGraphicsSystem` / `Ego::GUI::activeUIManager`):**
+
+- New `egolib/game/Core/ActiveGameEngine.{hpp,cpp}` — **global-namespace** (because `GameEngine` is a
+  global-namespace class, unlike the `Ego::`-namespaced renderer/graphics seams) free functions
+  `installActiveGameEngine(GameEngine&)` / `clearActiveGameEngine()` / `tryActiveGameEngine()` /
+  `activeGameEngine()` over an anonymous-namespace `g_activeGameEngine` pointer. The header keeps to a
+  `class GameEngine;` forward decl and pulls in **no** game-core header (so it is includable from a future
+  lower-layer `GameState`); the `.cpp` includes only its own header + `<stdexcept>` (the accessor returns a
+  reference and never dereferences `GameEngine`, so the forward decl suffices, exactly like `ActiveRenderer.cpp`).
+- **Install point = `EngineContext::setEngine` / `clearEngine`** (NOT `GameEngine::initialize`/`uninitialize`).
+  This is load-bearing: the script/engine **test fixtures publish the engine ONLY via `EngineContext::setEngine()`**
+  (never `GameEngine::initialize()`), and `EngineContext` *owns* the `GameEngine` (`activeEngine` unique_ptr),
+  so `setEngine` is the true install moment. Installed **after** both `setEngine` guards (null + double-install),
+  so the throw paths never reach the install; cleared **before** `activeEngine.reset()`, so the seam never
+  points at a destroyed object.
+- `GameState.cpp` now `#include`s `ActiveGameEngine.hpp` instead of `EngineContext.hpp`, and both `engine()`
+  overloads `return activeGameEngine();` (binding the non-const seam return to the const overload's
+  `const GameEngine&` is a legal implicit const-add — identical to the prior `EngineContext::get().engine()`).
+- `ActiveGameEngine.{cpp,hpp}` added to `EGOLIB_GAME_CORE_SOURCES` — they stay in **egolib-library** this
+  pass, so the build/link/topology is neutral (the seam is defined and consumed entirely within the top
+  archive). A new `EngineContextFixture.SetEnginePublishesActiveGameEngineSeam` test locks the
+  install/clear lifecycle + reference identity (`&activeGameEngine() == context.tryEngine()`).
+
+**Result:** `GameState.cpp.o` now has **zero** game-core (`EngineContext`) undefined symbols — its only
+engine reference is `activeGameEngine()`, defined (`T`) in `ActiveGameEngine.cpp.o` in the same archive. The
+`GameState` base is now relocatable; this is the keystone that unblocks the (deferred) GameStates carve.
+
+**Verification:** build 0; nm proof (`GameState.cpp.o` shows no `EngineContext`, only `U activeGameEngine()`);
+ctest -j20 **875/875** (874 + the new seam test — incl. the `ScopedPlayingStateHarness` / screenshot-hotkey
+fixtures that exercise `GameState::engine()` in the real engine-using paths, confirming behavior identity);
+validator `test.mod` 0/0; DAG sanity (no lower-layer archive references the seam — topology-neutral, still
+acyclic). Behavior-identical (the seam resolves to the same `GameEngine`).
+
+**Deferred (per the plan + the topological-shape caveat):** the actual `egolib-gamestates` archive carve —
+even with the base freed, only 4 small leaf screens (`DebugFontRenderingState`, `InputOptionsScreen`,
+`LoadPlayerElement`, `OptionsConfigActions`) become nm-clean, too small a cohort to justify a new archive +
+its CMake/DAG surface, and GameStates is topologically near the *top* of the call graph (orchestrates; little
+calls it) — the wrong shape for a below-remainder layer. **Next (Pass 3 candidate):** enlarge the clean
+cohort by seaming the LIGHT 2–4-`EngineContext` screens (`AudioOptionsScreen`, `MainMenuState`,
+`OptionsScreen`, `Select{Character,Module,Players}State`, `VideoOptionsScreen`, `MapEditorSelectModuleState`)
+onto the existing `active*()` seams, then reassess whether the cohort is large enough to be worth a layer.

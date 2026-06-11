@@ -12,6 +12,7 @@
 #include "egolib/egoboo_setup.h"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/ActiveGameEngine.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
@@ -48,6 +49,7 @@ void EngineContext::setEngine(std::unique_ptr<GameEngine> engine)
         throw std::logic_error("game engine already installed");
     }
     activeEngine = std::move(engine);
+    installActiveGameEngine(*activeEngine);
 }
 
 void EngineContext::clearEngine()
@@ -66,6 +68,7 @@ void EngineContext::clearEngine()
     clearGFX();
     clearVideoBufferManager();
     clearRenderer();
+    clearActiveGameEngine();
     activeEngine.reset();
 }
 

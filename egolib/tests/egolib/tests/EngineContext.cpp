@@ -10,6 +10,7 @@
 #include "egolib/Log/Target.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Renderer/DeferredTexture.hpp"
+#include "egolib/game/Core/ActiveGameEngine.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
@@ -288,6 +289,27 @@ TEST_F(EngineContextFixture, SetEnginePublishesInstalledEngine)
     EXPECT_EQ(context.tryEngine(), installedPtr);
     EXPECT_EQ(&context.engine(), installedPtr);
     EXPECT_EQ(context.renderedFrameCount(), 0u);
+}
+
+TEST_F(EngineContextFixture, SetEnginePublishesActiveGameEngineSeam)
+{
+    // The GameState base reaches the engine through the activeGameEngine() ownership-move seam, which
+    // EngineContext installs from setEngine and clears from clearEngine. Lock that lifecycle + identity.
+    EngineContext& context = EngineContext::get();
+    EXPECT_EQ(tryActiveGameEngine(), nullptr);
+    EXPECT_THROW(activeGameEngine(), std::logic_error);
+
+    auto installed = std::make_unique<GameEngine>();
+    GameEngine* installedPtr = installed.get();
+    context.setEngine(std::move(installed));
+
+    EXPECT_EQ(tryActiveGameEngine(), installedPtr);
+    EXPECT_EQ(&activeGameEngine(), installedPtr);
+    EXPECT_EQ(&activeGameEngine(), context.tryEngine());   // seam resolves to the same instance
+
+    context.clearEngine();
+    EXPECT_EQ(tryActiveGameEngine(), nullptr);
+    EXPECT_THROW(activeGameEngine(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, AudioSystemThrowsWhenNoAudioSystemIsInstalled)
