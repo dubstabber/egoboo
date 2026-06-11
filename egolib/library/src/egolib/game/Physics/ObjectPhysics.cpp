@@ -691,22 +691,23 @@ const Vector2f& ObjectPhysics::getDesiredVelocity() const
 
 float ObjectPhysics::getMass() const
 {
-    if ( 0.0f == _object.phys.bumpdampen )
+    // Weight 255 (CAP_INFINITE_WEIGHT, promoted to CHR_INFINITE_WEIGHT at spawn — see
+    // Object_attributes.cpp) marks immovable scenery: it must yield an infinite collision mass
+    // regardless of bump dampening, so a character bumping into it cannot shove it. Most immovable
+    // content ALSO sets bumpdampen 0.0 (handled by the second branch), but some (e.g. the tent)
+    // relies solely on weight 255 with a non-zero bumpdampen, so this first branch is required.
+    if ( Ego::Physics::CHR_INFINITE_WEIGHT == _object.phys.weight )
+    {
+        return -static_cast<float>(Ego::Physics::CHR_INFINITE_WEIGHT);
+    }
+    else if ( 0.0f == _object.phys.bumpdampen )
     {
         return -static_cast<float>(Ego::Physics::CHR_INFINITE_WEIGHT);
     }
     else
     {
-        // Legacy content uses weight 255 as a maximum carry weight, not as an
-        // infinitely immovable collision mass. Preserve true immovability via
-        // bump dampening instead, and otherwise fall back to the profile-space
-        // weight when runtime storage has promoted 255 to CHR_INFINITE_WEIGHT.
-        const float collisionWeight =
-            (Ego::Physics::CHR_INFINITE_WEIGHT == _object.phys.weight)
-                ? static_cast<float>(_object.getProfile()->getWeight())
-                : static_cast<float>(_object.phys.weight);
-        return collisionWeight / _object.phys.bumpdampen;
-    }    
+        return _object.phys.weight / _object.phys.bumpdampen;
+    }
 }
 
 bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
