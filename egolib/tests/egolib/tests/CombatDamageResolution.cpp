@@ -40,9 +40,11 @@
 #undef private
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Module/Module.hpp"  // GameModule::spawnObject (real spawn path)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Logic/Damage.hpp"
 #include "egolib/Logic/Attribute.hpp"
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
 #include "egolib/typedef.h"
 #include "egolib/vfs.h"
 
@@ -133,6 +135,42 @@ protected:
         }
 
         return _objectHandler.insert(profile);
+    }
+
+    /// Begin the live test module (needed for the real spawn path, which initialises an
+    /// object's runtime physics — weight promotion, bump dampen — from its profile).
+    GameModule& beginActiveTestModule()
+    {
+        std::shared_ptr<ModuleProfile> module;
+        for (const auto& candidate : EngineContext::get().profileSystem().getModuleProfiles())
+        {
+            if (candidate && candidate->getFolderName() == "test.mod")
+            {
+                module = candidate;
+                break;
+            }
+        }
+        EXPECT_NE(module, nullptr);
+        if (module == nullptr)
+        {
+            throw std::runtime_error("test.mod profile not found");
+        }
+        EXPECT_TRUE(GameSessionContext::get().beginModule(module, 17));
+        return GameSessionContext::get().activeModule();
+    }
+
+    /// Spawn an object through the module (the real spawn path that initialises runtime physics).
+    std::shared_ptr<Object> spawnInModule(GameModule& module, const std::string& profilePath, int slot)
+    {
+        const ObjectProfileRef profile =
+            EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
+        EXPECT_NE(profile, ObjectProfileRef::Invalid);
+        if (profile == ObjectProfileRef::Invalid)
+        {
+            return nullptr;
+        }
+        return module.spawnObject(Ego::Vector3f(64.0f, 64.0f, 0.0f), profile,
+                                  static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
     }
 
     /// Fully control the three inputs the resistance/reduction math reads for `type`,
@@ -298,6 +336,38 @@ TEST_F(CombatDamageFixture, InvictusDirection_InvincibleObjectIsInvictusFromEver
     EXPECT_TRUE(object->isInvictusDirection(Facing(0x8000)));
     EXPECT_TRUE(object->isInvictusDirection(Facing(0xC000)));
     EXPECT_TRUE(object->isInvictusDirection(Facing(0xFFFF)));
+}
+
+// ---------------------------------------------------------------------------
+// ObjectPhysics::getMass — immovable scenery collision mass
+// ---------------------------------------------------------------------------
+
+// Regression guard for commit c0fd22e53, which dropped the "weight 255 -> infinite collision mass"
+// rule from getMass() in favour of "immovability comes from bumpdampen == 0". That broke the tent:
+// it is the one immovable scenery object that marks itself immovable purely with Weight 255
+// (CAP_INFINITE_WEIGHT) and a NON-ZERO bump dampen (0.1) — every other immovable object also sets
+// bumpdampen 0.0. Without the weight rule the tent got a finite mass of 255/0.1 = 2550 and a
+// colliding character could shove it. getMass() must return an infinite (negative sentinel) mass.
+TEST_F(CombatDamageFixture, Weight255SceneryHasInfiniteCollisionMass)
+{
+    auto& module = beginActiveTestModule();
+    auto tent = spawnInModule(module, "mp_data/globalobjects/misc/tent.obj", 3500);
+    ASSERT_NE(tent, nullptr);
+
+    // The content preconditions the regression hinges on: weight 255 with a non-zero bump dampen.
+    EXPECT_EQ(tent->getProfile()->getWeight(), CAP_INFINITE_WEIGHT);
+    EXPECT_GT(tent->getProfile()->getBumpDampen(), 0.0f);
+    // Weight 255 is promoted to the infinite-weight sentinel at spawn (Module_spawn.cpp).
+    EXPECT_EQ(tent->getPhysicsWeight(), Ego::Physics::CHR_INFINITE_WEIGHT);
+
+    // The actual guard: an infinite (negative) collision mass => immovable on character collision.
+    EXPECT_LT(tent->getMass(), 0.0f);
+
+    // Control: an ordinary finite-weight follower has a finite, positive collision mass (movable).
+    auto follower = spawnInModule(module, "mp_objects/follower.obj", 3501);
+    ASSERT_NE(follower, nullptr);
+    EXPECT_NE(follower->getPhysicsWeight(), Ego::Physics::CHR_INFINITE_WEIGHT);  // finite weight
+    EXPECT_GT(follower->getMass(), 0.0f);
 }
 
 } // namespace
