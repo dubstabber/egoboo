@@ -205,7 +205,7 @@ void MainLoop::check_stats()
     {
         auto playingState = activePlayingState();
         playingState->getMiniMap()->setVisible(true);
-        playingState->getMiniMap()->setShowPlayerPosition(true);
+        playingState->setMiniMapShowPlayerPosition(true);
         stat_check_delay = 150;
     }
 

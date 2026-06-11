@@ -2086,3 +2086,43 @@ mislocated definitions (`ai_state_t`, a pure win valuable on its own), interface
 upward calls (the 3 drivers). The test executable is a second install site whenever a seam is driven
 by a runtime path the tests exercise (the IObjectWorld precedent auto-installs from library, but a
 VM-above-library adapter cannot — it must be injected from above, like the main-menu factory).
+
+---
+
+## egolib-hud-widgets carve — the EIGHTH link-split (2026-06-11, branch `refactor/egolib-hud-widgets-carve`)
+
+The maintainer pivoted to this after finding the graphics-narrow carve's hard core GL-gated (see that
+entry). The in-game HUD widgets are a much smaller, render-driver-FREE upward carve that completed cleanly
+with no GL gate. **The easiest link-split yet: a single reverse edge.**
+
+**Measurement (inline, on the post-scriptvm tree).** HUD-widget cluster = the 6 game-coupled GUI widgets
+(`CharacterStatus`/`CharacterWindow`/`InventorySlot`/`LevelUpWindow`/`MiniMap`/`ModuleSelector`) that stayed
+in egolib-library when the generic egolib-gui toolkit was carved. After the scriptvm carve, `library →
+HUD` reverse edges = **1**: `MiniMap::setShowPlayerPosition(bool)`, from the AI minimap-reveal in
+`Object_update.cpp` (NAVIGATION perk) + `game_loop.c` (debug reveal). Topology: cluster→scriptvm = 0,
+cluster→gamestates = 0, scriptvm→cluster = 2 (`script_functions_quests` reveals the minimap), gamestates→
+cluster = 8 (PlayingState owns the HUD). So the cluster is a **MIDDLE upper layer: above library, BELOW both
+scriptvm and gamestates** (both link it). 43 forward edges into library.
+
+**P1 — the seam (commit `69ab6b5aa`).** Both reverse-edge call sites already reach the minimap via
+`tryActivePlayingState()->getMiniMap()`, but `->setShowPlayerPosition()` link-references the concrete
+`MiniMap` symbol. Added `IPlayingStateController::setMiniMapShowPlayerPosition(bool)` (implemented by
+`PlayingState` as `_miniMap->setShowPlayerPosition(...)`) and routed the 2 call sites through it — the edge
+becomes a lower-layer vtable dispatch (no concrete-`MiniMap` link edge). `getMiniMap()->setVisible()` stays
+(setVisible is `Component`'s, in egolib-gui — not a reverse edge). nm: `library → HUD` reverse edges 1 → 0.
+
+**P2 — the carve (commit `6c6a711e3`).** `EGOLIB_HUD_WIDGETS_LAYER_SOURCES` (the 6 widgets) REMOVE_ITEM'd
+into `add_library(egolib-hud-widgets)` that PUBLIC-links egolib-library; both `egolib-scriptvm` and
+`egolib-gamestates` link it (egoboo + the test executable inherit it transitively); `cartman`/the
+content-validator (no in-game HUD, `library → HUD` = 0) stay on egolib-library.
+
+Archive layout: **base 146 ◄ {physics 5, renderer 28 ◄ gui 22} ◄ library 77 ◄ hud-widgets 6 ◄
+{scriptvm 17, gamestates 19}.**
+
+Full gate green: in-place + from-scratch clean builds; exact `ar t` (146/5/28/22/77/6/17/19); nm-acyclic
+(**0 forbidden back-edges across all 8 archives**; positive controls real: hud→library 43, scriptvm→hud 2,
+gamestates→hud 8; invariants library→hud 0, hud→scriptvm 0, hud→gamestates 0); validator `test.mod` 0/0;
+ctest **875/875**. No GL gate — the carve changes only archive membership + 1 flag-setter interface method;
+the widgets' render code is byte-identical and the seam goes through the already-installed
+`IPlayingStateController`. This is the first carve where measuring REVERSE edges yielded a near-trivial
+blocker (1), confirming the HUD widgets are genuinely top-of-call-graph.
