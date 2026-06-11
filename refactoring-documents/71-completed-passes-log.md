@@ -1740,3 +1740,73 @@ Closed the last back-edge the gui-carve pass left. Investigation showed `MeshLoo
 So instead of a data-split: dropped the dead `twist_vel` field + its computation (and the `PhysicalConstants` include), then relocated `MeshLookupTables.{hpp,cpp}` from `EGOLIB_PHYSICS_SOURCES` to `EGOLIB_FOUNDATION_BASE_SOURCES` (a pure CMake move once the dependency was gone). `mesh_geometry.c` (base) → `g_meshLookupTables` is now intra-base; the physics/graphics consumers (`ObjectPhysics`/`ParticlePhysics`/`Module_spawn`/`RenderPasses`) read it downward. Layout: **base 142 / physics 5 / renderer 28 / gui 22 / library 116**.
 
 All five archives now verify **0 forbidden back-edges (ACYCLIC ✓)** — the first fully-clean state since the multi-archive split began. Behavior-identical (twist_vel was unused dead data). Gates: build, exact `ar t`, per-archive nm acyclicity with positive controls, ctest -j20 830/830, validator `test.mod` 0/0.
+
+---
+
+## GUI Component/Container characterization net (2026-06-11, branch master — uncommitted)
+
+The first step of the maintainer-chosen **"de-risk → carve GameStates"** program: lay a behavioral
+characterization net over the egolib-gui base classes BEFORE the next link-split (carving the
+GameStates/menu screens, which derive from `Container`). A scout-next-heavy-front workflow (8 fronts,
+adversarially verified) found the safe move-only modularization vein exhausted and ranked this the
+highest-value sandbox-verifiable bounded front: it pins the base-class pair every widget (~30 GUI TUs)
+and every `GameState` (`GameState : Container`) inherits, so the egolib-gui layer and the eventual
+GameStates carve can be refactored without silently changing geometry, hit-testing, z-order, state
+gating, or input propagation.
+
+**New TU (test-only, zero production/CMake edits — auto-globbed by `GLOB_RECURSE CONFIGURE_DEPENDS`):**
+`egolib/tests/egolib/tests/GuiComponentBehavior.cpp` — **44 tests** across three suites:
+
+- **GuiComponent** (geometry/state/lifecycle): default bounds (0,0)-(32,32); `setPosition`/`setX`/`setY`
+  translate keeping size; `setSize`/`setWidth`/`setHeight` keep the min corner; `setCenterPosition`
+  (both axes + `onlyHorizontal`); `contains()` is **closed on both bounds** (min & max corners
+  inclusive, per idlib `is_enclosing`); the `isEnabled() = _enabled && !_destroyed && _visible`
+  gate (hiding also disables; disabling does not hide); `destroy()` forces enabled/visible false and
+  **dominates** later `setEnabled(true)`/`setVisible(true)`; derived-position/bounds accumulation
+  through a 2-level parent chain (`getDerivedBounds` translates own bounds by the **parent's** derived
+  position); `bringToFront()` no-ops without a parent; the `InputListener` defaults (all `notify*`
+  return false).
+- **GuiContainer** (membership/z-order/input): add/remove set/clear the child parent + count;
+  add/remove `nullptr` throws `idlib::argument_null_error` (note: the header doc says
+  `invalid_argument_error` — **wrong**, the code throws `argument_null_error`);
+  `clearComponents()`/`setComponentList()` empty the list but **do NOT** null dropped children's
+  parent pointers (asymmetry vs `removeComponent`); `bringComponentToFront` and `Component::bringToFront`
+  move to the back of draw order; `destroy()` auto-removes from parent; **input propagation** iterates
+  reverse (last-added/top consumes first), skips `!isEnabled()` children, stops on first consumer,
+  returns false (visiting all) if none consume; **mouse** events are translated by the container's
+  **own** `getPosition()` and **compose per nesting level** (outer (10,20) → inner (5,5) → leaf sees
+  event − (15,25) cumulatively — the seam a nesting refactor is most likely to perturb, since a
+  top-level container alone cannot distinguish own- from derived-position); **keyboard/wheel** events
+  propagate reverse-order/first-consumer-wins but are **NOT** position-translated; `KeyboardKeyReleased`/
+  `KeyboardKeyTyped`/`MouseButtonClicked` are **not** among Container's five overrides, so they are
+  **not forwarded** to children (fall through to the false default); Container does **NO hit-testing**
+  (dispatches to enabled children regardless of bounds — a maintainer must not add a `contains()` gate).
+- **GuiLayout** (pure geometry): `LayoutColumns`/`LayoutRows` stack/arrange + wrap on overflow; empty
+  list is a no-op; **multi-wrap quirk pinned** — the column wrap resets x to a SINGLE
+  `leftTop.x()+horizontalIncrement` (not cumulative per column index), so on a second wrap the third
+  column overlaps the second (Layout.cpp:36; rows analogous at :81). Pinned as CURRENT behavior so a
+  future "fix" toward the documented cumulative formula is a conscious, test-updating change.
+
+**Engine-free by construction:** the tests never call `draw()`/`drawAll()` (the only paths that reach
+`activeUIManager()`, which throws with no UIManager installed); construction, geometry, state, membership,
+`notify*`, and layout are all engine-free. All instances are heap-allocated via `std::make_shared`
+(Component derives from `enable_shared_from_this`; `destroy()`/the `shared_ptr` cast call
+`shared_from_this()`). Positions are float-exact (`point_2s == Point2f`; idlib `single == float`), so the
+scout's proposed "integer-truncation" pin category was dropped as false.
+
+**Adversarial review (3 lenses — semantic accuracy / robustness / coverage gaps + synthesis): ship-as-is,
+zero must-fix.** All 33 initial assertions were independently re-derived from source and confirmed; no UB,
+tautology, or isolation issue. The four high-value should-fix coverage gaps it surfaced (nested own-vs-derived
+translation, keyboard/wheel propagation, the not-forwarded trio, the InputListener defaults) plus cheap
+high-value additions (no-hit-testing, `Component::bringToFront`, destroy-dominance, `setComponentList`
+stale-parent, the layout multi-wrap quirk) were folded in (33 → 44 tests).
+
+**Verification:** build 0; new tests 44/44; ctest -j20 **874/874** (830 prior + 44 new — note the current
+baseline is 874, not the docs' stale "828/830 with 2 ScriptLoaderFixture failures"; those two pass here);
+validator `test.mod` 0/0. No archive/DAG change (test-only), so no nm re-check needed. Menu smoke-run is not
+a usable gate in this sandbox (SDL_ttf fonts fail on pristine master too).
+
+**Next (Pass 2 of the program):** relocate the `GameState` base class to break the menu screens'
+vtable/typeinfo back-edges into the game-core remainder, then measure the most-isolated leaf screen's
+residual coupling — the first bounded seam-cut toward an eventual `egolib-gamestates` link-split (Front B,
+refuted as a direct move: GameStates measured at 63 back-edges, needs seam-cutting first).

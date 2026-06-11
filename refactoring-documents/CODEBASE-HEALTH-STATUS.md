@@ -9,7 +9,9 @@ Consolidated, current-state health snapshot of the Egoboo codebase. Supersedes a
 
 Snapshot date: 2026-06-10 (updated from the 2026-06-09, 2026-06-08, 2026-06-06, and 2026-04-20 baselines). This document is intentionally standalone — it does not cross-reference numbered passes beyond what is necessary to locate canonical plans, so it survives as a single health reference even if the individual pass documents move.
 
-**Latest (2026-06-11) — MeshLookupTables → foundation-base (DAG now fully acyclic):** resolved the last back-edge (`game/mesh_geometry.c` in base → `g_meshLookupTables` in physics). Root cause: the `MeshLookupTables` twist tables' only physics dependency was the gravity-derived `twist_vel` table — which is **dead** (written in the ctor, never read anywhere). Dropped `twist_vel` (and its `g_environment`/`PhysicalConstants` dependency), leaving pure base-layer geometry (`twist_nrm`/`twist_facing_x/y`/`twist_flat` via `twist_to_normal`/`vec_to_facing`), and relocated `MeshLookupTables.{hpp,cpp}` from `egolib-physics` to `egolib-foundation-base`. Layout: **base 142 / physics 5 / renderer 28 / gui 22 / library 116**. All five archives now verify **0 forbidden back-edges (ACYCLIC ✓)**. Gates green: build, `ar t`, per-archive nm acyclicity with positive controls, ctest -j20 830/830, validator `test.mod` 0/0.
+**Latest (2026-06-11) — GUI Component/Container characterization net (de-risk → carve GameStates, step 1):** added `egolib/tests/egolib/tests/GuiComponentBehavior.cpp` — **44 tests, test-only, zero production/CMake edits** — pinning the egolib-gui base classes (`Component`/`Container`/`LayoutColumns`/`LayoutRows`) that every widget and every `GameState` (`GameState : Container`) inherits. Covers geometry, the `isEnabled()` visibility gate, closed-interval `contains()`, derived-position chaining, `destroy()` dominance, container membership + the `clearComponents()` parent-dangling asymmetry, z-order, and especially **input propagation** (reverse-order/first-consumer-wins, disabled-skip, mouse position translated by each container's **own** position composing per nesting level, keyboard/wheel **not** translated, the not-forwarded `Released`/`Typed`/`Clicked` trio, no hit-testing). Engine-free (never calls `draw()`/`activeUIManager()`). Adversarially reviewed (3 lenses): ship-as-is, zero must-fix. This is the safety net for the next link-split (carving the GameStates/menu screens — Front B, currently blocked at 63 back-edges and needing seam-cutting first). Gates: build 0, ctest -j20 **874/874**, validator `test.mod` 0/0. Next: relocate the `GameState` base to break menu-screen vtable/typeinfo back-edges.
+
+**Previous (2026-06-11) — MeshLookupTables → foundation-base (DAG now fully acyclic):** resolved the last back-edge (`game/mesh_geometry.c` in base → `g_meshLookupTables` in physics). Root cause: the `MeshLookupTables` twist tables' only physics dependency was the gravity-derived `twist_vel` table — which is **dead** (written in the ctor, never read anywhere). Dropped `twist_vel` (and its `g_environment`/`PhysicalConstants` dependency), leaving pure base-layer geometry (`twist_nrm`/`twist_facing_x/y`/`twist_flat` via `twist_to_normal`/`vec_to_facing`), and relocated `MeshLookupTables.{hpp,cpp}` from `egolib-physics` to `egolib-foundation-base`. Layout: **base 142 / physics 5 / renderer 28 / gui 22 / library 116**. All five archives now verify **0 forbidden back-edges (ACYCLIC ✓)**. Gates green: build, `ar t`, per-archive nm acyclicity with positive controls, ctest -j20 830/830, validator `test.mod` 0/0.
 
 **Previous (2026-06-11) — egolib-gui carve (the fifth link-split) + DAG acyclicity repair:** extracted the generic GUI widget toolkit as a new **`egolib-gui`** STATIC archive (22 TUs: Component/Container/Layout/Material/InputListener/DrawingContext + the leaf widgets + UIManager + ScreenMessage), a cohesive middle layer ABOVE `egolib-renderer` and `egolib-foundation-base`, below `egolib-library`. Layout: **base 141 ◄ {physics 6, renderer 28 ◄ gui 22} ◄ library 116** (was 143/6/29/132). This is the first *cohesive* (non-grab-bag) carved layer — it carries no game-session/object-state dependency, reaching engine services through lower-layer `active*()` seams. Required three new seams: `Ego::activeRenderer()` + `Ego::activeGraphicsSystem()` (ownership-move keystones) and `Ego::GUI::activeUIManager()` + a `postScreenMessage` sink. **Also repaired the DAG:** fresh nm analysis found the documented "acyclic" invariant was *already violated* in the live tree (recent absorptions had not nm-verified) — base/renderer→library back-edges via `EngineContext::renderer()` in Font/TextureManager/Material/Component + 3 renderer TUs; the `activeRenderer` seam + the gui carve eliminated all of them. egolib-gui/renderer/physics now verify 0 forbidden back-edges. One pre-existing back-edge remains and is documented (`mesh_geometry.c`→`g_meshLookupTables`, base→physics). Gates green: build, exact `ar t`, per-archive nm acyclicity with positive controls, ctest -j20 830/830, validator `test.mod` 0/0. (Menu smoke unusable in this sandbox — fonts fail via SDL_ttf on pristine master too.)
 
@@ -39,13 +41,13 @@ Verified against the live tree on 2026-06-10. These are the single source of tru
 | ------ | ----: | ---- |
 | Active source files (egolib+egoboo, excl. tests) | **654** | `.c` 61 · `.cpp` 233 · `.h` 60 · `.hpp` 300 (incl. the lower-layer `egolib/Mesh/ITerrainQuery.hpp`) |
 | Active source lines (egolib+egoboo) | ~122,600 | — |
-| Test lines / ratio | ~21,500 / **~17.5%** | 43 test `.cpp` files, **830** ctest cases (incl. `AITerrainQueries.cpp`, `CombatDamageIntegration.cpp`, and `CollisionPipeline.cpp`) |
-| ctest result | **828 / 830** | the only 2 failures are the perennial `ScriptLoaderFixture` Missing/Invalid-PrimaryScript fallback cases |
-| Singleton `::get()` call sites (egolib) | **~666** | down from ~760 (2026-06-10 pre-mesh-cleanup) / ~863 (2026-06-08 pre-front) / ~912 (2026-06-06) / ~1,150 (2026-04-19) / 1,239 (baseline) |
+| Test lines / ratio | ~22,000 / **~17.7%** | 44 test `.cpp` files, **874** ctest cases (incl. `GuiComponentBehavior.cpp` (44), `AITerrainQueries.cpp`, `CombatDamageIntegration.cpp`, `CollisionPipeline.cpp`) |
+| ctest result | **874 / 874** | clean on this machine; the two historical `ScriptLoaderFixture` PrimaryScript-fallback cases now pass here |
+| Singleton `::get()` call sites (egolib) | **633** | of which `EngineContext::get()` 452 + `GameSessionContext::get()` 129 are the intentional seam calls; actionable direct singletons are now ≤8 each (InputSystem 8, GraphicsSystemNew 6, egoboo_config_t 6, …). Down from ~760 / ~863 / ~912 / ~1,150 / 1,239 (baseline) |
 | `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07); `IGraphicsSystem` widened (2026-06-10) |
 | `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
 | `Object` role interfaces | **18** | `Entities/I*.hpp` (19 `I*.hpp` files incl. the `IParticleHandler` *service* interface) |
-| Largest TU | `script_functions_systems.c` **3,206** | no other TU exceeds ~1,700 |
+| Largest TU | `vfs.c` **1,920** | `script_functions_systems.c` (the former 3,206-line largest) was decomposed; no TU now exceeds ~1,920 |
 | `Object.hpp` | **1,616** lines | monolithic by interface |
 | `vfs.c` | **1,921** lines | was 2,456 before T3.6 |
 | `shared_ptr` occurrences | ~1,200 | `unique_ptr` ~52, `weak_ptr` ~26 |
@@ -135,24 +137,20 @@ Pure physics/collision math (intersection, swept bounds, collision normals, oct-
 
 ### Files over 1,000 lines (active tree)
 
-Fourteen files remain over the 1k-line threshold. `script_functions.c` (8,183 lines) and `Object.cpp` (3,201 lines) have been split. `Object.hpp` is the surviving "large header." `script_functions_systems.c` has grown to become the largest TU in the tree as role-extraction helpers have been moved in. `vfs.c` dropped from 2,456 to 1,922 lines (~22%) when its dead cstdio backend was eliminated (2026-06-07, three passes — see `71-completed-passes-log.md`).
+**Ten** files remain over the 1k-line threshold (down from fourteen — `script_functions_systems.c`, formerly the 3,206-line largest TU, has been decomposed, as have `script_functions_target.c` and `script_functions_state.c` shedding lines into new `script_functions_{quests,commerce}.c` siblings). `script_functions.c` (8,183) and `Object.cpp` (3,201) were split earlier. `Object.hpp` is the surviving "large header." `vfs.c` (now the largest TU at 1,920) dropped from 2,456 (~22%) when its dead cstdio backend was eliminated (2026-06-07).
 
 | File                                              |  Lines | Role                                       |
 | ------------------------------------------------- | -----: | ------------------------------------------ |
-| `game/script_functions_systems.c`                 |  3,206 | Script dispatch — systems (largest TU)     |
-| `egolib/vfs.c`                                    |  1,922 | Virtual file system (PHYSFS-only since the cstdio-backend elimination) |
-| `game/script_functions_target.c`                  |  1,676 | Script dispatch — target                   |
-| `Entities/Object.hpp`                             |  1,617 | Core entity — still monolithic by interface |
+| `egolib/vfs.c`                                    |  1,920 | Virtual file system — largest TU (PHYSFS-only since the cstdio-backend elimination) |
+| `Entities/Object.hpp`                             |  1,613 | Core entity — still monolithic by interface |
 | `game/script_functions_spawn.c`                   |  1,576 | Script dispatch — spawn                    |
-| `game/Physics/particle_collision.c`               |  1,525 | Particle collision                         |
-| `game/Graphics/ObjectGraphics.cpp`                |  1,487 | Object rendering                           |
-| `game/script_functions_state.c`                   |  1,478 | Script dispatch — state                    |
-| `game/mesh.c`                                     |  1,370 | Mesh management                            |
-| `Script/script.c`                                 |  1,371 | Script runtime                             |
-| `fileutil.c`                                      |  1,327 | File utilities                             |
-| `game/script_compile.c`                           |  1,148 | Script compiler                            |
-| `game/script_functions_action.c`                  |  1,100 | Script dispatch — action                   |
-| `game/Physics/ObjectPhysics.cpp`                  |  1,109 | Object physics                             |
+| `game/Physics/particle_collision.c`               |  1,528 | Particle collision                         |
+| `game/Graphics/ObjectGraphics.cpp`                |  1,488 | Object rendering                           |
+| `Script/script.c`                                 |  1,369 | Script runtime                             |
+| `game/script_compile.c`                           |  1,151 | Script compiler                            |
+| `game/Physics/ObjectPhysics.cpp`                  |  1,138 | Object physics                             |
+| `game/script_functions_action.c`                  |  1,101 | Script dispatch — action                   |
+| `game/script_functions_target.c`                  |  1,044 | Script dispatch — target                   |
 
 The split script-dispatch TUs have continued to grow as helpers have been moved in from `Object` and friends rather than authored from scratch — a consequence of role extraction, not a regression. No individual file exceeds 3,300 lines.
 
