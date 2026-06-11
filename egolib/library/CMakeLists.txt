@@ -509,6 +509,8 @@ set(EGOLIB_TOPLEVEL_SOURCES
 
 # -- game/Core ---------------------------------------------------------------
 set(EGOLIB_GAME_CORE_SOURCES
+    src/egolib/game/Core/ActiveGameEngine.cpp
+    src/egolib/game/Core/ActiveGameEngine.hpp
     src/egolib/game/Core/ContentRuntimeBootstrap.cpp
     src/egolib/game/Core/ContentRuntimeBootstrap.hpp
     src/egolib/game/Core/EngineContext.cpp

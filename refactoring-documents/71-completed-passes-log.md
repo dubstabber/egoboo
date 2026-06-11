@@ -1740,3 +1740,131 @@ Closed the last back-edge the gui-carve pass left. Investigation showed `MeshLoo
 So instead of a data-split: dropped the dead `twist_vel` field + its computation (and the `PhysicalConstants` include), then relocated `MeshLookupTables.{hpp,cpp}` from `EGOLIB_PHYSICS_SOURCES` to `EGOLIB_FOUNDATION_BASE_SOURCES` (a pure CMake move once the dependency was gone). `mesh_geometry.c` (base) → `g_meshLookupTables` is now intra-base; the physics/graphics consumers (`ObjectPhysics`/`ParticlePhysics`/`Module_spawn`/`RenderPasses`) read it downward. Layout: **base 142 / physics 5 / renderer 28 / gui 22 / library 116**.
 
 All five archives now verify **0 forbidden back-edges (ACYCLIC ✓)** — the first fully-clean state since the multi-archive split began. Behavior-identical (twist_vel was unused dead data). Gates: build, exact `ar t`, per-archive nm acyclicity with positive controls, ctest -j20 830/830, validator `test.mod` 0/0.
+
+---
+
+## GUI Component/Container characterization net (2026-06-11, branch master — uncommitted)
+
+The first step of the maintainer-chosen **"de-risk → carve GameStates"** program: lay a behavioral
+characterization net over the egolib-gui base classes BEFORE the next link-split (carving the
+GameStates/menu screens, which derive from `Container`). A scout-next-heavy-front workflow (8 fronts,
+adversarially verified) found the safe move-only modularization vein exhausted and ranked this the
+highest-value sandbox-verifiable bounded front: it pins the base-class pair every widget (~30 GUI TUs)
+and every `GameState` (`GameState : Container`) inherits, so the egolib-gui layer and the eventual
+GameStates carve can be refactored without silently changing geometry, hit-testing, z-order, state
+gating, or input propagation.
+
+**New TU (test-only, zero production/CMake edits — auto-globbed by `GLOB_RECURSE CONFIGURE_DEPENDS`):**
+`egolib/tests/egolib/tests/GuiComponentBehavior.cpp` — **44 tests** across three suites:
+
+- **GuiComponent** (geometry/state/lifecycle): default bounds (0,0)-(32,32); `setPosition`/`setX`/`setY`
+  translate keeping size; `setSize`/`setWidth`/`setHeight` keep the min corner; `setCenterPosition`
+  (both axes + `onlyHorizontal`); `contains()` is **closed on both bounds** (min & max corners
+  inclusive, per idlib `is_enclosing`); the `isEnabled() = _enabled && !_destroyed && _visible`
+  gate (hiding also disables; disabling does not hide); `destroy()` forces enabled/visible false and
+  **dominates** later `setEnabled(true)`/`setVisible(true)`; derived-position/bounds accumulation
+  through a 2-level parent chain (`getDerivedBounds` translates own bounds by the **parent's** derived
+  position); `bringToFront()` no-ops without a parent; the `InputListener` defaults (all `notify*`
+  return false).
+- **GuiContainer** (membership/z-order/input): add/remove set/clear the child parent + count;
+  add/remove `nullptr` throws `idlib::argument_null_error` (note: the header doc says
+  `invalid_argument_error` — **wrong**, the code throws `argument_null_error`);
+  `clearComponents()`/`setComponentList()` empty the list but **do NOT** null dropped children's
+  parent pointers (asymmetry vs `removeComponent`); `bringComponentToFront` and `Component::bringToFront`
+  move to the back of draw order; `destroy()` auto-removes from parent; **input propagation** iterates
+  reverse (last-added/top consumes first), skips `!isEnabled()` children, stops on first consumer,
+  returns false (visiting all) if none consume; **mouse** events are translated by the container's
+  **own** `getPosition()` and **compose per nesting level** (outer (10,20) → inner (5,5) → leaf sees
+  event − (15,25) cumulatively — the seam a nesting refactor is most likely to perturb, since a
+  top-level container alone cannot distinguish own- from derived-position); **keyboard/wheel** events
+  propagate reverse-order/first-consumer-wins but are **NOT** position-translated; `KeyboardKeyReleased`/
+  `KeyboardKeyTyped`/`MouseButtonClicked` are **not** among Container's five overrides, so they are
+  **not forwarded** to children (fall through to the false default); Container does **NO hit-testing**
+  (dispatches to enabled children regardless of bounds — a maintainer must not add a `contains()` gate).
+- **GuiLayout** (pure geometry): `LayoutColumns`/`LayoutRows` stack/arrange + wrap on overflow; empty
+  list is a no-op; **multi-wrap quirk pinned** — the column wrap resets x to a SINGLE
+  `leftTop.x()+horizontalIncrement` (not cumulative per column index), so on a second wrap the third
+  column overlaps the second (Layout.cpp:36; rows analogous at :81). Pinned as CURRENT behavior so a
+  future "fix" toward the documented cumulative formula is a conscious, test-updating change.
+
+**Engine-free by construction:** the tests never call `draw()`/`drawAll()` (the only paths that reach
+`activeUIManager()`, which throws with no UIManager installed); construction, geometry, state, membership,
+`notify*`, and layout are all engine-free. All instances are heap-allocated via `std::make_shared`
+(Component derives from `enable_shared_from_this`; `destroy()`/the `shared_ptr` cast call
+`shared_from_this()`). Positions are float-exact (`point_2s == Point2f`; idlib `single == float`), so the
+scout's proposed "integer-truncation" pin category was dropped as false.
+
+**Adversarial review (3 lenses — semantic accuracy / robustness / coverage gaps + synthesis): ship-as-is,
+zero must-fix.** All 33 initial assertions were independently re-derived from source and confirmed; no UB,
+tautology, or isolation issue. The four high-value should-fix coverage gaps it surfaced (nested own-vs-derived
+translation, keyboard/wheel propagation, the not-forwarded trio, the InputListener defaults) plus cheap
+high-value additions (no-hit-testing, `Component::bringToFront`, destroy-dominance, `setComponentList`
+stale-parent, the layout multi-wrap quirk) were folded in (33 → 44 tests).
+
+**Verification:** build 0; new tests 44/44; ctest -j20 **874/874** (830 prior + 44 new — note the current
+baseline is 874, not the docs' stale "828/830 with 2 ScriptLoaderFixture failures"; those two pass here);
+validator `test.mod` 0/0. No archive/DAG change (test-only), so no nm re-check needed. Menu smoke-run is not
+a usable gate in this sandbox (SDL_ttf fonts fail on pristine master too).
+
+**Next (Pass 2 of the program):** relocate the `GameState` base class to break the menu screens'
+vtable/typeinfo back-edges into the game-core remainder, then measure the most-isolated leaf screen's
+residual coupling — the first bounded seam-cut toward an eventual `egolib-gamestates` link-split (Front B,
+refuted as a direct move: GameStates measured at 63 back-edges, needs seam-cutting first).
+
+---
+
+## Pass 2: GameState base seam-cut — activeGameEngine() ownership-move seam (2026-06-11, branch refactor/gamestates-decoupling)
+
+Step 2 of the "de-risk → carve GameStates" program: **free the `GameState` base class of its only
+game-core coupling**, making it relocatable toward an eventual `egolib-gamestates` archive. A
+plan-gamestate-seam workflow (measure + design + adversarial-refute across 9 break-vectors) confirmed the
+bounded scope and the install point before any edit.
+
+**Measured starting point (nm on the live `egolib-library.a`):** `GameState.hpp` was *already* lower-layer
+clean (includes only `GUI/Container.hpp` — in egolib-gui — and forward-declares `class GameEngine;`). The
+**only** game-core coupling was in `GameState.cpp`: `engine()` did `return EngineContext::get().engine();`,
+giving `GameState.cpp.o` exactly two game-core undefined symbols — `EngineContext::get()` and
+`EngineContext::engine()`.
+
+**The seam-cut (the proven ownership-move keystone pattern — mirrors `Ego::activeRenderer` /
+`activeGraphicsSystem` / `Ego::GUI::activeUIManager`):**
+
+- New `egolib/game/Core/ActiveGameEngine.{hpp,cpp}` — **global-namespace** (because `GameEngine` is a
+  global-namespace class, unlike the `Ego::`-namespaced renderer/graphics seams) free functions
+  `installActiveGameEngine(GameEngine&)` / `clearActiveGameEngine()` / `tryActiveGameEngine()` /
+  `activeGameEngine()` over an anonymous-namespace `g_activeGameEngine` pointer. The header keeps to a
+  `class GameEngine;` forward decl and pulls in **no** game-core header (so it is includable from a future
+  lower-layer `GameState`); the `.cpp` includes only its own header + `<stdexcept>` (the accessor returns a
+  reference and never dereferences `GameEngine`, so the forward decl suffices, exactly like `ActiveRenderer.cpp`).
+- **Install point = `EngineContext::setEngine` / `clearEngine`** (NOT `GameEngine::initialize`/`uninitialize`).
+  This is load-bearing: the script/engine **test fixtures publish the engine ONLY via `EngineContext::setEngine()`**
+  (never `GameEngine::initialize()`), and `EngineContext` *owns* the `GameEngine` (`activeEngine` unique_ptr),
+  so `setEngine` is the true install moment. Installed **after** both `setEngine` guards (null + double-install),
+  so the throw paths never reach the install; cleared **before** `activeEngine.reset()`, so the seam never
+  points at a destroyed object.
+- `GameState.cpp` now `#include`s `ActiveGameEngine.hpp` instead of `EngineContext.hpp`, and both `engine()`
+  overloads `return activeGameEngine();` (binding the non-const seam return to the const overload's
+  `const GameEngine&` is a legal implicit const-add — identical to the prior `EngineContext::get().engine()`).
+- `ActiveGameEngine.{cpp,hpp}` added to `EGOLIB_GAME_CORE_SOURCES` — they stay in **egolib-library** this
+  pass, so the build/link/topology is neutral (the seam is defined and consumed entirely within the top
+  archive). A new `EngineContextFixture.SetEnginePublishesActiveGameEngineSeam` test locks the
+  install/clear lifecycle + reference identity (`&activeGameEngine() == context.tryEngine()`).
+
+**Result:** `GameState.cpp.o` now has **zero** game-core (`EngineContext`) undefined symbols — its only
+engine reference is `activeGameEngine()`, defined (`T`) in `ActiveGameEngine.cpp.o` in the same archive. The
+`GameState` base is now relocatable; this is the keystone that unblocks the (deferred) GameStates carve.
+
+**Verification:** build 0; nm proof (`GameState.cpp.o` shows no `EngineContext`, only `U activeGameEngine()`);
+ctest -j20 **875/875** (874 + the new seam test — incl. the `ScopedPlayingStateHarness` / screenshot-hotkey
+fixtures that exercise `GameState::engine()` in the real engine-using paths, confirming behavior identity);
+validator `test.mod` 0/0; DAG sanity (no lower-layer archive references the seam — topology-neutral, still
+acyclic). Behavior-identical (the seam resolves to the same `GameEngine`).
+
+**Deferred (per the plan + the topological-shape caveat):** the actual `egolib-gamestates` archive carve —
+even with the base freed, only 4 small leaf screens (`DebugFontRenderingState`, `InputOptionsScreen`,
+`LoadPlayerElement`, `OptionsConfigActions`) become nm-clean, too small a cohort to justify a new archive +
+its CMake/DAG surface, and GameStates is topologically near the *top* of the call graph (orchestrates; little
+calls it) — the wrong shape for a below-remainder layer. **Next (Pass 3 candidate):** enlarge the clean
+cohort by seaming the LIGHT 2–4-`EngineContext` screens (`AudioOptionsScreen`, `MainMenuState`,
+`OptionsScreen`, `Select{Character,Module,Players}State`, `VideoOptionsScreen`, `MapEditorSelectModuleState`)
+onto the existing `active*()` seams, then reassess whether the cohort is large enough to be worth a layer.
