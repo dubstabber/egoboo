@@ -49,7 +49,7 @@ Verified against the live tree on 2026-06-10. These are the single source of tru
 | `EngineContext` service seams | **15** install seams (~16 services) | incl. `CameraSystem` (2026-06-07); `IGraphicsSystem` widened (2026-06-10) |
 | `game/Core/EngineContext.hpp` includers | 92 total, **8** non-game leaf | down from 117 / 33 (2026-06-08 service-hub front) and 51 before T3.7 |
 | `Object` role interfaces | **18** | `Entities/I*.hpp` (19 `I*.hpp` files incl. the `IParticleHandler` *service* interface) |
-| Largest TU | `vfs.c` **1,920** | `script_functions_systems.c` (the former 3,206-line largest) was decomposed; no TU now exceeds ~1,920 |
+| Largest TU | `Entities/Object.hpp` **1,613** | `vfs.c` dropped to 1,500 (RWops→`vfs_rwops.c`, mount→`vfs_mount.c`); `script_functions_systems.c` (former 3,206-line largest) was decomposed |
 | `Object.hpp` | **1,616** lines | monolithic by interface |
 | `vfs.c` | **1,921** lines | was 2,456 before T3.6 |
 | `shared_ptr` occurrences | ~1,200 | `unique_ptr` ~52, `weak_ptr` ~26 |
@@ -139,14 +139,14 @@ Pure physics/collision math (intersection, swept bounds, collision normals, oct-
 
 ### Files over 1,000 lines (active tree)
 
-**Ten** files remain over the 1k-line threshold (down from fourteen — `script_functions_systems.c`, formerly the 3,206-line largest TU, has been decomposed, as have `script_functions_target.c` and `script_functions_state.c` shedding lines into new `script_functions_{quests,commerce}.c` siblings). `script_functions.c` (8,183) and `Object.cpp` (3,201) were split earlier. `Object.hpp` is the surviving "large header." `vfs.c` (now the largest TU at 1,920) dropped from 2,456 (~22%) when its dead cstdio backend was eliminated (2026-06-07).
+**Ten** files remain over the 1k-line threshold (down from fourteen — `script_functions_systems.c`, formerly the 3,206-line largest TU, has been decomposed, as have `script_functions_target.c` and `script_functions_state.c` shedding lines into new `script_functions_{quests,commerce}.c` siblings). `script_functions.c` (8,183) and `Object.cpp` (3,201) were split earlier. `Object.hpp` is now the largest TU (surviving "large header"); `vfs.c` (the former largest) dropped from 2,456 → 1,500 across the cstdio-backend elimination (2026-06-07) and the SDL_RWops + mount-management splits (2026-06-11).
 
 | File                                              |  Lines | Role                                       |
 | ------------------------------------------------- | -----: | ------------------------------------------ |
-| `egolib/vfs.c`                                    |  1,920 | Virtual file system — largest TU (PHYSFS-only since the cstdio-backend elimination) |
-| `Entities/Object.hpp`                             |  1,613 | Core entity — still monolithic by interface |
+| `Entities/Object.hpp`                             |  1,613 | Core entity — largest TU; still monolithic by interface |
 | `game/script_functions_spawn.c`                   |  1,576 | Script dispatch — spawn                    |
 | `game/Physics/particle_collision.c`               |  1,528 | Particle collision                         |
+| `egolib/vfs.c`                                    |  1,500 | Virtual file system (PHYSFS-only; SDL_RWops→`vfs_rwops.c`, mount mgmt→`vfs_mount.c`) |
 | `game/Graphics/ObjectGraphics.cpp`                |  1,488 | Object rendering                           |
 | `Script/script.c`                                 |  1,369 | Script runtime                             |
 | `game/script_compile.c`                           |  1,151 | Script compiler                            |

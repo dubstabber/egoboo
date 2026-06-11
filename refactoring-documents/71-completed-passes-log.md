@@ -1868,3 +1868,77 @@ calls it) — the wrong shape for a below-remainder layer. **Next (Pass 3 candid
 cohort by seaming the LIGHT 2–4-`EngineContext` screens (`AudioOptionsScreen`, `MainMenuState`,
 `OptionsScreen`, `Select{Character,Module,Players}State`, `VideoOptionsScreen`, `MapEditorSelectModuleState`)
 onto the existing `active*()` seams, then reassess whether the cohort is large enough to be worth a layer.
+
+---
+
+## vfs.c split — Pass A: extract the SDL_RWops adapter (2026-06-11, branch refactor/vfs-split)
+
+First (lowest-risk) slice of splitting `vfs.c` (the largest TU, 1,920 lines) along its four
+mutually-independent clusters, picked by a scout-next-heavy-front workflow as the cleanest available
+file-split. The SDL_RWops adapter is a self-contained island: it wraps a `vfs_FILE` as an `SDL_RWops`
+for SDL loaders, touches **no** VFS mount state, and uses `vfs_FILE` only opaquely through the public
+`vfs.h` API — so it needs no VFS-internal header (the scout's proposed premature `vfs_internal.h`
+scaffolding was correctly dropped per the adversarial verifier).
+
+**Change:** moved the 10 RWops functions (6 static helpers `vfs_rwops_{size,seek,read,write,close,create}`
++ the 4 public `vfs_openRWops{,Read,Write,Append}` declared in `vfs.h`) out of `vfs.c` into a new sibling
+`egolib/vfs_rwops.c`. The new TU includes `egolib/vfs.h` (for `vfs_FILE`, the public `vfs_*` API, and the
+`struct SDL_RWops;` forward decl) plus **`<SDL.h>`** for the full `SDL_RWops` definition it dereferences
+(`vfs.h` only forward-declares it — the verifier's key catch), `<cstdlib>` (malloc/free), `<cstdio>`
+(`SEEK_*`). Registered `vfs_rwops.c` in BOTH `EGOLIB_VFS_SOURCES` (compilation) and
+`EGOLIB_FOUNDATION_BASE_SOURCES` (membership), keeping it in `egolib-foundation-base`.
+
+**Result:** `vfs.c` 1,920 → 1,786 lines (−134). Topology-neutral — `vfs_rwops.c.o` builds into
+`egolib-foundation-base` and its only undefined symbols are `vfs_*` (defined in `vfs.c`, same archive) +
+SDL/libstdc++/libc (lower/external); zero upward edge, DAG still acyclic.
+
+**Verification:** build 0; nm (vfs_rwops.o defines the 4 public `vfs_openRWops*`, no upward undefined
+symbols); ctest -j20 **875/875**; validator `test.mod` 0/0. Behavior-identical (pure code move).
+
+**Next slices (deferred):** the mount-management cluster (`vfs_add_mount_point`/`remove` +
+`_vfs_mount_info_*` + the shared `_vfs_mount_infos`/`_vfs_initialized`/`_vfs_atexit_registered` statics →
+`vfs_mount.c`) — the only cluster touching the shared mutable mount state, so it needs a narrow
+`extern`-ing seam (a private internal header) and is higher-risk; and the `SearchContext` class →
+`vfs_search.c`.
+
+---
+
+## vfs.c split — Pass B: extract the mount-point management cluster (2026-06-11, branch refactor/vfs-split)
+
+Second slice of the `vfs.c` split. The mount-info cluster owns the mount registry and the add/remove/query
+functions; careful nm + call-graph measurement (NOT the scout's first estimate) showed the true seam:
+
+- **Only `_vfs_mount_infos`** (the registry) and the `vfs_path_data_t` record are mount-cluster-private —
+  used nowhere else — so both move to the new TU. (The other two statics the scout named,
+  `_vfs_initialized` / `_vfs_atexit_registered`, are **init-cluster** state, staying in `vfs.c`.)
+- The mount functions guard with `BAIL_IF_NOT_INIT()`, which reads `_vfs_initialized` (owned by `vfs.c`),
+  and `vfs.c`'s path normalization (one call site) still calls `_vfs_mount_info_search`. So the narrow
+  cross-TU seam is exactly: `extern _vfs_initialized` + the `BAIL_IF_NOT_INIT` macro + the
+  `_vfs_mount_info_search` declaration — placed in a new **`egolib/vfs_internal.h`** (named to avoid
+  colliding with the unrelated `egolib/VFS/internal.hpp`, which holds idlib path-parsing internals — the
+  collision the adversarial verifier flagged).
+
+**Change:** moved `vfs_add_mount_point`, `vfs_remove_mount_point`, `vfs_mount_info_strip_path`,
+`_vfs_mount_info_search` (now non-static, header-declared), and the static helpers
+`_vfs_mount_info_{matches×2,add,remove}` — plus the `s_vfs_path_data`/`vfs_path_data_t` struct and the
+`_vfs_mount_infos` vector — out of `vfs.c` into a new sibling `egolib/vfs_mount.c`. `_vfs_initialized`
+became a non-static definition in `vfs.c` (extern-declared in `vfs_internal.h`); the `BAIL_IF_NOT_INIT`
+macro moved to `vfs_internal.h` (used 53× across `vfs.c` + the mount TU). `vfs.c` includes
+`vfs_internal.h`. The cluster is non-contiguous in `vfs.c` (the `SearchContext::hasData/getData` methods sit
+between the two mount blocks and stay), so the removal was done by a boundary-asserted scripted rewrite, not
+a line-range truncation. Registered `vfs_mount.c` + `vfs_internal.h` in both CMake blocks, keeping them in
+`egolib-foundation-base`.
+
+**Result:** `vfs.c` 1,786 → 1,500 lines (−286); it is **no longer the largest TU** (`Object.hpp` at 1,613
+now is). Topology-neutral — `vfs_mount.c.o` builds into `egolib-foundation-base`; its only undefined symbols
+are `vfs_*`/PHYSFS/idlib/std/libc (no upward edge), and `vfs.c.o` resolves `_vfs_mount_info_search` within
+the same archive.
+
+**Verification:** build 0; nm (vfs_mount.o defines the mount API + the seam, no upward edges; vfs.c.o has
+`_vfs_initialized` defined + `_vfs_mount_info_search` undefined-resolved-in-base); ctest -j20 **875/875**
+(incl. `ModuleLoadSmoke`/`ImportWorkflow` mount paths; the content-validator itself mounts
+`mp_data`/`mp_objects`, clean 0/0); validator `test.mod` 0/0. Behavior-identical (pure code move + a
+narrow init-flag/macro seam).
+
+**Next slice (deferred):** the `SearchContext` class (file enumeration; spans `vfs.c` ~978–1198 + the
+`hasData`/`getData` pair) → `vfs_search.c` — also non-contiguous.
