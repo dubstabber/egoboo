@@ -1193,10 +1193,35 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/Script/ScriptSystemAdapter.cpp
 )
 
+# The egolib-hud-widgets layer: the game-coupled in-game HUD widgets (the character status bar,
+# character info / level-up windows, the inventory slot, the minimap, and the module selector).
+# Unlike the generic egolib-gui toolkit (Component/Container/leaf widgets), these reach DOWN into
+# game-core (Object/Module/Player — 43 forward edges), so they sit ABOVE egolib-library. They are a
+# MIDDLE upper layer: BELOW both egolib-scriptvm (script_functions_quests reveals the minimap) and
+# egolib-gamestates (PlayingState owns the HUD), which therefore both link this archive. The single
+# library -> HUD reverse edge (MiniMap::setShowPlayerPosition, from the AI minimap-reveal in
+# Object_update/game_loop) was seam-cut via IPlayingStateController::setMiniMapShowPlayerPosition.
+# nm-verified: egolib-library has zero references into this layer; this layer has zero into
+# scriptvm/gamestates.
+set(EGOLIB_HUD_WIDGETS_LAYER_SOURCES
+    src/egolib/game/GUI/CharacterStatus.cpp
+    src/egolib/game/GUI/CharacterStatus.hpp
+    src/egolib/game/GUI/CharacterWindow.cpp
+    src/egolib/game/GUI/CharacterWindow.hpp
+    src/egolib/game/GUI/InventorySlot.cpp
+    src/egolib/game/GUI/InventorySlot.hpp
+    src/egolib/game/GUI/LevelUpWindow.cpp
+    src/egolib/game/GUI/LevelUpWindow.hpp
+    src/egolib/game/GUI/MiniMap.cpp
+    src/egolib/game/GUI/MiniMap.hpp
+    src/egolib/game/GUI/ModuleSelector.cpp
+    src/egolib/game/GUI/ModuleSelector.hpp
+)
+
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
-# egolib-gamestates and egolib-scriptvm are carved out too, but they sit ABOVE egolib-library (they
-# link egolib-library), so their sources leave the egolib-library archive and form upper-layer targets.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
+# egolib-gamestates, egolib-scriptvm and egolib-hud-widgets are carved out too, but they sit ABOVE
+# egolib-library (they link it), so their sources leave the egolib-library archive and form upper layers.
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES} ${EGOLIB_HUD_WIDGETS_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
@@ -1230,16 +1255,26 @@ add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
+# egolib-hud-widgets: the game-coupled in-game HUD widgets — a MIDDLE upper layer ABOVE egolib-library
+# and BELOW both egolib-scriptvm and egolib-gamestates (which therefore both link it). It links
+# egolib-library (43 forward edges into game-core) and, transitively, the lower layers. The lone
+# library -> HUD reverse edge was seam-cut via IPlayingStateController::setMiniMapShowPlayerPosition.
+# cartman and the content-validator use no in-game HUD and stay on egolib-library.
+add_library(egolib-hud-widgets STATIC ${EGOLIB_HUD_WIDGETS_LAYER_SOURCES})
+target_include_directories(egolib-hud-widgets INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
 # egolib-scriptvm: the EgoScript VM — an upper layer ABOVE egolib-library and a SIBLING of
 # egolib-gamestates (zero link edges to/from gamestates in either direction). It links egolib-library
-# (its 85 forward edges into game-core) and, transitively, the lower layers. Consumers that actually
-# drive the VM — egoboo (Main.cpp installs the adapter) and the test executable (its global
-# environment installs it; ScriptRuntime.cpp calls scr_* directly) — link egolib-scriptvm alongside
-# egolib-gamestates. cartman and the content-validator use no VM path and stay on egolib-library.
-# nm-verified acyclic: egolib-library has zero references into this layer.
+# (its 85 forward edges into game-core) and egolib-hud-widgets (script_functions_quests reveals the
+# minimap), and transitively the lower layers. Consumers that actually drive the VM — egoboo (Main.cpp
+# installs the adapter) and the test executable (its global environment installs it; ScriptRuntime.cpp
+# calls scr_* directly) — link egolib-scriptvm alongside egolib-gamestates. cartman and the
+# content-validator use no VM path and stay on egolib-library. nm-verified acyclic: egolib-library has
+# zero references into this layer.
 add_library(egolib-scriptvm STATIC ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
 target_include_directories(egolib-scriptvm INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-scriptvm egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-scriptvm egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
 # egolib-gamestates: the concrete GameState screens — the one layer ABOVE egolib-library. It links
 # egolib-library (and, transitively, the lower layers). Consumers (egoboo, the test executable,
@@ -1247,10 +1282,11 @@ target_link_libraries(egolib-scriptvm egolib-library egolib-gui egolib-physics e
 # egolib-library has zero references into this layer.
 add_library(egolib-gamestates STATIC ${EGOLIB_GAMESTATES_LAYER_SOURCES})
 target_include_directories(egolib-gamestates INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-gamestates egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-gamestates egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
+    target_link_libraries(egolib-hud-widgets Shlwapi.lib)
     target_link_libraries(egolib-scriptvm Shlwapi.lib)
     target_link_libraries(egolib-gamestates Shlwapi.lib)
     target_link_libraries(egolib-physics Shlwapi.lib)
@@ -1259,6 +1295,7 @@ if (WIN32)
     target_link_libraries(egolib-foundation-base Shlwapi.lib)
   else()
     target_link_libraries(egolib-library shlwapi)
+    target_link_libraries(egolib-hud-widgets shlwapi)
     target_link_libraries(egolib-scriptvm shlwapi)
     target_link_libraries(egolib-gamestates shlwapi)
     target_link_libraries(egolib-physics shlwapi)
