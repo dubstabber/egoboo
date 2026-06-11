@@ -1221,10 +1221,56 @@ set(EGOLIB_HUD_WIDGETS_LAYER_SOURCES
     src/egolib/game/GUI/ModuleSelector.hpp
 )
 
+# The egolib-game-graphics layer: the 3D scene-rendering infrastructure — the GFX/GameAppImpl
+# construction (graphic_init.cpp), the CameraSystem, the BillboardSystem, the TextureAtlasManager
+# and the 11 concrete RenderPasses. It sits ABOVE egolib-library (it reaches DOWN into game-core:
+# EntityList/TileList/ObjectGraphics/ParticleGraphics/mesh/objects, which STAY in egolib-library)
+# and BELOW egolib-hud-widgets (MiniMap projects through the Camera). The 15 former library->cluster
+# reverse edges were seam-cut by relocating the construction bodies here and routing the bootstrap
+# through Ego::Graphics::runGraphicsBootstrap* (the GraphicsBootstrap holder stays in egolib-library).
+# Camera/CameraSystem methods reached from egolib-library go through the ICameraSystem/IGFX
+# interfaces (foundation-base), so no concrete cluster symbol is referenced by the library remainder.
+# cartman and the content-validator drive no 3D scene render and stay on egolib-library only.
+set(EGOLIB_GAME_GRAPHICS_LAYER_SOURCES
+    src/egolib/game/Graphics/graphic_init.cpp
+    src/egolib/game/Graphics/BillboardSystem.cpp
+    src/egolib/game/Graphics/BillboardSystem.hpp
+    src/egolib/game/Graphics/Camera.cpp
+    src/egolib/game/Graphics/Camera.hpp
+    src/egolib/game/Graphics/CameraSystem.cpp
+    src/egolib/game/Graphics/CameraSystem.hpp
+    src/egolib/game/Graphics/RenderPasses.cpp
+    src/egolib/game/Graphics/RenderPasses.hpp
+    src/egolib/game/Graphics/TextureAtlasManager.cpp
+    src/egolib/game/Graphics/TextureAtlasManager.hpp
+    src/egolib/game/Graphics/RenderPasses/BackgroundRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/BackgroundRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/ForegroundRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/HeightmapRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/HeightmapRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/NonOpaqueEntitiesRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/NonOpaqueEntitiesRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/NonReflectiveTilesRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/NonReflectiveTilesRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/ReflectiveTilesFirstRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/ReflectiveTilesFirstRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.hpp
+    src/egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.cpp
+    src/egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp
+)
+
 # Carve the lower layers out of the monolithic accumulation; whatever remains is egolib-library.
 # egolib-gamestates, egolib-scriptvm and egolib-hud-widgets are carved out too, but they sit ABOVE
 # egolib-library (they link it), so their sources leave the egolib-library archive and form upper layers.
-list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES} ${EGOLIB_HUD_WIDGETS_LAYER_SOURCES})
+list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAME_GRAPHICS_LAYER_SOURCES} ${EGOLIB_GAMESTATES_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES} ${EGOLIB_HUD_WIDGETS_LAYER_SOURCES})
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
@@ -1258,6 +1304,19 @@ add_library(egolib-library STATIC ${SOURCE_FILES})
 target_include_directories(egolib-library INTERFACE "${PROJECT_SOURCE_DIR}/src/")
 target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
+# egolib-game-graphics: the 3D scene-rendering layer (cameras, billboards, texture atlas, the 11
+# concrete RenderPasses + the GFX/GameAppImpl construction in graphic_init.cpp). The 9th archive.
+# ABOVE egolib-library (it links it and reaches DOWN into game-core) and BELOW egolib-hud-widgets
+# (and thus scriptvm/gamestates), which therefore link it transitively. The 15 former
+# library->cluster reverse edges were seam-cut via the GraphicsBootstrap hook (held in
+# egolib-library) + the relocate-down of the construction bodies into this layer. nm-verified:
+# egolib-library has zero references into this layer; this layer has zero references into
+# hud-widgets/scriptvm/gamestates. cartman + content-validator render no scene and stay on
+# egolib-library only.
+add_library(egolib-game-graphics STATIC ${EGOLIB_GAME_GRAPHICS_LAYER_SOURCES})
+target_include_directories(egolib-game-graphics INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_link_libraries(egolib-game-graphics egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+
 # egolib-hud-widgets: the game-coupled in-game HUD widgets — a MIDDLE upper layer ABOVE egolib-library
 # and BELOW both egolib-scriptvm and egolib-gamestates (which therefore both link it). It links
 # egolib-library (43 forward edges into game-core) and, transitively, the lower layers. The lone
@@ -1265,7 +1324,7 @@ target_link_libraries(egolib-library egolib-gui egolib-physics egolib-renderer i
 # cartman and the content-validator use no in-game HUD and stay on egolib-library.
 add_library(egolib-hud-widgets STATIC ${EGOLIB_HUD_WIDGETS_LAYER_SOURCES})
 target_include_directories(egolib-hud-widgets INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-hud-widgets egolib-game-graphics egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
 # egolib-scriptvm: the EgoScript VM — an upper layer ABOVE egolib-library and a SIBLING of
 # egolib-gamestates (zero link edges to/from gamestates in either direction). It links egolib-library
@@ -1277,7 +1336,7 @@ target_link_libraries(egolib-hud-widgets egolib-library egolib-gui egolib-physic
 # zero references into this layer.
 add_library(egolib-scriptvm STATIC ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
 target_include_directories(egolib-scriptvm INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-scriptvm egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-scriptvm egolib-hud-widgets egolib-game-graphics egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
 # egolib-gamestates: the concrete GameState screens — the one layer ABOVE egolib-library. It links
 # egolib-library (and, transitively, the lower layers). Consumers (egoboo, the test executable,
@@ -1285,13 +1344,14 @@ target_link_libraries(egolib-scriptvm egolib-hud-widgets egolib-library egolib-g
 # egolib-library has zero references into this layer.
 add_library(egolib-gamestates STATIC ${EGOLIB_GAMESTATES_LAYER_SOURCES})
 target_include_directories(egolib-gamestates INTERFACE "${PROJECT_SOURCE_DIR}/src/")
-target_link_libraries(egolib-gamestates egolib-hud-widgets egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
+target_link_libraries(egolib-gamestates egolib-hud-widgets egolib-game-graphics egolib-library egolib-gui egolib-physics egolib-renderer idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 if (WIN32)
   if (${IDLIB_CXX_COMPILER_ID} EQUAL ${IDLIB_CXX_COMPILER_ID_MSVC})
     target_link_libraries(egolib-library Shlwapi.lib)
     target_link_libraries(egolib-hud-widgets Shlwapi.lib)
     target_link_libraries(egolib-scriptvm Shlwapi.lib)
     target_link_libraries(egolib-gamestates Shlwapi.lib)
+    target_link_libraries(egolib-game-graphics Shlwapi.lib)
     target_link_libraries(egolib-physics Shlwapi.lib)
     target_link_libraries(egolib-renderer Shlwapi.lib)
     target_link_libraries(egolib-gui Shlwapi.lib)
@@ -1301,6 +1361,7 @@ if (WIN32)
     target_link_libraries(egolib-hud-widgets shlwapi)
     target_link_libraries(egolib-scriptvm shlwapi)
     target_link_libraries(egolib-gamestates shlwapi)
+    target_link_libraries(egolib-game-graphics shlwapi)
     target_link_libraries(egolib-physics shlwapi)
     target_link_libraries(egolib-renderer shlwapi)
     target_link_libraries(egolib-gui shlwapi)
