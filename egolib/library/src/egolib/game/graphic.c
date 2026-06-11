@@ -27,21 +27,12 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/FileFormats/Globals.hpp"
-#include "egolib/game/Graphics/RenderPasses/BackgroundRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/HeightmapRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/NonOpaqueEntitiesRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/NonReflectiveTilesRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/ReflectiveTilesFirstRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.hpp"
-#include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
-#include "egolib/game/Graphics/DefaultMd2ModelRenderer.hpp"
-#include "egolib/game/Graphics/BillboardSystem.hpp"
+// The concrete RenderPass / BillboardSystem / TextureAtlasManager / Md2ModelRenderer types are
+// constructed in graphic_init.cpp (egolib-game-graphics, above egolib-library). graphic.c only
+// needs the RenderPass *base* here (reinitClocks touches RenderPass::clock through the IGFX
+// accessors) and reaches the billboard/atlas systems through the EngineContext interfaces.
+#include "egolib/game/Graphics/RenderPass.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Graphics/TextureAtlasManager.hpp"
 #include "egolib/font_bmp.h"                  // font_bmp_init
 #include "egolib/Graphics/TextureManager.hpp" // Ego::TextureManager
 #include "egolib/Console/Console.hpp"         // Ego::Core::Console
@@ -106,34 +97,10 @@ void reinitClocks() {
     EngineContext::get().gfx().getBackground().clock.reinit();
 }
 
-//--------------------------------------------------------------------------------------------
-// GFX implementation
-//--------------------------------------------------------------------------------------------
-
-GFX::GFX() :
-    GameApp<GFX>("Egoboo", GameEngine::GAME_VERSION),
-    update_object_instances_timer("update.object.instances", 512),
-    update_particle_instances_timer("update.particle.instances", 512),
-    nonOpaqueEntities(std::make_unique<Ego::Graphics::NonOpaqueEntitiesRenderPass>()),
-    opaqueEntities(std::make_unique<Ego::Graphics::OpaqueEntitiesRenderPass>()),
-    reflective0(std::make_unique<Ego::Graphics::ReflectiveTilesFirstRenderPass>()),
-    reflective1(std::make_unique<Ego::Graphics::ReflectiveTilesSecondRenderPass>()),
-    nonReflective(std::make_unique<Ego::Graphics::NonReflectiveTilesRenderPass>()),
-    entityShadows(std::make_unique<Ego::Graphics::EntityShadowsRenderPass>()),
-    water(std::make_unique<Ego::Graphics::WaterTilesRenderPass>()),
-    entityReflections(std::make_unique<Ego::Graphics::EntityReflectionsRenderPass>()),
-    foreground(std::make_unique<Ego::Graphics::ForegroundRenderPass>()),
-    background(std::make_unique<Ego::Graphics::BackgroundRenderPass>()),
-    heightmap(std::make_unique<Ego::Graphics::HeightmapRenderPass>())
-{}
-
-GFX::~GFX()
-{}
-
-void GFX::renderBillboards(Camera& camera)
-{
-    getBillboardSystem().render_all(camera);
-}
+// GFX / GameAppImpl construction and GFX::renderBillboards were relocated to
+// game/Graphics/graphic_init.cpp (egolib-game-graphics, above egolib-library) so the only TU
+// naming the concrete RenderPass / BillboardSystem / TextureAtlasManager types sits above the
+// library. The bootstrap is triggered from GameEngine via Ego::Graphics::runGraphicsBootstrap*.
 
 void gfx_system_load_assets()
 {
@@ -447,43 +414,5 @@ gfx_rv GFX::update_particle_instances(Camera& camera)
     return retval;
 }
 
-GameAppImpl::GameAppImpl() :
-    dynalist(),
-    billboardSystem(std::make_unique<Ego::Graphics::BillboardSystem>()),
-    md2ModelRenderer(std::make_unique<Ego::Graphics::DefaultMd2ModelRenderer>())
-{
-    // Initialize the texture atlas manager.
-    try
-    {
-        Ego::Graphics::TextureAtlasManager::initialize();
-    }
-    catch (...)
-    {
-        std::rethrow_exception(std::current_exception());
-    }
-    // Publish the texture atlas manager through the engine context.
-    EngineContext::get().installTextureAtlasManager(Ego::Graphics::TextureAtlasManager::get());
-}
-
-GameAppImpl::~GameAppImpl()
-{
-    // Unpublish the texture atlas manager from the engine context.
-    EngineContext::get().clearTextureAtlasManager();
-    // Uninitialize the texture atlas manager.
-    Ego::Graphics::TextureAtlasManager::uninitialize();
-}
-
-dynalist_t& GameAppImpl::getDynalist()
-{
-    return dynalist;
-}
-
-Ego::Graphics::BillboardSystem& GameAppImpl::getBillboardSystem() const
-{
-    return *billboardSystem;
-}
-
-Ego::Graphics::Md2ModelRenderer& GameAppImpl::getMd2ModelRenderer() const
-{
-    return *md2ModelRenderer;
-}
+// GameAppImpl construction/teardown and accessors were relocated to
+// game/Graphics/graphic_init.cpp (egolib-game-graphics) alongside the GFX bodies.
