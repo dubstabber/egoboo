@@ -56,6 +56,8 @@ public:
 
     const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const override;
 
+    void setMiniMapShowPlayerPosition(bool showPlayerPosition) override;
+
     void addStatusMonitor(ObjectRef objectRef) override;
 
     ObjectRef getStatusCharacterRef(size_t index) override;

@@ -48,6 +48,11 @@ public:
     /// @brief The in-game minimap widget.
     virtual const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const = 0;
 
+    /// @brief Toggle whether the minimap shows the player's position. Routed through the interface
+    ///        (rather than getMiniMap()->setShowPlayerPosition) so the game-core library does not
+    ///        link-reference the concrete MiniMap symbol — the lone library->HUD-widget reverse edge.
+    virtual void setMiniMapShowPlayerPosition(bool showPlayerPosition) = 0;
+
     /// @brief The in-game scrolling message log widget.
     virtual const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const = 0;
 

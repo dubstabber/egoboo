@@ -405,7 +405,7 @@ void Object::update()
             if(hasPerk(Ego::Perks::NAVIGATION)) {
                 if (auto playingState = tryActivePlayingState())
                 {
-                    playingState->getMiniMap()->setShowPlayerPosition(true);
+                    playingState->setMiniMapShowPlayerPosition(true);
                 }
             }
 

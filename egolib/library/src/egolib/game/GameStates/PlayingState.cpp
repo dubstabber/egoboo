@@ -263,6 +263,11 @@ const std::shared_ptr<Ego::GUI::MiniMap>& PlayingState::getMiniMap() const
     return _miniMap;
 }
 
+void PlayingState::setMiniMapShowPlayerPosition(bool showPlayerPosition)
+{
+    _miniMap->setShowPlayerPosition(showPlayerPosition);
+}
+
 void PlayingState::addStatusMonitor(ObjectRef objectRef)
 {
     Object* object = tryObservedUiObject(objectRef);
