@@ -451,6 +451,8 @@ set(EGOLIB_TIME_SOURCES
 # -- VFS ---------------------------------------------------------------------
 set(EGOLIB_VFS_SOURCES
     src/egolib/vfs.c
+    src/egolib/vfs_bulk.c
+    src/egolib/vfs_io.c
     src/egolib/vfs_rwops.c
     src/egolib/vfs_mount.c
     src/egolib/vfs_search.c
@@ -1059,6 +1061,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/strutil.c
     src/egolib/typedef.c
     src/egolib/vfs.c
+    src/egolib/vfs_bulk.c
+    src/egolib/vfs_io.c
     src/egolib/vfs_rwops.c
     src/egolib/vfs_mount.c
     src/egolib/vfs_search.c

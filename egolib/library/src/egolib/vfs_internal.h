@@ -30,6 +30,35 @@
 #include <stdexcept>
 #include <string>
 
+#include <physfs.h>
+
+#include "egolib/typedef.h"
+
+/// The following flags set in vfs_file::flags provide information about the state of a file.
+typedef enum vfs_file_flags
+{
+
+    /// End of the file encountered.
+    VFS_FILE_FLAG_EOF = (1 << 0),
+
+    /// Error was encountered.
+    VFS_FILE_FLAG_ERROR = (1 << 1),
+
+    /// The file is opened for writing.
+    VFS_FILE_FLAG_WRITING = (1 << 2),
+
+    /// The file is opened for reading.
+    VFS_FILE_FLAG_READING = (1 << 3),
+
+} vfs_file_flagss;
+
+/// A container holding a PHYSFS file handle and translated error states
+struct vsf_file
+{
+    BIT_FIELD flags;
+    PHYSFS_File *p;
+};
+
 /// @brief Whether the VFS has been initialized. Defined in vfs.c; read by the BAIL_IF_NOT_INIT guard in
 ///        both vfs.c and vfs_mount.c.
 extern bool _vfs_initialized;
