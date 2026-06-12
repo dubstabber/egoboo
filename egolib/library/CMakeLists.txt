@@ -1204,6 +1204,8 @@ set(EGOLIB_GAMESTATES_LAYER_SOURCES
 # in either direction). nm-verified acyclic: egolib-library has zero references into this layer.
 set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/Script/script.c
+    src/egolib/Script/script_internal.h
+    src/egolib/Script/script_operand.c
     src/egolib/game/script_implementation.c
     src/egolib/game/script_variables.c
     src/egolib/game/script_functions_action.c
