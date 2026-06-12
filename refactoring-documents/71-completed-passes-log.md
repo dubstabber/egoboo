@@ -2184,3 +2184,133 @@ construction code is byte-identical and runs at the original call site through t
 n/a (no usable GL context in this environment). First carve to use a *construction-injection* seam
 (`std::function` bootstrap hook) rather than a method-dispatch interface — the right tool when the reverse
 edges are object *constructors* triggered order-sensitively from below.
+
+---
+
+## Theme 21 — Within-layer file-splits batch (2026-06-12)
+
+After the nine-archive DAG was closed, the move-only absorption vein into the lower layers reached its
+ceiling (the 2026-06-12 10th-archive scout — five candidates, each with an adversarial refuter — confirmed
+no clean candidate remains; the residual `egolib-library` 62 TUs are intentional Entities↔Module↔
+Physics↔GameSession↔Graphics game-core glue). The next-best ROI shifted to navigability splits: shrink
+the over-1000-line TUs without crossing archive boundaries. An 11-agent scout-and-refute workflow ranked
+five candidates; three came back as `go` and were executed and merged the same day. None changed link
+topology — ctest 877/877 throughout.
+
+### Pass 240 — `script_functions_spawn.c` 3-way split (merge `e6aaf1291`, branch
+`refactor/script-functions-spawn-3way`, 2026-06-12)
+
+The 1576-line `script_functions_spawn.c` — the largest .c TU after the prior `script_functions_systems.c`
+decomposition — split into three within-`egolib-scriptvm` siblings:
+
+- `script_functions_spawn_particle.c` (463 lines) — the 12 particle-spawn entries: `scr_SpawnParticle`,
+  `scr_DisaffirmCharacter`, `scr_ReaffirmCharacter`, `scr_SpawnAttachedParticle`, `scr_SpawnExactParticle`,
+  `scr_SpawnPoof`, `scr_SpawnAttachedSizedParticle`, `scr_SpawnAttachedFacedParticle`,
+  `scr_SpawnAttachedHolderParticle`, `scr_SpawnExactChaseParticle`, `scr_SpawnExactParticleEndSpawn`,
+  `scr_SpawnPoofSpeedSpacingDamage`.
+- `script_functions_spawn_character.c` (458 lines) — the 8 character-spawn/respawn entries:
+  `scr_SpawnCharacter`, `scr_RespawnCharacter`, `scr_SpawnCharacterXYZ`, `scr_SpawnExactCharacterXYZ`,
+  `scr_SpawnAttachedCharacter`, `scr_EnableRespawn`, `scr_DisableRespawn`, `scr_MorphToTarget`.
+- `script_functions_spawn.c` (629 lines, residual) — the 24 lifecycle/drop/cleanup/identify/state-mutation
+  entries: `scr_DropWeapons`, `scr_GoPoof`, `scr_DropKeys`, `scr_DetachFromHolder`, `scr_CleanUp`,
+  `scr_MakeCrushValid`, `scr_PoofTarget`, `scr_SetChildState`, `scr_DropItems`, `scr_RespawnTarget`,
+  `scr_NotAnItem`, `scr_SetChildAmmo`, `scr_IdentifyTarget`, `scr_DropTargetKeys`, `scr_MakeCrushInvalid`,
+  `scr_SetDamageTime`, `scr_SetTargetToChild`, `scr_SetDamageThreshold`, `scr_SetChildContent`,
+  `scr_EnableInvictus`, `scr_DisableInvictus`, `scr_SetTargetSize`, `scr_EnableStealth`,
+  `scr_DisableStealth`.
+
+A new private `script_functions_spawn_internal.h` (74 lines) holds the truly shared spawn-helper
+infrastructure in a `script_spawn_detail` namespace (`SpawnSelfContext` struct, `makeSpawnSelfContext`
+both overloads, `gameSession()`, `isLiveSpawnObjectRef`), mirroring the existing
+`script_functions_internal.h` / `script_detail` pattern (do-not-include-from-other-script_functions_*.c
+TUs). Each TU keeps group-exclusive helpers in its own anonymous namespace: particle has
+ownerRef/spawnLocalParticleForSelf/tryAttachParticleToResolvedSelf; character has
+SpawnAttachmentTargetContext + log*/spawn/attach/publish helpers; residual has forEachLiveSpawnObjectRef +
+drop/trySet*/publishCleanUp* helpers.
+
+No public-header changes (`script_functions.h` already declares all 44 dispatch entries). 2 CMakeLists.txt
+edits at the `EGOLIB_GAME_TOPLEVEL_SOURCES` (line 770) and `EGOLIB_SCRIPTVM_LAYER_SOURCES` (line 1193)
+blocks. No archive boundary crossed, no nm back-edge check needed. Gates: in-place build clean, ctest -j20
+**877/877**, validator `test.mod` 0/0. Refuter caught two non-load-bearing inaccuracies in the scout's
+plan: the "~100-line shared preamble" was actually ~59 lines, and the predicted per-TU sizes
+(700/650/580) were inverted relative to reality (residual is the largest at 629, not the smallest).
+
+### Pass 241 — `vfs_search.c` extraction (merge `7d682043e`, branch `refactor/vfs-search-extraction`,
+2026-06-12)
+
+Completes the four-slice `vfs.c` carve (slices A `vfs_rwops.c` + B `vfs_mount.c` landed 2026-06-11 at
+merge `49a2c532a`). Moved `SearchContext` (the four ctors + dtor + the two `makePredicate` factories +
+`predicate` + `nextData` + `hasData` + `getData` + `enumerateFiles`) plus its only client
+`vfs_copyDirectory` (51 lines) from `vfs.c` (1500 → 1276) into the new sibling `vfs_search.c` (260 lines).
+`vfs_removeDirectoryAndContents` stays in `vfs.c` (zero SearchContext dep — it only calls
+`vfs_resolveWriteFilename` + `fs_*`).
+
+Two seam additions to `vfs_internal.h` (48 → 58 lines):
+
+1. **`to_physfs_path` declaration** — the scout's refuter caught this. `SearchContext::enumerateFiles`
+   calls `to_physfs_path` (defined at vfs.c line 222, no header decl). The function already has external
+   linkage (no `static`), so this is purely a decl-side fix; without it the new `vfs_search.c` would not
+   compile.
+2. **`VFS_PATH` / `VFS_MAX_PATH` typedef** — relocated from `vfs.c`'s body so `vfs_copyDirectory`'s
+   `srcPath`/`destPath` fixed-size buffers see the same 1024-byte bound from both TUs.
+
+2 CMakeLists.txt edits (the `egolib-foundation-base` source block at line 453 + the second consumer at
+line 1052). All four pieces stay in `egolib-foundation-base`; topology-neutral. Test coverage is solid for
+a foundation-base file: ModuleLoadSmoke ×10 (SearchContext ctor + iteration), ImportWorkflow ×11 +
+LoadPlayerElement + ModulePlayerStartup (vfs_copyDirectory against live VFS state). Gates: build clean,
+ctest -j20 **877/877**, validator `test.mod` 0/0.
+
+### Pass 242 — `particle_collision.c` 2-way split (merge `eba024d19`, branch
+`refactor/particle-collision-split`, 2026-06-12)
+
+The 1528-line `particle_collision.c` split into two within-`egolib-library` siblings (in
+`game/Physics/`):
+
+- `particle_collision_physics.c` (274 lines) — the game-state-light slice: `get_prt_mass` (75 lines,
+  particle effective-mass calc), `get_recoil_factors` (38 lines, pure impulse ratio math),
+  `do_prt_platform_detection` (83 lines, platform-attachment geometry) + static `attach_prt_to_platform`
+  (25 lines). Three anonymous-namespace seams (`objectWorld`, `worldUpdateCount`, `physical`).
+- `particle_collision_response.c` (1308 lines) — the chr-prt response chain: `do_chr_prt_collision_init`,
+  `_get_details`, `_deflect`, `_damage`, `_bump`, `_handle_bump`, `_knockback` + the
+  `do_chr_prt_collision` entry-point orchestrator + `spawn_bump_particles` (the bump-spawn fallout, used
+  only by `_handle_bump`). The full 10-seam anonymous namespace
+  (objectWorld/audioSystem/worldUpdateCount/damageable/physical/scriptable/heldItem/
+  usedHeldItemForBlock/publishScoredHit/publishWeaponScoredHit). `chr_prt_collision_data_t` and its ctor
+  live entirely here (no consumer outside the `do_chr_prt_collision_*` family).
+
+The two TUs communicate only through the public `particle_collision.h` surface: response's `_knockback`
+calls physics's `get_prt_mass`. The 3 shared seams (objectWorld/worldUpdateCount/physical) duplicate in
+each TU's anonymous namespace; the 7 response-only seams stay in response alone (zero physics caller).
+
+**Key refuter catch: `spawn_bump_particles`.** Original file declared this static (forward decl at L105,
+definition at L1369). The scout's plan put the definition in physics.c with the forward decl in
+response.c, which would not link — TU-local static cannot cross TUs. The fix: move
+`spawn_bump_particles` *entirely* to response.c. Its only caller is `do_chr_prt_collision_handle_bump`,
+which is also in response.c.
+
+**Immovable-tent guards are behavior-preserved.** The L1069 guard in `do_chr_prt_collision_knockback`
+(`CHR_INFINITE_WEIGHT == phys.weight || bumpdampen == 0.0`) lives unchanged in
+`particle_collision_response.c`; the particle-side guard in `get_prt_mass`
+(`CHR_INFINITE_WEIGHT == pprt->phys.weight`) lives unchanged in `particle_collision_physics.c`. The
+recent `3d6614852` / `bc0b26b40` weight-255 fix is preserved.
+
+No public-header changes (`particle_collision.h` still declares the same four-function surface
+consumed by `CollisionSystem.cpp` + `ParticleRecoil.cpp` + `CollisionPipeline.cpp` externally). 1
+CMakeLists.txt edit at the `game/Physics/` source block (line 722). Gates: in-place build clean, ctest
+-j20 **877/877** (CollisionPipeline.cpp's 8 tests pin `do_chr_prt_collision` end-to-end;
+ParticleRecoil.cpp's 10 tests pin `get_recoil_factors` edge cases including infinite weight;
+PhysicsCollisionNormal + PhysicsIntersection cover the lower-layer geometry that
+`do_chr_prt_collision_get_details` depends on), validator `test.mod` 0/0.
+
+**Cumulative effect of the batch.** The over-1000-line .c list dropped from nine entries to **seven**:
+gone are `script_functions_spawn.c` (1576, now three sub-1000 TUs) and `particle_collision.c` (1528, now
+274 + 1308). The new largest .c TU is `particle_collision_response.c` (1308); `Object.hpp` (1613) is
+still the single largest TU overall. The `vfs.c` carve was completed (1500 → 1276). The two parked
+candidates from the scout: the **10th-archive carve** was parked (the best candidate `egolib-audio`
+came out 1 TU / ~6 seam sites — the same ballpark as hud-widgets's 1 seam / 6 TUs, which is a 6× worse
+payoff ratio; and the refuter found the main claimed payoff — cartman/validator stop linking SDL_mixer —
+was false because `idlib-game-engine-library` links SDL_mixer unconditionally as a transitive dep of
+`egolib-library`), and the **`Object.hpp` mechanical split** was parked (the refuter cut the scout's
+claimed payoff from 415 → ~123 lines saved, because de-inlining single-line methods does not remove
+header lines — the method declaration stays on the same line; the header is documentation-dominated
+rather than code-dominated, ~979 of 1613 lines are doxygen + blanks).
