@@ -719,8 +719,9 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
     src/egolib/game/Physics/CollisionSystem.hpp
     src/egolib/game/Physics/ObjectPhysics.cpp
     src/egolib/game/Physics/ObjectPhysics.hpp
-    src/egolib/game/Physics/particle_collision.c
     src/egolib/game/Physics/particle_collision.h
+    src/egolib/game/Physics/particle_collision_physics.c
+    src/egolib/game/Physics/particle_collision_response.c
     src/egolib/game/Physics/ParticlePhysics.cpp
     src/egolib/game/Physics/ParticlePhysics.hpp
 )
