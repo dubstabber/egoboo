@@ -100,20 +100,20 @@ The remaining coupling hotspot is singleton access: ~632 `::get()` call sites pe
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly eight as of 2026-06-12:
+Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly five as of 2026-06-12:
 - `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; the single largest TU in the tree)
-- `egolib/library/src/egolib/game/Physics/particle_collision_response.c` (~1308 lines, the chr-prt response pipeline; carved 2026-06-12 from the former 1528-line `particle_collision.c` — see `particle_collision_physics.c` (274) for the pure mass/recoil/platform-detection sibling)
+- `egolib/library/src/egolib/game/Physics/particle_collision_response.c` (~1308 lines, the chr-prt response pipeline; carved 2026-06-12 from the former 1528-line `particle_collision.c` — see `particle_collision_physics.c` (274) for the pure mass/recoil/platform-detection sibling; the largest `.c` TU)
 - `egolib/library/src/egolib/vfs.c` (~1276 lines, the SearchContext slice carved 2026-06-12 to `vfs_search.c` (260); earlier SDL_RWops→`vfs_rwops.c` and mount mgmt→`vfs_mount.c` slices landed 2026-06-11)
 - `egolib/library/src/egolib/Script/script.c` (~1156 lines, in `egolib-scriptvm`; `ai_state_t` state methods split out to `Entities/AiState.cpp`)
-- `egolib/library/src/egolib/game/script_compile.c` (~1151 lines)
 - `egolib/library/src/egolib/game/Physics/ObjectPhysics.cpp` (~1138 lines)
-- `egolib/library/src/egolib/game/script_functions_action.c` (~1101 lines)
-- `egolib/library/src/egolib/game/script_functions_target.c` (~1044 lines)
 
 Notes:
 - `script_functions_systems.c` (formerly ~3,200 lines) has been fully decomposed and deleted, spread across 14 `script_functions_*.c` files (action, alerts, appearance, bitwise, combat, commerce, enchant, movement, quests, spawn, state, stat_gifts, target, target_select). The largest TU is now `Entities/Object.hpp`, not this deleted file.
 - `script_functions_spawn.c` (formerly ~1576 lines, the largest .c TU) was split 2026-06-12 into 3 within-`egolib-scriptvm` siblings: `script_functions_spawn.c` (629, residual: 24 lifecycle/drop/cleanup/identify/state-mutation entries), `script_functions_spawn_character.c` (458, 8 character spawn/respawn entries), `script_functions_spawn_particle.c` (463, 12 particle spawn/poof entries), plus a private `script_functions_spawn_internal.h` (74, shared `SpawnSelfContext` / `makeSpawnSelfContext` / `gameSession()` / `isLiveSpawnObjectRef`).
 - `particle_collision.c` (formerly ~1528 lines, second-largest .c TU) was split 2026-06-12 into 2 within-`egolib-library` siblings: `particle_collision_physics.c` (274, `get_prt_mass` / `get_recoil_factors` / `do_prt_platform_detection` / `attach_prt_to_platform`) and `particle_collision_response.c` (1308, the chr-prt response chain + `do_chr_prt_collision` orchestrator + `spawn_bump_particles`). Public `particle_collision.h` unchanged; the immovable-tent guards (CHR_INFINITE_WEIGHT / bumpdampen==0) live intact in both TUs.
+- `script_compile.c` (formerly ~1151 lines) was split 2026-06-12 (merge 37b47657e) by extracting `line_scanner_state_t`'s method bodies into a sibling `script_compile_lexer.c` (~353 lines); residual `script_compile.c` is now ~798 lines (the parser/codegen body).
+- `script_functions_action.c` (formerly ~1101 lines) was split 2026-06-12 (merge 9a2c7199f) into 3 within-`egolib-scriptvm` siblings: `script_functions_action.c` (545 residual, 25 misc entries), `script_functions_action_audio.c` (211, 10 sound/music entries), `script_functions_action_visual.c` (297, 11 animation/visual entries), plus a private `script_functions_action_internal.h` (108, shared `SelfActionContext` in `namespace script_action_detail`).
+- `script_functions_target.c` (formerly ~1044 lines) was split 2026-06-12 (merges 96fddcafe + d4feb6919) into 3 within-`egolib-scriptvm` siblings: `script_functions_target.c` (589 residual, 30 state-predicate `Is*`/`Facing`/`Distance` entries), `script_functions_target_identity.c` (213, 9 IDSZ `Has*` queries), `script_functions_target_orders.c` (267, 13 order/getter/mutator ops); shared `script_functions_target_impl.h` updated in the follow-on cleanup to use `namespace script_target_detail` + `inline` (replacing the anon-namespace pattern) to silence the 42 `-Wunused-function` warnings the wider includer set introduced.
 
 Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/game/game.c` (~522 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
