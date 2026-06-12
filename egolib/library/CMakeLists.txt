@@ -756,8 +756,6 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/graphic_scene.c
     src/egolib/game/graphic_fan.h
     src/egolib/game/graphic.h
-    src/egolib/game/graphic_mad.c
-    src/egolib/game/graphic_mad.h
     src/egolib/game/graphic_prt.c
     src/egolib/game/graphic_prt.h
     src/egolib/game/IPlayingStateController.hpp
@@ -1274,6 +1272,8 @@ set(EGOLIB_HUD_WIDGETS_LAYER_SOURCES
 # interfaces (foundation-base), so no concrete cluster symbol is referenced by the library remainder.
 # cartman and the content-validator drive no 3D scene render and stay on egolib-library only.
 set(EGOLIB_GAME_GRAPHICS_LAYER_SOURCES
+    src/egolib/game/graphic_mad.c
+    src/egolib/game/graphic_mad.h
     src/egolib/game/Graphics/graphic_init.cpp
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
@@ -1316,7 +1316,7 @@ list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS
 
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
-foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
+foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAME_GRAPHICS_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
     if(_src MATCHES "\\.[ch]$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
