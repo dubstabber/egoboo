@@ -44,8 +44,11 @@ public:
 protected:
 
     /// @brief The running game engine.
-    /// @remark Lives on GameState (egolib-library) rather than the lower-layer GUI Component, since
-    ///         GameEngine is a game-layer type; the generic GUI widget toolkit must not depend on it.
+    /// @remark Lives on GameState (egolib-gui) rather than the lower-layer GUI Component, since the
+    ///         engine reference is the one piece of game-state-orchestration the base needs.
+    ///         GameState only forward-declares GameEngine; the resolution goes through
+    ///         activeGameEngine() (also in egolib-gui), so the generic GUI widget toolkit still
+    ///         carries no full game-core dependency.
     GameEngine& engine();
     const GameEngine& engine() const;
 
