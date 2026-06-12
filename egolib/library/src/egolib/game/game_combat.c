@@ -164,12 +164,12 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
             if ( pmount->isMount() && pmount->isAlive() )
             {
                 // can the mount be told what to do?
-                if ( !pmount->isPlayer() && pmount->canBeInterrupted() )
+                if ( !pmount->isPlayer() && pmount->getGraphics().canBeInterrupted() )
                 {
                     if ( !ACTION_IS_TYPE( action, P ) || !mountProfile->riderCanAttack() )
                     {
                         const ModelAction action = pmount->getProfile()->getModel()->randomizeAction(ACTION_UA);
-                        pmount->playAction(action, false);
+                        pmount->getGraphics().playAction(action, false);
                         IScriptable& scriptableMount = scriptable(*pmount);
                         publishAttackUse(scriptableCharacter, pmount->getObjRef(), scriptableMount);
 
@@ -186,7 +186,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
         //Attacking or using an item disables stealth
         pchr->deactivateStealth();
 
-        if ( pchr->canBeInterrupted() && action_valid )
+        if ( pchr->getGraphics().canBeInterrupted() && action_valid )
         {
             //Check if we are attacking unarmed and cost mana to do so
             if(iweapon == pchr->getObjRef())
@@ -212,18 +212,18 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                 if ( ACTION_IS_TYPE( action, P ) )
                 {
                     // we must set parry actions to be interrupted by anything
-                    pchr->playAction(action, true);
+                    pchr->getGraphics().playAction(action, true);
                 }
                 else
                 {
                     float agility = pchr->getAttribute(Ego::Attribute::AGILITY);
 
-                    pchr->playAction(action, false);
+                    pchr->getGraphics().playAction(action, false);
 
                     // Make the weapon animate the attack as well as the character holding it
                     if (iweapon != iobj)
                     {
-                        pweapon->playAction(ACTION_MJ, false);
+                        pweapon->getGraphics().playAction(ACTION_MJ, false);
                     }
 
                     //Crossbow Mastery increases XBow attack speed by 30%
@@ -233,11 +233,11 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     }
 
                     //Determine the attack speed (how fast we play the animation)
-                    pchr->setAnimationSpeed(0.80f + agility * 0.02f);   //every Agility increases base attack speed by 2%
+                    pchr->getGraphics().setAnimationSpeed(0.80f + agility * 0.02f);   //every Agility increases base attack speed by 2%
 
                     //If Quick Strike perk triggers then we have fastest possible attack (10% chance)
                     if(pchr->hasPerk(Ego::Perks::QUICK_STRIKE) && pweapon->getProfile()->isMeleeWeapon() && Random::getPercent() <= 10) {
-                        pchr->setAnimationSpeed(3.0f);
+                        pchr->getGraphics().setAnimationSpeed(3.0f);
                         EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Quick Strike!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
 

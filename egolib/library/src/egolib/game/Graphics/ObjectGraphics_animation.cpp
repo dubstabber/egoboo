@@ -43,10 +43,10 @@ using namespace detail;    // shared file-local helpers (see ObjectGraphics_inte
 static void chr_invalidate_child_instances(const IInventoryHolder &object)
 {
     if (const std::shared_ptr<Object>& leftHandItem = heldItem(object, SLOT_LEFT)) {
-        leftHandItem->setMatrixCacheValid(false);
+        leftHandItem->getGraphics().setMatrixCacheValid(false);
     }
     if (const std::shared_ptr<Object>& rightHandItem = heldItem(object, SLOT_RIGHT)) {
-        rightHandItem->setMatrixCacheValid(false);
+        rightHandItem->getGraphics().setMatrixCacheValid(false);
     }
 }
 
@@ -422,7 +422,7 @@ bool ObjectGraphics::applyMountedAnimationRatePolicy()
     }
     else {
         // just copy the rate from the mount
-        _animationRate = holder->getAnimationSpeed();
+        _animationRate = holder->getGraphics().getAnimationSpeed();
     }
 
     return true;

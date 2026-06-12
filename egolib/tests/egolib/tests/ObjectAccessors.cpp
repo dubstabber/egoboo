@@ -1833,16 +1833,16 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsRoundTripSelectedState)
     object->setAlpha(123);
     object->setLight(87);
     object->setSheen(45);
-    object->setColorShift(colorshift_t(1, 2, 3));
-    object->setUOffset(321);
-    object->setVOffset(654);
+    object->getGraphics().setColorShift(colorshift_t(1, 2, 3));
+    object->getGraphics().setUOffset(321);
+    object->getGraphics().setVOffset(654);
 
     EXPECT_EQ(object->getAlpha(), 123);
     EXPECT_EQ(object->getLight(), 87);
     EXPECT_EQ(object->getSheen(), 45);
-    EXPECT_EQ(object->getColorShift().red, 1);
-    EXPECT_EQ(object->getColorShift().green, 2);
-    EXPECT_EQ(object->getColorShift().blue, 3);
+    EXPECT_EQ(object->getGraphics().getColorShift().red, 1);
+    EXPECT_EQ(object->getGraphics().getColorShift().green, 2);
+    EXPECT_EQ(object->getGraphics().getColorShift().blue, 3);
     EXPECT_EQ(object->getUOffset(), 321);
     EXPECT_EQ(object->getVOffset(), 654);
 
@@ -1872,8 +1872,8 @@ TEST_F(ObjectAccessorFixture, RenderRoleSurfaceExposesRenderPolicyAndGeometryQue
     object->setAlpha(123);
     object->setLight(87);
     object->setSheen(45);
-    object->setColorShift(colorshift_t(1, 2, 3));
-    object->setMatrix(idlib::identity<Ego::Matrix4f4f>());
+    object->getGraphics().setColorShift(colorshift_t(1, 2, 3));
+    object->getGraphics().setMatrix(idlib::identity<Ego::Matrix4f4f>());
 
     const IRenderable& renderable = *object;
 
@@ -1910,7 +1910,7 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsApplyReflectionPolicy)
     object->setAlpha(200);
     object->setLight(60);
     object->setSheen(10);
-    object->setColorShift(colorshift_t(1, 2, 3));
+    object->getGraphics().setColorShift(colorshift_t(1, 2, 3));
 
     const float altitudeAboveGround = std::max(0.0f, object->getPosZ() - object->getFloorElevation());
     float alphaFade = (255.0f - altitudeAboveGround) * 0.5f;
@@ -1938,7 +1938,7 @@ TEST_F(ObjectAccessorFixture, RenderStateAccessorsApplyLocalPlayerPerceptionOver
 
     object->setAlpha(30);
     object->setLight(40);
-    object->setColorShift(colorshift_t(0, 0, 0));
+    object->getGraphics().setColorShift(colorshift_t(0, 0, 0));
 
     LocalPlayerPerceptionState perception;
     perception.seeInvisibleLevel = 1.0f;
@@ -1974,11 +1974,11 @@ TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
     cache.grip_verts[0] = 8;
     cache.self_scale = Ego::Vector3f(1.5f, 2.5f, 3.5f);
 
-    object->setMatrixCache(cache);
+    object->getGraphics().setMatrixCache(cache);
 
-    const matrix_cache_t roundTrip = object->getMatrixCache();
-    EXPECT_TRUE(object->hasValidMatrixCache());
-    EXPECT_FALSE(object->hasValidMatrixValue());
+    const matrix_cache_t roundTrip = object->getGraphics().getMatrixCache();
+    EXPECT_TRUE(object->getGraphics().hasValidMatrixCache());
+    EXPECT_FALSE(object->getGraphics().hasValidMatrixValue());
     EXPECT_FALSE(roundTrip.isValid());
     EXPECT_EQ(roundTrip.type_bits, MAT_WEAPON);
     EXPECT_EQ(roundTrip.rotate[kX], Facing(101));
@@ -1994,17 +1994,17 @@ TEST_F(ObjectAccessorFixture, MatrixCacheAccessorsRoundTripAndInvalidate)
     EXPECT_FLOAT_EQ(roundTrip.self_scale[kY], 2.5f);
     EXPECT_FLOAT_EQ(roundTrip.self_scale[kZ], 3.5f);
 
-    object->setMatrixValueValid(true);
+    object->getGraphics().setMatrixValueValid(true);
 
-    EXPECT_TRUE(object->hasValidMatrixCache());
-    EXPECT_TRUE(object->hasValidMatrixValue());
-    EXPECT_TRUE(object->getMatrixCache().isValid());
+    EXPECT_TRUE(object->getGraphics().hasValidMatrixCache());
+    EXPECT_TRUE(object->getGraphics().hasValidMatrixValue());
+    EXPECT_TRUE(object->getGraphics().getMatrixCache().isValid());
 
-    object->invalidateMatrixCache();
+    object->getGraphics().invalidateMatrixCache();
 
-    EXPECT_FALSE(object->hasValidMatrixCache());
-    EXPECT_FALSE(object->hasValidMatrixValue());
-    EXPECT_FALSE(object->getMatrixCache().isValid());
+    EXPECT_FALSE(object->getGraphics().hasValidMatrixCache());
+    EXPECT_FALSE(object->getGraphics().hasValidMatrixValue());
+    EXPECT_FALSE(object->getGraphics().getMatrixCache().isValid());
 }
 
 TEST_F(ObjectAccessorFixture, MatrixUpdateReportsAppliedStateForStaleAndCurrentCache)
@@ -2017,12 +2017,12 @@ TEST_F(ObjectAccessorFixture, MatrixUpdateReportsAppliedStateForStaleAndCurrentC
     object->setFacingZ(Facing(1111));
     object->setMapTwistFacingX(Facing(2222));
     object->setMapTwistFacingY(Facing(3333));
-    object->invalidateMatrixCache();
+    object->getGraphics().invalidateMatrixCache();
 
     EXPECT_TRUE(chr_update_matrix(*object, true));
     EXPECT_TRUE(chr_matrix_valid(object.get()));
-    EXPECT_TRUE(object->hasValidMatrixCache());
-    EXPECT_TRUE(object->hasValidMatrixValue());
+    EXPECT_TRUE(object->getGraphics().hasValidMatrixCache());
+    EXPECT_TRUE(object->getGraphics().hasValidMatrixValue());
 
     EXPECT_FALSE(chr_update_matrix(*object, true));
 
@@ -2082,11 +2082,11 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsGripUpdateUsesBooleanVertexContract)
     ASSERT_GT(object->getVertexCount(), 0u);
 
     const uint16_t invalidGrip[] = {0xFFFF};
-    EXPECT_FALSE(object->updateGripVertices(nullptr, 1));
-    EXPECT_FALSE(object->updateGripVertices(invalidGrip, 1));
+    EXPECT_FALSE(object->getGraphics().updateGripVertices(nullptr, 1));
+    EXPECT_FALSE(object->getGraphics().updateGripVertices(invalidGrip, 1));
 
     const uint16_t validGrip[] = {0};
-    EXPECT_TRUE(object->updateGripVertices(validGrip, 1));
+    EXPECT_TRUE(object->getGraphics().updateGripVertices(validGrip, 1));
 }
 
 TEST_F(ObjectAccessorFixture, MatrixQueryHelpersPreservePointerCompatibility)
@@ -2106,7 +2106,7 @@ TEST_F(ObjectAccessorFixture, MatrixQueryHelpersPreservePointerCompatibility)
     ASSERT_NE(object, nullptr);
 
     object->setPosition(43.0f, 47.0f, 53.0f);
-    object->invalidateMatrixCache();
+    object->getGraphics().invalidateMatrixCache();
 
     EXPECT_FALSE(chr_matrix_valid(object.get()));
     EXPECT_TRUE(chr_getMatUp(object.get(), up));
@@ -2127,8 +2127,8 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAn
     object->setAlpha(12);
     object->setLight(34);
     object->setSheen(56);
-    object->setUOffset(321);
-    object->setVOffset(654);
+    object->getGraphics().setUOffset(321);
+    object->getGraphics().setVOffset(654);
 
     matrix_cache_t staleCache;
     staleCache.valid = true;
@@ -2136,10 +2136,10 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAn
     staleCache.type_bits = MAT_WEAPON;
     staleCache.grip_chr = ObjectRef(77);
     staleCache.grip_slot = SLOT_RIGHT;
-    object->setMatrixCache(staleCache);
+    object->getGraphics().setMatrixCache(staleCache);
 
-    ASSERT_TRUE(object->hasValidMatrixCache());
-    ASSERT_TRUE(object->hasValidMatrixValue());
+    ASSERT_TRUE(object->getGraphics().hasValidMatrixCache());
+    ASSERT_TRUE(object->getGraphics().hasValidMatrixValue());
 
     object->inst.setObjectProfile(object->getProfile());
 
@@ -2149,10 +2149,10 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAn
     EXPECT_EQ(object->getUOffset(), 0);
     EXPECT_EQ(object->getVOffset(), 0);
     EXPECT_TRUE(object->hasModelDescriptor());
-    EXPECT_FALSE(object->hasValidMatrixCache());
-    EXPECT_FALSE(object->hasValidMatrixValue());
-    EXPECT_EQ(object->getMatrixCache().type_bits, MAT_UNKNOWN);
-    EXPECT_EQ(object->getMatrixCache().grip_chr, ObjectRef::Invalid);
+    EXPECT_FALSE(object->getGraphics().hasValidMatrixCache());
+    EXPECT_FALSE(object->getGraphics().hasValidMatrixValue());
+    EXPECT_EQ(object->getGraphics().getMatrixCache().type_bits, MAT_UNKNOWN);
+    EXPECT_EQ(object->getGraphics().getMatrixCache().grip_chr, ObjectRef::Invalid);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresLiveIdleAnimationPolicy)
@@ -2169,8 +2169,8 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresLiveIdleAnimatio
     object->inst.setObjectProfile(object->getProfile());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
-    EXPECT_FALSE(object->canBeInterrupted());
-    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FALSE(object->getGraphics().canBeInterrupted());
+    EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
     EXPECT_FALSE(object->inst._freezeAtLastFrame);
 }
 
@@ -2189,8 +2189,8 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimati
     object->inst.setObjectProfile(object->getProfile());
 
     EXPECT_TRUE(ACTION_IS_TYPE(object->getCurrentAnimation(), K));
-    EXPECT_FALSE(object->canBeInterrupted());
-    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FALSE(object->getGraphics().canBeInterrupted());
+    EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
     EXPECT_TRUE(object->hasModelDescriptor());
     EXPECT_TRUE(object->inst._freezeAtLastFrame);
 }
@@ -2222,7 +2222,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetActionMutatesAnimationStateWithou
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
     EXPECT_EQ(object->inst._sourceFrameIndex, sourceFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, targetFrame);
     EXPECT_EQ(object->inst._animationProgressInteger, 3);
@@ -2254,7 +2254,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameMutatesBookkeepingWithoutCha
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
-    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_FALSE(object->getGraphics().canBeInterrupted());
     EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
     EXPECT_EQ(object->inst._animationProgressInteger, 0);
@@ -2290,7 +2290,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsStartAnimationRestartsAtFirstFrameAn
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
     EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
     EXPECT_EQ(object->inst._animationProgressInteger, 0);
@@ -2354,7 +2354,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationSnapsToTargetWith
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
-    EXPECT_FALSE(object->canBeInterrupted());
+    EXPECT_FALSE(object->getGraphics().canBeInterrupted());
     EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._animationProgressInteger, 0);
@@ -2384,7 +2384,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationIsNoOpWhenAlready
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_WB);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
     EXPECT_EQ(object->inst._sourceFrameIndex, frame);
     EXPECT_EQ(object->inst._targetFrameIndex, frame);
     EXPECT_EQ(object->inst._animationProgressInteger, 0);
@@ -2449,7 +2449,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedSceneryAnimationPolicyStopsAn
     rider->inst.updateAnimationRate();
 
     EXPECT_TRUE(holder->isScenery());
-    EXPECT_FLOAT_EQ(rider->getAnimationSpeed(), 0.1f);
+    EXPECT_FLOAT_EQ(rider->getGraphics().getAnimationSpeed(), 0.1f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedAnimationPolicyCopiesHolderAnimationRate)
@@ -2462,7 +2462,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedAnimationPolicyCopiesHolderAn
 
     holder->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     holder->setBaseAttribute(Ego::Attribute::ACCELERATION, 1.0f);
-    holder->setAnimationSpeed(2.5f);
+    holder->getGraphics().setAnimationSpeed(2.5f);
     rider->setHolderRef(holder->getObjRef());
     rider->inst._currentAnimation = ACTION_MH;
     rider->inst._canBeInterrupted = true;
@@ -2472,7 +2472,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedAnimationPolicyCopiesHolderAn
     rider->inst.updateAnimationRate();
 
     EXPECT_FALSE(holder->isScenery());
-    EXPECT_FLOAT_EQ(rider->getAnimationSpeed(), holder->getAnimationSpeed());
+    EXPECT_FLOAT_EQ(rider->getGraphics().getAnimationSpeed(), holder->getGraphics().getAnimationSpeed());
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsTimer)
@@ -2516,7 +2516,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyReturnsWalkingAnimationToI
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
-    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnimation)
@@ -2539,7 +2539,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnim
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_WA);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
-    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyRemapsFlyingIdleToFlapAnimation)
@@ -2560,7 +2560,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyRemapsFlyingIdleToFlap
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_WC);
     EXPECT_EQ(object->inst._nextAnimation, ACTION_WC);
-    EXPECT_FLOAT_EQ(object->getAnimationSpeed(), 1.0f);
+    EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndFreezeKeepsLastFrameAndMakesActionInterruptible)
@@ -2588,7 +2588,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndFreezeKeepsLastFrameAndM
     EXPECT_EQ(object->getCurrentAnimation(), action);
     EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationAdvancesQuarterStepWithoutChangingFrames)
@@ -2715,7 +2715,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndLoopWrapsToFirstFrameAnd
     EXPECT_EQ(object->getCurrentAnimation(), action);
     EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithHeldItemSubstitutesSitAnimation)
@@ -2752,7 +2752,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithHeldItemS
     EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
     EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
-    EXPECT_TRUE(rider->canBeInterrupted());
+    EXPECT_TRUE(rider->getGraphics().canBeInterrupted());
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithEmptyHandsSubstitutesRideAnimation)
@@ -2788,7 +2788,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithEmptyHand
     EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
     EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
     EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
-    EXPECT_TRUE(rider->canBeInterrupted());
+    EXPECT_TRUE(rider->getGraphics().canBeInterrupted());
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndTransitionsToQueuedNextAction)
@@ -2821,7 +2821,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndTransitionsToQueuedNextA
     EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
     EXPECT_EQ(object->inst._sourceFrameIndex, currentLastFrame);
     EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
-    EXPECT_TRUE(object->canBeInterrupted());
+    EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 
 TEST_F(ObjectAccessorFixture, StatsAmmoGenderAccessorsRoundTripSelectedState)

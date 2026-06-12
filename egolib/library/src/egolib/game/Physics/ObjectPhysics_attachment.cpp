@@ -172,7 +172,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
                 if (grab_people)
                 {
                     // Start the slam animation...  ( Be sure to drop!!! )
-                    _object.playAction(static_cast<ModelAction>(ACTION_MC + slot), false);
+                    _object.getGraphics().playAction(static_cast<ModelAction>(ACTION_MC + slot), false);
                 }
             }
             return true;
@@ -263,20 +263,20 @@ bool ObjectPhysics::attachToObject(ObjectRef holderRef, grip_offset_t grip_off)
         {
             // if the character is holding anything, make the animation
             // ACTION_MH == "sitting" so that it does not look so silly
-            _object.playAction(ACTION_MH, true);
+            _object.getGraphics().playAction(ACTION_MH, true);
         }
         else
         {
             // if it is not holding anything, go for the riding animation
-            _object.playAction(ACTION_MI, true);
+            _object.getGraphics().playAction(ACTION_MI, true);
         }
 
         // set this action to loop
-        _object.setActionLooped(true);
+        _object.getGraphics().setActionLooped(true);
     }
     else if (_object.isAlive())
     {
-        _object.playAction(static_cast<ModelAction>(ACTION_MM + slot), false);
+        _object.getGraphics().playAction(static_cast<ModelAction>(ACTION_MM + slot), false);
 
         /// @note ZF@> hmm, here is the torch holding bug. Removing
         /// the interpolation seems to fix it...
@@ -339,7 +339,7 @@ void ObjectPhysics::updateCollisionSize(bool update_matrix)
 
     // convert the point cloud in the GLvertex array (_object.inst._vertexList) to
     // a level 1 bounding box. Subtract off the position of the character
-    oct_bb_t bsrc = _object.getBoundingBox();
+    oct_bb_t bsrc = _object.getGraphics().getBoundingBox();
 
     Vector4f  src[16];  // for the upper and lower octagon points
     Vector4f  dst[16];  // for the upper and lower octagon points

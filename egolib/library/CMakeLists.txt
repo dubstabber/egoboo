@@ -80,6 +80,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/IScriptable.hpp
     src/egolib/Entities/ITargetInfo.hpp
     src/egolib/Entities/_Include.hpp
+    src/egolib/Entities/Object_accessors.cpp
     src/egolib/Entities/Object_attributes.cpp
     src/egolib/Entities/Object_combat.cpp
     src/egolib/Entities/Object.cpp

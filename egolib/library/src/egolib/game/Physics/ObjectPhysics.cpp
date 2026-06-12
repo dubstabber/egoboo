@@ -353,7 +353,7 @@ float ObjectPhysics::getMaxSpeed() const
     }
 
     //Check animation frame freeze movement
-    if ( _object.getFrameFX() & MADFX_STOP )
+    if ( _object.getGraphics().getFrameFX() & MADFX_STOP )
     {
         //Allow 50% movement while using Shield and have the Mobile Defence perk
         if(_object.hasPerk(Ego::Perks::MOBILE_DEFENCE) && ACTION_IS_TYPE(_object.getCurrentAnimation(), P))

@@ -300,7 +300,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         if (!collisionWorld().gridIsValid(pchr->getTile())) continue;
 
         // make sure that the vertices are interpolated
-        if (!pchr->updateVertices(-1, -1, true)) {
+        if (!pchr->getGraphics().updateVertices(-1, -1, true)) {
             retval = gfx_error;
         }
 
@@ -310,7 +310,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
         }
 
         // do the basic lighting
-        pchr->updateLighting();
+        pchr->getGraphics().updateLighting();
     }
 
     return retval;

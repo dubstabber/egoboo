@@ -48,12 +48,12 @@ bool setEncodedFrame(Object& object, int encodedFrame)
     const int frameAlong = encodedFrame >> 2;
 
     const ModelAction action = object.getProfile()->getModel()->getAction(ACTION_DA);
-    if (!object.setAction(action, true, true))
+    if (!object.getGraphics().setAction(action, true, true))
     {
         return false;
     }
 
-    return object.setFrameFull(frameAlong, interpolationStep);
+    return object.getGraphics().setFrameFull(frameAlong, interpolationStep);
 }
 }
 
