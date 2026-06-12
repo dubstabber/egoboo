@@ -100,8 +100,8 @@ The remaining coupling hotspot is singleton access: ~632 `::get()` call sites pe
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly two as of 2026-06-12 (after the script.c operand-evaluator carve):
-- `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; the single largest TU in the tree). Scouted 2026-06-12: structurally indivisible by any routine mechanical pass — the floor from de-inlining + removing forwarding wrappers is ~1258 lines, still above 1000. Below 1000 would require PIMPL, factoring into sub-objects, or eliminating role interfaces — out of scope for the file-split cadence.
+Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly two as of 2026-06-12 (after the script.c operand-evaluator carve + the Object.hpp Strategy 1+4 partial carve that shaved Object.hpp 1613→1530 without dropping it off the list):
+- `egolib/library/src/egolib/Entities/Object.hpp` (~1530 lines after the 2026-06-12 Strategy 1+4 partial pass, down from 1613 — monolithic interface; 18 role interfaces extracted; the single largest TU in the tree). The 2026-06-12 partial carve added `Object::getGraphics()` / `getGraphics() const` accessors returning `Ego::Graphics::ObjectGraphics&`, deleted 26 non-override `inst.*` forwarding wrappers (interface-free ones), de-inlined ~198 inline method bodies into the new `Object_accessors.cpp` (550 lines), and migrated 13 caller files to the `obj.getGraphics().X()` pattern. The 20 *override* wrappers (interface contract for IRenderable / IAnimationControl / IVisualControl) had to stay — their bodies de-inlined but their signatures kept. Below 1000 would require PIMPL, factoring into sub-objects, or eliminating role interfaces — out of scope for the routine file-split cadence.
 - `egolib/library/src/egolib/game/Physics/particle_collision_response.c` (~1308 lines, the chr-prt response pipeline; carved 2026-06-12 from the former 1528-line `particle_collision.c` — see `particle_collision_physics.c` (274) for the pure mass/recoil/platform-detection sibling; the largest `.c` TU). Scouted 2026-06-12 as splittable (3-way: residual + _damage + _effects) but recently carved (eba024d19); recommend letting settle before another split.
 
 Notes:
@@ -117,7 +117,7 @@ Notes:
 
 Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/game/game.c` (~522 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
-- `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs)
+- `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs; a seventh sibling `Object_accessors.cpp` (550 lines) added 2026-06-12 holds the de-inlined override-wrapper bodies + trivial accessor bodies — see Object.hpp note above)
 - `egolib/library/src/egolib/game/Module/Module.cpp` (~277 lines, split into six `Module_*.cpp` siblings)
 - `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~741 lines, split off `ObjectGraphics_animation.cpp` (~587, the animation state machine) + shared `ObjectGraphics_internal.hpp`; both TUs stay in egolib-library)
 
