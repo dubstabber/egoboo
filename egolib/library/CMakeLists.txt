@@ -719,7 +719,10 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
     src/egolib/game/Physics/CollisionSystem.cpp
     src/egolib/game/Physics/CollisionSystem.hpp
     src/egolib/game/Physics/ObjectPhysics.cpp
+    src/egolib/game/Physics/ObjectPhysics_attachment.cpp
+    src/egolib/game/Physics/ObjectPhysics_internal.h
     src/egolib/game/Physics/ObjectPhysics.hpp
+    src/egolib/game/Physics/ObjectPhysics_terrain.cpp
     src/egolib/game/Physics/particle_collision.h
     src/egolib/game/Physics/particle_collision_physics.c
     src/egolib/game/Physics/particle_collision_response.c
