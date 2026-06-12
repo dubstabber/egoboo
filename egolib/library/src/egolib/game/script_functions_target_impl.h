@@ -1,22 +1,24 @@
 /// @file egolib/game/script_functions_target_impl.h
-/// @brief Private anonymous-namespace helpers shared between the four
-///        script_functions_target*.c translation units:
+/// @brief Private helpers shared between the four script_functions_target*.c
+///        translation units:
 ///          * script_functions_target.c          (state predicates)
 ///          * script_functions_target_identity.c (IDSZ identity queries)
 ///          * script_functions_target_orders.c   (orders + getters/mutators)
 ///          * script_functions_target_select.c   (target acquisition / selection)
 ///
-/// Include this header ONLY from those translation units.  It defines
-/// types and helper functions inside an anonymous namespace, so each TU
-/// gets its own copy — consistent with the pattern used in all other
-/// script_functions_*.c files.
+/// Include this header ONLY from those translation units.  Types and helpers
+/// live in `namespace script_target_detail` with `inline` linkage so the
+/// includer pulls them in via vague linkage — mirrors the
+/// script_functions_action_internal.h / script_functions_spawn_internal.h
+/// pattern and avoids the -Wunused-function noise an anonymous namespace
+/// would generate in TUs that touch only a subset of the helpers.
 
 #pragma once
 
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
-namespace
+namespace script_target_detail
 {
 
 struct SelfTargetSelectorContext
@@ -39,7 +41,7 @@ struct TargetCompatibilityContext
     const IPhysical* physical = nullptr;
 };
 
-bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
+inline bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
 {
     FACING_T facing = FACING_T(vec_to_facing(targetPhysical.getPosX() - selfPhysical.getPosX(),
                                              targetPhysical.getPosY() - selfPhysical.getPosY()));
@@ -47,7 +49,7 @@ bool isFacing(const IPhysical& selfPhysical, const IPhysical& targetPhysical)
     return facing > 55535 || facing < 10000;
 }
 
-SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
+inline SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
 {
     SelfTargetSelectorContext context;
     context.selfRef = self.getSelf();
@@ -59,7 +61,7 @@ SelfTargetSelectorContext makeSelfTargetSelectorContext(const ai_state_t& self)
     return context;
 }
 
-TargetCompatibilityContext makeTargetCompatibilityContext(ObjectRef objectRef)
+inline TargetCompatibilityContext makeTargetCompatibilityContext(ObjectRef objectRef)
 {
     TargetCompatibilityContext context;
     context.ref = objectRef;
@@ -71,22 +73,22 @@ TargetCompatibilityContext makeTargetCompatibilityContext(ObjectRef objectRef)
     return context;
 }
 
-TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
+inline TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
 {
     return makeTargetCompatibilityContext(self.getTarget());
 }
 
-bool isLiveTargetRef(ObjectRef objectRef)
+inline bool isLiveTargetRef(ObjectRef objectRef)
 {
     return tryTargetInfo(objectRef) != nullptr;
 }
 
-const ITargetInfo* tryResolvedTargetInfo(const ai_state_t& self)
+inline const ITargetInfo* tryResolvedTargetInfo(const ai_state_t& self)
 {
     return makeTargetCompatibilityContext(self).info;
 }
 
-bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
+inline bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
 {
     if (!isLiveTargetRef(objectRef))
     {
@@ -97,59 +99,59 @@ bool trySetResolvedTarget(ai_state_t& self, ObjectRef objectRef)
     return true;
 }
 
-bool trySetTargetFromHeldObject(ai_state_t& self,
-                                const IInventoryHolder& holder,
-                                slot_t slot)
+inline bool trySetTargetFromHeldObject(ai_state_t& self,
+                                       const IInventoryHolder& holder,
+                                       slot_t slot)
 {
     return trySetResolvedTarget(self, holder.getHeldObject(slot));
 }
 
-bool trySetTargetFromScriptableTarget(ai_state_t& self, const IScriptable* scriptableObject)
+inline bool trySetTargetFromScriptableTarget(ai_state_t& self, const IScriptable* scriptableObject)
 {
     return scriptableObject != nullptr &&
            trySetResolvedTarget(self, scriptableObject->getAITarget());
 }
 
-ObjectRef selfLastAttackerRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfLastAttackerRef(const SelfTargetSelectorContext& context)
 {
     return context.scriptable != nullptr ? context.scriptable->getAILastAttacker() : ObjectRef::Invalid;
 }
 
-ObjectRef selfBumpedRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfBumpedRef(const SelfTargetSelectorContext& context)
 {
     return context.scriptable != nullptr ? context.scriptable->getAIBumped() : ObjectRef::Invalid;
 }
 
-ObjectRef selfLastHitRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfLastHitRef(const SelfTargetSelectorContext& context)
 {
     return context.scriptable != nullptr ? context.scriptable->getAILastHit() : ObjectRef::Invalid;
 }
 
-ObjectRef selfLastItemUsedRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfLastItemUsedRef(const SelfTargetSelectorContext& context)
 {
     return context.scriptable != nullptr ? context.scriptable->getAILastItemUsed() : ObjectRef::Invalid;
 }
 
-ObjectRef selfTeamLeaderRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfTeamLeaderRef(const SelfTargetSelectorContext& context)
 {
     return context.info != nullptr ? teamLeaderRef(*context.info) : ObjectRef::Invalid;
 }
 
-ObjectRef selfTeamCallerForHelpRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfTeamCallerForHelpRef(const SelfTargetSelectorContext& context)
 {
     return context.info != nullptr ? teamCallerForHelpRef(*context.info) : ObjectRef::Invalid;
 }
 
-ObjectRef selfHolderRef(const SelfTargetSelectorContext& context)
+inline ObjectRef selfHolderRef(const SelfTargetSelectorContext& context)
 {
     return context.info != nullptr ? context.info->getHolderRef() : ObjectRef::Invalid;
 }
 
-bool trySetTargetFromPassageOccupant(ai_state_t& self,
-                                     int passageId,
-                                     const IDSZ2& occupantIdsz,
-                                     BIT_FIELD targetingBits,
-                                     const IDSZ2& requiredItem)
+inline bool trySetTargetFromPassageOccupant(ai_state_t& self,
+                                            int passageId,
+                                            const IDSZ2& occupantIdsz,
+                                            BIT_FIELD targetingBits,
+                                            const IDSZ2& requiredItem)
 {
     const std::shared_ptr<Passage> passage = tryPassage(passageId);
     return passage != nullptr &&
@@ -160,21 +162,23 @@ bool trySetTargetFromPassageOccupant(ai_state_t& self,
                                                               requiredItem));
 }
 
-ObjectRef findTargetForSelf(const SelfTargetSelectorContext& context,
-                            float maxDistance,
-                            const IDSZ2& idsz,
-                            BIT_FIELD targetingBits)
+inline ObjectRef findTargetForSelf(const SelfTargetSelectorContext& context,
+                                   float maxDistance,
+                                   const IDSZ2& idsz,
+                                   BIT_FIELD targetingBits)
 {
     return chr_find_target(context.selfRef, maxDistance, idsz, targetingBits);
 }
 
-ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
-                            float maxDistance,
-                            const IDSZ2& weaponIdsz,
-                            bool findRanged,
-                            bool useLineOfSight)
+inline ObjectRef findWeaponForSelf(const SelfTargetSelectorContext& context,
+                                   float maxDistance,
+                                   const IDSZ2& weaponIdsz,
+                                   bool findRanged,
+                                   bool useLineOfSight)
 {
     return FindWeapon(context.selfRef, maxDistance, weaponIdsz, findRanged, useLineOfSight);
 }
 
-} // anonymous namespace
+} // namespace script_target_detail
+
+using namespace script_target_detail;
