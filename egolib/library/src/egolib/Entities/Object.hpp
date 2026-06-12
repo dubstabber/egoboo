@@ -149,27 +149,27 @@ public:
 
     std::shared_ptr<const Ego::Texture> getSkinTexture() const override;
 
-    bool isPhongMapped() const override { return getProfile()->isPhongMapped(); }
+    bool isPhongMapped() const override;
 
-    bool hasReflection() const override { return getProfile()->hasReflection(); }
+    bool hasReflection() const override;
 
-    bool isDontCullBackfaces() const override { return getProfile()->isDontCullBackfaces(); }
+    bool isDontCullBackfaces() const override;
 
-    float getPosZ() const override { return Ego::Physics::Collidable::getPosZ(); }
+    float getPosZ() const override;
 
-    const Ego::Vector3f& getPosition() const override { return Ego::Physics::Collidable::getPosition(); }
+    const Ego::Vector3f& getPosition() const override;
 
     /**
     * @return
     *   The elevation of the floor
     **/
-    float getFloorElevation() const override { return _objectPhysics.getGroundElevation(); }
+    float getFloorElevation() const override;
 
-    const Ego::Vector3f& getVelocity() const override { return PhysicsData::getVelocity(); }
+    const Ego::Vector3f& getVelocity() const override;
 
-    void setVelocity(const Ego::Vector3f& velocity) override { PhysicsData::setVelocity(velocity); }
+    void setVelocity(const Ego::Vector3f& velocity) override;
 
-    const Ego::Vector3f& getSpawnPosition() const override { return Ego::Physics::Collidable::getSpawnPosition(); }
+    const Ego::Vector3f& getSpawnPosition() const override;
 
     void updatePhysics();
 
@@ -193,7 +193,7 @@ public:
 	 * @brief Get the unique object reference of this object.
      * @return the unique object reference of this object
      */
-    ObjectRef getObjRef() const override { return _objRef; }
+    ObjectRef getObjRef() const override;
 
     /**
     * @return the current team this object is on. This can change in-game (mounts or pets for example)
@@ -206,23 +206,23 @@ public:
 
     void giveTeamExperience(int amount, XPType type) const override;
 
-    TEAM_REF getTeamRef() const override { return team; }
+    TEAM_REF getTeamRef() const override;
 
-    void setTeamRef(TEAM_REF teamRef) { team = teamRef; }
+    void setTeamRef(TEAM_REF teamRef);
 
-    TEAM_REF getBaseTeamRef() const override { return team_base; }
+    TEAM_REF getBaseTeamRef() const override;
 
-    void setBaseTeamRef(TEAM_REF teamRef) { team_base = teamRef; }
+    void setBaseTeamRef(TEAM_REF teamRef);
 
-    IDSZ2 getTypeIDSZ() const override { return getProfile()->getIDSZ(IDSZ_TYPE); }
+    IDSZ2 getTypeIDSZ() const override;
 
-    IDSZ2 getHateIDSZ() const override { return getProfile()->getIDSZ(IDSZ_HATE); }
+    IDSZ2 getHateIDSZ() const override;
 
     /**
     * @brief
     *   True if this Object is a item that can be grabbed
     **/
-    bool isItem() const override {return isitem;}
+    bool isItem() const override;
 
     /**
     * @return
@@ -269,33 +269,33 @@ public:
     **/
     bool isInsideInventory() const override;
 
-    ObjectRef getHolderRef() const override { return attachedto; }
+    ObjectRef getHolderRef() const override;
 
-    void setHolderRef(ObjectRef holderRef) { attachedto = holderRef; }
+    void setHolderRef(ObjectRef holderRef);
 
-    ObjectRef getAttachedPlatformRef() const { return onwhichplatform_ref; }
+    ObjectRef getAttachedPlatformRef() const;
 
-    slot_t getAttachmentSlot() const override { return inwhich_slot; }
+    slot_t getAttachmentSlot() const override;
 
-    void setAttachmentSlot(slot_t slot) { inwhich_slot = slot; }
+    void setAttachmentSlot(slot_t slot);
 
-    ObjectRef getInventoryHolderRef() const { return inwhich_inventory; }
+    ObjectRef getInventoryHolderRef() const;
 
-    void setInventoryHolderRef(ObjectRef holderRef) { inwhich_inventory = holderRef; }
+    void setInventoryHolderRef(ObjectRef holderRef);
 
-    bool isPlatform() const override { return platform; }
+    bool isPlatform() const override;
 
-    void setPlatform(bool platformState) { platform = platformState; }
+    void setPlatform(bool platformState);
 
-    bool canUsePlatforms() const { return canuseplatforms; }
+    bool canUsePlatforms() const;
 
-    void setCanUsePlatforms(bool enabled) { canuseplatforms = enabled; }
+    void setCanUsePlatforms(bool enabled);
 
-    int getHoldingWeight() const override { return holdingweight; }
+    int getHoldingWeight() const override;
 
-    void setHoldingWeight(int weight) { holdingweight = weight; }
+    void setHoldingWeight(int weight);
 
-    void adjustHoldingWeight(int delta) { holdingweight += delta; }
+    void adjustHoldingWeight(int delta);
 
     /**
     * @return
@@ -303,7 +303,7 @@ public:
     *   If this value is true, then this Object is effectively no longer a part of
     *   the game and should not be interacted with.
     **/
-    inline bool isTerminated() const override {return _terminateRequested;}
+    bool isTerminated() const override;
 
 	/**
 	* @brief
@@ -342,111 +342,52 @@ public:
     */
     void setLight(const int light) override;
 
-    uint8_t getAlpha() const override { return inst.getAlpha(); }
+    /// Access this object's render data (animation, lighting, matrix cache).
+    /// Used in place of the legacy inst.* forwarding wrappers.
+    Ego::Graphics::ObjectGraphics& getGraphics() noexcept { return inst; }
+    const Ego::Graphics::ObjectGraphics& getGraphics() const noexcept { return inst; }
 
-    uint8_t getLight() const override { return inst.getLight(); }
+    uint8_t getAlpha() const override;
 
-    uint8_t getSheen() const override { return inst.getSheen(); }
+    uint8_t getLight() const override;
 
-    const colorshift_t& getColorShift() const { return inst.getColorShift(); }
+    uint8_t getSheen() const override;
 
-    void setColorShift(const colorshift_t& colorShift) { inst.setColorShift(colorShift); }
+    SFP8_T getUOffset() const override;
 
-    SFP8_T getUOffset() const override { return inst.getUOffset(); }
+    SFP8_T getVOffset() const override;
 
-    void setUOffset(SFP8_T value) { inst.setUOffset(value); }
+    bool hasModelDescriptor() const override;
 
-    SFP8_T getVOffset() const override { return inst.getVOffset(); }
+    const std::shared_ptr<Ego::ModelDescriptor>& getModelDescriptor() const override;
 
-    void setVOffset(SFP8_T value) { inst.setVOffset(value); }
+    uint8_t getReflectionAlpha() const override;
 
-    bool hasModelDescriptor() const override { return inst.getModelDescriptor() != nullptr; }
+    void getTint(GLXvector4f tint, bool reflection, int type) const override;
 
-    const std::shared_ptr<Ego::ModelDescriptor>& getModelDescriptor() const override { return inst.getModelDescriptor(); }
+    ModelAction resolveModelAction(int actionIndex) const override;
 
-    uint8_t getReflectionAlpha() const override { return inst.getReflectionAlpha(); }
+    bool startAnimation(ModelAction action, bool actionReady, bool overrideAction) override;
 
-    void getTint(GLXvector4f tint, bool reflection, int type) const override { inst.getTint(tint, reflection, type); }
+    void setActionKeep(bool val) override;
 
-    bool playAction(ModelAction action, bool actionReady) { return inst.playAction(action, actionReady); }
+    ModelAction getCurrentAnimation() const override;
 
-    ModelAction resolveModelAction(int actionIndex) const override
-    {
-        return getProfile()->getModel()->getAction(actionIndex);
-    }
+    void removeInterpolation() override;
 
-    bool startAnimation(ModelAction action, bool actionReady, bool overrideAction) override
-    {
-        return inst.startAnimation(action, actionReady, overrideAction);
-    }
+    const Ego::Matrix4f4f& getMatrix() const override;
 
-    bool setAction(ModelAction action, bool actionReady, bool overrideAction)
-    {
-        return inst.setAction(action, actionReady, overrideAction);
-    }
+    const Ego::Matrix4f4f& getReflectionMatrix() const override;
 
-    bool setFrameFull(int frameAlong, int ilip) { return inst.setFrameFull(frameAlong, ilip); }
+    const GLvertex& getVertex(size_t index) const override;
 
-    bool canBeInterrupted() const { return inst.canBeInterrupted(); }
+    size_t getVertexCount() const override;
 
-    void setActionKeep(bool val) override { inst.setActionKeep(val); }
+    void flash(uint8_t value) override;
 
-    void setActionLooped(bool val) { inst.setActionLooped(val); }
+    void flashVariableHeight(uint8_t valueLow, int16_t low, uint8_t valueHigh, int16_t high) override;
 
-    ModelAction getCurrentAnimation() const override { return inst.getCurrentAnimation(); }
-
-    void setAnimationSpeed(float rate) { inst.setAnimationSpeed(rate); }
-
-    float getAnimationSpeed() const { return inst.getAnimationSpeed(); }
-
-    void removeInterpolation() override { inst.removeInterpolation(); }
-
-    void updateAnimation() { inst.updateAnimation(); }
-
-    const Ego::Matrix4f4f& getMatrix() const override { return inst.getMatrix(); }
-
-    const Ego::Matrix4f4f& getReflectionMatrix() const override { return inst.getReflectionMatrix(); }
-
-    void setMatrix(const Ego::Matrix4f4f& matrix) { inst.setMatrix(matrix); }
-
-    const GLvertex& getVertex(size_t index) const override { return inst.getVertex(index); }
-
-    size_t getVertexCount() const override { return inst.getVertexCount(); }
-
-    bool updateVertices(int vmin, int vmax, bool force) { return inst.updateVertices(vmin, vmax, force); }
-
-    bool updateGripVertices(const uint16_t vrt_lst[], size_t vrt_count) { return inst.updateGripVertices(vrt_lst, vrt_count); }
-
-    BIT_FIELD getFrameFX() const { return inst.getFrameFX(); }
-
-    void updateLighting() { inst.updateLighting(); }
-
-    void flash(uint8_t value) override { inst.flash(value); }
-
-    void flashVariableHeight(uint8_t valueLow, int16_t low, uint8_t valueHigh, int16_t high) override
-    {
-        inst.flashVariableHeight(valueLow, low, valueHigh, high);
-    }
-
-    int getMaxLight() const { return inst.getMaxLight(); }
-
-    int getAmbientColour() const override { return inst.getAmbientColour(); }
-
-    oct_bb_t getBoundingBox() const { return inst.getBoundingBox(); }
-
-    matrix_cache_t getMatrixCache() const { return inst.getMatrixCache(); }
-
-    void setMatrixCache(const matrix_cache_t& cache) { inst.setMatrixCache(cache); }
-
-    bool hasValidMatrixCache() const { return inst.hasValidMatrixCache(); }
-
-    void setMatrixCacheValid(bool valid) { inst.setMatrixCacheValid(valid); }
-
-    bool hasValidMatrixValue() const { return inst.hasValidMatrixValue(); }
-
-    void setMatrixValueValid(bool valid) { inst.setMatrixValueValid(valid); }
-
-    void invalidateMatrixCache() { inst.invalidateMatrixCache(); }
+    int getAmbientColour() const override;
 
     /**
      * @brief Checks if this Object is able to mount (ride) another Object
@@ -458,7 +399,7 @@ public:
     /**
      * @return true if this Object is mountable by other Objects
      */
-    bool isMount() const override {return getProfile()->isMount();}
+    bool isMount() const override;
 
     /**
     * @brief
@@ -515,19 +456,19 @@ public:
     /**
     * @return true if this Object is controlled by a player
     **/
-    bool isPlayer() const override {return islocalplayer;}
+    bool isPlayer() const override;
 
-    PLA_REF getPlayerNumber() const override { return is_which_player; }
+    PLA_REF getPlayerNumber() const override;
 
-    void setPlayerNumber(PLA_REF playerNumber) { is_which_player = playerNumber; }
+    void setPlayerNumber(PLA_REF playerNumber);
 
-    void setLocalPlayer(bool localPlayer) { islocalplayer = localPlayer; }
+    void setLocalPlayer(bool localPlayer);
 
     /**
     * @brief
     *   Returns true if this Object has not been killed by anything
     **/
-    bool isAlive() const override {return _isAlive;}
+    bool isAlive() const override;
 
     /**
     * @return
@@ -537,43 +478,43 @@ public:
     **/
     bool isHidden() const override;
 
-    bool isNameKnown() const override {return nameknown;}
+    bool isNameKnown() const override;
 
-    void setNameKnown(bool known) override { nameknown = known; }
+    void setNameKnown(bool known) override;
 
-    bool isAmmoKnown() const { return ammoknown; }
+    bool isAmmoKnown() const;
 
-    void setAmmoKnown(bool known) override { ammoknown = known; }
+    void setAmmoKnown(bool known) override;
 
-    bool isInvincible() const override {return invictus;}
+    bool isInvincible() const override;
 
-    void setInvincible(bool invincible) override { invictus = invincible; }
+    void setInvincible(bool invincible) override;
 
-    bool isKursed() const override { return iskursed; }
+    bool isKursed() const override;
 
-    void setKursed(bool kursed) override { iskursed = kursed; }
+    void setKursed(bool kursed) override;
 
-    bool isHitReady() const { return hitready; }
+    bool isHitReady() const;
 
-    void setHitReady(bool ready) { hitready = ready; }
+    void setHitReady(bool ready);
 
-    bool isEquipped() const override { return isequipped; }
+    bool isEquipped() const override;
 
-    void setEquipped(bool equipped) { isequipped = equipped; }
+    void setEquipped(bool equipped);
 
-    void setItem(bool item) override { isitem = item; }
+    void setItem(bool item) override;
 
-    bool isShopItem() const { return isshopitem; }
+    bool isShopItem() const;
 
-    void setShopItem(bool shopItem) { isshopitem = shopItem; }
+    void setShopItem(bool shopItem);
 
-    bool canBeCrushed() const { return canbecrushed; }
+    bool canBeCrushed() const;
 
-    void setCanBeCrushed(bool crushable) override { canbecrushed = crushable; }
+    void setCanBeCrushed(bool crushable) override;
 
-    uint8_t getSparkle() const { return sparkle; }
+    uint8_t getSparkle() const;
 
-    void setSparkle(uint8_t sparkleValue) override { sparkle = sparkleValue; }
+    void setSparkle(uint8_t sparkleValue) override;
 
     /**
     * @brief
@@ -611,13 +552,13 @@ public:
     **/
     bool detachFromHolder(const bool ignoreKurse, const bool doShop) override;
 
-    ObjectRef getHeldObject(slot_t slot) const override { return holdingwhich[slot]; }
+    ObjectRef getHeldObject(slot_t slot) const override;
 
-    void setHeldObject(slot_t slot, ObjectRef objectRef) override { holdingwhich[slot] = objectRef; }
+    void setHeldObject(slot_t slot, ObjectRef objectRef) override;
 
-    ObjectRef getEquipment(inventory_t slot) const { return equipment[slot]; }
+    ObjectRef getEquipment(inventory_t slot) const;
 
-    void setEquipment(inventory_t slot, ObjectRef objectRef) { equipment[slot] = objectRef; }
+    void setEquipment(inventory_t slot, ObjectRef objectRef);
 
     /**
     * @return
@@ -633,68 +574,59 @@ public:
     **/
     void setFat(const float fat);
 
-    float getBaseFat() const { return fat_stt; }
+    float getBaseFat() const;
 
-    void setBaseFat(float fat) { fat_stt = fat; }
+    void setBaseFat(float fat);
 
-    float getFat() const override { return fat; }
+    float getFat() const override;
 
-    void setFatRaw(float currentFat) { fat = currentFat; }
+    void setFatRaw(float currentFat);
 
-    float getTargetFat() const override { return fat_goto; }
+    float getTargetFat() const override;
 
-    void setTargetFat(float fat) override { fat_goto = fat; }
+    void setTargetFat(float fat) override;
 
-    int16_t getResizeTimeRemaining() const override { return fat_goto_time; }
+    int16_t getResizeTimeRemaining() const override;
 
-    void setResizeTimeRemaining(int16_t remaining) override { fat_goto_time = remaining; }
+    void setResizeTimeRemaining(int16_t remaining) override;
 
-    float getPosX() const override { return Ego::Physics::Collidable::getPosX(); }
+    float getPosX() const override;
 
-    float getPosY() const override { return Ego::Physics::Collidable::getPosY(); }
+    float getPosY() const override;
 
-    const bumper_t& getInitialBump() const override { return bump_stt; }
+    const bumper_t& getInitialBump() const override;
 
-    void setInitialBump(const bumper_t& baseBump) { bump_stt = baseBump; }
+    void setInitialBump(const bumper_t& baseBump);
 
-    const bumper_t& getCurrentBump() const override { return bump; }
+    const bumper_t& getCurrentBump() const override;
 
-    void setCurrentBump(const bumper_t& currentBump) { bump = currentBump; }
+    void setCurrentBump(const bumper_t& currentBump);
 
-    const bumper_t& getSavedBump() const override { return bump_save; }
+    const bumper_t& getSavedBump() const override;
 
-    void setSavedBump(const bumper_t& savedBump) { bump_save = savedBump; }
+    void setSavedBump(const bumper_t& savedBump);
 
-    void initializeBaseBump(const bumper_t& baseBump)
-    {
-        setInitialBump(baseBump);
-        setSavedBump(baseBump);
-    }
+    void initializeBaseBump(const bumper_t& baseBump);
 
-    const bumper_t& getLooseBump() const override { return bump_1; }
+    const bumper_t& getLooseBump() const override;
 
-    void setLooseBump(const bumper_t& looseBump) { bump_1 = looseBump; }
+    void setLooseBump(const bumper_t& looseBump);
 
-    const oct_bb_t& getMinCollisionVolume() const override { return chr_min_cv; }
+    const oct_bb_t& getMinCollisionVolume() const override;
 
-    void setMinCollisionVolume(const oct_bb_t& minCollisionVolume) { chr_min_cv = minCollisionVolume; }
+    void setMinCollisionVolume(const oct_bb_t& minCollisionVolume);
 
-    const oct_bb_t& getMaxCollisionVolume() const override { return chr_max_cv; }
+    const oct_bb_t& getMaxCollisionVolume() const override;
 
-    void setMaxCollisionVolume(const oct_bb_t& maxCollisionVolume) { chr_max_cv = maxCollisionVolume; }
+    void setMaxCollisionVolume(const oct_bb_t& maxCollisionVolume);
 
-    const oct_bb_t& getSlotCollisionVolume(slot_t slot) const override { return slot_cv[slot]; }
+    const oct_bb_t& getSlotCollisionVolume(slot_t slot) const override;
 
-    void setSlotCollisionVolume(slot_t slot, const oct_bb_t& slotCollisionVolume) { slot_cv[slot] = slotCollisionVolume; }
+    void setSlotCollisionVolume(slot_t slot, const oct_bb_t& slotCollisionVolume);
 
     void setCollisionVolumes(const oct_bb_t& minCollisionVolume,
                              const oct_bb_t& maxCollisionVolume,
-                             const std::array<oct_bb_t, SLOT_COUNT>& slotCollisionVolumes)
-    {
-        chr_min_cv = minCollisionVolume;
-        chr_max_cv = maxCollisionVolume;
-        slot_cv = slotCollisionVolumes;
-    }
+                             const std::array<oct_bb_t, SLOT_COUNT>& slotCollisionVolumes);
 
     /**
     * @brief Set the (base) height of a character.
@@ -754,9 +686,9 @@ public:
 	/** @override */
 	BIT_FIELD test_wall(const Ego::Vector3f& pos) override;
 
-    inline const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const override { return _objectPhysics.getAxisAlignedBox2D(); }
+    const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const override;
 
-    uint32_t getPhysicsWeight() const override { return phys.weight; }
+    uint32_t getPhysicsWeight() const override;
 
     /**
     * @brief
@@ -781,7 +713,7 @@ public:
     * @brief
     *   Get max allowed mana for this Object
     **/
-    inline float getMaxMana() const { return getAttribute(Ego::Attribute::MAX_MANA); }
+    float getMaxMana() const;
 
     /**
     * @return
@@ -809,30 +741,30 @@ public:
     * @brief
     *   True if this object is added to a statusbar monitor
     **/
-    bool getShowStatus() const { return _showStatus; }
-    void setShowStatus(const bool val) { _showStatus = val; }
+    bool getShowStatus() const;
+    void setShowStatus(const bool val);
 
     /**
     * @return
     *   Get the experience level of this Object (1 being the first level)
     **/
-    uint8_t getExperienceLevel() const { return experiencelevel + 1; }
+    uint8_t getExperienceLevel() const;
 
-    uint8_t getExperienceLevelIndex() const override { return experiencelevel; }
+    uint8_t getExperienceLevelIndex() const override;
 
-    void setExperienceLevelIndex(uint8_t levelIndex) { experiencelevel = levelIndex; }
+    void setExperienceLevelIndex(uint8_t levelIndex);
 
     /**
     * @return
     *   The gender of this Object (if applicable)
     **/
-    Gender getGender() const override { return gender; }
+    Gender getGender() const override;
 
-    void setGender(Gender objectGender) { gender = objectGender; }
+    void setGender(Gender objectGender);
 
-    uint32_t getExperience() const override { return experience; }
+    uint32_t getExperience() const override;
 
-    void setExperience(uint32_t value) { experience = value; }
+    void setExperience(uint32_t value);
 
     /**
     * @brief
@@ -869,20 +801,11 @@ public:
     **/
     float getBaseAttribute(const Ego::Attribute::AttributeType type) const;
 
-    void setRedShift(int value) override
-    {
-        setBaseAttribute(Ego::Attribute::RED_SHIFT, value);
-    }
+    void setRedShift(int value) override;
 
-    void setGreenShift(int value) override
-    {
-        setBaseAttribute(Ego::Attribute::GREEN_SHIFT, value);
-    }
+    void setGreenShift(int value) override;
 
-    void setBlueShift(int value) override
-    {
-        setBaseAttribute(Ego::Attribute::BLUE_SHIFT, value);
-    }
+    void setBlueShift(int value) override;
 
     /**
     * @brief
@@ -896,10 +819,7 @@ public:
     **/
     void setBaseAttribute(const Ego::Attribute::AttributeType type, float value);
 
-    void setFlyHeight(float height) override
-    {
-        setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, height < 0.0f ? 0.0f : height);
-    }
+    void setFlyHeight(float height) override;
 
     size_t getInventoryMaxItems() const override;
 
@@ -915,13 +835,13 @@ public:
 
     bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse) override;
 
-    uint16_t getAmmoMax() const override { return ammomax; }
+    uint16_t getAmmoMax() const override;
 
-    void setAmmoMax(uint16_t maxAmmo) { ammomax = maxAmmo; }
+    void setAmmoMax(uint16_t maxAmmo);
 
-    uint16_t getAmmo() const override { return ammo; }
+    uint16_t getAmmo() const override;
 
-    void setAmmo(uint16_t ammoCount) override { ammo = ammoCount; }
+    void setAmmo(uint16_t ammoCount) override;
 
     /**
     * @return
@@ -945,7 +865,7 @@ public:
     * @return
     *   true if this Object can detect and see invisible objects
     **/
-    bool canSeeInvisible() const override { return getAttribute(Ego::Attribute::SEE_INVISIBLE) > 0.0f; }
+    bool canSeeInvisible() const override;
 
     bool canSeeKurses() const override;
 
@@ -957,7 +877,7 @@ public:
     * @return
     *   The logic update frame when the rally bonus ends
     **/
-    uint32_t getRallyDuration() const { return _reallyDuration; }
+    uint32_t getRallyDuration() const;
 
 
     /**
@@ -965,14 +885,14 @@ public:
     *   Get the random seed used for determining which perks will be available when leveling and
     *   how much attributes get improved
     **/
-    uint32_t getLevelUpSeed() const { return _levelUpSeed; }
+    uint32_t getLevelUpSeed() const;
 
     /**
     * @brief
     *   Generates a new random level up seed. Should be called every time a level up is complete
     *   or first time generating a character from scratch (not a save game)
     **/
-    void randomizeLevelUpSeed() { _levelUpSeed = Random::next(Random::next<uint32_t>(std::numeric_limits<uint32_t>::max())); }
+    void randomizeLevelUpSeed();
 
     /**
     * @brief
@@ -1012,7 +932,7 @@ public:
     * @return
     *   true if the skin could be changed into the specified number or false if it fails
     **/
-    SKIN_T getSkin() const override { return skin; }
+    SKIN_T getSkin() const override;
 
     bool setSkin(const size_t skinNumber) override;
 
@@ -1022,29 +942,29 @@ public:
 
     bool hasIntellectDamageParticle() const override;
 
-    SKIN_T getBaseSkin() const { return skin_stt; }
+    SKIN_T getBaseSkin() const;
 
-    void setBaseSkin(SKIN_T skinNumber) { skin_stt = skinNumber; }
+    void setBaseSkin(SKIN_T skinNumber);
 
-    ObjectProfileRef getBaseModelRef() const override { return basemodel_ref; }
+    ObjectProfileRef getBaseModelRef() const override;
 
-    void setBaseModelRef(ObjectProfileRef profileRef) override { basemodel_ref = profileRef; }
+    void setBaseModelRef(ObjectProfileRef profileRef) override;
 
-    bool isOverlay() const { return is_overlay; }
+    bool isOverlay() const;
 
-    void setOverlay(bool overlayState) { is_overlay = overlayState; }
+    void setOverlay(bool overlayState);
 
-    float getBaseShadowSize() const { return shadow_size_stt; }
+    float getBaseShadowSize() const;
 
-    void setBaseShadowSize(float shadowSize) { shadow_size_stt = shadowSize; }
+    void setBaseShadowSize(float shadowSize);
 
-    uint32_t getShadowSize() const { return shadow_size; }
+    uint32_t getShadowSize() const;
 
-    void setShadowSize(uint32_t shadowSize) override { shadow_size = shadowSize; }
+    void setShadowSize(uint32_t shadowSize) override;
 
-    uint32_t getSavedShadowSize() const { return shadow_size_save; }
+    uint32_t getSavedShadowSize() const;
 
-    void setSavedShadowSize(uint32_t shadowSize) override { shadow_size_save = shadowSize; }
+    void setSavedShadowSize(uint32_t shadowSize) override;
 
     bool hasTempAttribute(Ego::Attribute::AttributeType type) const;
 
@@ -1070,7 +990,7 @@ public:
     **/
     void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin) override;
 
-    ObjectProfileRef getProfileID() const {return _profileID;}
+    ObjectProfileRef getProfileID() const;
 
     /**
     * @return
@@ -1078,17 +998,17 @@ public:
     **/
     bool isInvictusDirection(Facing direction) const;
 
-    DamageType getDamageTargetType() const override { return damagetarget_damagetype; }
+    DamageType getDamageTargetType() const override;
 
-    void setDamageTargetType(DamageType damageType) { damagetarget_damagetype = damageType; }
+    void setDamageTargetType(DamageType damageType);
 
-    DamageType getReaffirmDamageType() const override { return reaffirm_damagetype; }
+    DamageType getReaffirmDamageType() const override;
 
-    void setReaffirmDamageType(DamageType damageType) { reaffirm_damagetype = damageType; }
+    void setReaffirmDamageType(DamageType damageType);
 
-    SFP8_T getDamageThreshold() const { return damage_threshold; }
+    SFP8_T getDamageThreshold() const;
 
-    void setDamageThreshold(SFP8_T threshold) override { damage_threshold = threshold; }
+    void setDamageThreshold(SFP8_T threshold) override;
 
     /**
     * @return 
@@ -1148,14 +1068,11 @@ public:
 
     bool hasTypeIDSZ(const IDSZ2& idsz) const override;
 
-    bool isRangedWeapon() const override { return getProfile() && getProfile()->isRangedWeapon(); }
+    bool isRangedWeapon() const override;
 
-    bool isMeleeWeapon() const override
-    {
-        return getProfile() && !getProfile()->isRangedWeapon() && getProfile()->getWeaponAction() != ACTION_PA;
-    }
+    bool isMeleeWeapon() const override;
 
-    bool isShield() const override { return getProfile() && getProfile()->getWeaponAction() == ACTION_PA; }
+    bool isShield() const override;
 
     bool hasAnyIDSZ(const IDSZ2& idsz) const override;
 
@@ -1206,53 +1123,53 @@ public:
     **/
     void dropMoney(int amount) override;
 
-    bool canBeGrogged() const override { return getProfile() && getProfile()->canBeGrogged(); }
+    bool canBeGrogged() const override;
 
-    bool canBeDazed() const override { return getProfile() && getProfile()->canBeDazed(); }
+    bool canBeDazed() const override;
 
-    int16_t getGrogTimer() const override { return grog_timer; }
+    int16_t getGrogTimer() const override;
 
-    void setGrogTimer(int16_t timer) override { grog_timer = timer; }
+    void setGrogTimer(int16_t timer) override;
 
-    int16_t getDazeTimer() const override { return daze_timer; }
+    int16_t getDazeTimer() const override;
 
     bool isHurt() const override;
 
     bool hasNotFullMana() const override;
 
-    void setDazeTimer(int16_t timer) override { daze_timer = timer; }
+    void setDazeTimer(int16_t timer) override;
 
-    int16_t getBoredTimer() const { return bore_timer; }
+    int16_t getBoredTimer() const;
 
-    void setBoredTimer(int16_t timer) { bore_timer = timer; }
+    void setBoredTimer(int16_t timer);
 
-    uint8_t getCarefulTimer() const { return careful_timer; }
+    uint8_t getCarefulTimer() const;
 
-    void setCarefulTimer(uint8_t timer) { careful_timer = timer; }
+    void setCarefulTimer(uint8_t timer);
 
-    uint16_t getReloadTimer() const override { return reload_timer; }
+    uint16_t getReloadTimer() const override;
 
-    void setReloadTimer(uint16_t timer) override { reload_timer = timer; }
+    void setReloadTimer(uint16_t timer) override;
 
-    uint8_t getDamageTimer() const override { return damage_timer; }
+    uint8_t getDamageTimer() const override;
 
-    void setDamageTimer(uint8_t timer) override { damage_timer = timer; }
+    void setDamageTimer(uint8_t timer) override;
 
-    bool shouldDrawIcon() const { return draw_icon; }
+    bool shouldDrawIcon() const;
 
-    void setDrawIcon(bool drawIcon) { draw_icon = drawIcon; }
+    void setDrawIcon(bool drawIcon);
 
-    bool isInWater() const { return inwater; }
+    bool isInWater() const;
 
-    void setInWater(bool inWater) { inwater = inWater; }
+    void setInWater(bool inWater);
 
-    int getDismountTimer() const { return dismount_timer; }
+    int getDismountTimer() const;
 
-    void setDismountTimer(int timer) override { dismount_timer = timer; }
+    void setDismountTimer(int timer) override;
 
-    ObjectRef getDismountObject() const { return dismount_object; }
+    ObjectRef getDismountObject() const;
 
-    void setDismountObject(ObjectRef objectRef) override { dismount_object = objectRef; }
+    void setDismountObject(ObjectRef objectRef) override;
 
     BIT_FIELD getAIAlertBits() const override;
 
@@ -1351,47 +1268,47 @@ public:
     **/
     void setLatchButton(const LatchButton latchButton, const bool pressed) override;
 
-    inline bool isAnyLatchButtonPressed() { return _inputLatchesPressed.any(); }
+    bool isAnyLatchButtonPressed();
 
-    uint8_t getJumpTimer() const { return jump_timer; }
+    uint8_t getJumpTimer() const;
 
-    void setJumpTimer(uint8_t timer) override { jump_timer = timer; }
+    void setJumpTimer(uint8_t timer) override;
 
-    uint8_t getJumpNumber() const { return jumpnumber; }
+    uint8_t getJumpNumber() const;
 
-    void setJumpNumber(uint8_t count) { jumpnumber = count; }
+    void setJumpNumber(uint8_t count);
 
-    bool isJumpReady() const { return jumpready; }
+    bool isJumpReady() const;
 
-    void setJumpReady(bool ready) { jumpready = ready; }
+    void setJumpReady(bool ready);
 
-    uint8_t getStoppedByMask() const { return stoppedby; }
+    uint8_t getStoppedByMask() const;
 
-    void setStoppedByMask(uint8_t mask) { stoppedby = mask; }
+    void setStoppedByMask(uint8_t mask);
 
-    ObjectRef getBumpListNext() const { return bumplist_next; }
+    ObjectRef getBumpListNext() const;
 
-    void setBumpListNext(ObjectRef objectRef) { bumplist_next = objectRef; }
+    void setBumpListNext(ObjectRef objectRef);
 
-    turn_mode_t getTurnMode() const { return turnmode; }
+    turn_mode_t getTurnMode() const;
 
-    void setTurnMode(turn_mode_t mode) override { turnmode = mode; }
+    void setTurnMode(turn_mode_t mode) override;
 
-    Facing getFacingZ() const override { return ori.facing_z; }
+    Facing getFacingZ() const override;
 
-    void setFacingZ(Facing facing) { ori.facing_z = facing; }
+    void setFacingZ(Facing facing);
 
-    Facing getMapTwistFacingX() const override { return ori.map_twist_facing_x; }
+    Facing getMapTwistFacingX() const override;
 
-    void setMapTwistFacingX(Facing facing) { ori.map_twist_facing_x = facing; }
+    void setMapTwistFacingX(Facing facing);
 
-    Facing getMapTwistFacingY() const override { return ori.map_twist_facing_y; }
+    Facing getMapTwistFacingY() const override;
 
-    void setMapTwistFacingY(Facing facing) { ori.map_twist_facing_y = facing; }
+    void setMapTwistFacingY(Facing facing);
 
-    Facing getPreviousFacingZ() const override { return ori_old.facing_z; }
+    Facing getPreviousFacingZ() const override;
 
-    void setPreviousFacingZ(Facing facing) { ori_old.facing_z = facing; }
+    void setPreviousFacingZ(Facing facing);
 
 private:
 

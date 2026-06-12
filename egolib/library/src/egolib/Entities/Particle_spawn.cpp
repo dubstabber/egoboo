@@ -582,7 +582,7 @@ bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_o
         vertex = object->getVertexCount() - vertex_offset;
 
         // do the automatic update
-        object->updateVertices(vertex, vertex, false);
+        object->getGraphics().updateVertices(vertex, vertex, false);
 
         // Calculate vertex_offset point locations with linear interpolation and other silly things
         point[0][kX] = object->getVertex(vertex).pos[XX];

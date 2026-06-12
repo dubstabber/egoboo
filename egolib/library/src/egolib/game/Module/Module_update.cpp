@@ -96,7 +96,7 @@ void GameModule::updateAllObjects()
         object->update();
 
         //Update model animation
-        object->updateAnimation();
+        object->getGraphics().updateAnimation();
 
         //Check if this object should be poofed (destroyed)
         bool timeOut = (object->getAIPoofTime() > 0) && (object->getAIPoofTime() <= static_cast<int32_t>(currentUpdateFrame));
