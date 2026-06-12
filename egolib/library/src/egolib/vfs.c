@@ -50,13 +50,10 @@
 #undef _VFS_DEBUG
 
  //--------------------------------------------------------------------------------------------
-#define VFS_MAX_PATH 1024
-
+// VFS_PATH / VFS_MAX_PATH live in vfs_internal.h so both vfs.c and vfs_search.c see them.
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-
-typedef char VFS_PATH[VFS_MAX_PATH];
 
 /// The following flags set in vfs_file::flags provide information about the state of a file.
 typedef enum vfs_file_flags
@@ -934,169 +931,8 @@ int vfs_printf( vfs_FILE * pfile, const char *format, ... )
 }
 
 //--------------------------------------------------------------------------------------------
-
-std::vector<std::string> SearchContext::enumerateFiles(const Ego::VfsPath& pathname) {
-    std::vector<std::string> result;
-    const auto temporary = to_physfs_path(pathname.string());
-    char **fileList = PHYSFS_enumerateFiles(temporary.c_str());
-    if (!fileList) {
-        throw std::runtime_error("unable to enumerate files");
-    }
-    for (char **file = fileList; nullptr != *file; ++file) {
-        try {
-            result.push_back(*file);
-        } catch (...) {
-            PHYSFS_freeList(fileList);
-            std::rethrow_exception(std::current_exception());
-        }
-    }
-    PHYSFS_freeList(fileList);
-    return result;
-}
-
-SearchContext::SearchContext(const Ego::VfsPath& searchPath, const Ego::Extension& searchExtension, uint32_t searchBits)
-    : file_list_2(), file_list_iterator_2(), path_2(), bare(false), predicates(), found_2() {
-    // Bare search results?
-    if (VFS_SEARCH_BARE == (VFS_SEARCH_BARE & searchBits)) {
-        bare = true;
-    }
-    // Filter by type?
-    predicates.push_back(makePredicate(searchBits));
-    // Enumerate using PhysFS.
-    path_2 = vfs_convert_fname(searchPath);
-    file_list_2 = enumerateFiles(path_2);
-    // Filter by extension?
-    predicates.push_back(makePredicate(searchExtension.to_string()));
-    // Begin iteration.
-    file_list_iterator_2 = file_list_2.begin();
-    // Search the first acceptable filename.
-    for (; file_list_iterator_2 != file_list_2.cend(); file_list_iterator_2++) {
-        /// @todo: Possibly virtual function call. Not acceptable.
-        if (predicate(Ego::VfsPath(*file_list_iterator_2))) {
-            break;
-        }
-    }
-    if (file_list_iterator_2 != file_list_2.cend()) {
-        if (bare) {
-            found_2 = Ego::VfsPath(*file_list_iterator_2);
-        } else {
-            /// @todo Possibly virtual function call. Not acceptable.
-            found_2 = path_2 + Ego::VfsPath(NETWORK_SLASH_STR) + Ego::VfsPath(*file_list_iterator_2);
-        }
-    }
-}
-
-SearchContext::SearchContext(const Ego::VfsPath& searchPath, uint32_t searchBits) :
-    file_list_2(), file_list_iterator_2(), path_2(), bare(false), predicates(), found_2() {
-    // Bare search results?
-    if (VFS_SEARCH_BARE == (VFS_SEARCH_BARE & searchBits)) {
-        bare = true;
-    }
-    // Filter by type?
-    predicates.push_back(makePredicate(searchBits));
-    // Enumerate using PhysFS.
-    path_2 = vfs_convert_fname(searchPath);
-    file_list_2 = enumerateFiles(path_2);
-
-    // Begin iteration.
-    file_list_iterator_2 = file_list_2.begin();
-    // Search the first acceptable filename.
-    for (; file_list_iterator_2 != file_list_2.cend(); file_list_iterator_2++) {
-        /// @todo: Possibly virtual function call. Not acceptable.
-        if (predicate(Ego::VfsPath(*file_list_iterator_2))) {
-            break;
-        }
-    }
-    if (file_list_iterator_2 != file_list_2.cend()) {
-        if (bare) {
-            found_2 = Ego::VfsPath(*file_list_iterator_2);
-        } else {
-            /// @todo Possibly virtual function call. Not acceptable.
-            found_2 = path_2 + Ego::VfsPath(NETWORK_SLASH_STR) + Ego::VfsPath(*file_list_iterator_2);
-        }
-    }
-}
-
-SearchContext::SearchContext(uint32_t searchBits)
-    : SearchContext(Ego::VfsPath("/"), searchBits)
-{ /* Intentionally empty. */}
-
-SearchContext::SearchContext(const Ego::Extension& searchExtension, uint32_t searchBits)
-    : SearchContext(Ego::VfsPath("/"), searchExtension, searchBits)
-{ /* Intentionally empty. */ }
-
-SearchContext::~SearchContext()
-{ /* Intentionally empty. */ }
-
-//--------------------------------------------------------------------------------------------
-std::function<bool(const Ego::VfsPath&)> SearchContext::makePredicate(uint32_t searchBits) {
-    auto predicate = [searchBits](const Ego::VfsPath& path) {
-        if (VFS_SEARCH_ALL != (searchBits & VFS_SEARCH_ALL)) {
-            bool isDirectory = vfs_isDirectory(path.string());
-            bool isFile = !isDirectory;
-            if (isFile) {
-                return (VFS_SEARCH_FILE == (VFS_SEARCH_FILE & searchBits));
-            }
-            if (isDirectory) {
-                return (VFS_SEARCH_DIR == (VFS_SEARCH_DIR & searchBits));
-            }
-        }
-        return true;
-    };
-    return predicate;
-}
-
-std::function<bool(const Ego::VfsPath&)> SearchContext::makePredicate(std::string extension) {
-    auto predicate = [extension](const Ego::VfsPath& path) {
-        return path.getExtension() == extension;
-    };
-    return predicate;
-}
-
-bool SearchContext::predicate(const Ego::VfsPath& path) const {
-    auto fullPath = path_2 + Ego::VfsPath(NETWORK_SLASH_STR) + path;
-    // Apply predicates.
-    for (const auto& predicate : predicates) {
-        if (nullptr != predicate) {
-            if (!predicate(fullPath)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-void SearchContext::nextData()
-{
-    // if there are no files, return an error value
-
-    BAIL_IF_NOT_INIT();
-
-    // Hit the end? Nothing to do.
-    if (this->file_list_iterator_2 == this->file_list_2.cend()) {
-        return;
-    }
-
-    // Increment at least once. Increment until a file is accepted or the end is reached.
-    while (true) {
-        this->file_list_iterator_2++;
-        if (this->file_list_iterator_2 == this->file_list_2.cend()) break;
-        if (this->predicate(Ego::VfsPath(*this->file_list_iterator_2))) break;
-    }
-
-    // If no suitable file was found ...
-    if (this->file_list_iterator_2 == this->file_list_2.cend()) {
-        // ... return.
-        this->found_2 = Ego::VfsPath();
-        return;
-    }
-
-    if (this->bare) {
-        this->found_2 = Ego::VfsPath(*this->file_list_iterator_2);
-    } else {
-        this->found_2 = path_2 + Ego::VfsPath(NETWORK_SLASH_STR) + Ego::VfsPath(*this->file_list_iterator_2);
-    }
-}
+// SearchContext (ctors, dtor, predicates, enumerateFiles, hasData/getData, nextData)
+// lives in vfs_search.c — alongside vfs_copyDirectory, which is its only client.
 
 //--------------------------------------------------------------------------------------------
 int vfs_removeDirectoryAndContents(const char * dirname) {
@@ -1129,57 +965,7 @@ int vfs_copyFile( const std::string& source, const std::string& target)
 }
 
 //--------------------------------------------------------------------------------------------
-int vfs_copyDirectory( const char *sourceDir, const char *destDir )
-{
-    /// @author ZZ
-    /// @details This function copies all files in a directory
-    VFS_PATH srcPath = EMPTY_CSTR, destPath = EMPTY_CSTR;
-
-    SearchContext *ctxt;
-
-    BAIL_IF_NOT_INIT();
-
-    if ( INVALID_CSTR( sourceDir ) || INVALID_CSTR( destDir ) )
-    {
-        return VFS_FALSE;
-    }
-
-    // make sure the destination directory exists
-    if ( !vfs_mkdir( destDir ) )
-    {
-        return VFS_FALSE;
-    }
-
-    // get the a filename that we are allowed to write to
-    //snprintf( szDst, SDL_arraysize( szDst ), "%s",  vfs_resolveWriteFilename( destDir ) );
-    //real_dst = szDst;
-
-    // List all the files in the directory
-    ctxt = new SearchContext(vfs_convert_fname(sourceDir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
-    if (!ctxt) return VFS_FALSE;
-    while (ctxt->hasData())
-    {
-        auto fileName = ctxt->getData();
-        // Ignore files that begin with a .
-        if ( '.' != fileName.string()[0] )
-        {
-            snprintf( srcPath, SDL_arraysize( srcPath ), "%s/%s", sourceDir, fileName.string().c_str() );
-            snprintf( destPath, SDL_arraysize( destPath ), "%s/%s", destDir, fileName.string().c_str() );
-
-            if ( !vfs_copyFile( srcPath, destPath ) )
-            {
-                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "failed to copy from ", "`", 
-                                                 srcPath, "`", " to ", "`", destPath, "`", ": ", vfs_getError(),
-                                                 Log::EndOfEntry);
-            }
-        }
-        ctxt->nextData();
-    }
-    delete ctxt;
-    ctxt = nullptr;
-
-    return VFS_TRUE;
-}
+// vfs_copyDirectory lives in vfs_search.c (it directly instantiates SearchContext).
 
 //--------------------------------------------------------------------------------------------
 int vfs_ungetc( int c, vfs_FILE * pfile )
@@ -1348,17 +1134,7 @@ const char * vfs_getError( void )
 }
 
 //--------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------
-bool SearchContext::hasData() const {
-    return this->file_list_iterator_2 != this->file_list_2.cend();
-}
-
-const Ego::VfsPath& SearchContext::getData() const {
-    return this->found_2;
-}
-
-//--------------------------------------------------------------------------------------------
+// SearchContext::hasData / getData live in vfs_search.c with the rest of SearchContext.
 //--------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------

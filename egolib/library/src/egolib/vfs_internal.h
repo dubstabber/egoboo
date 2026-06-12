@@ -45,3 +45,14 @@ extern bool _vfs_initialized;
 /// @brief Get if the specified path is equivalent to a virtual mount point.
 /// @remark Defined in vfs_mount.c; called from vfs.c path normalization.
 int _vfs_mount_info_search(const std::string& pathname);
+
+/// @brief Strip leading slash characters from a path so PhysFS sees a relative key.
+/// @remark Defined in vfs.c; called from vfs_search.c (SearchContext::enumerateFiles) plus the
+///         in-file vfs_open* / vfs_mkdir / vfs_exists / vfs_isDirectory paths in vfs.c.
+std::string to_physfs_path(const std::string& pathname);
+
+/// @brief Fixed-size path buffer used by VFS helpers that build paths via snprintf
+///        (vfs.c's vfs_get_version + vfs_search.c's vfs_copyDirectory).
+/// @remark Lives in the internal header so both TUs see the same VFS_MAX_PATH bound.
+#define VFS_MAX_PATH 1024
+typedef char VFS_PATH[VFS_MAX_PATH];
