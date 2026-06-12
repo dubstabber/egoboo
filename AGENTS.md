@@ -100,18 +100,20 @@ The remaining coupling hotspot is singleton access: ~632 `::get()` call sites pe
 
 ### High-Risk Hotspots
 
-Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly nine:
-- `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; now the single largest TU in the tree)
-- `egolib/library/src/egolib/game/script_functions_spawn.c` (~1576 lines)
-- `egolib/library/src/egolib/game/Physics/particle_collision.c` (~1528 lines)
-- `egolib/library/src/egolib/vfs.c` (~1500 lines, split this session into vfs.c + vfs_rwops.c + vfs_mount.c)
-- `egolib/library/src/egolib/Script/script.c` (~1156 lines, now in `egolib-scriptvm`; `ai_state_t` state methods split out to `Entities/AiState.cpp`)
+Read relevant audit docs before modifying. Files over 1,000 lines (by size) — exactly eight as of 2026-06-12:
+- `egolib/library/src/egolib/Entities/Object.hpp` (~1613 lines, monolithic interface — 18 role interfaces extracted but header still large; the single largest TU in the tree)
+- `egolib/library/src/egolib/game/Physics/particle_collision_response.c` (~1308 lines, the chr-prt response pipeline; carved 2026-06-12 from the former 1528-line `particle_collision.c` — see `particle_collision_physics.c` (274) for the pure mass/recoil/platform-detection sibling)
+- `egolib/library/src/egolib/vfs.c` (~1276 lines, the SearchContext slice carved 2026-06-12 to `vfs_search.c` (260); earlier SDL_RWops→`vfs_rwops.c` and mount mgmt→`vfs_mount.c` slices landed 2026-06-11)
+- `egolib/library/src/egolib/Script/script.c` (~1156 lines, in `egolib-scriptvm`; `ai_state_t` state methods split out to `Entities/AiState.cpp`)
 - `egolib/library/src/egolib/game/script_compile.c` (~1151 lines)
 - `egolib/library/src/egolib/game/Physics/ObjectPhysics.cpp` (~1138 lines)
 - `egolib/library/src/egolib/game/script_functions_action.c` (~1101 lines)
 - `egolib/library/src/egolib/game/script_functions_target.c` (~1044 lines)
 
-Note: `script_functions_systems.c` (formerly ~3,200 lines) has been fully decomposed and deleted, spread across 14 `script_functions_*.c` files (action, alerts, appearance, bitwise, combat, commerce, enchant, movement, quests, spawn, state, stat_gifts, target, target_select). The largest TU is now `Entities/Object.hpp`, not this deleted file.
+Notes:
+- `script_functions_systems.c` (formerly ~3,200 lines) has been fully decomposed and deleted, spread across 14 `script_functions_*.c` files (action, alerts, appearance, bitwise, combat, commerce, enchant, movement, quests, spawn, state, stat_gifts, target, target_select). The largest TU is now `Entities/Object.hpp`, not this deleted file.
+- `script_functions_spawn.c` (formerly ~1576 lines, the largest .c TU) was split 2026-06-12 into 3 within-`egolib-scriptvm` siblings: `script_functions_spawn.c` (629, residual: 24 lifecycle/drop/cleanup/identify/state-mutation entries), `script_functions_spawn_character.c` (458, 8 character spawn/respawn entries), `script_functions_spawn_particle.c` (463, 12 particle spawn/poof entries), plus a private `script_functions_spawn_internal.h` (74, shared `SpawnSelfContext` / `makeSpawnSelfContext` / `gameSession()` / `isLiveSpawnObjectRef`).
+- `particle_collision.c` (formerly ~1528 lines, second-largest .c TU) was split 2026-06-12 into 2 within-`egolib-library` siblings: `particle_collision_physics.c` (274, `get_prt_mass` / `get_recoil_factors` / `do_prt_platform_detection` / `attach_prt_to_platform`) and `particle_collision_response.c` (1308, the chr-prt response chain + `do_chr_prt_collision` orchestrator + `spawn_bump_particles`). Public `particle_collision.h` unchanged; the immovable-tent guards (CHR_INFINITE_WEIGHT / bumpdampen==0) live intact in both TUs.
 
 Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/game/game.c` (~522 lines, split into `game_{combat,export,loop,targeting,wawalite}.c`)
@@ -130,7 +132,7 @@ Architecturally central but now small after split passes:
 
 ## Testing
 
-Google Test framework. Tests in `egolib/tests/` (44 test files, **875** ctest cases; full run is 875/875 PASS on this machine — the two historical `ScriptLoaderFixture` PrimaryScript-fallback cases now pass here). **Parallel-safe at `-j20`** — each test process gets per-PID isolation via `EGOBOO_USER_DIR` (`TestEnvironment.hpp`), with automatic `atexit` cleanup of temp directories. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
+Google Test framework. Tests in `egolib/tests/` (44 test files, **877** ctest cases; full run is 877/877 PASS on this machine — the two historical `ScriptLoaderFixture` PrimaryScript-fallback cases now pass here; +2 since the 875 baseline are the `script.c` runCharacterScript VM dispatch test (commit 7495f2955) + the UIManager Renderer-seam activeRenderer test (commit ee7487deb)). **Parallel-safe at `-j20`** — each test process gets per-PID isolation via `EGOBOO_USER_DIR` (`TestEnvironment.hpp`), with automatic `atexit` cleanup of temp directories. Coverage spans utilities (quad-tree, string utilities, mesh iterators), content parsers, module load/spawn, script dispatch/VM, gameplay alerts, shop interactions, physics/collision math, and — via a live spawned `Object` — combat damage-resolution math. Still uncovered: rendering, GUI, AI, and the full combat *integration* path.
 
 ## Environment Variables
 
