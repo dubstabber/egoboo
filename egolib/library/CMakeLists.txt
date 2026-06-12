@@ -767,6 +767,9 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/renderer_3d.h
     src/egolib/game/script_compile.h
     src/egolib/game/script_functions_action.c
+    src/egolib/game/script_functions_action_audio.c
+    src/egolib/game/script_functions_action_internal.h
+    src/egolib/game/script_functions_action_visual.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/game/script_functions_internal.h
     src/egolib/game/script_functions_movement.c
@@ -1201,6 +1204,8 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_implementation.c
     src/egolib/game/script_variables.c
     src/egolib/game/script_functions_action.c
+    src/egolib/game/script_functions_action_audio.c
+    src/egolib/game/script_functions_action_visual.c
     src/egolib/game/script_functions_alerts.c
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
