@@ -1,8 +1,12 @@
 /// @file egolib/game/script_functions_target_impl.h
-/// @brief Private anonymous-namespace helpers shared between
-///        script_functions_target.c and script_functions_target_select.c.
+/// @brief Private anonymous-namespace helpers shared between the four
+///        script_functions_target*.c translation units:
+///          * script_functions_target.c          (state predicates)
+///          * script_functions_target_identity.c (IDSZ identity queries)
+///          * script_functions_target_orders.c   (orders + getters/mutators)
+///          * script_functions_target_select.c   (target acquisition / selection)
 ///
-/// Include this header ONLY from those two translation units.  It defines
+/// Include this header ONLY from those translation units.  It defines
 /// types and helper functions inside an anonymous namespace, so each TU
 /// gets its own copy — consistent with the pattern used in all other
 /// script_functions_*.c files.
