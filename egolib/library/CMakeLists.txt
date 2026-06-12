@@ -518,9 +518,9 @@ set(EGOLIB_TOPLEVEL_SOURCES
 )
 
 # -- game/Core ---------------------------------------------------------------
+# Note: ActiveGameEngine.{cpp,hpp} lives in egolib-gui (the active-engine seam carries
+# zero game-core deps; relocated 2026-06-12) — see EGOLIB_GUI_LAYER_SOURCES below.
 set(EGOLIB_GAME_CORE_SOURCES
-    src/egolib/game/Core/ActiveGameEngine.cpp
-    src/egolib/game/Core/ActiveGameEngine.hpp
     src/egolib/game/Core/ContentRuntimeBootstrap.cpp
     src/egolib/game/Core/ContentRuntimeBootstrap.hpp
     src/egolib/game/Core/EngineContext.cpp
@@ -532,6 +532,9 @@ set(EGOLIB_GAME_CORE_SOURCES
 )
 
 # -- game/GameStates ---------------------------------------------------------
+# Note: GameState.{cpp,hpp} lives in egolib-gui (the abstract base only needs
+# Ego::GUI::Container and the activeGameEngine() seam; relocated 2026-06-12) —
+# see EGOLIB_GUI_LAYER_SOURCES below.
 set(EGOLIB_GAME_GAMESTATES_SOURCES
     src/egolib/game/GameStates/AudioOptionsScreen.cpp
     src/egolib/game/GameStates/AudioOptionsScreen.hpp
@@ -545,8 +548,6 @@ set(EGOLIB_GAME_GAMESTATES_SOURCES
     src/egolib/game/GameStates/DebugObjectLoadingState.hpp
     src/egolib/game/GameStates/DebugParticlesScreen.cpp
     src/egolib/game/GameStates/DebugParticlesScreen.hpp
-    src/egolib/game/GameStates/GameState.cpp
-    src/egolib/game/GameStates/GameState.hpp
     src/egolib/game/GameStates/InGameMenuState.cpp
     src/egolib/game/GameStates/InGameMenuState.hpp
     src/egolib/game/GameStates/InputOptionsScreen.cpp
@@ -1114,12 +1115,21 @@ set(EGOLIB_RENDERER_LAYER_SOURCES
 )
 
 # The egolib-gui middle layer: the generic GUI widget toolkit (Component/Container/Layout + the
-# leaf widgets + UIManager). Depends one-way on egolib-foundation-base AND egolib-renderer (it draws
+# leaf widgets + UIManager) plus the abstract GameState base and the active-engine ownership-move
+# seam (ActiveGameEngine). Depends one-way on egolib-foundation-base AND egolib-renderer (it draws
 # through the OpenGL backend and the active renderer/graphics seams). It is the cohesive toolkit that
 # carries NO game-session/object-state dependency; the game-coupled widgets (CharacterStatus,
 # CharacterWindow, MiniMap, InventorySlot, ModuleSelector, LevelUpWindow) stay in egolib-library.
-# nm-verified: zero refs into egolib-library/egolib-physics; nothing below it depends on it.
+# GameState (the abstract base) lives here because it only requires Ego::GUI::Container plus the
+# activeGameEngine() seam — both intra-gui. ActiveGameEngine.{cpp,hpp} carries zero game-core deps
+# (only stdexcept + a forward decl of GameEngine) and lives alongside the GameState base so the seam
+# resolves intra-gui. nm-verified: zero refs into egolib-library/egolib-physics; nothing below it
+# depends on it.
 set(EGOLIB_GUI_LAYER_SOURCES
+    src/egolib/game/Core/ActiveGameEngine.cpp
+    src/egolib/game/Core/ActiveGameEngine.hpp
+    src/egolib/game/GameStates/GameState.cpp
+    src/egolib/game/GameStates/GameState.hpp
     src/egolib/game/GUI/Component.cpp
     src/egolib/game/GUI/Component_bridge.cpp
     src/egolib/game/GUI/Container.cpp
@@ -1149,8 +1159,10 @@ set(EGOLIB_GUI_LAYER_SOURCES
 # screens orchestrate the game (they reach DOWN into the game-core library), and game-core no longer
 # references any concrete screen (the former reverse edges were seam-cut via IPlayingStateController,
 # the GameEngine main-menu-state factory, and the dynamic_cast-to-interface). The GameState BASE
-# (GameState.cpp) stays in egolib-library — the screens derive from it downward. nm-verified: zero
-# egolib-library -> egolib-gamestates link edges.
+# (GameState.cpp) lives in egolib-gui (relocated 2026-06-12 — the base only needs
+# Ego::GUI::Container plus the activeGameEngine() seam, both intra-gui); the screens derive from it
+# downward across the library boundary. nm-verified: zero egolib-library -> egolib-gamestates link
+# edges.
 set(EGOLIB_GAMESTATES_LAYER_SOURCES
     src/egolib/game/GameStates/AudioOptionsScreen.cpp
     src/egolib/game/GameStates/DebugFontRenderingState.cpp
