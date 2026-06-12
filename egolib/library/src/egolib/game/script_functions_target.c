@@ -1,5 +1,8 @@
 /// @file egolib/game/script_functions_target.c
-/// @brief Target property queries, order management, and miscellaneous target operations
+/// @brief Target state predicates (Is*/Facing/Distance). Companion TUs hold the
+///        IDSZ identity queries (script_functions_target_identity.c) and the
+///        order/getter/mutator ops (script_functions_target_orders.c) since the
+///        3-way split on 2026-06-12.
 
 #include "egolib/game/script_functions_target_impl.h"
 
@@ -21,111 +24,6 @@ uint8_t scr_IfTargetKilled( script_state_t& state, ai_state_t& self )
 
     // Proceed only if the character's target has just died or is already dead
     return ( HAS_SOME_BITS( self.alert, ALERTIF_TARGETKILLED ) || !targetContext.damageable->isAlive() );
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasID( tmpargument = "idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target has either a parent or type IDSZ
-    /// matching tmpargument.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->hasTypeIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasItemID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasItemID( tmpargument = "idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target has a matching item in his/her
-    /// pockets or hands.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.info == nullptr || targetContext.inventory == nullptr)
-    {
-        return false;
-    }
-
-    const IDSZ2 itemId = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-
-    //Check hands
-    if (targetContext.info->wieldsItemIDSZ(itemId)) {
-        return true;
-    }
-
-    //Check inventory
-    return ObjectRef::Invalid != Inventory::findItem(*targetContext.inventory, itemId, false);
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHoldingItemID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHoldingItemID( tmpargument = "idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target has a matching item in his/her
-    /// hands.  It also sets tmpargument to the proper latch button to press
-    /// to use that item
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->wieldsItemIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasSkillID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasSkillID( tmpargument = "skill idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if ID matches tmpargument
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->hasSkillIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IssueOrder( script_state_t& state, ai_state_t& self )
-{
-    // IssueOrder( tmpargument = "order"  )
-    /// @author ZZ
-    /// @details This function tells all of the character's teammates to do something,
-    /// though each teammate needs to interpret the order using IfOrdered in
-    /// its own script.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    issue_order( self.getSelf(), state.argument );
-
-    return true;
 }
 
 
@@ -218,41 +116,6 @@ uint8_t scr_IfTargetIsOldTarget( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     return ( self.getTarget() == self.getOldTarget() );
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_SetOldTarget( script_state_t& state, ai_state_t& self )
-{
-    // SetOldTarget()
-    /// @author ZZ
-    /// @details This function sets the old target to the current target.  To allow
-    /// greater manipulations of the target
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    self.setOldTarget(self.getTarget());
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasVulnerabilityID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasVulnerabilityID( tmpargument = "vulnerability idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target is vulnerable to the given IDSZ.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->matchesVulnerabilityIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -365,125 +228,6 @@ uint8_t scr_IfTargetIsFemale( script_state_t& state, ai_state_t& self )
 
 
 //--------------------------------------------------------------------------------------------
-uint8_t scr_GetAttackTurn( script_state_t& state, ai_state_t& self )
-{
-    // tmpturn = GetAttackTurn()
-    /// @author ZZ
-    /// @details This function sets tmpturn to the direction from which the last attack
-    /// came. Not particularly useful in most cases, but it could be.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    state.turn = FACING_T(self.directionlast);
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetDamageType( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetDamageType()
-    /// @author ZZ
-    /// @details This function sets tmpargument to the damage type of the last attack that
-    /// hit the character
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    state.argument = self.damagetypelast;
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_TranslateOrder( script_state_t& state, ai_state_t& self )
-{
-    // tmpx,tmpy,tmpargument = TranslateOrder()
-    /// @author ZZ
-    /// @details This function translates a packed order into understandable values.
-    /// See CreateOrder for more.  This function sets tmpx, tmpy, tmpargument,
-    /// and sets the target ( if valid )
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ObjectRef targetRef = ObjectRef(Ego::Math::clipBits<16>(self.order_value >> 24));
-    if (!trySetResolvedTarget(self, targetRef))
-    {
-        return false;
-    }
-
-    state.x = ((self.order_value >> 14) & 0x03FF) << 6;
-    state.y = ((self.order_value >> 4) & 0x03FF) << 6;
-    state.argument = (self.order_value >> 0) & 0x000F;
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasSpecialID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasSpecialID( tmpargument = "special idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the character has a special IDSZ ( in data.txt )
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->matchesSpecialIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetTargetGrogTime( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetTargetGrogTime()
-    /// @author ZZ
-    /// @details This function sets tmpargument to the number of updates before the
-    /// character is ungrogged, proceeding if the number is greater than 0
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    state.argument = target->getGrogTimer();
-
-    return ( 0 != state.argument );
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetTargetDazeTime( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetTargetDazeTime()
-    /// @author ZZ
-    /// @details This function sets tmpargument to the number of updates before the
-    /// character is undazed, proceeding if the number is greater than 0
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    state.argument = target->getDazeTimer();
-
-    return ( 0 != state.argument );
-}
-
-
-//--------------------------------------------------------------------------------------------
 uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
 {
     // IfTargetIsOnSameTeam()
@@ -500,25 +244,6 @@ uint8_t scr_IfTargetIsOnSameTeam( script_state_t& state, ai_state_t& self )
     }
 
     return target->isOnSameTeam(selfContext.info->getTeamRef());
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasAnyID( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasAnyID( tmpargument = "idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target has any IDSZ that matches the given one
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->hasAnyIDSZ(Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument));
 }
 
 
@@ -613,27 +338,6 @@ uint8_t scr_IfDistanceIsMoreThanTurn( script_state_t& state, ai_state_t& self )
 
 
 //--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasItemIDEquipped( script_state_t& state, ai_state_t& self )
-{
-    // IfTargetHasItemIDEquipped( tmpargument = "item idsz" )
-    /// @author ZZ
-    /// @details This function proceeds if the target already wearing a matching item
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.inventory == nullptr)
-    {
-        return false;
-    }
-
-	auto iitem = Inventory::findItem(*targetContext.inventory, Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument), true );
-
-    return isLiveTargetRef(iitem);
-}
-
-
-//--------------------------------------------------------------------------------------------
 uint8_t scr_IfFacingTarget( script_state_t& state, ai_state_t& self )
 {
     // IfFacingTarget()
@@ -671,66 +375,6 @@ uint8_t scr_IfTargetIsMounted( script_state_t& state, ai_state_t& self )
 
     const ITargetInfo* holderInfo = tryTargetInfo(targetContext.info->getHolderRef());
     return holderInfo != nullptr && holderInfo->isMount();
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_OrderTarget( script_state_t& state, ai_state_t& self )
-{
-    // OrderTarget( tmpargument = "order" )
-    /// @author ZZ
-    /// @details This function issues an order to the given target
-    /// Be careful in using this, always checking IDSZ first
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.scriptable == nullptr)
-    {
-        return false;
-    }
-
-    return targetContext.scriptable->addAIOrder(state.argument, 0);
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_CreateOrder( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = CreateOrder( tmpx = "value1", tmpy = "value2", tmpargument = "order" )
-
-    /// @author ZZ
-    /// @details This function compresses tmpx, tmpy, tmpargument ( 0 - 15 ), and the
-    /// character's target into tmpargument.  This new tmpargument can then
-    /// be issued as an order to teammates.  TranslateOrder will undo the
-    /// compression
-
-    uint16_t sTmp = 0;
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    sTmp = ( REF_TO_INT( self.getTarget().get() ) & 0x00FF ) << 24;
-    sTmp |= (( state.x >> 6 ) & 0x03FF ) << 14;
-    sTmp |= (( state.y >> 6 ) & 0x03FF ) << 4;
-    sTmp |= ( state.argument & 0x000F );
-    state.argument = sTmp;
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_OrderSpecialID( script_state_t& state, ai_state_t& self )
-{
-    // OrderSpecialID( tmpargument = "compressed order", tmpdistance = "idsz" )
-    /// @author ZZ
-    /// @details This function orders all characters with the given special IDSZ.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    issue_special_order( state.argument, state.distance );
-
-    return true;
 }
 
 
@@ -789,47 +433,6 @@ uint8_t scr_IfTargetIsFlying( script_state_t& state, ai_state_t& self )
     }
 
     return target->isFlying();
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetTargetState( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetTargetState()
-    /// @author ZZ
-    /// @details This function sets tmpargument to the state of the target
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.scriptable == nullptr)
-    {
-        return false;
-    }
-
-    state.argument = targetContext.scriptable->getAIStateValue();
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetTargetContent( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetTargetContent()
-    // This sets tmpargument to the current Target's content value
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.scriptable == nullptr)
-    {
-        return false;
-    }
-
-    state.argument = targetContext.scriptable->getAIContent();
-
-    return true;
 }
 
 
@@ -925,64 +528,6 @@ uint8_t scr_IfTargetIsASpell( script_state_t& state, ai_state_t& self )
     }
 
     return selfContext.appearance->hasIntellectDamageParticle();
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_GetTargetDamageType( script_state_t& state, ai_state_t& self )
-{
-    // tmpargument = GetTargetDamageType()
-    /// @author ZF
-    /// @details This function gets the last type of damage for the Target
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.scriptable == nullptr)
-    {
-        return false;
-    }
-
-    state.argument = targetContext.scriptable->getAILastDamageType();
-
-    return true;
-}
-
-
-//--------------------------------------------------------------------------------------------
-uint8_t scr_IfTargetHasQuest( script_state_t& state, ai_state_t& self )
-{
-    // tmpdistance = IfTargetHasQuest( tmpargument = "quest idsz )
-    /// @author ZF
-    /// @details This function proceeds if the Target has the unfinIshed quest specified in tmpargument
-    /// and sets tmpdistance to the Quest Level of the specified quest.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
-    if (targetContext.info == nullptr)
-    {
-        return false;
-    }
-
-    const IDSZ2 idsz = Ego::Script::Interpreter::safeCast<IDSZ2>(state.argument);
-    if(!targetContext.info->isPlayer()) {
-        return false;
-    }
-
-    const std::shared_ptr<Ego::Player> player = tryPlayer(*targetContext.info);
-    if (player == nullptr)
-    {
-        return false;
-    }
-
-    // only find active quests
-    if(!player->getQuestLog().hasActiveQuest(idsz)) {
-        return false;
-    }
-
-    state.distance = player->getQuestLog()[idsz];
-    return true;
 }
 
 

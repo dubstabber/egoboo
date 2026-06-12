@@ -786,6 +786,8 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_commerce.c
     src/egolib/game/script_functions_quests.c
     src/egolib/game/script_functions_target.c
+    src/egolib/game/script_functions_target_identity.c
+    src/egolib/game/script_functions_target_orders.c
     src/egolib/game/script_functions_target_select.c
     src/egolib/game/script_functions_target_impl.h
     src/egolib/game/script_functions.h
@@ -1220,6 +1222,8 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_state.c
     src/egolib/game/script_functions_stat_gifts.c
     src/egolib/game/script_functions_target.c
+    src/egolib/game/script_functions_target_identity.c
+    src/egolib/game/script_functions_target_orders.c
     src/egolib/game/script_functions_target_select.c
     src/egolib/Script/ScriptSystemAdapter.cpp
 )
