@@ -738,6 +738,8 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
     src/egolib/game/Physics/particle_collision_physics.c
     src/egolib/game/Physics/particle_collision_response.c
     src/egolib/game/Physics/ParticlePhysics.cpp
+    src/egolib/game/Physics/ParticlePhysics_movement.cpp
+    src/egolib/game/Physics/ParticlePhysics_internal.h
     src/egolib/game/Physics/ParticlePhysics.hpp
 )
 
