@@ -719,6 +719,8 @@ set(EGOLIB_GAME_MODULE_SOURCES
 set(EGOLIB_GAME_PHYSICS_SOURCES
     src/egolib/game/Physics/CollisionSystem.cpp
     src/egolib/game/Physics/CollisionSystem.hpp
+    src/egolib/game/Physics/CollisionSystem_chr_chr.cpp
+    src/egolib/game/Physics/CollisionSystem_internal.h
     src/egolib/game/Physics/ObjectPhysics.cpp
     src/egolib/game/Physics/ObjectPhysics_attachment.cpp
     src/egolib/game/Physics/ObjectPhysics_internal.h
