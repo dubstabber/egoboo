@@ -784,6 +784,8 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_spawn_internal.h
     src/egolib/game/script_functions_spawn_particle.c
     src/egolib/game/script_functions_state.c
+    src/egolib/game/script_functions_state_inventory.c
+    src/egolib/game/script_functions_state_internal.h
     src/egolib/game/script_functions_alerts.c
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
@@ -1232,6 +1234,7 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_spawn_character.c
     src/egolib/game/script_functions_spawn_particle.c
     src/egolib/game/script_functions_state.c
+    src/egolib/game/script_functions_state_inventory.c
     src/egolib/game/script_functions_stat_gifts.c
     src/egolib/game/script_functions_target.c
     src/egolib/game/script_functions_target_identity.c
