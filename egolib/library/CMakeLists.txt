@@ -738,7 +738,9 @@ set(EGOLIB_GAME_PHYSICS_SOURCES
 # -- game/ top-level files ---------------------------------------------------
 set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/CharacterMatrix.c
+    src/egolib/game/CharacterMatrix_grip.c
     src/egolib/game/CharacterMatrix.h
+    src/egolib/game/CharacterMatrix_internal.h
     src/egolib/game/CharacterParticleOps.h
     src/egolib/game/egoboo.c
     src/egolib/game/egoboo_doxygen.h
