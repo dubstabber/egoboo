@@ -162,7 +162,10 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/DisplayMode.cpp
     src/egolib/Graphics/DisplayMode.hpp
     src/egolib/Graphics/Font.cpp
+    src/egolib/Graphics/Font_layout.cpp
+    src/egolib/Graphics/Font_utf8.cpp
     src/egolib/Graphics/Font.hpp
+    src/egolib/Graphics/Font_internal.hpp
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/FontManager.hpp
     src/egolib/Graphics/GraphicsContext.cpp
@@ -953,6 +956,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/wawalite_file.c
     src/egolib/Float.cpp
     src/egolib/Graphics/Font.cpp
+    src/egolib/Graphics/Font_layout.cpp
+    src/egolib/Graphics/Font_utf8.cpp
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/ICameraSystem.cpp
