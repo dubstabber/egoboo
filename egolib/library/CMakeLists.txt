@@ -183,6 +183,7 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/MD2Model.hpp
     src/egolib/Graphics/ModelDescriptor.cpp
+    src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.hpp
     src/egolib/Graphics/ModelDescriptor.hpp
@@ -952,6 +953,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
+    src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/PixelFormat.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/TextureManager.cpp
