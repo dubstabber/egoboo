@@ -787,6 +787,9 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_bitwise.c
     src/egolib/game/script_functions_internal.h
     src/egolib/game/script_functions_movement.c
+    src/egolib/game/script_functions_movement_internal.h
+    src/egolib/game/script_functions_movement_locomotion.c
+    src/egolib/game/script_functions_movement_physics.c
     src/egolib/game/script_functions_spawn.c
     src/egolib/game/script_functions_spawn_character.c
     src/egolib/game/script_functions_spawn_internal.h
@@ -1244,6 +1247,8 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_commerce_passages.c
     src/egolib/game/script_functions_enchant.c
     src/egolib/game/script_functions_movement.c
+    src/egolib/game/script_functions_movement_locomotion.c
+    src/egolib/game/script_functions_movement_physics.c
     src/egolib/game/script_functions_quests.c
     src/egolib/game/script_functions_teams_presentation.c
     src/egolib/game/script_functions_spawn.c
