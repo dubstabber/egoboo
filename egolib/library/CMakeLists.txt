@@ -82,6 +82,8 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/_Include.hpp
     src/egolib/Entities/Object_accessors.cpp
     src/egolib/Entities/Object_attributes.cpp
+    src/egolib/Entities/Object_attributes_behaviors.cpp
+    src/egolib/Entities/Object_attributes_internal.h
     src/egolib/Entities/Object_combat.cpp
     src/egolib/Entities/Object_combat_stats.cpp
     src/egolib/Entities/Object.cpp
