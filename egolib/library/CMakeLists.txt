@@ -793,6 +793,8 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_enchant.c
     src/egolib/game/script_functions_stat_gifts.c
     src/egolib/game/script_functions_commerce.c
+    src/egolib/game/script_functions_commerce_module.c
+    src/egolib/game/script_functions_commerce_passages.c
     src/egolib/game/script_functions_quests.c
     src/egolib/game/script_functions_target.c
     src/egolib/game/script_functions_target_identity.c
@@ -1228,6 +1230,8 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
     src/egolib/game/script_functions_commerce.c
+    src/egolib/game/script_functions_commerce_module.c
+    src/egolib/game/script_functions_commerce_passages.c
     src/egolib/game/script_functions_enchant.c
     src/egolib/game/script_functions_movement.c
     src/egolib/game/script_functions_quests.c
