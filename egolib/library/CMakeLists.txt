@@ -1327,7 +1327,11 @@ list(REMOVE_ITEM SOURCE_FILES ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS
 # Re-assert C-as-C++ on the carved C sources (the SOURCE_FILES-scoped property set above is kept,
 # but assert it here so the carved targets are self-contained).
 foreach(_src ${EGOLIB_FOUNDATION_BASE_SOURCES} ${EGOLIB_PHYSICS_SOURCES} ${EGOLIB_RENDERER_LAYER_SOURCES} ${EGOLIB_GUI_LAYER_SOURCES} ${EGOLIB_GAME_GRAPHICS_LAYER_SOURCES} ${EGOLIB_SCRIPTVM_LAYER_SOURCES})
-    if(_src MATCHES "\\.[ch]$")
+    # Match .c ONLY (not .h). Unlike the master SOURCE_FILES loop above, this carve-layer loop
+    # has no HEADER_FILE_ONLY follow-up, so a "\\.[ch]$" pattern would set LANGUAGE CXX on .h
+    # headers (e.g. graphic_mad.h, script_internal.h) and force CMake to compile them into stray
+    # <name>.h.o archive members. .c sources still get C-as-C++; .h/.hpp headers stay header-only.
+    if(_src MATCHES "\\.c$")
         set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
     endif()
 endforeach()
