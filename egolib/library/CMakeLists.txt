@@ -468,8 +468,6 @@ set(EGOLIB_VFS_SOURCES
 
 # -- Top-level egolib files (not yet assigned to a subsystem) ----------------
 set(EGOLIB_TOPLEVEL_SOURCES
-    src/egolib/App.cpp
-    src/egolib/App.hpp
     src/egolib/bbox.c
     src/egolib/bbox.h
     src/egolib/PhysicsData.h
@@ -1272,6 +1270,8 @@ set(EGOLIB_HUD_WIDGETS_LAYER_SOURCES
 # interfaces (foundation-base), so no concrete cluster symbol is referenced by the library remainder.
 # cartman and the content-validator drive no 3D scene render and stay on egolib-library only.
 set(EGOLIB_GAME_GRAPHICS_LAYER_SOURCES
+    src/egolib/App.cpp
+    src/egolib/App.hpp
     src/egolib/game/graphic_mad.c
     src/egolib/game/graphic_mad.h
     src/egolib/game/Graphics/graphic_init.cpp
