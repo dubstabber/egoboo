@@ -237,6 +237,7 @@ set(EGOLIB_IMAGE_SOURCES
     src/egolib/Image/ImageManager.cpp
     src/egolib/Image/ImageManager.hpp
     src/egolib/Image/SDL_Image_Extensions.c
+    src/egolib/Image/SDL_Image_Extensions_functors.c
     src/egolib/Image/SDL_Image_Extensions.h
 )
 
@@ -988,6 +989,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Image/ImageLoader_SDL_image.cpp
     src/egolib/Image/ImageManager.cpp
     src/egolib/Image/SDL_Image_Extensions.c
+    src/egolib/Image/SDL_Image_Extensions_functors.c
     src/egolib/InputControl/ControlSettingsFile.cpp
     src/egolib/InputControl/InputDevice.cpp
     src/egolib/InputControl/InputSystem.cpp
