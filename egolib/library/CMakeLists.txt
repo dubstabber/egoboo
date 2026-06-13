@@ -480,6 +480,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/PhysicalConstants.hpp
     src/egolib/Physics/physics.c
+    src/egolib/Physics/physics_intersect.c
     src/egolib/Physics/physics.h
     src/egolib/Clock.cpp
     src/egolib/Clock.hpp
@@ -1088,6 +1089,7 @@ set(EGOLIB_PHYSICS_SOURCES
     src/egolib/Physics/ICollisionWorld.cpp
     src/egolib/Physics/PhysicalConstants.cpp
     src/egolib/Physics/physics.c
+    src/egolib/Physics/physics_intersect.c
 )
 
 # The egolib-renderer middle layer: SDL display/windowing + the OpenGL rendering backend.
