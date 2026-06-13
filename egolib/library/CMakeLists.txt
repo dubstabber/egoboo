@@ -592,6 +592,7 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
     src/egolib/game/Graphics/Camera.cpp
+    src/egolib/game/Graphics/Camera_update.cpp
     src/egolib/game/Graphics/Camera.hpp
     src/egolib/game/Graphics/CameraSystem.cpp
     src/egolib/game/Graphics/CameraSystem.hpp
@@ -1302,6 +1303,7 @@ set(EGOLIB_GAME_GRAPHICS_LAYER_SOURCES
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
     src/egolib/game/Graphics/Camera.cpp
+    src/egolib/game/Graphics/Camera_update.cpp
     src/egolib/game/Graphics/Camera.hpp
     src/egolib/game/Graphics/CameraSystem.cpp
     src/egolib/game/Graphics/CameraSystem.hpp
