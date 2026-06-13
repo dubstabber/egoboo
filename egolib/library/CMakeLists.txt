@@ -755,6 +755,7 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/graphic_hud.c
     src/egolib/game/graphic_internal.h
     src/egolib/game/graphic_lighting.c
+    src/egolib/game/graphic_lighting_dynalist.c
     src/egolib/game/graphic_scene.c
     src/egolib/game/graphic_fan.h
     src/egolib/game/graphic.h
