@@ -500,6 +500,7 @@ set(EGOLIB_TOPLEVEL_SOURCES
     src/egolib/fileutil.c
     src/egolib/fileutil.h
     src/egolib/ReadContext.cpp
+    src/egolib/ReadContext_literals.cpp
     src/egolib/Float.cpp
     src/egolib/Float.hpp
     src/egolib/font_bmp.c
@@ -1048,6 +1049,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/file_common.c
     src/egolib/fileutil.c
     src/egolib/ReadContext.cpp
+    src/egolib/ReadContext_literals.cpp
     src/egolib/font_bmp.c
     src/egolib/frustum.c
     src/egolib/game/Module/AnimatedTiles.cpp
