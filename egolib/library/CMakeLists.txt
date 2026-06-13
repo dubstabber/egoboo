@@ -83,6 +83,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/Object_accessors.cpp
     src/egolib/Entities/Object_attributes.cpp
     src/egolib/Entities/Object_combat.cpp
+    src/egolib/Entities/Object_combat_stats.cpp
     src/egolib/Entities/Object.cpp
     src/egolib/Entities/Object_appearance.cpp
     src/egolib/Entities/Object_internal.h
