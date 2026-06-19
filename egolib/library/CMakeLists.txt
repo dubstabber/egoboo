@@ -1312,6 +1312,7 @@ set(EGOLIB_GAME_GRAPHICS_LAYER_SOURCES
     src/egolib/App.hpp
     src/egolib/game/graphic_mad.c
     src/egolib/game/graphic_mad.h
+    src/egolib/game/graphic_mad_model.c
     src/egolib/game/Graphics/graphic_init.cpp
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
