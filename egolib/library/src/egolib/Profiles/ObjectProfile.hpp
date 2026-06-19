@@ -595,7 +595,7 @@ private:
     struct LoadServices;
 
     /**
-    * @brief Loads the md2 model for this profile
+    * @brief Loads the model for this profile
     **/
     //void loadModel(const std::string &filePath);
 
@@ -625,7 +625,7 @@ private:
     std::string _pathname;                      ///< Usually the source filename
 
     // the sub-profiles
-    std::shared_ptr<Ego::ModelDescriptor> _model;   ///< the md2 model for this profile
+    std::shared_ptr<Ego::ModelDescriptor> _model;   ///< the model for this profile
     EVE_REF _ieve;                             ///< the enchant profile for this profile
     ObjectProfileRef _slotNumber;
 

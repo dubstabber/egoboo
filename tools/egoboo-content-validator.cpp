@@ -3,6 +3,7 @@
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"  // spawn_file_info_t (was leeched via the egolib.h uber-header)
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
+#include "egolib/Graphics/ObjectModelAsset.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Image/ImageManager.hpp"
@@ -1042,7 +1043,6 @@ bool validateObjectProfile(const std::string& moduleName,
     bool success = true;
 
     const std::string dataPath = virtualObjectPath + "/data.txt";
-    const std::string modelPath = virtualObjectPath + "/tris.md2";
     const std::string scriptPath = virtualObjectPath + "/script.txt";
 
     if (!vfs_exists(dataPath))
@@ -1051,10 +1051,28 @@ bool validateObjectProfile(const std::string& moduleName,
         return false;
     }
 
-    if (!vfs_exists(modelPath))
+    const Ego::Graphics::ObjectModelAsset modelAsset = Ego::Graphics::resolveObjectModelAsset(virtualObjectPath);
+    if (!modelAsset.exists)
     {
+        const std::string modelPath = virtualObjectPath + "/tris.md2";
         reporter.error(moduleName, "missing_required_file", modelPath, "missing required object model", &summary, modelPath);
         success = false;
+    }
+    else if (modelAsset.format != Ego::Graphics::ObjectModelFormat::Md2)
+    {
+        const Ego::Graphics::ObjectModelAsset md2Fallback =
+            Ego::Graphics::resolveObjectModelAsset(virtualObjectPath, Ego::Graphics::ObjectModelFormat::Md2);
+        if (!md2Fallback.exists)
+        {
+            reporter.error(moduleName,
+                           "unsupported_model_format",
+                           modelAsset.path,
+                           std::string("object model format is not loadable by this runtime: ") +
+                               Ego::Graphics::getObjectModelFormatName(modelAsset.format),
+                           &summary,
+                           modelAsset.path);
+            success = false;
+        }
     }
 
     try

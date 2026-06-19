@@ -1,6 +1,8 @@
 #include "ModelDescriptor.hpp"
 #include "egolib/Log/_Include.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
+#include "egolib/Graphics/ObjectModelAsset.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/fileutil.h"
@@ -111,7 +113,7 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
     _actionValid(),
     _actionStart(),
     _actionEnd(),
-    _md2Model(nullptr)
+    _model(nullptr)
 {
     // Clear out all actions and reset to invalid
     _actionMap.fill(ACTION_COUNT);
@@ -125,18 +127,32 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
         }
     }
 
-    // load the model from the file
-    _md2Model = MD2Model::loadFromFile(folderPath + "/tris.md2");
-    if(!_md2Model) {
+    Graphics::ObjectModelAsset modelAsset = Graphics::resolveObjectModelAsset(folderPath);
+    if (!modelAsset.exists)
+    {
         throw std::runtime_error("File not found: " + folderPath + "/tris.md2");
     }
 
-    /// @details Egoboo md2 models were designed with 1 tile = 32x32 units, but internally Egoboo uses
+    if (modelAsset.format != Graphics::ObjectModelFormat::Md2)
+    {
+        modelAsset = Graphics::resolveObjectModelAsset(folderPath, Graphics::ObjectModelFormat::Md2);
+        if (!modelAsset.exists)
+        {
+            throw std::runtime_error("Unsupported model format: " + folderPath);
+        }
+    }
+
+    _model = MD2Model::loadFromFile(modelAsset.path);
+    if(!_model) {
+        throw std::runtime_error("File not found: " + modelAsset.path);
+    }
+
+    /// @details Egoboo legacy models were designed with 1 tile = 32x32 units, but internally Egoboo uses
     ///      1 tile = 128x128 units. Previously, this was handled by sprinkling a bunch of
     ///      commands that multiplied various quantities by 4 or by 4.125 throughout the code.
     ///      It was very counterintuitive, and caused me no end of headaches...  Of course the
     ///      solution is to scale the model!
-    _md2Model->scaleModel(-3.5f, 3.5f, 3.5f);
+    _model->scaleModel(-3.5f, 3.5f, 3.5f);
 
     // Create the actions table for this imad
     ripActions();
@@ -144,7 +160,7 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
 
     // Create table for doing transition from one type of walk to another...
     // Clear 'em all to start
-    for(MD2_Frame &frame : _md2Model->getFrames())
+    for(Graphics::AnimatedModelFrame &frame : _model->getFrames())
     {
         frame.framelip = 0;
     }
@@ -220,7 +236,7 @@ BIT_FIELD ModelDescriptor::getMadFX(int action) const
 
     //Loop through all frames in animation and collect all FX bits that are set
     BIT_FIELD retval = EMPTY_BIT_FIELD;
-    const std::vector<MD2_Frame> &frames = _md2Model->getFrames();
+    const std::vector<Graphics::AnimatedModelFrame> &frames = _model->getFrames();
     for (size_t cnt = _actionStart[action]; cnt <= _actionEnd[action]; cnt++)
     {
         SET_BIT(retval, frames[cnt].framefx);

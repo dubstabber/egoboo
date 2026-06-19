@@ -3,6 +3,7 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#include "egolib/Graphics/ObjectModelAsset.hpp"
 #define private public
 #include "egolib/Entities/_Include.hpp"
 #undef private
@@ -115,7 +116,9 @@ protected:
         EXPECT_TRUE(vfs_copyDirectory("mp_objects/follower.obj", profilePath.c_str()));
         EXPECT_TRUE(vfs_exists((profilePath + "/data.txt").c_str()));
         EXPECT_TRUE(vfs_exists((profilePath + "/naming.txt").c_str()));
-        EXPECT_TRUE(vfs_exists((profilePath + "/tris.md2").c_str()));
+        const Ego::Graphics::ObjectModelAsset modelAsset = Ego::Graphics::resolveObjectModelAsset(profilePath);
+        EXPECT_TRUE(modelAsset.exists);
+        EXPECT_EQ(modelAsset.format, Ego::Graphics::ObjectModelFormat::Md2);
 
         return EngineContext::get().profileSystem().loadOneProfile(profilePath, slot);
     }

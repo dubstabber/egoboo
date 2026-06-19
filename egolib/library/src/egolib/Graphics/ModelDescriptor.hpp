@@ -24,7 +24,7 @@
 #include "egolib/typedef.h"
 
 //Forward declarations
-class MD2Model;
+namespace Ego { namespace Graphics { class AnimatedModel; } }
 
 //Macros
 #define ACTION_IS_TYPE( VAL, CHR ) ((VAL >= ACTION_##CHR##A) && (VAL <= ACTION_##CHR##D))
@@ -151,7 +151,7 @@ public:
 
     const std::string& getName() const;
 
-    const std::shared_ptr<MD2Model>& getMD2() const;
+    const std::shared_ptr<Ego::Graphics::AnimatedModel>& getModel() const;
 
     /// @details translate the action that was given into a valid action for the model
     ///
@@ -190,7 +190,7 @@ public:
 private:
 
     /// \details  This function creates the iframe lists for each action based on the
-    ///    name of each md2 iframe in the model
+    ///    name of each animation frame in the model
     void ripActions();
 
     /// @details This function figures out the IFrame invulnerability, and Attack, Grab, and
@@ -240,7 +240,7 @@ private:
     std::array<int, ACTION_COUNT> _actionStart;        ///< First frame of animation
     std::array<int, ACTION_COUNT> _actionEnd;          ///< The last frame
 
-    std::shared_ptr<MD2Model> _md2Model;               ///< actual MD2 model
+    std::shared_ptr<Ego::Graphics::AnimatedModel> _model;   ///< actual animated model
 };
 
 } //Ego

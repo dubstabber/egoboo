@@ -27,7 +27,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/FileFormats/Globals.hpp"
-// The concrete RenderPass / BillboardSystem / TextureAtlasManager / Md2ModelRenderer types are
+// The concrete RenderPass / BillboardSystem / TextureAtlasManager / model vertex-buffer types are
 // constructed in graphic_init.cpp (egolib-game-graphics, above egolib-library). graphic.c only
 // needs the RenderPass *base* here (reinitClocks touches RenderPass::clock through the IGFX
 // accessors) and reaches the billboard/atlas systems through the EngineContext interfaces.
@@ -65,7 +65,7 @@ using namespace Ego::Time;
 
 gfx_config_t     gfx;
 
-float            indextoenvirox[MD2Model::normalCount];
+float            indextoenvirox[Ego::Graphics::AnimatedModel::normalCount];
 
 using namespace gfx_internal;
 
@@ -144,10 +144,10 @@ void gfx_system_make_enviro()
     /// @details This function sets up the environment mapping table
 
     // Find the environment map positions
-    for (size_t i = 0; i < MD2Model::normalCount; ++i)
+    for (size_t i = 0; i < Ego::Graphics::AnimatedModel::normalCount; ++i)
     {
-        float x = MD2Model::getMD2Normal(i, 0);
-        float y = MD2Model::getMD2Normal(i, 1);
+        float x = Ego::Graphics::AnimatedModel::getLegacyNormal(i, 0);
+        float y = Ego::Graphics::AnimatedModel::getLegacyNormal(i, 1);
         indextoenvirox[i] = std::atan2(y, x) * idlib::inv_two_pi<float>();
     }
 }
@@ -239,9 +239,9 @@ float calc_light_rotation(int rotation, int normal)
 	Vector3f nrm, nrm2;
     float sinrot, cosrot;
 
-    nrm[kX] = MD2Model::getMD2Normal(normal, 0);
-    nrm[kY] = MD2Model::getMD2Normal(normal, 1);
-    nrm[kZ] = MD2Model::getMD2Normal(normal, 2);
+    nrm[kX] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 0);
+    nrm[kY] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 1);
+    nrm[kZ] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 2);
 
     sinrot = sinlut[rotation];
     cosrot = coslut[rotation];
@@ -264,9 +264,9 @@ float calc_light_global(int rotation, int normal, float lx, float ly, float lz)
 	Vector3f nrm, nrm2;
     float sinrot, cosrot;
 
-    nrm[kX] = MD2Model::getMD2Normal(normal, 0);
-    nrm[kY] = MD2Model::getMD2Normal(normal, 1);
-    nrm[kZ] = MD2Model::getMD2Normal(normal, 2);
+    nrm[kX] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 0);
+    nrm[kY] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 1);
+    nrm[kZ] = Ego::Graphics::AnimatedModel::getLegacyNormal(normal, 2);
 
     sinrot = sinlut[rotation];
     cosrot = coslut[rotation];

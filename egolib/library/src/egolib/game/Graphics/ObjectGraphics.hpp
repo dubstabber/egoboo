@@ -5,7 +5,7 @@
 #include "egolib/Graphics/Vertex.hpp"
 
 #include "egolib/Graphics/ModelDescriptor.hpp"
-#include "egolib/Graphics/MD2Model.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
 #include "egolib/Profiles/_Include.hpp"  // ObjectProfile
 
 //Forward declarations
@@ -301,13 +301,13 @@ private:
     * @brief
     *   Get the desired/next frame in the current animation action
     **/
-    const MD2_Frame& getNextFrame() const;
+    const AnimatedModelFrame& getNextFrame() const;
 
     /**
     * @brief
     *   Get the current/previous frame in the current animation action
     **/
-    const MD2_Frame& getLastFrame() const;
+    const AnimatedModelFrame& getLastFrame() const;
 
 	bool updateVertexCache(int vmin, int vmax, bool force, bool vertices_match, bool frames_match);
 
@@ -324,7 +324,7 @@ private:
     **/
 	void clearCache();
 
-	void interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_ary, const std::vector<MD2_Vertex> &nxt_ary, int vmin, int vmax, float flip);
+	void interpolateVerticesRaw(const std::vector<AnimatedModelVertex> &lst_ary, const std::vector<AnimatedModelVertex> &nxt_ary, int vmin, int vmax, float flip);
 
     /**
     * @brief

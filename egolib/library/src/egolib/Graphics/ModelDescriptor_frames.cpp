@@ -1,6 +1,6 @@
 #include "ModelDescriptor.hpp"
 #include "egolib/Log/_Include.hpp"
-#include "egolib/Graphics/MD2Model.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/fileutil.h"
@@ -18,7 +18,7 @@ void ModelDescriptor::ripActions()
     _actionValid.fill(false);
 
     // is there anything to do?
-    if ( _md2Model->getFrames().empty() ) return;
+    if ( _model->getFrames().empty() ) return;
 
     // Make a default dance action (ACTION_DA) to be the 1st frame of the animation
     _actionMap[ACTION_DA]   = ACTION_DA;
@@ -34,7 +34,7 @@ void ModelDescriptor::ripActions()
     // Now go huntin' to see what each iframe is, look for runs of same action
     ModelAction last_action = ACTION_COUNT;
     int iframe = 0;
-    for(const MD2_Frame &frame : _md2Model->getFrames())
+    for(const Graphics::AnimatedModelFrame &frame : _model->getFrames())
     {
         ModelAction action_now = stringToAction(frame.name);
         
@@ -77,12 +77,12 @@ void ModelDescriptor::parseFrameDescriptors(const char * cFrameName, int frame)
                                    }; /* the "bad" token aliases */
 
     // check for a valid frame number
-    if(frame >= _md2Model->getFrames().size())
+    if(frame >= _model->getFrames().size())
     {
         return; 
     }
 
-    MD2_Frame &pframe = _md2Model->getFrames()[frame];
+    Graphics::AnimatedModelFrame &pframe = _model->getFrames()[frame];
 
     // this should only be initialized the first time through
     if (token_count < 0)
@@ -302,7 +302,7 @@ void ModelDescriptor::initializeWalkFrame(int lip, ModelAction action)
 
 void ModelDescriptor::makeEquallyLit()
 {
-    _md2Model->makeEquallyLit();
+    _model->makeEquallyLit();
 }
 
 void ModelDescriptor::initializeFrameLip(ModelAction action)
@@ -320,7 +320,7 @@ void ModelDescriptor::initializeFrameLip(ModelAction action)
     for (int frame = action_stt; frame <= action_end; frame++)
     {
         // grab a valid frame
-        if (frame >= _md2Model->getFrames().size()) break;
+        if (frame >= _model->getFrames().size()) break;
 
         // calculate the framelip.
         // this should produce a number between 0 and FRAMELIP_COUNT-1, but
@@ -328,7 +328,7 @@ void ModelDescriptor::initializeFrameLip(ModelAction action)
         int framelip = (( frame - action_stt ) * FRAMELIP_COUNT ) / action_count;
 
         // limit the framelip to the valid range
-        _md2Model->getFrames()[frame].framelip = std::min<size_t>(framelip, FRAMELIP_COUNT - 1);
+        _model->getFrames()[frame].framelip = std::min<size_t>(framelip, FRAMELIP_COUNT - 1);
     }
 }
 
@@ -459,9 +459,9 @@ void ModelDescriptor::actionCopyCorrect(ModelAction actiona, ModelAction actionb
     }
 }
 
-const std::shared_ptr<MD2Model>& ModelDescriptor::getMD2() const
+const std::shared_ptr<Ego::Graphics::AnimatedModel>& ModelDescriptor::getModel() const
 {
-    return _md2Model;
+    return _model;
 }
 
 bool ModelDescriptor::isFrameValid(int action, int frame) const

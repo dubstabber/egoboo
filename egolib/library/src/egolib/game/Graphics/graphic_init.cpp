@@ -21,7 +21,7 @@
 /// @brief Construction/teardown of the 3D scene-rendering cluster (egolib-game-graphics).
 /// @details Holds the GFX GameApp ctor/dtor (which make_unique the 11 concrete RenderPasses),
 ///   GFX::renderBillboards (which calls the concrete BillboardSystem::render_all), and the
-///   GameAppImpl ctor/dtor (BillboardSystem + Md2ModelRenderer + TextureAtlasManager). These
+///   GameAppImpl ctor/dtor (BillboardSystem + ModelVertexBuffer + TextureAtlasManager). These
 ///   bodies were relocated out of egolib-library's graphic.c so that the only TU naming the
 ///   concrete cluster types lives ABOVE egolib-library, in the egolib-game-graphics archive —
 ///   the 9th link-split. The construction is triggered from egolib-library
@@ -45,7 +45,7 @@
 #include "egolib/game/Graphics/RenderPasses/ReflectiveTilesFirstRenderPass.hpp"
 #include "egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.hpp"
 #include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
-#include "egolib/game/Graphics/DefaultMd2ModelRenderer.hpp"
+#include "egolib/game/Graphics/DefaultModelVertexBuffer.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
@@ -90,7 +90,7 @@ void GFX::renderBillboards(Camera& camera)
 GameAppImpl::GameAppImpl() :
     dynalist(),
     billboardSystem(std::make_unique<Ego::Graphics::BillboardSystem>()),
-    md2ModelRenderer(std::make_unique<Ego::Graphics::DefaultMd2ModelRenderer>())
+    modelVertexBuffer(std::make_unique<Ego::Graphics::DefaultModelVertexBuffer>())
 {
     // Initialize the texture atlas manager.
     try
@@ -123,9 +123,9 @@ Ego::Graphics::BillboardSystem& GameAppImpl::getBillboardSystem() const
     return *billboardSystem;
 }
 
-Ego::Graphics::Md2ModelRenderer& GameAppImpl::getMd2ModelRenderer() const
+Ego::Graphics::ModelVertexBuffer& GameAppImpl::getModelVertexBuffer() const
 {
-    return *md2ModelRenderer;
+    return *modelVertexBuffer;
 }
 
 //--------------------------------------------------------------------------------------------

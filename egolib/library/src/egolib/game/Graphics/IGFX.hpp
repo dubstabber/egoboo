@@ -8,7 +8,7 @@ struct dynalist_t;
 
 namespace Ego {
 namespace Graphics {
-class Md2ModelRenderer;
+class ModelVertexBuffer;
 struct RenderPass;
 } // namespace Graphics
 } // namespace Ego
@@ -17,8 +17,8 @@ struct RenderPass;
 ///        from the concrete GFX singleton. Published through EngineContext.
 ///
 /// This is the first ("sub-pass A") slice of the GFX surface: the per-frame
-/// instance-update timers and methods, the dynamic-light list, and the MD2
-/// model renderer. The render-pass accessors are added in a follow-on pass.
+/// instance-update timers and methods, the dynamic-light list, and the model
+/// vertex buffer. The render-pass accessors are added in a follow-on pass.
 class IGFX
 {
 public:
@@ -39,8 +39,8 @@ public:
     /// @brief The active dynamic-light list.
     virtual dynalist_t& getDynalist() = 0;
 
-    /// @brief The MD2 model renderer.
-    virtual Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const = 0;
+    /// @brief The model vertex buffer.
+    virtual Ego::Graphics::ModelVertexBuffer& getModelVertexBuffer() const = 0;
 
     // --- Render-pass accessors (sub-pass B). The returned RenderPass is used
     //     via .run(camera, tileList, entityList) and its public .clock member. ---

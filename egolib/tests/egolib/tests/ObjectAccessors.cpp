@@ -2,6 +2,7 @@
 
 #include "TestEnvironment.hpp"
 #include "egolib/Audio/AudioSystem.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
 #define private public
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/_Include.hpp"
@@ -2404,7 +2405,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAs
 
     const int initialFirstFrame = model->getFirstFrame(initialAction);
     const int initialTargetFrame = model->getLastFrame(initialAction);
-    const int expectedSourceFrame = model->getFrameLipToWalkFrame(LIPWA, model->getMD2()->getFrames()[initialTargetFrame].framelip);
+    const int expectedSourceFrame = model->getFrameLipToWalkFrame(LIPWA, model->getModel()->getFrames()[initialTargetFrame].framelip);
     const int expectedTargetFrame = model->getFirstFrame(ACTION_WA);
 
     object->_stealth = true;

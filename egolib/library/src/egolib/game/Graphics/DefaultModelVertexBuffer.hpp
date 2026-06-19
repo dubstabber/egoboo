@@ -1,14 +1,14 @@
 #pragma once
 
-#include "egolib/game/Graphics/Md2ModelRenderer.hpp"
+#include "egolib/game/Graphics/ModelVertexBuffer.hpp"
 #include "egolib/integrations/video.hpp"  // idlib::vertex_descriptor
 #include <vector>
 
 namespace Ego {
 namespace Graphics {
 
-/// @brief Default renderer for MD2 models.
-class DefaultMd2ModelRenderer : public Md2ModelRenderer
+/// @brief Default renderer for models.
+class DefaultModelVertexBuffer : public ModelVertexBuffer
 {
 public:
     // Forward declaration.
@@ -24,19 +24,19 @@ protected:
     Vertex *m_vertices;
 
 public:
-    /// @brief Construct this MD2 model renderer.
-    DefaultMd2ModelRenderer();
+    /// @brief Construct this model vertex buffer.
+    DefaultModelVertexBuffer();
 
-    /// @brief Destruct this MD2 model renderer.
-    virtual ~DefaultMd2ModelRenderer();
+    /// @brief Destruct this model vertex buffer.
+    virtual ~DefaultModelVertexBuffer();
 
-    /// @copydoc Md2ModelRenderer::ensureSize
+    /// @copydoc ModelVertexBuffer::ensureSize
     void ensureSize(size_t requiredSize) override;
 
-    /// @copydoc Md2ModelRenderer::getRequiredVertexBufferCapacity
-    size_t getRequiredVertexBufferCapacity(const MD2Model& model) const override;
+    /// @copydoc ModelVertexBuffer::getRequiredVertexBufferCapacity
+    size_t getRequiredVertexBufferCapacity(const AnimatedModel& model) const override;
 
-    /// @copydoc Md2ModelRenderer::lock()
+    /// @copydoc ModelVertexBuffer::lock()
     void *lock() override;
 
     /// @brief A vertex.
@@ -63,7 +63,7 @@ public:
     /// @brief List of vertices to be rendered.
     std::vector<Vertex> vertices;
 
-}; // class DefaultMd2ModelRenderer
+}; // class DefaultModelVertexBuffer
 
 } // namespace Graphics
 } // namespace Ego

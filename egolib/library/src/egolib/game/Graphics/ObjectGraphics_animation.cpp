@@ -55,9 +55,9 @@ const std::shared_ptr<Ego::ModelDescriptor>& ObjectGraphics::getModelDescriptor(
 }
 
 void ObjectGraphics::assertFrameIndex(int frameIndex) const {
-    if (frameIndex > getModelDescriptor()->getMD2()->getFrames().size()) {
+    if (frameIndex > getModelDescriptor()->getModel()->getFrames().size()) {
         auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "invalid frame ", frameIndex, "/", 
-                                    getModelDescriptor()->getMD2()->getFrames().size(), Log::EndOfEntry);
+                                    getModelDescriptor()->getModel()->getFrames().size(), Log::EndOfEntry);
         EngineContext::get().logTarget() << e;
         throw idlib::runtime_error(__FILE__, __LINE__, e.getText());
     }

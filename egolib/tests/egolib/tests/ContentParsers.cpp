@@ -19,6 +19,9 @@
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/wawalite_file.h"
+#include "egolib/Graphics/AnimatedModel.hpp"
+#include "egolib/Graphics/ModelDescriptor.hpp"
+#include "egolib/Graphics/ObjectModelAsset.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/Image/ImageManager.hpp"
@@ -27,6 +30,8 @@
 #include "egolib/vfs.h"
 
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -312,8 +317,73 @@ TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoadsNonLightweightWithIns
     auto profile = ObjectProfile::loadFromFile(
         "mp_objects/follower.obj", ObjectProfileRef(37), false);
     ASSERT_NE(profile, nullptr) << "follower.obj failed to load in full mode";
+    ASSERT_NE(profile->getModel(), nullptr);
+    ASSERT_NE(profile->getModel()->getModel(), nullptr);
+    EXPECT_TRUE(profile->getModel()->isActionValid(ACTION_DA));
+    EXPECT_GT(profile->getModel()->getModel()->getVertexCount(), 0u);
+    EXPECT_FALSE(profile->getModel()->getModel()->getFrames().empty());
+    EXPECT_FALSE(profile->getModel()->getModel()->getDrawCommands().empty());
     ASSERT_FALSE(s_audioSystem->loadedSoundPaths.empty());
     EXPECT_EQ(s_audioSystem->loadedSoundPaths.front(), "mp_objects/follower.obj/sound0");
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelResolverFindsCurrentMd2Fallback)
+{
+    auto mod = findModule("test.mod");
+    ASSERT_NE(mod, nullptr);
+    mountModule(*mod);
+
+    const Ego::Graphics::ObjectModelAsset modelAsset =
+        Ego::Graphics::resolveObjectModelAsset("mp_objects/follower.obj");
+    ASSERT_TRUE(modelAsset.exists);
+    EXPECT_EQ(modelAsset.format, Ego::Graphics::ObjectModelFormat::Md2);
+    EXPECT_EQ(modelAsset.path, "mp_objects/follower.obj/tris.md2");
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelResolverPrefersGltfThenGlbThenMd2)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-resolver-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "synthetic.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    {
+        std::ofstream(objectDir / "tris.md2").put('\0');
+    }
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelresolver"), 1));
+
+    const std::string objectPath = "mp_modelresolver/synthetic.obj";
+    Ego::Graphics::ObjectModelAsset modelAsset = Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(modelAsset.exists);
+    EXPECT_EQ(modelAsset.format, Ego::Graphics::ObjectModelFormat::Md2);
+
+    {
+        std::ofstream(objectDir / "tris.glb").put('\0');
+    }
+    modelAsset = Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(modelAsset.exists);
+    EXPECT_EQ(modelAsset.format, Ego::Graphics::ObjectModelFormat::Glb);
+
+    {
+        std::ofstream(objectDir / "tris.gltf").put('\0');
+    }
+    modelAsset = Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(modelAsset.exists);
+    EXPECT_EQ(modelAsset.format, Ego::Graphics::ObjectModelFormat::Gltf);
+
+    const Ego::Graphics::ObjectModelAsset md2Fallback =
+        Ego::Graphics::resolveObjectModelAsset(objectPath, Ego::Graphics::ObjectModelFormat::Md2);
+    ASSERT_TRUE(md2Fallback.exists);
+    EXPECT_EQ(md2Fallback.format, Ego::Graphics::ObjectModelFormat::Md2);
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelresolver"));
 }
 
 TEST_F(ObjectProfileParserTest, TestModFollowerClassName)

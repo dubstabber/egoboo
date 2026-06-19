@@ -173,7 +173,7 @@ ObjectGraphics::VertexUpdateNeed ObjectGraphics::needsUpdate(int vmin, int vmax)
     return result;
 }
 
-void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_ary, const std::vector<MD2_Vertex> &nxt_ary, int vmin, int vmax, float flip )
+void ObjectGraphics::interpolateVerticesRaw(const std::vector<AnimatedModelVertex> &lst_ary, const std::vector<AnimatedModelVertex> &nxt_ary, int vmin, int vmax, float flip )
 {
     /// raw indicates no bounds checking, so be careful
 
@@ -182,7 +182,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
         for (size_t i = vmin; i <= vmax; i++)
         {
             GLvertex* dst = &_vertexList[i];
-            const MD2_Vertex &srcLast = lst_ary[i];
+            const AnimatedModelVertex &srcLast = lst_ary[i];
 
 			dst->pos[XX] = srcLast.pos[kX];
 			dst->pos[YY] = srcLast.pos[kY];
@@ -193,7 +193,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
 			dst->nrm[YY] = srcLast.nrm[kY];
 			dst->nrm[ZZ] = srcLast.nrm[kZ];
 
-            dst->env[XX] = indextoenvirox[srcLast.normal];
+            dst->env[XX] = indextoenvirox[srcLast.normalIndex];
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
         }
     }
@@ -202,7 +202,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
         for (size_t i = vmin; i <= vmax; i++ )
         {
             GLvertex* dst = &_vertexList[i];
-            const MD2_Vertex &srcNext = nxt_ary[i];
+            const AnimatedModelVertex &srcNext = nxt_ary[i];
 
 			dst->pos[XX] = srcNext.pos[kX];
 			dst->pos[YY] = srcNext.pos[kY];
@@ -213,7 +213,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
             dst->nrm[YY] = srcNext.nrm[kY];
             dst->nrm[ZZ] = srcNext.nrm[kZ];
 
-            dst->env[XX] = indextoenvirox[srcNext.normal];
+            dst->env[XX] = indextoenvirox[srcNext.normalIndex];
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
         }
     }
@@ -224,8 +224,8 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
         for (size_t i = vmin; i <= vmax; i++)
         {
             GLvertex* dst = &_vertexList[i];
-            const MD2_Vertex &srcLast = lst_ary[i];
-            const MD2_Vertex &srcNext = nxt_ary[i];
+            const AnimatedModelVertex &srcLast = lst_ary[i];
+            const AnimatedModelVertex &srcNext = nxt_ary[i];
 
             dst->pos[XX] = srcLast.pos[kX] + ( srcNext.pos[kX] - srcLast.pos[kX] ) * flip;
             dst->pos[YY] = srcLast.pos[kY] + ( srcNext.pos[kY] - srcLast.pos[kY] ) * flip;
@@ -236,8 +236,8 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<MD2_Vertex> &lst_a
             dst->nrm[YY] = srcLast.nrm[kY] + ( srcNext.nrm[kY] - srcLast.nrm[kY] ) * flip;
             dst->nrm[ZZ] = srcLast.nrm[kZ] + ( srcNext.nrm[kZ] - srcLast.nrm[kZ] ) * flip;
 
-            vrta_lst = srcLast.normal;
-            vrta_nxt = srcNext.normal;
+            vrta_lst = srcLast.normalIndex;
+            vrta_nxt = srcNext.normalIndex;
 
             dst->env[XX] = indextoenvirox[vrta_lst] + ( indextoenvirox[vrta_nxt] - indextoenvirox[vrta_lst] ) * flip;
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
@@ -255,12 +255,12 @@ bool ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     int vdirty2_min = -1, vdirty2_max = -1;
 
     // get the model
-    const std::shared_ptr<MD2Model> &pmd2 = getModelDescriptor()->getMD2();
+    const std::shared_ptr<AnimatedModel> &model = getModelDescriptor()->getModel();
 
     // make sure we have valid data
-    if (_vertexList.size() != pmd2->getVertexCount())
+    if (_vertexList.size() != model->getVertexCount())
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance vertex data does not match its md2", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance vertex data does not match its model", Log::EndOfEntry);
         return false;
     }
 
@@ -327,11 +327,11 @@ bool ObjectGraphics::updateVertices(int vmin, int vmax, bool force)
     }
 
     // make sure the frames are in the valid range
-    const auto& frameList = pmd2->getFrames();
+    const auto& frameList = model->getFrames();
     if ( _targetFrameIndex >= frameList.size() || _sourceFrameIndex >= frameList.size() )
     {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance frame is outside "
-                                         "the range of its MD2", Log::EndOfEntry);
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "character instance frame is outside "
+                                         "the range of its model", Log::EndOfEntry);
         return false;
     }
 
@@ -530,7 +530,7 @@ bool ObjectGraphics::setModel(const std::shared_ptr<Ego::ModelDescriptor> &model
     }
 
     // set the vertex size
-    size_t vlst_size = getModelDescriptor()->getMD2()->getVertexCount();
+    size_t vlst_size = getModelDescriptor()->getModel()->getVertexCount();
     if (_vertexList.size() != vlst_size) {
         updated = true;
         _vertexList.resize(vlst_size);
@@ -630,16 +630,16 @@ BIT_FIELD ObjectGraphics::getFrameFX() const
     return getNextFrame().framefx;
 }
 
-const MD2_Frame& ObjectGraphics::getNextFrame() const
+const AnimatedModelFrame& ObjectGraphics::getNextFrame() const
 {
     assertFrameIndex(_targetFrameIndex);
-    return getModelDescriptor()->getMD2()->getFrames()[_targetFrameIndex];
+    return getModelDescriptor()->getModel()->getFrames()[_targetFrameIndex];
 }
 
-const MD2_Frame& ObjectGraphics::getLastFrame() const
+const AnimatedModelFrame& ObjectGraphics::getLastFrame() const
 {
     assertFrameIndex(_sourceFrameIndex);
-    return getModelDescriptor()->getMD2()->getFrames()[_sourceFrameIndex];
+    return getModelDescriptor()->getModel()->getFrames()[_sourceFrameIndex];
 }
 
 bool ObjectGraphics::isVertexCacheValid() const

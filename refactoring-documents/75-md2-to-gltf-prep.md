@@ -1,0 +1,32 @@
+# MD2 to glTF Runtime Preparation
+
+This note records the first runtime-prep milestone for moving object models from
+legacy `tris.md2` assets toward glTF/GLB.
+
+## Runtime Shape
+
+- `Ego::Graphics::AnimatedModel` is the format-neutral runtime model consumed by
+  `ModelDescriptor`, `ObjectGraphics`, and the model draw path.
+- `MD2Model` is now an MD2 loader adapter that populates `AnimatedModel`.
+- Object model resolution prefers `tris.gltf`, then `tris.glb`, then `tris.md2`.
+  Until a glTF parser is implemented, runtime loading explicitly falls back to
+  `tris.md2` when a higher-priority future asset is present beside it.
+- The render scratch-buffer seam is format-neutral (`ModelVertexBuffer` /
+  `DefaultModelVertexBuffer`) and sizes itself from `AnimatedModel` draw
+  commands.
+
+## Future glTF Metadata
+
+Converted assets should keep Egoboo-specific animation semantics self-contained
+in glTF `extras.egoboo` metadata rather than requiring a sidecar file. The first
+loader should preserve:
+
+- metadata schema version
+- original frame order and frame names
+- frame effects equivalent to `ModelFrameEffects`
+- action ranges equivalent to `ModelAction`
+- copy/healing compatibility data currently read from `copy.txt`
+
+The current `ModelDescriptor` action and frame-effect parser remains the
+behavioral reference until the glTF loader can prove equivalent action maps,
+walk-lip tables, frame effects, bounding boxes, and vertex interpolation.

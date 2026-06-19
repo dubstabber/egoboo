@@ -24,7 +24,7 @@
 #include "egolib/App.hpp"  // GameApp (GFX base)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Graphics/IGFX.hpp"
-#include "egolib/Graphics/MD2Model.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/Extensions/ogl_extensions.h"
 #include "egolib/Mesh/Info.hpp"  // Index1D
@@ -36,7 +36,7 @@ class ego_tile_info_t;
 namespace Ego {
 namespace Graphics {
 class BillboardSystem;
-class Md2ModelRenderer;
+class ModelVertexBuffer;
 struct RenderPass;
 struct TileList;
 struct EntityList;
@@ -125,7 +125,7 @@ struct gfx_config_t
 //--------------------------------------------------------------------------------------------
 extern gfx_config_t gfx;
 
-extern float           indextoenvirox[MD2Model::normalCount];                    ///< Environment map
+extern float           indextoenvirox[Ego::Graphics::AnimatedModel::normalCount]; ///< Environment map
 
 //--------------------------------------------------------------------------------------------
 /// The active dynamic lights
@@ -145,13 +145,13 @@ struct GameAppImpl
 private:
     dynalist_t dynalist;
     std::unique_ptr<Ego::Graphics::BillboardSystem> billboardSystem;
-    std::unique_ptr<Ego::Graphics::Md2ModelRenderer> md2ModelRenderer;
+    std::unique_ptr<Ego::Graphics::ModelVertexBuffer> modelVertexBuffer;
 public:
     GameAppImpl();
     ~GameAppImpl();
     dynalist_t& getDynalist();
     Ego::Graphics::BillboardSystem& getBillboardSystem() const;
-    Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const;
+    Ego::Graphics::ModelVertexBuffer& getModelVertexBuffer() const;
 };
 
 template <typename T>
@@ -174,9 +174,9 @@ public:
     {
         return impl->getBillboardSystem();
     }
-    Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const
+    Ego::Graphics::ModelVertexBuffer& getModelVertexBuffer() const
     {
-        return impl->getMd2ModelRenderer();
+        return impl->getModelVertexBuffer();
     }
 };
 
@@ -223,9 +223,9 @@ public:
     {
         return GameApp<GFX>::getDynalist();
     }
-    Ego::Graphics::Md2ModelRenderer& getMd2ModelRenderer() const override
+    Ego::Graphics::ModelVertexBuffer& getModelVertexBuffer() const override
     {
-        return GameApp<GFX>::getMd2ModelRenderer();
+        return GameApp<GFX>::getModelVertexBuffer();
     }
 
 public:

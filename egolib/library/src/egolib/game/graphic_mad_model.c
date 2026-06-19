@@ -30,14 +30,30 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Graphics/DefaultMd2ModelRenderer.hpp"
+#include "egolib/Graphics/AnimatedModel.hpp"
+#include "egolib/game/Graphics/DefaultModelVertexBuffer.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 
-struct Md2VertexBuffer {
+namespace
+{
+
+GLenum toOpenGLMode(Ego::Graphics::AnimatedModelPrimitiveMode mode)
+{
+    switch (mode)
+    {
+        case Ego::Graphics::AnimatedModelPrimitiveMode::TriangleFan:
+            return GL_TRIANGLE_FAN;
+        case Ego::Graphics::AnimatedModelPrimitiveMode::TriangleStrip:
+        default:
+            return GL_TRIANGLE_STRIP;
+    }
+}
+
+struct ModelVertexBufferRenderer {
     static void render(GLenum mode, size_t start, size_t length) {
-        auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
+        auto& modelVertexBuffer = EngineContext::get().gfx().getModelVertexBuffer();
         glBegin(mode); {
-            auto *vertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
+            auto *vertex = (Ego::Graphics::DefaultModelVertexBuffer::Vertex *)modelVertexBuffer.lock();
             for (size_t vertexIndex = start; vertexIndex < start + length; ++vertexIndex) {
                 const auto& v = vertex[vertexIndex];
                 glColor4f(v.colour.r, v.colour.g, v.colour.b, v.colour.a);
@@ -50,6 +66,8 @@ struct Md2VertexBuffer {
     }
 };
 
+} // namespace
+
 gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits)
 {
     if (!object.hasModelDescriptor())
@@ -59,10 +77,10 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
         EngineContext::get().logTarget() << e;
         return gfx_error;
     }
-    const auto& pmd2 = object.getModelDescriptor()->getMD2();
+    const auto& model = object.getModelDescriptor()->getModel();
     auto& renderer = EngineContext::get().renderer();
     auto& textureManager = EngineContext::get().textureManager();
-    auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
+    auto& modelVertexBuffer = EngineContext::get().gfx().getModelVertexBuffer();
 
     std::shared_ptr<const Ego::Texture> ptex = nullptr;
 	if (HAS_SOME_BITS(bits, CHR_PHONG))
@@ -98,17 +116,17 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
         Ego::OpenGL::PushAttrib pa(GL_CURRENT_BIT);
         {
             // Get the maximum number of vertices per command.
-            size_t vertexBufferCapacity = md2ModelRenderer.getRequiredVertexBufferCapacity(*pmd2);
+            size_t vertexBufferCapacity = modelVertexBuffer.getRequiredVertexBufferCapacity(*model);
             // Allocate a vertex buffer.
-            md2ModelRenderer.ensureSize(vertexBufferCapacity);
+            modelVertexBuffer.ensureSize(vertexBufferCapacity);
             // Render each command
-            for (const auto& glcommand : pmd2->getGLCommands()) {
+            for (const auto& command : model->getDrawCommands()) {
                 // Pre-render this command.
                 size_t vertexBufferSize = 0;
-                auto *targetVertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
-                for (const id_glcmd_packed_t& cmd : glcommand.data) {
-                    uint16_t vertexIndex = cmd.index;
-                    if (vertexIndex >= object.getVertexCount()) continue;
+                auto *targetVertex = (Ego::Graphics::DefaultModelVertexBuffer::Vertex *)modelVertexBuffer.lock();
+                for (const auto& cmd : command.data) {
+                    if (cmd.vertexIndex < 0 || static_cast<size_t>(cmd.vertexIndex) >= object.getVertexCount()) continue;
+                    const size_t vertexIndex = static_cast<size_t>(cmd.vertexIndex);
                     const GLvertex& pvrt = object.getVertex(vertexIndex);
                     targetVertex->position.x = pvrt.pos[XX];
                     targetVertex->position.y = pvrt.pos[YY];
@@ -150,7 +168,7 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
                     targetVertex++;
                 }
                 // Render this command.
-                Md2VertexBuffer::render(glcommand.glMode, 0, vertexBufferSize);
+                ModelVertexBufferRenderer::render(toOpenGLMode(command.primitiveMode), 0, vertexBufferSize);
             }
         }
     }
@@ -212,8 +230,8 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
     }
 
     auto& renderer = EngineContext::get().renderer();
-    auto& md2ModelRenderer = EngineContext::get().gfx().getMd2ModelRenderer();
-    const std::shared_ptr<MD2Model> &pmd2 = object.getModelDescriptor()->getMD2();
+    auto& modelVertexBuffer = EngineContext::get().gfx().getModelVertexBuffer();
+    const auto& model = object.getModelDescriptor()->getModel();
 
     // To make life easier
     std::shared_ptr<const Ego::Texture> ptex = object.getSkinTexture();
@@ -230,9 +248,9 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
     }
 
     // Get the maximum number of vertices per command.
-    size_t vertexBufferCapacity = md2ModelRenderer.getRequiredVertexBufferCapacity(*pmd2);
+    size_t vertexBufferCapacity = modelVertexBuffer.getRequiredVertexBufferCapacity(*model);
     // Allocate a vertex buffer.
-    md2ModelRenderer.ensureSize(vertexBufferCapacity);
+    modelVertexBuffer.ensureSize(vertexBufferCapacity);
 
     if (0 != (bits & CHR_REFLECT))
     {
@@ -250,15 +268,15 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
         Ego::OpenGL::PushAttrib pa(GL_CURRENT_BIT);
         {
             // Render each command
-            for (const MD2_GLCommand& glcommand : pmd2->getGLCommands()) {
+            for (const auto& command : model->getDrawCommands()) {
                 // Pre-render this command.
                 size_t vertexBufferSize = 0;
-                auto* targetVertex = (Ego::Graphics::DefaultMd2ModelRenderer::Vertex *)md2ModelRenderer.lock();
-                for (const id_glcmd_packed_t &cmd : glcommand.data) {
-                    uint16_t vertexIndex = cmd.index;
-                    if (vertexIndex >= object.getVertexCount()) {
+                auto* targetVertex = (Ego::Graphics::DefaultModelVertexBuffer::Vertex *)modelVertexBuffer.lock();
+                for (const auto& cmd : command.data) {
+                    if (cmd.vertexIndex < 0 || static_cast<size_t>(cmd.vertexIndex) >= object.getVertexCount()) {
                         continue;
                     }
+                    const size_t vertexIndex = static_cast<size_t>(cmd.vertexIndex);
                     const GLvertex& pvrt = object.getVertex(vertexIndex);
                     targetVertex->position.x = pvrt.pos[XX];
                     targetVertex->position.y = pvrt.pos[YY];
@@ -313,7 +331,7 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
                     targetVertex++;
                 }
                 // Render this command.
-                Md2VertexBuffer::render(glcommand.glMode, 0, vertexBufferSize);
+                ModelVertexBufferRenderer::render(toOpenGLMode(command.primitiveMode), 0, vertexBufferSize);
             }
         }
     }

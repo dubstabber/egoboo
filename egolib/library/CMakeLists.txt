@@ -156,6 +156,8 @@ set(EGOLIB_FILEFORMATS_SOURCES
 
 # -- Graphics (engine level) -------------------------------------------------
 set(EGOLIB_GRAPHICS_SOURCES
+    src/egolib/Graphics/AnimatedModel.cpp
+    src/egolib/Graphics/AnimatedModel.hpp
     src/egolib/Graphics/Animation2D.hpp
     src/egolib/Graphics/Camera.hpp
     src/egolib/Graphics/descriptor_factory.hpp
@@ -190,6 +192,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/MD2Model.hpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
+    src/egolib/Graphics/ObjectModelAsset.cpp
+    src/egolib/Graphics/ObjectModelAsset.hpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.hpp
     src/egolib/Graphics/ModelDescriptor.hpp
@@ -600,12 +604,12 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/Camera.hpp
     src/egolib/game/Graphics/CameraSystem.cpp
     src/egolib/game/Graphics/CameraSystem.hpp
-    src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
-    src/egolib/game/Graphics/DefaultMd2ModelRenderer.hpp
+    src/egolib/game/Graphics/DefaultModelVertexBuffer.cpp
+    src/egolib/game/Graphics/DefaultModelVertexBuffer.hpp
     src/egolib/game/Graphics/EntityList.cpp
     src/egolib/game/Graphics/EntityList.hpp
-    src/egolib/game/Graphics/Md2ModelRenderer.cpp
-    src/egolib/game/Graphics/Md2ModelRenderer.hpp
+    src/egolib/game/Graphics/ModelVertexBuffer.cpp
+    src/egolib/game/Graphics/ModelVertexBuffer.hpp
     src/egolib/game/Graphics/ObjectGraphics.cpp
     src/egolib/game/Graphics/ObjectGraphics_animation.cpp
     src/egolib/game/Graphics/ObjectGraphics.hpp
@@ -716,6 +720,7 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module_internal.h
     src/egolib/game/Module/Module_loading.cpp
     src/egolib/game/Module/Module_spawn.cpp
+    src/egolib/game/Module/Module_spawn_realization.cpp
     src/egolib/game/Module/Module_spawn_plan.hpp
     src/egolib/game/Module/Module_update.cpp
     src/egolib/game/Module/Module.hpp
@@ -911,7 +916,7 @@ endif()
 #
 # * egolib-foundation-base -- the dependency-closed bottom layer (Math/Log/Mesh/VFS/FileFormats/
 #   Time/Platform/Image/InputControl + the Script DDL/PDL lexer + Profiles data/writers + the
-#   MD2 model + texture/font clusters + toplevel math/IO). Every external symbol resolves within
+#   model + texture/font clusters + toplevel math/IO). Every external symbol resolves within
 #   this set or in idlib / SDL / the C++ runtime.
 # * egolib-physics -- a thin middle layer: the collision nucleus (Collidable, ICollisionWorld,
 #   PhysicalConstants) plus the oct_bb_t collision-geometry free functions (physics.c) and the
@@ -974,10 +979,12 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/ICameraSystem.cpp
     src/egolib/Graphics/IGraphicsSystem.cpp
     src/egolib/Graphics/ITextureManager.cpp
+    src/egolib/Graphics/AnimatedModel.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
+    src/egolib/Graphics/ObjectModelAsset.cpp
     src/egolib/Graphics/PixelFormat.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/TextureManager.cpp
@@ -1063,14 +1070,13 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/Module/Fog.cpp
     src/egolib/game/Module/Fog.hpp
     src/egolib/game/Module/Module_spawn_plan.cpp
-    src/egolib/game/Module/Module_spawn_realization.cpp
     src/egolib/game/Module/module_spawn.c
     src/egolib/game/Module/Module_spawn_realization.hpp
     src/egolib/game/Module/Water.cpp
     src/egolib/game/Module/Water.hpp
     src/egolib/game/Graphics/Billboard.cpp
-    src/egolib/game/Graphics/DefaultMd2ModelRenderer.cpp
-    src/egolib/game/Graphics/Md2ModelRenderer.cpp
+    src/egolib/game/Graphics/DefaultModelVertexBuffer.cpp
+    src/egolib/game/Graphics/ModelVertexBuffer.cpp
     src/egolib/game/GameStates/LoadPlayerElement.cpp
     src/egolib/game/GameStates/LoadPlayerElement.hpp
     src/egolib/game/GameStates/OptionsConfigActions.cpp
