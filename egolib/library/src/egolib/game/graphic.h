@@ -125,8 +125,6 @@ struct gfx_config_t
 //--------------------------------------------------------------------------------------------
 extern gfx_config_t gfx;
 
-extern float           indextoenvirox[Ego::Graphics::AnimatedModel::normalCount]; ///< Environment map
-
 //--------------------------------------------------------------------------------------------
 /// The active dynamic lights
 struct dynalist_t
@@ -298,7 +296,6 @@ public:
 /// the stored state of the texture and its surface, the backing OpenGL texture needs to be
 /// reconstructed.
 void gfx_system_reload_all_textures();
-void gfx_system_make_enviro();
 void gfx_system_init_all_graphics();
 void gfx_system_release_all_graphics();
 void gfx_system_load_assets();

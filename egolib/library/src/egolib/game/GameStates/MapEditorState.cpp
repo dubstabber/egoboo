@@ -165,9 +165,6 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
     // Reset all loaded "profiles" in the "profile system".
     EngineContext::get().profileSystem().reset();
 
-    // do some graphics initialization
-    gfx_system_make_enviro();
-
     // try to start a new module
     GameSessionContext::get().beginModule(module);
 

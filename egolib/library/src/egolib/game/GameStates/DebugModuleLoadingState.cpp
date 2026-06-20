@@ -256,10 +256,6 @@ void DebugModuleLoadingState::loadModuleData()
         // Reset all "profiles" in the "profile system".
         EngineContext::get().profileSystem().reset();
 
-        // do some graphics initialization
-        //make_lightdirectionlookup();
-        gfx_system_make_enviro();
-
         //Load players if needed
         if(!_playersToLoad.empty())
         {

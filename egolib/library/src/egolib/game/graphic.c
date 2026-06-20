@@ -65,8 +65,6 @@ using namespace Ego::Time;
 
 gfx_config_t     gfx;
 
-float            indextoenvirox[Ego::Graphics::AnimatedModel::normalCount];
-
 using namespace gfx_internal;
 
 //--------------------------------------------------------------------------------------------
@@ -134,21 +132,6 @@ void gfx_system_release_all_graphics()
     if (Ego::TextureManager::is_initialized())
     {
         EngineContext::get().textureManager().release_all();
-    }
-}
-
-//--------------------------------------------------------------------------------------------
-void gfx_system_make_enviro()
-{
-    /// @author ZZ
-    /// @details This function sets up the environment mapping table
-
-    // Find the environment map positions
-    for (size_t i = 0; i < Ego::Graphics::AnimatedModel::normalCount; ++i)
-    {
-        float x = Ego::Graphics::AnimatedModel::getLegacyNormal(i, 0);
-        float y = Ego::Graphics::AnimatedModel::getLegacyNormal(i, 1);
-        indextoenvirox[i] = std::atan2(y, x) * idlib::inv_two_pi<float>();
     }
 }
 

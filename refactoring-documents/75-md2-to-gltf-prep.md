@@ -61,9 +61,20 @@ tables, frame effects, bounding boxes, and vertex interpolation.
 With the `initializeFromActionData` ingest seam in place, the metadata side of a
 glTF loader narrows to: (1) define the `extras.egoboo` schema enumerated above,
 (2) decode it into an `AnimationMetadataInput` (action ranges + heal aliases) and
-per-frame `framefx`, and (3) call `initializeFromActionData`. The remaining
-non-metadata MD2 coupling tracked for later passes is the env-map normal palette
-(`AnimatedModel::normalIndex` / `getLegacyNormal` / `normalCount`, consumed by
-`indextoenvirox` in `graphic.c` and `ObjectGraphics::interpolateVerticesRaw`),
-the strip/fan-only draw-command primitive set, and the unconditional legacy
-`scaleModel(-3.5, 3.5, 3.5)` in the `ModelDescriptor` ctor.
+per-frame `framefx`, and (3) call `initializeFromActionData`.
+
+The env-map normal palette is also decoupled. `AnimatedModelVertex` no longer
+carries an MD2 palette index; it carries `envU`, a precomputed environment-map U
+coordinate (azimuth of the vertex normal, in turns). The MD2 loader derives it
+from the legacy palette (`MD2Model` now owns the 162-normal table privately),
+`makeEquallyLit` pins it to zero, and a glTF loader sets it from real per-vertex
+normals. The global `indextoenvirox` table and `gfx_system_make_enviro()` are
+gone; `AnimatedModel::getLegacyNormal` / `normalCount` are no longer public. The
+change is behavior-preserving for MD2 (the per-vertex `envU` equals the retired
+`indextoenvirox[normalIndex]` value bit-for-bit, since both apply the same
+`atan2 * inv_two_pi` to the same legacy normal).
+
+The remaining non-metadata MD2 coupling tracked for later passes is the
+strip/fan-only draw-command primitive set (no indexed-triangle mode) and the
+unconditional legacy `scaleModel(-3.5, 3.5, 3.5)` in the `ModelDescriptor` ctor,
+which a format-conditional post-load branch should make MD2-only.

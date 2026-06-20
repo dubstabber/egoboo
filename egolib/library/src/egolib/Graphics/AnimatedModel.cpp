@@ -10,17 +10,6 @@ namespace Ego
 namespace Graphics
 {
 
-namespace
-{
-
-static const float LEGACY_MODEL_NORMALS[AnimatedModel::normalCount][3] =
-{
-#include "egolib/FileFormats/id_normals.inl"
-    , {0, 0, 0}
-};
-
-} // namespace
-
 AnimatedModelDrawVertex::AnimatedModelDrawVertex() :
     s(0.0f),
     t(0.0f),
@@ -35,7 +24,7 @@ AnimatedModelDrawCommand::AnimatedModelDrawCommand() :
 AnimatedModelVertex::AnimatedModelVertex() :
     pos(0.0f, 0.0f, 0.0f),
     nrm(0.0f, 0.0f, 0.0f),
-    normalIndex(0)
+    envU(0.0f)
 {}
 
 AnimatedModelFrame::AnimatedModelFrame() :
@@ -83,13 +72,6 @@ const std::forward_list<AnimatedModelDrawCommand>& AnimatedModel::getDrawCommand
     return _commands;
 }
 
-float AnimatedModel::getLegacyNormal(size_t normal, size_t index)
-{
-    normal = std::min(normal, normalCount - 1);
-    index = std::min<size_t>(index, 2);
-    return LEGACY_MODEL_NORMALS[normal][index];
-}
-
 void AnimatedModel::scaleModel(const float scaleX, const float scaleY, const float scaleZ)
 {
     for (AnimatedModelFrame& frame : _frames)
@@ -124,11 +106,14 @@ void AnimatedModel::scaleModel(const float scaleX, const float scaleY, const flo
 
 void AnimatedModel::makeEquallyLit()
 {
+    // Pin the environment-map U coordinate to the zero-normal entry (azimuth 0),
+    // matching the legacy behaviour of mapping every vertex to the zero normal.
+    // The lighting normal (nrm) is intentionally left untouched.
     for (AnimatedModelFrame& frame : _frames)
     {
         for (AnimatedModelVertex& vertex : frame.vertexList)
         {
-            vertex.normalIndex = AnimatedModel::normalCount - 1;
+            vertex.envU = 0.0f;
         }
     }
 }

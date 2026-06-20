@@ -42,7 +42,11 @@ struct AnimatedModelVertex
 
     Ego::Vector3f pos;
     Ego::Vector3f nrm;
-    size_t normalIndex;
+    /// Precomputed environment-map U coordinate (the azimuth of nrm, in turns).
+    /// Set by the loader so the render path needs no format-specific normal table:
+    /// the MD2 loader derives it from the legacy normal palette, a glTF loader from
+    /// the asset's real per-vertex normals.
+    float envU;
 };
 
 struct AnimatedModelFrame
@@ -59,8 +63,6 @@ struct AnimatedModelFrame
 class AnimatedModel
 {
 public:
-    static constexpr size_t normalCount = 163;
-
     AnimatedModel();
 
     size_t getVertexCount() const;
@@ -74,8 +76,6 @@ public:
 
     void scaleModel(float scaleX, float scaleY, float scaleZ);
     void makeEquallyLit();
-
-    static float getLegacyNormal(size_t normal, size_t index);
 
 private:
     size_t _vertices;
