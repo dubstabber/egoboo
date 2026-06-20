@@ -38,7 +38,7 @@ The validator currently checks:
 - `spawn.txt` parsing
 - local object enumeration under module `objects/`
 - object profile loading through lightweight `ObjectProfile::loadFromFile(...)`
-- presence of `data.txt` and `tris.md2`
+- presence of `data.txt` and one object model candidate (`tris.gltf`, `tris.glb`, or `tris.md2`; MD2 is the only loadable format until the glTF/GLB loader lands)
 - narrow semantic `data.txt` validation for raw `DRES`, `SKIN`, and `LEVL` tagged expansions plus loaded skin-override and ammo-vs-max-ammo invariants
 - spawn-referenced object resolution against `mp_objects`
 - object script compilation or fallback to `mp_data/script.txt`

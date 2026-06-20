@@ -132,9 +132,16 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
         const Graphics::ObjectModelAsset preferredAsset = Graphics::resolveObjectModelAsset(folderPath);
         if (preferredAsset.exists)
         {
-            throw std::runtime_error("Unsupported model format: " + folderPath);
+            throw std::runtime_error(std::string("Unsupported model format: ") +
+                                     preferredAsset.path +
+                                     " (" +
+                                     Graphics::getObjectModelFormatName(preferredAsset.format) +
+                                     ")");
         }
-        throw std::runtime_error("File not found: " + folderPath + "/tris.md2");
+        throw std::runtime_error("File not found: " + folderPath +
+                                 " (expected one of: " +
+                                 Graphics::describeObjectModelSearchOrder() +
+                                 ")");
     }
 
     _model = Graphics::loadObjectModelAsset(modelAsset);

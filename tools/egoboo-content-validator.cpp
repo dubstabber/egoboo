@@ -1054,8 +1054,13 @@ bool validateObjectProfile(const std::string& moduleName,
     const Ego::Graphics::ObjectModelAsset modelAsset = Ego::Graphics::resolveObjectModelAsset(virtualObjectPath);
     if (!modelAsset.exists)
     {
-        const std::string modelPath = virtualObjectPath + "/tris.md2";
-        reporter.error(moduleName, "missing_required_file", modelPath, "missing required object model", &summary, modelPath);
+        reporter.error(moduleName,
+                       "missing_required_file",
+                       virtualObjectPath,
+                       std::string("missing required object model; expected one of: ") +
+                           Ego::Graphics::describeObjectModelSearchOrder(),
+                       &summary,
+                       virtualObjectPath);
         success = false;
     }
     else if (!Ego::Graphics::canLoadObjectModelFormat(modelAsset.format))

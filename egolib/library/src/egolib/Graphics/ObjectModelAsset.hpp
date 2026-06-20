@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace Ego
 {
@@ -26,7 +27,10 @@ struct ObjectModelAsset
 
 ObjectModelAsset resolveObjectModelAsset(const std::string& objectFolderPath);
 ObjectModelAsset resolveObjectModelAsset(const std::string& objectFolderPath, ObjectModelFormat format);
+const std::vector<ObjectModelFormat>& getObjectModelSearchOrder();
+const char* getObjectModelFileName(ObjectModelFormat format);
 const char* getObjectModelFormatName(ObjectModelFormat format);
+std::string describeObjectModelSearchOrder();
 
 } // namespace Graphics
 } // namespace Ego

@@ -34,6 +34,8 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace
@@ -401,6 +403,22 @@ TEST_F(ObjectProfileParserTest, ObjectModelLoaderReportsCurrentLoadability)
     EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Unknown));
 }
 
+TEST_F(ObjectProfileParserTest, ObjectModelAssetHelpersReportCurrentSearchOrder)
+{
+    const std::vector<Ego::Graphics::ObjectModelFormat>& order =
+        Ego::Graphics::getObjectModelSearchOrder();
+    ASSERT_EQ(order.size(), 3u);
+    EXPECT_EQ(order[0], Ego::Graphics::ObjectModelFormat::Gltf);
+    EXPECT_EQ(order[1], Ego::Graphics::ObjectModelFormat::Glb);
+    EXPECT_EQ(order[2], Ego::Graphics::ObjectModelFormat::Md2);
+
+    EXPECT_STREQ(Ego::Graphics::getObjectModelFileName(Ego::Graphics::ObjectModelFormat::Gltf), "tris.gltf");
+    EXPECT_STREQ(Ego::Graphics::getObjectModelFileName(Ego::Graphics::ObjectModelFormat::Glb), "tris.glb");
+    EXPECT_STREQ(Ego::Graphics::getObjectModelFileName(Ego::Graphics::ObjectModelFormat::Md2), "tris.md2");
+    EXPECT_STREQ(Ego::Graphics::getObjectModelFileName(Ego::Graphics::ObjectModelFormat::Unknown), "");
+    EXPECT_EQ(Ego::Graphics::describeObjectModelSearchOrder(), "tris.gltf, tris.glb, tris.md2");
+}
+
 TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverRejectsFutureOnlyAssets)
 {
 #ifdef _WIN32
@@ -435,6 +453,69 @@ TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverRejectsFutureOnlyAsse
     EXPECT_EQ(Ego::Graphics::loadObjectModelAsset(preferredAsset), nullptr);
 
     vfs_remove_mount_point(Ego::VfsPath("mp_modelloadable"));
+}
+
+TEST_F(ObjectProfileParserTest, ModelDescriptorMissingModelErrorNamesAllCandidates)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-missing-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "missing.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelmissing"), 1));
+
+    try
+    {
+        Ego::ModelDescriptor descriptor("mp_modelmissing/missing.obj");
+        FAIL() << "ModelDescriptor should reject object folders without a model asset";
+    }
+    catch (const std::runtime_error& error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("expected one of: tris.gltf, tris.glb, tris.md2"), std::string::npos);
+    }
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelmissing"));
+}
+
+TEST_F(ObjectProfileParserTest, ModelDescriptorUnsupportedFutureOnlyAssetNamesPreferredAsset)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-unsupported-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "future.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    {
+        std::ofstream(objectDir / "tris.gltf").put('\0');
+    }
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelunsupported"), 1));
+
+    try
+    {
+        Ego::ModelDescriptor descriptor("mp_modelunsupported/future.obj");
+        FAIL() << "ModelDescriptor should reject future-only model assets until a loader exists";
+    }
+    catch (const std::runtime_error& error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("Unsupported model format: mp_modelunsupported/future.obj/tris.gltf"), std::string::npos);
+        EXPECT_NE(message.find("(glTF)"), std::string::npos);
+    }
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelunsupported"));
 }
 
 TEST_F(ObjectProfileParserTest, TestModFollowerClassName)

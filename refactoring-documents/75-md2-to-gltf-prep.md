@@ -11,6 +11,9 @@ legacy `tris.md2` assets toward glTF/GLB.
 - Object model resolution prefers `tris.gltf`, then `tris.glb`, then `tris.md2`.
   Until a glTF parser is implemented, runtime loading explicitly falls back to
   `tris.md2` when a higher-priority future asset is present beside it.
+- Object model candidate filenames and search-order diagnostics are centralized
+  in `ObjectModelAsset`, so runtime and validator errors report the same
+  format-forward candidate list instead of hardcoding `tris.md2`.
 - Runtime loadability is centralized behind `ObjectModelLoader`: preferred asset
   discovery remains format-forward, while `canLoadObjectModelFormat`,
   `resolveLoadableObjectModelAsset`, and `loadObjectModelAsset` keep MD2 as the

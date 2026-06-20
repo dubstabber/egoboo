@@ -2,6 +2,9 @@
 
 #include "egolib/vfs.h"
 
+#include <string>
+#include <vector>
+
 namespace Ego
 {
 namespace Graphics
@@ -10,17 +13,11 @@ namespace Graphics
 namespace
 {
 
-struct Candidate
+static const std::vector<ObjectModelFormat> MODEL_SEARCH_ORDER =
 {
-    ObjectModelFormat format;
-    const char* fileName;
-};
-
-static const Candidate MODEL_CANDIDATES[] =
-{
-    {ObjectModelFormat::Gltf, "tris.gltf"},
-    {ObjectModelFormat::Glb,  "tris.glb"},
-    {ObjectModelFormat::Md2,  "tris.md2"}
+    ObjectModelFormat::Gltf,
+    ObjectModelFormat::Glb,
+    ObjectModelFormat::Md2
 };
 
 } // namespace
@@ -33,14 +30,14 @@ ObjectModelAsset::ObjectModelAsset() :
 
 ObjectModelAsset resolveObjectModelAsset(const std::string& objectFolderPath)
 {
-    for (const Candidate& candidate : MODEL_CANDIDATES)
+    for (const ObjectModelFormat format : getObjectModelSearchOrder())
     {
-        const std::string path = objectFolderPath + "/" + candidate.fileName;
+        const std::string path = objectFolderPath + "/" + getObjectModelFileName(format);
         if (vfs_exists(path))
         {
             ObjectModelAsset asset;
             asset.exists = true;
-            asset.format = candidate.format;
+            asset.format = format;
             asset.path = path;
             return asset;
         }
@@ -51,25 +48,41 @@ ObjectModelAsset resolveObjectModelAsset(const std::string& objectFolderPath)
 
 ObjectModelAsset resolveObjectModelAsset(const std::string& objectFolderPath, ObjectModelFormat format)
 {
-    for (const Candidate& candidate : MODEL_CANDIDATES)
+    const char* fileName = getObjectModelFileName(format);
+    if ('\0' == fileName[0])
     {
-        if (candidate.format != format)
-        {
-            continue;
-        }
+        return ObjectModelAsset();
+    }
 
-        const std::string path = objectFolderPath + "/" + candidate.fileName;
-        if (vfs_exists(path))
-        {
-            ObjectModelAsset asset;
-            asset.exists = true;
-            asset.format = candidate.format;
-            asset.path = path;
-            return asset;
-        }
+    const std::string path = objectFolderPath + "/" + fileName;
+    if (vfs_exists(path))
+    {
+        ObjectModelAsset asset;
+        asset.exists = true;
+        asset.format = format;
+        asset.path = path;
+        return asset;
     }
 
     return ObjectModelAsset();
+}
+
+const std::vector<ObjectModelFormat>& getObjectModelSearchOrder()
+{
+    return MODEL_SEARCH_ORDER;
+}
+
+const char* getObjectModelFileName(ObjectModelFormat format)
+{
+    switch (format)
+    {
+        case ObjectModelFormat::Gltf: return "tris.gltf";
+        case ObjectModelFormat::Glb:  return "tris.glb";
+        case ObjectModelFormat::Md2:  return "tris.md2";
+        case ObjectModelFormat::Unknown:
+        default:
+            return "";
+    }
 }
 
 const char* getObjectModelFormatName(ObjectModelFormat format)
@@ -83,6 +96,20 @@ const char* getObjectModelFormatName(ObjectModelFormat format)
         default:
             return "unknown";
     }
+}
+
+std::string describeObjectModelSearchOrder()
+{
+    std::string description;
+    for (const ObjectModelFormat format : getObjectModelSearchOrder())
+    {
+        if (!description.empty())
+        {
+            description += ", ";
+        }
+        description += getObjectModelFileName(format);
+    }
+    return description;
 }
 
 } // namespace Graphics
