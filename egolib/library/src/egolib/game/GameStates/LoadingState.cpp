@@ -196,9 +196,6 @@ void LoadingState::loadModuleData()
         // Reset all loaded "profiles" in the "profile system".
         EngineContext::get().profileSystem().reset();
 
-        // do some graphics initialization
-        gfx_system_make_enviro();
-
         //Load players if needed
         if(!_playersToLoad.empty()) {
             setProgressText("Loading players...", 50);

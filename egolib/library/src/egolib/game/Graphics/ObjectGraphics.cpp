@@ -193,7 +193,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<AnimatedModelVerte
 			dst->nrm[YY] = srcLast.nrm[kY];
 			dst->nrm[ZZ] = srcLast.nrm[kZ];
 
-            dst->env[XX] = indextoenvirox[srcLast.normalIndex];
+            dst->env[XX] = srcLast.envU;
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
         }
     }
@@ -213,14 +213,12 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<AnimatedModelVerte
             dst->nrm[YY] = srcNext.nrm[kY];
             dst->nrm[ZZ] = srcNext.nrm[kZ];
 
-            dst->env[XX] = indextoenvirox[srcNext.normalIndex];
+            dst->env[XX] = srcNext.envU;
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
         }
     }
     else
     {
-        uint16_t vrta_lst, vrta_nxt;
-
         for (size_t i = vmin; i <= vmax; i++)
         {
             GLvertex* dst = &_vertexList[i];
@@ -236,10 +234,7 @@ void ObjectGraphics::interpolateVerticesRaw(const std::vector<AnimatedModelVerte
             dst->nrm[YY] = srcLast.nrm[kY] + ( srcNext.nrm[kY] - srcLast.nrm[kY] ) * flip;
             dst->nrm[ZZ] = srcLast.nrm[kZ] + ( srcNext.nrm[kZ] - srcLast.nrm[kZ] ) * flip;
 
-            vrta_lst = srcLast.normalIndex;
-            vrta_nxt = srcNext.normalIndex;
-
-            dst->env[XX] = indextoenvirox[vrta_lst] + ( indextoenvirox[vrta_nxt] - indextoenvirox[vrta_lst] ) * flip;
+            dst->env[XX] = srcLast.envU + ( srcNext.envU - srcLast.envU ) * flip;
             dst->env[YY] = 0.5f * ( 1.0f + dst->nrm[ZZ] );
         }
     }

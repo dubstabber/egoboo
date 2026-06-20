@@ -6,8 +6,32 @@
 #include "egolib/vfs.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <vector>
+
+namespace
+{
+
+/// The 162 legacy MD2/Quake2 quantized normals plus one zero sentinel (index 162).
+/// This palette is MD2-format-private: the runtime AnimatedModel carries explicit
+/// normals and a precomputed environment-map coordinate, not a palette index.
+constexpr size_t LEGACY_NORMAL_COUNT = 163;
+
+const float LEGACY_MODEL_NORMALS[LEGACY_NORMAL_COUNT][3] =
+{
+#include "egolib/FileFormats/id_normals.inl"
+    , {0, 0, 0}
+};
+
+float legacyNormal(size_t normal, size_t index)
+{
+    normal = std::min(normal, LEGACY_NORMAL_COUNT - 1);
+    index = std::min<size_t>(index, 2);
+    return LEGACY_MODEL_NORMALS[normal][index];
+}
+
+} // namespace
 
 std::shared_ptr<Ego::Graphics::AnimatedModel> MD2Model::loadFromFile(const std::string& fileName)
 {
@@ -106,10 +130,14 @@ std::shared_ptr<Ego::Graphics::AnimatedModel> MD2Model::loadFromFile(const std::
             vertex.pos[kY] = frameVertex.v[1] * frameHeader.scale[1] + frameHeader.translate[1];
             vertex.pos[kZ] = frameVertex.v[2] * frameHeader.scale[2] + frameHeader.translate[2];
 
-            vertex.normalIndex = std::min<size_t>(frameVertex.normalIndex, MD2_MAX_NORMALS);
-            vertex.nrm[kX] = Ego::Graphics::AnimatedModel::getLegacyNormal(vertex.normalIndex, 0);
-            vertex.nrm[kY] = Ego::Graphics::AnimatedModel::getLegacyNormal(vertex.normalIndex, 1);
-            vertex.nrm[kZ] = Ego::Graphics::AnimatedModel::getLegacyNormal(vertex.normalIndex, 2);
+            const size_t normalIndex = std::min<size_t>(frameVertex.normalIndex, MD2_MAX_NORMALS);
+            vertex.nrm[kX] = legacyNormal(normalIndex, 0);
+            vertex.nrm[kY] = legacyNormal(normalIndex, 1);
+            vertex.nrm[kZ] = legacyNormal(normalIndex, 2);
+
+            // Precompute the environment-map U coordinate from the (pre-scale) normal,
+            // identical to the retired indextoenvirox[normalIndex] table lookup.
+            vertex.envU = std::atan2(vertex.nrm[kY], vertex.nrm[kX]) * idlib::inv_two_pi<float>();
 
             const oct_vec_v2_t ovec(vertex.pos);
             if (!boundingBoxFound)
