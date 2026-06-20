@@ -8,6 +8,13 @@ legacy `tris.md2` assets toward glTF/GLB.
 - `Ego::Graphics::AnimatedModel` is the format-neutral runtime model consumed by
   `ModelDescriptor`, `ObjectGraphics`, and the model draw path.
 - `MD2Model` is now an MD2 loader adapter that populates `AnimatedModel`.
+- `Ego::Graphics::ModelAnimationMetadata` owns the legacy action ranges,
+  frame-effect parsing, walk-lip tables, and `copy.txt` healing behavior that
+  used to live inside `ModelDescriptor`. `ModelDescriptor` keeps its public API
+  as a facade over the metadata object plus the runtime `AnimatedModel`.
+- The obsolete raw `id_md2.c` reader has been removed. `id_md2.h` now contains
+  only packed MD2 file-layout structures shared by the current `MD2Model`
+  adapter.
 - Object model resolution prefers `tris.gltf`, then `tris.glb`, then `tris.md2`.
   Until a glTF parser is implemented, runtime loading explicitly falls back to
   `tris.md2` when a higher-priority future asset is present beside it.
@@ -34,6 +41,6 @@ loader should preserve:
 - action ranges equivalent to `ModelAction`
 - copy/healing compatibility data currently read from `copy.txt`
 
-The current `ModelDescriptor` action and frame-effect parser remains the
-behavioral reference until the glTF loader can prove equivalent action maps,
-walk-lip tables, frame effects, bounding boxes, and vertex interpolation.
+`ModelAnimationMetadata` is the current action and frame-effect behavioral
+reference until the glTF loader can prove equivalent action maps, walk-lip
+tables, frame effects, bounding boxes, and vertex interpolation.

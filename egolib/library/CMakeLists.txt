@@ -121,7 +121,6 @@ set(EGOLIB_FILEFORMATS_SOURCES
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.hpp
     src/egolib/FileFormats/Globals.cpp
     src/egolib/FileFormats/Globals.hpp
-    src/egolib/FileFormats/id_md2.c
     src/egolib/FileFormats/id_md2.h
     src/egolib/FileFormats/map_file.c
     src/egolib/FileFormats/map_file.h
@@ -190,6 +189,9 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/IndexFormat.hpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/MD2Model.hpp
+    src/egolib/Graphics/ModelAnimationMetadata.cpp
+    src/egolib/Graphics/ModelAnimationMetadata.hpp
+    src/egolib/Graphics/ModelAnimationTypes.hpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/ObjectModelAsset.cpp
@@ -963,7 +965,6 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/FileFormats/SpawnFile/SpawnFileTokenKind.cpp
     src/egolib/FileFormats/SpawnFile/SpawnName.cpp
     src/egolib/FileFormats/SpawnFile/spawn_file.c
-    src/egolib/FileFormats/id_md2.c
     src/egolib/FileFormats/map_file-v1.c
     src/egolib/FileFormats/map_file-v2.c
     src/egolib/FileFormats/map_file-v3.c
@@ -984,6 +985,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/AnimatedModel.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
+    src/egolib/Graphics/ModelAnimationMetadata.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/ObjectModelAsset.cpp

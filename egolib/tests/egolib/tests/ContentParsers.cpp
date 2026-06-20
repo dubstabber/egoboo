@@ -20,6 +20,7 @@
 #include "egolib/FileFormats/SpawnFile/SpawnFileReaderImpl.hpp"
 #include "egolib/FileFormats/wawalite_file.h"
 #include "egolib/Graphics/AnimatedModel.hpp"
+#include "egolib/Graphics/ModelAnimationMetadata.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Graphics/ObjectModelAsset.hpp"
 #include "egolib/Graphics/ObjectModelLoader.hpp"
@@ -31,8 +32,10 @@
 #include "egolib/vfs.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -297,6 +300,149 @@ TEST_F(WawaliteParserTest, TestModWawaliteGravity)
 // ===========================================================================
 
 class ObjectProfileParserTest : public ContentParserFixture {};
+
+namespace
+{
+
+void setSyntheticFrameName(Ego::Graphics::AnimatedModelFrame& frame, const char* name)
+{
+    std::strncpy(frame.name, name, sizeof(frame.name));
+    frame.name[sizeof(frame.name) - 1] = '\0';
+}
+
+Ego::Graphics::AnimatedModel makeSyntheticModel(std::initializer_list<const char*> frameNames)
+{
+    Ego::Graphics::AnimatedModel model;
+    model.getFrames().resize(frameNames.size());
+
+    size_t index = 0;
+    for (const char* frameName : frameNames)
+    {
+        setSyntheticFrameName(model.getFrames()[index], frameName);
+        ++index;
+    }
+
+    return model;
+}
+
+} // namespace
+
+class ModelAnimationMetadataTest : public ContentParserFixture {};
+
+TEST_F(ModelAnimationMetadataTest, LegacyFrameNamesBuildActionRangesAndEffects)
+{
+    Ego::Graphics::AnimatedModel model = makeSyntheticModel({
+        "DA0",
+        "WA0 F",
+        "WA1 ALGR",
+        "WB0 LA",
+        "KC0 P"
+    });
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromLegacyFrames(model, "synthetic", "mp_missing/copy.txt");
+
+    EXPECT_TRUE(metadata.isActionValid(ACTION_DA));
+    EXPECT_TRUE(metadata.isActionValid(ACTION_WA));
+    EXPECT_TRUE(metadata.isActionValid(ACTION_WB));
+    EXPECT_TRUE(metadata.isActionValid(ACTION_KC));
+    EXPECT_FALSE(metadata.isActionValid(ACTION_WC));
+
+    EXPECT_EQ(metadata.getFirstFrame(ACTION_WA), 1);
+    EXPECT_EQ(metadata.getLastFrame(ACTION_WA), 2);
+    EXPECT_EQ(metadata.getFirstFrame(ACTION_WB), 3);
+    EXPECT_EQ(metadata.getLastFrame(ACTION_WB), 3);
+
+    EXPECT_TRUE(HAS_SOME_BITS(model.getFrames()[1].framefx, MADFX_FOOTFALL));
+    EXPECT_TRUE(HAS_SOME_BITS(model.getFrames()[2].framefx, MADFX_ACTLEFT));
+    EXPECT_TRUE(HAS_SOME_BITS(model.getFrames()[2].framefx, MADFX_GRABRIGHT));
+    EXPECT_TRUE(HAS_SOME_BITS(model.getFrames()[3].framefx, MADFX_ACTLEFT));
+    EXPECT_TRUE(HAS_SOME_BITS(model.getFrames()[4].framefx, MADFX_POOF));
+
+    const BIT_FIELD walkFx = metadata.getMadFX(model, ACTION_WA);
+    EXPECT_TRUE(HAS_SOME_BITS(walkFx, MADFX_FOOTFALL));
+    EXPECT_TRUE(HAS_SOME_BITS(walkFx, MADFX_ACTLEFT));
+    EXPECT_TRUE(HAS_SOME_BITS(walkFx, MADFX_GRABRIGHT));
+}
+
+TEST_F(ModelAnimationMetadataTest, MissingWalkActionsFallbackThroughLegacyChain)
+{
+    Ego::Graphics::AnimatedModel model = makeSyntheticModel({
+        "DA0",
+        "WB0",
+        "WB1"
+    });
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromLegacyFrames(model, "synthetic", "mp_missing/copy.txt");
+
+    EXPECT_FALSE(metadata.isActionValid(ACTION_WA));
+    EXPECT_FALSE(metadata.isActionValid(ACTION_WC));
+    EXPECT_EQ(metadata.getAction(ACTION_WA), ACTION_DA);
+    EXPECT_EQ(metadata.getAction(ACTION_WC), ACTION_WB);
+}
+
+TEST_F(ModelAnimationMetadataTest, WalkLipMappingsUseActionFrameProgress)
+{
+    Ego::Graphics::AnimatedModel model = makeSyntheticModel({
+        "DA0",
+        "WA0",
+        "WA1",
+        "WA2",
+        "WB0",
+        "WC0"
+    });
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromLegacyFrames(model, "synthetic", "mp_missing/copy.txt");
+
+    EXPECT_EQ(model.getFrames()[1].framelip, 0);
+    EXPECT_EQ(model.getFrames()[2].framelip, 5);
+    EXPECT_EQ(model.getFrames()[3].framelip, 10);
+
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWA, 0), 1);
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWA, 15), 3);
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWB, 15), 4);
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWC, 15), 5);
+}
+
+TEST_F(ModelAnimationMetadataTest, CopyFileHealingMapsActionFamilies)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-metadata-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "copy.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    {
+        std::ofstream(objectDir / "copy.txt") << ": BASH ZAP\n";
+    }
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelmetadata"), 1));
+
+    Ego::Graphics::AnimatedModel model = makeSyntheticModel({
+        "DA0",
+        "BA0",
+        "BB0"
+    });
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromLegacyFrames(model, "synthetic", "mp_modelmetadata/copy.obj/copy.txt");
+
+    EXPECT_TRUE(metadata.isActionValid(ACTION_BA));
+    EXPECT_TRUE(metadata.isActionValid(ACTION_BB));
+    EXPECT_FALSE(metadata.isActionValid(ACTION_ZA));
+    EXPECT_FALSE(metadata.isActionValid(ACTION_ZB));
+    EXPECT_EQ(metadata.getAction(ACTION_ZA), ACTION_BA);
+    EXPECT_EQ(metadata.getAction(ACTION_ZB), ACTION_BB);
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelmetadata"));
+}
 
 TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoads)
 {

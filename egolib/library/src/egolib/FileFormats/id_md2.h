@@ -3,8 +3,7 @@
 /// @file egolib/FileFormats/id_md2.h
 /// @details Md2 model file loading structures & constants.
 
-#include "egolib/Extensions/ogl_extensions.h"
-#include <string>
+#include <cstdint>
 
 //--------------------------------------------------------------------------------------------
 // gcc does not properly recognize #pragma pack statements
@@ -99,15 +98,6 @@
         char             name[16];
     } SET_PACKED();
 
-    /* Model frame */
-    struct id_md2_frame_t
-    {
-        float            scale[3];
-        float            translate[3];
-        char             name[16];
-        id_md2_vertex_t *verts;
-    } SET_PACKED();
-
     /* GL command packet */
     struct id_glcmd_packed_t
     {
@@ -116,33 +106,4 @@
         int32_t index;
     } SET_PACKED();
 
-    /* MD2 model structure */
-    struct id_md2_model_t
-    {
-        id_md2_header_t    header;
-
-        id_md2_skin_t     *skins;
-        id_md2_texcoord_t *texcoords;
-        id_md2_triangle_t *triangles;
-        id_md2_frame_t    *frames;
-        int               *glcmds;
-        GLuint             tex_id;
-    } SET_PACKED();
-
 #pragma pack(pop)
-
-//--------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------
-
-    extern float kid_md2_normals[MD2_MAX_NORMALS][3];
-
-//--------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------
-
-/// functions to load the packed data structures directly from a file
-/// only works with little endian machines
-    id_md2_model_t * id_md2_load( const std::string& filename, id_md2_model_t * mdl );
-    void             id_md2_free( id_md2_model_t * mdl );
-
-//--------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------
