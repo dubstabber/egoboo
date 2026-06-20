@@ -444,6 +444,103 @@ TEST_F(ModelAnimationMetadataTest, CopyFileHealingMapsActionFamilies)
     vfs_remove_mount_point(Ego::VfsPath("mp_modelmetadata"));
 }
 
+TEST_F(ModelAnimationMetadataTest, ActionDataMatchesLegacyFramePipeline)
+{
+    // The neutral initializeFromActionData path must reproduce the legacy
+    // frame-name pipeline exactly when fed the same action ranges and effects.
+    const std::initializer_list<const char*> frameNames = {
+        "DA0",
+        "WA0 F",
+        "WA1 ALGR",
+        "WA2",
+        "WB0 LA",
+        "WC0",
+        "KC0 P"
+    };
+
+    // Legacy path: recover everything from MD2 frame-name strings.
+    Ego::Graphics::AnimatedModel legacyModel = makeSyntheticModel(frameNames);
+    Ego::Graphics::ModelAnimationMetadata legacy;
+    legacy.initializeFromLegacyFrames(legacyModel, "synthetic", "mp_missing/copy.txt");
+
+    // Neutral path: same frames, per-frame effects copied from the legacy result
+    // (a loader sets these on the model), action ranges supplied structurally.
+    Ego::Graphics::AnimatedModel neutralModel = makeSyntheticModel(frameNames);
+    ASSERT_EQ(neutralModel.getFrames().size(), legacyModel.getFrames().size());
+    for (size_t i = 0; i < neutralModel.getFrames().size(); ++i)
+    {
+        neutralModel.getFrames()[i].framefx = legacyModel.getFrames()[i].framefx;
+    }
+
+    Ego::Graphics::AnimationMetadataInput input;
+    input.actions[ACTION_DA] = {true, 0, 0};
+    input.actions[ACTION_WA] = {true, 1, 3};
+    input.actions[ACTION_WB] = {true, 4, 4};
+    input.actions[ACTION_WC] = {true, 5, 5};
+    input.actions[ACTION_KC] = {true, 6, 6};
+
+    Ego::Graphics::ModelAnimationMetadata neutral;
+    neutral.initializeFromActionData(neutralModel, input);
+
+    // Action validity, fallback resolution, ranges and effects identical for every action.
+    for (int action = 0; action < ACTION_COUNT; ++action)
+    {
+        EXPECT_EQ(legacy.isActionValid(action), neutral.isActionValid(action)) << "action " << action;
+        EXPECT_EQ(legacy.getAction(action), neutral.getAction(action)) << "action " << action;
+        if (legacy.isActionValid(action))
+        {
+            EXPECT_EQ(legacy.getFirstFrame(action), neutral.getFirstFrame(action)) << "action " << action;
+            EXPECT_EQ(legacy.getLastFrame(action), neutral.getLastFrame(action)) << "action " << action;
+            EXPECT_EQ(legacy.getMadFX(legacyModel, action), neutral.getMadFX(neutralModel, action)) << "action " << action;
+        }
+    }
+
+    // Walk-lip interpolation tables identical.
+    for (int lip = 0; lip < LIP_COUNT; ++lip)
+    {
+        for (int framelip = 0; framelip < 16; ++framelip)
+        {
+            EXPECT_EQ(legacy.getFrameLipToWalkFrame(lip, framelip), neutral.getFrameLipToWalkFrame(lip, framelip))
+                << "lip " << lip << " framelip " << framelip;
+        }
+    }
+
+    // Per-frame framelip write-backs identical.
+    for (size_t i = 0; i < legacyModel.getFrames().size(); ++i)
+    {
+        EXPECT_EQ(legacyModel.getFrames()[i].framelip, neutralModel.getFrames()[i].framelip) << "frame " << i;
+    }
+}
+
+TEST_F(ModelAnimationMetadataTest, ActionDataIngestsWithoutFrameNames)
+{
+    // The glTF-style case: frames carry no legacy MD2 names; action ranges and
+    // per-frame effects come from structured data, not frame-name parsing.
+    Ego::Graphics::AnimatedModel model;
+    model.getFrames().resize(4);
+    for (Ego::Graphics::AnimatedModelFrame& frame : model.getFrames())
+    {
+        frame.framefx = EMPTY_BIT_FIELD;
+    }
+    model.getFrames()[1].framefx = MADFX_FOOTFALL;
+
+    Ego::Graphics::AnimationMetadataInput input;
+    input.actions[ACTION_WA] = {true, 0, 3};
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromActionData(model, input);
+
+    EXPECT_TRUE(metadata.isActionValid(ACTION_WA));
+    EXPECT_TRUE(metadata.isActionValid(ACTION_DA));   // engine-seeded default-stand action
+    EXPECT_EQ(metadata.getFirstFrame(ACTION_WA), 0);
+    EXPECT_EQ(metadata.getLastFrame(ACTION_WA), 3);
+    EXPECT_TRUE(HAS_SOME_BITS(metadata.getMadFX(model, ACTION_WA), MADFX_FOOTFALL));
+
+    // Walk-lip progression derived purely from the supplied frame range.
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWA, 0), 0);
+    EXPECT_EQ(metadata.getFrameLipToWalkFrame(LIPWA, 15), 3);
+}
+
 TEST_F(ObjectProfileParserTest, TestModFollowerProfileLoads)
 {
     auto mod = findModule("test.mod");

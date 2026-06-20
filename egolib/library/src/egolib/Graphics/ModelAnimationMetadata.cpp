@@ -54,10 +54,58 @@ void ModelAnimationMetadata::initializeFromLegacyFrames(AnimatedModel& model,
                                                        const std::string& modelName,
                                                        const std::string& copyFilePath)
 {
+    // Recover the format-neutral metadata input from the legacy MD2 frame-name
+    // encoding: action ranges + per-frame effects (written onto the frames) and
+    // the copy.txt heal aliases. Then apply it through the shared neutral path.
+    AnimationMetadataInput input;
+    ripActions(model, modelName, input);
+    collectHealAliases(copyFilePath, input);
+
+    applyMetadata(model, input);
+}
+
+void ModelAnimationMetadata::initializeFromActionData(AnimatedModel& model,
+                                                      const AnimationMetadataInput& input)
+{
+    applyMetadata(model, input);
+}
+
+void ModelAnimationMetadata::applyMetadata(AnimatedModel& model, const AnimationMetadataInput& input)
+{
     reset();
 
-    ripActions(model, modelName);
-    healActions(copyFilePath);
+    _actionMap.fill(ACTION_COUNT);
+    _actionStart.fill(-1);
+    _actionEnd.fill(-1);
+    _actionValid.fill(false);
+
+    if (!model.getFrames().empty())
+    {
+        _actionMap[ACTION_DA] = ACTION_DA;
+        _actionValid[ACTION_DA] = true;
+        _actionStart[ACTION_DA] = 0;
+        _actionEnd[ACTION_DA] = 0;
+
+        _actionMap[ACTION_WC] = ACTION_WB;
+        _actionMap[ACTION_WB] = ACTION_WA;
+        _actionMap[ACTION_WA] = ACTION_DA;
+
+        for (size_t action = 0; action < ACTION_COUNT; ++action)
+        {
+            const AnimationActionRange& range = input.actions[action];
+            if (!range.present)
+            {
+                continue;
+            }
+
+            _actionMap[action] = static_cast<ModelAction>(action);
+            _actionStart[action] = range.start;
+            _actionEnd[action] = range.end;
+            _actionValid[action] = true;
+        }
+    }
+
+    applyHealActions(input);
 
     for (AnimatedModelFrame& frame : model.getFrames())
     {
@@ -164,26 +212,12 @@ ModelAction ModelAnimationMetadata::stringToAction(const std::string& action)
     return ACTION_COUNT;
 }
 
-void ModelAnimationMetadata::ripActions(AnimatedModel& model, const std::string& modelName)
+void ModelAnimationMetadata::ripActions(AnimatedModel& model, const std::string& modelName, AnimationMetadataInput& input)
 {
-    _actionMap.fill(ACTION_COUNT);
-    _actionStart.fill(-1);
-    _actionEnd.fill(-1);
-    _actionValid.fill(false);
-
     if (model.getFrames().empty())
     {
         return;
     }
-
-    _actionMap[ACTION_DA] = ACTION_DA;
-    _actionValid[ACTION_DA] = true;
-    _actionStart[ACTION_DA] = 0;
-    _actionEnd[ACTION_DA] = 0;
-
-    _actionMap[ACTION_WC] = ACTION_WB;
-    _actionMap[ACTION_WB] = ACTION_WA;
-    _actionMap[ACTION_WA] = ACTION_DA;
 
     ModelAction last_action = ACTION_COUNT;
     int iframe = 0;
@@ -200,16 +234,15 @@ void ModelAnimationMetadata::ripActions(AnimatedModel& model, const std::string&
 
         if (last_action != action_now)
         {
-            _actionMap[action_now] = action_now;
-            _actionStart[action_now] = iframe;
-            _actionEnd[action_now] = iframe;
-            _actionValid[action_now] = true;
+            input.actions[action_now].present = true;
+            input.actions[action_now].start = iframe;
+            input.actions[action_now].end = iframe;
 
             last_action = action_now;
         }
         else
         {
-            _actionEnd[action_now] = iframe;
+            input.actions[action_now].end = iframe;
         }
 
         parseFrameDescriptors(model, modelName, frame.name, iframe);
@@ -391,7 +424,7 @@ void ModelAnimationMetadata::parseFrameDescriptors(AnimatedModel& model,
     pframe.framefx = fx;
 }
 
-void ModelAnimationMetadata::healActions(const std::string& filePath)
+void ModelAnimationMetadata::applyHealActions(const AnimationMetadataInput& input)
 {
     actionCopyCorrect(ACTION_DA, ACTION_DB);
     actionCopyCorrect(ACTION_DB, ACTION_DC);
@@ -445,6 +478,20 @@ void ModelAnimationMetadata::healActions(const std::string& filePath)
     actionCopyCorrect(ACTION_DA, ACTION_MM);
     actionCopyCorrect(ACTION_MM, ACTION_MN);
 
+    for (const std::pair<ModelAction, ModelAction>& alias : input.healAliases)
+    {
+        const ModelAction actiona = alias.first;
+        const ModelAction actionb = alias.second;
+
+        actionCopyCorrect(static_cast<ModelAction>(actiona + 0), static_cast<ModelAction>(actionb + 0));
+        actionCopyCorrect(static_cast<ModelAction>(actiona + 1), static_cast<ModelAction>(actionb + 1));
+        actionCopyCorrect(static_cast<ModelAction>(actiona + 2), static_cast<ModelAction>(actionb + 2));
+        actionCopyCorrect(static_cast<ModelAction>(actiona + 3), static_cast<ModelAction>(actionb + 3));
+    }
+}
+
+void ModelAnimationMetadata::collectHealAliases(const std::string& filePath, AnimationMetadataInput& input)
+{
     std::unique_ptr<ReadContext> ctxt = nullptr;
     try
     {
@@ -465,10 +512,7 @@ void ModelAnimationMetadata::healActions(const std::string& filePath)
         szTwo = vfs_read_string_lit(*ctxt);
         ModelAction actionb = charToAction(szTwo[0]);
 
-        actionCopyCorrect(static_cast<ModelAction>(actiona + 0), static_cast<ModelAction>(actionb + 0));
-        actionCopyCorrect(static_cast<ModelAction>(actiona + 1), static_cast<ModelAction>(actionb + 1));
-        actionCopyCorrect(static_cast<ModelAction>(actiona + 2), static_cast<ModelAction>(actionb + 2));
-        actionCopyCorrect(static_cast<ModelAction>(actiona + 3), static_cast<ModelAction>(actionb + 3));
+        input.healAliases.emplace_back(actiona, actionb);
     }
 }
 

@@ -12,6 +12,19 @@ legacy `tris.md2` assets toward glTF/GLB.
   frame-effect parsing, walk-lip tables, and `copy.txt` healing behavior that
   used to live inside `ModelDescriptor`. `ModelDescriptor` keeps its public API
   as a facade over the metadata object plus the runtime `AnimatedModel`.
+- `ModelAnimationMetadata` now has a format-neutral ingest seam. The legacy
+  MD2 frame-name parse is just one producer: `initializeFromLegacyFrames`
+  recovers an `AnimationMetadataInput` (per-action presence + frame ranges, plus
+  `copy.txt`/`extras.egoboo` heal aliases) and feeds it to a shared
+  `applyMetadata` step that builds the action map, walk-lip tables, and per-frame
+  walk-lip write-backs. A non-MD2 loader (glTF via `extras.egoboo`) calls
+  `initializeFromActionData(model, input)` directly, supplying resolved action
+  ranges instead of forging 16-char MD2 frame-name strings. Per-frame effects
+  (`framefx`) remain model data set on each `AnimatedModelFrame` by the loader,
+  not carried in the input. The legacy path is behavior-preserving (a parity test
+  in `ContentParsers.cpp` asserts `initializeFromActionData` reproduces
+  `initializeFromLegacyFrames` exactly across the full action table, walk-lip
+  tables, and per-frame `framelip`).
 - The obsolete raw `id_md2.c` reader has been removed. `id_md2.h` now contains
   only packed MD2 file-layout structures shared by the current `MD2Model`
   adapter.
@@ -44,3 +57,13 @@ loader should preserve:
 `ModelAnimationMetadata` is the current action and frame-effect behavioral
 reference until the glTF loader can prove equivalent action maps, walk-lip
 tables, frame effects, bounding boxes, and vertex interpolation.
+
+With the `initializeFromActionData` ingest seam in place, the metadata side of a
+glTF loader narrows to: (1) define the `extras.egoboo` schema enumerated above,
+(2) decode it into an `AnimationMetadataInput` (action ranges + heal aliases) and
+per-frame `framefx`, and (3) call `initializeFromActionData`. The remaining
+non-metadata MD2 coupling tracked for later passes is the env-map normal palette
+(`AnimatedModel::normalIndex` / `getLegacyNormal` / `normalCount`, consumed by
+`indextoenvirox` in `graphic.c` and `ObjectGraphics::interpolateVerticesRaw`),
+the strip/fan-only draw-command primitive set, and the unconditional legacy
+`scaleModel(-3.5, 3.5, 3.5)` in the `ModelDescriptor` ctor.
