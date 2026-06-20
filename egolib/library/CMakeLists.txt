@@ -194,6 +194,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/ObjectModelAsset.cpp
     src/egolib/Graphics/ObjectModelAsset.hpp
+    src/egolib/Graphics/ObjectModelLoader.cpp
+    src/egolib/Graphics/ObjectModelLoader.hpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.hpp
     src/egolib/Graphics/ModelDescriptor.hpp
@@ -985,6 +987,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/ObjectModelAsset.cpp
+    src/egolib/Graphics/ObjectModelLoader.cpp
     src/egolib/Graphics/PixelFormat.cpp
     src/egolib/Graphics/VideoBufferManagerSeam.cpp
     src/egolib/Graphics/TextureManager.cpp

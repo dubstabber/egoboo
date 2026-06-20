@@ -3,7 +3,7 @@
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"  // spawn_file_info_t (was leeched via the egolib.h uber-header)
 #include "egolib/FileFormats/map_file.h"
 #include "egolib/FileFormats/wawalite_file.h"
-#include "egolib/Graphics/ObjectModelAsset.hpp"
+#include "egolib/Graphics/ObjectModelLoader.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Image/ImageManager.hpp"
@@ -1058,11 +1058,11 @@ bool validateObjectProfile(const std::string& moduleName,
         reporter.error(moduleName, "missing_required_file", modelPath, "missing required object model", &summary, modelPath);
         success = false;
     }
-    else if (modelAsset.format != Ego::Graphics::ObjectModelFormat::Md2)
+    else if (!Ego::Graphics::canLoadObjectModelFormat(modelAsset.format))
     {
-        const Ego::Graphics::ObjectModelAsset md2Fallback =
-            Ego::Graphics::resolveObjectModelAsset(virtualObjectPath, Ego::Graphics::ObjectModelFormat::Md2);
-        if (!md2Fallback.exists)
+        const Ego::Graphics::ObjectModelAsset loadableFallback =
+            Ego::Graphics::resolveLoadableObjectModelAsset(virtualObjectPath);
+        if (!loadableFallback.exists)
         {
             reporter.error(moduleName,
                            "unsupported_model_format",

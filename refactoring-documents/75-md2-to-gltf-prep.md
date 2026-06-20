@@ -11,6 +11,10 @@ legacy `tris.md2` assets toward glTF/GLB.
 - Object model resolution prefers `tris.gltf`, then `tris.glb`, then `tris.md2`.
   Until a glTF parser is implemented, runtime loading explicitly falls back to
   `tris.md2` when a higher-priority future asset is present beside it.
+- Runtime loadability is centralized behind `ObjectModelLoader`: preferred asset
+  discovery remains format-forward, while `canLoadObjectModelFormat`,
+  `resolveLoadableObjectModelAsset`, and `loadObjectModelAsset` keep MD2 as the
+  only loadable format until a real glTF/GLB loader lands.
 - The render scratch-buffer seam is format-neutral (`ModelVertexBuffer` /
   `DefaultModelVertexBuffer`) and sizes itself from `AnimatedModel` draw
   commands.

@@ -1,8 +1,7 @@
 #include "ModelDescriptor.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Graphics/AnimatedModel.hpp"
-#include "egolib/Graphics/MD2Model.hpp"
-#include "egolib/Graphics/ObjectModelAsset.hpp"
+#include "egolib/Graphics/ObjectModelLoader.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/fileutil.h"
@@ -127,22 +126,18 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
         }
     }
 
-    Graphics::ObjectModelAsset modelAsset = Graphics::resolveObjectModelAsset(folderPath);
+    Graphics::ObjectModelAsset modelAsset = Graphics::resolveLoadableObjectModelAsset(folderPath);
     if (!modelAsset.exists)
     {
-        throw std::runtime_error("File not found: " + folderPath + "/tris.md2");
-    }
-
-    if (modelAsset.format != Graphics::ObjectModelFormat::Md2)
-    {
-        modelAsset = Graphics::resolveObjectModelAsset(folderPath, Graphics::ObjectModelFormat::Md2);
-        if (!modelAsset.exists)
+        const Graphics::ObjectModelAsset preferredAsset = Graphics::resolveObjectModelAsset(folderPath);
+        if (preferredAsset.exists)
         {
             throw std::runtime_error("Unsupported model format: " + folderPath);
         }
+        throw std::runtime_error("File not found: " + folderPath + "/tris.md2");
     }
 
-    _model = MD2Model::loadFromFile(modelAsset.path);
+    _model = Graphics::loadObjectModelAsset(modelAsset);
     if(!_model) {
         throw std::runtime_error("File not found: " + modelAsset.path);
     }

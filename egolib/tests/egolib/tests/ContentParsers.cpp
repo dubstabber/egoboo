@@ -22,6 +22,7 @@
 #include "egolib/Graphics/AnimatedModel.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Graphics/ObjectModelAsset.hpp"
+#include "egolib/Graphics/ObjectModelLoader.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/Image/ImageManager.hpp"
@@ -383,7 +384,57 @@ TEST_F(ObjectProfileParserTest, ObjectModelResolverPrefersGltfThenGlbThenMd2)
     ASSERT_TRUE(md2Fallback.exists);
     EXPECT_EQ(md2Fallback.format, Ego::Graphics::ObjectModelFormat::Md2);
 
+    const Ego::Graphics::ObjectModelAsset loadableAsset =
+        Ego::Graphics::resolveLoadableObjectModelAsset(objectPath);
+    ASSERT_TRUE(loadableAsset.exists);
+    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Md2);
+    EXPECT_EQ(loadableAsset.path, objectPath + "/tris.md2");
+
     vfs_remove_mount_point(Ego::VfsPath("mp_modelresolver"));
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelLoaderReportsCurrentLoadability)
+{
+    EXPECT_TRUE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Md2));
+    EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Gltf));
+    EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Glb));
+    EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Unknown));
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverRejectsFutureOnlyAssets)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-loadable-resolver-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "future.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    {
+        std::ofstream(objectDir / "tris.glb").put('\0');
+        std::ofstream(objectDir / "tris.gltf").put('\0');
+    }
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelloadable"), 1));
+
+    const std::string objectPath = "mp_modelloadable/future.obj";
+    const Ego::Graphics::ObjectModelAsset preferredAsset =
+        Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(preferredAsset.exists);
+    EXPECT_EQ(preferredAsset.format, Ego::Graphics::ObjectModelFormat::Gltf);
+    EXPECT_EQ(preferredAsset.path, objectPath + "/tris.gltf");
+
+    const Ego::Graphics::ObjectModelAsset loadableAsset =
+        Ego::Graphics::resolveLoadableObjectModelAsset(objectPath);
+    EXPECT_FALSE(loadableAsset.exists);
+    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Unknown);
+    EXPECT_EQ(Ego::Graphics::loadObjectModelAsset(preferredAsset), nullptr);
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelloadable"));
 }
 
 TEST_F(ObjectProfileParserTest, TestModFollowerClassName)
