@@ -7,6 +7,10 @@ class ITeamMember
 public:
     virtual ~ITeamMember() = default;
 
+    /**
+    * @brief
+    *   Changes the team of this Object to another team
+    **/
     virtual void setTeam(TEAM_REF team, bool permanent = true) = 0;
     virtual void becomeTeamLeader() = 0;
     virtual void callTeamForHelp() = 0;

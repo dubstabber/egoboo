@@ -19,6 +19,12 @@ public:
     virtual ~IRenderable() = default;
 
     virtual ObjectRef getObjRef() const = 0;
+    /**
+    * @return
+    *   true if the Object is currently in hidden state. In hidden state the object cannot be
+    *   interacted with, is not rendered and is effectively not part of the game until it is
+    *   unhidden again. Hidden state is determined by the Objects AI state.
+    **/
     virtual bool isHidden() const = 0;
     virtual bool isInsideInventory() const = 0;
 

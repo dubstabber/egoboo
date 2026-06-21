@@ -56,7 +56,7 @@ public:
 
     /**
     * @return
-    *   true if this Entity can collide with another Entity
+    *   true if this Entity can collide physically with other Entities
     **/
     virtual bool canCollide() const = 0;
 

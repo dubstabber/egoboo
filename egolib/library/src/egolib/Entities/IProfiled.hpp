@@ -13,6 +13,9 @@ class IProfiled
 public:
     virtual ~IProfiled() = default;
 
-    /// @brief The object's profile (its static, per-type data).
+    /**
+    * @brief Gets a shared_ptr to the current ObjectProfile associated with this character.
+    *        The ObjectProfile can change for polymorphing objects.
+    **/
     virtual const std::shared_ptr<ObjectProfile>& getProfile() const = 0;
 };

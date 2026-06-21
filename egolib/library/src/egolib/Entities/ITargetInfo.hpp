@@ -18,28 +18,67 @@ public:
     virtual PLA_REF getPlayerNumber() const = 0;
 
     virtual bool isAlive() const = 0;
+    /**
+    * @brief
+    *   This function returns true if this Object is being held by another Object
+    * @return
+    *   true if held by another existing Object that is not marked for removal
+    **/
     virtual bool isBeingHeld() const = 0;
     virtual bool isPlayer() const = 0;
     virtual Gender getGender() const = 0;
     virtual ModelAction getCurrentAnimation() const = 0;
 
+    /**
+     * @return true if this Object is mountable by other Objects
+     */
     virtual bool isMount() const = 0;
     virtual bool isPlatform() const = 0;
+    /**
+    * @return
+    *   true if this Object is currently levitating above the ground
+    **/
     virtual bool isFlying() const = 0;
     virtual bool isHurt() const = 0;
     virtual bool hasNotFullMana() const = 0;
+    /**
+    * @return true if this Object is currently doing an attack animation
+    **/
     virtual bool isAttacking() const = 0;
     virtual bool isNameKnown() const = 0;
     virtual bool isKursed() const = 0;
     virtual bool isEquipped() const = 0;
+    /**
+    * @brief
+    *   This function returns true if the character is on a water tile
+    * @return
+    *   true if it is on a water tile
+    **/
     virtual bool isOnWaterTile() const = 0;
+    /**
+    * @return
+    *   true if this Object is actively trying to hide from others
+    **/
     virtual bool isStealthed() const = 0;
 
+    /**
+    * @return
+    *   true if this Object can detect and see invisible objects
+    **/
     virtual bool canSeeInvisible() const = 0;
     virtual bool canSeeKurses() const = 0;
     virtual bool canOpenStuff() const = 0;
     virtual bool isWeapon() const = 0;
 
+    /**
+    * @brief
+    *   checks if the object has a matching skill IDSZ. This function also maps between the old skill IDSZ
+    *   system and the new Perk system.
+    * @param whichskill
+    *   The IDSZ of the skill to check. An IDSZ of [NONE] always matches true.
+    * @return
+    *   true if the Object has the matching skill IDSZ of a perk that matches the skill IDSZ
+    **/
     virtual bool hasSkillIDSZ(const IDSZ2& idsz) const = 0;
     virtual bool hasTypeIDSZ(const IDSZ2& idsz) const = 0;
     virtual bool hasAnyIDSZ(const IDSZ2& idsz) const = 0;
