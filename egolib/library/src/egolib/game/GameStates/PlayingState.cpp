@@ -138,8 +138,13 @@ PlayingState::~PlayingState()
         EngineContext::get().profileSystem().loadAllSavedCharacters("mp_players");
     }
 
-    //Stop music
-    audioSystem().fadeAllSounds();
+    //Stop music. Guard against teardown ordering: on shutdown the engine clears the
+    //audio system (GameEngine::uninitialize) before the game-state stack is destroyed,
+    //so the throwing accessor would raise during destruction and terminate the process.
+    if (IAudioSystem* audio = EngineContext::get().tryAudioSystem())
+    {
+        audio->fadeAllSounds();
+    }
 }
 
 void PlayingState::updateStatusBarPosition()
