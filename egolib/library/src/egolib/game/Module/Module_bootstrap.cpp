@@ -150,12 +150,23 @@ void GameModule::finalizeModuleInitialization()
 
 GameModule::~GameModule()
 {
+    // GameModule is owned by the GameSessionContext singleton, so this can run at
+    // static-destruction time, after GameEngine::uninitialize() has already cleared
+    // these services. A throw from a destructor terminates the process, so every
+    // service access must tolerate an already-cleared service.
+
     //free all particles
-    EngineContext::get().particleHandler().clear();
+    if (auto* particleHandler = EngineContext::get().tryParticleHandler())
+    {
+        particleHandler->clear();
+    }
 
     //Free all profiles loaded by the module
-    EngineContext::get().profileSystem().reset();
+    if (auto* profileSystem = EngineContext::get().tryProfileSystem())
+    {
+        profileSystem->reset();
+    }
 
-    //Free all textures
+    //Free all textures (internally guarded against a torn-down GFX / texture manager)
     gfx_system_release_all_graphics();
 }
