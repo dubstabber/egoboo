@@ -166,6 +166,8 @@ void Object::adjustHoldingWeight(int delta) { holdingweight += delta; }
 
 bool Object::isTerminated() const { return _terminateRequested; }
 
+void Object::markTerminateRequested() { _terminateRequested = true; }
+
 bool Object::isMount() const { return getProfile()->isMount(); }
 
 // ---------------------------------------------------------------------------

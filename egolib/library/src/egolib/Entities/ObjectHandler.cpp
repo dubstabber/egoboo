@@ -96,7 +96,7 @@ bool ObjectHandler::remove(ObjectRef ref) {
 
 	// If we are inside a list loop, do not actually change the length of the
 	// list. Else this can cause some problems later.
-	_internalCharacterList[ref]->_terminateRequested = true; //bad: private access
+	_internalCharacterList[ref]->markTerminateRequested();
 	_deletedCharacters++;
 
 	// We can safely modify the map, it is not iterable from the outside.
