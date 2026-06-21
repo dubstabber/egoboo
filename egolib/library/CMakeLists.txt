@@ -451,6 +451,7 @@ set(EGOLIB_SCRIPT_SOURCES
     src/egolib/Script/Scanner.cpp
     src/egolib/Script/Scanner.hpp
     src/egolib/Script/script.c
+    src/egolib/Script/script_driver.c
     src/egolib/Script/script.h
     src/egolib/Script/TextFile.cpp
     src/egolib/Script/TextFile.hpp
@@ -1252,19 +1253,22 @@ set(EGOLIB_GAMESTATES_LAYER_SOURCES
     src/egolib/game/GameStates/VideoOptionsScreen.cpp
 )
 
-# The egolib-scriptvm layer: the EgoScript bytecode VM — script.c (the interpreter + Runtime),
-# the script_implementation/script_variables support, and the script_functions_*.c dispatch family
-# (minus script_functions_bitwise.c, whose pure bit-ops already live in egolib-foundation-base),
-# plus the VM-side ScriptSystemAdapter. Like egolib-gamestates it sits ABOVE egolib-library: the VM
+# The egolib-scriptvm layer: the EgoScript bytecode VM — script.c (Runtime + opcode dispatch),
+# script_driver.c (character-script/alert driver), the script_implementation/script_variables
+# support, and the script_functions_*.c dispatch family (minus script_functions_bitwise.c, whose
+# pure bit-ops already live in egolib-foundation-base), plus the VM-side ScriptSystemAdapter. Like
+# egolib-gamestates it sits ABOVE egolib-library: the VM
 # reaches DOWN into the game-core library (85 forward edges), and game-core no longer references the
 # VM — the former reverse edges were seam-cut by relocating ai_state_t's state methods down into
 # Entities/AiState.cpp (P1) and routing the 3 driver entries (scr_run_chr_script / set_alerts /
 # scripting_system_end) through the Ego::Script::IScriptSystem interface (P2). The lower-layer
 # accessor IScriptSystem.cpp stays in egolib-foundation-base; only the adapter that forwards to
-# script.c lives here. egolib-scriptvm is a SIBLING of egolib-gamestates (nm-verified: zero edges
-# in either direction). nm-verified acyclic: egolib-library has zero references into this layer.
+# the VM driver functions lives here. egolib-scriptvm is a SIBLING of egolib-gamestates
+# (nm-verified: zero edges in either direction). nm-verified acyclic: egolib-library has zero
+# references into this layer.
 set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/Script/script.c
+    src/egolib/Script/script_driver.c
     src/egolib/Script/script_internal.h
     src/egolib/Script/script_operand.c
     src/egolib/game/script_implementation.c

@@ -18,20 +18,20 @@
 //********************************************************************************************
 
 /// @file  egolib/Script/script_internal.h
-/// @brief Private seam between the VM driver (script.c) and the operand evaluator
+/// @brief Private seam between the VM driver (script_driver.c) and the operand evaluator
 ///        (script_operand.c): extern declarations for the two file-scope globals that
-///        updateScriptErrorContext (script.c) writes and run_operand (script_operand.c) reads.
+///        updateScriptErrorContext (script_driver.c) writes and run_operand (script_operand.c) reads.
 
 #pragma once
 
 #include "egolib/typedef.h"  // ObjectProfileRef
 
 /// @brief The ObjectProfile reference of the object whose script caused an error.
-/// Set by updateScriptErrorContext (script.c); read by run_operand (script_operand.c)
-/// and dumpDebugScriptState (script.c).
+/// Set by updateScriptErrorContext (script_driver.c); read by run_operand (script_operand.c)
+/// and dumpDebugScriptState (script_driver.c).
 extern ObjectProfileRef script_error_model;
 
 /// @brief The class name of the object whose script caused an error.
-/// Set by updateScriptErrorContext (script.c); read by run_operand (script_operand.c)
-/// and dumpDebugScriptState (script.c).
+/// Set by updateScriptErrorContext (script_driver.c); read by run_operand (script_operand.c)
+/// and dumpDebugScriptState (script_driver.c).
 extern const char *script_error_classname;

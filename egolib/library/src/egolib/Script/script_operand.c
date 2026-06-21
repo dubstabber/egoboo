@@ -25,10 +25,10 @@
 ///          onVariableNotDefinedError, and script_info_t position methods
 ///          (increment_pos / get_pos / set_pos).
 ///
-///          The VM execution driver (scripting_system_begin/end, scr_run_chr_script,
-///          runCharacterScript, run_function_call/run_operation/run_function, set_alerts,
-///          ai_state_t::get_wp/ensure_wp, issue_order/issue_special_order) lives in
-///          the sibling script.c.
+///          The character-script/alert driver (scripting_system_begin/end,
+///          scr_run_chr_script, runCharacterScript, set_alerts, ai_state_t::get_wp/
+///          ensure_wp) lives in script_driver.c. The opcode dispatch methods and
+///          order-publication helpers live in the sibling script.c.
 
 #include "egolib/Script/script.h"
 #include "egolib/Script/script_internal.h"

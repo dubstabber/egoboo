@@ -2366,3 +2366,32 @@ Positive control against `egolib-foundation-base` finds the expected intra-base 
 Gates: build clean; focused `ModelAnimationMetadataTest.*` 6/6; ctest **897/897**; validator `test.mod`
 0/0; full validator completed at the known legacy content baseline (42 modules, 10 warnings, 245 errors,
 nonzero exit due to existing content errors).
+
+### Pass 245 — `Script/script.c` VM-driver split (2026-06-21)
+
+The 798-line `Script/script.c` split into two within-`egolib-scriptvm` siblings:
+
+- `script_driver.c` (455 lines) — the character-script and alert-polling driver:
+  `scripting_system_begin`/`scripting_system_end`, both `scr_run_chr_script` overloads,
+  `set_alerts`, `ai_state_t::get_wp`/`ensure_wp`, and the anonymous driver helpers
+  (`RuntimeActorContext`, script-error context publication, debug dump, invisible-target reset,
+  waypoint alert/velocity helpers, and `runCharacterScript`).
+- `script.c` (377 lines) — Runtime construction/statistics, script name arrays,
+  `Ego::Script::runtimeState`, `script_error_model`/`script_error_classname` storage,
+  opcode-dispatch methods (`run_function_call`/`run_operation`/`run_function`), the
+  order-publication helpers (`issue_order`/`issue_special_order`), and `script_state_t` construction.
+
+No public API changes (`script.h` unchanged), no private internal header, and no static-to-extern
+promotions. The `script_error_*` storage remains in `script.c`; `script_driver.c` writes it through the
+existing `script_internal.h` extern seam, and `script_operand.c` keeps reading it through the same seam.
+The moved public driver entries are still resolved through `script.h`, so `ScriptSystemAdapter` and the
+script runtime tests need no call-site changes. The new `.c` is registered in BOTH the master
+`EGOLIB_SCRIPT_SOURCES` and `EGOLIB_SCRIPTVM_LAYER_SOURCES` lists; scriptvm archive membership is now
+32 `.o`.
+
+Gates: targeted build (`egolib-scriptvm`, `egolib-tests-executable`, `egoboo-content-validator`) clean;
+focused `ScriptRuntime` 17/17; ctest **897/897**; validator `test.mod` 0/0. Archive proof:
+`script_driver.c.o` is present in `libegolib-scriptvm.a`; nm set-intersections are zero for
+`egolib-library -> egolib-scriptvm`, `egolib-scriptvm -> egolib-gamestates`, and
+`egolib-gamestates -> egolib-scriptvm`; positive control `egolib-scriptvm -> egolib-library` finds 88
+expected downward edges.

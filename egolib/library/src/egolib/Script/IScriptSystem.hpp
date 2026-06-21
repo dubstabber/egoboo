@@ -35,11 +35,11 @@ namespace Script
 ///        character's script, poll its per-tick alert conditions, and tear the VM down.
 ///
 ///        It is implemented by a VM-side adapter (ScriptSystemAdapter, which forwards to the
-///        free functions in script.c) and installed once at boot from a layer above
+///        VM driver free functions) and installed once at boot from a layer above
 ///        egolib-library. Routing the three library call sites (game_loop's per-object AI tick,
 ///        Object::kill's final-script run, and the game session teardown) through this interface
-///        removes the only remaining egolib-library -> script.c link edges, so the EgoScript VM
-///        (script.c + the script_functions_*.c family) can be carved into an above-library
+///        removes the only remaining egolib-library -> VM-driver link edges, so the EgoScript VM
+///        (script.c + script_driver.c + the script_functions_*.c family) can be carved into an above-library
 ///        egolib-scriptvm archive. This mirrors Ego::Entities::IObjectWorld (the entity-world
 ///        seam) and the GameEngine main-menu-state factory used by the gamestates carve.
 ///
@@ -75,7 +75,7 @@ IScriptSystem* tryActiveScriptSystem();
 IScriptSystem& activeScriptSystem();
 
 /// @brief Install the default VM-backed script system (the ScriptSystemAdapter forwarding to
-///        script.c). Called once at boot from above egolib-library (the game's Main and the test
+///        VM driver). Called once at boot from above egolib-library (the game's Main and the test
 ///        harness), since the adapter references VM symbols that live above egolib-library after
 ///        the egolib-scriptvm carve.
 void installDefaultScriptSystem();

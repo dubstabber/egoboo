@@ -19,7 +19,7 @@
 
 /// @file egolib/Script/ScriptSystemAdapter.cpp
 /// @brief VM-side implementation of the IScriptSystem driver seam.
-/// @details Forwards each interface method to the free functions in script.c. Lives in the
+/// @details Forwards each interface method to the VM driver free functions. Lives in the
 ///   egolib-scriptvm archive (above egolib-library), so its references to scr_run_chr_script /
 ///   set_alerts / scripting_system_end are intra-layer (scriptvm -> scriptvm), never a
 ///   library -> scriptvm reverse edge.
