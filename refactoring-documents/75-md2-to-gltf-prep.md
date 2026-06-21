@@ -74,7 +74,12 @@ change is behavior-preserving for MD2 (the per-vertex `envU` equals the retired
 `indextoenvirox[normalIndex]` value bit-for-bit, since both apply the same
 `atan2 * inv_two_pi` to the same legacy normal).
 
+The `ModelDescriptor` post-load step is now format-conditional: the ctor switches
+on the resolved `ObjectModelFormat`, and the MD2-era `scaleModel(-3.5, 3.5, 3.5)`
++ `initializeFromLegacyFrames` run only on the `Md2` arm. The `Gltf`/`Glb`/`Unknown`
+arms are the (currently unreachable) seam where a future loader supplies a
+format-native scale and feeds metadata via `initializeFromActionData`.
+
 The remaining non-metadata MD2 coupling tracked for later passes is the
-strip/fan-only draw-command primitive set (no indexed-triangle mode) and the
-unconditional legacy `scaleModel(-3.5, 3.5, 3.5)` in the `ModelDescriptor` ctor,
-which a format-conditional post-load branch should make MD2-only.
+strip/fan-only draw-command primitive set (no indexed-triangle mode), after which
+the glTF/GLB loader itself (cgltf + the `extras.egoboo` schema) can land.

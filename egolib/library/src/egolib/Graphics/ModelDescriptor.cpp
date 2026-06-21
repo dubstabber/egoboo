@@ -33,14 +33,32 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
         throw std::runtime_error("File not found: " + modelAsset.path);
     }
 
-    /// @details Egoboo legacy models were designed with 1 tile = 32x32 units, but internally Egoboo uses
-    ///      1 tile = 128x128 units. Previously, this was handled by sprinkling a bunch of
-    ///      commands that multiplied various quantities by 4 or by 4.125 throughout the code.
-    ///      It was very counterintuitive, and caused me no end of headaches...  Of course the
-    ///      solution is to scale the model!
-    _model->scaleModel(-3.5f, 3.5f, 3.5f);
+    // Post-load normalization is format-specific. Today only MD2 is loadable
+    // (loadObjectModelAsset returns nullptr for glTF/GLB, so those formats already
+    // threw above before reaching here); the glTF/GLB arms mark the seam where a
+    // future loader supplies its own scale and animation metadata — e.g. from the
+    // asset's extras.egoboo block via initializeFromActionData — instead of the
+    // MD2-era rescale and frame-name parse.
+    switch (modelAsset.format)
+    {
+        case Graphics::ObjectModelFormat::Md2:
+            /// @details Egoboo legacy models were designed with 1 tile = 32x32 units, but internally Egoboo uses
+            ///      1 tile = 128x128 units. Previously, this was handled by sprinkling a bunch of
+            ///      commands that multiplied various quantities by 4 or by 4.125 throughout the code.
+            ///      It was very counterintuitive, and caused me no end of headaches...  Of course the
+            ///      solution is to scale the model!
+            _model->scaleModel(-3.5f, 3.5f, 3.5f);
 
-    _animationMetadata.initializeFromLegacyFrames(*_model, _name, folderPath + "/copy.txt");
+            _animationMetadata.initializeFromLegacyFrames(*_model, _name, folderPath + "/copy.txt");
+            break;
+
+        case Graphics::ObjectModelFormat::Gltf:
+        case Graphics::ObjectModelFormat::Glb:
+        case Graphics::ObjectModelFormat::Unknown:
+            // Unreachable until a glTF/GLB loader lands (see above): a format-native
+            // scale and a metadata path (initializeFromActionData) belong here.
+            break;
+    }
 }
 
 const std::string& ModelDescriptor::getName() const
