@@ -135,6 +135,7 @@ Architecturally central but now small after split passes:
 - `egolib/library/src/egolib/Entities/Object.cpp` (~200 lines, split into six `Object_*.cpp` TUs; a seventh sibling `Object_accessors.cpp` (550 lines) added 2026-06-12 holds the de-inlined override-wrapper bodies + trivial accessor bodies — see Object.hpp note above)
 - `egolib/library/src/egolib/game/Module/Module.cpp` (~277 lines, split into six `Module_*.cpp` siblings)
 - `egolib/library/src/egolib/game/Graphics/ObjectGraphics.cpp` (~741 lines, split off `ObjectGraphics_animation.cpp` (~587, the animation state machine) + shared `ObjectGraphics_internal.hpp`; both TUs stay in egolib-library)
+- `egolib/library/src/egolib/game/Core/EngineContext.cpp` (~171 lines after the 2026-06-21 split of the 817-line service hub into engine-core + `EngineContext_services_owned.cpp` (258, the 5 directly-owned services input/image/font/textureAtlas/GFX) + `EngineContext_services_seam.cpp` (460, the 12 lower-layer-seam-delegated services); pure member-fn split, ZERO promotions, no shared header — `clearEngine()` calls the per-service `clearX()` members across the cut and they link-resolve via the header; each anon-ns static stays with its service group)
 
 ## Refactoring Guidelines
 
