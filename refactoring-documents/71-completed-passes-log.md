@@ -2395,3 +2395,30 @@ focused `ScriptRuntime` 17/17; ctest **897/897**; validator `test.mod` 0/0. Arch
 `egolib-library -> egolib-scriptvm`, `egolib-scriptvm -> egolib-gamestates`, and
 `egolib-gamestates -> egolib-scriptvm`; positive control `egolib-scriptvm -> egolib-library` finds 88
 expected downward edges.
+
+### Pass 246 — `ObjectGraphics.cpp` vertex/cache split (2026-06-21)
+
+The 736-line `game/Graphics/ObjectGraphics.cpp` residual split into two within-`egolib-library`
+siblings, leaving the existing animation sibling unchanged:
+
+- `ObjectGraphics.cpp` (269 lines) — construction/destruction, lighting, profile setup, tint, frame
+  accessors, flash, and matrix/reflection state.
+- `ObjectGraphics_vertices.cpp` (502 lines) — vertex interpolation/cache/model-binding:
+  `needsUpdate`, `interpolateVerticesRaw`, `updateVertices`, `updateVertexCache`,
+  `updateGripVertices`, `clearCache`, `getVertex`, `setModel`, `isVertexCacheValid`,
+  `getVertexCount`, and `flashVariableHeight`.
+- `ObjectGraphics_animation.cpp` remains 587 lines — animation state machine unchanged.
+
+No public API changes (`ObjectGraphics.hpp` unchanged), no private header changes, and no static-to-extern
+promotions. The flip tolerance constant moved with its only consumers into the new vertex TU. The new
+`.cpp` is registered only in the master `EGOLIB_GAME_GRAPHICS_SOURCES` grouping; it is intentionally NOT
+in `EGOLIB_GAME_GRAPHICS_LAYER_SOURCES`, because `ObjectGraphics` stays in the game-core/library
+remainder rather than the above-library scene-rendering archive.
+
+Gates: targeted build (`egolib-library`, `egolib-tests-executable`, `egoboo-content-validator`) clean;
+focused `ObjectGraphics` tests **27/27**; ctest **897/897**; validator `test.mod` 0/0. Archive proof:
+`ObjectGraphics.cpp.o`, `ObjectGraphics_animation.cpp.o`, and `ObjectGraphics_vertices.cpp.o` are all
+members of `libegolib-library.a`; no `ObjectGraphics*` member appears in `libegolib-game-graphics.a`.
+nm set-intersections are zero for `egolib-library -> {game-graphics,hud-widgets,scriptvm,gamestates}`
+and `egolib-game-graphics -> {hud-widgets,scriptvm,gamestates}`; positive control
+`egolib-game-graphics -> egolib-library` finds 68 expected downward edges.
