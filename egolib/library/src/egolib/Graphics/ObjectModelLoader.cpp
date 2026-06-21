@@ -1,5 +1,6 @@
 #include "egolib/Graphics/ObjectModelLoader.hpp"
 
+#include "egolib/Graphics/GltfModel.hpp"
 #include "egolib/Graphics/MD2Model.hpp"
 
 namespace Ego
@@ -12,9 +13,9 @@ bool canLoadObjectModelFormat(ObjectModelFormat format)
     switch (format)
     {
         case ObjectModelFormat::Md2:
-            return true;
         case ObjectModelFormat::Gltf:
         case ObjectModelFormat::Glb:
+            return true;
         case ObjectModelFormat::Unknown:
         default:
             return false;
@@ -32,23 +33,33 @@ ObjectModelAsset resolveLoadableObjectModelAsset(const std::string& objectFolder
     return resolveObjectModelAsset(objectFolderPath, ObjectModelFormat::Md2);
 }
 
-std::shared_ptr<AnimatedModel> loadObjectModelAsset(const ObjectModelAsset& asset)
+ObjectModelLoadResult loadObjectModel(const ObjectModelAsset& asset)
 {
     if (!asset.exists)
     {
-        return nullptr;
+        return ObjectModelLoadResult();
     }
 
     switch (asset.format)
     {
         case ObjectModelFormat::Md2:
-            return MD2Model::loadFromFile(asset.path);
+        {
+            ObjectModelLoadResult result;
+            result.model = MD2Model::loadFromFile(asset.path);
+            return result;
+        }
         case ObjectModelFormat::Gltf:
         case ObjectModelFormat::Glb:
+            return GltfModel::loadFromFile(asset.path);
         case ObjectModelFormat::Unknown:
         default:
-            return nullptr;
+            return ObjectModelLoadResult();
     }
+}
+
+std::shared_ptr<AnimatedModel> loadObjectModelAsset(const ObjectModelAsset& asset)
+{
+    return loadObjectModel(asset).model;
 }
 
 } // namespace Graphics

@@ -28,17 +28,18 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
                                  ")");
     }
 
-    _model = Graphics::loadObjectModelAsset(modelAsset);
+    const Graphics::ObjectModelLoadResult loadedModel = Graphics::loadObjectModel(modelAsset);
+    _model = loadedModel.model;
     if(!_model) {
-        throw std::runtime_error("File not found: " + modelAsset.path);
+        throw std::runtime_error(std::string("Unable to load model file: ") +
+                                 modelAsset.path +
+                                 " (" +
+                                 Graphics::getObjectModelFormatName(modelAsset.format) +
+                                 ")");
     }
 
-    // Post-load normalization is format-specific. Today only MD2 is loadable
-    // (loadObjectModelAsset returns nullptr for glTF/GLB, so those formats already
-    // threw above before reaching here); the glTF/GLB arms mark the seam where a
-    // future loader supplies its own scale and animation metadata — e.g. from the
-    // asset's extras.egoboo block via initializeFromActionData — instead of the
-    // MD2-era rescale and frame-name parse.
+    // Post-load normalization is format-specific: MD2 keeps the legacy scale and
+    // frame-name parse, while glTF/GLB supplies format-native metadata.
     switch (modelAsset.format)
     {
         case Graphics::ObjectModelFormat::Md2:
@@ -54,9 +55,14 @@ ModelDescriptor::ModelDescriptor(const std::string &folderPath) :
 
         case Graphics::ObjectModelFormat::Gltf:
         case Graphics::ObjectModelFormat::Glb:
+            if (!loadedModel.animationMetadata.has_value())
+            {
+                throw std::runtime_error("Missing animation metadata: " + modelAsset.path);
+            }
+            _animationMetadata.initializeFromActionData(*_model, *loadedModel.animationMetadata);
+            break;
+
         case Graphics::ObjectModelFormat::Unknown:
-            // Unreachable until a glTF/GLB loader lands (see above): a format-native
-            // scale and a metadata path (initializeFromActionData) belong here.
             break;
     }
 }

@@ -32,6 +32,8 @@
 #include "egolib/vfs.h"
 
 #include <cstdlib>
+#include <array>
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -144,6 +146,229 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ContentParserFixture::s_runtime;
 std::unique_ptr<RecordingAudioSystem> ContentParserFixture::s_audioSystem;
+
+std::vector<uint8_t> makeSyntheticModelBuffer()
+{
+    std::vector<uint8_t> buffer;
+
+    const auto append = [&buffer](const void* data, size_t size)
+    {
+        const auto* bytes = static_cast<const uint8_t*>(data);
+        buffer.insert(buffer.end(), bytes, bytes + size);
+    };
+    const auto appendFloat = [&append](float value)
+    {
+        append(&value, sizeof(value));
+    };
+    const auto appendUInt16 = [&append](uint16_t value)
+    {
+        append(&value, sizeof(value));
+    };
+
+    const std::array<std::array<float, 3>, 3> positions =
+    {{
+        {{0.0f, 0.0f, 0.0f}},
+        {{1.0f, 0.0f, 0.0f}},
+        {{0.0f, 1.0f, 0.0f}}
+    }};
+    const std::array<std::array<float, 3>, 3> normals =
+    {{
+        {{0.0f, 0.0f, 1.0f}},
+        {{0.0f, 0.0f, 1.0f}},
+        {{0.0f, 0.0f, 1.0f}}
+    }};
+    const std::array<std::array<float, 2>, 3> uvs =
+    {{
+        {{0.0f, 0.0f}},
+        {{1.0f, 0.0f}},
+        {{0.0f, 1.0f}}
+    }};
+
+    for (const auto& position : positions)
+    {
+        for (const float value : position)
+        {
+            appendFloat(value);
+        }
+    }
+    for (const auto& normal : normals)
+    {
+        for (const float value : normal)
+        {
+            appendFloat(value);
+        }
+    }
+    for (const auto& uv : uvs)
+    {
+        for (const float value : uv)
+        {
+            appendFloat(value);
+        }
+    }
+    appendUInt16(0);
+    appendUInt16(1);
+    appendUInt16(2);
+
+    while (buffer.size() % 4 != 0)
+    {
+        buffer.push_back(0);
+    }
+
+    return buffer;
+}
+
+std::string base64Encode(const std::vector<uint8_t>& data)
+{
+    static const char* alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string encoded;
+    for (size_t i = 0; i < data.size(); i += 3)
+    {
+        const uint32_t a = data[i];
+        const uint32_t b = (i + 1 < data.size()) ? data[i + 1] : 0;
+        const uint32_t c = (i + 2 < data.size()) ? data[i + 2] : 0;
+        const uint32_t triple = (a << 16) | (b << 8) | c;
+
+        encoded.push_back(alphabet[(triple >> 18) & 0x3F]);
+        encoded.push_back(alphabet[(triple >> 12) & 0x3F]);
+        encoded.push_back(i + 1 < data.size() ? alphabet[(triple >> 6) & 0x3F] : '=');
+        encoded.push_back(i + 2 < data.size() ? alphabet[triple & 0x3F] : '=');
+    }
+    return encoded;
+}
+
+std::string makeSyntheticModelJson(const std::string& bufferUri, bool includeExtras)
+{
+    std::string json =
+        "{"
+        "\"asset\":{\"version\":\"2.0\"},"
+        "\"buffers\":[{\"byteLength\":104";
+    if (!bufferUri.empty())
+    {
+        json += ",\"uri\":\"" + bufferUri + "\"";
+    }
+    json +=
+        "}],"
+        "\"bufferViews\":["
+        "{\"buffer\":0,\"byteOffset\":0,\"byteLength\":36},"
+        "{\"buffer\":0,\"byteOffset\":36,\"byteLength\":36},"
+        "{\"buffer\":0,\"byteOffset\":72,\"byteLength\":24},"
+        "{\"buffer\":0,\"byteOffset\":96,\"byteLength\":6,\"target\":34963}"
+        "],"
+        "\"accessors\":["
+        "{\"bufferView\":0,\"componentType\":5126,\"count\":3,\"type\":\"VEC3\",\"min\":[0,0,0],\"max\":[1,1,0]},"
+        "{\"bufferView\":1,\"componentType\":5126,\"count\":3,\"type\":\"VEC3\"},"
+        "{\"bufferView\":2,\"componentType\":5126,\"count\":3,\"type\":\"VEC2\"},"
+        "{\"bufferView\":3,\"componentType\":5123,\"count\":3,\"type\":\"SCALAR\"}"
+        "],"
+        "\"meshes\":[{\"primitives\":[{\"attributes\":{\"POSITION\":0,\"NORMAL\":1,\"TEXCOORD_0\":2},\"indices\":3}]}]";
+
+    if (includeExtras)
+    {
+        json +=
+            ",\"extras\":{\"egoboo\":{"
+            "\"version\":1,"
+            "\"frames\":[{\"name\":\"DA0\",\"mesh\":0,\"framefx\":256}],"
+            "\"actions\":{\"DA\":[0,0]},"
+            "\"healAliases\":[[\"DA\",\"WA\"]]"
+            "}}";
+    }
+
+    json += "}";
+    return json;
+}
+
+void writeTextFile(const std::filesystem::path& path, const std::string& text)
+{
+    std::ofstream out(path);
+    out << text;
+}
+
+void writeBinaryFile(const std::filesystem::path& path, const std::vector<uint8_t>& data)
+{
+    std::ofstream out(path, std::ios::binary);
+    out.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
+}
+
+void appendU32(std::vector<uint8_t>& data, uint32_t value)
+{
+    data.push_back(static_cast<uint8_t>(value & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> 16) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> 24) & 0xFF));
+}
+
+void appendPaddedTextChunk(std::vector<uint8_t>& data, const std::string& text)
+{
+    data.insert(data.end(), text.begin(), text.end());
+    while (data.size() % 4 != 0)
+    {
+        data.push_back(' ');
+    }
+}
+
+void writeSyntheticGltf(const std::filesystem::path& objectDir, const std::string& fileName, bool includeExtras)
+{
+    const std::vector<uint8_t> buffer = makeSyntheticModelBuffer();
+    const std::string uri = "data:application/octet-stream;base64," + base64Encode(buffer);
+    writeTextFile(objectDir / fileName, makeSyntheticModelJson(uri, includeExtras));
+}
+
+void writeSyntheticGlb(const std::filesystem::path& objectDir, bool includeExtras)
+{
+    const std::vector<uint8_t> buffer = makeSyntheticModelBuffer();
+    std::string json = makeSyntheticModelJson("", includeExtras);
+
+    std::vector<uint8_t> jsonChunk;
+    appendPaddedTextChunk(jsonChunk, json);
+
+    std::vector<uint8_t> binChunk = buffer;
+    while (binChunk.size() % 4 != 0)
+    {
+        binChunk.push_back(0);
+    }
+
+    std::vector<uint8_t> glb;
+    appendU32(glb, 0x46546C67);
+    appendU32(glb, 2);
+    appendU32(glb, static_cast<uint32_t>(12 + 8 + jsonChunk.size() + 8 + binChunk.size()));
+    appendU32(glb, static_cast<uint32_t>(jsonChunk.size()));
+    appendU32(glb, 0x4E4F534A);
+    glb.insert(glb.end(), jsonChunk.begin(), jsonChunk.end());
+    appendU32(glb, static_cast<uint32_t>(binChunk.size()));
+    appendU32(glb, 0x004E4942);
+    glb.insert(glb.end(), binChunk.begin(), binChunk.end());
+
+    writeBinaryFile(objectDir / "tris.glb", glb);
+}
+
+void expectSyntheticModelLoaded(const Ego::Graphics::ObjectModelLoadResult& result)
+{
+    ASSERT_NE(result.model, nullptr);
+    ASSERT_TRUE(result.animationMetadata.has_value());
+
+    const std::shared_ptr<Ego::Graphics::AnimatedModel>& model = result.model;
+    EXPECT_EQ(model->getVertexCount(), 3u);
+    ASSERT_EQ(model->getFrames().size(), 1u);
+    EXPECT_STREQ(model->getFrames()[0].name, "DA0");
+    EXPECT_EQ(model->getFrames()[0].framefx, static_cast<BIT_FIELD>(MADFX_FOOTFALL));
+    ASSERT_EQ(model->getFrames()[0].vertexList.size(), 3u);
+    EXPECT_FLOAT_EQ(model->getFrames()[0].vertexList[1].pos[kX], 1.0f);
+    EXPECT_FLOAT_EQ(model->getFrames()[0].vertexList[2].pos[kY], 1.0f);
+
+    ASSERT_FALSE(model->getDrawCommands().empty());
+    const Ego::Graphics::AnimatedModelDrawCommand& command = model->getDrawCommands().front();
+    EXPECT_EQ(command.primitiveMode, Ego::Graphics::AnimatedModelPrimitiveMode::Triangles);
+    ASSERT_EQ(command.data.size(), 3u);
+    EXPECT_EQ(command.data[0].vertexIndex, 0);
+    EXPECT_EQ(command.data[1].vertexIndex, 1);
+    EXPECT_EQ(command.data[2].vertexIndex, 2);
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromActionData(*model, *result.animationMetadata);
+    EXPECT_TRUE(metadata.isActionValid(ACTION_DA));
+    EXPECT_EQ(metadata.getFirstFrame(ACTION_DA), 0);
+    EXPECT_EQ(metadata.getLastFrame(ACTION_DA), 0);
+}
 
 // ===========================================================================
 //  spawn.txt parser tests
@@ -632,8 +857,8 @@ TEST_F(ObjectProfileParserTest, ObjectModelResolverPrefersGltfThenGlbThenMd2)
     const Ego::Graphics::ObjectModelAsset loadableAsset =
         Ego::Graphics::resolveLoadableObjectModelAsset(objectPath);
     ASSERT_TRUE(loadableAsset.exists);
-    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Md2);
-    EXPECT_EQ(loadableAsset.path, objectPath + "/tris.md2");
+    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Gltf);
+    EXPECT_EQ(loadableAsset.path, objectPath + "/tris.gltf");
 
     vfs_remove_mount_point(Ego::VfsPath("mp_modelresolver"));
 }
@@ -641,8 +866,8 @@ TEST_F(ObjectProfileParserTest, ObjectModelResolverPrefersGltfThenGlbThenMd2)
 TEST_F(ObjectProfileParserTest, ObjectModelLoaderReportsCurrentLoadability)
 {
     EXPECT_TRUE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Md2));
-    EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Gltf));
-    EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Glb));
+    EXPECT_TRUE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Gltf));
+    EXPECT_TRUE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Glb));
     EXPECT_FALSE(Ego::Graphics::canLoadObjectModelFormat(Ego::Graphics::ObjectModelFormat::Unknown));
 }
 
@@ -662,7 +887,7 @@ TEST_F(ObjectProfileParserTest, ObjectModelAssetHelpersReportCurrentSearchOrder)
     EXPECT_EQ(Ego::Graphics::describeObjectModelSearchOrder(), "tris.gltf, tris.glb, tris.md2");
 }
 
-TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverRejectsFutureOnlyAssets)
+TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverReturnsPreferredGltfAsset)
 {
 #ifdef _WIN32
     const int processId = _getpid();
@@ -691,11 +916,106 @@ TEST_F(ObjectProfileParserTest, ObjectModelLoadableResolverRejectsFutureOnlyAsse
 
     const Ego::Graphics::ObjectModelAsset loadableAsset =
         Ego::Graphics::resolveLoadableObjectModelAsset(objectPath);
-    EXPECT_FALSE(loadableAsset.exists);
-    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Unknown);
+    ASSERT_TRUE(loadableAsset.exists);
+    EXPECT_EQ(loadableAsset.format, Ego::Graphics::ObjectModelFormat::Gltf);
+    EXPECT_EQ(loadableAsset.path, objectPath + "/tris.gltf");
     EXPECT_EQ(Ego::Graphics::loadObjectModelAsset(preferredAsset), nullptr);
 
     vfs_remove_mount_point(Ego::VfsPath("mp_modelloadable"));
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelLoaderLoadsSyntheticGltf)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-gltf-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "synthetic.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    writeSyntheticGltf(objectDir, "tris.gltf", true);
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelgltf"), 1));
+
+    const std::string objectPath = "mp_modelgltf/synthetic.obj";
+    const Ego::Graphics::ObjectModelAsset asset =
+        Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(asset.exists);
+    EXPECT_EQ(asset.format, Ego::Graphics::ObjectModelFormat::Gltf);
+
+    expectSyntheticModelLoaded(Ego::Graphics::loadObjectModel(asset));
+
+    Ego::ModelDescriptor descriptor(objectPath);
+    EXPECT_TRUE(descriptor.isActionValid(ACTION_DA));
+    ASSERT_NE(descriptor.getModel(), nullptr);
+    EXPECT_EQ(descriptor.getModel()->getVertexCount(), 3u);
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelgltf"));
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelLoaderLoadsSyntheticGlb)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-glb-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "synthetic.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    writeSyntheticGlb(objectDir, true);
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelglb"), 1));
+
+    const std::string objectPath = "mp_modelglb/synthetic.obj";
+    const Ego::Graphics::ObjectModelAsset asset =
+        Ego::Graphics::resolveObjectModelAsset(objectPath);
+    ASSERT_TRUE(asset.exists);
+    EXPECT_EQ(asset.format, Ego::Graphics::ObjectModelFormat::Glb);
+
+    expectSyntheticModelLoaded(Ego::Graphics::loadObjectModel(asset));
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelglb"));
+}
+
+TEST_F(ObjectProfileParserTest, ObjectModelLoaderUsesSingleFrameFallbackWithoutExtras)
+{
+#ifdef _WIN32
+    const int processId = _getpid();
+#else
+    const int processId = getpid();
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() / ("egoboo-model-gltf-no-extras-" + std::to_string(processId));
+    const std::filesystem::path objectDir = root / "synthetic.obj";
+    std::filesystem::create_directories(objectDir);
+    Ego::Test::scheduleTestDirectoryCleanup(root);
+
+    writeSyntheticGltf(objectDir, "tris.gltf", false);
+
+    ASSERT_NE(0, vfs_add_mount_point(root.string(), Ego::FsPath(""), Ego::VfsPath("mp_modelgltfnoextras"), 1));
+
+    const std::string objectPath = "mp_modelgltfnoextras/synthetic.obj";
+    const Ego::Graphics::ObjectModelLoadResult result =
+        Ego::Graphics::loadObjectModel(Ego::Graphics::resolveObjectModelAsset(objectPath));
+
+    ASSERT_NE(result.model, nullptr);
+    ASSERT_TRUE(result.animationMetadata.has_value());
+    ASSERT_EQ(result.model->getFrames().size(), 1u);
+    EXPECT_STREQ(result.model->getFrames()[0].name, "DA");
+
+    Ego::Graphics::ModelAnimationMetadata metadata;
+    metadata.initializeFromActionData(*result.model, *result.animationMetadata);
+    EXPECT_TRUE(metadata.isActionValid(ACTION_DA));
+
+    vfs_remove_mount_point(Ego::VfsPath("mp_modelgltfnoextras"));
 }
 
 TEST_F(ObjectProfileParserTest, ModelDescriptorMissingModelErrorNamesAllCandidates)
@@ -727,7 +1047,7 @@ TEST_F(ObjectProfileParserTest, ModelDescriptorMissingModelErrorNamesAllCandidat
     vfs_remove_mount_point(Ego::VfsPath("mp_modelmissing"));
 }
 
-TEST_F(ObjectProfileParserTest, ModelDescriptorUnsupportedFutureOnlyAssetNamesPreferredAsset)
+TEST_F(ObjectProfileParserTest, ModelDescriptorInvalidGltfNamesPreferredAsset)
 {
 #ifdef _WIN32
     const int processId = _getpid();
@@ -749,12 +1069,12 @@ TEST_F(ObjectProfileParserTest, ModelDescriptorUnsupportedFutureOnlyAssetNamesPr
     try
     {
         Ego::ModelDescriptor descriptor("mp_modelunsupported/future.obj");
-        FAIL() << "ModelDescriptor should reject future-only model assets until a loader exists";
+        FAIL() << "ModelDescriptor should reject malformed glTF assets";
     }
     catch (const std::runtime_error& error)
     {
         const std::string message = error.what();
-        EXPECT_NE(message.find("Unsupported model format: mp_modelunsupported/future.obj/tris.gltf"), std::string::npos);
+        EXPECT_NE(message.find("Unable to load model file: mp_modelunsupported/future.obj/tris.gltf"), std::string::npos);
         EXPECT_NE(message.find("(glTF)"), std::string::npos);
     }
 

@@ -179,6 +179,10 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/GraphicsSystemNew.hpp
     src/egolib/Graphics/GraphicsWindow.cpp
     src/egolib/Graphics/GraphicsWindow.hpp
+    src/egolib/Graphics/GltfModel.cpp
+    src/egolib/Graphics/GltfModel.hpp
+    src/egolib/Graphics/GltfModel_internal.hpp
+    src/egolib/Graphics/GltfModel_metadata.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/IBillboardSystem.hpp
     src/egolib/Graphics/IGraphicsSystem.cpp
@@ -983,6 +987,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/IGraphicsSystem.cpp
     src/egolib/Graphics/ITextureManager.cpp
     src/egolib/Graphics/AnimatedModel.cpp
+    src/egolib/Graphics/GltfModel.cpp
+    src/egolib/Graphics/GltfModel_metadata.cpp
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelAnimationMetadata.cpp
@@ -1381,6 +1387,7 @@ endforeach()
 #   egolib-foundation-base <- {egolib-physics, egolib-renderer <- egolib-gui} <- egolib-library.
 add_library(egolib-foundation-base STATIC ${EGOLIB_FOUNDATION_BASE_SOURCES})
 target_include_directories(egolib-foundation-base INTERFACE "${PROJECT_SOURCE_DIR}/src/")
+target_include_directories(egolib-foundation-base PRIVATE "${CMAKE_SOURCE_DIR}/external/cgltf")
 target_link_libraries(egolib-foundation-base idlib-game-engine-library idlib-document-library idlib-math-geometry-library idlib-hll-library idlib-parsing-expression-library idlib-color-library idlib-filesystem-library)
 
 add_library(egolib-physics STATIC ${EGOLIB_PHYSICS_SOURCES})

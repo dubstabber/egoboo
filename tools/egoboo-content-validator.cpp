@@ -1079,6 +1079,18 @@ bool validateObjectProfile(const std::string& moduleName,
             success = false;
         }
     }
+    else if (modelAsset.format != Ego::Graphics::ObjectModelFormat::Md2 &&
+             !Ego::Graphics::loadObjectModelAsset(modelAsset))
+    {
+        reporter.error(moduleName,
+                       "model_load_failure",
+                       modelAsset.path,
+                       std::string("object model could not be loaded as ") +
+                           Ego::Graphics::getObjectModelFormatName(modelAsset.format),
+                       &summary,
+                       modelAsset.path);
+        success = false;
+    }
 
     try
     {
