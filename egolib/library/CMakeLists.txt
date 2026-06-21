@@ -830,6 +830,7 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_commerce_module.c
     src/egolib/game/script_functions_commerce_passages.c
     src/egolib/game/script_functions_quests.c
+    src/egolib/game/script_functions_teams.c
     src/egolib/game/script_functions_teams_presentation.c
     src/egolib/game/script_functions_target.c
     src/egolib/game/script_functions_target_identity.c
@@ -1280,6 +1281,7 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_movement_locomotion.c
     src/egolib/game/script_functions_movement_physics.c
     src/egolib/game/script_functions_quests.c
+    src/egolib/game/script_functions_teams.c
     src/egolib/game/script_functions_teams_presentation.c
     src/egolib/game/script_functions_spawn.c
     src/egolib/game/script_functions_spawn_character.c

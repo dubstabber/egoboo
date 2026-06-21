@@ -2314,3 +2314,26 @@ was false because `idlib-game-engine-library` links SDL_mixer unconditionally as
 claimed payoff from 415 → ~123 lines saved, because de-inlining single-line methods does not remove
 header lines — the method declaration stays on the same line; the header is documentation-dominated
 rather than code-dominated, ~979 of 1613 lines are doxygen + blanks).
+
+### Pass 243 — `script_functions_teams_presentation.c` team split (2026-06-21)
+
+The 735-line `script_functions_teams_presentation.c` residual from the earlier quests split had stayed as
+a mixed team / minimap / end-message / follow-link / enemy-sense TU. This pass split out the team opcode
+cluster into a sibling within `egolib-scriptvm`:
+
+- `script_functions_teams.c` (301 lines) — the 11 team-management entries:
+  `scr_JoinTargetTeam`, `scr_IfLeaderKilled`, `scr_BecomeLeader`, `scr_IfLeaderIsAlive`,
+  `scr_JoinTeam`, `scr_TargetJoinTeam`, `scr_JoinEvilTeam`, `scr_JoinNullTeam`, `scr_JoinGoodTeam`,
+  `scr_GiveExperienceToGoodTeam`, `scr_GiveExperienceToTargetTeam`.
+- `script_functions_teams_presentation.c` (422 lines) — the residual presentation/link state:
+  minimap reveal/blip helpers, end-message helpers, status monitor publication, deprecated
+  `EnableListenSkill` logging, follow-link hook/test seam, and enemy-sense publication.
+
+No public API changes (`script_functions.h` unchanged), no private internal header, and no static-to-extern
+promotions. The new team TU duplicates only tiny file-local context helpers and uses `SelfRoleContext`
+directly, so team opcodes no longer construct the presentation compatibility context or call the
+`EngineContext`/GUI presentation adapters. The follow-link test hook
+`scr_systems_set_follow_link_by_modname_for_test` stays in the presentation residual. The new `.c` is
+registered in BOTH the master `EGOLIB_GAME_TOPLEVEL_SOURCES` and `EGOLIB_SCRIPTVM_LAYER_SOURCES` lists;
+scriptvm archive membership is now 31 `.o`. Gates: build clean, focused `ScriptSystemsFunctions` 77/77,
+ctest **897/897**, validator `test.mod` 0/0.
