@@ -520,6 +520,14 @@ bool script_state_t::run_function_call(ai_state_t& aiState, script_info_t& scrip
     }
     else
     {
+        // A well-formed function is always followed by its jump code; a malformed or
+        // truncated script (e.g. one whose compilation failed) may not be, in which case
+        // the position now sits past the end. Stop rather than read out of bounds.
+        if (script.get_pos() >= script._instructions.getNumberOfInstructions())
+        {
+            return false;
+        }
+
         // use the jump code to jump to the right location
         size_t new_index = script._instructions[script.get_pos()].getBits();
 
@@ -563,8 +571,14 @@ bool script_state_t::run_operation(ai_state_t& aiState, script_info_t& script)
         vfs_printf(debug_script_file, "%s = ", variable.c_str());
     }
 
-    // Get the number of operands
+    // Get the number of operands. A truncated script may end immediately after the
+    // operation opcode with no operand count following, leaving the position past the
+    // end; stop rather than read out of bounds.
     script.increment_pos();
+    if (script.get_pos() >= script._instructions.getNumberOfInstructions())
+    {
+        return false;
+    }
     auto operand_count = script._instructions[script.get_pos()].getBits();
 
     // Now run the operation

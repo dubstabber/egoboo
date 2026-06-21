@@ -244,6 +244,38 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptExecutesCompiledOperationAndFunct
     EXPECT_EQ(aiState.content, 12);
 }
 
+// A script whose compilation failed can leave a truncated instruction stream — e.g.
+// an operation opcode with no operand-count instruction following it. The dispatch
+// loop must stop at the end of the stream rather than read past it. Previously this
+// threw "instruction index out of bounds" (script.h InstructionList::operator[]),
+// which — when raised from a character whose script ran during shutdown — aborted the
+// process by escaping a destructor. Regression test for the run_operation bounds guard.
+TEST_F(ScriptRuntimeFixture, TruncatedScriptStopsInsteadOfReadingInstructionsOutOfBounds)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5851);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_FALSE(actor->isPlayer());
+
+    auto& aiScript = actor->getProfile()->getAIScript();
+    aiScript._name = "truncated-script";
+    aiScript._instructions.clear();
+
+    // A single operation-header instruction (assign to tmpx) with NO operand-count
+    // instruction after it: a deliberately truncated, malformed script. isInv() is
+    // false (bit 31 clear), so the dispatch loop routes it to run_operation, which
+    // advances past the header and must then detect the end instead of overrunning.
+    const auto varIndex = aiScript._instructions.getConstantPool().getOrCreateConstant(Ego::Script::VARTMPX);
+    aiScript._instructions.append(Instruction((static_cast<uint32_t>(Ego::Script::OPADD) << 27) | varIndex));
+    ASSERT_EQ(aiScript._instructions.getNumberOfInstructions(), 1u);
+
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    aiState.terminate = false;
+
+    EXPECT_NO_THROW(scr_run_chr_script(actor.get()));
+}
+
 TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentObjects)
 {
     auto& module = beginActiveTestModule();
