@@ -135,16 +135,8 @@ public:
      */
     virtual ~Object();
 
-    /**
-    * @brief Gets a shared_ptr to the current ObjectProfile associated with this character.
-    *        The ObjectProfile can change for polymorphing objects.
-    **/
     const std::shared_ptr<ObjectProfile>& getProfile() const override;
 
-    /**
-    * @return
-    *   true if this Entity can collide physically with other Entities
-    **/
     bool canCollide() const override;
 
     std::shared_ptr<const Ego::Texture> getSkinTexture() const override;
@@ -159,10 +151,6 @@ public:
 
     const Ego::Vector3f& getPosition() const override;
 
-    /**
-    * @return
-    *   The elevation of the floor
-    **/
     float getFloorElevation() const override;
 
     const Ego::Vector3f& getVelocity() const override;
@@ -189,10 +177,6 @@ public:
 
     bool isTouchingGround() const;
 
-    /**
-	 * @brief Get the unique object reference of this object.
-     * @return the unique object reference of this object
-     */
     ObjectRef getObjRef() const override;
 
     /**
@@ -218,23 +202,10 @@ public:
 
     IDSZ2 getHateIDSZ() const override;
 
-    /**
-    * @brief
-    *   True if this Object is a item that can be grabbed
-    **/
     bool isItem() const override;
 
-    /**
-    * @return
-    *   true if this Object is currently levitating above the ground
-    **/
     bool isFlying() const override;
 
-    /**
-    * @brief
-    *   Respawns a Object, bringing it back to life and moving it to its initial position and state.
-    *   Does nothing if character is already alive.
-    **/
     void respawn() override;
 
     void respawnInPlace() override;
@@ -245,28 +216,10 @@ public:
     **/
     void update();
 
-    /**
-    * @brief
-    *   This function returns true if the character is on a water tile
-    * @return 
-    *   true if it is on a water tile
-    **/
     bool isOnWaterTile() const override;
 
-    /**
-    * @brief
-    *   This function returns true if this Object is being held by another Object
-    * @return
-    *   true if held by another existing Object that is not marked for removal
-    **/
     bool isBeingHeld() const override;
 
-    /**
-    * @brief
-    *   This function returns true if this Object is inside another Objects inventory
-    * @return
-    *   true if inside another existing Object's inventory
-    **/
     bool isInsideInventory() const override;
 
     ObjectRef getHolderRef() const override;
@@ -297,12 +250,6 @@ public:
 
     void adjustHoldingWeight(int delta);
 
-    /**
-    * @return
-    *   true if this Object has been terminated and will be removed from the game.
-    *   If this value is true, then this Object is effectively no longer a part of
-    *   the game and should not be interacted with.
-    **/
     bool isTerminated() const override;
 
 	/**
@@ -319,15 +266,8 @@ public:
     **/
     bool isSubmerged() const;
 
-    /**
-    * @brief Translate the current X, Y, Z position of this object by the specified values
-    **/
     void movePosition(const float x, const float y, const float z) override;
 
-    /**
-    * @brief Sets the transparency for this Object
-    * @param alpha Transparency level between 0 (fully transparent) and 255 (fully opaque)
-    **/
     void setAlpha(const int alpha) override;
 
     /**
@@ -336,10 +276,6 @@ public:
     **/
     void setSheen(const int sheen);
 
-    /**
-    * @brief Sets the transparency for this Object
-    * @param light Transparency level between 0 (fully transparent) and 255 (fully opaque)
-    */
     void setLight(const int light) override;
 
     /// Access this object's render data (animation, lighting, matrix cache).
@@ -396,15 +332,8 @@ public:
      */
     bool canMount(ObjectRef mountRef) const;
 
-    /**
-     * @return true if this Object is mountable by other Objects
-     */
     bool isMount() const override;
 
-    /**
-    * @brief
-    *   Mark this object as terminated, it will be removed from the game by the update.
-    **/
     void requestTerminate() override;
 
     /**
@@ -416,55 +345,13 @@ public:
     **/
     void markTerminateRequested();
 
-    /**
-    * @brief
-    *   This function calculates and applies damage to a character.  It also
-    *   sets alerts and begins actions.  Blocking and frame invincibility are done here too.  
-    *
-    * @param direction
-    *   Direction is ATK_FRONT if the attack is coming head on, ATK_RIGHT if from the right, 
-    *   ATK_BEHIND if from the back, ATK_LEFT if from the left.
-    *
-    * @param damage 
-    *   is a random range of damage to deal
-    *
-    * @param damageType 
-    *   indicates what kind of damage this is (ZAP, CRUSH, FIRE, etc.) which is again 
-    *   affected by resistances immunities, etc.
-    *
-    * @param team 
-    *   which team is dealing the damage
-    *
-    * @param attacker 
-    *   The Object which is dealing the damage to this Object
-    *
-    * @param effects 
-    *   is a BIT_FIELD of various flags which affect how we determine damage.
-    *
-    * @param ignore_invictus 
-    *   if this is true, then we allow damaging this object even though it is normally immune to damage.
-    **/
     int damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
                const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus) override;
 
-    /**
-     * @brief
-     *  This function gives some purelife points to the target, ignoring any resistances and so forth.
-     * @param healer
-     *  the healer
-     * @param amount
-     *  the amount to heal the character
-     */
     bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility) override;
 
-    /**
-    * @return true if this Object is currently doing an attack animation
-    **/
     bool isAttacking() const override;
 
-    /**
-    * @return true if this Object is controlled by a player
-    **/
     bool isPlayer() const override;
 
     PLA_REF getPlayerNumber() const override;
@@ -473,18 +360,8 @@ public:
 
     void setLocalPlayer(bool localPlayer);
 
-    /**
-    * @brief
-    *   Returns true if this Object has not been killed by anything
-    **/
     bool isAlive() const override;
 
-    /**
-    * @return
-    *   true if the Object is currently in hidden state. In hidden state the object cannot be
-    *   interacted with, is not rendered and is effectively not part of the game until it is
-    *   unhidden again. Hidden state is determined by the Objects AI state.
-    **/
     bool isHidden() const override;
 
     bool isNameKnown() const override;
@@ -525,12 +402,6 @@ public:
 
     void setSparkle(uint8_t sparkleValue) override;
 
-    /**
-    * @brief
-    *   Tries to teleport this Object to the specified location if it is valid
-    * @result
-    *   Success returns true, failure returns false;
-    **/
     bool teleport(const Ego::Vector3f& position, Facing facing_z) override;
 
     /**
@@ -553,12 +424,6 @@ public:
     **/
     bool isFacingLocation(const float x, const float y) const;
 
-    /**
-    * @brief
-    *   This makes this Object detach from any holder (or dismount of riding a mount)
-    * @return
-    *   true if the detach was successful (could fail because of a kurse for example)
-    **/
     bool detachFromHolder(const bool ignoreKurse, const bool doShop) override;
 
     ObjectRef getHeldObject(slot_t slot) const override;
@@ -637,20 +502,8 @@ public:
                              const oct_bb_t& maxCollisionVolume,
                              const std::array<oct_bb_t, SLOT_COUNT>& slotCollisionVolumes);
 
-    /**
-    * @brief Set the (base) height of a character.
-    * @param chr the character
-    * @param height the new height
-    * @remark The (base) height influences the character size.
-    **/
     void setBumpHeight(const float height) override;
 
-    /**
-    * @brief Set the (base) width of a character.
-    * @param chr the character
-    * @param width the new width
-    * @remark Also modifies the shadow size.
-    **/
     void setBumpWidth(const float width) override;
 
     //TODO: should be private
@@ -658,28 +511,12 @@ public:
     /// @details Convert the base size values to the size values that are used in the game
     void recalculateCollisionSize();
 
-    /**
-    * @author BB
-    * @details Handle a character death. Set various states, disconnect it from the world, etc.
-    **/
     void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility) override;
 
     /// @author ZZ
     /// @details This function fixes an item's transparency
     void resetAlpha();
 
-    /**
-    * @brief
-    *   Awards some experience points to this object, potentionally allowing it to reach another
-    *   character level. This function handles additional experience gain modifiers such as
-    *   XP bonus, roleplay or game difficulity.
-    * @param xptype
-    *   What kind of experience to give. Different classes gain experience differently depending
-    *   on the kind of xp.
-    * @param overrideInvincibility
-    *   Invincible objects usually gain no experience (scenery objects such as a rock for example).
-    *   Set this parameter to true to override this and give the experience anyways.
-    **/
     void giveExperience(const int amount, const XPType xptype, const bool overrideInvincibility) override;
 
 
@@ -687,35 +524,17 @@ public:
     /// @details determine the correct price for an item
     int getPrice() const;
 
-	/** @override */
 	BIT_FIELD hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float *pressure) override;
-	/** @override */
 	BIT_FIELD hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float *pressure, mesh_wall_data_t& data) override;
 
-	/** @override */
 	BIT_FIELD test_wall(const Ego::Vector3f& pos) override;
 
     const Ego::AxisAlignedBox2f& getAxisAlignedBox2D() const override;
 
     uint32_t getPhysicsWeight() const override;
 
-    /**
-    * @brief
-    *   This function takes mana from a character ( or gives mana ), and returns true if the character had enough to pay, or false
-    *   otherwise. This can kill a character in hard mode.
-    * @param amount
-    *   How much mana to take (positive value) of give (negative value)
-    * @param killer
-    *   If characters have channeling they can use life instead of mana. This can actually kill them (ghosts that drain mana for example)
-    * @return
-    *   true if all the requested mana was successfully consumed by the Object
-    **/
     bool costMana(int amount, const ObjectRef killer) override;
 
-    /**
-    * @return
-    *   Get current mana
-    **/
     float getMana() const override;
 
     /**
@@ -724,10 +543,6 @@ public:
     **/
     float getMaxMana() const;
 
-    /**
-    * @return
-    *   current life remaining in float format
-    **/
     float getLife() const override;
 
     /**
@@ -775,19 +590,6 @@ public:
 
     void setExperience(uint32_t value);
 
-    /**
-    * @brief
-    *   Gets how resistant this Object is to a specific type of damage (ZAP, FIRE, POKE, etc.)
-    *   For positive Defence, damage reduction =((defence)*0.06)/(1+0.06*(defence))
-    *   For negative Defence, it is damage increase = 1-0.94^(defence).
-    * @param type
-    *   What kind of damage resistance to retrieve
-    * @param includeArmor
-    *   true if Defence should be included in damage reduction calculation
-    * @return
-    *   A floating point value representing the damage reduction (0.0f = no reduction, 1.0f = no damage, -1.0f = double damage)
-    *   I.e a return value of 0.05f would mean damage reduction of 5%.
-    **/
     float getDamageReduction(const DamageType type, const bool includeArmor = true) const override;
 
     /**
@@ -797,11 +599,6 @@ public:
     **/
     float getRawDamageResistance(const DamageType type, const bool includeArmor = true) const;
 
-    /**
-    * @brief
-    *   Get total value for the specified attribute. Includes bonuses from Enchants, Perks
-    *   and other active boni or penalties.
-    **/
     float getAttribute(const Ego::Attribute::AttributeType type) const override;
 
     /**
@@ -816,10 +613,6 @@ public:
 
     void setBlueShift(int value) override;
 
-    /**
-    * @brief
-    *   Permanently increases or decreases an attribute of this Object
-    **/
     void increaseBaseAttribute(const Ego::Attribute::AttributeType type, float value) override;
 
     /**
@@ -852,10 +645,6 @@ public:
 
     void setAmmo(uint16_t ammoCount) override;
 
-    /**
-    * @return
-    *   true if this Object has mastered the specified perk. Returns always true for NR_OF_PERKS
-    **/
     bool hasPerk(Ego::Perks::PerkID perk) const override;
 
     /**
@@ -864,16 +653,8 @@ public:
     **/
     std::vector<Ego::Perks::PerkID> getValidPerks() const;
 
-    /**
-    * @brief
-    *   permanently adds a new Perk to this character object
-    **/
     void addPerk(Ego::Perks::PerkID perk) override;
 
-    /**
-    * @return
-    *   true if this Object can detect and see invisible objects
-    **/
     bool canSeeInvisible() const override;
 
     bool canSeeKurses() const override;
@@ -903,16 +684,6 @@ public:
     **/
     void randomizeLevelUpSeed();
 
-    /**
-    * @brief
-    *   Applies an enchantment to this object
-    * @param enchantProfile
-    *   The unique profile ID for the Enchantment (ENC_REF)
-    * @param spawnerProfile
-    *   The unique ObjectProfile ID for the object that creates this enchant
-    * @brief
-    *   pointer to the enchant that was added (or nullptr if it failed)
-    **/
     std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile,
                                                  const std::shared_ptr<Object>& owner,
                                                  const std::shared_ptr<Object>& spawner) override;
@@ -927,20 +698,8 @@ public:
 
     void addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant);
 
-    /**
-    * @brief
-    *   Removes all enchantments from character
-    **/
     bool disenchant() override;
 
-    /**
-    * @brief
-    *   Changes the skin of this Object to the specified skin number.
-    *   This changes this Objects damage resistances and movement speed accordingly to the new
-    *   armor of the skin.
-    * @return
-    *   true if the skin could be changed into the specified number or false if it fails
-    **/
     SKIN_T getSkin() const override;
 
     bool setSkin(const size_t skinNumber) override;
@@ -993,10 +752,6 @@ public:
     **/
     void setName(const std::string &name);
 
-    /**
-    * @brief
-    *   Changes this Object into a different type. This effect is reversible (base profile is not changed)
-    **/
     void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin) override;
 
     ObjectProfileRef getProfileID() const;
@@ -1019,27 +774,10 @@ public:
 
     void setDamageThreshold(SFP8_T threshold) override;
 
-    /**
-    * @return 
-    *   true if this Object is actively trying to hide from others
-    **/
     bool isStealthed() const override;
 
-    /**
-    * @brief
-    *  makes this creature enter Stealth mode. It will try to stay hidden from other Objects.
-    *  It will only work if there are no enemies nearby. Depending on the skill level of the
-    *  Object, it movement may or may not be restricted. Enemies try to detect stealthed objects
-    *  once every second.
-    * @return
-    *   true if this object is now stealthed from other Objects
-    **/
     bool activateStealth() override;
 
-    /**
-    * @brief
-    *   This ends the stealth effect on this Object and reveals it to everyone else
-    **/
     void deactivateStealth() override;
 
     /**
@@ -1052,27 +790,8 @@ public:
     **/
     bool isScenery() const;
 
-    /**
-    * @brief
-    *   Checks if the character is wielding an item with the specified IDSZ in his or her hands
-    * @return
-    *   The Object that has the matching IDSZ
-    **/
-    /**
-    * @brief
-    *   Changes the team of this Object to another team
-    **/
     void setTeam(TEAM_REF team, bool permanent = true) override;
 
-    /**
-    * @brief
-    *   checks if the object has a matching skill IDSZ. This function also maps between the old skill IDSZ
-    *   system and the new Perk system.
-    * @param whichskill
-    *   The IDSZ of the skill to check. An IDSZ of [NONE] always matches true.
-    * @return
-    *   true if the Object has the matching skill IDSZ of a perk that matches the skill IDSZ
-    **/
     bool hasSkillIDSZ(const IDSZ2& whichskill) const override;
 
     bool hasTypeIDSZ(const IDSZ2& idsz) const override;
@@ -1095,41 +814,16 @@ public:
 
     bool isHatedByTeam(TEAM_REF teamRef) const override;
 
-    /**
-    * @brief 
-    *   This function drops all keys ( [KEYA] to [KEYZ] ) that are in a character's
-    *   inventory (Not hands).
-    **/
     void dropKeys() override;
 
     void dropAllItems() override;
 
     std::shared_ptr<const Ego::Texture> getIcon() const;
 
-    /**
-    * @brief
-    *   Modifies the amount of money this character has. This method
-    *   ensures the resulting amount is not negative and not above the
-    *   maximum amount.
-    * @param amount
-    *   The amount to add or subtract (if negative)
-    **/
     void giveMoney(int amount) override;
 
-    /**
-    * @return
-    *   The amount of money (zennies) this Object currently has
-    **/
     uint16_t getMoney() const override;
 
-    /**
-    * @brief
-    *   This function will make the Object drop the specified amount of money.
-    *   Dropping money will spawn money particles around the Object
-    * @param amount
-    *   The amount of money to be dropped. If this is more than the max money,
-    *   then all available money will be dropped
-    **/
     void dropMoney(int amount) override;
 
     bool canBeGrogged() const override;
@@ -1266,15 +960,6 @@ public:
 
     void resetInputCommands();
 
-    /**
-    * @brief
-    *   Set or unset a latch button. This triggers in game character commands such as attacking, grabbing items or jumping
-    * @param latchButton
-    *   Which button to set
-    * @param pressed
-    *   true if this button should be active or false if not
-    * @see enum LatchButton
-    **/
     void setLatchButton(const LatchButton latchButton, const bool pressed) override;
 
     bool isAnyLatchButtonPressed();

@@ -13,6 +13,10 @@ public:
     virtual float getPosY() const = 0;
     virtual float getPosZ() const = 0;
     virtual const Ego::Vector3f& getPosition() const = 0;
+    /**
+    * @return
+    *   The elevation of the floor
+    **/
     virtual float getFloorElevation() const = 0;
     virtual const Ego::Vector3f& getVelocity() const = 0;
     virtual const Ego::Vector3f& getSpawnPosition() const = 0;

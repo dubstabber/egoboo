@@ -96,3 +96,6 @@ egoboo-2.6.8-crossplatform/
 .claude/scheduled_tasks.lock
 
 .claude/agent-memory/
+
+# agent worktrees (transient)
+.claude/worktrees/

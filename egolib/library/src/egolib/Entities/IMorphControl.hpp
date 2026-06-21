@@ -15,5 +15,9 @@ public:
     virtual void setTargetFat(float fat) = 0;
     virtual int16_t getResizeTimeRemaining() const = 0;
     virtual void setResizeTimeRemaining(int16_t remaining) = 0;
+    /**
+    * @brief
+    *   Changes this Object into a different type. This effect is reversible (base profile is not changed)
+    **/
     virtual void polymorphObject(ObjectProfileRef profileID, SKIN_T skin) = 0;
 };
