@@ -194,6 +194,7 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/MD2Model.hpp
     src/egolib/Graphics/ModelAnimationMetadata.cpp
+    src/egolib/Graphics/ModelAnimationMetadata_legacy.cpp
     src/egolib/Graphics/ModelAnimationMetadata.hpp
     src/egolib/Graphics/ModelAnimationTypes.hpp
     src/egolib/Graphics/ModelDescriptor.cpp
@@ -998,6 +999,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/IndexFormat.cpp
     src/egolib/Graphics/MD2Model.cpp
     src/egolib/Graphics/ModelAnimationMetadata.cpp
+    src/egolib/Graphics/ModelAnimationMetadata_legacy.cpp
     src/egolib/Graphics/ModelDescriptor.cpp
     src/egolib/Graphics/ModelDescriptor_frames.cpp
     src/egolib/Graphics/ObjectModelAsset.cpp

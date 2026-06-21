@@ -2337,3 +2337,32 @@ directly, so team opcodes no longer construct the presentation compatibility con
 registered in BOTH the master `EGOLIB_GAME_TOPLEVEL_SOURCES` and `EGOLIB_SCRIPTVM_LAYER_SOURCES` lists;
 scriptvm archive membership is now 31 `.o`. Gates: build clean, focused `ScriptSystemsFunctions` 77/77,
 ctest **897/897**, validator `test.mod` 0/0.
+
+### Pass 244 — `ModelAnimationMetadata.cpp` legacy-input split (2026-06-21)
+
+The 758-line `Graphics/ModelAnimationMetadata.cpp` split into two within-`egolib-foundation-base`
+siblings:
+
+- `ModelAnimationMetadata.cpp` (500 lines) — construction/reset, neutral metadata application
+  (`initializeFromActionData`/`applyMetadata`), action-name mapping, heal-action fallback policy,
+  walk/framelip initialization, public query methods, and action randomization.
+- `ModelAnimationMetadata_legacy.cpp` (275 lines) — legacy MD2 frame-name recovery:
+  `initializeFromLegacyFrames`, `ripActions`, `parseFrameDescriptors`, and `collectHealAliases`.
+
+This is a pure member-function split: all cross-TU calls were already declared in
+`ModelAnimationMetadata.hpp`, so there is no internal header and no static-to-extern promotion. The
+function-local/static legacy frame-effects token state stays inside `parseFrameDescriptors` in the legacy
+TU. The new `.cpp` is registered in BOTH the master graphics source list and
+`EGOLIB_FOUNDATION_BASE_SOURCES`; foundation-base archive membership is now 160 `.o`.
+
+Archive proof: both `ModelAnimationMetadata.cpp.o` and `ModelAnimationMetadata_legacy.cpp.o` are members
+of `build/products/x64/lib/libegolib-foundation-base.a`. nm set-intersection of undefined symbols from
+`ModelAnimationMetadata_legacy.cpp.o` against all eight upper egolib archives
+(`physics`/`renderer`/`gui`/`library`/`game-graphics`/`hud-widgets`/`gamestates`/`scriptvm`) is empty.
+Positive control against `egolib-foundation-base` finds the expected intra-base dependencies
+(`ReadContext`, `vfs_read_string_lit`, `AnimatedModel::getFrames`, `Log`, and the residual
+`ModelAnimationMetadata` methods).
+
+Gates: build clean; focused `ModelAnimationMetadataTest.*` 6/6; ctest **897/897**; validator `test.mod`
+0/0; full validator completed at the known legacy content baseline (42 modules, 10 warnings, 245 errors,
+nonzero exit due to existing content errors).
