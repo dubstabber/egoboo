@@ -16,7 +16,8 @@ namespace Graphics
 enum class AnimatedModelPrimitiveMode
 {
     TriangleStrip,
-    TriangleFan
+    TriangleFan,
+    Triangles
 };
 
 struct AnimatedModelDrawVertex
@@ -71,8 +72,9 @@ public:
     std::vector<AnimatedModelFrame>& getFrames();
     const std::vector<AnimatedModelFrame>& getFrames() const;
 
-    std::forward_list<AnimatedModelDrawCommand>& getDrawCommands();
     const std::forward_list<AnimatedModelDrawCommand>& getDrawCommands() const;
+    void prependDrawCommand(AnimatedModelDrawCommand command);
+    void appendDrawCommand(AnimatedModelDrawCommand command);
 
     void scaleModel(float scaleX, float scaleY, float scaleZ);
     void makeEquallyLit();

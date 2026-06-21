@@ -41,6 +41,10 @@ legacy `tris.md2` assets toward glTF/GLB.
 - The render scratch-buffer seam is format-neutral (`ModelVertexBuffer` /
   `DefaultModelVertexBuffer`) and sizes itself from `AnimatedModel` draw
   commands.
+- `AnimatedModel` draw commands now support triangle strips, triangle fans, and
+  indexed triangle streams. MD2 keeps its legacy strip/fan command order through
+  an explicit prepend path; a future glTF/GLB loader can append native triangle
+  commands without forging MD2 GL-command strips.
 
 ## Future glTF Metadata
 
@@ -80,6 +84,6 @@ on the resolved `ObjectModelFormat`, and the MD2-era `scaleModel(-3.5, 3.5, 3.5)
 arms are the (currently unreachable) seam where a future loader supplies a
 format-native scale and feeds metadata via `initializeFromActionData`.
 
-The remaining non-metadata MD2 coupling tracked for later passes is the
-strip/fan-only draw-command primitive set (no indexed-triangle mode), after which
-the glTF/GLB loader itself (cgltf + the `extras.egoboo` schema) can land.
+The former non-metadata MD2 coupling in the strip/fan-only draw-command
+primitive set is cleared. The remaining loader work is the glTF/GLB loader
+itself (cgltf + the `extras.egoboo` schema).

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 namespace
@@ -194,7 +195,7 @@ std::shared_ptr<Ego::Graphics::AnimatedModel> MD2Model::loadFromFile(const std::
                 command.data[i].t = raw.t - (0.5f / 64.0f);
             }
 
-            model->getDrawCommands().push_front(command);
+            model->prependDrawCommand(std::move(command));
         }
     }
 

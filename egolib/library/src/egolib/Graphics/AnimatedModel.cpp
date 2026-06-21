@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace Ego
 {
@@ -62,14 +63,24 @@ const std::vector<AnimatedModelFrame>& AnimatedModel::getFrames() const
     return _frames;
 }
 
-std::forward_list<AnimatedModelDrawCommand>& AnimatedModel::getDrawCommands()
+const std::forward_list<AnimatedModelDrawCommand>& AnimatedModel::getDrawCommands() const
 {
     return _commands;
 }
 
-const std::forward_list<AnimatedModelDrawCommand>& AnimatedModel::getDrawCommands() const
+void AnimatedModel::prependDrawCommand(AnimatedModelDrawCommand command)
 {
-    return _commands;
+    _commands.push_front(std::move(command));
+}
+
+void AnimatedModel::appendDrawCommand(AnimatedModelDrawCommand command)
+{
+    auto beforeEnd = _commands.before_begin();
+    for (auto current = _commands.begin(); current != _commands.end(); ++current)
+    {
+        ++beforeEnd;
+    }
+    _commands.insert_after(beforeEnd, std::move(command));
 }
 
 void AnimatedModel::scaleModel(const float scaleX, const float scaleY, const float scaleZ)

@@ -41,6 +41,8 @@ GLenum toOpenGLMode(Ego::Graphics::AnimatedModelPrimitiveMode mode)
 {
     switch (mode)
     {
+        case Ego::Graphics::AnimatedModelPrimitiveMode::Triangles:
+            return GL_TRIANGLES;
         case Ego::Graphics::AnimatedModelPrimitiveMode::TriangleFan:
             return GL_TRIANGLE_FAN;
         case Ego::Graphics::AnimatedModelPrimitiveMode::TriangleStrip:
