@@ -408,7 +408,16 @@ public:
     void requestTerminate() override;
 
     /**
-    * @brief 
+    * @brief
+    *   Set the terminated flag directly, without routing through the ObjectHandler removal
+    *   path (which is what calls this, mid-removal). Use requestTerminate() for the normal
+    *   "please remove me from the game" request; this low-level setter exists so ObjectHandler
+    *   can flag the object during remove() without needing private (friend) access.
+    **/
+    void markTerminateRequested();
+
+    /**
+    * @brief
     *   This function calculates and applies damage to a character.  It also
     *   sets alerts and begins actions.  Blocking and frame invincibility are done here too.  
     *
@@ -1525,6 +1534,4 @@ private:
     //Enchantment stuff
     std::forward_list<std::shared_ptr<Ego::Enchantment>> _activeEnchants;    ///< List of all active enchants on this Object
     std::weak_ptr<Ego::Enchantment> _lastEnchantSpawned;    //< Last enchantment that his Object has spawned
-
-    friend class ObjectHandler;
 };
