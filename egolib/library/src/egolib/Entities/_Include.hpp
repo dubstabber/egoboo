@@ -6,6 +6,7 @@
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/Enchant.hpp"
+#include "egolib/Entities/IEquipmentControl.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IItemInfo.hpp"

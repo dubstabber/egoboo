@@ -53,7 +53,10 @@ Object* tryObservedPlayerObject(const std::shared_ptr<Ego::Player>& player)
 int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
                        const std::shared_ptr<Object>& attacker, bool setDamageTime)
 {
-    return target.damage(ATK_BEHIND, damage, damageType, Team::TEAM_DAMAGE, attacker, true, setDamageTime, false);
+    return target.damage(ATK_BEHIND, damage, damageType,
+                         attacker ? attacker->attribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE))
+                                  : ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE)),
+                         true, setDamageTime, false);
 }
 }
 
@@ -148,7 +151,7 @@ void GameModule::updatePits()
             if (_pitsKill && pchr->getPosZ() < PITDEPTH)
             {
                 // Got one!
-                damageable.kill(Object::INVALID_OBJECT, false);
+                damageable.kill(ObjectAttribution(), false);
                 pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
             }
 
@@ -158,7 +161,7 @@ void GameModule::updatePits()
                 // Teleport them back to a "safe" spot
                 if (!pchr->teleport(_pitsTeleportPos, pchr->getFacingZ())) {
                     // Kill it instead
-                    damageable.kill(Object::INVALID_OBJECT, false);
+                    damageable.kill(ObjectAttribution(), false);
                     pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
                 }
                 else {

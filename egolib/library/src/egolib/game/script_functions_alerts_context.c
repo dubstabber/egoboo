@@ -7,8 +7,6 @@ namespace
 {
 struct SelfStateContext
 {
-    Object* object = nullptr;
-    ObjectProfile* profile = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     const IInventoryHolder* inventory = nullptr;
     const IScriptable* scriptable = nullptr;
@@ -16,9 +14,7 @@ struct SelfStateContext
 
     bool isResolved() const
     {
-        return object != nullptr &&
-               profile != nullptr &&
-               targetInfo != nullptr &&
+        return targetInfo != nullptr &&
                inventory != nullptr &&
                scriptable != nullptr &&
                visual != nullptr;
@@ -27,19 +23,12 @@ struct SelfStateContext
 
 SelfStateContext makeSelfStateContext(const ai_state_t& self)
 {
-    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
     SelfStateContext context;
-    context.object = resolvedSelf.object;
-    context.profile = resolvedSelf.profile;
-    if (!resolvedSelf.isResolved())
-    {
-        return context;
-    }
-
-    context.targetInfo = static_cast<const ITargetInfo*>(resolvedSelf.object);
-    context.inventory = static_cast<const IInventoryHolder*>(resolvedSelf.object);
-    context.scriptable = static_cast<const IScriptable*>(resolvedSelf.object);
-    context.visual = static_cast<IVisualControl*>(resolvedSelf.object);
+    const ObjectRef selfRef = self.getSelf();
+    context.targetInfo = tryTargetInfo(selfRef);
+    context.inventory = tryInventoryHolder(selfRef);
+    context.scriptable = tryScriptable(selfRef);
+    context.visual = tryVisualControl(selfRef);
     return context;
 }
 
@@ -83,9 +72,8 @@ uint8_t scr_IfSitting( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function proceeds if the character is riding a mount
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     return hasExistingHolder(*selfContext.targetInfo);
 }
 
@@ -98,9 +86,8 @@ uint8_t scr_IfGrogged( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character has been grogged ( a type of
     /// confusion ) this update
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     return selfContext.targetInfo->getGrogTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 }
 
@@ -113,9 +100,8 @@ uint8_t scr_IfDazed( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the character has been dazed ( a type of
     /// confusion ) this update
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     return selfContext.targetInfo->getDazeTimer() > 0 && HAS_SOME_BITS( self.alert, ALERTIF_CONFUSED );
 }
 
@@ -128,8 +114,6 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
     /// @details Proceeds if HitFromBehind, target has [STAB] skill and damage dealt is physical
     /// automatically fails if attacker has a code of conduct
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     if (!HAS_SOME_BITS( self.alert, ALERTIF_ATTACKED ))
     {
         return false;
@@ -137,6 +121,7 @@ uint8_t scr_IfBackstabbed( script_state_t& state, ai_state_t& self )
 
     //Who is the dirty backstabber?
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef lastAttackerRef = selfContext.scriptable->getAILastAttacker();
     const IInventoryHolder* lastAttackerHolder = tryInventoryHolder(lastAttackerRef);
     const ICharacterState* lastAttackerState = tryCharacterState(lastAttackerRef);
@@ -162,9 +147,8 @@ uint8_t scr_IfHolderBlocked( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function passes if the holder blocked an attack
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     return trySetTargetToHolderLastAttacker(self, *selfContext.targetInfo);
 }
 
@@ -178,9 +162,8 @@ uint8_t scr_IfHeldInLeftHand( script_state_t& state, ai_state_t& self )
     /// left hand.
     /// Usage: Used mostly by enchants that target the item of the other hand
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
     const SelfStateContext selfContext = makeSelfStateContext(self);
+    if (!selfContext.isResolved()) return false;
     const ITargetInfo& selfTargetInfo = *selfContext.targetInfo;
     IInventoryHolder* holderInventory = tryInventoryHolder(selfTargetInfo.getHolderRef());
     return holderInventory != nullptr && holderInventory->getHeldObject(SLOT_LEFT) == self.getSelf();

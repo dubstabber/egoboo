@@ -16,36 +16,6 @@ GameSessionContext& gameSession()
 
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
-struct SelfProfilePolicyData
-{
-    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
-    EVE_REF enchantRef = INVALID_EVE_REF;
-    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
-};
-
-struct SelfProfileComparisonData
-{
-    ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
-    bool baseModelIsSpellbook = false;
-    bool currentProfileMatchesBaseModel = false;
-};
-
-struct SelfProfilePolicyDataFull
-{
-    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
-    EVE_REF enchantRef = INVALID_EVE_REF;
-    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
-    SelfProfileComparisonData comparison;
-};
-
-struct SelfProfileContext
-{
-    const ObjectProfile* profile = nullptr;
-    std::string selfName;
-    std::string className;
-    SelfProfilePolicyDataFull policy;
-};
-
 struct FollowLinkRequest
 {
     std::string selfName;
@@ -64,34 +34,6 @@ struct TargetCompatibilityContext
     ObjectRef targetRef = ObjectRef::Invalid;
     const ITargetInfo* info = nullptr;
 };
-
-SelfProfileContext makeSelfProfileContext(const ai_state_t& self)
-{
-    SelfProfileContext context;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return context;
-    }
-
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
-    if (selfProfile == nullptr)
-    {
-        return context;
-    }
-
-    context.profile = selfProfile.get();
-    context.selfName = selfObject->getName();
-    context.className = selfProfile->getClassName();
-    context.policy.profileRef = selfObject->getProfileID();
-    context.policy.enchantRef = selfProfile->getEnchantRef();
-    context.policy.spellEffectSkin = selfProfile->getSpellEffectType();
-    context.policy.comparison.baseModelRef = selfObject->getBaseModelRef();
-    context.policy.comparison.baseModelIsSpellbook = context.policy.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
-    context.policy.comparison.currentProfileMatchesBaseModel =
-        context.policy.comparison.baseModelRef == context.policy.profileRef;
-    return context;
-}
 
 PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self)
 {
@@ -194,12 +136,12 @@ void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                                            Log::EndOfEntry);
 }
 
-void publishDeprecatedEnableListenSkillWarning(const SelfProfileContext& context)
+void publishDeprecatedEnableListenSkillWarning(const SelfProfileSnapshot& context)
 {
     logDeprecatedScriptFunctionUse("EnableListenSkill", context.className);
 }
 
-bool resolveFollowLinkRequest(const SelfProfileContext& context,
+bool resolveFollowLinkRequest(const SelfProfileSnapshot& context,
                               const int messageId,
                               FollowLinkRequest& request)
 {
@@ -238,7 +180,7 @@ bool tryFollowLink(const PresentationEffectsContext& context,
     return followed;
 }
 
-bool followLinkFromMessageId(const SelfProfileContext& context,
+bool followLinkFromMessageId(const SelfProfileSnapshot& context,
                              const PresentationEffectsContext& presentationContext,
                              const int messageId)
 {
@@ -382,7 +324,8 @@ uint8_t scr_EnableListenSkill( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeSelfProfileSnapshot(self);
+    if (!selfContext.isResolved()) return false;
 
     publishDeprecatedEnableListenSkillWarning(selfContext);
     return false;
@@ -398,7 +341,8 @@ uint8_t scr_FollowLink( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeSelfProfileSnapshot(self);
+    if (!selfContext.isResolved()) return false;
     const PresentationEffectsContext presentationContext = makePresentationEffectsContext(self);
 
     return followLinkFromMessageId(selfContext, presentationContext, state.argument);

@@ -20,7 +20,7 @@ struct HealingInvocationContext
 {
     ICharacterState* targetState = nullptr;
     IDamageable* damageable = nullptr;
-    std::shared_ptr<Object> healer;
+    ObjectAttribution healer;
 };
 
 TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
@@ -52,12 +52,12 @@ bool resolveAliveTargetHealingContext(const ai_state_t& self,
     const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
     context.targetState = tryCharacterState(self.getTarget());
     context.damageable = tryDamageable(self.getTarget());
-    context.healer = tryObjectShared(self.getSelf());
+    context.healer = objectAttributionFromRef(self.getSelf());
     return resolvedTargetInfo != nullptr &&
            context.targetState != nullptr &&
            context.damageable != nullptr &&
            resolvedTargetInfo->isAlive() &&
-           context.healer != nullptr;
+           context.healer.hasObject();
 }
 
 void applyResolvedTargetBaseAttribute(const TargetStateCompatibilityContext& context,

@@ -788,7 +788,7 @@ TEST_F(ScriptTargetFunctionsFixture, IfTargetKilledReturnsFalseForLiveTargetAndT
     EXPECT_FALSE(scr_IfTargetKilled(state, self));
 
     IDamageable& damageableTarget = *target;
-    damageableTarget.kill(actor, true);
+    damageableTarget.kill(actor->attribution(), true);
     ASSERT_FALSE(target->isAlive());
 
     EXPECT_TRUE(scr_IfTargetKilled(state, self));

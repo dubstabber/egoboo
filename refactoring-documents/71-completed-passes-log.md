@@ -2644,3 +2644,28 @@ mutation around `scr_run_chr_script`.
 Gates: `cmake --build build -j20` clean; focused spawn/script slice **21/21**; ctest **912/912**;
 validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules, 10 warnings,
 245 errors**, nonzero exit from pre-existing content errors).
+
+### Pass 261 — Object damage attribution and equipment role boundary (2026-06-22)
+
+Introduced the 19th `Object` role interface, `IEquipmentControl`, and made `Object` implement it through
+the existing `setEquipped(...)` behavior. The script appearance helpers now use that role for equipment
+mutation and use the already role-owned `IDamageable::setDamageTargetType(...)` path for self damage-type
+changes.
+
+`IDamageable::{damage,heal,kill}` no longer expose `std::shared_ptr<Object>` on the role surface. They now
+take `ObjectAttribution`, a small value carrying object ref, object team, damage-source team,
+player/liveness snapshot data. `Object` keeps compatibility overloads for concrete callers, and
+`Object::damage(...)` preserves the old split semantics: friendly-fire and easy-mode checks use the
+attacker object's team/player snapshot, while blood particles and `TEAM_DAMAGE` alert behavior use the
+explicit source team. Module terrain damage, particle damage, script combat, stat-gift healing, and focused
+tests were migrated to the value attribution surface.
+
+The script helper layer also gained `SelfProfileSnapshot` and shared attribution builders, letting
+appearance/team-presentation code drop duplicated profile resolver structs and letting combat/stat-gift
+contexts stop carrying concrete object handles solely for damage ownership. Alert and spawn helper pockets
+were tightened to use existing role resolvers where only role data is needed.
+
+No source files moved between archives; the only CMake change registers the new public header. Archive
+membership remains **164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19** in the health-doc order. Gates:
+`cmake --build build -j20` clean; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.
+Live-archive proof after the CMake touch: all nine forbidden higher-layer `nm` set-intersections are **0**.

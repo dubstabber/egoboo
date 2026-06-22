@@ -503,9 +503,10 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     /// @details This morphs the character into the target
     /// Also set size and keeps the previous AI type
 
-    if (!resolveSpawnSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    IMorphControl* selfMorph = tryMorphControl(self.getSelf());
+    IMorphControl* selfMorph = tryMorphControl(selfContext.ref);
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());
     if (selfMorph == nullptr || targetMorph == nullptr)
     {

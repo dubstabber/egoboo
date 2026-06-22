@@ -35,6 +35,7 @@
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
+#include "egolib/Entities/IEquipmentControl.hpp"
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IItemInfo.hpp"
 #include "egolib/Entities/ILifecycleControl.hpp"
@@ -68,6 +69,7 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IDamageable,
                public ICharacterState,
                public IEnchantable,
+               public IEquipmentControl,
                public IInventoryHolder,
                public IItemInfo,
                public ILifecycleControl,
@@ -104,6 +106,10 @@ public:
     bool canCollide() const override;
 
     std::shared_ptr<const Ego::Texture> getSkinTexture() const override;
+
+    ObjectAttribution attribution() const;
+
+    ObjectAttribution attribution(TEAM_REF sourceTeam) const;
 
     bool isPhongMapped() const override;
 
@@ -295,10 +301,15 @@ public:
     **/
     void markTerminateRequested();
 
-    int damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
-               const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus) override;
+    int damage(Facing direction, const IPair  damage, const DamageType damagetype, ObjectAttribution attacker,
+               const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus) override;
 
-    bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility) override;
+    int damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
+               const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus);
+
+    bool heal(ObjectAttribution healer, const UFP8_T amount, const bool ignoreInvincibility) override;
+
+    bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility);
 
     bool isAttacking() const override;
 
@@ -336,7 +347,7 @@ public:
 
     bool isEquipped() const override;
 
-    void setEquipped(bool equipped);
+    void setEquipped(bool equipped) override;
 
     void setItem(bool item) override;
 
@@ -461,7 +472,9 @@ public:
     /// @details Convert the base size values to the size values that are used in the game
     void recalculateCollisionSize();
 
-    void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility) override;
+    void kill(ObjectAttribution originalKiller, bool ignoreInvincibility) override;
+
+    void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility);
 
     /// @author ZZ
     /// @details This function fixes an item's transparency
@@ -691,7 +704,7 @@ public:
 
     DamageType getDamageTargetType() const override;
 
-    void setDamageTargetType(DamageType damageType);
+    void setDamageTargetType(DamageType damageType) override;
 
     DamageType getReaffirmDamageType() const override;
 

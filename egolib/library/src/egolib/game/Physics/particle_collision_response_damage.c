@@ -67,6 +67,12 @@ bool publishWeaponScoredHit(const std::shared_ptr<Object>& weapon, ObjectRef tar
     scriptableWeapon.addAIAlertBits(ALERTIF_SCOREDAHIT);
     return weapon->getProfile()->getIDSZ(IDSZ_SPECIAL).equals('X', 'W', 'E', 'P') && !weapon->getProfile()->isRangedWeapon();
 }
+
+ObjectAttribution objectAttributionFor(ObjectRef objectRef, TEAM_REF team)
+{
+    const std::shared_ptr<Object>& object = objectWorld().getObjectHandler()[objectRef];
+    return object ? object->attribution(team) : ObjectAttribution(team);
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -414,8 +420,8 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
                             IPair grimReaperDamage;
                             grimReaperDamage.base = FLOAT_TO_FP8(50.0f);
                             grimReaperDamage.rand = 0.0f;
-                            damageableCharacter.damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL, pdata.pprt->team,
-                                                       objectWorld().getObjectHandler()[pdata.pprt->owner_ref], false, true, false);
+                            damageableCharacter.damage(Facing(direction), grimReaperDamage, DAMAGE_EVIL,
+                                                       objectAttributionFor(pdata.pprt->owner_ref, pdata.pprt->team), false, true, false);
                             Ego::Graphics::activeBillboardSystem().makeBillboard(powner->getObjRef(), "Grim Reaper!", Ego::Colour4f::white(), Ego::Colour4f::red(), 3, Ego::Graphics::Billboard::Flags::All);
                             audioSystem().playSound(powner->getPosition(), audioSystem().getGlobalSound(GSND_CRITICAL_HIT));
                         }
@@ -470,7 +476,7 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
             // Damage the character
             pdata.actual_damage = damageableCharacter.damage(Facing(direction), modifiedDamage, pdata.pprt->damagetype,
-                pdata.pprt->team, objectWorld().getObjectHandler()[pdata.pprt->owner_ref], pdata.ppip->hasBit(DAMFX_ARMO), !pdata.ppip->hasBit(DAMFX_TIME), false);
+                objectAttributionFor(pdata.pprt->owner_ref, pdata.pprt->team), pdata.ppip->hasBit(DAMFX_ARMO), !pdata.ppip->hasBit(DAMFX_TIME), false);
         }
     }
 

@@ -10,6 +10,7 @@ struct OwnedObjectHandle
 {
     ObjectRef ref = ObjectRef::Invalid;
     std::shared_ptr<Object> object;
+    ObjectAttribution attribution;
 };
 
 struct DamageInvocationContext
@@ -79,6 +80,7 @@ bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
 {
     handle.ref = objectRef;
     handle.object = tryObjectShared(objectRef);
+    handle.attribution = objectAttributionFromHandle(handle.object);
     return handle.object != nullptr;
 }
 
@@ -147,6 +149,7 @@ bool resolveSelfAttributedDamageContext(const ai_state_t& self,
 
     context.damageType = selfDamageable->getDamageTargetType();
     context.teamRef = selfInfo->getTeamRef();
+    context.source.attribution = objectAttributionFromHandle(context.source.object, context.teamRef);
     return true;
 }
 
@@ -169,7 +172,9 @@ bool resolveKillDamageContext(const ai_state_t& self,
         return false;
     }
 
-    return resolveOwnedObjectHandle(resolvedKillSourceRef(*selfInfo, self.getSelf()), context.source);
+    const bool resolved = resolveOwnedObjectHandle(resolvedKillSourceRef(*selfInfo, self.getSelf()), context.source);
+    context.source.attribution = objectAttributionFromHandle(context.source.object);
+    return resolved;
 }
 
 bool resolveSelfHealingContext(const ai_state_t& self,
@@ -219,6 +224,7 @@ bool resolveRetaliationDamageContext(const ai_state_t& self,
     }
 
     context.teamRef = retaliationInfo->getTeamRef();
+    context.source.attribution = objectAttributionFromHandle(context.source.object, context.teamRef);
     return true;
 }
 
@@ -231,7 +237,7 @@ void applyRetaliationDamage(const DamageInvocationContext& context,
     damage.rand = 1;
 
     context.damageable->damage(ATK_FRONT, damage, damageType,
-                               context.teamRef, context.source.object,
+                               context.source.attribution,
                                false, false, true);
 }
 
@@ -358,7 +364,7 @@ uint8_t scr_DamageTarget( script_state_t& state, ai_state_t& self )
     tmp_damage.rand = 1;
 
     damageContext.damageable->damage(ATK_FRONT, tmp_damage, damageContext.damageType,
-                                     damageContext.teamRef, damageContext.source.object,
+                                     damageContext.source.attribution,
                                      false, false, true);
 
     return true;
@@ -380,7 +386,7 @@ uint8_t scr_KillTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    damageContext.damageable->kill(damageContext.source.object, false);
+    damageContext.damageable->kill(damageContext.source.attribution, false);
 
     return true;
 }
@@ -404,7 +410,7 @@ uint8_t scr_HealSelf( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    healingContext.damageable->heal(healingContext.healer.object, state.argument, true);
+    healingContext.damageable->heal(healingContext.healer.attribution, state.argument, true);
 
     return true;
 }
@@ -426,7 +432,7 @@ uint8_t scr_HealTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    if (healingContext.damageable->heal(healingContext.healer.object, state.argument, false))
+    if (healingContext.damageable->heal(healingContext.healer.attribution, state.argument, false))
     {
         healingContext.targetState->removeEnchantsWithIDSZ(IDSZ2('H', 'E', 'A', 'L'));
         return true;

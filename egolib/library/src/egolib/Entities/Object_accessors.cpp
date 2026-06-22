@@ -114,6 +114,16 @@ float Object::getPosY() const { return Ego::Physics::Collidable::getPosY(); }
 
 ObjectRef Object::getObjRef() const { return _objRef; }
 
+ObjectAttribution Object::attribution() const
+{
+    return attribution(getTeamRef());
+}
+
+ObjectAttribution Object::attribution(TEAM_REF sourceTeam) const
+{
+    return ObjectAttribution(getObjRef(), getTeamRef(), sourceTeam, isPlayer(), isTerminated());
+}
+
 TEAM_REF Object::getTeamRef() const { return team; }
 
 void Object::setTeamRef(TEAM_REF teamRef) { team = teamRef; }

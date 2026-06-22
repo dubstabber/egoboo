@@ -70,6 +70,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/Enchant.hpp
     src/egolib/Entities/IDamageable.hpp
     src/egolib/Entities/IEnchantable.hpp
+    src/egolib/Entities/IEquipmentControl.hpp
     src/egolib/Entities/IInventoryHolder.hpp
     src/egolib/Entities/IMovementControl.hpp
     src/egolib/Entities/ILifecycleControl.hpp

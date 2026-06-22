@@ -177,6 +177,26 @@ inline std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
     return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
 }
 
+inline ObjectAttribution objectAttributionFromHandle(const std::shared_ptr<Object>& object)
+{
+    return object ? object->attribution() : ObjectAttribution();
+}
+
+inline ObjectAttribution objectAttributionFromHandle(const std::shared_ptr<Object>& object, TEAM_REF sourceTeam)
+{
+    return object ? object->attribution(sourceTeam) : ObjectAttribution(sourceTeam);
+}
+
+inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef)
+{
+    return objectAttributionFromHandle(tryObjectShared(objectRef));
+}
+
+inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef, TEAM_REF sourceTeam)
+{
+    return objectAttributionFromHandle(tryObjectShared(objectRef), sourceTeam);
+}
+
 inline IScriptable* tryScriptable(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
@@ -193,6 +213,12 @@ inline IDamageable* tryDamageable(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<IDamageable*>(object) : nullptr;
+}
+
+inline IEquipmentControl* tryEquipmentControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IEquipmentControl*>(object) : nullptr;
 }
 
 inline ICharacterState* tryCharacterState(ObjectRef objectRef)
@@ -298,6 +324,51 @@ inline IWallet* tryWallet(ObjectRef objectRef)
 inline uint32_t worldUpdateCount()
 {
     return GameSessionContext::get().worldUpdateCount();
+}
+
+struct SelfProfileSnapshot
+{
+    const ObjectProfile* profile = nullptr;
+    std::string selfName;
+    std::string className;
+    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
+    EVE_REF enchantRef = INVALID_EVE_REF;
+    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
+    ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
+    bool baseModelIsSpellbook = false;
+    bool currentProfileMatchesBaseModel = false;
+
+    bool isResolved() const
+    {
+        return profile != nullptr;
+    }
+};
+
+inline SelfProfileSnapshot makeSelfProfileSnapshot(const ai_state_t& self)
+{
+    SelfProfileSnapshot snapshot;
+    Object* selfObject = tryObject(self.getSelf());
+    if (selfObject == nullptr)
+    {
+        return snapshot;
+    }
+
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
+    if (selfProfile == nullptr)
+    {
+        return snapshot;
+    }
+
+    snapshot.profile = selfProfile.get();
+    snapshot.selfName = selfObject->getName();
+    snapshot.className = selfProfile->getClassName();
+    snapshot.profileRef = selfObject->getProfileID();
+    snapshot.enchantRef = selfProfile->getEnchantRef();
+    snapshot.spellEffectSkin = selfProfile->getSpellEffectType();
+    snapshot.baseModelRef = selfObject->getBaseModelRef();
+    snapshot.baseModelIsSpellbook = snapshot.baseModelRef == ObjectProfileRef(SPELLBOOK);
+    snapshot.currentProfileMatchesBaseModel = snapshot.baseModelRef == snapshot.profileRef;
+    return snapshot;
 }
 }
 using namespace script_detail;

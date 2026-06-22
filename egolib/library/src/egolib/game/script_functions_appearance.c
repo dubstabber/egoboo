@@ -6,58 +6,16 @@
 
 namespace
 {
-IAnimationControl& animationControl(Object& object)
-{
-    return object;
-}
-
-IEnchantable& enchantable(Object& object)
-{
-    return object;
-}
-
-Object& resolvedSelfObject(const ai_state_t& self)
-{
-    return *resolveSelfContext(self).object;
-}
-
-IMorphControl& morphControl(Object& object)
-{
-    return object;
-}
-
 struct SelfRoleContext
 {
-    Object* selfObject = nullptr;
+    IDamageable* damageable = nullptr;
+    IEquipmentControl* equipment = nullptr;
     IAppearanceProfile* appearance = nullptr;
     ICharacterState* characterState = nullptr;
     IEnchantable* enchantable = nullptr;
     ITeamMember* teamMember = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     IWallet* wallet = nullptr;
-};
-
-struct SelfProfileComparisonData
-{
-    ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
-    bool baseModelIsSpellbook = false;
-    bool currentProfileMatchesBaseModel = false;
-};
-
-struct SelfProfilePolicyData
-{
-    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
-    EVE_REF enchantRef = INVALID_EVE_REF;
-    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
-    SelfProfileComparisonData comparison;
-};
-
-struct SelfProfileContext
-{
-    const ObjectProfile* profile = nullptr;
-    std::string selfName;
-    std::string className;
-    SelfProfilePolicyData policy;
 };
 
 struct ClassChangeCompatibilityContext
@@ -87,47 +45,46 @@ struct InventoryCompatibilityContext
 SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
 {
     SelfRoleContext context;
-    context.selfObject = tryObject(self.getSelf());
-    if (context.selfObject == nullptr)
-    {
-        return context;
-    }
-
-    context.appearance = static_cast<IAppearanceProfile*>(context.selfObject);
-    context.characterState = static_cast<ICharacterState*>(context.selfObject);
-    context.enchantable = static_cast<IEnchantable*>(context.selfObject);
-    context.teamMember = static_cast<ITeamMember*>(context.selfObject);
-    context.targetInfo = static_cast<const ITargetInfo*>(context.selfObject);
-    context.wallet = static_cast<IWallet*>(context.selfObject);
+    const ObjectRef selfRef = self.getSelf();
+    context.damageable = tryDamageable(selfRef);
+    context.equipment = tryEquipmentControl(selfRef);
+    context.appearance = tryAppearanceProfile(selfRef);
+    context.characterState = tryCharacterState(selfRef);
+    context.enchantable = tryEnchantable(selfRef);
+    context.teamMember = tryTeamMember(selfRef);
+    context.targetInfo = tryTargetInfo(selfRef);
+    context.wallet = tryWallet(selfRef);
     return context;
 }
 
-SelfProfileContext makeSelfProfileContext(const ai_state_t& self)
+Object& resolvedSelfObject(const ai_state_t& self)
 {
-    SelfProfileContext context;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return context;
-    }
+    return *resolveSelfContext(self).object;
+}
 
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
-    if (selfProfile == nullptr)
-    {
-        return context;
-    }
+SelfProfileSnapshot makeRequiredSelfProfileSnapshot(const ai_state_t& self)
+{
+    return makeSelfProfileSnapshot(self);
+}
 
-    context.profile = selfProfile.get();
-    context.selfName = selfObject->getName();
-    context.className = selfProfile->getClassName();
-    context.policy.profileRef = selfObject->getProfileID();
-    context.policy.enchantRef = selfProfile->getEnchantRef();
-    context.policy.spellEffectSkin = selfProfile->getSpellEffectType();
-    context.policy.comparison.baseModelRef = selfObject->getBaseModelRef();
-    context.policy.comparison.baseModelIsSpellbook = context.policy.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
-    context.policy.comparison.currentProfileMatchesBaseModel =
-        context.policy.comparison.baseModelRef == context.policy.profileRef;
-    return context;
+bool hasRequiredSelfProfileSnapshot(const SelfProfileSnapshot& context)
+{
+    return context.isResolved();
+}
+
+IAnimationControl& animationControl(Object& object)
+{
+    return object;
+}
+
+IEnchantable& enchantable(Object& object)
+{
+    return object;
+}
+
+IMorphControl& morphControl(Object& object)
+{
+    return object;
 }
 
 PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self)
@@ -149,23 +106,23 @@ SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(co
 
 bool setSelfDamageType(SelfRoleContext& selfContext, DamageType damageType)
 {
-    if (selfContext.selfObject == nullptr)
+    if (selfContext.damageable == nullptr)
     {
         return false;
     }
 
-    selfContext.selfObject->setDamageTargetType(damageType);
+    selfContext.damageable->setDamageTargetType(damageType);
     return true;
 }
 
 bool markSelfEquipped(SelfRoleContext& selfContext)
 {
-    if (selfContext.selfObject == nullptr)
+    if (selfContext.equipment == nullptr)
     {
         return false;
     }
 
-    selfContext.selfObject->setEquipped(true);
+    selfContext.equipment->setEquipped(true);
     return true;
 }
 
@@ -388,13 +345,14 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeRequiredSelfProfileSnapshot(self);
+    if (!hasRequiredSelfProfileSnapshot(selfContext)) return false;
 
     becomeSpellbook(enchantable(resolvedSelfObject(self)),
                     morphControl(resolvedSelfObject(self)),
                     animationControl(resolvedSelfObject(self)),
-                    selfContext.policy.profileRef,
-                    selfContext.policy.spellEffectSkin,
+                    selfContext.profileRef,
+                    selfContext.spellEffectSkin,
                     self);
 
     return true;
@@ -520,8 +478,9 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeRequiredSelfProfileSnapshot(self);
+    if (!hasRequiredSelfProfileSnapshot(selfContext)) return false;
 
-    return selfContext.policy.comparison.baseModelIsSpellbook ||
-           selfContext.policy.comparison.currentProfileMatchesBaseModel;
+    return selfContext.baseModelIsSpellbook ||
+           selfContext.currentProfileMatchesBaseModel;
 }

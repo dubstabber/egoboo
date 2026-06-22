@@ -127,7 +127,7 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
                                   selfContext.physical->getPosition(),
                                   Facing(uint16_t(selfContext.physical->getFacingZ())),
                                   LocalParticleProfileRef(state.argument),
-                                  self.getSelf(),
+                                  selfContext.ref,
                                   state.distance,
                                   ownerRef);
 
@@ -137,7 +137,7 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     }
 
     return tryAttachParticleToResolvedSelf(particle,
-                                           self.getSelf(),
+                                           selfContext.ref,
                                            state.distance,
                                            state.x,
                                            state.y);
@@ -152,9 +152,10 @@ uint8_t scr_DisaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function removes all the attached particles from a character
     /// ( stuck arrows, flames, etc )
 
-    if (!resolveSpawnSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    disaffirm_attached_particles(self.getSelf());
+    disaffirm_attached_particles(selfContext.ref);
 
     return true;
 }
@@ -168,9 +169,10 @@ uint8_t scr_ReaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function makes sure it has all of its reaffirmation particles
     /// attached to it. Used to make the torch light again
 
-    if (!resolveSpawnSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    reaffirm_attached_particles(self.getSelf());
+    reaffirm_attached_particles(selfContext.ref);
 
     return true;
 }
@@ -185,12 +187,12 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
 
     const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
     if (!selfContext.isResolved()) return false;
-    const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(self.getSelf());
+    const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(selfContext.ref);
     return nullptr != spawnLocalParticleForSelf(selfContext,
                                                 selfContext.physical->getPosition(),
                                                 idlib::canonicalize(selfContext.physical->getFacingZ()),
                                                 LocalParticleProfileRef(state.argument),
-                                                self.getSelf(),
+                                                selfContext.ref,
                                                 state.distance,
                                                 ownerRef);
 }
@@ -228,9 +230,10 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
     /// @details This function makes a lovely little poof at the character's location.
     /// The poof form and particle types are set in data.txt
 
-    if (!resolveSpawnSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
-    return spawnPoofForSelf(self.getSelf());
+    return spawnPoofForSelf(selfContext.ref);
 }
 
 
@@ -250,7 +253,7 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
                                   selfContext.physical->getPosition(),
                                   idlib::canonicalize(selfContext.physical->getFacingZ()),
                                   LocalParticleProfileRef(state.argument),
-                                  self.getSelf(),
+                                  selfContext.ref,
                                   state.distance,
                                   ownerRef);
 
@@ -280,7 +283,7 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
                                                 selfContext.physical->getPosition(),
                                                 Facing(Ego::Math::clipBits<16>(state.turn)),
                                                 LocalParticleProfileRef(state.argument),
-                                                self.getSelf(),
+                                                selfContext.ref,
                                                 state.distance,
                                                 ownerRef);
 }

@@ -50,6 +50,36 @@ const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t s
     return objectHandler()[object.getHeldObject(slot)];
 }
 
+ObjectAttribution attributionFor(const std::shared_ptr<Object>& object)
+{
+    if (!object)
+    {
+        return ObjectAttribution();
+    }
+
+    return object->attribution();
+}
+
+ObjectAttribution attributionFor(const std::shared_ptr<Object>& object, TEAM_REF sourceTeam)
+{
+    if (!object)
+    {
+        return ObjectAttribution(sourceTeam);
+    }
+
+    return object->attribution(sourceTeam);
+}
+
+std::shared_ptr<Object> resolveAttributionHandle(ObjectAttribution attribution)
+{
+    if (attribution.ref == ObjectRef::Invalid || !objectHandler().exists(attribution.ref))
+    {
+        return nullptr;
+    }
+
+    return objectHandler()[attribution.ref];
+}
+
 ObjectRef resolveHolderOrMountAttribution(const Object& actor)
 {
     ObjectRef actualActor = actor.getObjRef();
@@ -191,7 +221,15 @@ void publishDeathAlertsAndTeamExperience(Object& killed,
 int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
                    const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
 {
+    return this->damage(direction, damage, damagetype, attributionFor(attacker, attackerTeam),
+                        ignoreArmour, setDamageTime, ignoreInvictus);
+}
+
+int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, ObjectAttribution attacker,
+                   const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
+{
     bool do_feedback = (Ego::FeedbackType::None != config().hud_feedback.getValue());
+    const std::shared_ptr<Object> attackerHandle = resolveAttributionHandle(attacker);
 
     // Simply ignore damaging invincible targets.
     if(invictus && !ignoreInvictus)
@@ -208,20 +246,20 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
 
     // determine some optional behavior
     bool friendly_fire = false;
-    if ( !attacker )
+    if ( !attacker.hasObject() )
     {
         do_feedback = false;
     }
     else
     {
         // do not show feedback for damaging yourself
-        if ( attacker.get() == this )
+        if ( attacker.ref == getObjRef() )
         {
             do_feedback = false;
         }
 
         // identify friendly fire for color selection :)
-        if ( getTeam() == attacker->getTeam() )
+        if ( getTeamRef() == attacker.teamRef )
         {
             friendly_fire = true;
         }
@@ -255,7 +293,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
     {
         setMana(getMana() - FP8_TO_FLOAT(actual_damage));
         actual_damage -= std::max<int>(FLOAT_TO_FP8(getMana()) - actual_damage, 0);
-        updateLastAttacker(attacker, false);
+        updateLastAttacker(attackerHandle, false);
     }
 
     // Allow charging (Invert actual_damage to mana)
@@ -286,7 +324,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
         if ( !isMount() && 0 == damage_timer )
         {
             //Ping!
-            activeParticleHandler().spawnDefencePing(selfHandle(*this), attacker);
+            activeParticleHandler().spawnDefencePing(selfHandle(*this), attackerHandle);
 
             //Only draw "Immune!" if we are truly completely immune and it was not simply a weak attack
             if(HAS_SOME_BITS(damageModifier, DAMAGEINVICTUS) || damage.base + damage.rand <= damage_threshold) {
@@ -308,10 +346,10 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
             }
 
             // Easy mode deals 25% extra actual damage by players and 50% less to players
-            if (attacker && config().game_difficulty.getValue() <= Ego::GameDifficulty::Easy)
+            if (attacker.hasObject() && config().game_difficulty.getValue() <= Ego::GameDifficulty::Easy)
             {
-                if ( attacker->isPlayer()  && !isPlayer() ) actual_damage *= 1.25f;
-                if ( !attacker->isPlayer() &&  isPlayer() ) actual_damage *= 0.5f;
+                if ( attacker.isPlayer  && !isPlayer() ) actual_damage *= 1.25f;
+                if ( !attacker.isPlayer &&  isPlayer() ) actual_damage *= 0.5f;
             }
 
             if ( 0 != actual_damage )
@@ -325,20 +363,20 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
                     {
                         activeParticleHandler().spawnParticle( getPosition(), ori.facing_z + direction,
                                                                               _profile->getSlotNumber(), _profile->getBludParticleProfile(),
-                                                                              ObjectRef::Invalid, GRIP_LAST, attackerTeam, _objRef);
+                                                                              ObjectRef::Invalid, GRIP_LAST, attacker.sourceTeamRef, _objRef);
                     }
                 }
 
                 // Set attack alert if it wasn't an accident
                 if ( base_damage > HURTDAMAGE )
                 {
-                    if ( attackerTeam == Team::TEAM_DAMAGE )
+                    if ( attacker.sourceTeamRef == Team::TEAM_DAMAGE )
                     {
                         ai.setLastAttacker(ObjectRef::Invalid);
                     }
                     else
                     {
-                        updateLastAttacker(attacker, false );
+                        updateLastAttacker(attackerHandle, false );
                     }
                 }
 
@@ -430,7 +468,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
         heal(attacker, -actual_damage, ignoreInvictus);
 
         // Isssue an alert
-        if ( attackerTeam == Team::TEAM_DAMAGE )
+        if ( attacker.sourceTeamRef == Team::TEAM_DAMAGE )
         {
             ai.setLastAttacker(ObjectRef::Invalid);
         }
@@ -477,6 +515,11 @@ void Object::updateLastAttacker(const std::shared_ptr<Object> &attacker, bool he
 
 bool Object::heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility)
 {
+    return this->heal(attributionFor(healer), amount, ignoreInvincibility);
+}
+
+bool Object::heal(ObjectAttribution healer, const UFP8_T amount, const bool ignoreInvincibility)
+{
     //Don't heal dead and invincible stuff
     if (!isAlive() || (invictus && !ignoreInvincibility)) return false;
 
@@ -489,9 +532,10 @@ bool Object::heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, co
     }
 
     // Set alerts, but don't alert that we healed ourselves
-    if (healer && this != healer.get() && healer->attachedto != _objRef && amount > HURTDAMAGE)
+    const std::shared_ptr<Object> healerHandle = resolveAttributionHandle(healer);
+    if (healerHandle && this != healerHandle.get() && healerHandle->attachedto != _objRef && amount > HURTDAMAGE)
     {
-        updateLastAttacker(healer, true);
+        updateLastAttacker(healerHandle, true);
     }
 
     return true;
@@ -503,6 +547,11 @@ bool Object::isAttacking() const
 }
 
 void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility)
+{
+    this->kill(attributionFor(originalKiller), ignoreInvincibility);
+}
+
+void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
 {
     //No need to continue is there?
     if (!isAlive() || (isInvincible() && !ignoreInvincibility)) return;
@@ -537,7 +586,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         }
     }
 
-    std::shared_ptr<Object> actualKiller = resolveKillCreditRecipient(originalKiller);
+    std::shared_ptr<Object> actualKiller = resolveKillCreditRecipient(resolveAttributionHandle(originalKiller));
 
     _isAlive = false;
 
