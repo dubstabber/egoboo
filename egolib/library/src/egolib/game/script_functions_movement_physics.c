@@ -102,7 +102,9 @@ uint8_t scr_SetFrame( script_state_t& state, ai_state_t& self )
     const SelfMovementContext selfContext = makeSelfMovementContext(self);
     if (!selfContext.isResolved()) return false;
 
-    return setEncodedFrame(*selfContext.object, state.argument);
+    Object* selfObject = tryObject(self.getSelf());
+    return selfObject != nullptr &&
+           setEncodedFrame(*selfObject, state.argument);
 }
 
 

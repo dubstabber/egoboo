@@ -88,7 +88,7 @@ uint8_t scr_FindPath( script_state_t& state, ai_state_t& self )
 
     const bool foundPath = ::FindPath( self.wp_lst,
                                        *selfContext.physical,
-                                       selfContext.object->getStoppedByMask(),
+                                       selfContext.movement->getStoppedByMask(),
                                        Ego::Script::Interpreter::safeCast<float>(state.x),
                                        Ego::Script::Interpreter::safeCast<float>(state.y), &used_astar );
 

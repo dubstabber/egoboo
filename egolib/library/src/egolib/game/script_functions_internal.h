@@ -140,6 +140,16 @@ inline Object* tryObject(ObjectRef objectRef)
     return objectHandler().exists(objectRef) ? objectHandler().get(objectRef) : nullptr;
 }
 
+inline bool hasLiveObjectRef(ObjectRef objectRef)
+{
+    return tryObject(objectRef) != nullptr;
+}
+
+inline bool hasLiveSelf(const ai_state_t& self)
+{
+    return hasLiveObjectRef(self.getSelf());
+}
+
 struct ResolvedSelfContext
 {
     ObjectRef ref = ObjectRef::Invalid;
@@ -237,6 +247,12 @@ inline IAppearanceProfile* tryAppearanceProfile(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<IAppearanceProfile*>(object) : nullptr;
+}
+
+inline const IProfiled* tryProfiled(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<const IProfiled*>(object) : nullptr;
 }
 
 inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
@@ -347,25 +363,31 @@ struct SelfProfileSnapshot
 inline SelfProfileSnapshot makeSelfProfileSnapshot(const ai_state_t& self)
 {
     SelfProfileSnapshot snapshot;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
+    const IProfiled* selfProfiled = tryProfiled(self.getSelf());
+    if (selfProfiled == nullptr)
     {
         return snapshot;
     }
 
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
+    const std::shared_ptr<ObjectProfile>& selfProfile = selfProfiled->getProfile();
     if (selfProfile == nullptr)
     {
         return snapshot;
     }
 
     snapshot.profile = selfProfile.get();
-    snapshot.selfName = selfObject->getName();
+    if (const Object* selfObject = tryObject(self.getSelf()))
+    {
+        snapshot.selfName = selfObject->getName();
+    }
     snapshot.className = selfProfile->getClassName();
-    snapshot.profileRef = selfObject->getProfileID();
+    snapshot.profileRef = selfProfile->getSlotNumber();
     snapshot.enchantRef = selfProfile->getEnchantRef();
     snapshot.spellEffectSkin = selfProfile->getSpellEffectType();
-    snapshot.baseModelRef = selfObject->getBaseModelRef();
+    if (const IMorphControl* selfMorph = tryMorphControl(self.getSelf()))
+    {
+        snapshot.baseModelRef = selfMorph->getBaseModelRef();
+    }
     snapshot.baseModelIsSpellbook = snapshot.baseModelRef == ObjectProfileRef(SPELLBOOK);
     snapshot.currentProfileMatchesBaseModel = snapshot.baseModelRef == snapshot.profileRef;
     return snapshot;

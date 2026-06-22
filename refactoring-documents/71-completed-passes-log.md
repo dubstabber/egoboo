@@ -2669,3 +2669,28 @@ No source files moved between archives; the only CMake change registers the new 
 membership remains **164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19** in the health-doc order. Gates:
 `cmake --build build -j20` clean; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.
 Live-archive proof after the CMake touch: all nine forbidden higher-layer `nm` set-intersections are **0**.
+
+### Pass 262 — Script object role-context narrowing (2026-06-22)
+
+Continued the stable-first `Object` role program inside the script helper layer without changing script
+opcode APIs, source placement, CMake archive membership, or public damage/enchant behavior. The shared
+script helper header now exposes live-object gates and an `IProfiled` resolver, and `SelfProfileSnapshot`
+uses role surfaces for profile/base-model data with only the legacy display name still coming from the
+concrete object.
+
+Appearance and enchant helpers dropped duplicated concrete self/profile adapters. They now route spell,
+spellbook, class-change, equipment, armor, money, damage-type, enchant, disenchant, and kurse gates through
+role-sized contexts or the shared profile snapshot. `script_functions_appearance.c` and
+`script_functions_enchant.c` no longer include or call `EngineContext` directly.
+
+Combat helper contexts no longer carry `std::shared_ptr<Object>` only for attribution; they now store an
+`ObjectAttribution` value plus the object ref. State and movement self contexts stopped carrying concrete
+`Object*` handles, with `IMovementControl` widened by the existing stopped-by-mask getter so pathfinding can
+read that state through the movement role. The graphics-only `SetFrame` path keeps its concrete object
+lookup local to the opcode that still needs encoded animation frame mutation.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **613** `::get()` lines, including **426**
+`EngineContext::get()` and **133** `GameSessionContext::get()` lines. Gates: `cmake --build build -j20`
+clean; focused script/object role slice **226/226**; ctest **912/912**; validator `test.mod` 0/0;
+`git diff --check` clean.

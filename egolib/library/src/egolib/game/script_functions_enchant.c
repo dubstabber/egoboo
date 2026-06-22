@@ -2,23 +2,12 @@
 /// @brief Enchant/disenchant application and kurse management script functions
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
 GameSessionContext& gameSession()
 {
     return GameSessionContext::get();
-}
-
-Object& resolvedSelfObject(const ai_state_t& self)
-{
-    return *resolveSelfContext(self).object;
-}
-
-IEnchantable& enchantable(Object& object)
-{
-    return object;
 }
 
 struct OwnedObjectHandle
@@ -53,36 +42,6 @@ struct InventoryCompatibilityContext
 struct TargetStateCompatibilityContext
 {
     ICharacterState* characterState = nullptr;
-};
-
-struct SelfProfilePolicyData
-{
-    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
-    EVE_REF enchantRef = INVALID_EVE_REF;
-    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
-};
-
-struct SelfProfileComparisonData
-{
-    ObjectProfileRef baseModelRef = ObjectProfileRef::Invalid;
-    bool baseModelIsSpellbook = false;
-    bool currentProfileMatchesBaseModel = false;
-};
-
-struct SelfProfilePolicyDataFull
-{
-    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
-    EVE_REF enchantRef = INVALID_EVE_REF;
-    SKIN_T spellEffectSkin = ObjectProfile::NO_SKIN_OVERRIDE;
-    SelfProfileComparisonData comparison;
-};
-
-struct SelfProfileContext
-{
-    const ObjectProfile* profile = nullptr;
-    std::string selfName;
-    std::string className;
-    SelfProfilePolicyDataFull policy;
 };
 
 struct SelfRoleContextEnchant
@@ -125,34 +84,6 @@ bool resolveInventoryCompatibilityContext(const ai_state_t& self,
     return resolveInventoryCompatibilityContext(self.getSelf(), self.getTarget(), context);
 }
 
-SelfProfileContext makeSelfProfileContext(const ai_state_t& self)
-{
-    SelfProfileContext context;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return context;
-    }
-
-    const std::shared_ptr<ObjectProfile>& selfProfile = selfObject->getProfile();
-    if (selfProfile == nullptr)
-    {
-        return context;
-    }
-
-    context.profile = selfProfile.get();
-    context.selfName = selfObject->getName();
-    context.className = selfProfile->getClassName();
-    context.policy.profileRef = selfObject->getProfileID();
-    context.policy.enchantRef = selfProfile->getEnchantRef();
-    context.policy.spellEffectSkin = selfProfile->getSpellEffectType();
-    context.policy.comparison.baseModelRef = selfObject->getBaseModelRef();
-    context.policy.comparison.baseModelIsSpellbook = context.policy.comparison.baseModelRef == ObjectProfileRef(SPELLBOOK);
-    context.policy.comparison.currentProfileMatchesBaseModel =
-        context.policy.comparison.baseModelRef == context.policy.profileRef;
-    return context;
-}
-
 bool resolveEnchantInvocationContext(const ai_state_t& self,
                                      ObjectRef targetRef,
                                      EnchantInvocationContext& context)
@@ -166,12 +97,7 @@ bool resolveEnchantInvocationContext(const ai_state_t& self,
 SelfRoleContextEnchant makeSelfRoleContextEnchant(const ai_state_t& self)
 {
     SelfRoleContextEnchant context;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return context;
-    }
-    context.enchantable = static_cast<IEnchantable*>(selfObject);
+    context.enchantable = tryEnchantable(self.getSelf());
     return context;
 }
 
@@ -301,9 +227,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
     /// @details This function enchants the target with the enchantment given
     /// in enchant.txt. Make sure you use set_OwnerToTarget before doing this.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeSelfProfileSnapshot(self);
+    if (!selfContext.isResolved()) return false;
 
     EnchantInvocationContext enchantContext;
     if (!resolveEnchantInvocationContext(self, self.getTarget(), enchantContext))
@@ -311,8 +236,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    return enchantContext.target->addEnchant(selfContext.policy.enchantRef,
-                                             selfContext.policy.profileRef.get(),
+    return enchantContext.target->addEnchant(selfContext.enchantRef,
+                                             selfContext.profileRef.get(),
                                              enchantContext.owner.object,
                                              enchantContext.spawner.object) != nullptr;
 }
@@ -327,9 +252,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
     /// newly spawned character with the enchantment
     /// given in enchant.txt. Make sure you use set_OwnerToTarget before doing this.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfProfileContext selfContext = makeSelfProfileContext(self);
+    SelfProfileSnapshot selfContext = makeSelfProfileSnapshot(self);
+    if (!selfContext.isResolved()) return false;
 
     EnchantInvocationContext enchantContext;
     if (!resolveEnchantInvocationContext(self, self.child, enchantContext))
@@ -337,8 +261,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    return enchantContext.target->addEnchant(selfContext.policy.enchantRef,
-                                             selfContext.policy.profileRef.get(),
+    return enchantContext.target->addEnchant(selfContext.enchantRef,
+                                             selfContext.profileRef.get(),
                                              enchantContext.owner.object,
                                              enchantContext.spawner.object) != nullptr;
 }
@@ -352,9 +276,10 @@ uint8_t scr_UndoEnchant( script_state_t& state, ai_state_t& self )
     /// @details This function removes the last enchantment spawned by the character,
     /// proceeding if an enchantment was removed
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    SelfRoleContextEnchant selfContext = makeSelfRoleContextEnchant(self);
+    if (selfContext.enchantable == nullptr) return false;
 
-    std::shared_ptr<Ego::Enchantment> lastEnchant = enchantable(resolvedSelfObject(self)).getLastEnchantmentSpawned();
+    std::shared_ptr<Ego::Enchantment> lastEnchant = selfContext.enchantable->getLastEnchantmentSpawned();
     if(lastEnchant == nullptr || lastEnchant->isTerminated()) {
         return false;
     }
@@ -372,7 +297,7 @@ uint8_t scr_DisenchantTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes all enchantments on the Target character, proceeding
     /// if there were any, failing if not
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
 
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     return disenchantResolvedTarget(targetContext);
@@ -386,7 +311,7 @@ uint8_t scr_DisenchantAll( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function removes all enchantments in the game
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
 
     forEachResolvedObjectRef([](ObjectRef objectRef)
     {
@@ -407,7 +332,7 @@ uint8_t scr_DispelTargetEnchantID( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function removes all enchants from the target who match the specified RemovedByIDSZ
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
     TargetStateCompatibilityContext targetContext;
     return resolveTargetStateCompatibilityContext(self, targetContext) &&
            dispelResolvedTargetEnchants(targetContext,
@@ -424,7 +349,7 @@ uint8_t scr_SetEnchantBoostValues( script_state_t& state, ai_state_t& self )
     /// spawned by this character.
     /// Values are 8.8 fixed point
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
 
     SelfRoleContextEnchant selfContext = makeSelfRoleContextEnchant(self);
     return setSelfEnchantBoostValues(state, selfContext);
@@ -438,7 +363,7 @@ uint8_t scr_KurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This makes the target kursed
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     return kurseResolvedTarget(targetContext);
 }
@@ -451,7 +376,7 @@ uint8_t scr_UnkurseTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function unkurses the target
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     return unkurseResolvedTarget(targetContext);
 }
@@ -465,7 +390,7 @@ uint8_t scr_UnkurseTargetInventory( script_state_t& state, ai_state_t& self )
     /// @details This function preserves the legacy compatibility behavior: unkurse the
     /// target's held items plus the actor's pocket items, but not the target's pockets.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!hasLiveSelf(self)) return false;
 
     InventoryCompatibilityContext inventoryContext;
     if (!resolveInventoryCompatibilityContext(self, inventoryContext))

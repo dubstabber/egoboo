@@ -34,6 +34,7 @@ public:
     virtual ~IMovementControl() = default;
 
     virtual float getFat() const = 0;
+    virtual uint8_t getStoppedByMask() const = 0;
 
     virtual const Ego::Vector3f& getVelocity() const = 0;
     virtual void setVelocity(const Ego::Vector3f& velocity) = 0;

@@ -6,10 +6,9 @@
 namespace
 {
 
-struct OwnedObjectHandle
+struct AttributedObjectRef
 {
     ObjectRef ref = ObjectRef::Invalid;
-    std::shared_ptr<Object> object;
     ObjectAttribution attribution;
 };
 
@@ -18,14 +17,14 @@ struct DamageInvocationContext
     IDamageable* damageable = nullptr;
     TEAM_REF teamRef = static_cast<TEAM_REF>(Team::TEAM_MAX);
     DamageType damageType = DamageType::DAMAGE_DIRECT;
-    OwnedObjectHandle source;
+    AttributedObjectRef source;
 };
 
 struct HealingInvocationContext
 {
     ICharacterState* targetState = nullptr;
     IDamageable* damageable = nullptr;
-    OwnedObjectHandle healer;
+    AttributedObjectRef healer;
 };
 
 struct TargetCompatibilityContext
@@ -76,12 +75,32 @@ ObjectRef selfObjectRef(const ai_state_t& self)
     return self.getSelf();
 }
 
-bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
+bool resolveAttributedObjectRef(ObjectRef objectRef, AttributedObjectRef& handle)
 {
     handle.ref = objectRef;
-    handle.object = tryObjectShared(objectRef);
-    handle.attribution = objectAttributionFromHandle(handle.object);
-    return handle.object != nullptr;
+    if (!hasLiveObjectRef(objectRef))
+    {
+        handle.attribution = ObjectAttribution();
+        return false;
+    }
+
+    handle.attribution = objectAttributionFromRef(objectRef);
+    return true;
+}
+
+bool resolveAttributedObjectRef(ObjectRef objectRef,
+                                TEAM_REF sourceTeam,
+                                AttributedObjectRef& handle)
+{
+    handle.ref = objectRef;
+    if (!hasLiveObjectRef(objectRef))
+    {
+        handle.attribution = ObjectAttribution(sourceTeam);
+        return false;
+    }
+
+    handle.attribution = objectAttributionFromRef(objectRef, sourceTeam);
+    return true;
 }
 
 SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
@@ -141,16 +160,14 @@ bool resolveSelfAttributedDamageContext(const ai_state_t& self,
     const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf());
     if (context.damageable == nullptr ||
         selfDamageable == nullptr ||
-        selfInfo == nullptr ||
-        !resolveOwnedObjectHandle(self.getSelf(), context.source))
+        selfInfo == nullptr)
     {
         return false;
     }
 
     context.damageType = selfDamageable->getDamageTargetType();
     context.teamRef = selfInfo->getTeamRef();
-    context.source.attribution = objectAttributionFromHandle(context.source.object, context.teamRef);
-    return true;
+    return resolveAttributedObjectRef(self.getSelf(), context.teamRef, context.source);
 }
 
 ICharacterState* resolveAliveTargetState(const ai_state_t& self)
@@ -172,9 +189,7 @@ bool resolveKillDamageContext(const ai_state_t& self,
         return false;
     }
 
-    const bool resolved = resolveOwnedObjectHandle(resolvedKillSourceRef(*selfInfo, self.getSelf()), context.source);
-    context.source.attribution = objectAttributionFromHandle(context.source.object);
-    return resolved;
+    return resolveAttributedObjectRef(resolvedKillSourceRef(*selfInfo, self.getSelf()), context.source);
 }
 
 bool resolveSelfHealingContext(const ai_state_t& self,
@@ -182,7 +197,7 @@ bool resolveSelfHealingContext(const ai_state_t& self,
 {
     context.damageable = tryDamageable(self.getSelf());
     return context.damageable != nullptr &&
-           resolveOwnedObjectHandle(self.getSelf(), context.healer);
+           resolveAttributedObjectRef(self.getSelf(), context.healer);
 }
 
 bool resolveHealingTargetContext(const ai_state_t& self,
@@ -192,7 +207,7 @@ bool resolveHealingTargetContext(const ai_state_t& self,
     context.damageable = tryDamageable(self.getTarget());
     return context.targetState != nullptr &&
            context.damageable != nullptr &&
-           resolveOwnedObjectHandle(self.getSelf(), context.healer);
+           resolveAttributedObjectRef(self.getSelf(), context.healer);
 }
 
 bool pumpTargetManaFromSelf(const ai_state_t& self, int amount)
@@ -217,15 +232,13 @@ bool resolveRetaliationDamageContext(const ai_state_t& self,
     context.damageable = tryDamageable(self.getSelf());
     const ITargetInfo* retaliationInfo = tryTargetInfo(self.getTarget());
     if (context.damageable == nullptr ||
-        retaliationInfo == nullptr ||
-        !resolveOwnedObjectHandle(self.getTarget(), context.source))
+        retaliationInfo == nullptr)
     {
         return false;
     }
 
     context.teamRef = retaliationInfo->getTeamRef();
-    context.source.attribution = objectAttributionFromHandle(context.source.object, context.teamRef);
-    return true;
+    return resolveAttributedObjectRef(self.getTarget(), context.teamRef, context.source);
 }
 
 void applyRetaliationDamage(const DamageInvocationContext& context,

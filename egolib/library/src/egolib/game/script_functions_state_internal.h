@@ -30,8 +30,8 @@ namespace script_state_detail
 {
 struct SelfStateContext
 {
-    Object* object = nullptr;
     ObjectProfile* profile = nullptr;
+    const IPhysical* physical = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     const IInventoryHolder* inventory = nullptr;
     const IScriptable* scriptable = nullptr;
@@ -39,8 +39,8 @@ struct SelfStateContext
 
     bool isResolved() const
     {
-        return object != nullptr &&
-               profile != nullptr &&
+        return profile != nullptr &&
+               physical != nullptr &&
                targetInfo != nullptr &&
                inventory != nullptr &&
                scriptable != nullptr &&
@@ -50,19 +50,20 @@ struct SelfStateContext
 
 inline SelfStateContext makeSelfStateContext(const ai_state_t& self)
 {
-    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
     SelfStateContext context;
-    context.object = resolvedSelf.object;
-    context.profile = resolvedSelf.profile;
-    if (!resolvedSelf.isResolved())
+    const ObjectRef selfRef = self.getSelf();
+    const IProfiled* profiled = tryProfiled(selfRef);
+    if (profiled == nullptr || profiled->getProfile() == nullptr)
     {
         return context;
     }
 
-    context.targetInfo = static_cast<const ITargetInfo*>(resolvedSelf.object);
-    context.inventory = static_cast<const IInventoryHolder*>(resolvedSelf.object);
-    context.scriptable = static_cast<const IScriptable*>(resolvedSelf.object);
-    context.visual = static_cast<IVisualControl*>(resolvedSelf.object);
+    context.profile = profiled->getProfile().get();
+    context.physical = tryPhysical(selfRef);
+    context.targetInfo = tryTargetInfo(selfRef);
+    context.inventory = tryInventoryHolder(selfRef);
+    context.scriptable = tryScriptable(selfRef);
+    context.visual = tryVisualControl(selfRef);
     return context;
 }
 }

@@ -356,7 +356,7 @@ uint8_t scr_DebugMessage( script_state_t& state, ai_state_t& self )
     DisplayMsg_printf( "tmpx %d, tmpy %d", state.x, state.y );
     DisplayMsg_printf( "tmpdistance %d, tmpturn %d", state.distance, state.turn );
     const SelfStateContext selfContext = makeSelfStateContext(self);
-    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(selfContext.object->getFacingZ()) );
+    DisplayMsg_printf( "tmpargument %d, selfturn %d", state.argument, int32_t(selfContext.physical->getFacingZ()) );
 
     return true;
 }

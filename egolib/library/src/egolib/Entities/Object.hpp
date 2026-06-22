@@ -912,7 +912,7 @@ public:
 
     void setJumpReady(bool ready);
 
-    uint8_t getStoppedByMask() const;
+    uint8_t getStoppedByMask() const override;
 
     void setStoppedByMask(uint8_t mask);
 

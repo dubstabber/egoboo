@@ -2,17 +2,18 @@
 /// @brief Class change, spell/spellbook transforms, equip, armor, IDSz, and character self-presentation
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
 struct SelfRoleContext
 {
+    IAnimationControl* animation = nullptr;
     IDamageable* damageable = nullptr;
     IEquipmentControl* equipment = nullptr;
     IAppearanceProfile* appearance = nullptr;
     ICharacterState* characterState = nullptr;
     IEnchantable* enchantable = nullptr;
+    IMorphControl* morph = nullptr;
     ITeamMember* teamMember = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     IWallet* wallet = nullptr;
@@ -21,19 +22,6 @@ struct SelfRoleContext
 struct ClassChangeCompatibilityContext
 {
     IMorphControl* selfMorph = nullptr;
-};
-
-struct PresentationEffectsContext
-{
-    ObjectRef selfRef = ObjectRef::Invalid;
-    std::shared_ptr<IPlayingStateController> playingState;
-    std::shared_ptr<Ego::GUI::MiniMap> minimap;
-};
-
-struct SelfPresentationCompatibilityContext
-{
-    SelfRoleContext selfRole;
-    PresentationEffectsContext presentation;
 };
 
 struct InventoryCompatibilityContext
@@ -46,20 +34,17 @@ SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
 {
     SelfRoleContext context;
     const ObjectRef selfRef = self.getSelf();
+    context.animation = tryAnimationControl(selfRef);
     context.damageable = tryDamageable(selfRef);
     context.equipment = tryEquipmentControl(selfRef);
     context.appearance = tryAppearanceProfile(selfRef);
     context.characterState = tryCharacterState(selfRef);
     context.enchantable = tryEnchantable(selfRef);
+    context.morph = tryMorphControl(selfRef);
     context.teamMember = tryTeamMember(selfRef);
     context.targetInfo = tryTargetInfo(selfRef);
     context.wallet = tryWallet(selfRef);
     return context;
-}
-
-Object& resolvedSelfObject(const ai_state_t& self)
-{
-    return *resolveSelfContext(self).object;
 }
 
 SelfProfileSnapshot makeRequiredSelfProfileSnapshot(const ai_state_t& self)
@@ -70,38 +55,6 @@ SelfProfileSnapshot makeRequiredSelfProfileSnapshot(const ai_state_t& self)
 bool hasRequiredSelfProfileSnapshot(const SelfProfileSnapshot& context)
 {
     return context.isResolved();
-}
-
-IAnimationControl& animationControl(Object& object)
-{
-    return object;
-}
-
-IEnchantable& enchantable(Object& object)
-{
-    return object;
-}
-
-IMorphControl& morphControl(Object& object)
-{
-    return object;
-}
-
-PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self)
-{
-    PresentationEffectsContext context;
-    context.selfRef = self.getSelf();
-    context.playingState = EngineContext::get().tryActivePlayingState();
-    context.minimap = context.playingState ? context.playingState->getMiniMap() : nullptr;
-    return context;
-}
-
-SelfPresentationCompatibilityContext makeSelfPresentationCompatibilityContext(const ai_state_t& self)
-{
-    SelfPresentationCompatibilityContext context;
-    context.selfRole = makeSelfRoleContext(self);
-    context.presentation = makePresentationEffectsContext(self);
-    return context;
 }
 
 bool setSelfDamageType(SelfRoleContext& selfContext, DamageType damageType)
@@ -152,26 +105,6 @@ bool setSelfMoney(const script_state_t& state, SelfRoleContext& selfContext)
     return true;
 }
 
-bool applySelfDamageType(SelfPresentationCompatibilityContext& context, DamageType damageType)
-{
-    return setSelfDamageType(context.selfRole, damageType);
-}
-
-bool markSelfAsEquipped(SelfPresentationCompatibilityContext& context)
-{
-    return markSelfEquipped(context.selfRole);
-}
-
-bool applySelfArmorChange(script_state_t& state, SelfPresentationCompatibilityContext& context)
-{
-    return changeSelfArmor(state, context.selfRole);
-}
-
-bool applySelfMoney(const script_state_t& state, SelfPresentationCompatibilityContext& context)
-{
-    return setSelfMoney(state, context.selfRole);
-}
-
 ClassChangeCompatibilityContext makeClassChangeCompatibilityContext(IMorphControl& selfObject)
 {
     ClassChangeCompatibilityContext context;
@@ -182,7 +115,7 @@ ClassChangeCompatibilityContext makeClassChangeCompatibilityContext(IMorphContro
 bool changeSelfClass(const ClassChangeCompatibilityContext& context, ObjectProfileRef profileID)
 {
     if (context.selfMorph == nullptr ||
-        !EngineContext::get().profileSystem().isLoaded(profileID))
+        !activeProfileSystem().isLoaded(profileID))
     {
         return false;
     }
@@ -322,10 +255,11 @@ uint8_t scr_BecomeSpell( script_state_t& state, ai_state_t& self )
     /// content.
     /// TOO COMPLICATED TO EXPLAIN.  SHOULDN'T EVER BE NEEDED BY YOU.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    if (selfContext.enchantable == nullptr || selfContext.morph == nullptr) return false;
 
-    becomeSpell(enchantable(resolvedSelfObject(self)),
-                morphControl(resolvedSelfObject(self)),
+    becomeSpell(*selfContext.enchantable,
+                *selfContext.morph,
                 ObjectProfileRef(self.content),
                 self);
 
@@ -343,14 +277,17 @@ uint8_t scr_BecomeSpellbook( script_state_t& state, ai_state_t& self )
     /// TOO COMPLICATED TO EXPLAIN. Just copy the spells that already exist, and don't change
     /// them too much
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    SelfRoleContext roleContext = makeSelfRoleContext(self);
+    if (roleContext.enchantable == nullptr ||
+        roleContext.morph == nullptr ||
+        roleContext.animation == nullptr) return false;
 
     SelfProfileSnapshot selfContext = makeRequiredSelfProfileSnapshot(self);
     if (!hasRequiredSelfProfileSnapshot(selfContext)) return false;
 
-    becomeSpellbook(enchantable(resolvedSelfObject(self)),
-                    morphControl(resolvedSelfObject(self)),
-                    animationControl(resolvedSelfObject(self)),
+    becomeSpellbook(*roleContext.enchantable,
+                    *roleContext.morph,
+                    *roleContext.animation,
                     selfContext.profileRef,
                     selfContext.spellEffectSkin,
                     self);
@@ -370,10 +307,11 @@ uint8_t scr_ChangeTargetClass( script_state_t& state, ai_state_t& self )
     /// MODULE TO MODULE.
     /// USAGE: This is intended as a way to incorporate more player classes into the game.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    if (selfContext.morph == nullptr) return false;
 
     const auto profileID = ObjectProfileRef(static_cast<PRO_REF>(state.argument));
-    const ClassChangeCompatibilityContext classContext = makeClassChangeCompatibilityContext(resolvedSelfObject(self));
+    const ClassChangeCompatibilityContext classContext = makeClassChangeCompatibilityContext(*selfContext.morph);
 
     /// @details This function polymorphs a character permanently so that it can be exported properly
     /// A character turned into a frog with this function will also export as a frog!
@@ -389,8 +327,6 @@ uint8_t scr_CostTargetItemID( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the target has a matching held item or the
     /// actor has a matching pocket item, and poofs that item. This preserves the
     /// legacy actor-pocket compatibility behavior for one-use items such as keys.
-
-    if (!resolveSelfContext(self).isResolved()) return false;
 
     InventoryCompatibilityContext inventoryContext;
     if (!resolveInventoryCompatibilityContext(self, inventoryContext))
@@ -417,10 +353,8 @@ uint8_t scr_Equip( script_state_t& state, ai_state_t& self )
     /// @details This function flags the character as being equipped.
     /// This is used by equipment items when they are placed in the inventory
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
-    return markSelfAsEquipped(selfContext);
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    return markSelfEquipped(selfContext);
 }
 
 
@@ -432,10 +366,8 @@ uint8_t scr_ChangeArmor( script_state_t& state, ai_state_t& self )
     /// @details This function changes the character's armor.
     /// Sets tmpargument as the old type and tmpx as the new type
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
-    return applySelfArmorChange(state, selfContext);
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    return changeSelfArmor(state, selfContext);
 }
 
 
@@ -446,10 +378,8 @@ uint8_t scr_SetDamageType( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function lets a weapon change the type of damage it inflicts
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
-    return applySelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    return setSelfDamageType(selfContext, static_cast<DamageType>(state.argument % DAMAGE_COUNT));
 }
 
 
@@ -460,10 +390,8 @@ uint8_t scr_SetMoney( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Permanently sets the money for the character to tmpargument
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    SelfPresentationCompatibilityContext selfContext = makeSelfPresentationCompatibilityContext(self);
-    return applySelfMoney(state, selfContext);
+    SelfRoleContext selfContext = makeSelfRoleContext(self);
+    return setSelfMoney(state, selfContext);
 }
 
 
@@ -475,8 +403,6 @@ uint8_t scr_IfCharacterWasABook( script_state_t& state, ai_state_t& self )
     /// @details This function proceeds if the base model is the same as the current
     /// model or if the base model is SPELLBOOK
     /// USAGE: USED BY THE MORPH SPELL. Not much use elsewhere
-
-    if (!resolveSelfContext(self).isResolved()) return false;
 
     SelfProfileSnapshot selfContext = makeRequiredSelfProfileSnapshot(self);
     if (!hasRequiredSelfProfileSnapshot(selfContext)) return false;
