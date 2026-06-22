@@ -119,7 +119,7 @@ thin `egoboo.h` in `graphic_mad.h`/`graphic_prt.h` (they use `gfx_rv`). Used `cl
 
 **Lesson (important):** per-header `-fsyntax-only` selfcheck is necessary but NOT sufficient — it cannot see
 a *source* file that was leeching transitive includes through a header you just narrowed. After narrowing,
-run a **keep-going full build** (`cmake --build build -j4 -- -k`) and grep real `error:` lines to catch
+run a **keep-going full build** (`cmake --build build -j20 -- -k`) and grep real `error:` lines to catch
 those. Pass 2 caught exactly one: `FileFormats/SpawnFile/SpawnFileReaderImpl.cpp` lost `Ego::trim_ws`
 (→`Core/StringUtilities.hpp`) and `Info<float>::Grid::Size()` (→`FileFormats/map_file.h`, the grid `Info`
 template specialization — NOT `Mesh/Info.hpp`'s `Ego::MeshInfo`) via `Team.hpp`. Two common leech symbols:

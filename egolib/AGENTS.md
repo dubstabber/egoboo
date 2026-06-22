@@ -11,12 +11,12 @@ Additional instructions for work under `egolib/`.
 
 ## High-risk hotspots
 
-The live list of large TUs (files >1000 lines) and the link-layout/global-state figures live in **one
-authoritative place** — root `AGENTS.md` ("High-Risk Hotspots", "Link layout", "Global State") plus
-`refactoring-documents/CODEBASE-HEALTH-STATUS.md` §3. This file deliberately keeps **no parallel copy** of
-those numbers (it drifted stale once). Before working in the large script-dispatch (`game/script_functions_*.c`),
-`Entities/Object.hpp`, physics-collision (`particle_collision.c`/`ObjectPhysics.cpp`), `vfs.c`, or
-`game/Graphics/ObjectGraphics.cpp` areas, read those docs first.
+The live source-size, link-layout, and global-state figures live in root `AGENTS.md` and
+`refactoring-documents/CODEBASE-HEALTH-STATUS.md`. This file deliberately keeps no parallel copy of those
+numbers. Production runtime files are currently below 1,000 lines, so treat interface breadth and coupling
+as the risk, not raw line count. Before working in script dispatch (`game/script_functions_*.c`),
+`Entities/Object.hpp`, physics collision, VFS, object profiles, model loading, or game graphics, read those
+docs first.
 
 ## Global-state constraints
 
@@ -26,7 +26,7 @@ those numbers (it drifted stale once). Before working in the large script-dispat
 
 ## Validation expectations
 
-- The build is parallel-safe on this machine (i7-13700HX, 24 threads) — use `-j20`. (The old `-j4` cap was a laptop stability limit and no longer applies.)
+- The build is parallel-safe on this machine (i7-13700HX, 24 threads) — use `-j20`.
 - Prefer targeted CMake builds for touched targets.
 - If your change can affect content loading, module loading, VFS behavior, object profiles, or scripts, run at least:
   - `./build/products/x64/bin/egoboo-content-validator --data-dir "$PWD/data" --module test.mod`

@@ -38,7 +38,7 @@ The validator currently checks:
 - `spawn.txt` parsing
 - local object enumeration under module `objects/`
 - object profile loading through lightweight `ObjectProfile::loadFromFile(...)`
-- presence of `data.txt` and one object model candidate (`tris.gltf`, `tris.glb`, or `tris.md2`; MD2 is the only loadable format until the glTF/GLB loader lands)
+- presence of `data.txt` and one object model candidate (`tris.gltf`, `tris.glb`, or `tris.md2`); glTF/GLB and MD2 are loadable through the current `ObjectModelLoader`
 - narrow semantic `data.txt` validation for raw `DRES`, `SKIN`, and `LEVL` tagged expansions plus loaded skin-override and ammo-vs-max-ammo invariants
 - spawn-referenced object resolution against `mp_objects`
 - object script compilation or fallback to `mp_data/script.txt`
@@ -116,7 +116,7 @@ This is an execution-environment note, not a gameplay bug.
 
 ## 5. Latest full baseline results
 
-**Last verified:** 2026-06-08. Regenerate these numbers with:
+**Last verified:** 2026-06-22. Regenerate these numbers with:
 
 ```bash
 HOME=/tmp/egoboo-home \
@@ -216,7 +216,8 @@ The validator can now also emit `profile_field_invalid` warnings for a small set
 
 ## 8. Highest-error modules
 
-Top failing modules from the 2026-06-08 refresh:
+Top failing modules from the detailed baseline table, with top-level totals
+rechecked on 2026-06-22:
 
 | Module | Errors | Warnings | Spawn Entries |
 | --- | ---: | ---: | ---: |
@@ -233,11 +234,11 @@ Top failing modules from the 2026-06-08 refresh:
 
 `palwater.mod` is no longer in this table: it now passes with `errors=0` after the 2026-04-15 spawn-reference repair batch.
 
-Per-module error and warning counts above are aggregated from the validator's detailed `error [module]` / `warning [module]` event lines (these sum exactly to the 245/10 run totals). The current validator build only prints an `[ok]`/`[fail]` summary row — and therefore a live `spawn_entries` figure — for 21 of the 42 modules; `archmage.mod`, `zippy.mod`, and `advent.mod` are not among them, so their `Spawn Entries` values here are carried over from the prior baseline (their `spawn.txt` content is unchanged) and are not re-confirmed by the 2026-06-08 run.
+Per-module error and warning counts above are aggregated from the validator's detailed `error [module]` / `warning [module]` event lines (these sum exactly to the 245/10 run totals). The current validator build prints `[ok]`/`[fail]` summary rows, but some `Spawn Entries` values in this table are still carried over from the prior detailed baseline where the module's `spawn.txt` content is unchanged.
 
 ## 9. Most common unresolved spawn object names
 
-The most repeated unresolved object names (2026-06-08 run) were:
+The most repeated unresolved object names from the detailed baseline were:
 
 | Object name | Count |
 | --- | ---: |

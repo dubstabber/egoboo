@@ -1,8 +1,9 @@
-This directory contains a model verifier for Egoboo.
+This directory contains a legacy Perl model verifier for Egoboo.
 
 It verifies that all frames of the found models are what Egoboo expects.
 
-It requires Perl.
+It requires Perl and is not part of the main CMake build. The active content
+verification path is `egoboo-content-validator`.
 
 ## Usage
 

@@ -1,6 +1,6 @@
-This directory contains an object viewer for Egoboo.
+This directory contains a legacy Qt object viewer for Egoboo MD2 assets.
 
-It requires Qt 5.2.
+It requires Qt 5.2 and is not part of the main CMake build.
 
 This is based on [EOV](https://github.com/mohiji/eov).
 

@@ -38,7 +38,7 @@ On Fedora, the practical package set is usually close to:
 
 ```bash
 sudo dnf install \
-  cmake gcc gcc-c++ make pkgconf-pkg-config \
+  cmake ninja-build ccache gcc gcc-c++ make pkgconf-pkg-config \
   SDL2-devel SDL2_image-devel SDL2_mixer-devel SDL2_ttf-devel \
   mesa-libGL-devel
 ```
@@ -50,8 +50,10 @@ If your environment differs, inspect `idlib-game-engine/library/CMakeLists.txt` 
 Use the root CMake project from the repository root:
 
 ```bash
-cmake -S . -B build
-cmake --build build -j4
+cmake -S . -B build -G Ninja \
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake --build build -j20
 ```
 
 The default runtime outputs land in:
@@ -69,9 +71,20 @@ If you want a clean rebuild:
 
 ```bash
 rm -rf build
-cmake -S . -B build
-cmake --build build -j4
+cmake -S . -B build -G Ninja \
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake --build build -j20
 ```
+
+Run tests after a successful build:
+
+```bash
+ctest --test-dir build -j20 --output-on-failure
+```
+
+The test harness is parallel-safe. Each test process gets an isolated
+`EGOBOO_USER_DIR`, so `ctest -j20` is appropriate on this 24-thread machine.
 
 ## Run the game from the source tree
 

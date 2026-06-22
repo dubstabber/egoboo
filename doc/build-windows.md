@@ -32,7 +32,7 @@ Install a MinGW toolchain first. On Fedora this is typically close to:
 
 ```bash
 sudo dnf install \
-  mingw64-gcc mingw64-gcc-c++ mingw64-binutils \
+  ninja-build mingw64-gcc mingw64-gcc-c++ mingw64-binutils \
   mingw64-winpthreads-static
 ```
 
@@ -46,18 +46,18 @@ which x86_64-w64-mingw32-g++
 Configure with the checked-in toolchain file:
 
 ```bash
-cmake -S . -B build-windows \
+cmake -S . -B build-windows -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/mingw-w64-x86_64.cmake"
-cmake --build build-windows -j4
+cmake --build build-windows -j20
 ```
 
 If you want a clean rebuild:
 
 ```bash
 rm -rf build-windows
-cmake -S . -B build-windows \
+cmake -S . -B build-windows -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/mingw-w64-x86_64.cmake"
-cmake --build build-windows -j4
+cmake --build build-windows -j20
 ```
 
 Outputs land under:
@@ -152,6 +152,8 @@ Minimum expected bundle layout:
 Check these first:
 
 1. `git submodule update --init --recursive`
+   - For the normal superproject build, the top-level submodules are enough:
+     `git submodule update --init data external idlib idlib-game-engine`
 2. `which x86_64-w64-mingw32-gcc` and `which x86_64-w64-mingw32-g++` for Fedora cross-builds
 3. `ls external/mingw/include/SDL2/SDL.h`
 4. `ls external/mingw/lib/libSDL2.a`

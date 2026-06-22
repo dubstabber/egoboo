@@ -93,18 +93,13 @@ The historical shape of the runtime was defined by three large mutable globals �
 
 - `_currentModule` — 0 direct references in active runtime code; all consumers go through `GameSessionContext` / `GameModule` accessor surfaces.
 - `_gameEngine` — 0 direct references in active runtime code; remaining mentions are in commented-out documentation.
-- `update_wld` — 3 residue references in `Script/script.c`, `game/Graphics/ObjectGraphics.hpp`, and `Entities/Particle.hpp` as a legacy debug label, not active global coupling.
+- `update_wld` — 4 residue references in `Script/script_driver.c`, `game/Graphics/ObjectGraphics.hpp`, and `Entities/Particle.hpp` as legacy debug/comment labels, not active global coupling.
 
-Secondary runtime globals that still exist:
-
-- `clock_chr_stat`, `clock_enc_stat`
-- `overrideslots`
-- `g_importList`
-- weather/fog/animated tile globals in `game.h`
+The old secondary session globals (`clock_chr_stat`, `clock_enc_stat`, `overrideslots`, `g_importList`) are no longer present under those names. Weather, fog, and animated-tile state are owned through module/session surfaces.
 
 ### Remaining coupling risk
 
-The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count has fallen to ~632 `::get()` call sites (from ~1,150). A service-interface layer is partially in place — 15 services are now seamed through `EngineContext` (`IAudioSystem`, `ICameraSystem`, `IInputSystem`, `IPerkHandler`, `IImageManager`, `IFontManager`, `IGraphicsSystem`, `ITextureManager`, `IParticleHandler`, `IProfileSystem`, `IGFX`, `IBillboardSystem`, `ITextureAtlasManager`, plus config and logging) — but the context wrappers remain the dominant DIP boundary until the remaining `::get()` call sites migrate onto them (roadmap T1.3).
+The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count is about 623 `::get()` call sites in `egolib/library/src` (435 `EngineContext::get()`, 133 `GameSessionContext::get()`). A service-interface layer is partially in place — 15 services are now seamed through `EngineContext` (`IAudioSystem`, `ICameraSystem`, `IInputSystem`, `IPerkHandler`, `IImageManager`, `IFontManager`, `IGraphicsSystem`, `ITextureManager`, `IParticleHandler`, `IProfileSystem`, `IGFX`, `IBillboardSystem`, `ITextureAtlasManager`, plus config and logging) — but the context wrappers remain the dominant DIP boundary until the remaining direct singleton calls migrate onto them (roadmap T1.3).
 
 ## 7. Module runtime
 
@@ -204,7 +199,7 @@ The result is not merely mixed language style. It is mixed ownership style:
 
 ### Pain point 1: singleton-mediated dependency graph
 
-Raw-global reach into `_currentModule` / `_gameEngine` is gone, but ~632 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to concrete singletons, not declared constructor parameters.
+Raw-global reach into `_currentModule` / `_gameEngine` is gone, but about 623 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to context or concrete singletons, not declared constructor parameters.
 
 ### Pain point 2: initialization order as architecture
 

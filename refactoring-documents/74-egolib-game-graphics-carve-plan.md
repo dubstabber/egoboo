@@ -6,6 +6,10 @@ predicted), egolib-game-graphics = 17 TUs, egolib-library 77 → 62, 0 forbidden
 archives, ctest 876/876, validator 0/0. See `71-completed-passes-log.md` for the full landed record.
 Paired with a VM compile→execute characterization test (safety-net, landed first).
 
+This is a completed historical plan. Counts and verification totals in this file
+are the values at the time of the carve; use `CODEBASE-HEALTH-STATUS.md` for the
+current archive and test counts.
+
 ## Goal
 
 Carve the `game/Graphics` render-pass cluster out of `egolib-library` into a new above-library

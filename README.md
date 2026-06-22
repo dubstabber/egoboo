@@ -113,25 +113,25 @@ paths.
 
 Quick start:
 
-Linux (Ninja + ccache recommended; pick a `-j` for your core count):
+Linux (Ninja + ccache recommended; this workstation is safe at `-j20`):
 
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-cmake --build build -j8
-ctest --test-dir build --output-on-failure
+cmake --build build -j20
+ctest --test-dir build -j20 --output-on-failure
 ```
 
-`ctest` runs serially by default, which is what you want here — several
-fixtures share writable user-data paths and fail spuriously under high
-`ctest -j`. Keep test runs serial for a trustworthy baseline.
+The test runner is parallel-safe in the current harness. Each test process gets
+an isolated temp user directory via `EGOBOO_USER_DIR`, so `ctest -j20` is the
+normal local baseline on this machine.
 
 Windows cross-build with `mingw-w64`:
 
 ```bash
 cmake -S . -B build-windows -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/mingw-w64-x86_64.cmake"
-cmake --build build-windows -j8
+cmake --build build-windows -j20
 ```
 
 Run the cross-built Windows binary through Wine from Linux:

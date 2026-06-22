@@ -14,11 +14,11 @@
 
 ## Why this front
 
-`egolib-library` is one monolithic `add_library` (`egolib/library/CMakeLists.txt`). The
-blocker to splitting it into idlib-shaped layered sub-libraries is **include coupling**,
-not CMake. After the EngineContext service-hub fan-in was reduced to 8 leaves (doc 71,
-service-hub slice), the next lib-split blocker shifted to the **Entities layer reaching
-*up* into the game layer** via `#include`.
+At the time of this front, `egolib-library` was still the monolithic gameplay archive.
+The blocker to splitting it into idlib-shaped layered sub-libraries was **include
+coupling**, not CMake. After the EngineContext service-hub fan-in was reduced to 8 leaves
+(doc 71, service-hub slice), the next lib-split blocker shifted to the **Entities layer
+reaching *up* into the game layer** via `#include`.
 
 The structural harm is concentrated in **propagating headers** — a header's `game/`
 include flows into *every* translation unit that includes it. The Entities layer has four
@@ -45,7 +45,7 @@ Examples hit in this front:
   for the physics functions **and** `PhysicalConstants.hpp` symbols.
 
 **Method:** after removing a propagating include, run a *keep-going* build
-(`cmake --build build -j4 -- -k`) to enumerate the **complete** free-rider set in one pass
+(`cmake --build build -j20 -- -k`) to enumerate the **complete** free-rider set in one pass
 (per-TU first errors across all TUs, not just the first), then add the precise direct
 include each free-rider actually uses (include-what-you-use). For game-layer free-riders
 this is a clean `game → game` or `game → egolib-core` include — no new upward coupling.
