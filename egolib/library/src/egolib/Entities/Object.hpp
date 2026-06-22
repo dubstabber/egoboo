@@ -129,6 +129,8 @@ public:
 
     const Ego::Vector3f& getSpawnPosition() const override;
 
+    const Ego::Vector3f& getOldPosition() const override;
+
     void updatePhysics();
 
     bool attachToPlatform(ObjectRef platformRef);
@@ -260,6 +262,8 @@ public:
     ModelAction resolveModelAction(int actionIndex) const override;
 
     bool startAnimation(ModelAction action, bool actionReady, bool overrideAction) override;
+
+    bool setEncodedActionFrame(int actionIndex, int encodedFrame) override;
 
     void setActionKeep(bool val) override;
 
@@ -699,6 +703,8 @@ public:
     void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin) override;
 
     ObjectProfileRef getProfileID() const;
+
+    PRO_REF getProfileRef() const override;
 
     bool isInvictusDirection(Facing direction) const;
 

@@ -31,8 +31,9 @@ namespace script_action_detail
 struct SelfActionContext
 {
     ObjectRef selfRef = ObjectRef::Invalid;
-    Object* object = nullptr;
     ObjectProfile* profile = nullptr;
+    PRO_REF profileID = INVALID_PRO_REF;
+    const IPhysical* physical = nullptr;
     IAnimationControl* animation = nullptr;
     IVisualControl* visual = nullptr;
     ITeamMember* teamMember = nullptr;
@@ -41,8 +42,8 @@ struct SelfActionContext
     bool isResolved() const
     {
         return selfRef != ObjectRef::Invalid &&
-               object != nullptr &&
                profile != nullptr &&
+               physical != nullptr &&
                animation != nullptr &&
                visual != nullptr &&
                teamMember != nullptr &&
@@ -51,12 +52,12 @@ struct SelfActionContext
 
     const Ego::Vector3f& oldPosition() const
     {
-        return object->getOldPosition();
+        return physical->getOldPosition();
     }
 
     PRO_REF profileRef() const
     {
-        return object->getProfileID().get();
+        return profileID;
     }
 
     SoundID soundID(int soundIndex) const
@@ -84,24 +85,25 @@ inline SelfActionContext makeSelfActionContext(const ai_state_t& self)
 {
     SelfActionContext context;
     context.selfRef = self.getSelf();
-    context.object = tryObject(context.selfRef);
-    if (context.object == nullptr)
+    const IProfiled* profiled = tryProfiled(context.selfRef);
+    if (profiled == nullptr)
     {
         return context;
     }
 
-    const std::shared_ptr<ObjectProfile> profile = context.object->getProfile();
+    const std::shared_ptr<ObjectProfile>& profile = profiled->getProfile();
     if (profile == nullptr)
     {
-        context.object = nullptr;
         return context;
     }
 
     context.profile = profile.get();
-    context.animation = static_cast<IAnimationControl*>(context.object);
-    context.visual = static_cast<IVisualControl*>(context.object);
-    context.teamMember = static_cast<ITeamMember*>(context.object);
-    context.targetInfo = static_cast<const ITargetInfo*>(context.object);
+    context.profileID = profiled->getProfileRef();
+    context.physical = tryPhysical(context.selfRef);
+    context.animation = tryAnimationControl(context.selfRef);
+    context.visual = tryVisualControl(context.selfRef);
+    context.teamMember = tryTeamMember(context.selfRef);
+    context.targetInfo = tryTargetInfo(context.selfRef);
     return context;
 }
 }

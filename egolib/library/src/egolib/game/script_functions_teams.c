@@ -30,14 +30,9 @@ struct ModuleEffectsContext
 SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
 {
     SelfRoleContext context;
-    Object* selfObject = tryObject(self.getSelf());
-    if (selfObject == nullptr)
-    {
-        return context;
-    }
-
-    context.targetInfo = static_cast<const ITargetInfo*>(selfObject);
-    context.teamMember = static_cast<ITeamMember*>(selfObject);
+    const ObjectRef selfRef = self.getSelf();
+    context.targetInfo = tryTargetInfo(selfRef);
+    context.teamMember = tryTeamMember(selfRef);
     return context;
 }
 

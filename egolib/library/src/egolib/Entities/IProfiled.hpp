@@ -1,5 +1,7 @@
 #pragma once
 
+#include "egolib/typedef.h"  // PRO_REF
+
 #include <memory>
 
 class ObjectProfile;
@@ -18,4 +20,5 @@ public:
     *        The ObjectProfile can change for polymorphing objects.
     **/
     virtual const std::shared_ptr<ObjectProfile>& getProfile() const = 0;
+    virtual PRO_REF getProfileRef() const = 0;
 };

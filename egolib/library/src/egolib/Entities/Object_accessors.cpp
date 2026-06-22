@@ -55,6 +55,19 @@ bool Object::startAnimation(ModelAction action, bool actionReady, bool overrideA
     return inst.startAnimation(action, actionReady, overrideAction);
 }
 
+bool Object::setEncodedActionFrame(int actionIndex, int encodedFrame)
+{
+    const uint16_t interpolationStep = encodedFrame & 3;
+    const int frameAlong = encodedFrame >> 2;
+
+    if (!startAnimation(resolveModelAction(actionIndex), true, true))
+    {
+        return false;
+    }
+
+    return inst.setFrameFull(frameAlong, interpolationStep);
+}
+
 void Object::setActionKeep(bool val) { inst.setActionKeep(val); }
 
 ModelAction Object::getCurrentAnimation() const { return inst.getCurrentAnimation(); }
@@ -103,6 +116,8 @@ const Ego::Vector3f& Object::getVelocity() const { return PhysicsData::getVeloci
 void Object::setVelocity(const Ego::Vector3f& velocity) { PhysicsData::setVelocity(velocity); }
 
 const Ego::Vector3f& Object::getSpawnPosition() const { return Ego::Physics::Collidable::getSpawnPosition(); }
+
+const Ego::Vector3f& Object::getOldPosition() const { return Ego::Physics::Collidable::getOldPosition(); }
 
 float Object::getPosX() const { return Ego::Physics::Collidable::getPosX(); }
 
@@ -437,6 +452,8 @@ void Object::setSavedShadowSize(uint32_t shadowSize) { shadow_size_save = shadow
 // ---------------------------------------------------------------------------
 
 ObjectProfileRef Object::getProfileID() const { return _profileID; }
+
+PRO_REF Object::getProfileRef() const { return getProfileID().get(); }
 
 // ---------------------------------------------------------------------------
 // Damage type / threshold

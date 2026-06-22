@@ -2694,3 +2694,23 @@ back-edge proof was required. Singleton metrics are now **613** `::get()` lines,
 `EngineContext::get()` and **133** `GameSessionContext::get()` lines. Gates: `cmake --build build -j20`
 clean; focused script/object role slice **226/226**; ctest **912/912**; validator `test.mod` 0/0;
 `git diff --check` clean.
+
+### Pass 263 — Script action role-context closure (2026-06-22)
+
+Continued the stable-first `Object` role program in the action/movement/team script helpers without
+changing script opcode APIs, source placement, CMake archive membership, or spawn/enchant ownership
+behavior. `SelfActionContext` no longer stores a concrete `Object*`; it now resolves profile, physical,
+animation, visual, team-member, and target-info role surfaces, with `IProfiled::getProfileRef()` and
+`IPhysical::getOldPosition()` covering the remaining profile-id and old-position reads.
+
+`IAnimationControl` gained a narrow `setEncodedActionFrame(...)` wrapper so `scr_SetFrame` can publish the
+legacy encoded `ACTION_DA` frame through the animation role instead of a concrete object/graphics lookup.
+Team self-context construction now uses existing role resolvers for `ITargetInfo` and `ITeamMember`.
+Concrete object handles remain intentionally unchanged in the legacy end-message/minimap-icon and
+spawn/enchant ownership pockets.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Runtime source lines are now **128,594**, and `Object.hpp` is **994** lines;
+singleton metrics remain **613** `::get()` lines, including **426** `EngineContext::get()` and **133**
+`GameSessionContext::get()` lines. Gates: `cmake --build build -j20` clean; focused action/movement/team
+role slice **23/23**; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.

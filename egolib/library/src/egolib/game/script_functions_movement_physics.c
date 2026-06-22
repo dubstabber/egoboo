@@ -4,24 +4,6 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/script_functions_movement_internal.h"
 
-namespace
-{
-bool setEncodedFrame(Object& object, int encodedFrame)
-{
-    const uint16_t interpolationStep = encodedFrame & 3;
-    const int frameAlong = encodedFrame >> 2;
-
-    const ModelAction action = object.getProfile()->getModel()->getAction(ACTION_DA);
-    if (!object.getGraphics().setAction(action, true, true))
-    {
-        return false;
-    }
-
-    return object.getGraphics().setFrameFull(frameAlong, interpolationStep);
-}
-}
-
-
 //--------------------------------------------------------------------------------------------
 uint8_t scr_SetXY( script_state_t& state, ai_state_t& self )
 {
@@ -102,9 +84,9 @@ uint8_t scr_SetFrame( script_state_t& state, ai_state_t& self )
     const SelfMovementContext selfContext = makeSelfMovementContext(self);
     if (!selfContext.isResolved()) return false;
 
-    Object* selfObject = tryObject(self.getSelf());
-    return selfObject != nullptr &&
-           setEncodedFrame(*selfObject, state.argument);
+    IAnimationControl* selfAnimation = tryAnimationControl(self.getSelf());
+    return selfAnimation != nullptr &&
+           selfAnimation->setEncodedActionFrame(ACTION_DA, state.argument);
 }
 
 
