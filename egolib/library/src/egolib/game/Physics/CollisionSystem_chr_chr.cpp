@@ -28,16 +28,16 @@ namespace Physics
 // get_recoil_factors stays a file-scope static: it is called only from do_chr_chr_collision below.
 static void get_recoil_factors( float wta, float wtb, float * recoil_a, float * recoil_b );
 
-bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, const float tmin, const float tmax)
+bool do_chr_chr_collision(Object& objectA, Object& objectB, const float tmin, const float tmax)
 {
-    const ObjectRef ichr_a = objectA->getObjRef();
-    const ObjectRef ichr_b = objectB->getObjRef();
-    const oct_bb_t& objectAMinCollision = objectA->getMinCollisionVolume();
-    const oct_bb_t& objectBMinCollision = objectB->getMinCollisionVolume();
+    const ObjectRef ichr_a = objectA.getObjRef();
+    const ObjectRef ichr_b = objectB.getObjRef();
+    const oct_bb_t& objectAMinCollision = objectA.getMinCollisionVolume();
+    const oct_bb_t& objectBMinCollision = objectB.getMinCollisionVolume();
 
     // platform interaction. if the onwhichplatform_ref is set, then
     // all collision tests have been met
-    if ( ichr_a == objectB->onwhichplatform_ref )
+    if ( ichr_a == objectB.onwhichplatform_ref )
     {
         // this is handled in ObjectPhysics.cpp
         return true;
@@ -45,45 +45,45 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     // platform interaction. if the onwhichplatform_ref is set, then
     // all collision tests have been met
-    if ( ichr_b == objectA->onwhichplatform_ref )
+    if ( ichr_b == objectA.onwhichplatform_ref )
     {
         // this is handled in ObjectPhysics.cpp
         return true;
     }
 
     // items can interact with platforms but not with other characters/objects
-    if ( (objectA->isItem() && !objectA->isPlatform()) || (objectB->isItem() && !objectB->isPlatform()) ) {
+    if ( (objectA.isItem() && !objectA.isPlatform()) || (objectB.isItem() && !objectB.isPlatform()) ) {
         return false;
     }
 
     // don't interact with your mount, or your held items
-    if (ichr_a == objectB->getHolderRef() || ichr_b == objectA->getHolderRef()) {
+    if (ichr_a == objectB.getHolderRef() || ichr_b == objectA.getHolderRef()) {
         return false;
     }
 
     // don't do anything if there is no interaction strength
-    if (0.0f == objectA->getInitialBump().size || 0.0f == objectB->getInitialBump().size) {
+    if (0.0f == objectA.getInitialBump().size || 0.0f == objectB.getInitialBump().size) {
         return false;
     }
 
-    float interaction_strength = 0.1f + (0.9f-objectA->phys.bumpdampen) * (0.9f-objectB->phys.bumpdampen);
+    float interaction_strength = 0.1f + (0.9f-objectA.phys.bumpdampen) * (0.9f-objectB.phys.bumpdampen);
     
     //ZF> This was supposed to make ghosts more insubstantial, but it also affects invisible characters
-    //interaction_strength *= objectA->inst.alpha * idlib::fraction<float,1,255>();
-    //interaction_strength *= objectB->inst.alpha * idlib::fraction<float,1,255>();
+    //interaction_strength *= objectA.inst.alpha * idlib::fraction<float,1,255>();
+    //interaction_strength *= objectB.inst.alpha * idlib::fraction<float,1,255>();
 
     // reduce your interaction strength if you have just detached from an object
-    if ( objectA->getDismountObject() == ichr_b )
+    if ( objectA.getDismountObject() == ichr_b )
     {
-        float dismount_lerp = ( float )objectA->getDismountTimer() / static_cast<float>(Object::PHYS_DISMOUNT_TIME);
+        float dismount_lerp = ( float )objectA.getDismountTimer() / static_cast<float>(Object::PHYS_DISMOUNT_TIME);
         dismount_lerp = Ego::Math::constrain( dismount_lerp, 0.0f, 1.0f );
 
         interaction_strength *= dismount_lerp;
     }
 
-    if ( objectB->getDismountObject() == ichr_a )
+    if ( objectB.getDismountObject() == ichr_a )
     {
-        float dismount_lerp = ( float )objectB->getDismountTimer() / static_cast<float>(Object::PHYS_DISMOUNT_TIME);
+        float dismount_lerp = ( float )objectB.getDismountTimer() / static_cast<float>(Object::PHYS_DISMOUNT_TIME);
         dismount_lerp = Ego::Math::constrain( dismount_lerp, 0.0f, 1.0f );
 
         interaction_strength *= dismount_lerp;
@@ -91,17 +91,17 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     // seriously reduce the interaction_strength with mounts
     // this thould allow characters to mount certain mounts a lot easier
-    if (( objectA->isMount() && ObjectRef::Invalid == objectA->getHeldObject(SLOT_LEFT) && !objectB->isMount() ) ||
-        ( objectB->isMount() && ObjectRef::Invalid == objectB->getHeldObject(SLOT_LEFT) && !objectA->isMount() ) )
+    if (( objectA.isMount() && ObjectRef::Invalid == objectA.getHeldObject(SLOT_LEFT) && !objectB.isMount() ) ||
+        ( objectB.isMount() && ObjectRef::Invalid == objectB.getHeldObject(SLOT_LEFT) && !objectA.isMount() ) )
     {
         interaction_strength *= 0.75f;
     }
 
     // reduce the interaction strength with platforms
     // that are overlapping with the platform you are actually on
-    if ( objectB->canUsePlatforms() && objectA->isPlatform() && ObjectRef::Invalid != objectB->onwhichplatform_ref && ichr_a != objectB->onwhichplatform_ref )
+    if ( objectB.canUsePlatforms() && objectA.isPlatform() && ObjectRef::Invalid != objectB.onwhichplatform_ref && ichr_a != objectB.onwhichplatform_ref )
     {
-        float lerp_z = ( objectB->getPosZ() - ( objectA->getPosZ() + objectAMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
+        float lerp_z = ( objectB.getPosZ() - ( objectA.getPosZ() + objectAMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain(lerp_z, -1.0f, 1.0f);
 
         if ( lerp_z >= 0.0f )
@@ -114,9 +114,9 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
         }
     }
 
-    if ( objectA->canUsePlatforms() && objectB->isPlatform() && ObjectRef::Invalid != objectA->onwhichplatform_ref && ichr_b != objectA->onwhichplatform_ref )
+    if ( objectA.canUsePlatforms() && objectB.isPlatform() && ObjectRef::Invalid != objectA.onwhichplatform_ref && ichr_b != objectA.onwhichplatform_ref )
     {
-        float lerp_z = ( objectA->getPosZ() - ( objectB->getPosZ() + objectBMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
+        float lerp_z = ( objectA.getPosZ() - ( objectB.getPosZ() + objectBMinCollision._maxs[OCT_Z] ) ) / PLATTOLERANCE;
         lerp_z = Ego::Math::constrain( lerp_z, -1.0f, +1.0f );
 
         if ( lerp_z >= 0.0f )
@@ -133,13 +133,13 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 	oct_bb_t map_bb_a, map_bb_b;
 
     // shift the character bounding boxes to be centered on their positions
-    map_bb_a = idlib::translate(objectAMinCollision, objectA->getPosition());
-    map_bb_b = idlib::translate(objectBMinCollision, objectB->getPosition());
+    map_bb_a = idlib::translate(objectAMinCollision, objectA.getPosition());
+    map_bb_b = idlib::translate(objectBMinCollision, objectB.getPosition());
 
     // make the object more like a table if there is a platform-like interaction
     float exponent = 1.0f;
-    if ( objectA->canUsePlatforms() && objectB->isPlatform() ) exponent += 2;
-    if ( objectB->canUsePlatforms() && objectA->isPlatform() ) exponent += 2;
+    if ( objectA.canUsePlatforms() && objectB.isPlatform() ) exponent += 2;
+    if ( objectB.canUsePlatforms() && objectA.isPlatform() ) exponent += 2;
 
 	float recoil_a, recoil_b;
 
@@ -164,8 +164,8 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
         float tmp_max = tmin + ( tmax - tmin ) * 0.1f;
 
         // determine the expanded collision volumes for both objects
-        phys_expand_oct_bb(map_bb_a, objectA->getVelocity(), tmp_min, tmp_max, exp1);
-        phys_expand_oct_bb(map_bb_b, objectB->getVelocity(), tmp_min, tmp_max, exp2);
+        phys_expand_oct_bb(map_bb_a, objectA.getVelocity(), tmp_min, tmp_max, exp1);
+        phys_expand_oct_bb(map_bb_b, objectB.getVelocity(), tmp_min, tmp_max, exp2);
 
         valid_normal = phys_estimate_collision_normal(exp1, exp2, exponent, odepth, nrm, depth_min);
     }
@@ -185,18 +185,18 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
     // do character-character interactions
 
     // calculate a "mass" for each object, taking into account possible infinite masses
-    float wta = objectA->getMass();
-    float wtb = objectB->getMass();
+    float wta = objectA.getMass();
+    float wtb = objectB.getMass();
 
     // make a special exception for interaction between "Mario platforms"
-    if (( wta < 0.0f && objectA->isPlatform() ) && ( wtb < 0.0f && objectA->isPlatform() ) )
+    if (( wta < 0.0f && objectA.isPlatform() ) && ( wtb < 0.0f && objectA.isPlatform() ) )
     {
         return false;
     }
 
     // make a special exception for immovable scenery objects
     // they can collide, but cannot push each other apart... that might mess up the scenery ;)
-    if ( !collision && objectA->isScenery() && objectB->isScenery() )
+    if ( !collision && objectA.isScenery() && objectB.isScenery() )
     {
         return false;
     }
@@ -206,7 +206,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
     //---- calculate the character-character interactions
     {
-        const float max_pressure_strength = 0.25f;//1.0f - std::min(objectA->phys.dampen, objectB->phys.dampen);
+        const float max_pressure_strength = 0.25f;//1.0f - std::min(objectA.phys.dampen, objectB.phys.dampen);
         float pressure_strength     = max_pressure_strength * interaction_strength;
 
         Vector3f pdiff_a;
@@ -231,7 +231,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
         }
 
         // find the relative velocity
-        vdiff_a = objectB->getVelocity() - objectA->getVelocity();
+        vdiff_a = objectB.getVelocity() - objectA.getVelocity();
 
         need_velocity = false;
         if (idlib::manhattan_norm(vdiff_a) > 1e-6)
@@ -253,7 +253,7 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
                 Vector3f vdiff_para_a, vdiff_perp_a;
 
                 // generic coefficient of restitution.
-                float cr = objectA->phys.dampen * objectB->phys.dampen;
+                float cr = objectA.phys.dampen * objectB.phys.dampen;
 
                 // decompose this relative to the collision normal
                 fvec3_decompose(vdiff_a, nrm, vdiff_perp_a, vdiff_para_a);
@@ -261,13 +261,13 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
                 if (recoil_a > 0.0f)
                 {
                     Vector3f vimp_a = vdiff_perp_a * +(recoil_a * (1.0f + cr) * interaction_strength);
-                    objectA->phys.sum_avel(vimp_a);
+                    objectA.phys.sum_avel(vimp_a);
                 }
 
                 if (recoil_b > 0.0f)
                 {
                     Vector3f vimp_b = vdiff_perp_a * -(recoil_b * (1.0f + cr) * interaction_strength);
-                    objectB->phys.sum_avel(vimp_b);
+                    objectB.phys.sum_avel(vimp_b);
                 }
 
                 // this was definitely a bump
@@ -285,16 +285,16 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
 
                 // use pressure to push them appart. reduce their relative velocities.
 
-                float distance = idlib::euclidean_norm(objectA->getPosition() - objectB->getPosition());
-                distance /= std::max(objectA->getCurrentBump().size, objectB->getCurrentBump().size);
+                float distance = idlib::euclidean_norm(objectA.getPosition() - objectB.getPosition());
+                distance /= std::max(objectA.getCurrentBump().size, objectB.getCurrentBump().size);
                 if(distance > 0.0f)
                 {
-                    objectA->phys.sum_avel(nrm * distance * recoil_a * interaction_strength);
-                    objectB->phys.sum_avel(-nrm * distance * recoil_b * interaction_strength);
+                    objectA.phys.sum_avel(nrm * distance * recoil_a * interaction_strength);
+                    objectB.phys.sum_avel(-nrm * distance * recoil_b * interaction_strength);
 
                     // you could "bump" something if you changed your velocity, even if you were still touching
-                    bump = ((dot(objectA->getVelocity(), nrm) * dot(objectA->getOldVelocity(), nrm)) < 0) ||
-                           ((dot(objectB->getVelocity(), nrm) * dot(objectB->getOldVelocity(), nrm)) < 0);   
+                    bump = ((dot(objectA.getVelocity(), nrm) * dot(objectA.getOldVelocity(), nrm)) < 0) ||
+                           ((dot(objectB.getVelocity(), nrm) * dot(objectB.getOldVelocity(), nrm)) < 0);
                 }
             }
 
@@ -306,26 +306,26 @@ bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::sha
             if ( recoil_a > 0.0f )
             {
                 Vector3f pimp_a = pdiff_a * +(recoil_a * pressure_strength);
-                objectA->phys.sum_acoll(pimp_a);
+                objectA.phys.sum_acoll(pimp_a);
             }
 
             if ( recoil_b > 0.0f )
             {
                 Vector3f pimp_b = pdiff_a * -(recoil_b * pressure_strength);
-                objectB->phys.sum_acoll(pimp_b);
+                objectB.phys.sum_acoll(pimp_b);
             }
         }
     }
 
     if ( bump )
     {
-        objectA->recordAIBump(ichr_b);
-        objectB->recordAIBump(ichr_a);
+        objectA.recordAIBump(ichr_b);
+        objectB.recordAIBump(ichr_a);
 
         //Destroy stealth for both objects if they are not friendly
-        if(!objectA->isScenery() && !objectB->isScenery() && objectA->getTeam().hatesTeam(objectB->getTeam())) {
-            if(!objectA->hasPerk(Ego::Perks::SHADE)) objectA->deactivateStealth();
-            if(!objectA->hasPerk(Ego::Perks::SHADE)) objectB->deactivateStealth();
+        if(!objectA.isScenery() && !objectB.isScenery() && objectA.getTeam().hatesTeam(objectB.getTeam())) {
+            if(!objectA.hasPerk(Ego::Perks::SHADE)) objectA.deactivateStealth();
+            if(!objectA.hasPerk(Ego::Perks::SHADE)) objectB.deactivateStealth();
         }
     }
 

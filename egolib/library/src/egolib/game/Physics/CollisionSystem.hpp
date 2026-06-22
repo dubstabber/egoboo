@@ -19,7 +19,6 @@
 #pragma once
 
 #include "idlib/idlib.hpp"
-#include <memory>   // std::shared_ptr
 
 //Forward declarations
 class Object;
@@ -58,7 +57,7 @@ private:
     * @return
     *   true if these two Object actually collide, false otherwise
     **/
-    bool detectCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, float *tmin, float *tmax) const;
+    bool detectCollision(const Object& objectA, const Object& objectB, float *tmin, float *tmax) const;
 
     /**
     * @brief
@@ -70,7 +69,7 @@ private:
     * @return
     *   true if these two Entities actually collide, false otherwise
     **/
-    bool detectCollision(const std::shared_ptr<Ego::Particle> &particle, const std::shared_ptr<Object> &object, float *tmin, float *tmax) const;
+    bool detectCollision(const Ego::Particle& particle, const Object& object, float *tmin, float *tmax) const;
 
     /**
     * @brief
@@ -80,13 +79,13 @@ private:
     * @param objectB
     *   The object that objectA collides with
     **/
-    void handleCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, const float tmin, const float tmax);
+    void handleCollision(Object& objectA, Object& objectB, const float tmin, const float tmax);
 
     /**
     * @brief
     *   Handles collision interaction between an Object and a platform Object
     **/
-    bool handlePlatformCollision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB);
+    bool handlePlatformCollision(Object& objectA, Object& objectB);
 
     /**
     * @brief
@@ -98,7 +97,7 @@ private:
     * @return
     *   true if character is now riding mount
     **/
-    bool handleMountingCollision(const std::shared_ptr<Object> &character, const std::shared_ptr<Object> &mount);
+    bool handleMountingCollision(Object& character, Object& mount);
 
 private:
     friend idlib::default_new_functor<CollisionSystem>;

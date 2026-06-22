@@ -23,7 +23,7 @@
 ///          refactor (extending the lower-layer `Ego::Physics::ICollisionWorld` DIP seam to cover
 ///          the `GameModule` mesh queries the physics TUs use) can be verified behavior-preserving:
 ///
-///          - chr-prt: `do_chr_prt_collision(object, particle, tmin, tmax)` (game/Physics/particle_collision.h)
+///          - chr-prt: `do_chr_prt_collision(objectRef, particleRef, tmin, tmax)` (game/Physics/particle_collision.h)
 ///          - chr-chr: `Ego::Physics::CollisionSystem::{detectCollision,handleCollision,handlePlatformCollision,
 ///            handleMountingCollision}` (game/Physics/CollisionSystem.hpp)
 ///
@@ -304,7 +304,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_DamagingHit_SubtractsExactLife)
     ASSERT_NE(particle, nullptr);
 
     const float lifeBefore = victim->getLife();
-    const bool result = do_chr_prt_collision(victim, particle, -1.0f, 1.0f);
+    const bool result = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
 
     EXPECT_TRUE(result);
     // _currentLife -= FP8_TO_FLOAT(512) == 2.0 (reduction 0, ignoreArmour via DAMFX_ARMO path).
@@ -333,7 +333,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_ReHitSuppressed_HasCollidedGate)
     ASSERT_NE(particle, nullptr);
 
     // First hit lands.
-    ASSERT_TRUE(do_chr_prt_collision(victim, particle, -1.0f, 1.0f));
+    ASSERT_TRUE(do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f));
     const float lifeAfterFirst = victim->getLife();
     ASSERT_TRUE(particle->hasCollided(victim));
 
@@ -341,7 +341,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_ReHitSuppressed_HasCollidedGate)
     // can suppress the second hit. The same non-eternal particle has already collided with this
     // target, so do_chr_prt_collision_bump rejects it (particle_collision.c:934).
     victim->setDamageTimer(0);
-    const bool second = do_chr_prt_collision(victim, particle, -1.0f, 1.0f);
+    const bool second = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
 
     EXPECT_FALSE(second);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeAfterFirst);
@@ -369,7 +369,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_InvincibleTarget_NoDamage)
     ASSERT_NE(particle, nullptr);
 
     const float lifeBefore = victim->getLife();
-    const bool result = do_chr_prt_collision(victim, particle, -1.0f, 1.0f);
+    const bool result = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
 
     // do_chr_prt_collision_deflect returns true for an invincible target (particle_collision.c:518),
     // so the collision is "handled" (result true) but the damage branch is skipped.
@@ -400,7 +400,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_NeutralTargetRejectsNeutralParticle)
     ASSERT_NE(particle, nullptr);
 
     const float lifeBefore = victim->getLife();
-    const bool result = do_chr_prt_collision(victim, particle, -1.0f, 1.0f);
+    const bool result = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
 
     EXPECT_FALSE(result);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
@@ -429,10 +429,56 @@ TEST_F(CollisionPipelineFixture, ChrPrt_NonOverlappingParticle_NoInteraction)
     ASSERT_NE(particle, nullptr);
 
     const float lifeBefore = victim->getLife();
-    const bool result = do_chr_prt_collision(victim, particle, -1.0f, 1.0f);
+    const bool result = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
 
     EXPECT_FALSE(result);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
+}
+
+// ---------------------------------------------------------------------------
+// chr-prt: ref-based entry points fail cleanly for stale object/particle ids.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrPrt_InvalidObjectRef_ReturnsFalse)
+{
+    beginActiveTestModule();
+    const ObjectProfileRef profile = loadFollowerProfile(6512);
+    auto particle = spawnDamageParticle(profile,
+                                        Ego::Vector3f(64.0f, 64.0f, 40.0f),
+                                        static_cast<TEAM_REF>(Team::TEAM_NULL), 512, DAMAGE_SLASH);
+    ASSERT_NE(particle, nullptr);
+
+    EXPECT_FALSE(do_chr_prt_collision(ObjectRef::Invalid, particle->getParticleID(), -1.0f, 1.0f));
+}
+
+TEST_F(CollisionPipelineFixture, ChrPrt_InvalidParticleRef_ReturnsFalse)
+{
+    auto& module = beginActiveTestModule();
+    const ObjectProfileRef profile = loadFollowerProfile(6513);
+    auto victim = spawnFollower(module, profile, static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                               Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(victim, nullptr);
+
+    EXPECT_FALSE(do_chr_prt_collision(victim->getObjRef(), ParticleRef::Invalid, -1.0f, 1.0f));
+}
+
+TEST_F(CollisionPipelineFixture, ChrPrt_SharedPointerCompatibilityWrapperRejectsNullInputs)
+{
+    auto& module = beginActiveTestModule();
+    const ObjectProfileRef profile = loadFollowerProfile(6514);
+    auto victim = spawnFollower(module, profile, static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                               Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(victim, nullptr);
+    auto particle = spawnDamageParticle(profile,
+                                        victim->getPosition() + Ego::Vector3f(-20.0f, 0.0f, 40.0f),
+                                        static_cast<TEAM_REF>(Team::TEAM_NULL), 512, DAMAGE_SLASH);
+    ASSERT_NE(particle, nullptr);
+
+    const std::shared_ptr<Object> nullObject;
+    const std::shared_ptr<Ego::Particle> nullParticle;
+
+    EXPECT_FALSE(do_chr_prt_collision(nullObject, particle, -1.0f, 1.0f));
+    EXPECT_FALSE(do_chr_prt_collision(victim, nullParticle, -1.0f, 1.0f));
 }
 
 // ---------------------------------------------------------------------------
@@ -451,7 +497,7 @@ TEST_F(CollisionPipelineFixture, ChrChr_OverlappingObjects_Detected)
 
     auto& cs = Ego::Physics::CollisionSystem::get();
     float tmin = 0.0f, tmax = 0.0f;
-    const bool detected = cs.detectCollision(a, b, &tmin, &tmax);
+    const bool detected = cs.detectCollision(*a, *b, &tmin, &tmax);
 
     // Both followers have a real bump volume and are 12 units apart in X (well within the summed
     // collision volumes), so phys_intersect_oct_bb reports an overlap.
@@ -470,7 +516,7 @@ TEST_F(CollisionPipelineFixture, ChrChr_FarApartObjects_NotDetected)
 
     auto& cs = Ego::Physics::CollisionSystem::get();
     float tmin = -999.0f, tmax = -999.0f;
-    const bool detected = cs.detectCollision(a, b, &tmin, &tmax);
+    const bool detected = cs.detectCollision(*a, *b, &tmin, &tmax);
 
     EXPECT_FALSE(detected);
 }
@@ -491,8 +537,8 @@ TEST_F(CollisionPipelineFixture, ChrChr_PlainFollowers_NoMountOrPlatform)
 
     auto& cs = Ego::Physics::CollisionSystem::get();
     // A follower is neither a mount nor a platform, so neither resolution attaches the objects.
-    EXPECT_FALSE(cs.handleMountingCollision(a, b));
-    EXPECT_FALSE(cs.handlePlatformCollision(a, b));
+    EXPECT_FALSE(cs.handleMountingCollision(*a, *b));
+    EXPECT_FALSE(cs.handlePlatformCollision(*a, *b));
     EXPECT_EQ(a->getAttachedPlatformRef(), ObjectRef::Invalid);
     EXPECT_EQ(a->getHolderRef(), ObjectRef::Invalid);
 }

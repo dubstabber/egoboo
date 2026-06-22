@@ -274,7 +274,7 @@ bool do_chr_prt_collision_init( const ObjectRef ichr, const ParticleRef iprt, ch
 }
 
 //--------------------------------------------------------------------------------------------
-bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shared_ptr<Ego::Particle> &particle, const float tmin, const float tmax)
+bool do_chr_prt_collision(const ObjectRef object, const ParticleRef particle, const float tmin, const float tmax)
 {
     /// @author BB
     /// @details this funciton goes through all of the steps to handle character-particle
@@ -289,7 +289,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
 
     chr_prt_collision_data_t cn_data;
 
-    bool intialized = do_chr_prt_collision_init(object->getObjRef(), particle->getParticleID(), &cn_data );
+    bool intialized = do_chr_prt_collision_init(object, particle, &cn_data );
     if ( !intialized ) return false;
 
     // ignore dead characters
@@ -299,7 +299,7 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
     if ( cn_data.pchr->isInsideInventory() ) return false;
 
     // if the particle is attached to this character, ignore a "collision"
-    if ( cn_data.pprt->getAttachedObject().get() ==  cn_data.pchr )
+    if ( cn_data.pprt->getAttachedObjectID() == cn_data.ichr )
     {
         return false;
     }
@@ -446,4 +446,10 @@ bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shar
     }
 
     return retval;
+}
+
+bool do_chr_prt_collision(const std::shared_ptr<Object> &object, const std::shared_ptr<Ego::Particle> &particle, const float tmin, const float tmax)
+{
+    if (!object || !particle) return false;
+    return do_chr_prt_collision(object->getObjRef(), particle->getParticleID(), tmin, tmax);
 }

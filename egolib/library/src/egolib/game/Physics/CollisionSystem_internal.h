@@ -26,8 +26,6 @@
 ///          body can live in its own TU while still being called from the dispatcher.
 #pragma once
 
-#include <memory>
-
 class Object;
 
 namespace Ego
@@ -39,7 +37,7 @@ namespace Physics
 /// (restitution) impulses and pressure-separation displacement, and accumulate them onto
 /// each object's phys data. Returns true if the pair genuinely interacted (a "bump").
 /// Defined in CollisionSystem_chr_chr.cpp.
-bool do_chr_chr_collision(const std::shared_ptr<Object> &objectA, const std::shared_ptr<Object> &objectB, float tmin, float tmax);
+bool do_chr_chr_collision(Object& objectA, Object& objectB, float tmin, float tmax);
 
 } // namespace Physics
 } // namespace Ego

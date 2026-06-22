@@ -2780,3 +2780,23 @@ back-edge proof was required. Singleton metrics are now **604** `::get()` lines,
 role/script helper slice **219/219**; ctest **913/913**; validator `test.mod` 0/0; full validator at the
 known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
 content errors); `git diff --check` clean.
+
+### Pass 269 — Collision pipeline ownership boundary cleanup (2026-06-22)
+
+Retired collision-dispatch ownership leakage from the object/object and object/particle paths without
+changing source placement, archive membership, or gameplay collision policy. `CollisionSystem` now resolves
+iterator handles once, passes `Object&` / `Particle&` through detection and chr-chr response, and no longer
+calls `shared_from_this()` while dispatching nearby-object or nearby-particle collisions.
+
+The chr-prt response entry point now accepts stable `ObjectRef` / `ParticleRef` ids, validates them through
+the existing collision initializer, and compares attached-particle ownership by id. The former
+`shared_ptr<Object>` / `shared_ptr<Particle>` API remains as a compatibility wrapper that rejects null
+inputs before delegating to the ref-based path. `CollisionPipeline` coverage now pins the ref-based
+chr-prt cases, invalid stale-id behavior, and compatibility wrapper null handling.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **604** `::get()` lines, including **417**
+`EngineContext::get()` and **133** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,667**, test files/lines are **50 / 23,994**, and ctest configures **916** cases. Gates:
+`cmake --build build -j20` clean; focused `CollisionPipeline` slice **11/11**; ctest **916/916**;
+validator `test.mod` 0/0; `git diff --check` clean.
