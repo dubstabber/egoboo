@@ -20,9 +20,11 @@
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
+#include "ObjectGraphicsTestAccess.hpp"
 
 namespace
 {
+using GraphicsAccess = Ego::Graphics::ObjectGraphicsTestAccess;
 
 class ScriptTargetFunctionsFixture : public ::testing::Test
 {
@@ -1103,27 +1105,27 @@ TEST_F(ScriptTargetFunctionsFixture, TargetAnimationPredicatesReadThroughRoleSur
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor, target);
 
-    target->inst._currentAnimation = ACTION_PA;
-    target->inst._nextAnimation = ACTION_PA;
+    GraphicsAccess::setCurrentAnimation(target->getGraphics(), ACTION_PA);
+    GraphicsAccess::setNextAnimation(target->getGraphics(), ACTION_PA);
     EXPECT_TRUE(scr_IfTargetIsDefending(state, self));
 
-    target->inst._currentAnimation = ACTION_UA;
-    target->inst._nextAnimation = ACTION_UA;
+    GraphicsAccess::setCurrentAnimation(target->getGraphics(), ACTION_UA);
+    GraphicsAccess::setNextAnimation(target->getGraphics(), ACTION_UA);
     EXPECT_TRUE(scr_IfTargetIsAttacking(state, self));
 
     target->setKursed(true);
     EXPECT_TRUE(scr_IfTargetIsKursed(state, self));
 
-    target->inst._currentAnimation = ACTION_DA;
-    target->inst._nextAnimation = ACTION_DA;
+    GraphicsAccess::setCurrentAnimation(target->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(target->getGraphics(), ACTION_DA);
     EXPECT_TRUE(scr_IfTargetIsSneaking(state, self));
 
-    target->inst._currentAnimation = ACTION_WA;
-    target->inst._nextAnimation = ACTION_WA;
+    GraphicsAccess::setCurrentAnimation(target->getGraphics(), ACTION_WA);
+    GraphicsAccess::setNextAnimation(target->getGraphics(), ACTION_WA);
     EXPECT_TRUE(scr_IfTargetIsSneaking(state, self));
 
-    target->inst._currentAnimation = ACTION_MG;
-    target->inst._nextAnimation = ACTION_MG;
+    GraphicsAccess::setCurrentAnimation(target->getGraphics(), ACTION_MG);
+    GraphicsAccess::setNextAnimation(target->getGraphics(), ACTION_MG);
     target->setKursed(false);
     EXPECT_FALSE(scr_IfTargetIsDefending(state, self));
     EXPECT_FALSE(scr_IfTargetIsAttacking(state, self));

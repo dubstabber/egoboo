@@ -12,6 +12,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/vfs.h"
 #include "egolib/game/Module/Module.hpp"
+#include "ObjectGraphicsTestAccess.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -19,12 +20,9 @@
 
 namespace
 {
-IMovementControl& movementControl(Object& object)
-{
-    return object;
-}
+using GraphicsAccess = Ego::Graphics::ObjectGraphicsTestAccess;
 
-const IMovementControl& movementControl(const Object& object)
+IMovementControl& movementControl(Object& object)
 {
     return object;
 }
@@ -191,7 +189,7 @@ ModelAction findValidAction(const std::shared_ptr<Object>& object,
                             std::initializer_list<ModelAction> candidates,
                             ModelAction excluded = ACTION_COUNT)
 {
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     if (!model)
     {
         return ACTION_COUNT;
@@ -212,7 +210,7 @@ ModelAction findLoopingAction(const std::shared_ptr<Object>& object,
                               std::initializer_list<ModelAction> candidates,
                               ModelAction excluded = ACTION_COUNT)
 {
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     if (!model)
     {
         return ACTION_COUNT;
@@ -239,7 +237,7 @@ ModelAction findActionWithMinimumFrameCount(const std::shared_ptr<Object>& objec
                                             int minimumFrameCount,
                                             ModelAction excluded = ACTION_COUNT)
 {
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     if (!model)
     {
         return ACTION_COUNT;
@@ -266,7 +264,7 @@ bool findHealableInvalidAction(const std::shared_ptr<Object>& object,
                                ModelAction& invalidAction,
                                ModelAction& healedAction)
 {
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     if (!model)
     {
         return false;
@@ -1018,8 +1016,8 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     const SKIN_T validSkin = object->getProfile()->isValidSkin(1) ? 1 : 0;
     ASSERT_TRUE(object->getProfile()->isValidSkin(validSkin));
 
-    object->inst._currentAnimation = ACTION_UA;
-    object->inst._nextAnimation = ACTION_UA;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_UA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_UA);
     object->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     object->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
     object->setNameKnown(true);
@@ -1049,8 +1047,8 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAnimationCombatAndSelf
     object->_stealth = true;
     EXPECT_TRUE(targetInfo.isStealthed());
 
-    object->inst._currentAnimation = ACTION_DA;
-    object->inst._nextAnimation = ACTION_DA;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
     object->setNameKnown(false);
     object->setKursed(false);
     object->setEquipped(false);
@@ -1162,9 +1160,9 @@ TEST_F(ObjectAccessorFixture, VisualControlRoleSurfaceSupportsShiftFlagAndRender
     EXPECT_EQ(object->getSparkle(), 7);
 
     ASSERT_GE(object->getVertexCount(), 3u);
-    object->inst._vertexList[0].pos[ZZ] = 5.0f;
-    object->inst._vertexList[1].pos[ZZ] = 15.0f;
-    object->inst._vertexList[2].pos[ZZ] = 25.0f;
+    GraphicsAccess::setVertexZ(object->getGraphics(), 0, 5.0f);
+    GraphicsAccess::setVertexZ(object->getGraphics(), 1, 15.0f);
+    GraphicsAccess::setVertexZ(object->getGraphics(), 2, 25.0f);
 
     const int flashedLight = static_cast<int>(255 * idlib::fraction<float, 1, 255>());
     visual.flash(255);
@@ -1349,28 +1347,28 @@ TEST_F(ObjectAccessorFixture, AnimationControlRoleSurfaceSupportsActionResolutio
 
     EXPECT_EQ(animation.resolveModelAction(static_cast<int>(nextAction)), nextAction);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int currentLastFrame = model->getLastFrame(currentAction);
     const int nextFirstFrame = model->getFirstFrame(nextAction);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WB;
-    object->inst._canBeInterrupted = false;
-    object->inst._sourceFrameIndex = model->getFirstFrame(currentAction);
-    object->inst._targetFrameIndex = currentLastFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WB);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), model->getFirstFrame(currentAction));
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), currentLastFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
 
     EXPECT_TRUE(animation.startAnimation(nextAction, true, true));
     animation.setActionKeep(true);
     animation.removeInterpolation();
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
-    EXPECT_TRUE(object->inst._freezeAtLastFrame);
-    EXPECT_EQ(object->inst._sourceFrameIndex, nextFirstFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_TRUE(GraphicsAccess::freezeAtLastFrame(object->getGraphics()));
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), nextFirstFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), nextFirstFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, AIAccessorsRoundTripSelectedState)
@@ -2041,21 +2039,22 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateVerticesReportsSuccessForCache
     auto object = makeFollower(3133);
     ASSERT_NE(object, nullptr);
 
-    auto& graphics = object->inst;
+    auto& graphics = object->getGraphics();
     GameSessionContext::get().worldUpdateCount() = 101;
     ASSERT_TRUE(graphics.updateVertices(-1, -1, true));
 
-    const VertexListCache forcedCache = graphics._vertexCache;
+    const VertexListCache forcedCache = GraphicsAccess::vertexCache(graphics);
     EXPECT_TRUE(graphics.isVertexCacheValid());
     EXPECT_EQ(forcedCache.vert_wld, 101u);
     EXPECT_EQ(forcedCache.frame_wld, 101u);
 
     GameSessionContext::get().worldUpdateCount() = 109;
     EXPECT_TRUE(graphics.updateVertices(-1, -1, false));
-    EXPECT_EQ(graphics._vertexCache.vmin, forcedCache.vmin);
-    EXPECT_EQ(graphics._vertexCache.vmax, forcedCache.vmax);
-    EXPECT_EQ(graphics._vertexCache.vert_wld, forcedCache.vert_wld);
-    EXPECT_EQ(graphics._vertexCache.frame_wld, forcedCache.frame_wld);
+    const VertexListCache cacheAfterHit = GraphicsAccess::vertexCache(graphics);
+    EXPECT_EQ(cacheAfterHit.vmin, forcedCache.vmin);
+    EXPECT_EQ(cacheAfterHit.vmax, forcedCache.vmax);
+    EXPECT_EQ(cacheAfterHit.vert_wld, forcedCache.vert_wld);
+    EXPECT_EQ(cacheAfterHit.frame_wld, forcedCache.frame_wld);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateVerticesRejectsInvalidFrameAndVertexList)
@@ -2063,15 +2062,15 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateVerticesRejectsInvalidFrameAnd
     auto object = makeFollower(3134);
     ASSERT_NE(object, nullptr);
 
-    auto& graphics = object->inst;
-    const uint16_t originalTargetFrame = graphics._targetFrameIndex;
-    graphics._targetFrameIndex = 0xFFFF;
+    auto& graphics = object->getGraphics();
+    const uint16_t originalTargetFrame = GraphicsAccess::targetFrameIndex(graphics);
+    GraphicsAccess::setTargetFrameIndex(graphics, 0xFFFF);
 
     EXPECT_FALSE(graphics.updateVertices(-1, -1, true));
 
-    graphics._targetFrameIndex = originalTargetFrame;
-    ASSERT_FALSE(graphics._vertexList.empty());
-    graphics._vertexList.pop_back();
+    GraphicsAccess::setTargetFrameIndex(graphics, originalTargetFrame);
+    ASSERT_GT(graphics.getVertexCount(), 0u);
+    GraphicsAccess::popVertex(graphics);
 
     EXPECT_FALSE(graphics.updateVertices(-1, -1, true));
 }
@@ -2142,7 +2141,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresRenderDefaultsAn
     ASSERT_TRUE(object->getGraphics().hasValidMatrixCache());
     ASSERT_TRUE(object->getGraphics().hasValidMatrixValue());
 
-    object->inst.setObjectProfile(object->getProfile());
+    object->getGraphics().setObjectProfile(object->getProfile());
 
     EXPECT_EQ(object->getAlpha(), object->getProfile()->getAlpha());
     EXPECT_EQ(object->getLight(), object->getProfile()->getLight());
@@ -2161,18 +2160,18 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresLiveIdleAnimatio
     auto object = makeFollower(315);
     ASSERT_NE(object, nullptr);
 
-    object->inst._currentAnimation = ACTION_KA;
-    object->inst._nextAnimation = ACTION_KA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = true;
-    object->inst._animationRate = 3.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_KA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_KA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), true);
+    GraphicsAccess::setAnimationRate(object->getGraphics(), 3.0f);
 
-    object->inst.setObjectProfile(object->getProfile());
+    object->getGraphics().setObjectProfile(object->getProfile());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
     EXPECT_FALSE(object->getGraphics().canBeInterrupted());
     EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
-    EXPECT_FALSE(object->inst._freezeAtLastFrame);
+    EXPECT_FALSE(GraphicsAccess::freezeAtLastFrame(object->getGraphics()));
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimationPolicy)
@@ -2181,19 +2180,19 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsProfileResetRestoresDeadDeathAnimati
     ASSERT_NE(object, nullptr);
 
     object->_isAlive = false;
-    object->inst._currentAnimation = ACTION_DA;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._animationRate = 2.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setAnimationRate(object->getGraphics(), 2.0f);
 
-    object->inst.setObjectProfile(object->getProfile());
+    object->getGraphics().setObjectProfile(object->getProfile());
 
     EXPECT_TRUE(ACTION_IS_TYPE(object->getCurrentAnimation(), K));
     EXPECT_FALSE(object->getGraphics().canBeInterrupted());
     EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
     EXPECT_TRUE(object->hasModelDescriptor());
-    EXPECT_TRUE(object->inst._freezeAtLastFrame);
+    EXPECT_TRUE(GraphicsAccess::freezeAtLastFrame(object->getGraphics()));
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsSetActionMutatesAnimationStateWithoutTouchingFrameBookkeeping)
@@ -2207,27 +2206,27 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetActionMutatesAnimationStateWithou
     const ModelAction nextAction = findValidAction(object, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
     ASSERT_NE(nextAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int sourceFrame = model->getFirstFrame(currentAction);
     const int targetFrame = model->getLastFrame(currentAction);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WB;
-    object->inst._canBeInterrupted = false;
-    object->inst._sourceFrameIndex = sourceFrame;
-    object->inst._targetFrameIndex = targetFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WB);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), sourceFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), targetFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
 
-    EXPECT_TRUE(object->inst.setAction(nextAction, true, true));
+    EXPECT_TRUE(object->getGraphics().setAction(nextAction, true, true));
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_DA);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
-    EXPECT_EQ(object->inst._sourceFrameIndex, sourceFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, targetFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 3);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.75f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), sourceFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), targetFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 3);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.75f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameMutatesBookkeepingWithoutChangingActionState)
@@ -2238,28 +2237,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameMutatesBookkeepingWithoutCha
     const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(currentAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(currentAction);
     const int lastFrame = model->getLastFrame(currentAction);
     ASSERT_NE(firstFrame, lastFrame);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WA;
-    object->inst._canBeInterrupted = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = lastFrame;
-    object->inst._animationProgressInteger = 2;
-    object->inst._animationProgress = 0.5f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), lastFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 2);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.5f);
 
-    EXPECT_TRUE(object->inst.setFrame(firstFrame));
+    EXPECT_TRUE(object->getGraphics().setFrame(firstFrame));
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WA);
     EXPECT_FALSE(object->getGraphics().canBeInterrupted());
-    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), firstFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsStartAnimationRestartsAtFirstFrameAndUsesPriorTargetAsSource)
@@ -2274,28 +2273,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsStartAnimationRestartsAtFirstFrameAn
     const ModelAction nextAction = findValidAction(object, {ACTION_WA, ACTION_WB, ACTION_WC, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
     ASSERT_NE(nextAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(currentAction);
     const int lastFrame = model->getLastFrame(currentAction);
     const int nextFirstFrame = model->getFirstFrame(nextAction);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WB;
-    object->inst._canBeInterrupted = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = lastFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WB);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), lastFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
 
-    EXPECT_TRUE(object->inst.startAnimation(nextAction, true, true));
+    EXPECT_TRUE(object->getGraphics().startAnimation(nextAction, true, true));
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_DA);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
-    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), nextFirstFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameFullHealsCurrentActionAndPreservesSourceFrame)
@@ -2307,27 +2306,27 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsSetFrameFullHealsCurrentActionAndPre
     ModelAction healedAction = ACTION_COUNT;
     ASSERT_TRUE(findHealableInvalidAction(object, invalidAction, healedAction));
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int preservedSourceFrame = model->getFirstFrame(healedAction);
     const int firstFrame = model->getFirstFrame(healedAction);
     const int lastFrame = model->getLastFrame(healedAction);
     const int frameCount = 1 + (lastFrame - firstFrame);
     const int frameAlong = (frameCount > 1) ? 1 : 0;
 
-    object->inst._currentAnimation = invalidAction;
-    object->inst._sourceFrameIndex = preservedSourceFrame;
-    object->inst._targetFrameIndex = firstFrame;
-    object->inst._animationProgressInteger = 0;
-    object->inst._animationProgress = 0.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), invalidAction);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), preservedSourceFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 0);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.0f);
 
-    EXPECT_TRUE(object->inst.setFrameFull(frameAlong, 2));
+    EXPECT_TRUE(object->getGraphics().setFrameFull(frameAlong, 2));
 
     EXPECT_FALSE(model->isActionValid(invalidAction));
     EXPECT_EQ(object->getCurrentAnimation(), healedAction);
-    EXPECT_EQ(object->inst._sourceFrameIndex, preservedSourceFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, std::min(firstFrame + frameAlong, lastFrame));
-    EXPECT_EQ(object->inst._animationProgressInteger, 2);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.5f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), preservedSourceFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), std::min(firstFrame + frameAlong, lastFrame));
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 2);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.5f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationSnapsToTargetWithoutChangingActionState)
@@ -2338,28 +2337,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationSnapsToTargetWith
     const ModelAction currentAction = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(currentAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(currentAction);
     const int lastFrame = model->getLastFrame(currentAction);
     ASSERT_NE(firstFrame, lastFrame);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WA;
-    object->inst._canBeInterrupted = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = lastFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), lastFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
 
-    object->inst.removeInterpolation();
+    object->getGraphics().removeInterpolation();
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WA);
     EXPECT_FALSE(object->getGraphics().canBeInterrupted());
-    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationIsNoOpWhenAlreadyCollapsed)
@@ -2370,26 +2369,26 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsRemoveInterpolationIsNoOpWhenAlready
     const ModelAction currentAction = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(currentAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int frame = model->getFirstFrame(currentAction);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = ACTION_WB;
-    object->inst._canBeInterrupted = true;
-    object->inst._sourceFrameIndex = frame;
-    object->inst._targetFrameIndex = frame;
-    object->inst._animationProgressInteger = 0;
-    object->inst._animationProgress = 0.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WB);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), frame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), frame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 0);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.0f);
 
-    object->inst.removeInterpolation();
+    object->getGraphics().removeInterpolation();
 
     EXPECT_EQ(object->getCurrentAnimation(), currentAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WB);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WB);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
-    EXPECT_EQ(object->inst._sourceFrameIndex, frame);
-    EXPECT_EQ(object->inst._targetFrameIndex, frame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), frame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), frame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAsInterpolationSource)
@@ -2397,9 +2396,9 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAs
     auto& objectHandler = beginActiveTestModule();
     auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 338);
     ASSERT_NE(object, nullptr);
-    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WA));
+    ASSERT_TRUE(object->getGraphics().getModelDescriptor()->isActionValid(ACTION_WA));
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const ModelAction initialAction = findValidAction(object, {ACTION_DA, ACTION_DB, ACTION_DC, ACTION_WC}, ACTION_WA);
     ASSERT_NE(initialAction, ACTION_COUNT);
 
@@ -2409,26 +2408,26 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyKeepsMappedWalkFrameAs
     const int expectedTargetFrame = model->getFirstFrame(ACTION_WA);
 
     object->_stealth = true;
-    object->inst._currentAnimation = initialAction;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._sourceFrameIndex = initialFirstFrame;
-    object->inst._targetFrameIndex = initialTargetFrame;
-    object->inst._animationProgressInteger = 2;
-    object->inst._animationProgress = 0.5f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), initialAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), initialFirstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), initialTargetFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 2);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.5f);
     object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
     movementControl(*object).setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
-    object->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_WA);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
-    EXPECT_EQ(object->inst._sourceFrameIndex, expectedSourceFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, expectedTargetFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WA);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), expectedSourceFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), expectedTargetFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedSceneryAnimationPolicyStopsAnimationRate)
@@ -2442,12 +2441,12 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedSceneryAnimationPolicyStopsAn
     holder->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_NULL));
     holder->setBaseAttribute(Ego::Attribute::ACCELERATION, 0.0f);
     rider->setHolderRef(holder->getObjRef());
-    rider->inst._currentAnimation = ACTION_MI;
-    rider->inst._canBeInterrupted = true;
-    rider->inst._freezeAtLastFrame = false;
-    rider->inst._animationRate = 1.0f;
+    GraphicsAccess::setCurrentAnimation(rider->getGraphics(), ACTION_MI);
+    GraphicsAccess::setCanBeInterrupted(rider->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(rider->getGraphics(), false);
+    GraphicsAccess::setAnimationRate(rider->getGraphics(), 1.0f);
 
-    rider->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(rider->getGraphics());
 
     EXPECT_TRUE(holder->isScenery());
     EXPECT_FLOAT_EQ(rider->getGraphics().getAnimationSpeed(), 0.1f);
@@ -2465,12 +2464,12 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMountedAnimationPolicyCopiesHolderAn
     holder->setBaseAttribute(Ego::Attribute::ACCELERATION, 1.0f);
     holder->getGraphics().setAnimationSpeed(2.5f);
     rider->setHolderRef(holder->getObjRef());
-    rider->inst._currentAnimation = ACTION_MH;
-    rider->inst._canBeInterrupted = true;
-    rider->inst._freezeAtLastFrame = false;
-    rider->inst._animationRate = 1.0f;
+    GraphicsAccess::setCurrentAnimation(rider->getGraphics(), ACTION_MH);
+    GraphicsAccess::setCanBeInterrupted(rider->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(rider->getGraphics(), false);
+    GraphicsAccess::setAnimationRate(rider->getGraphics(), 1.0f);
 
-    rider->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(rider->getGraphics());
 
     EXPECT_FALSE(holder->isScenery());
     EXPECT_FLOAT_EQ(rider->getGraphics().getAnimationSpeed(), holder->getGraphics().getAnimationSpeed());
@@ -2485,14 +2484,14 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyRaisesBoredAlertAndResetsT
     object->setAIAlertBits(0);
     object->setBoredTimer(0);
     object->_stealth = false;
-    object->inst._currentAnimation = ACTION_DA;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
     object->_objectPhysics._groundElevation = object->getPosZ();
     movementControl(*object).setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
-    object->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(object->getGraphics());
 
     EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_BORED));
     EXPECT_GT(object->getBoredTimer(), 0);
@@ -2506,17 +2505,17 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsIdlePolicyReturnsWalkingAnimationToI
     ASSERT_NE(object, nullptr);
 
     object->setBoredTimer(12);
-    object->inst._currentAnimation = ACTION_WC;
-    object->inst._nextAnimation = ACTION_WC;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_WC);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_WC);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
     object->_objectPhysics._groundElevation = object->getPosZ();
     movementControl(*object).setDesiredVelocity(idlib::zero<Ego::Vector2f>());
 
-    object->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_DA);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_DA);
     EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
@@ -2525,21 +2524,21 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicySelectsStealthWalkAnim
     auto& objectHandler = beginActiveTestModule();
     auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 323);
     ASSERT_NE(object, nullptr);
-    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WA));
+    ASSERT_TRUE(object->getGraphics().getModelDescriptor()->isActionValid(ACTION_WA));
 
     object->_stealth = true;
-    object->inst._currentAnimation = ACTION_DA;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
     object->_objectPhysics._groundElevation = object->getPosZ();
     object->setVelocity(Ego::Vector3f(10.0f, 0.0f, 0.0f));
     movementControl(*object).setDesiredVelocity(Ego::Vector2f(1.0f, 0.0f));
 
-    object->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_WA);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WA);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WA);
     EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
@@ -2548,19 +2547,19 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsMovementPolicyRemapsFlyingIdleToFlap
     auto& objectHandler = beginActiveTestModule();
     auto object = makeObject(objectHandler, "mp_data/globalobjects/monsters/zombi.obj", 324);
     ASSERT_NE(object, nullptr);
-    ASSERT_TRUE(object->inst.getModelDescriptor()->isActionValid(ACTION_WC));
+    ASSERT_TRUE(object->getGraphics().getModelDescriptor()->isActionValid(ACTION_WC));
 
     object->setBaseAttribute(Ego::Attribute::FLY_TO_HEIGHT, 1.0f);
     object->setVelocity(idlib::zero<Ego::Vector3f>());
-    object->inst._currentAnimation = ACTION_DA;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = true;
-    object->inst._freezeAtLastFrame = false;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), true);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
 
-    object->inst.updateAnimationRate();
+    GraphicsAccess::updateAnimationRate(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), ACTION_WC);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_WC);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_WC);
     EXPECT_FLOAT_EQ(object->getGraphics().getAnimationSpeed(), 1.0f);
 }
 
@@ -2573,22 +2572,22 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndFreezeKeepsLastFrameAndM
     const ModelAction action = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(action, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int lastFrame = model->getLastFrame(action);
 
-    object->inst._currentAnimation = action;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = true;
-    object->inst._loopAnimation = false;
-    object->inst._sourceFrameIndex = model->getFirstFrame(action);
-    object->inst._targetFrameIndex = lastFrame;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), action);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), true);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), model->getFirstFrame(action));
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), lastFrame);
 
-    object->inst.incrementFrame();
+    GraphicsAccess::incrementFrame(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), action);
-    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, lastFrame);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), lastFrame);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 
@@ -2600,28 +2599,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationAdvancesQuarterStepWi
     const ModelAction action = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(action, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(action);
     const int secondFrame = firstFrame + 1;
     ASSERT_LE(secondFrame, model->getLastFrame(action));
 
-    object->inst._currentAnimation = action;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._loopAnimation = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = secondFrame;
-    object->inst._animationProgressInteger = 0;
-    object->inst._animationProgress = 0.0f;
-    object->inst._animationRate = 1.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), action);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), secondFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 0);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.0f);
+    GraphicsAccess::setAnimationRate(object->getGraphics(), 1.0f);
 
-    object->inst.updateAnimation();
+    object->getGraphics().updateAnimation();
 
-    EXPECT_EQ(object->inst._sourceFrameIndex, firstFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, secondFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 1);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.25f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), firstFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), secondFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 1);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.25f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationAdvancesFrameWhenCrossingBoundary)
@@ -2633,28 +2632,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationAdvancesFrameWhenCros
     const ModelAction action = findActionWithMinimumFrameCount(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC}, 3);
     ASSERT_NE(action, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(action);
     const int oldTargetFrame = firstFrame + 1;
     const int expectedNextFrame = firstFrame + 2;
 
-    object->inst._currentAnimation = action;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._loopAnimation = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = oldTargetFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
-    object->inst._animationRate = 1.0f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), action);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), oldTargetFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
+    GraphicsAccess::setAnimationRate(object->getGraphics(), 1.0f);
 
-    object->inst.updateAnimation();
+    object->getGraphics().updateAnimation();
 
-    EXPECT_EQ(object->inst._sourceFrameIndex, oldTargetFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, expectedNextFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.0f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), oldTargetFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), expectedNextFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.0f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationKeepsResidualProgressAfterFrameAdvance)
@@ -2666,28 +2665,28 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsUpdateAnimationKeepsResidualProgress
     const ModelAction action = findActionWithMinimumFrameCount(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC}, 3);
     ASSERT_NE(action, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(action);
     const int oldTargetFrame = firstFrame + 1;
     const int expectedNextFrame = firstFrame + 2;
 
-    object->inst._currentAnimation = action;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._loopAnimation = false;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = oldTargetFrame;
-    object->inst._animationProgressInteger = 3;
-    object->inst._animationProgress = 0.75f;
-    object->inst._animationRate = 1.5f;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), action);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), oldTargetFrame);
+    GraphicsAccess::setAnimationProgressInteger(object->getGraphics(), 3);
+    GraphicsAccess::setAnimationProgress(object->getGraphics(), 0.75f);
+    GraphicsAccess::setAnimationRate(object->getGraphics(), 1.5f);
 
-    object->inst.updateAnimation();
+    object->getGraphics().updateAnimation();
 
-    EXPECT_EQ(object->inst._sourceFrameIndex, oldTargetFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, expectedNextFrame);
-    EXPECT_EQ(object->inst._animationProgressInteger, 0);
-    EXPECT_FLOAT_EQ(object->inst._animationProgress, 0.125f);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), oldTargetFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), expectedNextFrame);
+    EXPECT_EQ(GraphicsAccess::animationProgressInteger(object->getGraphics()), 0);
+    EXPECT_FLOAT_EQ(GraphicsAccess::animationProgress(object->getGraphics()), 0.125f);
 }
 
 TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndLoopWrapsToFirstFrameAndMakesActionInterruptible)
@@ -2699,23 +2698,23 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndLoopWrapsToFirstFrameAnd
     const ModelAction action = findLoopingAction(object, {ACTION_WC, ACTION_WA, ACTION_DA, ACTION_DB, ACTION_DC});
     ASSERT_NE(action, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int firstFrame = model->getFirstFrame(action);
     const int lastFrame = model->getLastFrame(action);
 
-    object->inst._currentAnimation = action;
-    object->inst._nextAnimation = ACTION_DA;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._loopAnimation = true;
-    object->inst._sourceFrameIndex = firstFrame;
-    object->inst._targetFrameIndex = lastFrame;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), action);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), true);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), firstFrame);
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), lastFrame);
 
-    object->inst.incrementFrame();
+    GraphicsAccess::incrementFrame(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), action);
-    EXPECT_EQ(object->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, firstFrame);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), firstFrame);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 
@@ -2729,7 +2728,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithHeldItemS
     ASSERT_NE(rider, nullptr);
     ASSERT_NE(heldItem, nullptr);
 
-    const auto& model = rider->inst.getModelDescriptor();
+    const auto& model = rider->getGraphics().getModelDescriptor();
     const ModelAction mountedAction = model->getAction(ACTION_MH);
     ASSERT_NE(mountedAction, ACTION_COUNT);
 
@@ -2740,19 +2739,19 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithHeldItemS
 
     rider->setHolderRef(holder->getObjRef());
     rider->setHeldObject(SLOT_LEFT, heldItem->getObjRef());
-    rider->inst._currentAnimation = initialAction;
-    rider->inst._nextAnimation = ACTION_DA;
-    rider->inst._canBeInterrupted = false;
-    rider->inst._freezeAtLastFrame = false;
-    rider->inst._loopAnimation = true;
-    rider->inst._sourceFrameIndex = model->getFirstFrame(initialAction);
-    rider->inst._targetFrameIndex = lastFrame;
+    GraphicsAccess::setCurrentAnimation(rider->getGraphics(), initialAction);
+    GraphicsAccess::setNextAnimation(rider->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(rider->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(rider->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(rider->getGraphics(), true);
+    GraphicsAccess::setSourceFrameIndex(rider->getGraphics(), model->getFirstFrame(initialAction));
+    GraphicsAccess::setTargetFrameIndex(rider->getGraphics(), lastFrame);
 
-    rider->inst.incrementFrame();
+    GraphicsAccess::incrementFrame(rider->getGraphics());
 
     EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
-    EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(rider->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(rider->getGraphics()), firstMountFrame);
     EXPECT_TRUE(rider->getGraphics().canBeInterrupted());
 }
 
@@ -2764,7 +2763,7 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithEmptyHand
     ASSERT_NE(holder, nullptr);
     ASSERT_NE(rider, nullptr);
 
-    const auto& model = rider->inst.getModelDescriptor();
+    const auto& model = rider->getGraphics().getModelDescriptor();
     const ModelAction mountedAction = model->getAction(ACTION_MI);
     ASSERT_NE(mountedAction, ACTION_COUNT);
 
@@ -2776,19 +2775,19 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndMountedLoopWithEmptyHand
     rider->setHolderRef(holder->getObjRef());
     rider->setHeldObject(SLOT_LEFT, ObjectRef::Invalid);
     rider->setHeldObject(SLOT_RIGHT, ObjectRef::Invalid);
-    rider->inst._currentAnimation = initialAction;
-    rider->inst._nextAnimation = ACTION_DA;
-    rider->inst._canBeInterrupted = false;
-    rider->inst._freezeAtLastFrame = false;
-    rider->inst._loopAnimation = true;
-    rider->inst._sourceFrameIndex = model->getFirstFrame(initialAction);
-    rider->inst._targetFrameIndex = lastFrame;
+    GraphicsAccess::setCurrentAnimation(rider->getGraphics(), initialAction);
+    GraphicsAccess::setNextAnimation(rider->getGraphics(), ACTION_DA);
+    GraphicsAccess::setCanBeInterrupted(rider->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(rider->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(rider->getGraphics(), true);
+    GraphicsAccess::setSourceFrameIndex(rider->getGraphics(), model->getFirstFrame(initialAction));
+    GraphicsAccess::setTargetFrameIndex(rider->getGraphics(), lastFrame);
 
-    rider->inst.incrementFrame();
+    GraphicsAccess::incrementFrame(rider->getGraphics());
 
     EXPECT_EQ(rider->getCurrentAnimation(), mountedAction);
-    EXPECT_EQ(rider->inst._sourceFrameIndex, lastFrame);
-    EXPECT_EQ(rider->inst._targetFrameIndex, firstMountFrame);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(rider->getGraphics()), lastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(rider->getGraphics()), firstMountFrame);
     EXPECT_TRUE(rider->getGraphics().canBeInterrupted());
 }
 
@@ -2804,24 +2803,24 @@ TEST_F(ObjectAccessorFixture, ObjectGraphicsAnimationEndTransitionsToQueuedNextA
     const ModelAction nextAction = findValidAction(object, {ACTION_WC, ACTION_WA, ACTION_WB, ACTION_DA, ACTION_DB, ACTION_DC}, currentAction);
     ASSERT_NE(nextAction, ACTION_COUNT);
 
-    const auto& model = object->inst.getModelDescriptor();
+    const auto& model = object->getGraphics().getModelDescriptor();
     const int currentLastFrame = model->getLastFrame(currentAction);
     const int nextFirstFrame = model->getFirstFrame(nextAction);
 
-    object->inst._currentAnimation = currentAction;
-    object->inst._nextAnimation = nextAction;
-    object->inst._canBeInterrupted = false;
-    object->inst._freezeAtLastFrame = false;
-    object->inst._loopAnimation = false;
-    object->inst._sourceFrameIndex = model->getFirstFrame(currentAction);
-    object->inst._targetFrameIndex = currentLastFrame;
+    GraphicsAccess::setCurrentAnimation(object->getGraphics(), currentAction);
+    GraphicsAccess::setNextAnimation(object->getGraphics(), nextAction);
+    GraphicsAccess::setCanBeInterrupted(object->getGraphics(), false);
+    GraphicsAccess::setFreezeAtLastFrame(object->getGraphics(), false);
+    GraphicsAccess::setLoopAnimation(object->getGraphics(), false);
+    GraphicsAccess::setSourceFrameIndex(object->getGraphics(), model->getFirstFrame(currentAction));
+    GraphicsAccess::setTargetFrameIndex(object->getGraphics(), currentLastFrame);
 
-    object->inst.incrementFrame();
+    GraphicsAccess::incrementFrame(object->getGraphics());
 
     EXPECT_EQ(object->getCurrentAnimation(), nextAction);
-    EXPECT_EQ(object->inst._nextAnimation, ACTION_DA);
-    EXPECT_EQ(object->inst._sourceFrameIndex, currentLastFrame);
-    EXPECT_EQ(object->inst._targetFrameIndex, nextFirstFrame);
+    EXPECT_EQ(GraphicsAccess::nextAnimation(object->getGraphics()), ACTION_DA);
+    EXPECT_EQ(GraphicsAccess::sourceFrameIndex(object->getGraphics()), currentLastFrame);
+    EXPECT_EQ(GraphicsAccess::targetFrameIndex(object->getGraphics()), nextFirstFrame);
     EXPECT_TRUE(object->getGraphics().canBeInterrupted());
 }
 

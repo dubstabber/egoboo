@@ -21,9 +21,11 @@
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
 #include "egolib/vfs.h"
+#include "ObjectGraphicsTestAccess.hpp"
 
 namespace
 {
+using GraphicsAccess = Ego::Graphics::ObjectGraphicsTestAccess;
 
 class ScriptStateFunctionsFixture : public ::testing::Test
 {
@@ -1794,9 +1796,9 @@ TEST_F(ScriptStateFunctionsFixture, FlashVariableAndFlashVariableHeightUseVisual
     ASSERT_NE(actor, nullptr);
     ASSERT_GE(actor->getVertexCount(), 3u);
 
-    actor->inst._vertexList[0].pos[ZZ] = 5.0f;
-    actor->inst._vertexList[1].pos[ZZ] = 15.0f;
-    actor->inst._vertexList[2].pos[ZZ] = 25.0f;
+    GraphicsAccess::setVertexZ(actor->getGraphics(), 0, 5.0f);
+    GraphicsAccess::setVertexZ(actor->getGraphics(), 1, 15.0f);
+    GraphicsAccess::setVertexZ(actor->getGraphics(), 2, 25.0f);
 
     const int flashedLight = static_cast<int>(255 * idlib::fraction<float, 1, 255>());
 

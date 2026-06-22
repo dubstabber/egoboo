@@ -202,7 +202,7 @@ bool Object::canSeeObject(ObjectRef targetRef) const
         return true;
     }
 
-    int enviro_light = (target->getAlpha() * target->inst.getMaxLight()) * idlib::fraction<float, 1, 255>();
+    int enviro_light = (target->getAlpha() * target->getGraphics().getMaxLight()) * idlib::fraction<float, 1, 255>();
     int self_light = (target->getLight() == 255) ? 0 : target->getLight();
     int light = std::max(enviro_light, self_light);
     light *= expf(0.32f * getAttribute(Ego::Attribute::DARKVISION));

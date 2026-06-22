@@ -102,6 +102,8 @@ namespace Ego
 namespace Graphics
 {
 
+class ObjectGraphicsTestAccess;
+
 /// All the data that the renderer needs to draw the character
 class ObjectGraphics : private idlib::non_copyable
 {
@@ -280,6 +282,8 @@ public:
     oct_bb_t getBoundingBox() const;
 
 private:
+    friend class ObjectGraphicsTestAccess;
+
     struct VertexUpdateNeed
     {
         bool updateNeeded = true;
