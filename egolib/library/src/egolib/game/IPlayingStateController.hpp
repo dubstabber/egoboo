@@ -39,6 +39,9 @@ namespace Ego { namespace GUI {
 class MiniMap;
 class MessageLog;
 } }
+namespace Ego {
+class Texture;
+}
 
 /// @brief The control surface of the active in-game state, as needed by the game-core library.
 class IPlayingStateController {
@@ -48,10 +51,17 @@ public:
     /// @brief The in-game minimap widget.
     virtual const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const = 0;
 
+    /// @brief Show the minimap.
+    /// @return true if this call changed the minimap from hidden to visible.
+    virtual bool showMiniMap() = 0;
+
     /// @brief Toggle whether the minimap shows the player's position. Routed through the interface
     ///        (rather than getMiniMap()->setShowPlayerPosition) so the game-core library does not
     ///        link-reference the concrete MiniMap symbol — the lone library->HUD-widget reverse edge.
     virtual void setMiniMapShowPlayerPosition(bool showPlayerPosition) = 0;
+
+    /// @brief Add an icon blip to the minimap without exposing the concrete widget to callers.
+    virtual void addMiniMapBlip(float x, float y, const std::shared_ptr<const Ego::Texture>& icon) = 0;
 
     /// @brief The in-game scrolling message log widget.
     virtual const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const = 0;

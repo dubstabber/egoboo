@@ -44,7 +44,6 @@
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Script/Interpreter/SafeCast.hpp"
-#include "egolib/game/GUI/MiniMap.hpp"
 
 /**
  * @brief Convert a value of type \f$Value\f$ value into a bit index.

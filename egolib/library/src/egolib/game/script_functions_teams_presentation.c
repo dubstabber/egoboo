@@ -4,6 +4,7 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/MessageLog.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
 {
@@ -26,7 +27,6 @@ struct PresentationEffectsContext
 {
     ObjectRef selfRef = ObjectRef::Invalid;
     std::shared_ptr<IPlayingStateController> playingState;
-    std::shared_ptr<Ego::GUI::MiniMap> minimap;
 };
 
 struct TargetCompatibilityContext
@@ -40,7 +40,6 @@ PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self
     PresentationEffectsContext context;
     context.selfRef = self.getSelf();
     context.playingState = EngineContext::get().tryActivePlayingState();
-    context.minimap = context.playingState ? context.playingState->getMiniMap() : nullptr;
     return context;
 }
 
@@ -54,38 +53,58 @@ TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self
 
 bool showMiniMap(const PresentationEffectsContext& context)
 {
-    if (!context.minimap)
+    if (!context.playingState)
     {
         return false;
     }
 
-    const bool wasHidden = !context.minimap->isVisible();
-    context.minimap->setVisible(true);
-    return wasHidden;
+    return context.playingState->showMiniMap();
 }
 
 void showMiniMapPlayerPosition(const PresentationEffectsContext& context)
 {
-    if (context.minimap)
+    if (context.playingState)
     {
-        context.minimap->setShowPlayerPosition(true);
+        context.playingState->setMiniMapShowPlayerPosition(true);
     }
 }
 
-const Object* tryUiObject(ObjectRef objectRef)
+std::shared_ptr<const Ego::Texture> resolveMiniMapIcon(ObjectRef objectRef)
 {
-    return tryObject(objectRef);
+    const IProfiled* profiled = tryProfiled(objectRef);
+    const ITargetInfo* info = tryTargetInfo(objectRef);
+    if (profiled == nullptr || info == nullptr)
+    {
+        return nullptr;
+    }
+
+    const std::shared_ptr<ObjectProfile>& profile = profiled->getProfile();
+    if (profile == nullptr)
+    {
+        return nullptr;
+    }
+
+    const SKIN_T spellEffectType = profile->getSpellEffectType();
+    if (spellEffectType == ObjectProfile::NO_SKIN_OVERRIDE)
+    {
+        return profile->getIcon(info->getSkin()).get_ptr();
+    }
+
+    return activeProfileSystem().getSpellBookIcon(spellEffectType).get_ptr();
 }
 
 void addMiniMapBlip(const PresentationEffectsContext& context, float x, float y, ObjectRef objectRef)
 {
-    const Object* object = tryUiObject(objectRef);
-    if (!context.minimap || !object)
+    if (!context.playingState)
     {
         return;
     }
 
-    context.minimap->addBlip(x, y, object->getIcon());
+    const std::shared_ptr<const Ego::Texture> icon = resolveMiniMapIcon(objectRef);
+    if (icon)
+    {
+        context.playingState->addMiniMapBlip(x, y, icon);
+    }
 }
 
 void addSelfMiniMapBlip(const PresentationEffectsContext& context, float x, float y)

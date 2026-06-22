@@ -2714,3 +2714,20 @@ back-edge proof was required. Runtime source lines are now **128,594**, and `Obj
 singleton metrics remain **613** `::get()` lines, including **426** `EngineContext::get()` and **133**
 `GameSessionContext::get()` lines. Gates: `cmake --build build -j20` clean; focused action/movement/team
 role slice **23/23**; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 264 — Script presentation minimap controller seam (2026-06-22)
+
+Continued the stable-first script presentation cleanup without changing script opcode APIs, source
+placement, CMake archive membership, or spawn/enchant ownership behavior. `IPlayingStateController` now
+owns the minimap show and icon-blip adapter surface, and `script_functions_teams_presentation.c` no longer
+stores or calls `MiniMap` directly.
+
+Script blip icons are resolved from existing role data (`IProfiled` plus `ITargetInfo`) with the same
+profile/spellbook icon policy as `Object::getIcon()`, while `game_loop.c` routes the debug map reveal
+through the same controller seam. Removing `MiniMap.hpp` from `script_functions_internal.h` exposed a real
+free-rider in `script_functions_action_visual.c`; that translation unit now includes `game/graphic.h`
+directly for HUD color constants instead of relying on the shared script header.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Gates: `cmake --build build -j20` clean; focused presentation script slice
+**6/6**; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.

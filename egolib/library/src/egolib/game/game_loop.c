@@ -204,7 +204,7 @@ void MainLoop::check_stats()
     if (config().debug_developerMode_enable.getValue() && input.isKeyDown(SDLK_m) && input.isKeyDown(SDLK_LSHIFT))
     {
         auto playingState = activePlayingState();
-        playingState->getMiniMap()->setVisible(true);
+        playingState->showMiniMap();
         playingState->setMiniMapShowPlayerPosition(true);
         stat_check_delay = 150;
     }

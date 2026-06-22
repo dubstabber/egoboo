@@ -56,7 +56,11 @@ public:
 
     const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const override;
 
+    bool showMiniMap() override;
+
     void setMiniMapShowPlayerPosition(bool showPlayerPosition) override;
+
+    void addMiniMapBlip(float x, float y, const std::shared_ptr<const Ego::Texture>& icon) override;
 
     void addStatusMonitor(ObjectRef objectRef) override;
 

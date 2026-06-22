@@ -268,9 +268,21 @@ const std::shared_ptr<Ego::GUI::MiniMap>& PlayingState::getMiniMap() const
     return _miniMap;
 }
 
+bool PlayingState::showMiniMap()
+{
+    const bool wasHidden = !_miniMap->isVisible();
+    _miniMap->setVisible(true);
+    return wasHidden;
+}
+
 void PlayingState::setMiniMapShowPlayerPosition(bool showPlayerPosition)
 {
     _miniMap->setShowPlayerPosition(showPlayerPosition);
+}
+
+void PlayingState::addMiniMapBlip(float x, float y, const std::shared_ptr<const Ego::Texture>& icon)
+{
+    _miniMap->addBlip(x, y, icon);
 }
 
 void PlayingState::addStatusMonitor(ObjectRef objectRef)
