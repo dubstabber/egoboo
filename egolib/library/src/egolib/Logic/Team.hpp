@@ -27,9 +27,6 @@
 #include "egolib/platform.h"
 #include "egolib/typedef.h"              // ObjectRef
 #include "egolib/Profiles/_Include.hpp"  // XPType
-#include <memory>
-
-class Object;  // used only via shared_ptr/ObjectRef
 
 /// The description of a single team
 class Team : public idlib::equal_to_expr<Team>
@@ -47,27 +44,9 @@ public:
 
     Team(const TEAM_REF teamID);
 
-    /**
-    * @brief
-    *   Get the Object whos is the Leader of this team. If no Leader is specifically
-    *   set then the first Object joining this team is assigned as the leader.
-    *   If there is no leader or the leader has died, then this function will return
-    *   a nullptr.
-    **/
-	std::shared_ptr<Object> getLeader() const;
-
     ObjectRef getLeaderRef() const;
 
     void setLeaderRef(ObjectRef objectRef);
-
-    /**
-    * @brief
-    *   Change the leader of this team
-    * @param object
-    *   The Object who should become the leader. Use Object::INVALID_OBJECT for no 
-    *   leader.
-    **/
-	void setLeader(const std::shared_ptr<Object> &object);
 
     void clearLeader();
 
@@ -78,18 +57,7 @@ public:
     * @param caller
     *   The character who is calling for help
     **/
-    void callForHelp(const std::shared_ptr<Object> &caller);
-
     void callForHelp(ObjectRef callerRef);
-
-    /**
-    * @brief
-    *   Get the pansy who last has called for help. Returns a nullptr if no one has
-    *   called or the caller has died.
-    **/
-    std::shared_ptr<Object> getSissy() const;
-
-    ObjectRef getSissyRef() const;
 
     ObjectRef getCallerForHelpRef() const;
 

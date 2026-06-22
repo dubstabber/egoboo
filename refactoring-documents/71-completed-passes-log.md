@@ -2822,3 +2822,22 @@ back-edge proof was required. Singleton metrics are now **605** `::get()` lines,
 **128,707**, test files/lines are **50 / 23,993**, and ctest configures **916** cases. Gates:
 `cmake --build build -j20` clean; focused team/leader slice **13/13**; ctest **916/916**; validator
 `test.mod` 0/0.
+
+### Pass 271 — Team ObjectRef seam closure (2026-06-22)
+
+Closed the follow-up Team compatibility pocket without changing script opcode APIs, source placement,
+CMake archive membership, or gameplay team policy. The unused shared-pointer Team methods
+`getLeader`, `setLeader`, `getSissy`, `getSissyRef`, and `callForHelp(shared_ptr)` were removed, leaving
+leader and caller-for-help state exposed through the canonical `ObjectRef` API only.
+
+`Team.cpp` no longer includes or calls `GameSessionContext` / `GameModule`; leader/caller validation,
+team lookup, XP publication, and call-for-help alert publication now reach the active object/team world
+through the installed `Ego::Entities::IObjectWorld` seam. XP and help-alert broadcasts continue to use
+the existing locked object iterator, preserving deferred-removal behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **601** `::get()` lines, including **417**
+`EngineContext::get()` and **130** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,664**, and ctest configures **916** cases. Gates: `cmake --build build -j20` clean; focused
+Team/target/runtime/alert slice **140/140**; ctest **916/916**; validator `test.mod` 0/0; diff hygiene
+clean.

@@ -25,8 +25,7 @@
 
 #include "Team.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 namespace
 {
@@ -35,20 +34,36 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
+ObjectHandler* tryObjectHandler()
 {
-    ObjectHandler* objectHandler = GameSessionContext::get().tryObjectHandler();
+    Ego::Entities::IObjectWorld* world = Ego::Entities::tryActiveObjectWorld();
+    return world ? &world->getObjectHandler() : nullptr;
+}
+
+ObjectHandler& objectHandler()
+{
+    return Ego::Entities::activeObjectWorld().getObjectHandler();
+}
+
+std::vector<Team>& teamList()
+{
+    return Ego::Entities::activeObjectWorld().getTeamList();
+}
+
+Object* tryLiveObject(ObjectRef objectRef)
+{
+    ObjectHandler* objectHandler = tryObjectHandler();
     if (objectHandler == nullptr || !objectHandler->exists(objectRef))
     {
         return nullptr;
     }
 
-    return (*objectHandler)[objectRef];
+    return objectHandler->get(objectRef);
 }
 
 ObjectRef resolvedObjectRef(ObjectRef objectRef)
 {
-    return tryObjectShared(objectRef) ? objectRef : ObjectRef::Invalid;
+    return tryLiveObject(objectRef) ? objectRef : ObjectRef::Invalid;
 }
 }
 
@@ -79,7 +94,7 @@ Team::Team(const TEAM_REF teamID) :
 
 void Team::giveTeamExperience(const int amount, const XPType xptype) const
 {
-    for(const std::shared_ptr<Object> &chr : GameSessionContext::get().objectHandler().iterator())
+    for(const std::shared_ptr<Object> &chr : objectHandler().iterator())
     {
         if ( chr->getTeam()._teamID == _teamID )
         {
@@ -93,11 +108,6 @@ bool Team::hatesTeam(const Team &other) const
     return _hatesTeam[other._teamID];
 }
 
-std::shared_ptr<Object> Team::getLeader() const
-{
-	return tryObjectShared(_leaderRef);
-}
-
 ObjectRef Team::getLeaderRef() const
 {
     return resolvedObjectRef(_leaderRef);
@@ -108,48 +118,28 @@ void Team::setLeaderRef(ObjectRef objectRef)
     _leaderRef = resolvedObjectRef(objectRef);
 }
 
-void Team::setLeader(const std::shared_ptr<Object> &object)
-{
-	setLeaderRef(object ? object->getObjRef() : ObjectRef::Invalid);
-}
-
 void Team::clearLeader()
 {
     setLeaderRef(ObjectRef::Invalid);
 }
 
-void Team::callForHelp(const std::shared_ptr<Object> &caller)
-{
-    callForHelp(caller ? caller->getObjRef() : ObjectRef::Invalid);
-}
-
 void Team::callForHelp(ObjectRef callerRef)
 {
     _callerForHelpRef = resolvedObjectRef(callerRef);
-    const std::shared_ptr<Object> caller = tryObjectShared(_callerForHelpRef);
-    if (!caller)
+    const Object* caller = tryLiveObject(_callerForHelpRef);
+    if (caller == nullptr)
     {
         return;
     }
 
     //Notify all other characters who are friendly that this character has called for help
-    for(const std::shared_ptr<Object> &chr : GameSessionContext::get().objectHandler().iterator())
+    for(const std::shared_ptr<Object> &chr : objectHandler().iterator())
     {
-        if ( chr != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
+        if ( chr.get() != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
         {
             scriptable(*chr).addAIAlertBits(ALERTIF_CALLEDFORHELP);
         }
     }
-}
-
-std::shared_ptr<Object> Team::getSissy() const
-{
-    return tryObjectShared(_callerForHelpRef);
-}
-
-ObjectRef Team::getSissyRef() const
-{
-    return getCallerForHelpRef();
 }
 
 ObjectRef Team::getCallerForHelpRef() const
@@ -190,6 +180,5 @@ bool team_hates_team(const Team& a, const Team& b) {
 }
 
 bool team_hates_team(TEAM_REF a, TEAM_REF b) {
-    GameModule& module = GameSessionContext::get().activeModule();
-    return team_hates_team(module.getTeamList()[a], module.getTeamList()[b]);
+    return team_hates_team(teamList()[a], teamList()[b]);
 }
