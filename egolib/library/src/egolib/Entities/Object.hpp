@@ -954,6 +954,10 @@ private:
 
     void updateLatchButtons();
 
+    ai_state_t& scriptRuntimeState() noexcept;
+
+    const ai_state_t& scriptRuntimeState() const noexcept;
+
 private:
     friend ai_state_t& Ego::Script::runtimeState(Object& object);
     friend const ai_state_t& Ego::Script::runtimeState(const Object& object);

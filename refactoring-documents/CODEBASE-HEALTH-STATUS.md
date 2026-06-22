@@ -35,9 +35,9 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 164 / 6 / 28 / 24 / 78 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 771 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 278 `.cpp`, 73 `.h`, 317 `.hpp` |
-| Runtime source lines | 128,407 | Same scope as above |
+| Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Runtime source files | 772 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 317 `.hpp` |
+| Runtime source lines | 128,444 | Same scope as above |
 | Test files / lines | 50 / 23,921 | `egolib/tests`, source/header files only |
 | ctest cases | 912 | `ctest --test-dir build -N` |
 | ctest baseline | 912 / 912 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
@@ -58,7 +58,7 @@ The live archive member counts are:
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 78 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
+| `egolib-library` | 79 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
 | `egolib-game-graphics` | 21 | 3D scene-rendering layer: camera, billboard, texture atlas, render passes, GFX bootstrap |
 | `egolib-hud-widgets` | 6 | Game-coupled in-game HUD widgets |
 | `egolib-scriptvm` | 33 | EgoScript VM and `script_functions_*` dispatch family |
@@ -83,7 +83,7 @@ runtime files:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 971 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 975 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
 | `egolib/library/src/egolib/Script/script.h` | 685 |

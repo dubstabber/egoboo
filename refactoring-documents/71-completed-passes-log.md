@@ -2546,3 +2546,26 @@ Gates: `cmake --build build -j20` clean; focused `EngineContextFixture.*` **70/7
 validator `test.mod` 0/0. Archive proof: `foundation-base -> upper egolib`, `library -> upper four`, and
 `game-graphics -> top three` nm set-intersections are all **0**; positive control
 `game-graphics -> library` finds 68 expected downward edges.
+
+### Pass 252 — `Object_ai.cpp` script-runtime seam split (2026-06-22)
+
+The `Object` AI accessor/helper block moved out of `Object_update.cpp` into a new
+within-`egolib-library` sibling:
+
+- `Object_ai.cpp` (228 lines) — the private `scriptRuntimeState()` bridge plus the
+  `IScriptable` AI accessors/helpers (`getAIAlertBits` through `spawnAIState`).
+- `Object_update.cpp` (387 lines) — per-frame update, water/ripple handling, timers, perks,
+  stealth detection, latch updates, and resize effects.
+
+No public role-interface changes and no `ai_state_t` layout or script opcode behavior changes.
+`Ego::Script::runtimeState(Object&)` now reaches the embedded AI state through the private
+`Object::scriptRuntimeState()` friend seam instead of reading `object.ai` directly. The new `.cpp` is
+registered only in `EGOLIB_ENTITIES_SOURCES`, so it remains in `libegolib-library.a` and is intentionally
+absent from `egolib-game-graphics`, `egolib-hud-widgets`, `egolib-scriptvm`, and `egolib-gamestates`.
+
+Gates: `cmake --build build -j20` clean; focused object/script-runtime slice **8/8**; ctest
+**912/912**; validator `test.mod` 0/0. Archive membership is now
+**164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19** in the health-doc order. Archive proof:
+`Object_ai.cpp.o` appears only in `libegolib-library.a`; `library -> upper four` and
+`game-graphics -> top three` nm set-intersections are **0**; positive control
+`game-graphics -> library` finds 68 expected downward edges.

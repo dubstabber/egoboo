@@ -105,12 +105,12 @@ Runtime::~Runtime()
 
 ai_state_t& runtimeState(Object& object)
 {
-    return object.ai;
+    return object.scriptRuntimeState();
 }
 
 const ai_state_t& runtimeState(const Object& object)
 {
-    return object.ai;
+    return object.scriptRuntimeState();
 }
 
 } // namespace Script
