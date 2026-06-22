@@ -2448,3 +2448,24 @@ and absent from all eight upper egolib archives; nm set-intersection from `scrip
 into upper egolib archives is empty, with the base positive control finding expected intra-base
 dependencies (`Opcodes`, `activeProfileSystem`, `line_scanner_state_t` scan methods, `ConstantPool`,
 `CLogEntry`, and `Log`).
+
+### Pass 248 — `script_functions_alerts.c` context split (2026-06-22)
+
+The 643-line `game/script_functions_alerts.c` split into two within-`egolib-scriptvm` siblings:
+
+- `script_functions_alerts.c` (460 lines) — the residual simple alert-bit predicates, hit-direction
+  checks, level-up, and shop-theft checks.
+- `script_functions_alerts_context.c` (187 lines) — the role/context-dependent alert predicates:
+  `scr_IfSitting`, `scr_IfGrogged`, `scr_IfDazed`, `scr_IfBackstabbed`, `scr_IfHolderBlocked`, and
+  `scr_IfHeldInLeftHand`, plus the local `SelfStateContext` helper cluster they already used.
+
+No public API changes (`script_functions.h` unchanged), no private internal header, and no
+static-to-extern promotions. The helper cluster moved wholesale with its only consumers, so the split is
+purely TU-local. The new `.c` is registered in BOTH the master `EGOLIB_GAME_TOPLEVEL_SOURCES` and
+`EGOLIB_SCRIPTVM_LAYER_SOURCES` lists; scriptvm archive membership is now 33 `.o`.
+
+Gates: targeted build (`egolib-scriptvm`, `egolib-tests-executable`, `egoboo-content-validator`) clean;
+focused `ScriptStateFunctionsFixture.*` **59/59**; ctest **897/897**; validator `test.mod` 0/0. Archive
+proof: both alert objects are present in `libegolib-scriptvm.a`, no alert object appears in
+`libegolib-library.a`, and the six moved `scr_*` symbols are defined by
+`script_functions_alerts_context.c.o`.

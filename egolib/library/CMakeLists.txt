@@ -825,6 +825,7 @@ set(EGOLIB_GAME_TOPLEVEL_SOURCES
     src/egolib/game/script_functions_state_inventory.c
     src/egolib/game/script_functions_state_internal.h
     src/egolib/game/script_functions_alerts.c
+    src/egolib/game/script_functions_alerts_context.c
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
     src/egolib/game/script_functions_enchant.c
@@ -1279,6 +1280,7 @@ set(EGOLIB_SCRIPTVM_LAYER_SOURCES
     src/egolib/game/script_functions_action_audio.c
     src/egolib/game/script_functions_action_visual.c
     src/egolib/game/script_functions_alerts.c
+    src/egolib/game/script_functions_alerts_context.c
     src/egolib/game/script_functions_appearance.c
     src/egolib/game/script_functions_combat.c
     src/egolib/game/script_functions_commerce.c
