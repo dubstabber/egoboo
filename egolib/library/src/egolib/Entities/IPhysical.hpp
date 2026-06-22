@@ -3,6 +3,7 @@
 #include "egolib/_math.h"               // Vector3f, AxisAlignedBox2f, Facing
 #include "egolib/bbox.h"                // bumper_t, oct_bb_t
 #include "egolib/Logic/ObjectSlot.hpp"  // slot_t
+#include "egolib/Mesh/Info.hpp"         // Index1D
 
 class IPhysical
 {
@@ -12,6 +13,7 @@ public:
     virtual float getPosX() const = 0;
     virtual float getPosY() const = 0;
     virtual float getPosZ() const = 0;
+    virtual const Index1D& getTile() const = 0;
     virtual const Ego::Vector3f& getPosition() const = 0;
     /**
     * @return

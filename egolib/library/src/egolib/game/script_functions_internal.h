@@ -99,6 +99,11 @@ inline std::shared_ptr<IPlayingStateController> activePlayingState()
     return EngineContext::get().activePlayingState();
 }
 
+inline std::shared_ptr<IPlayingStateController> tryActivePlayingState()
+{
+    return EngineContext::get().tryActivePlayingState();
+}
+
 inline GameModule& activeModule()
 {
     return GameSessionContext::get().activeModule();
@@ -375,9 +380,9 @@ inline SelfProfileSnapshot makeSelfProfileSnapshot(const ai_state_t& self)
     }
 
     snapshot.profile = selfProfile.get();
-    if (const Object* selfObject = tryObject(self.getSelf()))
+    if (const ITargetInfo* selfInfo = tryTargetInfo(self.getSelf()))
     {
-        snapshot.selfName = selfObject->getName();
+        snapshot.selfName = selfInfo->getDisplayName();
     }
     snapshot.className = selfProfile->getClassName();
     snapshot.profileRef = selfProfile->getSlotNumber();

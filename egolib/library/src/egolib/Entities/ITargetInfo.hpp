@@ -6,12 +6,15 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"  // ModelAction
 #include "egolib/Logic/ObjectSlot.hpp"          // slot_t
 
+#include <string>
+
 class ITargetInfo
 {
 public:
     virtual ~ITargetInfo() = default;
 
     virtual ObjectRef getObjRef() const = 0;
+    virtual std::string getDisplayName() const = 0;
 
     virtual ObjectRef getHolderRef() const = 0;
     virtual slot_t getAttachmentSlot() const = 0;

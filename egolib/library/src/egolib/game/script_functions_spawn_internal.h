@@ -87,9 +87,9 @@ inline SpawnSelfContext resolveSpawnSelfContext(const ai_state_t& self)
     {
         context.oldPosition = context.physical->getOldPosition();
     }
-    if (const Object* selfObject = tryObject(context.ref))
+    if (context.targetInfo != nullptr)
     {
-        context.name = selfObject->getName();
+        context.name = context.targetInfo->getDisplayName();
     }
     context.className = profile ? profile->getClassName() : std::string();
     return context;

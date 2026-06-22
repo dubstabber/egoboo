@@ -184,6 +184,11 @@ std::string Object::getName(bool prefixArticle, bool prefixDefinite, bool capita
     return result;
 }
 
+std::string Object::getDisplayName() const
+{
+    return getName();
+}
+
 bool Object::isFacingLocation(const float x, const float y) const
 {
     auto facing = idlib::canonicalize(vec_to_facing(x - getPosX(), y - getPosY()));

@@ -2758,3 +2758,25 @@ back-edge proof was required. Gates: `cmake --build build -j20` clean; focused p
 and water-update seam slice **43/43**; ctest **913/913**; validator `test.mod` 0/0; full validator at the
 known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
 content errors).
+
+### Pass 266-268 — Script helper service and role seam cleanup (2026-06-22)
+
+Continued the stable-first script helper cleanup without changing script opcode APIs, source placement,
+CMake archive membership, or spawn/particle ownership behavior. The module and presentation helper TUs now
+route active playing-state discovery through the shared script helper seam, fog config reads through
+`Ego::activeConfig()`, and deprecated-function logging through `Log::activeTarget()` instead of direct
+`EngineContext` calls.
+
+`IPhysical` gained a read-only tile accessor and `ITargetInfo` gained a read-only display-name accessor.
+`script_functions_commerce_module.c`, `SelfProfileSnapshot`, and `SpawnSelfContext` now use those role
+surfaces for actor tile and legacy display-name reads. The legacy `AddEndMessage(Object*)`, spawned child
+ownership handles, and particle vertex-placement handles remain explicit concrete-object compatibility
+pockets.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **604** `::get()` lines, including **417**
+`EngineContext::get()` and **133** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,656**, and `Object.hpp` is **997** lines. Gates: `cmake --build build -j20` clean; focused
+role/script helper slice **219/219**; ctest **913/913**; validator `test.mod` 0/0; full validator at the
+known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
+content errors); `git diff --check` clean.

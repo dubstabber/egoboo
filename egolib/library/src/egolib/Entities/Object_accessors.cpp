@@ -107,6 +107,8 @@ bool Object::isDontCullBackfaces() const { return getProfile()->isDontCullBackfa
 
 float Object::getPosZ() const { return Ego::Physics::Collidable::getPosZ(); }
 
+const Index1D& Object::getTile() const { return Ego::Physics::Collidable::getTile(); }
+
 const Ego::Vector3f& Object::getPosition() const { return Ego::Physics::Collidable::getPosition(); }
 
 float Object::getFloorElevation() const { return _objectPhysics.getGroundElevation(); }

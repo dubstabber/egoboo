@@ -119,6 +119,8 @@ public:
 
     float getPosZ() const override;
 
+    const Index1D& getTile() const override;
+
     const Ego::Vector3f& getPosition() const override;
 
     float getFloorElevation() const override;
@@ -380,6 +382,7 @@ public:
     *   Capitalize the first letter in the name or class name (e.g "fluffy" -> "Fluffy")
     **/
     std::string getName(bool prefixArticle = true, bool prefixDefinite = true, bool capitalLetter = true) const;
+    std::string getDisplayName() const override;
 
     /**
     * @brief

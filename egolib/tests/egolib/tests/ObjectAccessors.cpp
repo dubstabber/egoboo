@@ -692,6 +692,7 @@ TEST_F(ObjectAccessorFixture, TargetInfoRoleSurfaceExposesAttachmentAndHeldState
 
     const ITargetInfo& target = *object;
 
+    EXPECT_EQ(target.getDisplayName(), object->getName());
     EXPECT_EQ(target.getHolderRef(), holder->getObjRef());
     EXPECT_EQ(target.getAttachmentSlot(), SLOT_RIGHT);
     EXPECT_TRUE(target.isBeingHeld());
@@ -1273,6 +1274,7 @@ TEST_F(ObjectAccessorFixture, PhysicalRoleSurfaceExposesCollisionShapeAndOrienta
     EXPECT_FLOAT_EQ(physical.getSpawnPosition().x(), 29.0f);
     EXPECT_FLOAT_EQ(physical.getSpawnPosition().y(), 31.0f);
     EXPECT_FLOAT_EQ(physical.getSpawnPosition().z(), 37.0f);
+    EXPECT_EQ(physical.getTile(), object->getTile());
     EXPECT_FLOAT_EQ(physical.getFloorElevation(), object->getFloorElevation());
     EXPECT_FLOAT_EQ(physical.getMinCollisionVolume()._mins[OCT_X], -1.0f);
     EXPECT_FLOAT_EQ(physical.getMaxCollisionVolume()._mins[OCT_X], 6.0f);

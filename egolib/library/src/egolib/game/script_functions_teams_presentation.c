@@ -2,7 +2,6 @@
 /// @brief Character presentation (minimap, end messages, status monitor), module linking, and enemy-sense publication
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
@@ -38,7 +37,7 @@ PresentationEffectsContext makePresentationEffectsContext(const ai_state_t& self
 {
     PresentationEffectsContext context;
     context.selfRef = self.getSelf();
-    context.playingState = EngineContext::get().tryActivePlayingState();
+    context.playingState = tryActivePlayingState();
     return context;
 }
 
@@ -141,17 +140,17 @@ bool addSelfEndMessageText(const PresentationEffectsContext& context, int messag
 void logDeprecatedScriptFunctionUse(const std::string& functionName,
                                     const std::string& className)
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
-                                                           __FILE__,
-                                                           __LINE__,
-                                                           "deprecated script function ",
-                                                           "`",
-                                                           functionName,
-                                                           "`",
-                                                           " by class `",
-                                                           className,
-                                                           "`",
-                                                           Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Warning,
+                                              __FILE__,
+                                              __LINE__,
+                                              "deprecated script function ",
+                                              "`",
+                                              functionName,
+                                              "`",
+                                              " by class `",
+                                              className,
+                                              "`",
+                                              Log::EndOfEntry);
 }
 
 void publishDeprecatedEnableListenSkillWarning(const SelfProfileSnapshot& context)

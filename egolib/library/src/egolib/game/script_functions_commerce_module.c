@@ -2,7 +2,6 @@
 /// @brief Module environment script functions (water/fog/tile manipulation, beats, exports, pits, expansion IDSZ)
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
@@ -13,7 +12,7 @@ GameSessionContext& gameSession()
 
 egoboo_config_t& config()
 {
-    return EngineContext::get().config();
+    return Ego::activeConfig();
 }
 
 struct ModuleEffectsContext
@@ -145,9 +144,9 @@ bool tryAddActiveModuleIdsz(const ModuleEffectsContext& context, const IDSZ2& id
 
 bool setActorTileType(const ModuleEffectsContext& context, uint16_t tileType)
 {
-    Object* selfObject = tryObject(context.selfRef);
-    return selfObject != nullptr &&
-           compatibleModule(context).setTileType(selfObject->getTile(), tileType);
+    const IPhysical* selfPhysical = tryPhysical(context.selfRef);
+    return selfPhysical != nullptr &&
+           compatibleModule(context).setTileType(selfPhysical->getTile(), tileType);
 }
 
 void configurePitFall(const ModuleEffectsContext& context, const Ego::Vector3f& location)
@@ -167,7 +166,7 @@ void pushModuleEndVictoryScreen()
     // game-core TU does not depend on the concrete VictoryScreen (which lives in egolib-gamestates).
     // scr_EndModule (the only caller) runs inside the gameplay update loop, where the active state is
     // always the PlayingState, so the guard is effectively always taken in real play.
-    if (auto controller = EngineContext::get().tryActivePlayingState())
+    if (auto controller = tryActivePlayingState())
     {
         controller->endModuleInVictory();
     }
