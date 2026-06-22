@@ -1,10 +1,32 @@
 #pragma once
 
 #include "egolib/_math.h"  // Facing, Vector2f, Vector3f
-#include <cstdint>         // uint8_t (enum forward declarations below)
+#include <cstdint>         // uint8_t
 
-enum turn_mode_t : uint8_t;
-enum LatchButton : uint8_t;
+/// The possible methods for characters to determine what direction they are facing.
+enum turn_mode_t : uint8_t
+{
+    TURNMODE_VELOCITY = 0,
+    TURNMODE_WATCH,
+    TURNMODE_SPIN,
+    TURNMODE_WATCHTARGET,
+    TURNMODE_COUNT
+};
+
+/// The offsets of bits identifying in-game actions in a bit set.
+enum LatchButton : uint8_t
+{
+    LATCHBUTTON_LEFT      = 0,
+    LATCHBUTTON_RIGHT     = 1,
+    LATCHBUTTON_JUMP      = 2,
+    LATCHBUTTON_ALTLEFT   = 3,
+    LATCHBUTTON_ALTRIGHT  = 4,
+    LATCHBUTTON_PACKLEFT  = 5,
+    LATCHBUTTON_PACKRIGHT = 6,
+    LATCHBUTTON_RESPAWN   = 7,
+
+    LATCHBUTTON_COUNT
+};
 
 class IMovementControl
 {

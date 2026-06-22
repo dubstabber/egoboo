@@ -93,6 +93,7 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/ObjectHandler.hpp
     src/egolib/Entities/Object_interaction.cpp
     src/egolib/Entities/Object_lifecycle.cpp
+    src/egolib/Entities/ObjectState.hpp
     src/egolib/Entities/Object_update.cpp
     src/egolib/Entities/Object.hpp
     src/egolib/Entities/Particle_combat.cpp

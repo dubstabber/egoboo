@@ -23,7 +23,7 @@
 
 #pragma once
 #if !defined(GAME_ENTITIES_PRIVATE) || GAME_ENTITIES_PRIVATE != 1
-#error(do not include directly, include `game/Entities/_Include.hpp` instead)
+#error "do not include directly, include game/Entities/_Include.hpp instead"
 #endif
 
 #include "egolib/Script/script.h"
@@ -52,39 +52,14 @@
 #include "egolib/Entities/Common.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/Physics/Collidable.hpp"
+#include "egolib/Entities/ObjectState.hpp"
 #include "egolib/game/Physics/ObjectPhysics.hpp"
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 
+#include <forward_list>
+
 //Forward declarations
 namespace Ego { class Enchantment; }
-
-/// The possible methods for characters to determine what direction they are facing
-enum turn_mode_t : uint8_t
-{
-    TURNMODE_VELOCITY = 0,                       ///< Character gets rotation from velocity (normal)
-    TURNMODE_WATCH,                              ///< For watch towers, look towards waypoint
-    TURNMODE_SPIN,                               ///< For spinning objects
-    TURNMODE_WATCHTARGET,                        ///< For combat intensive AI
-    TURNMODE_COUNT
-};
-
-//--------------------------------------------------------------------------------------------
-
-/// The offsets of Bits identifying in-game actions in a Bit set.
-enum LatchButton : uint8_t
-{
-    LATCHBUTTON_LEFT      = 0,                      ///< Character button presses
-    LATCHBUTTON_RIGHT     = 1,
-    LATCHBUTTON_JUMP      = 2,
-    LATCHBUTTON_ALTLEFT   = 3,                      ///< ( Alts are for grab/drop )
-    LATCHBUTTON_ALTRIGHT  = 4,
-    LATCHBUTTON_PACKLEFT  = 5,                      ///< ( Used by AI script for inventory cycle )
-    LATCHBUTTON_PACKRIGHT = 6,                      ///< ( Used by AI script for inventory cycle )
-    LATCHBUTTON_RESPAWN   = 7,
-
-    LATCHBUTTON_COUNT                               //Always last
-};
-
 
 /// The definition of the character object.
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
@@ -106,7 +81,8 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public ITargetInfo,
                public IVisualControl,
                public IWallet,
-               public std::enable_shared_from_this<Object>
+               public std::enable_shared_from_this<Object>,
+               private ObjectState
 {
 public:
     static const std::shared_ptr<Object> INVALID_OBJECT;    //< Invalid object reference
@@ -119,20 +95,8 @@ public:
     static constexpr float DISMOUNTZVEL = 12;               //< Vertical velocity when jumping off mounts
 
 public:
-    /**
-     * @brief
-     *  Constructor
-     * @param proRef
-     *  the profile reference of the profile this object should be spawned with
-     * @param objRef
-     *  the unique object reference of this object
-     */
     Object(ObjectProfileRef proRef, ObjectRef objRef);
 
-    /**
-     * @brief
-     *  Destructor.
-     */
     virtual ~Object();
 
     const std::shared_ptr<ObjectProfile>& getProfile() const override;
@@ -210,10 +174,6 @@ public:
 
     void respawnInPlace() override;
 
-    /**
-    * @brief
-    *   This function updates stats and such for this Object (called once per update loop)
-    **/
     void update();
 
     bool isOnWaterTile() const override;
@@ -252,18 +212,8 @@ public:
 
     bool isTerminated() const override;
 
-	/**
-	* @brief
-	*    Remove this object from the game.
-	*/
 	static void removeFromGame(Object * pchr);
 
-    /**
-    * @brief
-    *   This function returns true if this Object is submerged in liquid
-    * @return 
-    *   true if it is submerged (either fully or partially)
-    **/
     bool isSubmerged() const;
 
     void movePosition(const float x, const float y, const float z) override;
@@ -663,25 +613,10 @@ public:
 
     bool isWeapon() const override;
 
-    /**
-    * @return
-    *   The logic update frame when the rally bonus ends
-    **/
     uint32_t getRallyDuration() const;
 
-
-    /**
-    * @brief
-    *   Get the random seed used for determining which perks will be available when leveling and
-    *   how much attributes get improved
-    **/
     uint32_t getLevelUpSeed() const;
 
-    /**
-    * @brief
-    *   Generates a new random level up seed. Should be called every time a level up is complete
-    *   or first time generating a character from scratch (not a save game)
-    **/
     void randomizeLevelUpSeed();
 
     std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile,
@@ -746,20 +681,12 @@ public:
 
     std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const override;
 
-    /**
-    * @brief
-    *   changes the name of this Object
-    **/
     void setName(const std::string &name);
 
     void polymorphObject(ObjectProfileRef profileID, const SKIN_T skin) override;
 
     ObjectProfileRef getProfileID() const;
 
-    /**
-    * @return
-    *   true if this Object is immune to damage from the specified direction
-    **/
     bool isInvictusDirection(Facing direction) const;
 
     DamageType getDamageTargetType() const override;
@@ -952,10 +879,6 @@ public:
 
     void spawnAIState(uint16_t rank) override;
 
-    /**
-    * @brief
-    *   Re-initialized the bored timer to a random value
-    **/
     void resetBoredTimer();
 
     void resetInputCommands();
@@ -1025,17 +948,8 @@ private:
     **/
     void updateLastAttacker(const std::shared_ptr<Object> &attacker, bool healing);
 
-    /**
-    * @brief 
-    *   This function makes the characters get bigger or smaller, depending
-    *   on their fat_goto and fat_goto_time. Spellbooks do not resize
-    */
     void updateResize();
     
-    /**
-    * @brief
-    *   Checks if this Object has attained enough experience to increase its Experience Level
-    **/
     void checkLevelUp();
 
     void updateLatchButtons();
@@ -1044,179 +958,14 @@ private:
     friend ai_state_t& Ego::Script::runtimeState(Object& object);
     friend const ai_state_t& Ego::Script::runtimeState(const Object& object);
 
-    // character state
-    ai_state_t     ai;              ///< ai data
-
-    // character stats
-    Gender  gender;          ///< Gender
-
-    uint32_t       experience;      ///< Experience
-    uint8_t        experiencelevel; ///< Experience Level
-
-    uint16_t       ammomax;          ///< Ammo stuff
-    uint16_t       ammo;
-
-private:
-    // equipment and inventory
-    std::array<ObjectRef, SLOT_COUNT> holdingwhich; ///< != ObjectRef::Invalid if character is holding something
-    std::array<ObjectRef, INVEN_COUNT> equipment;   ///< != ObjectRef::Invalid if character has equipped something
-
-    // team stuff
-    TEAM_REF       team;            ///< Character's team
-    TEAM_REF       team_base;        ///< Character's starting team
-
-    float          fat_stt;                       ///< Character's initial size
-    float          fat;                           ///< Character's size
-    float          fat_goto;                      ///< Character's size goto
-    int16_t        fat_goto_time;                 ///< Time left in size change
-
-    // jump stuff
-    uint8_t          jump_timer;                    ///< Delay until next jump
-    uint8_t          jumpnumber;                    ///< Number of jumps remaining
-    bool             jumpready;                     ///< For standing on a platform character
-
-private:
-    // attachments
-    ObjectRef      attachedto;                    ///< != ObjectRef::Invalid if character is a held weapon
-    slot_t         inwhich_slot;                  ///< SLOT_LEFT or SLOT_RIGHT
-    ObjectRef      inwhich_inventory;             ///< != ObjectRef::Invalid if character is inside an inventory
-
-    // platform stuff
-    bool         platform;                      ///< Can it be stood on
-    bool         canuseplatforms;               ///< Can use platforms?
-    int            holdingweight;                 ///< For weighted buttons
-
-private:
-    // combat stuff
-    DamageType          damagetarget_damagetype;       ///< Type of damage for AI DamageTarget
-    DamageType          reaffirm_damagetype;           ///< For relighting torches
-    SFP8_T         damage_threshold;              ///< Damage below this number is ignored (8.8 fixed point)
-
-private:
-    // "variable" properties
-    PLA_REF      is_which_player;               ///< true = player
-    bool         islocalplayer;                 ///< true = local player
-    bool         invictus;                      ///< Totally invincible?
-    bool         iskursed;                      ///< Can't be dropped?
-    bool         nameknown;                     ///< Is the name known?
-    bool         ammoknown;                     ///< Is the ammo known?
-    bool         hitready;                      ///< Was it just dropped?
-    bool         isequipped;                    ///< For boots and rings and stuff
-
-    // "constant" properties
-    bool         isitem;                        ///< Is it grabbable?
-    bool         isshopitem;                    ///< Spawned in a shop?
-    bool         canbecrushed;                  ///< Crush in a door?
-
-private:
-    uint8_t          sparkle;         ///< Sparkle color or 0 for off
-
-    // misc timers
-    int16_t         grog_timer;                    ///< Grog timer
-    int16_t         daze_timer;                    ///< Daze timer
-    int16_t         bore_timer;                    ///< Boredom timer
-    uint8_t         careful_timer;                 ///< "You hurt me!" timer
-    uint16_t        reload_timer;                  ///< Time before another shot
-    uint8_t         damage_timer;                  ///< Invincibility timer
-
-    // graphical info
-    bool         draw_icon;       ///< Show the icon?
-
-private:
-    float          shadow_size_stt;  ///< Initial shadow size
-    uint32_t         shadow_size;      ///< Size of shadow
-    uint32_t         shadow_size_save; ///< Without size modifiers
-
-    // model info
-    bool         is_overlay;                    ///< Is this an overlay? Track aitarget...
-    SKIN_T         skin;                          ///< Character's skin
-	SKIN_T         skin_stt;                      ///< Character's initial skin
-    ObjectProfileRef        basemodel_ref;                     ///< The true form
-
-public:
-    // collision info
-
-    /// @note - to make it easier for things to "hit" one another (like a damage particle from
-    ///        a torch hitting a grub bug), Aaron sometimes made the bumper size much different
-    ///        than the shape of the actual object.
-    ///        The old bumper data that is read from the data.txt file will be kept in
-    ///        the struct "bump". A new bumper that actually matches the size of the object will
-    ///        be kept in the struct "collision"
-private:
-    bumper_t bump_stt;
-    bumper_t bump;
-    bumper_t bump_save;
-
-    bumper_t bump_1;       ///< the loosest collision volume that mimics the current bump
-    oct_bb_t chr_max_cv;   ///< a looser collision volume for chr-prt interactions
-    oct_bb_t chr_min_cv;   ///< the tightest collision volume for chr-chr interactions
-
-    std::array<oct_bb_t, SLOT_COUNT> slot_cv;     ///< the cv's for the object's slots
-
-private:
-    orientation_t  ori;                           ///< Character's orientation
-    orientation_t  ori_old;                       ///< Character's last orientation
-
-    // data for doing the physics in bump_all_objects()|
-
-    uint8_t stoppedby;                            ///< Collision mask
-
-    ObjectRef bumplist_next;                      ///< Next character on fanblock
-
-    // movement properties
-    turn_mode_t turnmode;                         ///< Turning mode
-
-    bool inwater;
-
-    int               dismount_timer;                ///< a timer BB added in to make mounts and dismounts not so unpredictable
-    ObjectRef         dismount_object;               ///< the object that you were dismounting from
-
-private:
-    static constexpr int RIPPLETOLERANCE = 60;
-    static constexpr int RIPPLEAND = 15;             ///< How often ripples spawn
-    static constexpr int HURTDAMAGE = 256;           //< Minimum damage for hurt animation
-    static constexpr uint8_t CAREFULTIME = 50;       ///< Friendly fire timer (number of game updates)
-    static constexpr uint8_t DAMAGETIME = 32;        ///< Invincibility time (number of game updates)
-    static constexpr float DROPXYVEL = 12;           //< Horizontal velocity of dropped items
-    static constexpr int GRABDELAY = 25;             ///< Time before grab again
-
-    bool _terminateRequested;                        ///< True if this character no longer exists in the game and should be destructed
-    ObjectRef _objRef;                               ///< The unique object reference of this object
-    ObjectProfileRef _profileID;                     ///< The ID of our profile
-    std::shared_ptr<ObjectProfile> _profile;         ///< Our Profile
-    bool _showStatus;                                ///< Display stats?
-    bool _isAlive;                                   ///< Is this Object alive or dead?
-    std::string _name;                               ///< Name of the Object
-
-    //Attributes
-    float _currentLife;
-    float _currentMana;
-    std::array<float, Ego::Attribute::NR_OF_ATTRIBUTES> _baseAttribute; ///< Character attributes
-    std::unordered_map<Ego::Attribute::AttributeType, float, std::hash<uint8_t>> _tempAttribute; ///< Character attributes with enchants
-
-    Inventory _inventory;
-    uint16_t  _money;                                    ///< Money
-    std::bitset<Ego::Perks::NR_OF_PERKS> _perks;         ///< Perks known (super-efficient bool array)
-    uint32_t _levelUpSeed;
-
-    //Input commands
-    std::bitset<LATCHBUTTON_COUNT> _inputLatchesPressed;
-
-private:
-    // Graphics
-    Ego::Graphics::ObjectGraphics inst;                   ///< the render data
-
-    //Physics
+    Ego::Graphics::ObjectGraphics inst;
     Ego::Physics::ObjectPhysics _objectPhysics;
 
-    //Non persistent variables. Once game ends these are not saved
-    bool _hasBeenKilled;                              ///< If this Object has been killed at least once this module (many can respawn)
-    uint32_t _reallyDuration;                         ///< Game Logic Update frame duration for rally bonus gained from the Perk
-    bool _stealth;                                    ///< Is this Object actively trying to hide from others?
-    uint16_t _stealthTimer;                           ///< Time before we can enter stealth again
-    uint32_t _observationTimer;                       ///< Next update frame we are going to scan for hidden objects
-
-    //Enchantment stuff
-    std::forward_list<std::shared_ptr<Ego::Enchantment>> _activeEnchants;    ///< List of all active enchants on this Object
-    std::weak_ptr<Ego::Enchantment> _lastEnchantSpawned;    //< Last enchantment that his Object has spawned
+    bool _hasBeenKilled;
+    uint32_t _reallyDuration;
+    bool _stealth;
+    uint16_t _stealthTimer;
+    uint32_t _observationTimer;
+    std::forward_list<std::shared_ptr<Ego::Enchantment>> _activeEnchants;
+    std::weak_ptr<Ego::Enchantment> _lastEnchantSpawned;
 };

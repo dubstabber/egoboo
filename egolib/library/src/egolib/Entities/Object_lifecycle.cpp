@@ -37,7 +37,7 @@ const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
 }
 }
 
-Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
+ObjectState::ObjectState(ObjectProfileRef proRef, ObjectRef objRef) :
     ai(),
     gender(Gender::Male),
     experience(0),
@@ -53,7 +53,7 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     fat_goto(0.0f),
     fat_goto_time(0),
 
-    jump_timer(JUMPDELAY),
+    jump_timer(Object::JUMPDELAY),
     jumpnumber(0),
     jumpready(false),
 
@@ -134,25 +134,8 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
     _perks(),
     _levelUpSeed(Random::next(std::numeric_limits<uint32_t>::max())),
 
-    // Graphics
-    inst(*this),
-
-    // Physics
-    _objectPhysics(*this),
-
     // Input commands
-    _inputLatchesPressed(),
-
-    // Non-persistent variables
-    _hasBeenKilled(false),
-    _reallyDuration(0),
-    _stealth(false),
-    _stealthTimer(0),
-    _observationTimer((objRef.get() % ONESECOND) + worldUpdateCount()), // spread observations so all characters don't happen at the same time
-
-    // Enchants
-    _activeEnchants(),
-    _lastEnchantSpawned()
+    _inputLatchesPressed()
 {
     holdingwhich.fill(ObjectRef::Invalid);
     _baseAttribute.fill(0.0f);
@@ -165,7 +148,20 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
         const idlib::interval<float>& baseRange = _profile->getAttributeBase(static_cast<Ego::Attribute::AttributeType>(i));
         _baseAttribute[i] = Random::next(baseRange);
     }
+}
 
+Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
+    ObjectState(proRef, objRef),
+    inst(*this),
+    _objectPhysics(*this),
+    _hasBeenKilled(false),
+    _reallyDuration(0),
+    _stealth(false),
+    _stealthTimer(0),
+    _observationTimer((objRef.get() % ONESECOND) + worldUpdateCount()), // spread observations so all characters don't happen at the same time
+    _activeEnchants(),
+    _lastEnchantSpawned()
+{
     resetBoredTimer();
 }
 
