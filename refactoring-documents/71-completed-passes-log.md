@@ -2491,3 +2491,32 @@ proof: `GameEngine.cpp.o` and `GameEngine_lifecycle.cpp.o` are both present in `
 `libegolib-hud-widgets.a`, `libegolib-gamestates.a`, or `libegolib-scriptvm.a`. Live-archive nm
 set-intersection from `egolib-library` into the four upper layers remains zero, with positive control
 `egolib-game-graphics -> egolib-library` finding 68 expected downward edges.
+
+### Pass 250 — `ObjectProfile_load.cpp` data-parser split (2026-06-22)
+
+The 730-line `Profiles/ObjectProfile_load.cpp` split into two within-`egolib-foundation-base` siblings:
+
+- `ObjectProfile_load.cpp` (203 lines) — texture/message loading plus the two `loadFromFile` orchestration
+  overloads: service resolution, model/enchant/message/particle/sound setup, texture/default-name loading,
+  data-file dispatch, and post-load lighting fixup.
+- `ObjectProfile_data.cpp` (543 lines) — the `data.txt` parser:
+  `ObjectProfile::loadDataFile`, the local `normalizePerkName` helper, and the local
+  `vfs_get_next_object_profile_ref` helper.
+
+No public API changes (`ObjectProfile.hpp` unchanged) and no static-to-extern promotions. The only shared
+private shape is `ObjectProfile::LoadServices`, whose full definition moved from the `.cpp` body into
+`ObjectProfile_internal.h` because both sibling TUs need the complete type. All member calls still resolve
+through the existing `ObjectProfile` declarations, and the parser-local helpers moved with their only
+consumer.
+
+The new `.cpp` is registered only in `EGOLIB_FOUNDATION_BASE_SOURCES`, preserving the existing
+foundation-base ownership of object-profile loading. Gates: targeted build (`egolib-foundation-base`,
+`egolib-tests-executable`, `egoboo-content-validator`) clean; focused profile/content-path test slice
+**164/164**; ctest **897/897**; validator `test.mod` 0/0; full validator at the known legacy content
+baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing content errors).
+Archive proof: `ObjectProfile_core.cpp.o`, `ObjectProfile_data.cpp.o`, and `ObjectProfile_load.cpp.o` are
+all present in `libegolib-foundation-base.a` (archive membership now 162 `.o`); `ObjectProfile_data.cpp.o`
+is absent from all eight upper egolib archives; nm set-intersection from `ObjectProfile_data.cpp.o` into
+upper archives is empty, with the base positive control finding expected intra-base dependencies
+(`ReadContext`, `vfs_get_next_*`, `ObjectProfile::setupXPTable`, `ModelDescriptor::charToAction`, and
+`Log`).

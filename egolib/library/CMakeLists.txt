@@ -1047,6 +1047,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Profiles/LocalParticleProfileRef.cpp
     src/egolib/Profiles/ModuleProfile.cpp
     src/egolib/Profiles/ObjectProfile_core.cpp
+    src/egolib/Profiles/ObjectProfile_data.cpp
     src/egolib/Profiles/ObjectProfile_load.cpp
     src/egolib/Profiles/ParticleProfile.cpp
     src/egolib/Profiles/ParticleProfileWriter.cpp

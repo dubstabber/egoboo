@@ -29,6 +29,18 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/FileFormats/template.h"
+#include "egolib/Logic/IPerkHandler.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Math/Random.hpp"
+#include "egolib/egoboo_setup.h"
 
 static const SkinInfo INVALID_SKIN = SkinInfo();
+
+struct ObjectProfile::LoadServices
+{
+    Log::Target& logTarget;
+    Ego::Perks::IPerkHandler& perkHandler;
+    IProfileSystem& profileSystem;
+    const egoboo_config_t& config;
+    IAudioSystem* audioSystem;
+};
