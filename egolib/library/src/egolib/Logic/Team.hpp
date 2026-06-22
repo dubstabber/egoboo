@@ -29,7 +29,7 @@
 #include "egolib/Profiles/_Include.hpp"  // XPType
 #include <memory>
 
-class Object;  // used only via shared_ptr/weak_ptr/ObjectRef
+class Object;  // used only via shared_ptr/ObjectRef
 
 /// The description of a single team
 class Team : public idlib::equal_to_expr<Team>
@@ -58,6 +58,8 @@ public:
 
     ObjectRef getLeaderRef() const;
 
+    void setLeaderRef(ObjectRef objectRef);
+
     /**
     * @brief
     *   Change the leader of this team
@@ -66,6 +68,8 @@ public:
     *   leader.
     **/
 	void setLeader(const std::shared_ptr<Object> &object);
+
+    void clearLeader();
 
     /**
     * @brief
@@ -76,6 +80,8 @@ public:
     **/
     void callForHelp(const std::shared_ptr<Object> &caller);
 
+    void callForHelp(ObjectRef callerRef);
+
     /**
     * @brief
     *   Get the pansy who last has called for help. Returns a nullptr if no one has
@@ -84,6 +90,10 @@ public:
     std::shared_ptr<Object> getSissy() const;
 
     ObjectRef getSissyRef() const;
+
+    ObjectRef getCallerForHelpRef() const;
+
+    void setCallerForHelpRef(ObjectRef objectRef);
 
     /**
     * @brief
@@ -140,8 +150,8 @@ public:
 
 private:
     TEAM_REF _teamID;                       ///< Unique team ID
-    std::weak_ptr<Object> _leader;          ///< The leader of the team
-    std::weak_ptr<Object> _sissy;           ///< Whoever called for help last
+    ObjectRef _leaderRef;                   ///< The leader of the team
+    ObjectRef _callerForHelpRef;            ///< Whoever called for help last
     std::array<bool, TEAM_MAX> _hatesTeam;  ///< Don't damage allies...
     uint16_t _morale;                       ///< Number of characters on team
 };

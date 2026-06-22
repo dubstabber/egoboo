@@ -2800,3 +2800,25 @@ back-edge proof was required. Singleton metrics remain **604** `::get()` lines, 
 **128,667**, test files/lines are **50 / 23,994**, and ctest configures **916** cases. Gates:
 `cmake --build build -j20` clean; focused `CollisionPipeline` slice **11/11**; ctest **916/916**;
 validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 270 — Team leadership ref ownership cleanup (2026-06-22)
+
+Continued the stable-first ownership-boundary cleanup from collision into team leadership and script leader
+variable resolution without changing script opcode APIs, source placement, CMake archive membership, or
+gameplay team policy. `Team` now stores leader and caller-for-help state as canonical `ObjectRef` values,
+adds ref-first leader/caller setters and getters, and keeps the former shared-pointer `getLeader`,
+`setLeader`, `getSissy`, and `callForHelp` methods as compatibility wrappers that resolve through the
+active object handler.
+
+Production leadership claim/clear, firstborn leadership, call-for-help publication, death leader-killed
+alerts, and module team accessors now use ref comparisons instead of shared-pointer identity. Focused tests
+were migrated to assert `ObjectRef` team state directly, including removing the direct `_sissy` fixture
+reset. Script operand context no longer carries a concrete `leaderObject`; `VARLEADERX/Y/DISTANCE/TURN`
+use the existing `leaderPhysical` role surface while preserving the missing-leader fallback behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,707**, test files/lines are **50 / 23,993**, and ctest configures **916** cases. Gates:
+`cmake --build build -j20` clean; focused team/leader slice **13/13**; ctest **916/916**; validator
+`test.mod` 0/0.

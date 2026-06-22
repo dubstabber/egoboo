@@ -45,11 +45,6 @@ ObjectRef resolveLeaderRefForVariables(const ITargetInfo& selfInfo)
     return teamLeaderRef(selfInfo);
 }
 
-const Object* tryLeaderForVariables(const ITargetInfo& selfInfo)
-{
-    return tryObject(resolveLeaderRefForVariables(selfInfo));
-}
-
 void populateSelfOperandContext(Ego::Script::ScriptOperandContext& context)
 {
     context.selfObject = tryObject(context.selfRef);
@@ -98,12 +93,6 @@ void populateLeaderOperandContext(Ego::Script::ScriptOperandContext& context)
     }
 
     context.leaderRef = resolveLeaderRefForVariables(*context.selfTargetInfo);
-    context.leaderObject = tryLeaderForVariables(*context.selfTargetInfo);
-    if (context.leaderObject == nullptr)
-    {
-        return;
-    }
-
     context.leaderPhysical = tryPhysical(context.leaderRef);
 }
 

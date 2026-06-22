@@ -285,7 +285,7 @@ void ObjectHandler::maybeRunDeferred()
                         if (chr->isTerminated() || chr == element) continue;
                         publishTargetKilledAlert(*chr, element->getObjRef());
 
-                        if (chr->getTeam().getLeader() == element)
+                        if (chr->getTeam().getLeaderRef() == element->getObjRef())
                         {
                             chr->addAIAlertBits(ALERTIF_LEADERKILLED);
                         }

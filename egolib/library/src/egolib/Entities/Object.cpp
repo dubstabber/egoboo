@@ -55,7 +55,7 @@ void Object::becomeTeamLeader()
         return;
     }
 
-    getMutableTeam().setLeader(selfHandle(*this));
+    getMutableTeam().setLeaderRef(getObjRef());
 }
 
 void Object::callTeamForHelp()
@@ -64,7 +64,7 @@ void Object::callTeamForHelp()
         return;
     }
 
-    getMutableTeam().callForHelp(selfHandle(*this));
+    getMutableTeam().callForHelp(getObjRef());
 }
 
 void Object::giveTeamExperience(int amount, XPType type) const
@@ -83,8 +83,8 @@ void Object::clearTeamLeadershipIfSelf(TEAM_REF teamRef)
     }
 
     Team& team = getMutableTeam(teamRef);
-    if (team.getLeader().get() == this) {
-        team.setLeader(Object::INVALID_OBJECT);
+    if (team.getLeaderRef() == getObjRef()) {
+        team.clearLeader();
     }
 }
 
@@ -95,8 +95,8 @@ void Object::claimTeamLeadershipIfUnset(TEAM_REF teamRef)
     }
 
     Team& team = getMutableTeam(teamRef);
-    if (!team.getLeader()) {
-        team.setLeader(selfHandle(*this));
+    if (team.getLeaderRef() == ObjectRef::Invalid) {
+        team.setLeaderRef(getObjRef());
     }
 }
 

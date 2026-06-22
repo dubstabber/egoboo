@@ -236,7 +236,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     }
 
     // Firstborn becomes the leader
-    if (!getTeamList()[team].getLeader())
+    if (getTeamList()[team].getLeaderRef() == ObjectRef::Invalid)
     {
         pchr->becomeTeamLeader();
     }

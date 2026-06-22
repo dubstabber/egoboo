@@ -29,7 +29,6 @@ Ego::Script::ScriptOperandContext makeOperandContext(const Object* self,
     context.selfObject = self;
     context.targetObject = target;
     context.ownerObject = owner;
-    context.leaderObject = leader;
 
     if (self != nullptr)
     {

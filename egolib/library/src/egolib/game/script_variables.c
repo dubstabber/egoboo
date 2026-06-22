@@ -82,7 +82,6 @@ int32_t turnToward(const IPhysical& from, const IPhysical& to)
 #define pobject (context.selfObject)
 #define ptarget (context.targetObject)
 #define powner (context.ownerObject)
-#define pleader (context.leaderObject)
 
 int32_t load_VARTMPX(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
@@ -180,19 +179,19 @@ int32_t load_VARTARGETTURN(script_state_t& scriptState, ai_state_t& aiState, con
 
 int32_t load_VARLEADERX(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    const IPhysical* leaderPhysical = context.leaderPhysical;
     return leaderPhysical ? leaderPhysical->getPosX() : physical(*pobject).getPosX();
 }
 
 int32_t load_VARLEADERY(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    const IPhysical* leaderPhysical = context.leaderPhysical;
     return leaderPhysical ? leaderPhysical->getPosY() : physical(*pobject).getPosY();
 }
 
 int32_t load_VARLEADERDISTANCE(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    const IPhysical* leaderPhysical = context.leaderPhysical;
     if (!leaderPhysical)
     {
         return 0x7FFFFFFF;
@@ -203,7 +202,7 @@ int32_t load_VARLEADERDISTANCE(script_state_t& scriptState, ai_state_t& aiState,
 
 int32_t load_VARLEADERTURN(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    const IPhysical* leaderPhysical = tryPhysicalRole(pleader);
+    const IPhysical* leaderPhysical = context.leaderPhysical;
     return leaderPhysical ? uint16_t(leaderPhysical->getFacingZ()) : uint16_t(physical(*pobject).getFacingZ());
 }
 
@@ -604,7 +603,6 @@ int32_t load_VARTARGETALTITUDE(script_state_t& scriptState, ai_state_t& aiState,
     return (nullptr == targetPhysical) ? 0 : targetPhysical->getPosZ() - targetPhysical->getFloorElevation();
 }
 
-#undef pleader
 #undef powner
 #undef ptarget
 #undef pobject

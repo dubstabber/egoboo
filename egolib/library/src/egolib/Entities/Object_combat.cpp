@@ -208,7 +208,7 @@ void publishDeathAlertsAndTeamExperience(Object& killed,
             listener->giveExperience(experience, XP_TEAMKILL, false);
         }
 
-        if (killed.getTeam().getLeader().get() == &killed && listener->getTeam() == killed.getTeam())
+        if (killed.getTeam().getLeaderRef() == killed.getObjRef() && listener->getTeam() == killed.getTeam())
         {
             listener->addAIAlertBits(ALERTIF_LEADERKILLED);
         }

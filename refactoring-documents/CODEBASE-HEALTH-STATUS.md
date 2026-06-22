@@ -37,13 +37,13 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,667 | Same scope as above |
-| Test files / lines | 50 / 23,994 | `egolib/tests`, source/header files only |
+| Runtime source lines | 128,707 | Same scope as above |
+| Test files / lines | 50 / 23,993 | `egolib/tests`, source/header files only |
 | ctest cases | 916 | `ctest --test-dir build -N` |
 | ctest baseline | 916 / 916 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 604 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `::get()` call sites | 605 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 133 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 134 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 648 | Broad grep count, not semantic classification |
 | Object role interfaces | 19 | 21 `Entities/I*.hpp` files total, including 2 service interfaces |

@@ -34,12 +34,28 @@ IScriptable& scriptable(Object& object)
 {
     return object;
 }
+
+std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
+{
+    ObjectHandler* objectHandler = GameSessionContext::get().tryObjectHandler();
+    if (objectHandler == nullptr || !objectHandler->exists(objectRef))
+    {
+        return nullptr;
+    }
+
+    return (*objectHandler)[objectRef];
+}
+
+ObjectRef resolvedObjectRef(ObjectRef objectRef)
+{
+    return tryObjectShared(objectRef) ? objectRef : ObjectRef::Invalid;
+}
 }
 
 Team::Team(const TEAM_REF teamID) :
     _teamID(teamID),
-    _leader(),
-    _sissy(),
+    _leaderRef(ObjectRef::Invalid),
+    _callerForHelpRef(ObjectRef::Invalid),
     _hatesTeam{},
     _morale(0)
 {
@@ -79,23 +95,42 @@ bool Team::hatesTeam(const Team &other) const
 
 std::shared_ptr<Object> Team::getLeader() const
 {
-	return _leader.lock();
+	return tryObjectShared(_leaderRef);
 }
 
 ObjectRef Team::getLeaderRef() const
 {
-    const std::shared_ptr<Object> leader = _leader.lock();
-    return leader ? leader->getObjRef() : ObjectRef::Invalid;
+    return resolvedObjectRef(_leaderRef);
+}
+
+void Team::setLeaderRef(ObjectRef objectRef)
+{
+    _leaderRef = resolvedObjectRef(objectRef);
 }
 
 void Team::setLeader(const std::shared_ptr<Object> &object)
 {
-	_leader = object;
+	setLeaderRef(object ? object->getObjRef() : ObjectRef::Invalid);
+}
+
+void Team::clearLeader()
+{
+    setLeaderRef(ObjectRef::Invalid);
 }
 
 void Team::callForHelp(const std::shared_ptr<Object> &caller)
 {
-    _sissy = caller;
+    callForHelp(caller ? caller->getObjRef() : ObjectRef::Invalid);
+}
+
+void Team::callForHelp(ObjectRef callerRef)
+{
+    _callerForHelpRef = resolvedObjectRef(callerRef);
+    const std::shared_ptr<Object> caller = tryObjectShared(_callerForHelpRef);
+    if (!caller)
+    {
+        return;
+    }
 
     //Notify all other characters who are friendly that this character has called for help
     for(const std::shared_ptr<Object> &chr : GameSessionContext::get().objectHandler().iterator())
@@ -109,13 +144,22 @@ void Team::callForHelp(const std::shared_ptr<Object> &caller)
 
 std::shared_ptr<Object> Team::getSissy() const
 {
-    return _sissy.lock();
+    return tryObjectShared(_callerForHelpRef);
 }
 
 ObjectRef Team::getSissyRef() const
 {
-    const std::shared_ptr<Object> sissy = _sissy.lock();
-    return sissy ? sissy->getObjRef() : ObjectRef::Invalid;
+    return getCallerForHelpRef();
+}
+
+ObjectRef Team::getCallerForHelpRef() const
+{
+    return resolvedObjectRef(_callerForHelpRef);
+}
+
+void Team::setCallerForHelpRef(ObjectRef objectRef)
+{
+    _callerForHelpRef = resolvedObjectRef(objectRef);
 }
 
 void Team::makeAlliance(const Team &other)

@@ -2786,9 +2786,9 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
 
     actor->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
     ally->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD));
-    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    module.getTeamList()[Team::TEAM_GOOD].clearLeader();
     EXPECT_TRUE(scr_BecomeLeader(state, self));
-    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getLeader(), actor);
+    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getLeaderRef(), actor->getObjRef());
     EXPECT_TRUE(scr_IfLeaderIsAlive(state, self));
     EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), actor->getObjRef());
 
@@ -2806,7 +2806,7 @@ TEST_F(ScriptSystemsFunctionsFixture, TeamHelpersUseTeamMemberRoleSeams)
     EXPECT_TRUE(scr_GiveExperienceToGoodTeam(state, self));
     EXPECT_GT(actor->getExperience(), goodTeamXpBefore);
 
-    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    module.getTeamList()[Team::TEAM_GOOD].clearLeader();
     EXPECT_FALSE(scr_IfLeaderIsAlive(state, self));
     EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), ObjectRef::Invalid);
 
@@ -2846,7 +2846,7 @@ TEST_F(ScriptSystemsFunctionsFixture, SelfRoleResidueHelpersFailQuietlyWhenSelfR
     EXPECT_FALSE(scr_JoinTargetTeam(state, invalidTeamSelf));
     EXPECT_EQ(actor->getTeamRef(), static_cast<TEAM_REF>(Team::TEAM_GOOD));
 
-    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    module.getTeamList()[Team::TEAM_GOOD].clearLeader();
     EXPECT_FALSE(scr_BecomeLeader(state, invalidTeamSelf));
     EXPECT_EQ(module.getTeamLeaderRef(static_cast<TEAM_REF>(Team::TEAM_GOOD)), ObjectRef::Invalid);
     EXPECT_FALSE(scr_IfLeaderIsAlive(state, invalidTeamSelf));

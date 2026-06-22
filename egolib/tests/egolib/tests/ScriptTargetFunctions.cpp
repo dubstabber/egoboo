@@ -964,8 +964,8 @@ TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
     sissy->setBaseTeamRef(teamRef);
 
     auto& team = module.getTeamList()[teamRef];
-    team.setLeader(leader);
-    team.callForHelp(sissy);
+    team.setLeaderRef(leader->getObjRef());
+    team.callForHelp(sissy->getObjRef());
 
     IScriptable& scriptableLeader = *leader;
     scriptableLeader.setAITarget(target->getObjRef());
@@ -986,8 +986,8 @@ TEST_F(ScriptTargetFunctionsFixture, TeamTargetSelectionUsesLeaderAndSissyRefs)
     EXPECT_EQ(module.getTeamLeaderRef(teamRef), leader->getObjRef());
     EXPECT_EQ(module.getTeamCallerForHelpRef(teamRef), sissy->getObjRef());
 
-    team.setLeader(nullptr);
-    team._sissy.reset();
+    team.clearLeader();
+    team.setCallerForHelpRef(ObjectRef::Invalid);
 
     self.setTarget(ObjectRef::Invalid);
     EXPECT_FALSE(scr_SetTargetToLeader(state, self));
@@ -1053,8 +1053,8 @@ TEST_F(ScriptTargetFunctionsFixture, SelfSelectorHelpersFailQuietlyWhenSelfRefIs
     static_cast<IScriptable&>(*leader).setAITarget(leaderTarget->getObjRef());
 
     auto& team = module.getTeamList()[teamRef];
-    team.setLeader(leader);
-    team.callForHelp(caller);
+    team.setLeaderRef(leader->getObjRef());
+    team.callForHelp(caller->getObjRef());
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor, existingTarget);

@@ -392,8 +392,8 @@ TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesFallBackToSelfWhenTeamLead
 
     constexpr TEAM_REF goodTeam = static_cast<TEAM_REF>(Team::TEAM_GOOD);
     actor->setTeam(goodTeam);
-    module.getTeamList()[goodTeam].setLeader(nullptr);
-    EXPECT_EQ(module.getTeamList()[goodTeam].getLeader(), nullptr);
+    module.getTeamList()[goodTeam].clearLeader();
+    EXPECT_EQ(module.getTeamList()[goodTeam].getLeaderRef(), ObjectRef::Invalid);
 
     auto& aiState = Ego::Script::runtimeState(*actor);
     aiState.setSelf(actor->getObjRef());
@@ -431,7 +431,7 @@ TEST_F(ScriptRuntimeFixture, RunOperandLeaderVariablesUseResolvedTeamLeaderWhenP
     constexpr TEAM_REF goodTeam = static_cast<TEAM_REF>(Team::TEAM_GOOD);
     actor->setTeam(goodTeam);
     leader->setTeam(goodTeam);
-    module.getTeamList()[goodTeam].setLeader(leader);
+    module.getTeamList()[goodTeam].setLeaderRef(leader->getObjRef());
     EXPECT_EQ(module.getTeamLeaderRef(goodTeam), leader->getObjRef());
 
     auto& aiState = Ego::Script::runtimeState(*actor);

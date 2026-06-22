@@ -508,7 +508,6 @@ struct ScriptOperandContext
     const Object* selfObject = nullptr;
     const Object* targetObject = nullptr;
     const Object* ownerObject = nullptr;
-    const Object* leaderObject = nullptr;
 
     const IPhysical* selfPhysical = nullptr;
     const IPhysical* targetPhysical = nullptr;

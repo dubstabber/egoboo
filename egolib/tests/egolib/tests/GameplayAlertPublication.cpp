@@ -244,12 +244,12 @@ TEST_F(GameplayAlertPublicationFixture, CallForHelpPublishesOnlyToFriendlyListen
     caller->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD), true);
     friendlyListener->setTeam(static_cast<TEAM_REF>(Team::TEAM_GOOD), true);
     enemyListener->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL), true);
-    module.getTeamList()[Team::TEAM_GOOD].setLeader(Object::INVALID_OBJECT);
+    module.getTeamList()[Team::TEAM_GOOD].clearLeader();
     flushObjectHandler(module);
 
     caller->callTeamForHelp();
 
-    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getSissy(), caller);
+    EXPECT_EQ(module.getTeamList()[Team::TEAM_GOOD].getCallerForHelpRef(), caller->getObjRef());
     EXPECT_TRUE(friendlyListener->hasAnyAIAlertBits(ALERTIF_CALLEDFORHELP));
     EXPECT_FALSE(enemyListener->hasAnyAIAlertBits(ALERTIF_CALLEDFORHELP));
 }

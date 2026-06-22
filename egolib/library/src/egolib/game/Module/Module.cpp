@@ -216,7 +216,7 @@ ObjectRef GameModule::getTeamCallerForHelpRef(TEAM_REF teamRef) const
         return ObjectRef::Invalid;
     }
 
-    return _teamList[teamRef].getSissyRef();
+    return _teamList[teamRef].getCallerForHelpRef();
 }
 
 uint16_t GameModule::getTeamMorale(TEAM_REF teamRef) const
