@@ -11,24 +11,41 @@ struct SpawnAttachmentTargetContext
     IInventoryHolder* inventory = nullptr;
 };
 
-IScriptable& scriptable(Object& object)
+struct SpawnedCharacterContext
 {
-    return object;
-}
+    std::shared_ptr<Object> handle;
+    ObjectRef ref = ObjectRef::Invalid;
+    IScriptable* scriptable = nullptr;
+    ICharacterState* characterState = nullptr;
+    ILifecycleControl* lifecycle = nullptr;
+    IMovementControl* movement = nullptr;
 
-ICharacterState& characterState(Object& object)
-{
-    return object;
-}
+    bool isResolved() const
+    {
+        return handle != nullptr &&
+               ref != ObjectRef::Invalid &&
+               scriptable != nullptr &&
+               characterState != nullptr &&
+               lifecycle != nullptr &&
+               movement != nullptr;
+    }
+};
 
-ILifecycleControl& lifecycleControl(Object& object)
+SpawnedCharacterContext makeSpawnedCharacterContext(const std::shared_ptr<Object>& child)
 {
-    return object;
-}
+    if (child == nullptr)
+    {
+        return {};
+    }
 
-IMovementControl& movementControl(Object& object)
-{
-    return object;
+    return SpawnedCharacterContext{
+        child,
+        child->getObjRef(),
+        static_cast<IScriptable*>(child.get()),
+        static_cast<ICharacterState*>(child.get()),
+        static_cast<ILifecycleControl*>(child.get()),
+        static_cast<IMovementControl*>(child.get())
+    };
 }
 
 bool resolveSpawnAttachmentTarget(const ai_state_t& self,
@@ -41,47 +58,47 @@ bool resolveSpawnAttachmentTarget(const ai_state_t& self,
 
 void logSelfCopySpawnFailure(const SpawnSelfContext& selfContext)
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
-                                                           __FILE__,
-                                                           __LINE__,
-                                                           "object ",
-                                                           "`",
-                                                           selfContext.name,
-                                                           "`",
-                                                           " failed to spawn a copy of itself",
-                                                           Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Warning,
+                                              __FILE__,
+                                              __LINE__,
+                                              "object ",
+                                              "`",
+                                              selfContext.name,
+                                              "`",
+                                              " failed to spawn a copy of itself",
+                                              Log::EndOfEntry);
 }
 
 void logUnsafeSelfCopySpawnFailure(const SpawnSelfContext& selfContext)
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
-                                                           __FILE__,
-                                                           __LINE__,
-                                                           "object ",
-                                                           "`",
-                                                           selfContext.name,
-                                                           "`",
-                                                           " failed to spawn a copy of itself (no safe location)",
-                                                           Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Warning,
+                                              __FILE__,
+                                              __LINE__,
+                                              "object ",
+                                              "`",
+                                              selfContext.name,
+                                              "`",
+                                              " failed to spawn a copy of itself (no safe location)",
+                                              Log::EndOfEntry);
 }
 
 void logAttachedCharacterSpawnFailure(const SpawnSelfContext& selfContext,
                                       int profileIndex)
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning,
-                                                           __FILE__,
-                                                           __LINE__,
-                                                           "object ",
-                                                           "`",
-                                                           selfContext.name,
-                                                           "`",
-                                                           "/",
-                                                           "`",
-                                                           selfContext.className,
-                                                           "`",
-                                                           " failed to spawn profile index ",
-                                                           profileIndex,
-                                                           Log::EndOfEntry);
+    Log::activeTarget() << Log::Entry::create(Log::Level::Warning,
+                                              __FILE__,
+                                              __LINE__,
+                                              "object ",
+                                              "`",
+                                              selfContext.name,
+                                              "`",
+                                              "/",
+                                              "`",
+                                              selfContext.className,
+                                              "`",
+                                              " failed to spawn profile index ",
+                                              profileIndex,
+                                              Log::EndOfEntry);
 }
 
 void inheritSpawnScriptState(IScriptable& child, const ai_state_t& self)
@@ -109,18 +126,60 @@ void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObject
     lifecycle.setDismountObject(dismountObjectRef);
 }
 
-void publishSpawnChildState(Object& child,
+bool hasSafeSpawnPosition(const SpawnedCharacterContext& child)
+{
+    return child.handle != nullptr && child.handle->hasSafePosition();
+}
+
+void terminateSpawnedCharacter(const SpawnedCharacterContext& child)
+{
+    if (child.handle != nullptr)
+    {
+        child.handle->requestTerminate();
+    }
+}
+
+bool attachSpawnedCharacterToGrip(const SpawnedCharacterContext& child,
+                                  ObjectRef targetRef,
+                                  grip_offset_t gripOffset)
+{
+    return child.handle != nullptr && child.handle->attachToObject(targetRef, gripOffset);
+}
+
+void setSpawnedCharacterHolder(const SpawnedCharacterContext& child, ObjectRef holderRef)
+{
+    if (child.handle != nullptr)
+    {
+        child.handle->setHolderRef(holderRef);
+    }
+}
+
+void runSpawnedCharacterScript(const SpawnedCharacterContext& child)
+{
+    if (child.ref != ObjectRef::Invalid)
+    {
+        scr_run_chr_script(child.ref);
+    }
+}
+
+void runSpawnedCharacterScriptAsHeld(const SpawnedCharacterContext& child, ObjectRef holderRef)
+{
+    setSpawnedCharacterHolder(child, holderRef);
+    runSpawnedCharacterScript(child);
+    setSpawnedCharacterHolder(child, ObjectRef::Invalid);
+}
+
+void publishSpawnChildState(const SpawnedCharacterContext& child,
                             bool inheritKurse,
                             ObjectRef dismountObjectRef,
                             ai_state_t& self)
 {
-    self.child = child.getObjRef();
+    self.child = child.ref;
 
-    ICharacterState& childState = characterState(child);
-    childState.setKursed(inheritKurse);
+    child.characterState->setKursed(inheritKurse);
 
-    inheritSpawnScriptState(scriptable(child), self);
-    publishSpawnDismount(lifecycleControl(child), dismountObjectRef);
+    inheritSpawnScriptState(*child.scriptable, self);
+    publishSpawnDismount(*child.lifecycle, dismountObjectRef);
 }
 
 std::shared_ptr<Object> spawnCharacterAt(const Ego::Vector3f& position,
@@ -146,24 +205,29 @@ std::shared_ptr<Object> spawnCharacterLikeSelf(const SpawnSelfContext& selfConte
                             facing);
 }
 
-bool publishAttachedChildState(IScriptable& child,
+bool publishAttachedChildState(const SpawnedCharacterContext& child,
                                ai_state_t& self)
 {
-    self.child = child.getObjRef();
-    inheritSpawnScriptState(child, self);
-    return true;
-}
-
-bool publishCopiedChildState(const SpawnSelfContext& selfContext,
-                             const std::shared_ptr<Object>& child,
-                             ai_state_t& self)
-{
-    if (child == nullptr)
+    if (!child.isResolved())
     {
         return false;
     }
 
-    publishSpawnChildState(*child, selfContext.targetInfo->isKursed(), selfContext.ref, self);
+    self.child = child.ref;
+    inheritSpawnScriptState(*child.scriptable, self);
+    return true;
+}
+
+bool publishCopiedChildState(const SpawnSelfContext& selfContext,
+                             const SpawnedCharacterContext& child,
+                             ai_state_t& self)
+{
+    if (!child.isResolved())
+    {
+        return false;
+    }
+
+    publishSpawnChildState(child, selfContext.targetInfo->isKursed(), selfContext.ref, self);
     return true;
 }
 
@@ -172,56 +236,55 @@ bool finalizeSafeSelfCopySpawn(const SpawnSelfContext& selfContext,
                                ai_state_t& self,
                                int initialVelocity)
 {
-    if (child == nullptr)
+    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
+    if (!childContext.isResolved())
     {
         logSelfCopySpawnFailure(selfContext);
         return false;
     }
 
-    if (!child->hasSafePosition())
+    if (!hasSafeSpawnPosition(childContext))
     {
         logUnsafeSelfCopySpawnFailure(selfContext);
-        child->requestTerminate();
+        terminateSpawnedCharacter(childContext);
         return true;
     }
 
     const Facing turn = selfContext.physical->getFacingZ() + ATK_BEHIND;
-    applySpawnVelocity(movementControl(*child), turn, initialVelocity);
-    return publishCopiedChildState(selfContext, child, self);
+    applySpawnVelocity(*childContext.movement, turn, initialVelocity);
+    return publishCopiedChildState(selfContext, childContext, self);
 }
 
 bool tryAttachSpawnedInventoryChild(const SpawnSelfContext& selfContext,
                                     const SpawnAttachmentTargetContext& targetContext,
-                                    const std::shared_ptr<Object>& child,
+                                    SpawnedCharacterContext& child,
                                     ai_state_t& self)
 {
-    if (child == nullptr)
+    if (!child.isResolved())
     {
         return false;
     }
 
     if (!Inventory::add_item(targetContext.ref,
-                             child->getObjRef(),
+                             child.ref,
                              selfContext.inventory->getFirstFreeInventorySlot(),
                              true))
     {
-        child->requestTerminate();
+        terminateSpawnedCharacter(child);
         return true;
     }
 
-    publishGrabbedAlert(*child);
-    child->setHolderRef(targetContext.ref);
-    scr_run_chr_script(child->getObjRef());
-    child->setHolderRef(ObjectRef::Invalid);
-    return publishAttachedChildState(*child, self);
+    publishGrabbedAlert(*child.scriptable);
+    runSpawnedCharacterScriptAsHeld(child, targetContext.ref);
+    return publishAttachedChildState(child, self);
 }
 
 bool tryAttachSpawnedGripChild(const SpawnAttachmentTargetContext& targetContext,
                                uint8_t grip,
-                               const std::shared_ptr<Object>& child,
+                               SpawnedCharacterContext& child,
                                ai_state_t& self)
 {
-    if (child == nullptr)
+    if (!child.isResolved())
     {
         return false;
     }
@@ -229,23 +292,23 @@ bool tryAttachSpawnedGripChild(const SpawnAttachmentTargetContext& targetContext
     const slot_t slot = (grip == ATTACH_LEFT) ? SLOT_LEFT : SLOT_RIGHT;
     if (isLiveSpawnObjectRef(targetContext.inventory->getHeldObject(slot)))
     {
-        child->requestTerminate();
+        terminateSpawnedCharacter(child);
         return true;
     }
 
     const grip_offset_t gripOffset = (grip == ATTACH_LEFT) ? GRIP_LEFT : GRIP_RIGHT;
-    if (child->attachToObject(targetContext.ref, gripOffset))
+    if (attachSpawnedCharacterToGrip(child, targetContext.ref, gripOffset))
     {
-        scr_run_chr_script(child->getObjRef());
+        runSpawnedCharacterScript(child);
     }
 
-    return publishAttachedChildState(*child, self);
+    return publishAttachedChildState(child, self);
 }
 
 bool resolveSpawnAttachedCharacterPlacement(const SpawnSelfContext& selfContext,
                                             const SpawnAttachmentTargetContext& targetContext,
                                             uint8_t grip,
-                                            const std::shared_ptr<Object>& child,
+                                            SpawnedCharacterContext& child,
                                             ai_state_t& self)
 {
     if (grip == ATTACH_INVENTORY)
@@ -258,7 +321,7 @@ bool resolveSpawnAttachedCharacterPlacement(const SpawnSelfContext& selfContext,
         return tryAttachSpawnedGripChild(targetContext, grip, child, self);
     }
 
-    return child != nullptr && publishAttachedChildState(*child, self);
+    return publishAttachedChildState(child, self);
 }
 }
 
@@ -325,7 +388,8 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    return publishCopiedChildState(selfContext, child, self);
+    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
+    return publishCopiedChildState(selfContext, childContext, self);
 }
 
 
@@ -355,7 +419,8 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    return publishCopiedChildState(selfContext, child, self);
+    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
+    return publishCopiedChildState(selfContext, childContext, self);
 }
 
 
@@ -421,13 +486,14 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         return false;
     }
 
+    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
     const uint8_t grip = Ego::Math::constrain<int>(state.distance,
                                                    ATTACH_INVENTORY,
                                                    ATTACH_RIGHT);
     return resolveSpawnAttachedCharacterPlacement(selfContext,
                                                   targetContext,
                                                   grip,
-                                                  child,
+                                                  childContext,
                                                   self);
 }
 

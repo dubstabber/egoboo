@@ -51,7 +51,7 @@ bool spawnPoofForSelf(ObjectRef selfRef)
         return false;
     }
 
-    EngineContext::get().particleHandler().spawnPoof(selfObject);
+    activeParticleHandler().spawnPoof(selfObject);
     return true;
 }
 
@@ -63,17 +63,17 @@ std::shared_ptr<Ego::Particle> spawnLocalParticleForSelf(const SpawnSelfContext&
                                                          int distance,
                                                          ObjectRef ownerRef)
 {
-    return EngineContext::get().particleHandler().spawnLocalParticle(position,
-                                                                     facing,
-                                                                     selfContext.profileRef,
-                                                                     profile,
-                                                                     attachedObjectRef,
-                                                                     distance,
-                                                                     selfContext.targetInfo->getTeamRef(),
-                                                                     ownerRef,
-                                                                     ParticleRef::Invalid,
-                                                                     0,
-                                                                     ObjectRef::Invalid);
+    return activeParticleHandler().spawnLocalParticle(position,
+                                                      facing,
+                                                      selfContext.profileRef,
+                                                      profile,
+                                                      attachedObjectRef,
+                                                      distance,
+                                                      selfContext.targetInfo->getTeamRef(),
+                                                      ownerRef,
+                                                      ParticleRef::Invalid,
+                                                      0,
+                                                      ObjectRef::Invalid);
 }
 
 bool tryAttachParticleToResolvedSelf(const std::shared_ptr<Ego::Particle>& particle,
@@ -402,7 +402,7 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
 
     PIP_REF ipip = selfContext.profile->getParticlePoofProfile();
     if ( INVALID_PIP_REF == ipip) return false;
-    const std::shared_ptr<ParticleProfile> &ppip = EngineContext::get().profileSystem().getParticleProfile(ipip);
+    const std::shared_ptr<ParticleProfile> &ppip = activeProfileSystem().getParticleProfile(ipip);
 
     bool spawnedPoof = false;
     if (ppip != nullptr)
@@ -414,16 +414,16 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         Facing facing_z = selfContext.physical->getFacingZ();
         for (int cnt = 0; cnt < selfContext.profile->getParticlePoofAmount(); cnt++)
         {
-            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(selfContext.oldPosition,
-                                                                                     facing_z,
-                                                                                     selfContext.profile->getSlotNumber(),
-                                                                                     ipip,
-                                                                                     ObjectRef::Invalid,
-                                                                                     GRIP_LAST,
-                                                                                     selfContext.targetInfo->getTeamRef(),
-                                                                                     selfContext.scriptable->getAIOwner(),
-                                                                                     ParticleRef::Invalid,
-                                                                                     cnt);
+            auto poofParticle = activeParticleHandler().spawnParticle(selfContext.oldPosition,
+                                                                      facing_z,
+                                                                      selfContext.profile->getSlotNumber(),
+                                                                      ipip,
+                                                                      ObjectRef::Invalid,
+                                                                      GRIP_LAST,
+                                                                      selfContext.targetInfo->getTeamRef(),
+                                                                      selfContext.scriptable->getAIOwner(),
+                                                                      ParticleRef::Invalid,
+                                                                      cnt);
 
             // set some values
             if(poofParticle) {

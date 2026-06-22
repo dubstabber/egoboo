@@ -41,8 +41,8 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | Test files / lines | 50 / 23,921 | `egolib/tests`, source/header files only |
 | ctest cases | 912 | `ctest --test-dir build -N` |
 | ctest baseline | 912 / 912 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 622 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
-| `EngineContext::get()` | 435 | Dominant intentional engine seam |
+| `::get()` call sites | 615 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `EngineContext::get()` | 428 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 133 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 646 | Broad grep count, not semantic classification |

@@ -2608,3 +2608,20 @@ spawning, and the temporary holder mutation around `scr_run_chr_script`.
 No public role interfaces, script opcode APIs, CMake source placement, or archive membership changed, so no
 live-archive back-edge proof was required. Gates: `cmake --build build -j20` clean; focused
 `ScriptStateFunctionsFixture.*` **59/59**; ctest **912/912**; validator `test.mod` 0/0.
+
+### Pass 259 — Script spawn service and child-context closure (2026-06-22)
+
+Continued the stable-first spawn helper cleanup without changing public role interfaces, script opcode
+APIs, CMake source placement, or archive membership. `script_functions_spawn_character.c` now resolves
+spawned children into a local role-sized context (`IScriptable`, `ICharacterState`, `ILifecycleControl`,
+and `IMovementControl`) and quarantines the remaining concrete child operations behind file-local helpers:
+safe-position checks, termination, grip attach, temporary holder mutation, and script reruns.
+
+`script_functions_spawn_particle.c` now uses the installed lower-layer service seams directly:
+`activeParticleHandler()` for poof/local/poof-speed particle spawning and `activeProfileSystem()` for the
+particle-profile lookup. Spawn-character logging now routes through `Log::activeTarget()` instead of the
+EngineContext delegator. Singleton metrics dropped to **615** `::get()` lines, including **428**
+`EngineContext::get()` and **133** `GameSessionContext::get()` lines.
+
+Gates: `cmake --build build -j20` clean; focused spawn/poof/morph slice **17/17**; full
+`ScriptStateFunctionsFixture.*` **59/59**; ctest **912/912**; validator `test.mod` 0/0.
