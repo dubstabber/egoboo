@@ -2569,3 +2569,24 @@ Gates: `cmake --build build -j20` clean; focused object/script-runtime slice **8
 `Object_ai.cpp.o` appears only in `libegolib-library.a`; `library -> upper four` and
 `game-graphics -> top three` nm set-intersections are **0**; positive control
 `game-graphics -> library` finds 68 expected downward edges.
+
+### Pass 253-257 — Object role caller cleanup and attribution quarantine (2026-06-22)
+
+Continued the stable-first `Object` role program without changing public role interfaces, script opcode
+APIs, `IDamageable::{damage,heal,kill}` signatures, CMake source placement, or archive membership.
+
+The script combat/stat-gift helpers now keep their compatibility contexts role-sized: self/target state
+resolution goes through existing `try*Role` helpers, while the remaining `std::shared_ptr<Object>` handle is
+kept only where the current `IDamageable` attribution API still requires it. `Object_combat.cpp` now
+quarantines combat attribution and reward publication behind file-local helpers: holder/mount/rider blame
+resolution, kill-credit recipient resolution, killed-target publication, direct kill rewards, and the
+death-alert/team-experience loop. `game_combat.c` gained local role adapters for script alert publication,
+inventory/target/character-state reads, lifecycle termination, movement velocity, and ammo-known visual
+publication, while preserving the legacy longbow kursed-slot gate exactly as characterized by tests.
+`CharacterMatrix.c` now routes attachment-target, script-target, physical-transform, and movement-scale
+observation through existing role surfaces; the public matrix APIs and concrete graphics mutation paths are
+unchanged.
+
+No source files moved between archives, so no live-archive back-edge proof was required for this pass.
+Touched runtime files total 2,853 lines after the cleanup. Gates: `cmake --build build -j20` clean; focused
+combat/script/matrix role fixture slice **167/167**; ctest **912/912**; validator `test.mod` 0/0.

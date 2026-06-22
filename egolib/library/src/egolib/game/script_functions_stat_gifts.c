@@ -2,25 +2,13 @@
 /// @brief Permanent stat gift script functions (experience, attributes, skills)
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
 
-struct OwnedObjectHandle
-{
-    ObjectRef ref = ObjectRef::Invalid;
-    std::shared_ptr<Object> object;
-};
-
 struct TargetCompatibilityContext
 {
-    ObjectRef targetRef = ObjectRef::Invalid;
-    const ITargetInfo* info = nullptr;
     ICharacterState* characterState = nullptr;
-    IInventoryHolder* inventory = nullptr;
-    ITeamMember* teamMember = nullptr;
-    IEnchantable* enchantable = nullptr;
 };
 
 struct TargetStateCompatibilityContext
@@ -32,18 +20,13 @@ struct HealingInvocationContext
 {
     ICharacterState* targetState = nullptr;
     IDamageable* damageable = nullptr;
-    OwnedObjectHandle healer;
+    std::shared_ptr<Object> healer;
 };
 
 TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
 {
     TargetCompatibilityContext context;
-    context.targetRef = self.getTarget();
-    context.info = tryTargetInfo(context.targetRef);
-    context.characterState = tryCharacterState(context.targetRef);
-    context.inventory = tryInventoryHolder(context.targetRef);
-    context.teamMember = tryTeamMember(context.targetRef);
-    context.enchantable = tryEnchantable(context.targetRef);
+    context.characterState = tryCharacterState(self.getTarget());
     return context;
 }
 
@@ -69,13 +52,12 @@ bool resolveAliveTargetHealingContext(const ai_state_t& self,
     const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
     context.targetState = tryCharacterState(self.getTarget());
     context.damageable = tryDamageable(self.getTarget());
-    context.healer.ref = self.getSelf();
-    context.healer.object = tryObjectShared(self.getSelf());
+    context.healer = tryObjectShared(self.getSelf());
     return resolvedTargetInfo != nullptr &&
            context.targetState != nullptr &&
            context.damageable != nullptr &&
            resolvedTargetInfo->isAlive() &&
-           context.healer.object != nullptr;
+           context.healer != nullptr;
 }
 
 void applyResolvedTargetBaseAttribute(const TargetStateCompatibilityContext& context,
@@ -211,7 +193,7 @@ uint8_t scr_GiveLifeToTarget( script_state_t& state, ai_state_t& self )
     {
         healingContext.targetState->increaseBaseAttribute(Ego::Attribute::MAX_LIFE,
                                                           FP8_TO_FLOAT(state.argument));
-        healingContext.damageable->heal(healingContext.healer.object, state.argument, true);
+        healingContext.damageable->heal(healingContext.healer, state.argument, true);
     }
 
     return true;

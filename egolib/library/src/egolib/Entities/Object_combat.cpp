@@ -40,9 +40,121 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
+ObjectHandler& objectHandler()
+{
+    return GameSessionContext::get().activeModule().getObjectHandler();
+}
+
 const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+    return objectHandler()[object.getHeldObject(slot)];
+}
+
+ObjectRef resolveHolderOrMountAttribution(const Object& actor)
+{
+    ObjectRef actualActor = actor.getObjRef();
+
+    if (actor.isBeingHeld() && !objectHandler().get(actor.getHolderRef())->isMount())
+    {
+        actualActor = actor.getHolderRef();
+    }
+    else if (actor.isMount() && objectHandler().exists(actor.getHeldObject(SLOT_LEFT)))
+    {
+        actualActor = actor.getHeldObject(SLOT_LEFT);
+    }
+
+    return actualActor;
+}
+
+bool resolveLastAttackerAttribution(const Object& target,
+                                    const std::shared_ptr<Object>& attacker,
+                                    ObjectRef& actualAttacker)
+{
+    actualAttacker = ObjectRef::Invalid;
+    if (!attacker)
+    {
+        return true;
+    }
+
+    if (attacker.get() == &target)
+    {
+        return false;
+    }
+
+    if (attacker->getTeam() == Team::TEAM_NULL)
+    {
+        return false;
+    }
+
+    if (attacker->getHolderRef() == target.getObjRef())
+    {
+        return false;
+    }
+
+    actualAttacker = resolveHolderOrMountAttribution(*attacker);
+    return true;
+}
+
+std::shared_ptr<Object> resolveKillCreditRecipient(const std::shared_ptr<Object>& originalKiller)
+{
+    std::shared_ptr<Object> actualKiller = originalKiller;
+    if (!actualKiller)
+    {
+        return actualKiller;
+    }
+
+    if (actualKiller->isBeingHeld() && !objectHandler().get(actualKiller->getHolderRef())->isMount())
+    {
+        actualKiller = objectHandler()[actualKiller->getHolderRef()];
+    }
+    else if (actualKiller->isMount() && heldItem(*actualKiller, SLOT_LEFT))
+    {
+        actualKiller = heldItem(*actualKiller, SLOT_LEFT);
+    }
+
+    return actualKiller;
+}
+
+void publishKillerTarget(IScriptable& killedScript, ObjectRef killedRef, const Object& killer)
+{
+    killedScript.setAITarget(killer.getObjRef());
+    if (killer.getTeam() == Team::TEAM_DAMAGE || killer.getTeam() == Team::TEAM_NULL)
+    {
+        killedScript.setAITarget(killedRef);
+    }
+}
+
+void awardDirectKillExperience(Object& killed,
+                               Object& actualKiller,
+                               uint16_t experience,
+                               bool firstDeath)
+{
+    if (!actualKiller.getTeam().hatesTeam(killed.getTeam()))
+    {
+        return;
+    }
+
+    if (actualKiller.getProfile()->getIDSZ(IDSZ_HATE) == killed.getProfile()->getIDSZ(IDSZ_PARENT) ||
+        actualKiller.getProfile()->getIDSZ(IDSZ_HATE) == killed.getProfile()->getIDSZ(IDSZ_TYPE))
+    {
+        actualKiller.giveExperience(experience, XP_KILLHATED, false);
+    }
+    else
+    {
+        actualKiller.giveExperience(experience, XP_KILLENEMY, false);
+    }
+
+    if (actualKiller.hasPerk(Ego::Perks::MERCENARY) && firstDeath)
+    {
+        actualKiller.giveMoney(1);
+        audioSystem().playSound(killed.getPosition(), audioSystem().getGlobalSound(GSND_COINGET));
+    }
+
+    if (actualKiller.hasPerk(Ego::Perks::CRUSADER) && killed.getProfile()->getIDSZ(IDSZ_PARENT).equals('U','N','D','E'))
+    {
+        actualKiller.costMana(-1, actualKiller.getObjRef());
+        Ego::Graphics::activeBillboardSystem().makeBillboard(actualKiller.getObjRef(), "Crusader", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
+    }
 }
 
 void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
@@ -50,6 +162,28 @@ void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
     if (listener.getAITarget() == targetRef)
     {
         listener.addAIAlertBits(ALERTIF_TARGETKILLED);
+    }
+}
+
+void publishDeathAlertsAndTeamExperience(Object& killed,
+                                         const std::shared_ptr<Object>& actualKiller,
+                                         uint16_t experience)
+{
+    for (const std::shared_ptr<Object>& listener : objectHandler().iterator())
+    {
+        if (!listener->isAlive()) continue;
+
+        if (actualKiller && listener != actualKiller && !listener->getTeam().hatesTeam(actualKiller->getTeam()) && listener->getTeam().hatesTeam(killed.getTeam()))
+        {
+            listener->giveExperience(experience, XP_TEAMKILL, false);
+        }
+
+        if (killed.getTeam().getLeader().get() == &killed && listener->getTeam() == killed.getTeam())
+        {
+            listener->addAIAlertBits(ALERTIF_LEADERKILLED);
+        }
+
+        publishTargetKilledAlert(*listener, killed.getObjRef());
     }
 }
 }
@@ -326,38 +460,13 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
 
 void Object::updateLastAttacker(const std::shared_ptr<Object> &attacker, bool healing)
 {
-    // Don't let characters chase themselves...  That would be silly
-    if ( this == attacker.get() ) return;
-
     // Don't alert the character too much if under constant fire
     if (0 != careful_timer) return;
 
-    ObjectRef actual_attacker = ObjectRef::Invalid;
-
-    // Figure out who is the real attacker, in case we are a held item or a controlled mount
-    if(attacker)
+    ObjectRef actual_attacker;
+    if (!resolveLastAttackerAttribution(*this, attacker, actual_attacker))
     {
-        actual_attacker = attacker->getObjRef();
-
-        //Dont alert if the attacker/healer was on the null team
-        if(attacker->getTeam() == Team::TEAM_NULL) {
-            return;
-        }
-
-        //Do not alert items damaging (or healing) their holders, healing potions for example
-        if ( attacker->attachedto == ai.getSelf() ) return;
-
-        //If we are held, the holder is the real attacker... unless the holder is a mount
-        if ( attacker->isBeingHeld() && !activeModule().getObjectHandler().get(attacker->attachedto)->isMount() )
-        {
-            actual_attacker = attacker->attachedto;
-        }
-
-        //If the attacker is a mount, try to blame the rider
-        else if ( attacker->isMount() && activeModule().getObjectHandler().exists( attacker->holdingwhich[SLOT_LEFT] ) )
-        {
-            actual_attacker = attacker->holdingwhich[SLOT_LEFT];
-        }
+        return;
     }
 
     //Update alerts and timers
@@ -428,22 +537,7 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
         }
     }
 
-    //Fix who is actually the killer if needed
-    std::shared_ptr<Object> actualKiller = originalKiller;
-    if (actualKiller)
-    {
-        //If we are a held item, try to figure out who the actual killer is
-        if ( actualKiller->isBeingHeld() && !activeModule().getObjectHandler().get(actualKiller->attachedto)->isMount() )
-        {
-            actualKiller = activeModule().getObjectHandler()[actualKiller->attachedto];
-        }
-
-        //If the killer is a mount, try to award the kill to the rider
-        else if (actualKiller->isMount() && heldItem(*actualKiller, SLOT_LEFT))
-        {
-            actualKiller = heldItem(*actualKiller, SLOT_LEFT);
-        }
-    }
+    std::shared_ptr<Object> actualKiller = resolveKillCreditRecipient(originalKiller);
 
     _isAlive = false;
 
@@ -467,63 +561,15 @@ void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvi
     // distribute experience to the attacker
     if (actualKiller)
     {
-        // Set target
-        ai.setTarget(actualKiller->getObjRef());
-        if (actualKiller->getTeam() == Team::TEAM_DAMAGE || actualKiller->getTeam() == Team::TEAM_NULL) {
-            ai.setTarget(getObjRef());
-        }
-
-        // Award experience for kill?
-        if ( actualKiller->getTeam().hatesTeam(getTeam()) )
-        {
-            //Check for special hatred
-            if ( actualKiller->getProfile()->getIDSZ(IDSZ_HATE) == getProfile()->getIDSZ(IDSZ_PARENT) ||
-                 actualKiller->getProfile()->getIDSZ(IDSZ_HATE) == getProfile()->getIDSZ(IDSZ_TYPE) )
-            {
-                actualKiller->giveExperience(experience, XP_KILLHATED, false);
-            }
-
-            // Nope, award direct kill experience instead
-            else actualKiller->giveExperience(experience, XP_KILLENEMY, false);
-
-            //Mercenary Perk gives +1 Zenny per kill (if this is the first time we died)
-            if(actualKiller->hasPerk(Ego::Perks::MERCENARY) && !_hasBeenKilled) {
-                actualKiller->giveMoney(1);
-                audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(GSND_COINGET));
-            }
-
-            //Crusader Perk regains 1 mana per Undead kill
-            if(actualKiller->hasPerk(Ego::Perks::CRUSADER) && getProfile()->getIDSZ(IDSZ_PARENT).equals('U','N','D','E')) {
-                actualKiller->costMana(-1, actualKiller->getObjRef());
-                Ego::Graphics::activeBillboardSystem().makeBillboard(actualKiller->getObjRef(), "Crusader", Ego::Colour4f::white(), Ego::Colour4f::yellow(), 3, Ego::Graphics::Billboard::Flags::All);
-            }
-        }
+        publishKillerTarget(*this, getObjRef(), *actualKiller);
+        awardDirectKillExperience(*this, *actualKiller, experience, !_hasBeenKilled);
     }
 
     //Set various alerts to let others know it has died
     //and distribute experience to whoever needs it
     SET_BIT(ai.alert, ALERTIF_KILLED);
 
-    for(const std::shared_ptr<Object> &listener : activeModule().getObjectHandler().iterator())
-    {
-        if (!listener->isAlive()) continue;
-
-        // All allies get team experience, but only if they also hate the dead guy's team
-        if (actualKiller && listener != actualKiller && !listener->getTeam().hatesTeam(actualKiller->getTeam()) && listener->getTeam().hatesTeam(getTeam()) )
-        {
-            listener->giveExperience(experience, XP_TEAMKILL, false);
-        }
-
-        // Check if we were a leader
-        if ( getTeam().getLeader().get() == this && listener->getTeam() == getTeam() )
-        {
-            // All folks on the leaders team get the alert
-            listener->addAIAlertBits(ALERTIF_LEADERKILLED);
-        }
-
-        // Let the other characters know it died
-        publishTargetKilledAlert(*listener, getObjRef());
-    }
+    publishDeathAlertsAndTeamExperience(*this, actualKiller, experience);
 
     // Detach the character from the game
     removeFromGame(this);

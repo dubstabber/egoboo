@@ -33,6 +33,42 @@ auto& objectHandler()
 {
     return GameSessionContext::get().activeModule().getObjectHandler();
 }
+
+const ITargetInfo& targetInfoRole(const Object& object)
+{
+    return object;
+}
+
+const IScriptable& scriptableRole(const Object& object)
+{
+    return object;
+}
+
+const IPhysical& physicalRole(const Object& object)
+{
+    return object;
+}
+
+const IMovementControl& movementRole(const Object& object)
+{
+    return object;
+}
+
+Ego::Vector3f uniformScale(const IMovementControl& movement)
+{
+    return Ego::Vector3f(movement.getFat(), movement.getFat(), movement.getFat());
+}
+
+void publishCharacterTransformCache(matrix_cache_t& cache,
+                                    const IPhysical& physical,
+                                    const IMovementControl& movement)
+{
+    cache.rotate[kX] = physical.getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
+    cache.rotate[kY] = physical.getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
+    cache.rotate[kZ] = physical.getFacingZ();
+    cache.pos = physical.getPosition();
+    cache.grip_scale = uniformScale(movement);
+}
 }
 
 static bool matrix_cache_needs_update(Object& object, matrix_cache_t& pmc);
@@ -141,14 +177,15 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
     mc_tmp.valid     = false;
     mc_tmp.type_bits = MAT_UNKNOWN;
 
-    mc_tmp.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
+    mc_tmp.self_scale = uniformScale(movementRole(*pchr));
 
     // handle the overlay first of all
-    if ( !handled && pchr->isOverlay() && ichr != pchr->getAITarget() && objectHandler().exists( pchr->getAITarget() ) )
+    const ObjectRef overlayTargetRef = scriptableRole(*pchr).getAITarget();
+    if ( !handled && pchr->isOverlay() && ichr != overlayTargetRef && objectHandler().exists( overlayTargetRef ) )
     {
         // this will pretty much fail the cmp_matrix_cache() every time...
 
-        Object * ptarget = objectHandler().get( pchr->getAITarget() );
+        Object * ptarget = objectHandler().get( overlayTargetRef );
 
         // make sure we have the latst info from the target
         chr_update_matrix(*ptarget, true);
@@ -168,9 +205,10 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
         itarget = GET_INDEX_PCHR( pchr );
 
         //---- update the MAT_WEAPON data
-        if ( objectHandler().exists( pchr->getHolderRef() ) )
+        const ObjectRef holderRef = targetInfoRole(*pchr).getHolderRef();
+        if ( objectHandler().exists( holderRef ) )
         {
-            Object * pmount = objectHandler().get( pchr->getHolderRef() );
+            Object * pmount = objectHandler().get( holderRef );
 
             // make sure we have the latst info from the target
             chr_update_matrix(*pmount, true);
@@ -182,11 +220,11 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
                 mc_tmp.valid     = true;
                 SET_BIT( mc_tmp.type_bits, MAT_WEAPON );        // add in the weapon data
 
-                mc_tmp.grip_chr  = pchr->getHolderRef();
+                mc_tmp.grip_chr  = holderRef;
                 mc_tmp.grip_slot = pchr->getAttachmentSlot();
-                get_grip_verts( mc_tmp.grip_verts.data(), pchr->getHolderRef(), slot_to_grip_offset( pchr->getAttachmentSlot() ) );
+                get_grip_verts( mc_tmp.grip_verts.data(), holderRef, slot_to_grip_offset( pchr->getAttachmentSlot() ) );
 
-                itarget = pchr->getHolderRef();
+                itarget = holderRef;
             }
         }
 
@@ -198,13 +236,7 @@ bool chr_get_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
             mc_tmp.valid   = true;
             SET_BIT( mc_tmp.type_bits, MAT_CHARACTER );  // add in the MAT_CHARACTER-type data for the object we are "connected to"
 
-            mc_tmp.rotate[kX] = ptarget->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
-            mc_tmp.rotate[kY] = ptarget->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
-            mc_tmp.rotate[kZ] = ptarget->getFacingZ();
-
-            mc_tmp.pos = ptarget->getPosition();
-
-            mc_tmp.grip_scale = Ego::Vector3f(ptarget->getFat(), ptarget->getFat(), ptarget->getFat());
+            publishCharacterTransformCache(mc_tmp, physicalRole(*ptarget), movementRole(*ptarget));
         }
     }
 
@@ -344,15 +376,9 @@ bool apply_matrix_cache( Object * pchr, matrix_cache_t& mc_tmp )
                 mcache.valid     = true;
                 mcache.type_bits = MAT_CHARACTER;
 
-                mcache.self_scale = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
-
+                mcache.self_scale = uniformScale(movementRole(*pchr));
                 mcache.grip_scale = mcache.self_scale;
-
-                mcache.rotate[kX] = pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
-                mcache.rotate[kY] = pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
-                mcache.rotate[kZ] = pchr->getFacingZ();
-
-                mcache.pos = pchr->getPosition();
+                publishCharacterTransformCache(mcache, physicalRole(*pchr), movementRole(*pchr));
 
                 pchr->getGraphics().setMatrixCache(mcache);
                 applied = true;
@@ -392,7 +418,7 @@ bool chr_update_matrix(Object& object, bool update_size)
     bool         needs_update = false;
 
     // recursively make sure that any mount matrices are updated
-    const ObjectRef holderRef = object.getHolderRef();
+    const ObjectRef holderRef = targetInfoRole(object).getHolderRef();
     if (objectHandler().exists(holderRef))
     {
         if (chr_update_matrix(*objectHandler().get(holderRef), true))
@@ -524,7 +550,7 @@ bool chr_getMatTranslate(Object *object_ptr, Ego::Vector3f& translate)
 	}
     else
 	{
-		translate = object_ptr->getPosition();
+		translate = physicalRole(*object_ptr).getPosition();
 	}
 
 	return true;
@@ -546,11 +572,12 @@ void make_one_character_matrix( const ObjectRef ichr )
     {
         // This character is an overlay and its ai.target points to the object it is overlaying
         // Overlays are kept with their target...
-        if ( objectHandler().exists( pchr->getAITarget() ) )
+        const ObjectRef overlayTargetRef = scriptableRole(*pchr).getAITarget();
+        if ( objectHandler().exists( overlayTargetRef ) )
         {
-            Object * ptarget = objectHandler().get( pchr->getAITarget() );
+            Object * ptarget = objectHandler().get( overlayTargetRef );
 
-            pchr->setPosition(ptarget->getPosition());
+            pchr->setPosition(physicalRole(*ptarget).getPosition());
 
             // copy the matrix
             pchr->getGraphics().setMatrix(ptarget->getMatrix());
@@ -561,26 +588,28 @@ void make_one_character_matrix( const ObjectRef ichr )
     }
     else
     {
+        const IPhysical& physical = physicalRole(*pchr);
+        const IMovementControl& movement = movementRole(*pchr);
         if ( pchr->getProfile()->hasStickyButt() )
         {
             pchr->getGraphics().setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_SpaceFixed(
-    				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
-                    pchr->getFacingZ(),
-                    pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET,
-                    pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET,
-                    pchr->getPosition())
+                    uniformScale(movement),
+                    physical.getFacingZ(),
+                    physical.getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET,
+                    physical.getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET,
+                    physical.getPosition())
             );
         }
         else
         {
             pchr->getGraphics().setMatrix(
                 mat_ScaleXYZ_RotateXYZ_TranslateXYZ_BodyFixed(
-    				Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat()),
-                    pchr->getFacingZ(),
-                    pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET,
-                    pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET,
-                    pchr->getPosition())
+                    uniformScale(movement),
+                    physical.getFacingZ(),
+                    physical.getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET,
+                    physical.getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET,
+                    physical.getPosition())
             );
         }
 
@@ -588,11 +617,8 @@ void make_one_character_matrix( const ObjectRef ichr )
         cache.valid        = true;
         cache.matrix_valid = true;
         cache.type_bits    = MAT_CHARACTER;
-        cache.self_scale   = Ego::Vector3f(pchr->getFat(), pchr->getFat(), pchr->getFat());
-        cache.rotate[kX]   = pchr->getMapTwistFacingX() - orientation_t::MAP_TURN_OFFSET;
-        cache.rotate[kY]   = pchr->getMapTwistFacingY() - orientation_t::MAP_TURN_OFFSET;
-        cache.rotate[kZ]   = pchr->getFacingZ();
-        cache.pos          = pchr->getPosition();
+        cache.self_scale   = uniformScale(movement);
+        publishCharacterTransformCache(cache, physical, movement);
         pchr->getGraphics().setMatrixCache(cache);
     }
 }

@@ -2,7 +2,6 @@
 /// @brief Damage, kill, heal, grog/daze, and ammo economy script functions
 
 #include "egolib/game/script_functions_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 
 namespace
 {
@@ -28,19 +27,11 @@ struct HealingInvocationContext
     OwnedObjectHandle healer;
 };
 
-struct TargetStateCompatibilityContext
-{
-    ICharacterState* characterState = nullptr;
-};
-
 struct TargetCompatibilityContext
 {
     ObjectRef targetRef = ObjectRef::Invalid;
     const ITargetInfo* info = nullptr;
     ICharacterState* characterState = nullptr;
-    IInventoryHolder* inventory = nullptr;
-    ITeamMember* teamMember = nullptr;
-    IEnchantable* enchantable = nullptr;
 };
 
 struct InventoryCompatibilityContext
@@ -51,13 +42,7 @@ struct InventoryCompatibilityContext
 
 struct SelfRoleContext
 {
-    Object* selfObject = nullptr;
-    IAppearanceProfile* appearance = nullptr;
     ICharacterState* characterState = nullptr;
-    IEnchantable* enchantable = nullptr;
-    ITeamMember* teamMember = nullptr;
-    const ITargetInfo* targetInfo = nullptr;
-    IWallet* wallet = nullptr;
 };
 
 TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
@@ -66,9 +51,6 @@ TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self
     context.targetRef = self.getTarget();
     context.info = tryTargetInfo(context.targetRef);
     context.characterState = tryCharacterState(context.targetRef);
-    context.inventory = tryInventoryHolder(context.targetRef);
-    context.teamMember = tryTeamMember(context.targetRef);
-    context.enchantable = tryEnchantable(context.targetRef);
     return context;
 }
 
@@ -103,18 +85,7 @@ bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
 SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
 {
     SelfRoleContext context;
-    context.selfObject = tryObject(self.getSelf());
-    if (context.selfObject == nullptr)
-    {
-        return context;
-    }
-
-    context.appearance = static_cast<IAppearanceProfile*>(context.selfObject);
-    context.characterState = static_cast<ICharacterState*>(context.selfObject);
-    context.enchantable = static_cast<IEnchantable*>(context.selfObject);
-    context.teamMember = static_cast<ITeamMember*>(context.selfObject);
-    context.targetInfo = static_cast<const ITargetInfo*>(context.selfObject);
-    context.wallet = static_cast<IWallet*>(context.selfObject);
+    context.characterState = tryCharacterState(self.getSelf());
     return context;
 }
 

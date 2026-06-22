@@ -34,9 +34,73 @@ egoboo_config_t& config()
     return EngineContext::get().config();
 }
 
-IScriptable& scriptable(Object& object)
+ObjectHandler& objectHandler()
+{
+    return activeModule().getObjectHandler();
+}
+
+Object* tryObject(ObjectRef ref)
+{
+    return objectHandler().exists(ref) ? objectHandler().get(ref) : nullptr;
+}
+
+IScriptable& scriptableRole(Object& object)
 {
     return object;
+}
+
+ICharacterState& characterStateRole(Object& object)
+{
+    return object;
+}
+
+IInventoryHolder& inventoryRole(Object& object)
+{
+    return object;
+}
+
+const ITargetInfo& targetInfoRole(const Object& object)
+{
+    return object;
+}
+
+ILifecycleControl& lifecycleRole(Object& object)
+{
+    return object;
+}
+
+IMovementControl& movementRole(Object& object)
+{
+    return object;
+}
+
+IVisualControl& visualRole(Object& object)
+{
+    return object;
+}
+
+ICharacterState* tryCharacterState(ObjectRef ref)
+{
+    Object* object = tryObject(ref);
+    return object ? static_cast<ICharacterState*>(object) : nullptr;
+}
+
+const IInventoryHolder* tryInventoryHolder(ObjectRef ref)
+{
+    Object* object = tryObject(ref);
+    return object ? static_cast<const IInventoryHolder*>(object) : nullptr;
+}
+
+const ITargetInfo* tryTargetInfo(ObjectRef ref)
+{
+    Object* object = tryObject(ref);
+    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+}
+
+bool heldItemIsKursed(const IInventoryHolder& holder, slot_t slot)
+{
+    const ICharacterState* heldItem = tryCharacterState(holder.getHeldObject(slot));
+    return heldItem != nullptr && heldItem->isKursed();
 }
 
 void publishUsedAlert(IScriptable& object)
@@ -59,6 +123,18 @@ void publishThrownAlert(IScriptable& object)
 {
     object.addAIAlertBits(ALERTIF_THROWN);
 }
+
+ObjectRef nextAttachmentRef(ObjectRef ref)
+{
+    const ITargetInfo* targetInfo = tryTargetInfo(ref);
+    return targetInfo != nullptr ? targetInfo->getHolderRef() : ObjectRef::Invalid;
+}
+
+bool isItemAttachment(ObjectRef ref)
+{
+    const IInventoryHolder* inventory = tryInventoryHolder(ref);
+    return inventory != nullptr && inventory->isItem();
+}
 }
 
 //--------------------------------------------------------------------------------------------
@@ -75,8 +151,13 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 
     if (which_slot >= SLOT_COUNT) return false;
 
+    const IInventoryHolder& characterInventory = inventoryRole(*pchr);
+    const ITargetInfo& characterInfo = targetInfoRole(*pchr);
+    ICharacterState& characterState = characterStateRole(*pchr);
+    ILifecycleControl& characterLifecycle = lifecycleRole(*pchr);
+
     // Which iweapon?
-    auto iweapon = pchr->getHeldObject(which_slot);
+    auto iweapon = characterInventory.getHeldObject(which_slot);
     if ( !module.getObjectHandler().exists( iweapon ) )
     {
         // Unarmed means object itself is the weapon
@@ -84,8 +165,8 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     }
     Object *pweapon = module.getObjectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
-    IScriptable& scriptableCharacter = scriptable(*pchr);
-    IScriptable& scriptableWeapon = scriptable(*pweapon);
+    IScriptable& scriptableCharacter = scriptableRole(*pchr);
+    IScriptable& scriptableWeapon = scriptableRole(*pweapon);
 
     // No need to continue if we have an attack cooldown
     if ( 0 != pweapon->getReloadTimer() ) return false;
@@ -111,7 +192,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
         // Then check if a skill is needed
         if ( weaponProfile->requiresSkillIDToUse() )
         {
-            if (!pchr->hasSkillIDSZ(pweapon->getProfile()->getIDSZ(IDSZ_SKILL)))
+            if (!characterInfo.hasSkillIDSZ(pweapon->getProfile()->getIDSZ(IDSZ_SKILL)))
             {
                 allowedtoattack = false;
             }
@@ -121,9 +202,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     // Don't allow users with kursed weapon in the other hand to use longbows
     if ( allowedtoattack && ACTION_IS_TYPE( action, L ) )
     {
-        const ObjectRef offhandItemRef = which_slot == SLOT_LEFT ? pchr->getHeldObject(SLOT_LEFT) : pchr->getHeldObject(SLOT_RIGHT);
-        const std::shared_ptr<Object> offhandItem = module.getObjectHandler().exists(offhandItemRef) ? module.getObjectHandler()[offhandItemRef] : nullptr;
-        if(offhandItem && offhandItem->isKursed()) allowedtoattack = false;
+        if (heldItemIsKursed(characterInventory, which_slot)) allowedtoattack = false;
     }
 
     if ( !allowedtoattack )
@@ -151,7 +230,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         // Rearing mount
-        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[pchr->getHolderRef()];
+        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[characterInfo.getHolderRef()];
 
         if (pmount)
         {
@@ -170,7 +249,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     {
                         const ModelAction action = pmount->getProfile()->getModel()->randomizeAction(ACTION_UA);
                         pmount->getGraphics().playAction(action, false);
-                        IScriptable& scriptableMount = scriptable(*pmount);
+                        IScriptable& scriptableMount = scriptableRole(*pmount);
                         publishAttackUse(scriptableCharacter, pmount->getObjRef(), scriptableMount);
 
                         retval = true;
@@ -184,16 +263,16 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         //Attacking or using an item disables stealth
-        pchr->deactivateStealth();
+        characterLifecycle.deactivateStealth();
 
         if ( pchr->getGraphics().canBeInterrupted() && action_valid )
         {
             //Check if we are attacking unarmed and cost mana to do so
             if(iweapon == pchr->getObjRef())
             {
-                if(pchr->getProfile()->getUseManaCost() <= pchr->getMana())
+                if(pchr->getProfile()->getUseManaCost() <= characterState.getMana())
                 {
-                    pchr->costMana(pchr->getProfile()->getUseManaCost(), pchr->getObjRef());
+                    characterState.costMana(pchr->getProfile()->getUseManaCost(), pchr->getObjRef());
                 }
                 else
                 {
@@ -216,7 +295,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                 }
                 else
                 {
-                    float agility = pchr->getAttribute(Ego::Attribute::AGILITY);
+                    float agility = characterState.getAttribute(Ego::Attribute::AGILITY);
 
                     pchr->getGraphics().playAction(action, false);
 
@@ -227,7 +306,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     }
 
                     //Crossbow Mastery increases XBow attack speed by 30%
-                    if(pchr->hasPerk(Ego::Perks::CROSSBOW_MASTERY) &&
+                    if(characterState.hasPerk(Ego::Perks::CROSSBOW_MASTERY) &&
                        pweapon->getProfile()->getIDSZ(IDSZ_PARENT).equals('X','B','O','W')) {
                         agility *= 1.30f;
                     }
@@ -236,7 +315,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
                     pchr->getGraphics().setAnimationSpeed(0.80f + agility * 0.02f);   //every Agility increases base attack speed by 2%
 
                     //If Quick Strike perk triggers then we have fastest possible attack (10% chance)
-                    if(pchr->hasPerk(Ego::Perks::QUICK_STRIKE) && pweapon->getProfile()->isMeleeWeapon() && Random::getPercent() <= 10) {
+                    if(characterState.hasPerk(Ego::Perks::QUICK_STRIKE) && pweapon->getProfile()->isMeleeWeapon() && Random::getPercent() <= 10) {
                         pchr->getGraphics().setAnimationSpeed(3.0f);
                         EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Quick Strike!", Ego::Colour4f::white(), Ego::Colour4f::blue(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
@@ -297,7 +376,9 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         return;
     }
 
-    ObjectRef iweapon = pchr->getHeldObject(slot);
+    const IInventoryHolder& characterInventory = inventoryRole(*pchr);
+    ICharacterState& characterState = characterStateRole(*pchr);
+    ObjectRef iweapon = characterInventory.getHeldObject(slot);
 
     // See if it's an unarmed attack...
     bool unarmed_attack;
@@ -320,6 +401,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     // find the 1st non-item that is holding the weapon
     ObjectRef iholder = chr_get_lowest_attachment( iweapon, true );
     const std::shared_ptr<Object> &pholder = module.getObjectHandler()[iholder];
+    const ITargetInfo& holderInfo = targetInfoRole(*pholder);
 
     /*
         if ( iweapon != iholder && iweapon != ichr )
@@ -344,12 +426,14 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->getAmmo() > 1 ) || ACTION_IS_TYPE( pweapon->getCurrentAnimation(), F ) ) )
     {
         // Throw the weapon if it's stacked or a hurl animation
-        std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), pholder->getTeam().toRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
+        std::shared_ptr<Object> pthrown = module.spawnObject(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), holderInfo.getTeamRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
         if (pthrown)
         {
-            IScriptable& scriptableThrown = scriptable(*pthrown);
+            IScriptable& scriptableThrown = scriptableRole(*pthrown);
+            IMovementControl& thrownMovement = movementRole(*pthrown);
+            ICharacterState& thrownState = characterStateRole(*pthrown);
             pthrown->setKursed(false);
-            pthrown->setAmmo(1);
+            thrownState.setAmmo(1);
             publishThrownAlert(scriptableThrown);
 
             // deterimine the throw velocity
@@ -360,19 +444,19 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             }
             else
             {
-                velocity += FLOAT_TO_FP8(pchr->getAttribute(Ego::Attribute::MIGHT)) / ( pthrown->phys.weight * THROWFIX );
+                velocity += FLOAT_TO_FP8(characterState.getAttribute(Ego::Attribute::MIGHT)) / ( pthrown->phys.weight * THROWFIX );
             }
             velocity = Ego::Math::constrain( velocity, MINTHROWVELOCITY, MAXTHROWVELOCITY );
 
             Facing turn = pchr->getFacingZ() + ATK_BEHIND;
-            pthrown->setVelocity({pthrown->getVelocity().x() + std::cos(turn) * velocity,
-                                  pthrown->getVelocity().y() + std::sin(turn) * velocity,
-                                  Object::DROPZVEL});
+            thrownMovement.setVelocity({thrownMovement.getVelocity().x() + std::cos(turn) * velocity,
+                                        thrownMovement.getVelocity().y() + std::sin(turn) * velocity,
+                                        Object::DROPZVEL});
 
             //Was that the last one?
             if ( pweapon->getAmmo() <= 1 ) {
                 // Poof the item
-                pweapon->requestTerminate();
+                lifecycleRole(*pweapon).requestTerminate();
                 return;
             }
             else {
@@ -389,10 +473,10 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             {
                 //Is it a wand? (Wand Mastery perk has chance to not use charge)
                 if(pweapon->getProfile()->getIDSZ(IDSZ_SKILL).equals('W','A','N','D')
-                    && pchr->hasPerk(Ego::Perks::WAND_MASTERY)) {
+                    && characterState.hasPerk(Ego::Perks::WAND_MASTERY)) {
 
                     //1% chance per Intellect
-                    if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::INTELLECT)) {
+                    if(Random::getPercent() <= characterState.getAttribute(Ego::Attribute::INTELLECT)) {
                         EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Wand Mastery!", Ego::Colour4f::white(), Ego::Colour4f::purple(), 3, Ego::Graphics::Billboard::Flags::All);
                     }
                     else {
@@ -408,10 +492,10 @@ void character_swipe( ObjectRef ichr, slot_t slot )
             int NR_OF_ATTACK_PARTICLES = 1;
 
             //Handle Double Shot perk
-            if(pchr->hasPerk(Ego::Perks::DOUBLE_SHOT) && weaponProfile->getIDSZ(IDSZ_PARENT).equals('L','B','O','W'))
+            if(characterState.hasPerk(Ego::Perks::DOUBLE_SHOT) && weaponProfile->getIDSZ(IDSZ_PARENT).equals('L','B','O','W'))
             {
                 //1% chance per Agility
-                if(Random::getPercent() <= pchr->getAttribute(Ego::Attribute::AGILITY) && pweapon->getAmmo() > 0) {
+                if(Random::getPercent() <= characterState.getAttribute(Ego::Attribute::AGILITY) && pweapon->getAmmo() > 0) {
                     NR_OF_ATTACK_PARTICLES = 2;
                     EngineContext::get().billboardSystem().makeBillboard(pchr->getObjRef(), "Double Shot!", Ego::Colour4f::white(), Ego::Colour4f::green(), 3, Ego::Graphics::Billboard::Flags::All);
 
@@ -430,7 +514,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                     std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnParticle(pweapon->getPosition(),
                         idlib::canonicalize(pchr->getFacingZ()), weaponProfile->getSlotNumber(),
                         attackParticle, weaponProfile->hasAttachParticleToWeapon() ? iweapon : ObjectRef::Invalid,
-                        spawn_vrt_offset, pholder->getTeam().toRef(), iholder);
+                        spawn_vrt_offset, holderInfo.getTeamRef(), iholder);
 
                     if (particle)
                     {
@@ -468,9 +552,9 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                         }
 
                         // Initial particles get a bonus, which may be zero. Increases damage with +(factor)% per attribute point (e.g Might=10 and MightFactor=0.06 then damageBonus=0.6=60%)
-                        particle->damage.base += (pchr->getAttribute(Ego::Attribute::MIGHT)     * weaponProfile->getStrengthDamageFactor());
-                        particle->damage.base += (pchr->getAttribute(Ego::Attribute::INTELLECT) * weaponProfile->getIntelligenceDamageFactor());
-                        particle->damage.base += (pchr->getAttribute(Ego::Attribute::AGILITY)   * weaponProfile->getDexterityDamageFactor());
+                        particle->damage.base += (characterState.getAttribute(Ego::Attribute::MIGHT)     * weaponProfile->getStrengthDamageFactor());
+                        particle->damage.base += (characterState.getAttribute(Ego::Attribute::INTELLECT) * weaponProfile->getIntelligenceDamageFactor());
+                        particle->damage.base += (characterState.getAttribute(Ego::Attribute::AGILITY)   * weaponProfile->getDexterityDamageFactor());
 
                         // Initial particles get an enchantment bonus
                         particle->damage.base += pweapon->getAttribute(Ego::Attribute::DAMAGE_BONUS);
@@ -481,49 +565,49 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                         {
                             //Wolverine perk gives +100% Claw damage
                             case IDSZ2::caseLabel('C','L','A','W'):
-                                if(pchr->hasPerk(Ego::Perks::WOLVERINE)) {
+                                if(characterState.hasPerk(Ego::Perks::WOLVERINE)) {
                                     damageBonus += 1.0f;
                                 }
                             break;
 
                             //+20% damage with polearms
                             case IDSZ2::caseLabel('P','O','L','E'):
-                                if(pchr->hasPerk(Ego::Perks::POLEARM_MASTERY)) {
+                                if(characterState.hasPerk(Ego::Perks::POLEARM_MASTERY)) {
                                     damageBonus += 0.2f;
                                 }
                             break;
 
                             //+20% damage with swords
                             case IDSZ2::caseLabel('S','W','O','R'):
-                                if(pchr->hasPerk(Ego::Perks::SWORD_MASTERY)) {
+                                if(characterState.hasPerk(Ego::Perks::SWORD_MASTERY)) {
                                     damageBonus += 0.2f;
                                 }
                             break;
 
                             //+20% damage with Axes
                             case IDSZ2::caseLabel('A','X','E','E'):
-                                if(pchr->hasPerk(Ego::Perks::AXE_MASTERY)) {
+                                if(characterState.hasPerk(Ego::Perks::AXE_MASTERY)) {
                                     damageBonus += 0.2f;
                                 }
                             break;
 
                             //+20% damage with Longbows
                             case IDSZ2::caseLabel('L','B','O','W'):
-                                if(pchr->hasPerk(Ego::Perks::BOW_MASTERY)) {
+                                if(characterState.hasPerk(Ego::Perks::BOW_MASTERY)) {
                                     damageBonus += 0.2f;
                                 }
                             break;
 
                             //+100% damage with Whips
                             case IDSZ2::caseLabel('W','H','I','P'):
-                                if(pchr->hasPerk(Ego::Perks::WHIP_MASTERY)) {
+                                if(characterState.hasPerk(Ego::Perks::WHIP_MASTERY)) {
                                     damageBonus += 1.0f;
                                 }
                             break;
                         }
 
                         //Improvised Weapons perk gives +100% to some unusual weapons
-                        if(pchr->hasPerk(Ego::Perks::IMPROVISED_WEAPONS)) {
+                        if(characterState.hasPerk(Ego::Perks::IMPROVISED_WEAPONS)) {
                             if (weaponProfile->getIDSZ(IDSZ_PARENT).equals('T','O','R','C')    //Torch
                              || weaponProfile->getIDSZ(IDSZ_TYPE).equals('S','H','O','V')      //Shovel
                              || weaponProfile->getIDSZ(IDSZ_TYPE).equals('P','L','U','N')      //Toilet Plunger
@@ -534,27 +618,27 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                         }
 
                         //Berserker perk deals +25% damage if you are below 25% life
-                        if(pchr->hasPerk(Ego::Perks::BERSERKER) && pchr->getLife() <= pchr->getAttribute(Ego::Attribute::MAX_LIFE)/4) {
+                        if(characterState.hasPerk(Ego::Perks::BERSERKER) && characterState.getLife() <= characterState.getAttribute(Ego::Attribute::MAX_LIFE)/4) {
                             damageBonus += 0.25f;
                         }
 
                         //If it is a ranged attack then Sharpshooter increases damage by 10%
-                        if(pchr->hasPerk(Ego::Perks::SHARPSHOOTER) && weaponProfile->isRangedWeapon() && DamageType_isPhysical(particle->damagetype)) {
+                        if(characterState.hasPerk(Ego::Perks::SHARPSHOOTER) && weaponProfile->isRangedWeapon() && DamageType_isPhysical(particle->damagetype)) {
                             damageBonus += 0.1f;
                         }
 
                         //+25% damage with Blunt Weapons Mastery
-                        if(particle->damagetype == DAMAGE_CRUSH && pchr->hasPerk(Ego::Perks::BLUNT_WEAPONS_MASTERY) && weaponProfile->isMeleeWeapon()) {
+                        if(particle->damagetype == DAMAGE_CRUSH && characterState.hasPerk(Ego::Perks::BLUNT_WEAPONS_MASTERY) && weaponProfile->isMeleeWeapon()) {
                             damageBonus += 0.25f;
                         }
 
                         //If it is a melee attack then Brute perk increases damage by 10%
-                        if(pchr->hasPerk(Ego::Perks::BRUTE) && weaponProfile->isMeleeWeapon()) {
+                        if(characterState.hasPerk(Ego::Perks::BRUTE) && weaponProfile->isMeleeWeapon()) {
                             damageBonus += 0.1f;
                         }
 
                         //Rally Bonus? (+10%)
-                        if(pchr->hasPerk(Ego::Perks::RALLY) && worldUpdateCount() < pchr->getRallyDuration()) {
+                        if(characterState.hasPerk(Ego::Perks::RALLY) && worldUpdateCount() < pchr->getRallyDuration()) {
                             damageBonus += 0.1f;
                         }
 
@@ -585,7 +669,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         }
         else
         {
-            pweapon->setAmmoKnown(true);
+            visualRole(*pweapon).setAmmoKnown(true);
         }
     }
 }
@@ -610,13 +694,13 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
     for (size_t cnt = 0; cnt < OBJECTS_MAX; cnt++)
     {
         // check for one of the ending condiitons
-        if (non_item && !module.getObjectHandler().get(object)->isItem())
+        if (non_item && !isItemAttachment(object))
         {
             break;
         }
 
         // grab the next object in the list
-        ObjectRef object_next = module.getObjectHandler().get(object)->getHolderRef();
+        ObjectRef object_next = nextAttachmentRef(object);
 
         // check for an end of the list
         if (!module.getObjectHandler().exists(object_next))
