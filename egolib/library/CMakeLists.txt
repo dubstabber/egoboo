@@ -553,6 +553,7 @@ set(EGOLIB_GAME_CORE_SOURCES
     src/egolib/game/Core/EngineContext_services_seam.cpp
     src/egolib/game/Core/EngineContext.hpp
     src/egolib/game/Core/GameEngine.cpp
+    src/egolib/game/Core/GameEngine_lifecycle.cpp
     src/egolib/game/Core/GameEngine.hpp
     src/egolib/game/Core/GameSessionContext.cpp
     src/egolib/game/Core/GameSessionContext.hpp

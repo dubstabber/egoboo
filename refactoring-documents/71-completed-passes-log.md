@@ -2469,3 +2469,25 @@ focused `ScriptStateFunctionsFixture.*` **59/59**; ctest **897/897**; validator 
 proof: both alert objects are present in `libegolib-scriptvm.a`, no alert object appears in
 `libegolib-library.a`, and the six moved `scr_*` symbols are defined by
 `script_functions_alerts_context.c.o`.
+
+### Pass 249 — `GameEngine.cpp` lifecycle/bootstrap split (2026-06-22)
+
+The 661-line `game/Core/GameEngine.cpp` split into two within-`egolib-library` siblings:
+
+- `GameEngine.cpp` (430 lines) — constants, construction, shutdown request, main loop, frame timing,
+  update/render frames, screenshot hotkey polling, SDL event pumping, state-stack mutation, and accessors.
+- `GameEngine_lifecycle.cpp` (277 lines) — lifecycle/bootstrap and teardown:
+  `initialize`, `uninitialize`, `subscribe`, `unsubscribe`, and `renderPreloadText`.
+
+No public API changes (`GameEngine.hpp` unchanged), no private internal header, and no static-to-extern
+promotions. All moved methods were already declared on `GameEngine`, so cross-TU calls resolve through the
+existing class surface. The new `.cpp` is registered only in `EGOLIB_GAME_CORE_SOURCES`; it is not in any
+above-library carve-layer source list.
+
+Gates: targeted build (`egolib-library`, `egolib-tests-executable`, `egoboo-content-validator`) clean;
+focused engine-publication/screenshot tests **3/3**; ctest **897/897**; validator `test.mod` 0/0. Archive
+proof: `GameEngine.cpp.o` and `GameEngine_lifecycle.cpp.o` are both present in `libegolib-library.a`
+(archive membership now 76 `.o`), and no `GameEngine*` object appears in `libegolib-game-graphics.a`,
+`libegolib-hud-widgets.a`, `libegolib-gamestates.a`, or `libegolib-scriptvm.a`. Live-archive nm
+set-intersection from `egolib-library` into the four upper layers remains zero, with positive control
+`egolib-game-graphics -> egolib-library` finding 68 expected downward edges.
