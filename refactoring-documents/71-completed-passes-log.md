@@ -2524,3 +2524,25 @@ is absent from all eight upper egolib archives; nm set-intersection from `Object
 upper archives is empty, with the base positive control finding expected intra-base dependencies
 (`ReadContext`, `vfs_get_next_*`, `ObjectProfile::setupXPTable`, `ModelDescriptor::charToAction`, and
 `Log`).
+
+### Pass 251 — EngineContext owned-service seam closure (2026-06-22)
+
+The remaining directly owned `EngineContext` service slots now route through active service registries:
+input, image, font, texture-atlas, and GFX. New seam implementations back the service interfaces for
+`IInputSystem`, `IFontManager`, `ITextureAtlasManager`, and `IGFX`; `IImageManager` uses the existing
+`ImageManager.cpp` TU and preserves the legacy concrete-singleton fallback for non-EngineContext callers.
+
+`EngineContext_services_owned.cpp` is now a compatibility delegation layer instead of a second set of
+file-local service pointers. `EngineContext::imageManager()` intentionally keeps installed-only semantics
+by checking `tryActiveImageManager()` before the fallback-capable `activeImageManager()`, and
+`EngineContext::clearEngine()` now clears the texture-atlas seam along with the other owned services.
+
+CMake placement keeps the DAG intact: `IInputSystem.cpp.o` and `IFontManager.cpp.o` are in
+`libegolib-foundation-base.a`; `IGFX.cpp.o` and `ITextureAtlasManager.cpp.o` are in
+`libegolib-library.a` and are intentionally absent from `libegolib-game-graphics.a`. Archive membership is
+now **164 / 6 / 28 / 24 / 78 / 21 / 6 / 33 / 19** in the health-doc order.
+
+Gates: `cmake --build build -j20` clean; focused `EngineContextFixture.*` **70/70**; ctest **912/912**;
+validator `test.mod` 0/0. Archive proof: `foundation-base -> upper egolib`, `library -> upper four`, and
+`game-graphics -> top three` nm set-intersections are all **0**; positive control
+`game-graphics -> library` finds 68 expected downward edges.

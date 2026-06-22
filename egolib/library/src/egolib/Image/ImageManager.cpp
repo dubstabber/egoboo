@@ -30,18 +30,45 @@
 #include "egolib/Graphics/PixelFormat.hpp"
 #include "egolib/Image/ImageLoader.hpp"
 
+#include <stdexcept>
+
 namespace Ego {
 
 namespace
 {
+IImageManager* g_activeImageManager = nullptr;
+
 egoboo_config_t& config()
 {
     return Ego::activeConfig();
 }
 }
 
+void installActiveImageManager(IImageManager& imageManager)
+{
+    if (g_activeImageManager)
+    {
+        throw std::logic_error("image manager already installed");
+    }
+    g_activeImageManager = &imageManager;
+}
+
+void clearActiveImageManager()
+{
+    g_activeImageManager = nullptr;
+}
+
+IImageManager* tryActiveImageManager()
+{
+    return g_activeImageManager;
+}
+
 IImageManager& activeImageManager()
 {
+    if (g_activeImageManager)
+    {
+        return *g_activeImageManager;
+    }
     return ImageManager::get();
 }
 

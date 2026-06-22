@@ -58,3 +58,17 @@ public:
 
     virtual void renderBillboards(Camera& camera) = 0;
 };
+
+/// @brief Install the active GFX service.
+/// @throw std::logic_error if GFX is already installed.
+void installActiveGFX(IGFX& gfx);
+
+/// @brief Clear the installed active GFX service.
+void clearActiveGFX();
+
+/// @brief The installed active GFX service, or @a nullptr if none is installed.
+IGFX* tryActiveGFX();
+
+/// @brief The active GFX service.
+/// @throw std::logic_error if no GFX service is installed.
+IGFX& activeGFX();

@@ -29,5 +29,19 @@ public:
     virtual ModifierKeys getModifierKeys() const = 0;
 };
 
+/// @brief Install the active input system.
+/// @throw std::logic_error if an input system is already installed.
+void installActiveInputSystem(IInputSystem& inputSystem);
+
+/// @brief Clear the installed active input system.
+void clearActiveInputSystem();
+
+/// @brief The installed active input system, or @a nullptr if none is installed.
+IInputSystem* tryActiveInputSystem();
+
+/// @brief The active input system.
+/// @throw std::logic_error if no input system is installed.
+IInputSystem& activeInputSystem();
+
 } // namespace Input
 } // namespace Ego

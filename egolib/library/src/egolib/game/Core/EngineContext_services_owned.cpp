@@ -21,88 +21,61 @@
 
 #include <stdexcept>
 
-// EngineContext implementation -- self-owned service registries.
+// EngineContext implementation -- compatibility delegators for recently moved ownership seams.
 //
-// The services whose installed pointer EngineContext owns DIRECTLY in a file-local static:
-// the input system, image manager, font manager, texture-atlas manager, and GFX. (Contrast the
-// seam-delegated services in EngineContext_services_seam.cpp, whose ownership has been moved to
-// lower-layer active-X seams.) The engine-core lifecycle lives in EngineContext.cpp.
-
-namespace
-{
-Ego::Input::IInputSystem* activeInputSystem = nullptr;
-Ego::IImageManager* activeImageManager = nullptr;
-Ego::IFontManager* activeFontManager = nullptr;
-Ego::Graphics::ITextureAtlasManager* activeTextureAtlasManager = nullptr;
-IGFX* activeGFX = nullptr;
-}
+// The installed pointers for input, image, font, texture-atlas, and GFX now live in their
+// subsystem active-X seams. These EngineContext entry points remain so existing install/clear
+// callers and tests keep using the same public context API while lower-layer callers can move off
+// the app-layer hub.
 
 void EngineContext::installInputSystem(Ego::Input::IInputSystem& inputSystem)
 {
-    if (activeInputSystem)
-    {
-        throw std::logic_error("input system already installed");
-    }
-    activeInputSystem = &inputSystem;
+    Ego::Input::installActiveInputSystem(inputSystem);
 }
 
 void EngineContext::clearInputSystem()
 {
-    activeInputSystem = nullptr;
+    Ego::Input::clearActiveInputSystem();
 }
 
 Ego::Input::IInputSystem* EngineContext::tryInputSystem()
 {
-    return activeInputSystem;
+    return Ego::Input::tryActiveInputSystem();
 }
 
 const Ego::Input::IInputSystem* EngineContext::tryInputSystem() const
 {
-    return activeInputSystem;
+    return Ego::Input::tryActiveInputSystem();
 }
 
 Ego::Input::IInputSystem& EngineContext::inputSystem()
 {
-    Ego::Input::IInputSystem* currentInputSystem = tryInputSystem();
-    if (!currentInputSystem)
-    {
-        throw std::logic_error("no active input system");
-    }
-    return *currentInputSystem;
+    return Ego::Input::activeInputSystem();
 }
 
 const Ego::Input::IInputSystem& EngineContext::inputSystem() const
 {
-    const Ego::Input::IInputSystem* currentInputSystem = tryInputSystem();
-    if (!currentInputSystem)
-    {
-        throw std::logic_error("no active input system");
-    }
-    return *currentInputSystem;
+    return Ego::Input::activeInputSystem();
 }
 
 void EngineContext::installImageManager(Ego::IImageManager& imageManager)
 {
-    if (activeImageManager)
-    {
-        throw std::logic_error("image manager already installed");
-    }
-    activeImageManager = &imageManager;
+    Ego::installActiveImageManager(imageManager);
 }
 
 void EngineContext::clearImageManager()
 {
-    activeImageManager = nullptr;
+    Ego::clearActiveImageManager();
 }
 
 Ego::IImageManager* EngineContext::tryImageManager()
 {
-    return activeImageManager;
+    return Ego::tryActiveImageManager();
 }
 
 const Ego::IImageManager* EngineContext::tryImageManager() const
 {
-    return activeImageManager;
+    return Ego::tryActiveImageManager();
 }
 
 Ego::IImageManager& EngineContext::imageManager()
@@ -127,132 +100,90 @@ const Ego::IImageManager& EngineContext::imageManager() const
 
 void EngineContext::installFontManager(Ego::IFontManager& fontManager)
 {
-    if (activeFontManager)
-    {
-        throw std::logic_error("font manager already installed");
-    }
-    activeFontManager = &fontManager;
+    Ego::installActiveFontManager(fontManager);
 }
 
 void EngineContext::clearFontManager()
 {
-    activeFontManager = nullptr;
+    Ego::clearActiveFontManager();
 }
 
 Ego::IFontManager* EngineContext::tryFontManager()
 {
-    return activeFontManager;
+    return Ego::tryActiveFontManager();
 }
 
 const Ego::IFontManager* EngineContext::tryFontManager() const
 {
-    return activeFontManager;
+    return Ego::tryActiveFontManager();
 }
 
 Ego::IFontManager& EngineContext::fontManager()
 {
-    Ego::IFontManager* currentFontManager = tryFontManager();
-    if (!currentFontManager)
-    {
-        throw std::logic_error("no active font manager");
-    }
-    return *currentFontManager;
+    return Ego::activeFontManager();
 }
 
 const Ego::IFontManager& EngineContext::fontManager() const
 {
-    const Ego::IFontManager* currentFontManager = tryFontManager();
-    if (!currentFontManager)
-    {
-        throw std::logic_error("no active font manager");
-    }
-    return *currentFontManager;
+    return Ego::activeFontManager();
 }
 
 void EngineContext::installTextureAtlasManager(Ego::Graphics::ITextureAtlasManager& textureAtlasManager)
 {
-    if (activeTextureAtlasManager)
-    {
-        throw std::logic_error("texture atlas manager already installed");
-    }
-    activeTextureAtlasManager = &textureAtlasManager;
+    Ego::Graphics::installActiveTextureAtlasManager(textureAtlasManager);
 }
 
 void EngineContext::clearTextureAtlasManager()
 {
-    activeTextureAtlasManager = nullptr;
+    Ego::Graphics::clearActiveTextureAtlasManager();
 }
 
 Ego::Graphics::ITextureAtlasManager* EngineContext::tryTextureAtlasManager()
 {
-    return activeTextureAtlasManager;
+    return Ego::Graphics::tryActiveTextureAtlasManager();
 }
 
 const Ego::Graphics::ITextureAtlasManager* EngineContext::tryTextureAtlasManager() const
 {
-    return activeTextureAtlasManager;
+    return Ego::Graphics::tryActiveTextureAtlasManager();
 }
 
 Ego::Graphics::ITextureAtlasManager& EngineContext::textureAtlasManager()
 {
-    Ego::Graphics::ITextureAtlasManager* currentTextureAtlasManager = tryTextureAtlasManager();
-    if (!currentTextureAtlasManager)
-    {
-        throw std::logic_error("no active texture atlas manager");
-    }
-    return *currentTextureAtlasManager;
+    return Ego::Graphics::activeTextureAtlasManager();
 }
 
 const Ego::Graphics::ITextureAtlasManager& EngineContext::textureAtlasManager() const
 {
-    const Ego::Graphics::ITextureAtlasManager* currentTextureAtlasManager = tryTextureAtlasManager();
-    if (!currentTextureAtlasManager)
-    {
-        throw std::logic_error("no active texture atlas manager");
-    }
-    return *currentTextureAtlasManager;
+    return Ego::Graphics::activeTextureAtlasManager();
 }
 
 void EngineContext::installGFX(IGFX& gfx)
 {
-    if (activeGFX)
-    {
-        throw std::logic_error("GFX already installed");
-    }
-    activeGFX = &gfx;
+    installActiveGFX(gfx);
 }
 
 void EngineContext::clearGFX()
 {
-    activeGFX = nullptr;
+    clearActiveGFX();
 }
 
 IGFX* EngineContext::tryGFX()
 {
-    return activeGFX;
+    return tryActiveGFX();
 }
 
 const IGFX* EngineContext::tryGFX() const
 {
-    return activeGFX;
+    return tryActiveGFX();
 }
 
 IGFX& EngineContext::gfx()
 {
-    IGFX* currentGFX = tryGFX();
-    if (!currentGFX)
-    {
-        throw std::logic_error("no active GFX");
-    }
-    return *currentGFX;
+    return activeGFX();
 }
 
 const IGFX& EngineContext::gfx() const
 {
-    const IGFX* currentGFX = tryGFX();
-    if (!currentGFX)
-    {
-        throw std::logic_error("no active GFX");
-    }
-    return *currentGFX;
+    return activeGFX();
 }

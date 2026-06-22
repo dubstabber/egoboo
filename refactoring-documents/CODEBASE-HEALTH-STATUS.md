@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 897 ctest cases.
+  configures 912 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -35,17 +35,17 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 162 / 6 / 28 / 24 / 76 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 767 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 274 `.cpp`, 73 `.h`, 317 `.hpp` |
-| Runtime source lines | 128,227 | Same scope as above |
-| Test files / lines | 50 / 23,648 | `egolib/tests`, source/header files only |
-| ctest cases | 897 | `ctest --test-dir build -N` |
-| ctest baseline | 897 / 897 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 623 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| Archive members | 164 / 6 / 28 / 24 / 78 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Runtime source files | 771 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 278 `.cpp`, 73 `.h`, 317 `.hpp` |
+| Runtime source lines | 128,407 | Same scope as above |
+| Test files / lines | 50 / 23,921 | `egolib/tests`, source/header files only |
+| ctest cases | 912 | `ctest --test-dir build -N` |
+| ctest baseline | 912 / 912 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| `::get()` call sites | 622 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 435 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 133 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
-| `throw` references | 605 | Broad grep count, not semantic classification |
+| `throw` references | 646 | Broad grep count, not semantic classification |
 | Object role interfaces | 18 | 20 `Entities/I*.hpp` files total, including 2 service interfaces |
 
 ## Link Layout
@@ -54,11 +54,11 @@ The live archive member counts are:
 
 | Archive | Members | Role |
 | --- | ---: | --- |
-| `egolib-foundation-base` | 162 | Dependency-closed base: math, logging, VFS, file formats, profiles data/model loading, script compiler pieces, low-level services |
+| `egolib-foundation-base` | 164 | Dependency-closed base: math, logging, VFS, file formats, profiles data/model loading, script compiler pieces, low-level services |
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 76 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
+| `egolib-library` | 78 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
 | `egolib-game-graphics` | 21 | 3D scene-rendering layer: camera, billboard, texture atlas, render passes, GFX bootstrap |
 | `egolib-hud-widgets` | 6 | Game-coupled in-game HUD widgets |
 | `egolib-scriptvm` | 33 | EgoScript VM and `script_functions_*` dispatch family |
@@ -126,6 +126,10 @@ flatten dependency visibility. Broader constructor injection does not exist.
 Actionable direct singleton calls should remain small and justified. When adding
 or moving code, prefer existing service interfaces and `active*()` seams over
 new hidden global access.
+
+Directly owned `EngineContext` services now delegate through active service
+registries for input, image, font, texture-atlas, and GFX access. This keeps the
+context API stable while moving ownership seams toward lower archives.
 
 ## Testing And Validation
 

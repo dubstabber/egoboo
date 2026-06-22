@@ -28,5 +28,19 @@ public:
     virtual void loadTileSet() = 0;
 };
 
+/// @brief Install the active texture-atlas manager.
+/// @throw std::logic_error if a texture-atlas manager is already installed.
+void installActiveTextureAtlasManager(ITextureAtlasManager& textureAtlasManager);
+
+/// @brief Clear the installed active texture-atlas manager.
+void clearActiveTextureAtlasManager();
+
+/// @brief The installed active texture-atlas manager, or @a nullptr if none is installed.
+ITextureAtlasManager* tryActiveTextureAtlasManager();
+
+/// @brief The active texture-atlas manager.
+/// @throw std::logic_error if no texture-atlas manager is installed.
+ITextureAtlasManager& activeTextureAtlasManager();
+
 } // namespace Graphics
 } // namespace Ego

@@ -172,6 +172,8 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/Font_internal.hpp
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/FontManager.hpp
+    src/egolib/Graphics/IFontManager.cpp
+    src/egolib/Graphics/IFontManager.hpp
     src/egolib/Graphics/GraphicsContext.cpp
     src/egolib/Graphics/GraphicsContext.hpp
     src/egolib/Graphics/GraphicsSystem.cpp
@@ -248,6 +250,7 @@ set(EGOLIB_IMAGE_SOURCES
     src/egolib/Image/ImageLoader_SDL.hpp
     src/egolib/Image/ImageLoader_SDL_image.cpp
     src/egolib/Image/ImageLoader_SDL_image.hpp
+    src/egolib/Image/IImageManager.hpp
     src/egolib/Image/ImageManager.cpp
     src/egolib/Image/ImageManager.hpp
     src/egolib/Image/SDL_Image_Extensions.c
@@ -261,6 +264,8 @@ set(EGOLIB_INPUTCONTROL_SOURCES
     src/egolib/InputControl/ControlSettingsFile.hpp
     src/egolib/InputControl/InputDevice.cpp
     src/egolib/InputControl/InputDevice.hpp
+    src/egolib/InputControl/IInputSystem.cpp
+    src/egolib/InputControl/IInputSystem.hpp
     src/egolib/InputControl/InputSystem.cpp
     src/egolib/InputControl/InputSystem.hpp
     src/egolib/InputControl/ModifierKeys.hpp
@@ -610,6 +615,8 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/GraphicsBootstrap.cpp
     src/egolib/game/Graphics/GraphicsBootstrap.hpp
     src/egolib/game/Graphics/graphic_init.cpp
+    src/egolib/game/Graphics/IGFX.cpp
+    src/egolib/game/Graphics/IGFX.hpp
     src/egolib/game/Graphics/Billboard.hpp
     src/egolib/game/Graphics/BillboardSystem.cpp
     src/egolib/game/Graphics/BillboardSystem.hpp
@@ -657,6 +664,8 @@ set(EGOLIB_GAME_GRAPHICS_SOURCES
     src/egolib/game/Graphics/RenderPasses/ReflectiveTilesSecondRenderPass.hpp
     src/egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.cpp
     src/egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp
+    src/egolib/game/Graphics/ITextureAtlasManager.cpp
+    src/egolib/game/Graphics/ITextureAtlasManager.hpp
     src/egolib/game/Graphics/TextureAtlasManager.cpp
     src/egolib/game/Graphics/TextureAtlasManager.hpp
     src/egolib/game/Graphics/TileList.cpp
@@ -994,6 +1003,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Graphics/Font_layout.cpp
     src/egolib/Graphics/Font_utf8.cpp
     src/egolib/Graphics/FontManager.cpp
+    src/egolib/Graphics/IFontManager.cpp
     src/egolib/Graphics/IBillboardSystem.cpp
     src/egolib/Graphics/ICameraSystem.cpp
     src/egolib/Graphics/IGraphicsSystem.cpp
@@ -1023,6 +1033,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Image/SDL_Image_Extensions_functors.c
     src/egolib/InputControl/ControlSettingsFile.cpp
     src/egolib/InputControl/InputDevice.cpp
+    src/egolib/InputControl/IInputSystem.cpp
     src/egolib/InputControl/InputSystem.cpp
     src/egolib/Log/ConsoleColor.cpp
     src/egolib/Log/DefaultTarget.cpp

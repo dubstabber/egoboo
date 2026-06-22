@@ -31,4 +31,20 @@ public:
                                                                      std::string* resolvedPath = nullptr) const = 0;
 };
 
+/// @brief Install the active image manager.
+/// @throw std::logic_error if an image manager is already installed.
+void installActiveImageManager(IImageManager& imageManager);
+
+/// @brief Clear the installed active image manager.
+void clearActiveImageManager();
+
+/// @brief The installed active image manager, or @a nullptr if none is installed.
+IImageManager* tryActiveImageManager();
+
+/// @brief The active image manager.
+///
+/// Falls back to the concrete singleton when no explicit service has been installed,
+/// preserving legacy lower-layer callers that predate EngineContext publication.
+IImageManager& activeImageManager();
+
 } // namespace Ego

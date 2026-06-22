@@ -27,8 +27,8 @@
 // lifecycle (install/clear/access of the GameEngine), the engine-derived UIManager and
 // active-playing-state accessors, and the clearEngine() teardown orchestrator -- which calls
 // the per-service clearX() members defined in the sibling TUs (link-resolved via the header).
-// The self-owned service registries live in EngineContext_services_owned.cpp and the
-// seam-delegated ones in EngineContext_services_seam.cpp.
+// The service registries live behind active-X seams; the sibling service TUs keep the public
+// EngineContext install/clear/accessor API as compatibility delegators.
 
 namespace
 {
@@ -68,6 +68,7 @@ void EngineContext::clearEngine()
     clearProfileSystem();
     clearCameraSystem();
     clearBillboardSystem();
+    clearTextureAtlasManager();
     clearGFX();
     clearVideoBufferManager();
     clearRenderer();

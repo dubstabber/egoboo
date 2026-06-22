@@ -2,6 +2,7 @@
 
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Graphics/IFontManager.hpp"
 #include "egolib/Image/IImageManager.hpp"
 #include "egolib/InputControl/IInputSystem.hpp"
 #include "egolib/Logic/IPerkHandler.hpp"
@@ -16,6 +17,8 @@
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
+#include "egolib/game/Graphics/IGFX.hpp"
+#include "egolib/game/Graphics/ITextureAtlasManager.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -92,6 +95,12 @@ public:
     void save_as_png(const std::shared_ptr<SDL_Surface>&, const std::string&) const override {}
     bool imageExistsWithKnownExtension(const std::string&) const override { return false; }
     std::shared_ptr<SDL_Surface> loadImageWithKnownExtension(const std::string&, std::string*) const override { return nullptr; }
+};
+
+class StubFontManager : public Ego::IFontManager
+{
+public:
+    std::shared_ptr<Ego::Font> loadFont(const std::string&, int) override { return nullptr; }
 };
 
 class StubParticleHandler : public IParticleHandler
@@ -227,6 +236,55 @@ public:
     }
 };
 
+class StubTextureAtlasManager : public Ego::Graphics::ITextureAtlasManager
+{
+public:
+    std::shared_ptr<Ego::Texture> getSmall(int) const override { return nullptr; }
+    std::shared_ptr<Ego::Texture> getBig(int) const override { return nullptr; }
+    void reupload() override {}
+    void loadTileSet() override {}
+};
+
+class StubGFX : public IGFX
+{
+public:
+    StubGFX() :
+        _objectClock("stub.gfx.object", 1),
+        _particleClock("stub.gfx.particle", 1)
+    {}
+
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive>& updateObjectInstancesTimer() override
+    {
+        return _objectClock;
+    }
+
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive>& updateParticleInstancesTimer() override
+    {
+        return _particleClock;
+    }
+
+    gfx_rv update_object_instances(Camera&) override { return gfx_success; }
+    gfx_rv update_particle_instances(Camera&) override { return gfx_success; }
+    dynalist_t& getDynalist() override { throw std::logic_error("unused GFX dynalist"); }
+    Ego::Graphics::ModelVertexBuffer& getModelVertexBuffer() const override { throw std::logic_error("unused GFX model vertex buffer"); }
+    Ego::Graphics::RenderPass& getNonOpaqueEntities() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getOpaqueEntities() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getReflective0() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getReflective1() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getNonReflective() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getEntityShadows() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getWater() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getEntityReflections() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getForeground() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getBackground() const override { throw std::logic_error("unused render pass"); }
+    Ego::Graphics::RenderPass& getHeightmap() const override { throw std::logic_error("unused render pass"); }
+    void renderBillboards(Camera&) override {}
+
+private:
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive> _objectClock;
+    Ego::Time::Clock<Ego::Time::ClockPolicy::NonRecursive> _particleClock;
+};
+
 class StubLogTarget : public Log::Target
 {
 public:
@@ -246,11 +304,14 @@ protected:
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearInputSystem();
         EngineContext::get().clearImageManager();
+        EngineContext::get().clearFontManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearProfileSystem();
         EngineContext::get().clearCameraSystem();
         EngineContext::get().clearBillboardSystem();
+        EngineContext::get().clearTextureAtlasManager();
+        EngineContext::get().clearGFX();
         EngineContext::get().clearEngine();
     }
 
@@ -261,11 +322,14 @@ protected:
         EngineContext::get().clearAudioSystem();
         EngineContext::get().clearInputSystem();
         EngineContext::get().clearImageManager();
+        EngineContext::get().clearFontManager();
         EngineContext::get().clearParticleHandler();
         EngineContext::get().clearPerkHandler();
         EngineContext::get().clearProfileSystem();
         EngineContext::get().clearCameraSystem();
         EngineContext::get().clearBillboardSystem();
+        EngineContext::get().clearTextureAtlasManager();
+        EngineContext::get().clearGFX();
         EngineContext::get().clearEngine();
     }
 };
@@ -325,7 +389,39 @@ TEST_F(EngineContextFixture, InputSystemThrowsWhenNoInputSystemIsInstalled)
     EngineContext& context = EngineContext::get();
 
     EXPECT_EQ(context.tryInputSystem(), nullptr);
+    EXPECT_EQ(Ego::Input::tryActiveInputSystem(), nullptr);
     EXPECT_THROW(context.inputSystem(), std::logic_error);
+    EXPECT_THROW(Ego::Input::activeInputSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, FontManagerThrowsWhenNoFontManagerIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryFontManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveFontManager(), nullptr);
+    EXPECT_THROW(context.fontManager(), std::logic_error);
+    EXPECT_THROW(Ego::activeFontManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, TextureAtlasManagerThrowsWhenNoTextureAtlasManagerIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryTextureAtlasManager(), nullptr);
+    EXPECT_EQ(Ego::Graphics::tryActiveTextureAtlasManager(), nullptr);
+    EXPECT_THROW(context.textureAtlasManager(), std::logic_error);
+    EXPECT_THROW(Ego::Graphics::activeTextureAtlasManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, GFXThrowsWhenNoGFXIsInstalled)
+{
+    EngineContext& context = EngineContext::get();
+
+    EXPECT_EQ(context.tryGFX(), nullptr);
+    EXPECT_EQ(tryActiveGFX(), nullptr);
+    EXPECT_THROW(context.gfx(), std::logic_error);
+    EXPECT_THROW(activeGFX(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, InstallAudioSystemPublishesInstalledAudioSystem)
@@ -350,6 +446,8 @@ TEST_F(EngineContextFixture, InstallInputSystemPublishesInstalledInputSystem)
 
     EXPECT_EQ(context.tryInputSystem(), &inputSystem);
     EXPECT_EQ(&context.inputSystem(), &inputSystem);
+    EXPECT_EQ(Ego::Input::tryActiveInputSystem(), &inputSystem);
+    EXPECT_EQ(&Ego::Input::activeInputSystem(), &inputSystem);
 }
 
 TEST_F(EngineContextFixture, SetEngineRejectsNullAndDoubleInstall)
@@ -476,6 +574,7 @@ TEST_F(EngineContextFixture, ImageManagerThrowsWhenNoImageManagerIsInstalled)
     EngineContext& context = EngineContext::get();
 
     EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveImageManager(), nullptr);
     EXPECT_THROW(context.imageManager(), std::logic_error);
 }
 
@@ -549,6 +648,21 @@ TEST_F(EngineContextFixture, InstallImageManagerPublishesInstalledImageManager)
 
     EXPECT_EQ(context.tryImageManager(), &imageManager);
     EXPECT_EQ(&context.imageManager(), &imageManager);
+    EXPECT_EQ(Ego::tryActiveImageManager(), &imageManager);
+    EXPECT_EQ(&Ego::activeImageManager(), &imageManager);
+}
+
+TEST_F(EngineContextFixture, InstallFontManagerPublishesInstalledFontManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubFontManager fontManager;
+    context.installFontManager(fontManager);
+
+    EXPECT_EQ(context.tryFontManager(), &fontManager);
+    EXPECT_EQ(&context.fontManager(), &fontManager);
+    EXPECT_EQ(Ego::tryActiveFontManager(), &fontManager);
+    EXPECT_EQ(&Ego::activeFontManager(), &fontManager);
 }
 
 TEST_F(EngineContextFixture, InstallParticleHandlerPublishesInstalledParticleHandler)
@@ -593,6 +707,32 @@ TEST_F(EngineContextFixture, InstallBillboardSystemPublishesInstalledBillboardSy
 
     EXPECT_EQ(context.tryBillboardSystem(), &billboardSystem);
     EXPECT_EQ(&context.billboardSystem(), &billboardSystem);
+}
+
+TEST_F(EngineContextFixture, InstallTextureAtlasManagerPublishesInstalledTextureAtlasManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubTextureAtlasManager textureAtlasManager;
+    context.installTextureAtlasManager(textureAtlasManager);
+
+    EXPECT_EQ(context.tryTextureAtlasManager(), &textureAtlasManager);
+    EXPECT_EQ(&context.textureAtlasManager(), &textureAtlasManager);
+    EXPECT_EQ(Ego::Graphics::tryActiveTextureAtlasManager(), &textureAtlasManager);
+    EXPECT_EQ(&Ego::Graphics::activeTextureAtlasManager(), &textureAtlasManager);
+}
+
+TEST_F(EngineContextFixture, InstallGFXPublishesInstalledGFX)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubGFX gfx;
+    context.installGFX(gfx);
+
+    EXPECT_EQ(context.tryGFX(), &gfx);
+    EXPECT_EQ(&context.gfx(), &gfx);
+    EXPECT_EQ(tryActiveGFX(), &gfx);
+    EXPECT_EQ(&activeGFX(), &gfx);
 }
 
 TEST_F(EngineContextFixture, InstallConfigPublishesInstalledConfig)
@@ -643,6 +783,18 @@ TEST_F(EngineContextFixture, InstallImageManagerRejectsDoubleInstall)
     EXPECT_EQ(context.tryImageManager(), &first);
 }
 
+TEST_F(EngineContextFixture, InstallFontManagerRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubFontManager first;
+    StubFontManager second;
+    context.installFontManager(first);
+
+    EXPECT_THROW(context.installFontManager(second), std::logic_error);
+    EXPECT_EQ(context.tryFontManager(), &first);
+}
+
 TEST_F(EngineContextFixture, InstallParticleHandlerRejectsDoubleInstall)
 {
     EngineContext& context = EngineContext::get();
@@ -689,6 +841,30 @@ TEST_F(EngineContextFixture, InstallBillboardSystemRejectsDoubleInstall)
 
     EXPECT_THROW(context.installBillboardSystem(second), std::logic_error);
     EXPECT_EQ(context.tryBillboardSystem(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallTextureAtlasManagerRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubTextureAtlasManager first;
+    StubTextureAtlasManager second;
+    context.installTextureAtlasManager(first);
+
+    EXPECT_THROW(context.installTextureAtlasManager(second), std::logic_error);
+    EXPECT_EQ(context.tryTextureAtlasManager(), &first);
+}
+
+TEST_F(EngineContextFixture, InstallGFXRejectsDoubleInstall)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubGFX first;
+    StubGFX second;
+    context.installGFX(first);
+
+    EXPECT_THROW(context.installGFX(second), std::logic_error);
+    EXPECT_EQ(context.tryGFX(), &first);
 }
 
 TEST_F(EngineContextFixture, InstallConfigRejectsDoubleInstall)
@@ -738,7 +914,23 @@ TEST_F(EngineContextFixture, ClearImageManagerRemovesInstalledImageManager)
     context.clearImageManager();
 
     EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveImageManager(), nullptr);
     EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearFontManagerRemovesInstalledFontManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubFontManager fontManager;
+    context.installFontManager(fontManager);
+
+    context.clearFontManager();
+
+    EXPECT_EQ(context.tryFontManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveFontManager(), nullptr);
+    EXPECT_THROW(context.fontManager(), std::logic_error);
+    EXPECT_THROW(Ego::activeFontManager(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearParticleHandlerRemovesInstalledParticleHandler)
@@ -791,6 +983,36 @@ TEST_F(EngineContextFixture, ClearBillboardSystemRemovesInstalledBillboardSystem
 
     EXPECT_EQ(context.tryBillboardSystem(), nullptr);
     EXPECT_THROW(context.billboardSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearTextureAtlasManagerRemovesInstalledTextureAtlasManager)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubTextureAtlasManager textureAtlasManager;
+    context.installTextureAtlasManager(textureAtlasManager);
+
+    context.clearTextureAtlasManager();
+
+    EXPECT_EQ(context.tryTextureAtlasManager(), nullptr);
+    EXPECT_EQ(Ego::Graphics::tryActiveTextureAtlasManager(), nullptr);
+    EXPECT_THROW(context.textureAtlasManager(), std::logic_error);
+    EXPECT_THROW(Ego::Graphics::activeTextureAtlasManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearGFXRemovesInstalledGFX)
+{
+    EngineContext& context = EngineContext::get();
+
+    StubGFX gfx;
+    context.installGFX(gfx);
+
+    context.clearGFX();
+
+    EXPECT_EQ(context.tryGFX(), nullptr);
+    EXPECT_EQ(tryActiveGFX(), nullptr);
+    EXPECT_THROW(context.gfx(), std::logic_error);
+    EXPECT_THROW(activeGFX(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearConfigRemovesInstalledConfig)
@@ -848,7 +1070,24 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledImageManager)
 
     EXPECT_EQ(context.tryEngine(), nullptr);
     EXPECT_EQ(context.tryImageManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveImageManager(), nullptr);
     EXPECT_THROW(context.imageManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledFontManager)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubFontManager fontManager;
+    context.installFontManager(fontManager);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryFontManager(), nullptr);
+    EXPECT_EQ(Ego::tryActiveFontManager(), nullptr);
+    EXPECT_THROW(context.fontManager(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledParticleHandler)
@@ -911,6 +1150,40 @@ TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledBillboardSystem)
     EXPECT_EQ(context.tryBillboardSystem(), nullptr);
     EXPECT_THROW(context.engine(), std::logic_error);
     EXPECT_THROW(context.billboardSystem(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledTextureAtlasManager)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubTextureAtlasManager textureAtlasManager;
+    context.installTextureAtlasManager(textureAtlasManager);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryTextureAtlasManager(), nullptr);
+    EXPECT_EQ(Ego::Graphics::tryActiveTextureAtlasManager(), nullptr);
+    EXPECT_THROW(context.engine(), std::logic_error);
+    EXPECT_THROW(context.textureAtlasManager(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, ClearEngineAlsoRemovesInstalledGFX)
+{
+    EngineContext& context = EngineContext::get();
+    context.setEngine(std::make_unique<GameEngine>());
+
+    StubGFX gfx;
+    context.installGFX(gfx);
+
+    context.clearEngine();
+
+    EXPECT_EQ(context.tryEngine(), nullptr);
+    EXPECT_EQ(context.tryGFX(), nullptr);
+    EXPECT_EQ(tryActiveGFX(), nullptr);
+    EXPECT_THROW(context.engine(), std::logic_error);
+    EXPECT_THROW(context.gfx(), std::logic_error);
 }
 
 TEST_F(EngineContextFixture, ClearEngineKeepsInstalledConfig)
