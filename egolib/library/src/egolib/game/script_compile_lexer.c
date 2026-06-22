@@ -21,9 +21,8 @@
 /// @brief line_scanner_state_t method bodies (the EgoScript lexical scanner). Split off
 ///        script_compile.c on 2026-06-12 (~358 lines, all line_scanner_state_t:: methods).
 /// @details The struct is declared in the public script_compile.h header, so no header
-///          carving was needed. parser_state_t methods (parse_indention / parse_token /
-///          parse_line_by_line / emit_opcode / raise / load_one_line / jump_goto /
-///          parse_jumps / load_ai_codes_vfs / load_ai_script_vfs) stay in script_compile.c.
+///          carving was needed. parser_state_t token parsing, opcode emission, and syntax
+///          diagnostics now live in script_compile_parser.c.
 
 #include "egolib/game/script_compile.h"
 #include "egolib/Core/StringUtilities.hpp"

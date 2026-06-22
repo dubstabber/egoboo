@@ -2422,3 +2422,29 @@ members of `libegolib-library.a`; no `ObjectGraphics*` member appears in `libego
 nm set-intersections are zero for `egolib-library -> {game-graphics,hud-widgets,scriptvm,gamestates}`
 and `egolib-game-graphics -> {hud-widgets,scriptvm,gamestates}`; positive control
 `egolib-game-graphics -> egolib-library` finds 68 expected downward edges.
+
+### Pass 247 — `script_compile.c` parser-helper split (2026-06-22)
+
+The 798-line `game/script_compile.c` residual split into two within-`egolib-foundation-base` siblings,
+leaving the existing lexer sibling unchanged:
+
+- `script_compile.c` (575 lines) — parser lifetime, line loading, `parse_line_by_line`, jump parsing,
+  opcode-table initialization, script file loading/fallback, and the debug-print code.
+- `script_compile_parser.c` (254 lines) — token parsing, opcode emission, and syntax diagnostics:
+  `parse_indention`, `parse_token`, `emit_opcode`, and `raise`.
+- `script_compile_lexer.c` remains 387 lines — `line_scanner_state_t` scanning methods unchanged.
+
+No public API changes (`script_compile.h` unchanged), no private internal header, and no static-to-extern
+promotions. All moved parser helpers were already declared as `parser_state_t` methods in
+`script_compile.h`, so cross-TU calls from `parse_line_by_line` resolve normally. `Opcodes` remains
+defined in `script_compile.c` and is consumed through the existing extern declaration. The new `.c` is
+registered only in `EGOLIB_FOUNDATION_BASE_SOURCES`.
+
+Gates: targeted build (`egolib-foundation-base`, `egolib-tests-executable`,
+`egoboo-content-validator`) clean; focused `Compilation|ScriptLoaderFixture|ScriptRuntimeFixture`
+**21/21**; ctest **897/897**; validator `test.mod` 0/0. Archive proof:
+`script_compile_parser.c.o` is present in `libegolib-foundation-base.a` (archive membership now 161 `.o`)
+and absent from all eight upper egolib archives; nm set-intersection from `script_compile_parser.c.o`
+into upper egolib archives is empty, with the base positive control finding expected intra-base
+dependencies (`Opcodes`, `activeProfileSystem`, `line_scanner_state_t` scan methods, `ConstantPool`,
+`CLogEntry`, and `Log`).

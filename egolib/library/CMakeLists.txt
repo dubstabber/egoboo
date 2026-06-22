@@ -1113,6 +1113,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/game/mesh_query.c
     src/egolib/game/script_compile.c
     src/egolib/game/script_compile_lexer.c
+    src/egolib/game/script_compile_parser.c
     src/egolib/game/script_functions_bitwise.c
     src/egolib/geometry.c
     src/egolib/map_functions.c
