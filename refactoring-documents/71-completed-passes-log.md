@@ -2625,3 +2625,22 @@ EngineContext delegator. Singleton metrics dropped to **615** `::get()` lines, i
 
 Gates: `cmake --build build -j20` clean; focused spawn/poof/morph slice **17/17**; full
 `ScriptStateFunctionsFixture.*` **59/59**; ctest **912/912**; validator `test.mod` 0/0.
+
+### Pass 260 — Script spawn self-context resolver consolidation (2026-06-22)
+
+Continued the stable-first spawn helper cleanup without changing public role interfaces, script opcode
+APIs, CMake source placement, or archive membership. `SpawnSelfContext` now has a private
+`isResolved()` validity predicate, and the three `script_functions_spawn*.c` TUs route self validation and
+context construction through `resolveSpawnSelfContext(...)` instead of separately checking
+`resolveSelfContext(self)` and rebuilding context from `Object`.
+
+The concrete self `Object` lookup is now quarantined in `script_functions_spawn_internal.h` at the context
+construction boundary. Spawn functions that need profile/name/old-position/role data reuse the checked
+context; functions that only need the legacy "self must be live" gate call the same resolver for a uniform
+failure path. Concrete `Object` handles remain only where current APIs still require them: spawned child
+ownership, safe-position checks, grip attachment, vertex placement, poof spawning, and temporary holder
+mutation around `scr_run_chr_script`.
+
+Gates: `cmake --build build -j20` clean; focused spawn/script slice **21/21**; ctest **912/912**;
+validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules, 10 warnings,
+245 errors**, nonzero exit from pre-existing content errors).

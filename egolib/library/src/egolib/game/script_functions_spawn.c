@@ -215,8 +215,8 @@ uint8_t scr_DropWeapons( script_state_t& state, ai_state_t& self )
     /// @details This function drops the character's in-hand items.  It will also
     /// buck the rider if the character is a mount
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     // This funtion drops the character's in hand items/riders
     const bool selfIsMount = selfContext.targetInfo->isMount();
@@ -235,8 +235,8 @@ uint8_t scr_GoPoof( script_state_t& state, ai_state_t& self )
     /// @details This function flags the character to be removed from the game entirely.
     /// This doesn't work on players
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     return trySetSelfPoofTime(self, selfContext.targetInfo->isPlayer());
 }
@@ -250,8 +250,8 @@ uint8_t scr_DropKeys( script_state_t& state, ai_state_t& self )
     /// @details This function drops all of the keys in the character's inventory.
     /// This does NOT drop keys in the character's hands.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->dropKeys();
 
@@ -268,7 +268,7 @@ uint8_t scr_DetachFromHolder( script_state_t& state, ai_state_t& self )
     /// Can be used to make slippery weapons, or to make certain characters
     /// incapable of wielding certain weapons. "A troll can't grab a torch"
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return tryDetachSelfFromHolder(self.getSelf());
 }
@@ -282,8 +282,8 @@ uint8_t scr_CleanUp( script_state_t& state, ai_state_t& self )
     /// @details This function tells all the dead characters on the team to clean
     /// themselves up.  Usually done by the boss creature every second or so
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     const TEAM_REF selfTeam = selfContext.targetInfo->getTeamRef();
     forEachLiveSpawnObjectRef([&](ObjectRef listenerRef)
@@ -303,8 +303,8 @@ uint8_t scr_MakeCrushValid( script_state_t& state, ai_state_t& self )
     /// @details This function makes a character able to be crushed by closing doors
     /// and such
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->setCanBeCrushed(true);
 
@@ -320,7 +320,7 @@ uint8_t scr_PoofTarget( script_state_t& state, ai_state_t& self )
     /// @details This function removes the target from the game, failing if the
     /// target is a player
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     IInventoryHolder* targetInventory = tryInventoryHolder(self.getTarget());
     if (targetInventory == nullptr)
@@ -361,7 +361,7 @@ uint8_t scr_SetChildState( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the state of the last character it
     /// spawned
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetChildState(self.child, state.argument);
 }
@@ -374,8 +374,8 @@ uint8_t scr_DropItems( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function drops all of the items the character is holding
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->dropAllItems();
 
@@ -390,7 +390,7 @@ uint8_t scr_RespawnTarget( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function respawns the target at its current location
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
     if (targetLifecycle == nullptr)
@@ -412,8 +412,8 @@ uint8_t scr_NotAnItem( script_state_t& state, ai_state_t& self )
     /// @details This function makes the character a non-item character.
     /// Usage: Used for spells that summon creatures
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->setItem(false);
 
@@ -428,7 +428,7 @@ uint8_t scr_SetChildAmmo( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function sets the ammo of the last character spawned by this character
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetChildAmmo(self.child, state.argument);
 }
@@ -442,8 +442,8 @@ uint8_t scr_IdentifyTarget( script_state_t& state, ai_state_t& self )
     /// @details This function reveals the target's name, ammo, and usage
     /// Proceeds if the target was unknown
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     return identifyResolvedTarget(*selfContext.profile, self.getTarget());
 }
@@ -456,7 +456,7 @@ uint8_t scr_DropTargetKeys( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the Target drops keys in inventory (Not inhand)
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     ILifecycleControl* targetLifecycle = tryLifecycleControl(self.getTarget());
     if (targetLifecycle == nullptr)
@@ -477,8 +477,8 @@ uint8_t scr_MakeCrushInvalid( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes doors unable to close on this object
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->setCanBeCrushed(false);
 
@@ -493,7 +493,7 @@ uint8_t scr_SetDamageTime( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function makes the character invincible for a little while
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetSelfDamageTimer(self, state.argument);
 }
@@ -506,7 +506,7 @@ uint8_t scr_SetTargetToChild( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function sets the target to the character it spawned last (also called it's "child")
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetTargetToChild(self);
 }
@@ -519,8 +519,8 @@ uint8_t scr_SetDamageThreshold( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This sets the damage treshold for this character. Damage below the threshold is ignored
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     const int v = state.argument;
     if (v > 0)
@@ -540,7 +540,7 @@ uint8_t scr_SetChildContent( script_state_t& state, ai_state_t& self )
     /// @details This function lets a character set the content of the last character it
     /// spawned last
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetChildContent(self.child, state.argument);
 }
@@ -553,7 +553,7 @@ uint8_t scr_EnableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character invulerable
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetSelfInvincibility(self, true);
 }
@@ -566,7 +566,7 @@ uint8_t scr_DisableInvictus( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function makes the character not invulerable
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return trySetSelfInvincibility(self, false);
 }
@@ -579,7 +579,7 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This changes the AI target's size
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());
     if (targetMorph == nullptr)
@@ -601,8 +601,8 @@ uint8_t scr_EnableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object enter stealth mode. Returns true if it is now hidden from others.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     if (selfContext.targetInfo->isStealthed()) {
         return false;
@@ -619,8 +619,8 @@ uint8_t scr_DisableStealth( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details Makes the object exit stealth mode. Returns true if it exited stealth mode.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     const bool wasStealthed = selfContext.targetInfo->isStealthed();
     selfContext.lifecycle->deactivateStealth();

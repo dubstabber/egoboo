@@ -119,9 +119,8 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle, offset from the character's location
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveSpawnParticleOwnerRef(selfContext);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
@@ -153,7 +152,7 @@ uint8_t scr_DisaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function removes all the attached particles from a character
     /// ( stuck arrows, flames, etc )
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     disaffirm_attached_particles(self.getSelf());
 
@@ -169,7 +168,7 @@ uint8_t scr_ReaffirmCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function makes sure it has all of its reaffirmation particles
     /// attached to it. Used to make the torch light again
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     reaffirm_attached_particles(self.getSelf());
 
@@ -184,9 +183,8 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle attached to the character
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(self.getSelf());
     return nullptr != spawnLocalParticleForSelf(selfContext,
                                                 selfContext.physical->getPosition(),
@@ -205,9 +203,8 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a particle at a specific x, y, z position
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
 
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
@@ -231,7 +228,7 @@ uint8_t scr_SpawnPoof( script_state_t& state, ai_state_t& self )
     /// @details This function makes a lovely little poof at the character's location.
     /// The poof form and particle types are set in data.txt
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     return spawnPoofForSelf(self.getSelf());
 }
@@ -245,9 +242,8 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle of the specific size attached to the
     /// character. For spell charging effects
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
@@ -277,9 +273,8 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
     /// @details This function spawns a particle attached to the character, facing the
     /// same direction given by tmpturn
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     return nullptr != spawnLocalParticleForSelf(selfContext,
                                                 selfContext.physical->getPosition(),
@@ -299,9 +294,8 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
     /// @author ZZ
     /// @details This function spawns a particle attached to the character's holder, or to the character if no holder
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     return nullptr != spawnLocalParticleForSelf(selfContext,
                                                 selfContext.physical->getPosition(),
@@ -323,9 +317,8 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
 
     std::shared_ptr<Ego::Particle> particle;
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
@@ -360,9 +353,8 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
 
     std::shared_ptr<Ego::Particle> particle;
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const Ego::Vector3f position(float(state.x),
                                  float(state.y),
@@ -397,8 +389,8 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
 
     //ZF> Note: This script function seems to be only used by the Fireball spell, so its use is VERY limited
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     PIP_REF ipip = selfContext.profile->getParticlePoofProfile();
     if ( INVALID_PIP_REF == ipip) return false;

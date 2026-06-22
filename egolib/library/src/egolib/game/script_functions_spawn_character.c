@@ -338,9 +338,8 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     /// tmpx and tmpy give the coodinates, tmpturn gives the new character's
     /// direction, and tmpdistance gives the new character's initial velocity
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const Ego::Vector3f position(static_cast<float>(state.x),
                                  static_cast<float>(state.y),
                                  selfContext.physical->getPosZ());
@@ -359,8 +358,8 @@ uint8_t scr_RespawnCharacter( script_state_t& state, ai_state_t& self )
     /// @details This function respawns the character at its starting location.
     /// Often used with the Clean functions
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     selfContext.lifecycle->respawn();
 
@@ -375,9 +374,8 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// @author ZZ
     /// @details This function spawns a character of the same type at a specific location, failing if x,y,z is invalid
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
                                                                  position,
@@ -403,9 +401,8 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
 
-    if (!resolveSelfContext(self).isResolved()) return false;
-
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
@@ -431,7 +428,7 @@ uint8_t scr_EnableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button on
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(true);
 
@@ -446,7 +443,7 @@ uint8_t scr_DisableRespawn( script_state_t& state, ai_state_t& self )
     /// @author ZF
     /// @details This function turns respawn with JUMP button off
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     setModuleRespawnValid(false);
 
@@ -465,7 +462,8 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
     /// grip specified is full or already in use.
     /// DON'T USE THIS FOR EXPORTABLE ITEMS OR CHARACTERS,
     /// AS THE MODEL SLOTS MAY VARY FROM MODULE TO MODULE.
-    if (!resolveSelfContext(self).isResolved()) return false;
+    const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
+    if (!selfContext.isResolved()) return false;
 
     SpawnAttachmentTargetContext targetContext;
     if (!resolveSpawnAttachmentTarget(self, targetContext))
@@ -473,7 +471,6 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
         return false;
     }
 
-    const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterAt(position,
                                                            ObjectProfileRef((PRO_REF)state.argument),
@@ -506,7 +503,7 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
     /// @details This morphs the character into the target
     /// Also set size and keeps the previous AI type
 
-    if (!resolveSelfContext(self).isResolved()) return false;
+    if (!resolveSpawnSelfContext(self).isResolved()) return false;
 
     IMorphControl* selfMorph = tryMorphControl(self.getSelf());
     IMorphControl* targetMorph = tryMorphControl(self.getTarget());

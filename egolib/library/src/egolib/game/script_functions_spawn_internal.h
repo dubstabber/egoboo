@@ -41,6 +41,17 @@ struct SpawnSelfContext
     Ego::Vector3f oldPosition;
     std::string name;
     std::string className;
+
+    bool isResolved() const
+    {
+        return ref != ObjectRef::Invalid &&
+               profile != nullptr &&
+               physical != nullptr &&
+               scriptable != nullptr &&
+               targetInfo != nullptr &&
+               inventory != nullptr &&
+               lifecycle != nullptr;
+    }
 };
 
 inline GameSessionContext& gameSession()
@@ -53,7 +64,7 @@ inline bool isLiveSpawnObjectRef(ObjectRef objectRef)
     return tryObject(objectRef) != nullptr;
 }
 
-inline SpawnSelfContext makeSpawnSelfContext(Object& object)
+inline SpawnSelfContext makeSpawnSelfContextFromObject(Object& object)
 {
     const std::shared_ptr<ObjectProfile> profile = object.getProfile();
     return SpawnSelfContext{
@@ -71,10 +82,15 @@ inline SpawnSelfContext makeSpawnSelfContext(Object& object)
     };
 }
 
-inline SpawnSelfContext makeSpawnSelfContext(const ai_state_t& self)
+inline SpawnSelfContext resolveSpawnSelfContext(const ai_state_t& self)
 {
     const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
-    return makeSpawnSelfContext(*resolvedSelf.object);
+    if (!resolvedSelf.isResolved())
+    {
+        return {};
+    }
+
+    return makeSpawnSelfContextFromObject(*resolvedSelf.object);
 }
 }
 using namespace script_spawn_detail;
