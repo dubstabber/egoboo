@@ -21,10 +21,10 @@
 /// @brief Per-frame update Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/Entities/IParticleHandler.hpp"      // activeParticleHandler
 #include "egolib/AI/LineOfSight.hpp"  // line_of_sight_info_t
-#include "egolib/game/Core/EngineContext.hpp"        // EngineContext::particleHandler / tryActivePlayingState
-#include "egolib/game/IPlayingStateController.hpp"   // IPlayingStateController + getMiniMap (minimap reveal)
-#include "egolib/game/GUI/MiniMap.hpp"               // MiniMap::setVisible / setShowPlayerPosition
+#include "egolib/game/Core/EngineContext.hpp"        // EngineContext::tryActivePlayingState
+#include "egolib/game/IPlayingStateController.hpp"   // IPlayingStateController minimap reveal seam
 #include "egolib/Physics/PhysicalConstants.hpp" // Ego::Physics::CHR_INFINITE_WEIGHT / CHR_MAX_WEIGHT
 
 namespace
@@ -78,7 +78,7 @@ void Object::update()
         if (!inwater)
         {
             // Splash
-            EngineContext::get().particleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
+            activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
 
             if ( activeModule().getWater()._is_water )
             {
@@ -116,7 +116,7 @@ void Object::update()
 
                     if ( 0 == ( (worldUpdateCount() + getObjRef().get()) & ripand ))
                     {
-                        EngineContext::get().particleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
+                        activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
                     }
                 }
             }
@@ -202,7 +202,7 @@ void Object::update()
             if(hasPerk(Ego::Perks::CARTOGRAPHY)) {
                 if (auto playingState = tryActivePlayingState())
                 {
-                    playingState->getMiniMap()->setVisible(true);
+                    playingState->showMiniMap();
                 }
             }
 

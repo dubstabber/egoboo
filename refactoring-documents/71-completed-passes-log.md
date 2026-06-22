@@ -2731,3 +2731,30 @@ directly for HUD color constants instead of relying on the shared script header.
 No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
 back-edge proof was required. Gates: `cmake --build build -j20` clean; focused presentation script slice
 **6/6**; ctest **912/912**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 265 — Script/Object presentation and service seam closure (2026-06-22)
+
+Continued the stable-first `Object` role program across presentation, update, action, and spawn helper
+pockets without changing script opcode APIs, source placement, CMake archive membership, or spawn/enchant
+ownership behavior. `IPlayingStateController` now owns the remaining message-log publication adapter and no
+longer exposes concrete `MiniMap` or `MessageLog` getters on the lower-layer interface; concrete
+`PlayingState` getters remain local owner/test conveniences.
+
+`Object_update.cpp` now uses the existing `IParticleHandler` active seam for water splash/ripple spawning,
+and its cartography perk reveal routes through `IPlayingStateController::showMiniMap()`. Script action
+helpers now use installed audio, camera, billboard, and UI-manager seams directly instead of the
+`EngineContext` delegators. `SpawnSelfContext` now resolves its profile/physical/script/target/inventory
+and lifecycle surfaces through role resolvers; the only concrete self read left in that construction path is
+the legacy display name used in warning text.
+
+A focused module-update characterization now proves object water-entry splash publication goes through the
+installed particle service. Singleton metrics are now **607** `::get()` lines, including **420**
+`EngineContext::get()` and **133** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,638**; ctest configures **913** cases. Archive membership remains
+**164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19** in the health-doc order.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Gates: `cmake --build build -j20` clean; focused presentation/action/spawn
+and water-update seam slice **43/43**; ctest **913/913**; validator `test.mod` 0/0; full validator at the
+known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
+content errors).

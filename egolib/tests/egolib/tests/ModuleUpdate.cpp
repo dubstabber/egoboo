@@ -413,6 +413,31 @@ TEST_F(ModuleUpdateFixture, DisaffirmAttachedParticlesPublishesDisaffirmedAlert)
     EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_DISAFFIRMED));
 }
 
+TEST_F(ModuleUpdateFixture, ObjectUpdateRoutesWaterSplashThroughInstalledParticleService)
+{
+    auto& module = beginActiveTestModule();
+    auto object = makeObject(module, "mp_objects/follower.obj", 41071, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(object, nullptr);
+
+    module.getMeshPointer()->add_fx(object->getTile(), MAPFX_WATER);
+    module.getWater()._is_water = true;
+    module.getWater().set_douse_level(16.0f);
+    object->setInWater(false);
+    GameSessionContext::get().worldUpdateCount() = 1;
+
+    RecordingParticleHandler handler;
+    ScopedInstalledParticleHandler scopedHandler(handler);
+
+    object->update();
+
+    ASSERT_EQ(handler.globalSpawnCalls.size(), 1u);
+    EXPECT_EQ(handler.globalSpawnCalls.front().particleProfile.get(), PIP_SPLASH);
+    EXPECT_EQ(handler.globalSpawnCalls.front().position.x(), object->getPosX());
+    EXPECT_EQ(handler.globalSpawnCalls.front().position.y(), object->getPosY());
+    EXPECT_FLOAT_EQ(handler.globalSpawnCalls.front().position.z(), module.getWater().get_level() + 10.0f);
+    EXPECT_TRUE(object->isInWater());
+}
+
 TEST_F(ModuleUpdateFixture, ParticleInitializeResolvesOwnerThroughInstalledParentParticleService)
 {
     beginActiveTestModule();

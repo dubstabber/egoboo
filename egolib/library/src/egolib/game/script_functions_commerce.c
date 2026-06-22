@@ -3,7 +3,6 @@
 
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/GUI/MessageLog.hpp"
 
 namespace
 {

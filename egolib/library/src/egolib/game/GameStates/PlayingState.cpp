@@ -285,6 +285,11 @@ void PlayingState::addMiniMapBlip(float x, float y, const std::shared_ptr<const 
     _miniMap->addBlip(x, y, icon);
 }
 
+void PlayingState::addMessageLogMessage(const std::string& message)
+{
+    _messageLog->addMessage(message);
+}
+
 void PlayingState::addStatusMonitor(ObjectRef objectRef)
 {
     Object* object = tryObservedUiObject(objectRef);

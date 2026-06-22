@@ -7,13 +7,14 @@
 ///          tryMakeBillboard, resolveChargeTarget) live in this TU's anonymous namespace.
 
 #include "egolib/game/script_functions_action_internal.h"
+#include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/graphic.h"
 
 namespace
 {
 Ego::Graphics::IBillboardSystem& billboardSystem()
 {
-    return EngineContext::get().billboardSystem();
+    return Ego::Graphics::activeBillboardSystem();
 }
 
 std::shared_ptr<Ego::Graphics::Billboard> tryMakeBillboard(const SelfActionContext& context,

@@ -530,5 +530,5 @@ int DisplayMsg_printf( const char *format, ... )
 void DisplayMsg_print(const std::string &text)
 {
     auto state = tryActivePlayingState();
-    if (state) state->getMessageLog()->addMessage(text);
+    if (state) state->addMessageLogMessage(text);
 }

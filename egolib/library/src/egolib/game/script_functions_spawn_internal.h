@@ -64,33 +64,35 @@ inline bool isLiveSpawnObjectRef(ObjectRef objectRef)
     return tryObject(objectRef) != nullptr;
 }
 
-inline SpawnSelfContext makeSpawnSelfContextFromObject(Object& object)
-{
-    const std::shared_ptr<ObjectProfile> profile = object.getProfile();
-    return SpawnSelfContext{
-        object.getObjRef(),
-        object.getProfileID(),
-        profile.get(),
-        static_cast<const IPhysical*>(&object),
-        static_cast<IScriptable*>(&object),
-        static_cast<const ITargetInfo*>(&object),
-        static_cast<const IInventoryHolder*>(&object),
-        static_cast<ILifecycleControl*>(&object),
-        object.getOldPosition(),
-        object.getName(),
-        profile ? profile->getClassName() : std::string()
-    };
-}
-
 inline SpawnSelfContext resolveSpawnSelfContext(const ai_state_t& self)
 {
-    const ResolvedSelfContext resolvedSelf = resolveSelfContext(self);
-    if (!resolvedSelf.isResolved())
+    SpawnSelfContext context;
+    context.ref = self.getSelf();
+
+    const IProfiled* profiled = tryProfiled(context.ref);
+    if (profiled == nullptr)
     {
-        return {};
+        return context;
     }
 
-    return makeSpawnSelfContextFromObject(*resolvedSelf.object);
+    const std::shared_ptr<ObjectProfile>& profile = profiled->getProfile();
+    context.profile = profile.get();
+    context.profileRef = ObjectProfileRef(profiled->getProfileRef());
+    context.physical = tryPhysical(context.ref);
+    context.scriptable = tryScriptable(context.ref);
+    context.targetInfo = tryTargetInfo(context.ref);
+    context.inventory = tryInventoryHolder(context.ref);
+    context.lifecycle = tryLifecycleControl(context.ref);
+    if (context.physical != nullptr)
+    {
+        context.oldPosition = context.physical->getOldPosition();
+    }
+    if (const Object* selfObject = tryObject(context.ref))
+    {
+        context.name = selfObject->getName();
+    }
+    context.className = profile ? profile->getClassName() : std::string();
+    return context;
 }
 }
 using namespace script_spawn_detail;

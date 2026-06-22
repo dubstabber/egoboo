@@ -40,8 +40,6 @@
 #include "egolib/Physics/physics.h"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/GUI/MiniMap.hpp"
-#include "egolib/game/GUI/MessageLog.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/Graphics/BillboardSystem.hpp"

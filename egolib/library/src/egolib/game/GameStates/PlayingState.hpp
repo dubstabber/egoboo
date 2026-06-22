@@ -54,7 +54,7 @@ public:
 
     bool notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e) override;
 
-    const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const override;
+    const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const;
 
     bool showMiniMap() override;
 
@@ -62,13 +62,15 @@ public:
 
     void addMiniMapBlip(float x, float y, const std::shared_ptr<const Ego::Texture>& icon) override;
 
+    void addMessageLogMessage(const std::string& message) override;
+
     void addStatusMonitor(ObjectRef objectRef) override;
 
     ObjectRef getStatusCharacterRef(size_t index) override;
 
     void displayCharacterWindow(uint8_t statusNumber) override;
 
-    const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const override;
+    const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const;
 
     void endModuleInVictory() override;
 

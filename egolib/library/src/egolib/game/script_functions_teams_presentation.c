@@ -3,7 +3,6 @@
 
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/GUI/MessageLog.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
@@ -180,7 +179,7 @@ void publishFollowLinkFailureMessage(const PresentationEffectsContext& context,
     const std::string text = "That's too scary for " + selfName;
     if (context.playingState)
     {
-        context.playingState->getMessageLog()->addMessage(text);
+        context.playingState->addMessageLogMessage(text);
         return;
     }
 

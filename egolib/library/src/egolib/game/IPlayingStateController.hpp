@@ -32,13 +32,10 @@
 #include <memory>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #include "egolib/typedef.h"   // ObjectRef
 
-namespace Ego { namespace GUI {
-class MiniMap;
-class MessageLog;
-} }
 namespace Ego {
 class Texture;
 }
@@ -47,9 +44,6 @@ class Texture;
 class IPlayingStateController {
 public:
     virtual ~IPlayingStateController() = default;
-
-    /// @brief The in-game minimap widget.
-    virtual const std::shared_ptr<Ego::GUI::MiniMap>& getMiniMap() const = 0;
 
     /// @brief Show the minimap.
     /// @return true if this call changed the minimap from hidden to visible.
@@ -63,8 +57,8 @@ public:
     /// @brief Add an icon blip to the minimap without exposing the concrete widget to callers.
     virtual void addMiniMapBlip(float x, float y, const std::shared_ptr<const Ego::Texture>& icon) = 0;
 
-    /// @brief The in-game scrolling message log widget.
-    virtual const std::shared_ptr<Ego::GUI::MessageLog>& getMessageLog() const = 0;
+    /// @brief Add a message to the in-game scrolling message log.
+    virtual void addMessageLogMessage(const std::string& message) = 0;
 
     /// @brief The character bound to the given on-screen status slot.
     virtual ObjectRef getStatusCharacterRef(size_t index) = 0;

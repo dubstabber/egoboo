@@ -6,18 +6,19 @@
 ///        promoted to script_functions_action_internal.h.
 
 #include "egolib/game/script_functions_action_internal.h"
+#include "egolib/Graphics/ICameraSystem.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
 namespace
 {
 ICameraSystem& cameraSystem()
 {
-    return EngineContext::get().cameraSystem();
+    return activeCameraSystem();
 }
 
 Ego::GUI::UIManager* tryUIManager()
 {
-    return EngineContext::get().tryUIManager();
+    return Ego::GUI::tryActiveUIManager();
 }
 
 bool startResolvedAnimation(IAnimationControl& animation, int actionIndex, bool overrideAction)
@@ -542,4 +543,3 @@ uint8_t scr_SetSelectSpeech( script_state_t& state, ai_state_t& self )
 
     return true;
 }
-
