@@ -5,16 +5,6 @@
 
 namespace
 {
-const ITargetInfo& targetInfo(const Object& object)
-{
-    return object;
-}
-
-const IInventoryHolder& inventoryHolder(const Object& object)
-{
-    return object;
-}
-
 std::shared_ptr<Object> resolveSpawnObjectHandle(ObjectRef objectRef)
 {
     ObjectHandler* handler = gameSession().tryObjectHandler();
@@ -32,12 +22,12 @@ ObjectRef resolveHolderOrSelfRef(const ITargetInfo& object)
     return isLiveSpawnObjectRef(holderRef) ? holderRef : object.getObjRef();
 }
 
-ObjectRef resolveSpawnParticleOwnerRef(const Object& object)
+ObjectRef resolveSpawnParticleOwnerRef(const SpawnSelfContext& selfContext)
 {
-    ObjectRef ownerRef = resolveHolderOrSelfRef(object);
-    if (targetInfo(object).isMount())
+    ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
+    if (selfContext.targetInfo->isMount())
     {
-        const ObjectRef riderRef = inventoryHolder(object).getHeldObject(SLOT_LEFT);
+        const ObjectRef riderRef = selfContext.inventory->getHeldObject(SLOT_LEFT);
         if (isLiveSpawnObjectRef(riderRef))
         {
             ownerRef = riderRef;
@@ -75,11 +65,11 @@ std::shared_ptr<Ego::Particle> spawnLocalParticleForSelf(const SpawnSelfContext&
 {
     return EngineContext::get().particleHandler().spawnLocalParticle(position,
                                                                      facing,
-                                                                     ObjectProfileRef(selfContext.object.getProfileID()),
+                                                                     selfContext.profileRef,
                                                                      profile,
                                                                      attachedObjectRef,
                                                                      distance,
-                                                                     selfContext.object.getTeamRef(),
+                                                                     selfContext.targetInfo->getTeamRef(),
                                                                      ownerRef,
                                                                      ParticleRef::Invalid,
                                                                      0,
@@ -132,11 +122,11 @@ uint8_t scr_SpawnParticle( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveSpawnParticleOwnerRef(selfContext.object);
+    const ObjectRef ownerRef = resolveSpawnParticleOwnerRef(selfContext);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
-                                  selfContext.object.getPosition(),
-                                  Facing(uint16_t(selfContext.object.getFacingZ())),
+                                  selfContext.physical->getPosition(),
+                                  Facing(uint16_t(selfContext.physical->getFacingZ())),
                                   LocalParticleProfileRef(state.argument),
                                   self.getSelf(),
                                   state.distance,
@@ -199,8 +189,8 @@ uint8_t scr_SpawnAttachedParticle( script_state_t& state, ai_state_t& self )
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const ObjectRef ownerRef = resolveLowestAttachmentOrSelfRef(self.getSelf());
     return nullptr != spawnLocalParticleForSelf(selfContext,
-                                                selfContext.object.getPosition(),
-                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                selfContext.physical->getPosition(),
+                                                idlib::canonicalize(selfContext.physical->getFacingZ()),
                                                 LocalParticleProfileRef(state.argument),
                                                 self.getSelf(),
                                                 state.distance,
@@ -218,14 +208,14 @@ uint8_t scr_SpawnExactParticle( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
 
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
     return nullptr != spawnLocalParticleForSelf(selfContext,
                                                 position,
-                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                idlib::canonicalize(selfContext.physical->getFacingZ()),
                                                 LocalParticleProfileRef(state.argument),
                                                 ObjectRef::Invalid,
                                                 0,
@@ -258,11 +248,11 @@ uint8_t scr_SpawnAttachedSizedParticle( script_state_t& state, ai_state_t& self 
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const std::shared_ptr<Ego::Particle> particle =
         spawnLocalParticleForSelf(selfContext,
-                                  selfContext.object.getPosition(),
-                                  idlib::canonicalize(selfContext.object.getFacingZ()),
+                                  selfContext.physical->getPosition(),
+                                  idlib::canonicalize(selfContext.physical->getFacingZ()),
                                   LocalParticleProfileRef(state.argument),
                                   self.getSelf(),
                                   state.distance,
@@ -290,9 +280,9 @@ uint8_t scr_SpawnAttachedFacedParticle( script_state_t& state, ai_state_t& self 
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     return nullptr != spawnLocalParticleForSelf(selfContext,
-                                                selfContext.object.getPosition(),
+                                                selfContext.physical->getPosition(),
                                                 Facing(Ego::Math::clipBits<16>(state.turn)),
                                                 LocalParticleProfileRef(state.argument),
                                                 self.getSelf(),
@@ -312,10 +302,10 @@ uint8_t scr_SpawnAttachedHolderParticle( script_state_t& state, ai_state_t& self
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     return nullptr != spawnLocalParticleForSelf(selfContext,
-                                                selfContext.object.getPosition(),
-                                                idlib::canonicalize(selfContext.object.getFacingZ()),
+                                                selfContext.physical->getPosition(),
+                                                idlib::canonicalize(selfContext.physical->getFacingZ()),
                                                 LocalParticleProfileRef(state.argument),
                                                 ownerRef,
                                                 state.distance,
@@ -336,13 +326,13 @@ uint8_t scr_SpawnExactChaseParticle( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
     particle = spawnLocalParticleForSelf(selfContext,
                                          position,
-                                         idlib::canonicalize(selfContext.object.getFacingZ()),
+                                         idlib::canonicalize(selfContext.physical->getFacingZ()),
                                          LocalParticleProfileRef(state.argument),
                                          ObjectRef::Invalid,
                                          0,
@@ -373,13 +363,13 @@ uint8_t scr_SpawnExactParticleEndSpawn( script_state_t& state, ai_state_t& self 
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
-    const ObjectRef ownerRef = resolveHolderOrSelfRef(selfContext.object);
+    const ObjectRef ownerRef = resolveHolderOrSelfRef(*selfContext.targetInfo);
     const Ego::Vector3f position(float(state.x),
                                  float(state.y),
                                  float(state.distance));
     particle = spawnLocalParticleForSelf(selfContext,
                                          position,
-                                         idlib::canonicalize(selfContext.object.getFacingZ()),
+                                         idlib::canonicalize(selfContext.physical->getFacingZ()),
                                          LocalParticleProfileRef(state.argument),
                                          ObjectRef::Invalid,
                                          0,
@@ -421,16 +411,16 @@ uint8_t scr_SpawnPoofSpeedSpacingDamage( script_state_t& state, ai_state_t& self
         const float posOffsetBase = static_cast<float>(state.y);
         const float damage_rand = ppip->damage.length();
 
-        Facing facing_z = selfContext.object.getFacingZ();
+        Facing facing_z = selfContext.physical->getFacingZ();
         for (int cnt = 0; cnt < selfContext.profile->getParticlePoofAmount(); cnt++)
         {
-            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(selfContext.object.getOldPosition(),
+            auto poofParticle = EngineContext::get().particleHandler().spawnParticle(selfContext.oldPosition,
                                                                                      facing_z,
                                                                                      selfContext.profile->getSlotNumber(),
                                                                                      ipip,
                                                                                      ObjectRef::Invalid,
                                                                                      GRIP_LAST,
-                                                                                     selfContext.object.getTeamRef(),
+                                                                                     selfContext.targetInfo->getTeamRef(),
                                                                                      selfContext.scriptable->getAIOwner(),
                                                                                      ParticleRef::Invalid,
                                                                                      cnt);

@@ -2590,3 +2590,21 @@ unchanged.
 No source files moved between archives, so no live-archive back-edge proof was required for this pass.
 Touched runtime files total 2,853 lines after the cleanup. Gates: `cmake --build build -j20` clean; focused
 combat/script/matrix role fixture slice **167/167**; ctest **912/912**; validator `test.mod` 0/0.
+
+### Pass 258 — Script spawn role-context cleanup (2026-06-22)
+
+Continued the stable-first `Object` role program inside the spawn script helper layer. The private
+`SpawnSelfContext` no longer exposes a concrete `Object&`; it now carries explicit self identity/profile
+data plus the existing role surfaces needed by the spawn helpers (`IPhysical`, `IScriptable`,
+`ITargetInfo`, `IInventoryHolder`, and `ILifecycleControl`) and copied log/old-position data.
+
+`script_functions_spawn_particle.c` now uses that role context for self position, facing, team, owner,
+holder/mount rider resolution, and particle profile metadata. `script_functions_spawn_character.c` now
+uses the same context for self profile/team/facing/z-position, curse inheritance, inventory slot choice,
+lifecycle respawn, and logging names. Concrete `Object` handles remain only where current APIs still
+require them: spawned child ownership, safe-position checks, grip attachment, vertex placement, poof
+spawning, and the temporary holder mutation around `scr_run_chr_script`.
+
+No public role interfaces, script opcode APIs, CMake source placement, or archive membership changed, so no
+live-archive back-edge proof was required. Gates: `cmake --build build -j20` clean; focused
+`ScriptStateFunctionsFixture.*` **59/59**; ctest **912/912**; validator `test.mod` 0/0.

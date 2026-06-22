@@ -109,7 +109,10 @@ void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObject
     lifecycle.setDismountObject(dismountObjectRef);
 }
 
-void publishSpawnChildState(Object& child, bool inheritKurse, ai_state_t& self)
+void publishSpawnChildState(Object& child,
+                            bool inheritKurse,
+                            ObjectRef dismountObjectRef,
+                            ai_state_t& self)
 {
     self.child = child.getObjRef();
 
@@ -117,7 +120,7 @@ void publishSpawnChildState(Object& child, bool inheritKurse, ai_state_t& self)
     childState.setKursed(inheritKurse);
 
     inheritSpawnScriptState(scriptable(child), self);
-    publishSpawnDismount(lifecycleControl(child), self.getSelf());
+    publishSpawnDismount(lifecycleControl(child), dismountObjectRef);
 }
 
 std::shared_ptr<Object> spawnCharacterAt(const Ego::Vector3f& position,
@@ -138,8 +141,8 @@ std::shared_ptr<Object> spawnCharacterLikeSelf(const SpawnSelfContext& selfConte
                                                Facing facing)
 {
     return spawnCharacterAt(position,
-                            selfContext.object.getProfileID(),
-                            selfContext.object.getTeamRef(),
+                            selfContext.profileRef,
+                            selfContext.targetInfo->getTeamRef(),
                             facing);
 }
 
@@ -160,7 +163,7 @@ bool publishCopiedChildState(const SpawnSelfContext& selfContext,
         return false;
     }
 
-    publishSpawnChildState(*child, selfContext.object.isKursed(), self);
+    publishSpawnChildState(*child, selfContext.targetInfo->isKursed(), selfContext.ref, self);
     return true;
 }
 
@@ -182,7 +185,7 @@ bool finalizeSafeSelfCopySpawn(const SpawnSelfContext& selfContext,
         return true;
     }
 
-    const Facing turn = selfContext.object.getFacingZ() + ATK_BEHIND;
+    const Facing turn = selfContext.physical->getFacingZ() + ATK_BEHIND;
     applySpawnVelocity(movementControl(*child), turn, initialVelocity);
     return publishCopiedChildState(selfContext, child, self);
 }
@@ -199,7 +202,7 @@ bool tryAttachSpawnedInventoryChild(const SpawnSelfContext& selfContext,
 
     if (!Inventory::add_item(targetContext.ref,
                              child->getObjRef(),
-                             selfContext.object.getFirstFreeInventorySlot(),
+                             selfContext.inventory->getFirstFreeInventorySlot(),
                              true))
     {
         child->requestTerminate();
@@ -277,7 +280,7 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     const SpawnSelfContext selfContext = makeSpawnSelfContext(self);
     const Ego::Vector3f position(static_cast<float>(state.x),
                                  static_cast<float>(state.y),
-                                 selfContext.object.getPosZ());
+                                 selfContext.physical->getPosZ());
     const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
                                                                  position,
                                                                  Facing(Ego::Math::clipBits<16>(state.turn)));
@@ -344,7 +347,7 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterAt(position,
                                                            ObjectProfileRef(static_cast<PRO_REF>(state.argument)),
-                                                           selfContext.object.getTeamRef(),
+                                                           selfContext.targetInfo->getTeamRef(),
                                                            Facing(Ego::Math::clipBits<16>(state.turn)));
 
     if (!child)
@@ -409,7 +412,7 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
     const std::shared_ptr<Object> child = spawnCharacterAt(position,
                                                            ObjectProfileRef((PRO_REF)state.argument),
-                                                           selfContext.object.getTeamRef(),
+                                                           selfContext.targetInfo->getTeamRef(),
                                                            FACE_NORTH);
 
     if (child == nullptr)

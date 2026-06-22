@@ -30,12 +30,15 @@ namespace script_spawn_detail
 {
 struct SpawnSelfContext
 {
-    Object& object;
+    ObjectRef ref = ObjectRef::Invalid;
+    ObjectProfileRef profileRef = ObjectProfileRef::Invalid;
     ObjectProfile* profile = nullptr;
+    const IPhysical* physical = nullptr;
     IScriptable* scriptable = nullptr;
     const ITargetInfo* targetInfo = nullptr;
     const IInventoryHolder* inventory = nullptr;
     ILifecycleControl* lifecycle = nullptr;
+    Ego::Vector3f oldPosition;
     std::string name;
     std::string className;
 };
@@ -54,12 +57,15 @@ inline SpawnSelfContext makeSpawnSelfContext(Object& object)
 {
     const std::shared_ptr<ObjectProfile> profile = object.getProfile();
     return SpawnSelfContext{
-        object,
+        object.getObjRef(),
+        object.getProfileID(),
         profile.get(),
+        static_cast<const IPhysical*>(&object),
         static_cast<IScriptable*>(&object),
         static_cast<const ITargetInfo*>(&object),
         static_cast<const IInventoryHolder*>(&object),
         static_cast<ILifecycleControl*>(&object),
+        object.getOldPosition(),
         object.getName(),
         profile ? profile->getClassName() : std::string()
     };
