@@ -292,7 +292,7 @@ void Object::dropKeys()
         Facing direction = Facing::random();
         Facing turn = direction;
 
-        removeInventoryItem(pkey, true);
+        removeInventoryItemRef(keyRef, true);
 
         pkey->setDismountTimer(PHYS_DISMOUNT_TIME);
         pkey->setDismountObject(getObjRef());
@@ -349,7 +349,7 @@ void Object::dropAllItems()
             continue;
         }
 
-        removeInventoryItem(pitem, true);
+        removeInventoryItemRef(itemRef, true);
 
         pitem->setDismountTimer(PHYS_DISMOUNT_TIME);
         pitem->setDismountObject(getObjRef());

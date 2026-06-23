@@ -24,6 +24,9 @@
 #include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/IDSZ.hpp"  // IDSZ2
 
+#include <array>
+#include <vector>
+
 class Inventory
 {
 public:
@@ -48,7 +51,7 @@ public:
      *  This fails if there already is an item there.
      */
     static bool add_item(ObjectRef iowner, const ObjectRef iitem, uint8_t inventorySlot, bool ignoreKurse);
-    static bool add_item(IInventoryHolder& owner, const std::shared_ptr<Object>& item, uint8_t inventorySlot, bool ignoreKurse);
+    static bool add_item(IInventoryHolder& owner, ObjectRef itemRef, uint8_t inventorySlot, bool ignoreKurse);
     /**
      * @brief
      *  Swap item between inventory slot and grip slot.
@@ -106,16 +109,11 @@ public:
 
     /**
     * @brief
-    *   Retrieve the shared_ptr of an item in this inventory
-    * @param slotNumber
-    *   Index number of the inventory slot to get
-    * @return
-    *   A shared_ptr to the Object in the specified slot number in this inventory
-    *   Returns nullptr if slotNumber is out of bounds or if slot is empty
+    *   Retrieve all live object references currently stored in this inventory.
     **/
-    std::shared_ptr<Object> getItem(const size_t slotNumber) const;
+    std::vector<ObjectRef> getItemIDs() const;
 
-    void setItem(const size_t slotNumber, const std::shared_ptr<Object> &item);
+    void setItemID(const size_t slotNumber, ObjectRef itemRef);
 
     /**
     * @return
@@ -130,17 +128,11 @@ public:
     **/
     size_t getMaxItems() const;
 
-    /**
-    * @brief
-    *   Returns a vector of all shared_ptr<Object> contained in this Inventory
-    **/
-    std::vector<std::shared_ptr<Object>> iterate() const;
-
     /*
      * @brief
      *  Remove an item from this inventory.
      * @param item
-     *  The item to remove
+     *  The item reference to remove
      * @param ignorekurse
      *  Remove items that normally cannot be removed due to a kurse
      * @return
@@ -148,8 +140,8 @@ public:
      * @details
      *  Note that you still have to handle it falling out.
      */
-    bool removeItem(const std::shared_ptr<Object> &item, const bool ignorekurse);
+    bool removeItem(ObjectRef itemRef, const bool ignorekurse);
 
 private:
-    std::array<std::weak_ptr<Object>, MAXNUMINPACK> _items;
+    std::array<ObjectRef, MAXNUMINPACK> _items;
 };

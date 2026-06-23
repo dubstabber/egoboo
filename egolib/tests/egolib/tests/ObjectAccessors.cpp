@@ -782,16 +782,13 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
 
     EXPECT_EQ(object->getInventoryMaxItems(), Inventory::MAXNUMINPACK);
     EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
-    EXPECT_EQ(object->getInventoryItem(0), nullptr);
-    EXPECT_EQ(object->getInventoryItem(1), nullptr);
+    EXPECT_EQ(object->getInventoryItemRef(0), ObjectRef::Invalid);
+    EXPECT_EQ(object->getInventoryItemRef(1), ObjectRef::Invalid);
     EXPECT_TRUE(object->getInventoryItemRefs().empty());
 
-    object->setInventoryItem(0, item0);
-    object->setInventoryItem(2, item2);
+    object->setInventoryItemRef(0, item0->getObjRef());
+    object->setInventoryItemRef(2, item2->getObjRef());
 
-    EXPECT_EQ(object->getInventoryItem(0), item0);
-    EXPECT_EQ(object->getInventoryItem(1), nullptr);
-    EXPECT_EQ(object->getInventoryItem(2), item2);
     EXPECT_EQ(object->getInventoryItemRef(0), item0->getObjRef());
     EXPECT_EQ(object->getInventoryItemRef(1), ObjectRef::Invalid);
     EXPECT_EQ(object->getInventoryItemRef(2), item2->getObjRef());
@@ -802,8 +799,10 @@ TEST_F(ObjectAccessorFixture, InventoryObservationHelpersExposeSlotCountItemsAnd
     EXPECT_EQ(itemRefs[0], item0->getObjRef());
     EXPECT_EQ(itemRefs[1], item2->getObjRef());
 
-    EXPECT_TRUE(object->removeInventoryItem(item0, true));
-    EXPECT_EQ(object->getInventoryItem(0), nullptr);
+    item2->requestTerminate();
+    EXPECT_EQ(object->getInventoryItemRef(2), ObjectRef::Invalid);
+
+    EXPECT_TRUE(object->removeInventoryItemRef(item0->getObjRef(), true));
     EXPECT_EQ(object->getInventoryItemRef(0), ObjectRef::Invalid);
     EXPECT_EQ(object->getFirstFreeInventorySlot(), 0u);
 }
@@ -817,16 +816,16 @@ TEST_F(ObjectAccessorFixture, InventoryMutationHelpersSupportStaticInventoryOper
     ASSERT_NE(inventoryItem, nullptr);
 
     EXPECT_TRUE(Inventory::add_item(owner->getObjRef(), inventoryItem->getObjRef(), owner->getFirstFreeInventorySlot(), true));
-    EXPECT_EQ(owner->getInventoryItem(0), inventoryItem);
+    EXPECT_EQ(owner->getInventoryItemRef(0), inventoryItem->getObjRef());
     EXPECT_EQ(inventoryItem->getInventoryHolderRef(), owner->getObjRef());
 
     EXPECT_TRUE(Inventory::remove_item(owner->getObjRef(), 0, true));
-    EXPECT_EQ(owner->getInventoryItem(0), nullptr);
+    EXPECT_EQ(owner->getInventoryItemRef(0), ObjectRef::Invalid);
     EXPECT_EQ(inventoryItem->getInventoryHolderRef(), ObjectRef::Invalid);
 
     // Empty hand/slot swaps are a stable no-op and should continue to succeed.
     EXPECT_TRUE(Inventory::swap_item(owner->getObjRef(), 0, SLOT_LEFT, true));
-    EXPECT_EQ(owner->getInventoryItem(0), nullptr);
+    EXPECT_EQ(owner->getInventoryItemRef(0), ObjectRef::Invalid);
     EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
 }
 
@@ -843,9 +842,8 @@ TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOp
 
     EXPECT_EQ(inventoryHolder.getHoldingWeight(), 9);
 
-    EXPECT_TRUE(Inventory::add_item(inventoryHolder, inventoryItem, inventoryHolder.getFirstFreeInventorySlot(), true));
+    EXPECT_TRUE(Inventory::add_item(inventoryHolder, inventoryItem->getObjRef(), inventoryHolder.getFirstFreeInventorySlot(), true));
     EXPECT_EQ(inventoryHolder.getInventoryItemRef(0), inventoryItem->getObjRef());
-    EXPECT_EQ(inventoryHolder.getInventoryItem(0), inventoryItem);
     const std::vector<ObjectRef> inventoryItemRefs = inventoryHolder.getInventoryItemRefs();
     ASSERT_EQ(inventoryItemRefs.size(), 1u);
     EXPECT_EQ(inventoryItemRefs.front(), inventoryItem->getObjRef());
@@ -854,11 +852,9 @@ TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOp
     EXPECT_TRUE(Inventory::swap_item(inventoryHolder, 1, SLOT_LEFT, true));
     EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
     EXPECT_EQ(inventoryHolder.getInventoryItemRef(1), ObjectRef::Invalid);
-    EXPECT_EQ(inventoryHolder.getInventoryItem(1), nullptr);
 
     EXPECT_TRUE(Inventory::remove_item(inventoryHolder, 0, true));
     EXPECT_EQ(inventoryHolder.getInventoryItemRef(0), ObjectRef::Invalid);
-    EXPECT_EQ(inventoryHolder.getInventoryItem(0), nullptr);
 }
 
 TEST_F(ObjectAccessorFixture, ItemInfoRoleSurfaceMatchesProfileBackedClassification)

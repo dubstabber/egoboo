@@ -4,7 +4,7 @@ Current-state health snapshot for the Egoboo workspace. This document is the
 canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
-Snapshot date: 2026-06-22. Measurements below were taken from the live tree and
+Snapshot date: 2026-06-23. Measurements below were taken from the live tree and
 the existing `build/products/x64/lib/libegolib-*.a` archives.
 
 ## Executive Summary
@@ -37,13 +37,13 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,664 | Same scope as above |
-| Test files / lines | 50 / 23,993 | `egolib/tests`, source/header files only |
+| Runtime source lines | 128,666 | Same scope as above |
+| Test files / lines | 50 / 23,989 | `egolib/tests`, source/header files only |
 | ctest cases | 916 | `ctest --test-dir build -N` |
 | ctest baseline | 916 / 916 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 601 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `::get()` call sites | 602 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 130 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 131 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 648 | Broad grep count, not semantic classification |
 | Object role interfaces | 19 | 21 `Entities/I*.hpp` files total, including 2 service interfaces |
@@ -83,11 +83,11 @@ runtime files:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 997 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 995 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
 | `egolib/library/src/egolib/game/game_combat.c` | 722 |
-| `egolib/library/src/egolib/Script/script.h` | 685 |
+| `egolib/library/src/egolib/Script/script.h` | 684 |
 | `egolib/library/src/egolib/Entities/Object_combat.cpp` | 684 |
 | `egolib/library/src/egolib/Audio/AudioSystem.cpp` | 675 |
 | `egolib/library/src/egolib/map_functions.c` | 668 |
@@ -99,7 +99,7 @@ Large non-runtime files still exist and are intentional test/tool hotspots:
 | File | Lines |
 | --- | ---: |
 | `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,211 |
-| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,846 |
+| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,844 |
 | `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,915 |
 | `tools/egoboo-content-validator.cpp` | 1,550 |
 | `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,256 |

@@ -350,7 +350,7 @@ TEST_F(GameplayAlertPublicationFixture, KursedPutawayPublishesNotPutAwayAlert)
 
     item->setKursed(true);
 
-    EXPECT_FALSE(Inventory::add_item(*holder, item, 0, false));
+    EXPECT_FALSE(Inventory::add_item(*holder, item->getObjRef(), 0, false));
     EXPECT_TRUE(item->hasAnyAIAlertBits(ALERTIF_NOTPUTAWAY));
 }
 

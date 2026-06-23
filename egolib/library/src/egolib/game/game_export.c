@@ -208,10 +208,10 @@ bool export_all_players( bool require_local )
         number = 0;
         for (size_t slot = 0; slot < pchr->getInventoryMaxItems(); ++slot)
         {
-            const std::shared_ptr<Object> pitem = pchr->getInventoryItem(slot);
-            if ( !pitem ) continue;
+            const ObjectRef itemRef = pchr->getInventoryItemRef(slot);
+            if (ObjectRef::Invalid == itemRef) continue;
 
-            exportResult = export_one_character( pitem->getObjRef(), character, number + SLOT_COUNT, true);
+            exportResult = export_one_character( itemRef, character, number + SLOT_COUNT, true);
             if ( ExportCharacterResult::Error == exportResult )
             {
                 exportedAllPlayers = false;

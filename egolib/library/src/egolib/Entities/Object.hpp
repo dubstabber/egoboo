@@ -599,13 +599,11 @@ public:
 
     ObjectRef getInventoryItemRef(size_t slotNumber) const override;
 
-    std::shared_ptr<Object> getInventoryItem(size_t slotNumber) const override;
-
     std::vector<ObjectRef> getInventoryItemRefs() const override;
 
-    void setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item) override;
+    void setInventoryItemRef(size_t slotNumber, ObjectRef itemRef) override;
 
-    bool removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse) override;
+    bool removeInventoryItemRef(ObjectRef itemRef, bool ignoreKurse) override;
 
     uint16_t getAmmoMax() const override;
 

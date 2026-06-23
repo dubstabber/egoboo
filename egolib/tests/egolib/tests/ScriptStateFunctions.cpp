@@ -1036,8 +1036,8 @@ TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterPreservesInventoryAndW
 
     auto inventoryChild = module.getObjectHandler().get(self.child);
     ASSERT_NE(inventoryChild, nullptr);
-    ASSERT_NE(target->getInventoryItem(firstInventorySlot), nullptr);
-    EXPECT_EQ(target->getInventoryItem(firstInventorySlot).get(), inventoryChild);
+    ASSERT_NE(target->getInventoryItemRef(firstInventorySlot), ObjectRef::Invalid);
+    EXPECT_EQ(target->getInventoryItemRef(firstInventorySlot), inventoryChild->getObjRef());
     EXPECT_EQ(inventoryChild->getInventoryHolderRef(), target->getObjRef());
     EXPECT_EQ(inventoryChild->getAIOwner(), self.owner);
     EXPECT_EQ(inventoryChild->getAIPassage(), self.passage);

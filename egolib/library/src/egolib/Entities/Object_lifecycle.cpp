@@ -171,8 +171,10 @@ Object::~Object()
     if (GameModule* module = tryActiveModule()) {
         removeFromGame(this);
 
-        for (const std::shared_ptr<Object>& pitem : _inventory.iterate()) {
-            pitem->requestTerminate();
+        for (const ObjectRef& itemRef : _inventory.getItemIDs()) {
+            if (Object* pitem = module->getObjectHandler().get(itemRef)) {
+                pitem->requestTerminate();
+            }
         }
 
         if (isAlive() && !getProfile()->isInvincible() && VALID_TEAM_RANGE(team_base)) {
@@ -282,8 +284,10 @@ void Object::respawn()
     grog_timer = 0;
     daze_timer = 0;
 
-    for (const std::shared_ptr<Object>& pitem : _inventory.iterate()) {
-        if (pitem->isequipped) {
+    ObjectHandler& handler = activeModule().getObjectHandler();
+    for (const ObjectRef& itemRef : _inventory.getItemIDs()) {
+        Object* pitem = handler.get(itemRef);
+        if (pitem != nullptr && pitem->isequipped) {
             pitem->isequipped = false;
             SET_BIT(ai.alert, ALERTIF_PUTAWAY);
         }
@@ -319,29 +323,19 @@ ObjectRef Object::getInventoryItemRef(size_t slotNumber) const
     return _inventory.getItemID(slotNumber);
 }
 
-std::shared_ptr<Object> Object::getInventoryItem(size_t slotNumber) const
-{
-    return _inventory.getItem(slotNumber);
-}
-
 std::vector<ObjectRef> Object::getInventoryItemRefs() const
 {
-    std::vector<ObjectRef> refs;
-    for (const std::shared_ptr<Object>& item : _inventory.iterate())
-    {
-        refs.push_back(item ? item->getObjRef() : ObjectRef::Invalid);
-    }
-    return refs;
+    return _inventory.getItemIDs();
 }
 
-void Object::setInventoryItem(size_t slotNumber, const std::shared_ptr<Object>& item)
+void Object::setInventoryItemRef(size_t slotNumber, ObjectRef itemRef)
 {
-    _inventory.setItem(slotNumber, item);
+    _inventory.setItemID(slotNumber, itemRef);
 }
 
-bool Object::removeInventoryItem(const std::shared_ptr<Object>& item, bool ignoreKurse)
+bool Object::removeInventoryItemRef(ObjectRef itemRef, bool ignoreKurse)
 {
-    return _inventory.removeItem(item, ignoreKurse);
+    return _inventory.removeItem(itemRef, ignoreKurse);
 }
 
 void Object::setName(const std::string& name)

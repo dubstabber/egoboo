@@ -183,8 +183,9 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
                 // II: Check the pack
                 for (size_t slot = 0; slot < pchr->getInventoryMaxItems(); ++slot)
                 {
-                    const std::shared_ptr<Object> pitem = pchr->getInventoryItem(slot);
-                    if (!pitem)
+                    const ObjectRef itemRef = pchr->getInventoryItemRef(slot);
+                    const Object* pitem = _module.getObjectHandler().get(itemRef);
+                    if (pitem == nullptr)
                     {
                         continue;
                     }

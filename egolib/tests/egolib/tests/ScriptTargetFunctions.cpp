@@ -825,7 +825,7 @@ TEST_F(ScriptTargetFunctionsFixture, TargetInfoPredicatesReadThroughRoleSurface)
     target->setDazeTimer(9);
     target->setHeldObject(SLOT_LEFT, heldWeapon->getObjRef());
     inventoryWeapon->setEquipped(true);
-    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon, target->getFirstFreeInventorySlot(), true));
+    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon->getObjRef(), target->getFirstFreeInventorySlot(), true));
 
     const IDSZ2 targetTypeId = target->getProfile()->getIDSZ(IDSZ_TYPE);
     const IDSZ2 heldWeaponTypeId = heldWeapon->getProfile()->getIDSZ(IDSZ_TYPE);
@@ -932,7 +932,7 @@ TEST_F(ScriptTargetFunctionsFixture, IfTargetHasItemIDEquippedFailsQuietlyWhenIn
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
     ASSERT_NE(inventoryWeapon, nullptr);
-    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon, target->getFirstFreeInventorySlot(), true));
+    ASSERT_TRUE(Inventory::add_item(static_cast<IInventoryHolder&>(*target), inventoryWeapon->getObjRef(), target->getFirstFreeInventorySlot(), true));
 
     script_state_t state;
     state.argument = inventoryWeapon->getProfile()->getIDSZ(IDSZ_TYPE).toUint32();

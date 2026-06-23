@@ -368,8 +368,8 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersSkipsNonCarryableInventoryItemsWit
     exportedItem->getProfile()->_canCarryToNextModule = true;
 
     ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
-    player->setInventoryItem(0, skippedItem);
-    player->setInventoryItem(2, exportedItem);
+    player->setInventoryItemRef(0, skippedItem->getObjRef());
+    player->setInventoryItemRef(2, exportedItem->getObjRef());
 
     const std::string exportRoot = playerExportRoot(*player);
     const std::string firstInventoryExport = exportRoot + "/" + std::to_string(SLOT_COUNT) + ".obj";

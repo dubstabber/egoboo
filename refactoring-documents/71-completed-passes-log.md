@@ -2841,3 +2841,23 @@ back-edge proof was required. Singleton metrics are now **601** `::get()` lines,
 **128,664**, and ctest configures **916** cases. Gates: `cmake --build build -j20` clean; focused
 Team/target/runtime/alert slice **140/140**; ctest **916/916**; validator `test.mod` 0/0; diff hygiene
 clean.
+
+### Pass 272 — Inventory ObjectRef ownership cleanup (2026-06-23)
+
+Continued the stable-first ownership-boundary cleanup from Team into inventory storage and holder role
+surfaces without changing script opcode APIs, source placement, CMake archive membership, or gameplay
+inventory policy. `IInventoryHolder` no longer exposes shared-pointer inventory get/set/remove methods;
+inventory observation and mutation now route through `ObjectRef` APIs only.
+
+`Inventory` now stores canonical `ObjectRef` slot values instead of `std::weak_ptr<Object>` handles. Slot
+observation validates refs through the active session object handler when one exists, while keeping empty
+slot reads usable for direct module-spawn realization tests that run without an active session module.
+Production export, passage checks, key/pack drops, spawn/import tests, and script inventory callers were
+migrated to the ref-first surface, including stale/terminated item coverage.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **602** `::get()` lines, including **417**
+`EngineContext::get()` and **131** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,666**, test files/lines are **50 / 23,989**, and ctest configures **916** cases. Gates:
+`cmake --build build -j20` clean; focused inventory/object/script/import slice **271/271**; ctest
+**916/916**; validator `test.mod` 0/0; `git diff --check` clean.

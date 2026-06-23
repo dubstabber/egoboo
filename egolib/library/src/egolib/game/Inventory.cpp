@@ -15,22 +15,49 @@ auto& objectHandler()
     return GameSessionContext::get().activeModule().getObjectHandler();
 }
 
+ObjectHandler* tryObjectHandler()
+{
+    return GameSessionContext::get().tryObjectHandler();
+}
+
+ObjectRef liveItemRef(ObjectRef itemRef)
+{
+    if (itemRef == ObjectRef::Invalid)
+    {
+        return ObjectRef::Invalid;
+    }
+
+    ObjectHandler* handler = tryObjectHandler();
+    if (handler == nullptr)
+    {
+        return itemRef;
+    }
+
+    Object* item = handler->get(itemRef);
+    if (item == nullptr || item->isTerminated())
+    {
+        return ObjectRef::Invalid;
+    }
+
+    return item->getObjRef();
+}
+
 IScriptable& scriptable(Object& object)
 {
     return object;
 }
 
-ObjectRef hasStack(const std::shared_ptr<Object>& item, const IInventoryHolder& owner)
+ObjectRef hasStack(const Object& item, const IInventoryHolder& owner)
 {
-    if (!item || !item->getProfile()->isStackable())
+    if (!item.getProfile()->isStackable())
     {
         return ObjectRef::Invalid;
     }
 
     for (size_t slot = 0; slot < owner.getInventoryMaxItems(); ++slot)
     {
-        const std::shared_ptr<Object> stack = owner.getInventoryItem(slot);
-        if (!stack)
+        Object* stack = objectHandler().get(owner.getInventoryItemRef(slot));
+        if (stack == nullptr || stack->isTerminated())
         {
             continue;
         }
@@ -42,11 +69,11 @@ ObjectRef hasStack(const std::shared_ptr<Object>& item, const IInventoryHolder& 
             found = false;
         }
 
-        if (found && (stack->getProfile()->getSlotNumber() != item->getProfileID()))
+        if (found && (stack->getProfile()->getSlotNumber() != item.getProfileID()))
         {
             for (uint16_t id = 0; id < IDSZ_COUNT && found; ++id)
             {
-                if (stack->getProfile()->getIDSZ(id) != item->getProfile()->getIDSZ(id))
+                if (stack->getProfile()->getIDSZ(id) != item.getProfile()->getIDSZ(id))
                 {
                     found = false;
                 }
@@ -80,8 +107,8 @@ ObjectRef Inventory::findItem(const IInventoryHolder& owner, const IDSZ2& idsz, 
 
     for (size_t slot = 0; slot < owner.getInventoryMaxItems(); ++slot)
     {
-        const std::shared_ptr<Object> pitem = owner.getInventoryItem(slot);
-        if (!pitem)
+        Object* pitem = objectHandler().get(owner.getInventoryItemRef(slot));
+        if (pitem == nullptr || pitem->isTerminated())
         {
             continue;
         }
@@ -114,10 +141,10 @@ bool Inventory::add_item( ObjectRef iowner, ObjectRef iitem, uint8_t inventorySl
 	if (!objectHandler().exists(iowner) || !objectHandler().exists(iitem)) {
 		return false;
 	}
-    return add_item(*objectHandler().get(iowner), objectHandler()[iitem], inventorySlot, ignoreKurse);
+    return add_item(*objectHandler().get(iowner), iitem, inventorySlot, ignoreKurse);
 }
 
-bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>& item, uint8_t inventorySlot, bool ignoreKurse)
+bool Inventory::add_item(IInventoryHolder& owner, ObjectRef itemRef, uint8_t inventorySlot, bool ignoreKurse)
 {
     // Does the owner have free slot in her inventory?
     if (inventorySlot >= owner.getInventoryMaxItems()) {
@@ -125,12 +152,14 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
     }
 
     // If there is an item in the slot, do nothing.
-	if (owner.getInventoryItem(inventorySlot)) {
+	if (owner.getInventoryItemRef(inventorySlot) != ObjectRef::Invalid) {
 		return false;
 	}
 
+    Object* item = objectHandler().get(itemRef);
+
     // Don't allow sub-inventories.
-	if (!item || item->isInsideInventory()) {
+	if (item == nullptr || item->isTerminated() || item->isInsideInventory()) {
 		return false;
 	}
 
@@ -152,7 +181,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
 	}
 
     // Check if item can be stacked on other items.
-    ObjectRef stack = hasStack(item, owner);
+    ObjectRef stack = hasStack(*item, owner);
     if ( objectHandler().exists( stack ) )
     {
         // We found a similar, stackable item in the inventory.
@@ -213,7 +242,7 @@ bool Inventory::add_item(IInventoryHolder& owner, const std::shared_ptr<Object>&
         //now put the item into the inventory
         item->setHolderRef(ObjectRef::Invalid);
         item->setInventoryHolderRef(owner.getObjRef());
-        owner.setInventoryItem(inventorySlot, item);
+        owner.setInventoryItemRef(inventorySlot, item->getObjRef());
 
         // fix the flags
 		if (item->getProfile()->isEquipment())
@@ -248,7 +277,8 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
     // Make sure everything is hunkydori
     if (owner.isItem() || owner.isInsideInventory()) return false;
 
-    const std::shared_ptr<Object> inventory_item = owner.getInventoryItem(inventory_slot);
+    const ObjectRef inventoryItemRef = owner.getInventoryItemRef(inventory_slot);
+    Object* inventory_item = objectHandler().get(inventoryItemRef);
     const std::shared_ptr<Object> item = objectHandler()[owner.getHeldObject(grip_off)];
 
     //Nothing to do?
@@ -278,7 +308,7 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
 
     //remove existing item from inventory and into the character's hand
     if (inventory_item) {
-        owner.removeInventoryItem(inventory_item, ignorekurse);
+        owner.removeInventoryItemRef(inventoryItemRef, ignorekurse);
 
         inventory_item->attachToObject(owner.getObjRef(), grip_off == SLOT_RIGHT ? GRIP_RIGHT : GRIP_LEFT);
 
@@ -289,7 +319,7 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
 
     //put the new item in the inventory
     if (item) {
-        add_item(owner, item, inventory_slot, ignorekurse);
+        add_item(owner, item->getObjRef(), inventory_slot, ignorekurse);
     }
 
     return true;
@@ -307,56 +337,46 @@ bool Inventory::remove_item( ObjectRef iholder, const size_t inventory_slot, con
 
 bool Inventory::remove_item(IInventoryHolder& holder, const size_t inventory_slot, const bool ignorekurse)
 {
-    return holder.removeInventoryItem(holder.getInventoryItem(inventory_slot), ignorekurse);
+    return holder.removeInventoryItemRef(holder.getInventoryItemRef(inventory_slot), ignorekurse);
 }
 
 ObjectRef Inventory::getItemID(const size_t slotNumber) const
 {
-    std::shared_ptr<Object> item = getItem(slotNumber);
-    if(!item) {
+    if(slotNumber >= _items.size()) {
         return ObjectRef::Invalid;
     }
-    return item->getObjRef();
+
+    return liveItemRef(_items[slotNumber]);
 }
 
-std::shared_ptr<Object> Inventory::getItem(const size_t slotNumber) const
+std::vector<ObjectRef> Inventory::getItemIDs() const
 {
-    if(slotNumber >= _items.size()) {
-        return Object::INVALID_OBJECT;
-    }
-
-    std::shared_ptr<Object> item = _items[slotNumber].lock();
-    if(item && item->isTerminated()) {
-        //_items[slotNumber].reset();
-        return Object::INVALID_OBJECT;
-    }
-
-    return item;
-}
-
-void Inventory::setItem(const size_t slotNumber, const std::shared_ptr<Object> &item)
-{
-    _items[slotNumber] = item;
-}
-
-std::vector<std::shared_ptr<Object>> Inventory::iterate() const
-{
-    std::vector<std::shared_ptr<Object>> result;
-    for(const std::weak_ptr<Object> &weak : _items)
+    std::vector<ObjectRef> result;
+    for(const ObjectRef& itemRef : _items)
     {
-        std::shared_ptr<Object> item = weak.lock();
-        if(item && !item->isTerminated()) {
-            result.push_back(item);
+        ObjectRef liveRef = liveItemRef(itemRef);
+        if(liveRef != ObjectRef::Invalid) {
+            result.push_back(liveRef);
         }
     }
     return result;
+}
+
+void Inventory::setItemID(const size_t slotNumber, ObjectRef itemRef)
+{
+    if(slotNumber >= _items.size()) {
+        return;
+    }
+
+    ObjectHandler* handler = tryObjectHandler();
+    _items[slotNumber] = (handler == nullptr || handler->exists(itemRef)) ? itemRef : ObjectRef::Invalid;
 }
 
 size_t Inventory::getFirstFreeSlotNumber() const
 {
     for(size_t i = 0; i < _items.size(); ++i)
     {
-        if(!_items[i].lock()) {
+        if(getItemID(i) == ObjectRef::Invalid) {
             return i;
         }
     }
@@ -364,17 +384,18 @@ size_t Inventory::getFirstFreeSlotNumber() const
     return _items.size();
 }
 
-bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignorekurse)
+bool Inventory::removeItem(ObjectRef itemRef, const bool ignorekurse)
 {
     //Empty or invalid items always returns false
-    if(!item) {
+    Object* item = objectHandler().get(itemRef);
+    if(item == nullptr || item->isTerminated()) {
         return false;
     }
 
-    for(std::weak_ptr<Object> &inventoryItem : _items)
+    for(ObjectRef& inventoryItem : _items)
     {
         //Is this the item we are looking for?
-        if(inventoryItem.lock() == item)
+        if(inventoryItem == itemRef)
         {
             //is it kursed?
             if (item->isKursed() && !ignorekurse)
@@ -387,7 +408,7 @@ bool Inventory::removeItem(const std::shared_ptr<Object> &item, const bool ignor
 
             //Remove it from the inventory!
             item->setInventoryHolderRef(ObjectRef::Invalid);
-            inventoryItem.reset();
+            inventoryItem = ObjectRef::Invalid;
             return true;
         }
     }
