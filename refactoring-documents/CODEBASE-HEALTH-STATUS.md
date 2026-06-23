@@ -21,9 +21,9 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 918 ctest cases.
+  configures 920 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
-  10 warnings, 245 errors.
+  25 warnings, 230 errors.
 
 The main remaining debt is not raw file size anymore. It is interface,
 ownership, and dependency-visibility coupling: `Object` is still broad by
@@ -45,13 +45,13 @@ or engine/session service ownership.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,724 | Same scope as above |
-| Test files / lines | 50 / 24,130 | `egolib/tests`, source/header files only |
-| ctest cases | 919 | `ctest --test-dir build -N` |
-| ctest baseline | 919 / 919 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 602 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| Runtime source lines | 128,815 | Same scope as above |
+| Test files / lines | 50 / 24,154 | `egolib/tests`, source/header files only |
+| ctest cases | 920 | `ctest --test-dir build -N` |
+| ctest baseline | 920 / 920 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| `::get()` call sites | 605 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 131 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 134 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 648 | Broad grep count, not semantic classification |
 | Interface headers | 39 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
@@ -109,8 +109,8 @@ Large non-runtime files still exist and are intentional test/tool hotspots:
 | File | Lines |
 | --- | ---: |
 | `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,211 |
-| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,871 |
-| `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,915 |
+| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,873 |
+| `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,914 |
 | `tools/egoboo-content-validator.cpp` | 1,550 |
 | `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,256 |
 | `egolib/tests/egolib/tests/ScriptActionFunctions.cpp` | 1,231 |
@@ -231,12 +231,12 @@ Full validator baseline, last rechecked 2026-06-23:
 | Metric | Value |
 | --- | ---: |
 | Modules validated | 42 |
-| Warnings | 10 |
-| Errors | 245 |
+| Warnings | 25 |
+| Errors | 230 |
 
 The full validator exits nonzero because the shipped legacy content has
 pre-existing integrity errors. Treat parser crashes, new error categories, or
-baseline count changes as suspicious; do not treat the current 245 legacy
+baseline count changes as suspicious; do not treat the current 230 legacy
 content errors as a new regression by themselves.
 
 ## Build And Platform Status

@@ -927,6 +927,7 @@ TEST_F(ObjectAccessorFixture, EnchantHelpersExposeReadOnlyListStateAndFrontEntry
     EXPECT_FALSE(target->getActiveEnchants().empty());
     EXPECT_EQ(target->getFirstActiveEnchant(), enchant);
     EXPECT_EQ(target->getActiveEnchants().front(), enchant);
+    EXPECT_EQ(enchant->getTargetRef(), target->getObjRef());
     EXPECT_EQ(spawner->getLastEnchantmentSpawned(), enchant);
 }
 
@@ -955,6 +956,7 @@ TEST_F(ObjectAccessorFixture, EnchantableRolePublishesAddDisenchantAndLastSpawne
 
     EXPECT_TRUE(targetEnchantable.hasActiveEnchants());
     EXPECT_EQ(targetEnchantable.getFirstActiveEnchant(), enchant);
+    EXPECT_EQ(enchant->getTargetRef(), target->getObjRef());
     EXPECT_EQ(spawnerEnchantable.getLastEnchantmentSpawned(), enchant);
     EXPECT_TRUE(targetEnchantable.disenchant());
     EXPECT_TRUE(enchant->isTerminated());

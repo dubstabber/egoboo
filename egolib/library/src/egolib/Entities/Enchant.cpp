@@ -42,6 +42,11 @@ const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t s
 {
     return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
 }
+
+std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
+{
+    return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
+}
 }
 
 Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, const std::shared_ptr<Object> &owner) :
@@ -300,10 +305,12 @@ const std::shared_ptr<EnchantProfile>& Enchantment::getProfile() const
     return _enchantProfile;
 }
 
-void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
+void Enchantment::applyEnchantment(ObjectRef targetRef)
 {
+    std::shared_ptr<Object> target = objectHandle(targetRef);
+
     //Invalid target?
-    if( target->isTerminated() || (!target->isAlive() && !_enchantProfile->_target._stay) ) {
+    if( target == nullptr || target->isTerminated() || (!target->isAlive() && !_enchantProfile->_target._stay) ) {
 		Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to apply enchant: invalid target", Log::EndOfEntry);
         requestTerminate();
         return;
@@ -482,9 +489,13 @@ void Enchantment::applyEnchantment(std::shared_ptr<Object> target)
     target->addActiveEnchant(shared_from_this());
 }
 
-std::shared_ptr<Object> Enchantment::getTarget() const
+ObjectRef Enchantment::getTargetRef() const
 {
-    return _target.lock();   
+    std::shared_ptr<Object> target = _target.lock();
+    if(!target || target->isTerminated()) {
+        return ObjectRef::Invalid;
+    }
+    return target->getObjRef();
 }
 
 ObjectRef Enchantment::getOwnerRef() const

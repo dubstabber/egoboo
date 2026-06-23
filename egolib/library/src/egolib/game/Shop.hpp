@@ -22,16 +22,12 @@
 #pragma once
 
 #include "egolib/typedef.h"  // ObjectRef
-#include <memory>
-
-class Object;  // used only via shared_ptr/ObjectRef
 
 struct Shop {
 private:
-    static bool buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Object>& item);
-    static bool steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Object>& item);
-    static bool canGrabItem(ObjectRef igrabber, ObjectRef iitem);
+    static bool buy(ObjectRef buyerRef, ObjectRef itemRef);
+    static bool steal(ObjectRef thiefRef, ObjectRef itemRef);
 public:
-    static bool drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Object>& item);
-    static bool canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared_ptr<Object>& item);
+    static bool drop(ObjectRef dropperRef, ObjectRef itemRef);
+    static bool canGrabItem(ObjectRef grabberRef, ObjectRef itemRef);
 };

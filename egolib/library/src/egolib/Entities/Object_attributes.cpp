@@ -209,7 +209,7 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
     std::shared_ptr<Object> spawner = activeModule().getObjectHandler()[spawnerRef];
 
     std::shared_ptr<Ego::Enchantment> enchant = std::make_shared<Ego::Enchantment>(enchantmentProfile, ObjectProfileRef(spawnerProfile), owner);
-    enchant->applyEnchantment(selfHandle(*this));
+    enchant->applyEnchantment(getObjRef());
 
     //Succeeded to apply the enchantment to the target?
     if(!enchant->isTerminated() && spawner) {

@@ -225,6 +225,8 @@ public:
      */
      std::shared_ptr<Object> spawnObject(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
                                          const Facing& facing, const std::string &name, const ObjectRef override);
+     ObjectRef spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
+                              const Facing& facing, const std::string& name, const ObjectRef override);
 
      std::shared_ptr<const Ego::Texture> getTileTexture(const size_t index);
      std::shared_ptr<const Ego::Texture> getWaterTexture(const uint8_t layer);
@@ -241,6 +243,7 @@ public:
     const std::vector<std::shared_ptr<Ego::Player>>& getPlayerList() const;
 
     bool addPlayer(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device);
+    bool addPlayer(ObjectRef objectRef, const Ego::Input::InputDevice& device);
 
     /**
     * @brief
@@ -275,6 +278,9 @@ private:
     void loadModuleEnvironment();
     void loadModuleContent();
     bool addPlayer(const std::shared_ptr<Object>& object,
+                   const Ego::Input::InputDevice& device,
+                   bool identifySpawnOnSuccess);
+    bool addPlayer(ObjectRef objectRef,
                    const Ego::Input::InputDevice& device,
                    bool identifySpawnOnSuccess);
     void finalizeModuleInitialization();

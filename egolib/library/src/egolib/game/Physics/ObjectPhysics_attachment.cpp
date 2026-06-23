@@ -164,7 +164,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
 
     if(bestMatch != nullptr) {
         const std::shared_ptr<Object> &grabber = objectWorld().getObjectHandler()[_object.getObjRef()];
-        if (Shop::canGrabItem(grabber, bestMatch->shared_from_this()))
+        if (Shop::canGrabItem(_object.getObjRef(), bestMatch->getObjRef()))
         {
             // Stick 'em together and quit
             if(bestMatch->attachToObject(grabber->getObjRef(), grip_off))

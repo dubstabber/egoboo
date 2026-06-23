@@ -81,13 +81,13 @@ public:
     *   Applies this Enchantment to the specified target. It will stay there and affect the target until
     *   it expires or is removed.
     **/
-    void applyEnchantment(std::shared_ptr<Object> target);
+    void applyEnchantment(ObjectRef targetRef);
 
     /**
     * @return
-    *   The target of this enchant, or nullptr if it no longer has a valid target
+    *   object reference of the target of this enchant or the invalid object reference if there is no valid target
     **/
-    std::shared_ptr<Object> getTarget() const;
+    ObjectRef getTargetRef() const;
 
     /**
     * @return

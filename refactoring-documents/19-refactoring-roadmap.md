@@ -135,5 +135,5 @@ service access where the tests and validator can prove behavior.
 - `vfs.c`, script dispatch files, collision response, `GameEngine`, and object
   profile loading have been split below the old monolithic sizes.
 - glTF/GLB object model loading has landed behind the current static-mesh subset.
-- The full validator baseline remains 42 modules, 10 warnings, 245 known content
+- The full validator baseline remains 42 modules, 25 warnings, 230 known content
   errors.

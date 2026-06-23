@@ -2951,3 +2951,25 @@ particle/collision/module-update/script slice **29/29**; ctest **919/919**; vali
 which does not match the current documented baseline (**42 modules, 10 warnings, 245 errors**) and should
 be reconciled as a separate validator-baseline audit; this pass did not touch validator or content-loading
 code.
+
+### Pass 278 — Validator baseline audit and ref-first gameplay surfaces (2026-06-23)
+
+Reconciled the validator baseline found in Pass 277 and continued the `ObjectRef` ownership-boundary
+cleanup in three bounded gameplay pockets without changing script opcode APIs, source placement, CMake
+archive membership, object ownership, or legacy content behavior. The maintained docs now record the live
+full-validator baseline as **42 modules, 25 warnings, 230 errors**, with successful script fallback kept as
+a warning category.
+
+`Enchantment::applyEnchantment(...)` now accepts an `ObjectRef`, and public target observation is exposed
+as `getTargetRef()`. `GameModule` gained ref-first `spawnObjectRef(...)` and `addPlayer(ObjectRef, ...)`
+wrappers so spawn-file realization and tests can bind players without carrying object handles at the API
+edge. `Shop` now exposes `drop(...)` and `canGrabItem(...)` through refs, with buy/steal internals using
+the same ref-first path while preserving money transfer, order publication, and theft alert behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,815**, test files/lines are **50 / 24,154**, and ctest configures **920** cases. Gates:
+`cmake --build build -j20` clean; focused enchant/module/shop slices **11/11**, **53/53**, and **3/3**;
+ctest **920/920**; validator `test.mod` 0/0; full validator at the known legacy content baseline
+(**42 modules, 25 warnings, 230 errors**, nonzero exit from pre-existing content errors).

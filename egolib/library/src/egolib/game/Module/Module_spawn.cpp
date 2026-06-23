@@ -329,9 +329,21 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     return pchr;
 }
 
+ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
+                                     const Facing& facing, const std::string& name, const ObjectRef override)
+{
+    const std::shared_ptr<Object> object = spawnObject(pos, profile, team, skin, facing, name, override);
+    return object ? object->getObjRef() : ObjectRef::Invalid;
+}
+
 bool GameModule::addPlayer(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device)
 {
     return addPlayer(object, device, false);
+}
+
+bool GameModule::addPlayer(ObjectRef objectRef, const Ego::Input::InputDevice& device)
+{
+    return addPlayer(objectRef, device, false);
 }
 
 bool GameModule::addPlayer(const std::shared_ptr<Object>& object,
@@ -339,6 +351,14 @@ bool GameModule::addPlayer(const std::shared_ptr<Object>& object,
                            const bool identifySpawnOnSuccess)
 {
     return module_player_startup::addPlayer(_playerList, object, device, identifySpawnOnSuccess);
+}
+
+bool GameModule::addPlayer(ObjectRef objectRef,
+                           const Ego::Input::InputDevice& device,
+                           const bool identifySpawnOnSuccess)
+{
+    const std::shared_ptr<Object>& object = getObjectHandler()[objectRef];
+    return addPlayer(object, device, identifySpawnOnSuccess);
 }
 
 void GameModule::spawnAllObjects()
@@ -409,9 +429,8 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
     ops.spawnObject = [this](const spawn_file_info_t& spawnInfo)
     {
         const auto profile = ObjectProfileRef(static_cast<PRO_REF>(spawnInfo.slot));
-        std::shared_ptr<Object> object = spawnObject(spawnInfo.pos, profile, spawnInfo.team, spawnInfo.skin, spawnInfo.facing,
-                                                     spawnInfo.spawn_name == "NONE" ? "" : spawnInfo.spawn_name, ObjectRef::Invalid);
-        return object ? object->getObjRef() : ObjectRef::Invalid;
+        return spawnObjectRef(spawnInfo.pos, profile, spawnInfo.team, spawnInfo.skin, spawnInfo.facing,
+                              spawnInfo.spawn_name == "NONE" ? "" : spawnInfo.spawn_name, ObjectRef::Invalid);
     };
     ops.resolveObject = [this](ObjectRef objectRef)
     {
@@ -446,8 +465,8 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
     };
     ops.addPlayer = [this](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {
-        const std::shared_ptr<Object>& object = getObjectHandler()[objectRef];
-        return addPlayer(object, Ego::Input::InputDevice::DeviceList[request.deviceIndex],
+        return addPlayer(objectRef,
+                         Ego::Input::InputDevice::DeviceList[request.deviceIndex],
                          request.identifySpawnOnSuccess);
     };
 

@@ -227,6 +227,29 @@ TEST_F(ImportWorkflowFixture, FromPlayersReturnsZeroWhenModuleHasNoPlayers)
     EXPECT_EQ(imports.count, 0u);
 }
 
+TEST_F(ImportWorkflowFixture, ModuleSpawnAndPlayerBindingExposeRefFirstPath)
+{
+    GameModule& module = beginActiveTestModule();
+    const ObjectProfileRef profile = loadFollowerProfile(411);
+    ASSERT_NE(profile, ObjectProfileRef::Invalid);
+
+    const ObjectRef objectRef = module.spawnObjectRef(Ego::Vector3f(64.0f, 64.0f, 0.0f),
+                                                      profile,
+                                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
+                                                      0,
+                                                      Facing(0),
+                                                      "",
+                                                      ObjectRef::Invalid);
+    ASSERT_NE(objectRef, ObjectRef::Invalid);
+
+    ASSERT_TRUE(module.addPlayer(objectRef, Ego::Input::InputDevice::DeviceList[0]));
+    Object* object = module.getObjectHandler().get(objectRef);
+    ASSERT_NE(object, nullptr);
+    EXPECT_TRUE(object->isPlayer());
+    ASSERT_NE(module.getPlayer(0), nullptr);
+    EXPECT_EQ(module.getPlayer(0)->getObjectRef(), objectRef);
+}
+
 TEST_F(ImportWorkflowFixture, FromPlayersBuildsImportEntriesForRegisteredPlayers)
 {
     GameModule& module = beginActiveTestModule();

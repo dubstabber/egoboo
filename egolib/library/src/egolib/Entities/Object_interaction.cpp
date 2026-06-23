@@ -96,7 +96,7 @@ bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
 
     bool inshop = false;
     if (doShop) {
-        inshop = Shop::drop(pholder, shared_from_this());
+        inshop = Shop::drop(holder, getObjRef());
     }
 
     hitready = true;

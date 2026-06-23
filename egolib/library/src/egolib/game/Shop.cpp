@@ -26,6 +26,8 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
 
+#include <memory>
+
 namespace
 {
 GameModule& activeModule()
@@ -36,6 +38,11 @@ GameModule& activeModule()
 auto& objectHandler()
 {
     return activeModule().getObjectHandler();
+}
+
+std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
+{
+    return objectHandler()[objectRef];
 }
 
 IScriptable& scriptable(Object& object)
@@ -54,8 +61,11 @@ void publishTheftTarget(IScriptable& shopKeeper, ObjectRef thiefRef)
 }
 }
 
-bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Object>& item)
+bool Shop::drop(ObjectRef dropperRef, ObjectRef itemRef)
 {
+    std::shared_ptr<Object> dropper = objectHandle(dropperRef);
+    std::shared_ptr<Object> item = objectHandle(itemRef);
+    if (!dropper || !item) return false;
     if (dropper->isTerminated() || item->isTerminated()) return false;
 
     bool inShop = false;
@@ -88,8 +98,11 @@ bool Shop::drop(const std::shared_ptr<Object>& dropper, const std::shared_ptr<Ob
     return inShop;
 }
 
-bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Object>& item)
+bool Shop::buy(ObjectRef buyerRef, ObjectRef itemRef)
 {
+    std::shared_ptr<Object> buyer = objectHandle(buyerRef);
+    std::shared_ptr<Object> item = objectHandle(itemRef);
+    if (!buyer || !item) return false;
     if (buyer->isTerminated() || item->isTerminated()) return false;
 
     bool canGrab = true;
@@ -148,8 +161,11 @@ bool Shop::buy(const std::shared_ptr<Object>& buyer, const std::shared_ptr<Objec
     return canGrab;
 }
 
-bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Object>& item)
+bool Shop::steal(ObjectRef thiefRef, ObjectRef itemRef)
 {
+    std::shared_ptr<Object> thief = objectHandle(thiefRef);
+    std::shared_ptr<Object> item = objectHandle(itemRef);
+    if (!thief || !item) return false;
     if (thief->isTerminated() || item->isTerminated()) return false;
 
     bool canSteal = true;
@@ -174,8 +190,11 @@ bool Shop::steal(const std::shared_ptr<Object>& thief, const std::shared_ptr<Obj
     return canSteal;
 }
 
-bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared_ptr<Object>& item)
+bool Shop::canGrabItem(ObjectRef grabberRef, ObjectRef itemRef)
 {
+    std::shared_ptr<Object> grabber = objectHandle(grabberRef);
+    std::shared_ptr<Object> item = objectHandle(itemRef);
+    if (!grabber || !item) return false;
     if (grabber->isTerminated() || item->isTerminated()) return false;
     // Assume there is no shop so that the character can grab anything.
     bool canGrab = true;
@@ -193,7 +212,7 @@ bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared
 
         if (canSteal)
         {
-            canGrab = Shop::steal(grabber, item);
+            canGrab = Shop::steal(grabberRef, itemRef);
 
             if (!canGrab)
             {
@@ -206,17 +225,9 @@ bool Shop::canGrabItem(const std::shared_ptr<Object>& grabber, const std::shared
         }
         else
         {
-            canGrab = Shop::buy(grabber, item);
+            canGrab = Shop::buy(grabberRef, itemRef);
         }
     }
 
     return canGrab;
-}
-
-bool Shop::canGrabItem(ObjectRef igrabber, ObjectRef iitem)
-{
-    auto grabber = objectHandler()[igrabber],
-         item = objectHandler()[iitem];
-    if (!grabber || !item) return false;
-    return canGrabItem(grabber, item);
 }
