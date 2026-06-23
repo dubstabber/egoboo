@@ -2908,3 +2908,25 @@ No files moved between archives and `egolib/library/CMakeLists.txt` was untouche
 back-edge proof was required. Runtime source lines are now **128,698**, test files/lines are
 **50 / 24,059**, and ctest configures **918** cases. Gates: `cmake --build build -j20` clean; focused
 collision/object/update slice **22/22**; ctest **918/918**; validator `test.mod` 0/0.
+
+### Pass 276 — Module spawn ObjectRef boundary cleanup (2026-06-23)
+
+Continued the stable-first ownership-boundary cleanup into the module spawn-realization helper without
+changing public `GameModule::spawnObject(...)`, player construction, script opcode APIs, source placement,
+CMake archive membership, or legacy content behavior. `module_spawn_realization::realizeSpawnEntry(...)`
+now takes and returns `ObjectRef` values, and its operation callbacks use refs for spawn, matrix setup,
+inventory attachment, grip attachment, termination checks, and player binding.
+
+Concrete object access is quarantined behind an explicit resolver callback used only inside realization
+internals for existing mutation/read points: spawn money and AI state publication, level assignment,
+startup-equipment identification, and player-binding profile lookup. `GameModule::spawnAllObjects()` and
+the private `spawnObjectFromFileEntry(...)` now track the current parent/spawn result by ref while the
+module-owned object handler remains the lifetime owner. Focused coverage now pins the unresolved-spawn-ref
+failure path.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Runtime source lines are now **128,724**, test files/lines are
+**50 / 24,130**, and ctest configures **919** cases. Gates: `cmake --build build -j20` clean; focused
+module-spawn/player/import slice **51/51**; ctest **919/919**; validator `test.mod` 0/0; full validator at
+the known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
+content errors); `git diff --check` clean.

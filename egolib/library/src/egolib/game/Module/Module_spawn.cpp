@@ -354,7 +354,7 @@ void GameModule::spawnAllObjects()
         },
         1 + MAX_IMPORT_PER_PLAYER * MAX_PLAYER);
 
-    std::shared_ptr<Object> parent = nullptr;
+    ObjectRef parentRef = ObjectRef::Invalid;
     for (auto& spawnInfo : spawnPlan.entries)
     {
         // If nothing is already in that slot, try to load it.
@@ -377,11 +377,11 @@ void GameModule::spawnAllObjects()
         }
 
         // we only reach this if everything was loaded properly
-        std::shared_ptr<Object> spawnedObject = spawnObjectFromFileEntry(spawnInfo, parent);
+        const ObjectRef spawnedObjectRef = spawnObjectFromFileEntry(spawnInfo, parentRef);
 
         //We might become the new parent
-        if (spawnedObject != nullptr && spawnInfo.attach == ATTACH_NONE) {
-            parent = spawnedObject;
+        if (spawnedObjectRef != ObjectRef::Invalid && spawnInfo.attach == ATTACH_NONE) {
+            parentRef = spawnedObjectRef;
         }
     }
 
@@ -392,7 +392,7 @@ void GameModule::spawnAllObjects()
     game_load_profile_ai();
 }
 
-std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, const std::shared_ptr<Object> &parent)
+ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, ObjectRef parentRef)
 {
     module_spawn_realization::SpawnRealizationState state;
     state.importValid = isImportValid();
@@ -409,20 +409,32 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     ops.spawnObject = [this](const spawn_file_info_t& spawnInfo)
     {
         const auto profile = ObjectProfileRef(static_cast<PRO_REF>(spawnInfo.slot));
-        return spawnObject(spawnInfo.pos, profile, spawnInfo.team, spawnInfo.skin, spawnInfo.facing,
-                           spawnInfo.spawn_name == "NONE" ? "" : spawnInfo.spawn_name, ObjectRef::Invalid);
+        std::shared_ptr<Object> object = spawnObject(spawnInfo.pos, profile, spawnInfo.team, spawnInfo.skin, spawnInfo.facing,
+                                                     spawnInfo.spawn_name == "NONE" ? "" : spawnInfo.spawn_name, ObjectRef::Invalid);
+        return object ? object->getObjRef() : ObjectRef::Invalid;
     };
-    ops.makeCharacterMatrix = [](const std::shared_ptr<Object>& object)
+    ops.resolveObject = [this](ObjectRef objectRef)
     {
-        make_one_character_matrix(object->getObjRef());
+        return getObjectHandler().get(objectRef);
     };
-    ops.attachInventoryItem = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object)
+    ops.makeCharacterMatrix = [](ObjectRef objectRef)
     {
-        Inventory::add_item(parentObject->getObjRef(), object->getObjRef(), parentObject->getFirstFreeInventorySlot(), true);
+        make_one_character_matrix(objectRef);
     };
-    ops.attachToGrip = [](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object, grip_offset_t grip)
+    ops.attachInventoryItem = [this](ObjectRef parentObjectRef, ObjectRef objectRef)
     {
-        return object->attachToObject(parentObject->getObjRef(), grip);
+        const Object* parentObject = getObjectHandler().get(parentObjectRef);
+        if (!parentObject)
+        {
+            return;
+        }
+
+        Inventory::add_item(parentObjectRef, objectRef, parentObject->getFirstFreeInventorySlot(), true);
+    };
+    ops.attachToGrip = [this](ObjectRef parentObjectRef, ObjectRef objectRef, grip_offset_t grip)
+    {
+        Object* object = getObjectHandler().get(objectRef);
+        return object ? object->attachToObject(parentObjectRef, grip) : false;
     };
     ops.currentPlayerCount = [this]()
     {
@@ -432,13 +444,14 @@ std::shared_ptr<Object> GameModule::spawnObjectFromFileEntry(const spawn_file_in
     {
         return GameSessionContext::get().localPlayerCount();
     };
-    ops.addPlayer = [this](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
+    ops.addPlayer = [this](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {
+        const std::shared_ptr<Object>& object = getObjectHandler()[objectRef];
         return addPlayer(object, Ego::Input::InputDevice::DeviceList[request.deviceIndex],
                          request.identifySpawnOnSuccess);
     };
 
-    return module_spawn_realization::realizeSpawnEntry(psp_info, parent, state, ops);
+    return module_spawn_realization::realizeSpawnEntry(psp_info, parentRef, state, ops);
 }
 
 void GameModule::tiltCharactersToTerrain()

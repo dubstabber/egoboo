@@ -45,10 +45,10 @@ or engine/session service ownership.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,698 | Same scope as above |
-| Test files / lines | 50 / 24,059 | `egolib/tests`, source/header files only |
-| ctest cases | 918 | `ctest --test-dir build -N` |
-| ctest baseline | 918 / 918 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Runtime source lines | 128,724 | Same scope as above |
+| Test files / lines | 50 / 24,130 | `egolib/tests`, source/header files only |
+| ctest cases | 919 | `ctest --test-dir build -N` |
+| ctest baseline | 919 / 919 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 602 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 131 | Dominant intentional session seam |
@@ -226,7 +226,7 @@ ctest --test-dir build -j20 --output-on-failure
 The test runner is parallel-safe in the current harness. Each test process gets
 its own `EGOBOO_USER_DIR` through per-PID isolation.
 
-Full validator baseline, last rechecked 2026-06-22:
+Full validator baseline, last rechecked 2026-06-23:
 
 | Metric | Value |
 | --- | ---: |

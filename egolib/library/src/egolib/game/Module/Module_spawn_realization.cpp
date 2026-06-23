@@ -53,13 +53,24 @@ size_t currentLocalPlayerCount(const SpawnRealizationOps& ops)
     return ops.currentLocalPlayerCount ? ops.currentLocalPlayerCount() : 0u;
 }
 
-bool isObjectTerminated(const std::shared_ptr<Object>& object, const SpawnRealizationOps& ops)
+Object* resolveObject(ObjectRef objectRef, const SpawnRealizationOps& ops)
+{
+    if (objectRef == ObjectRef::Invalid || !ops.resolveObject)
+    {
+        return nullptr;
+    }
+
+    return ops.resolveObject(objectRef);
+}
+
+bool isObjectTerminated(ObjectRef objectRef, const SpawnRealizationOps& ops)
 {
     if (ops.isObjectTerminated)
     {
-        return ops.isObjectTerminated(object);
+        return ops.isObjectTerminated(objectRef);
     }
 
+    const Object* object = resolveObject(objectRef, ops);
     return object ? object->isTerminated() : true;
 }
 
@@ -98,17 +109,17 @@ int findImportMatchIndex(const ObjectProfileRef profileID, const SpawnRealizatio
     return -1;
 }
 
-void applyStartupEquipmentHook(const std::shared_ptr<Object>& object,
-                               const std::shared_ptr<Object>& parent,
+void applyStartupEquipmentHook(Object& object,
+                               const Object* parent,
                                const SpawnRealizationState& state)
 {
-    if (!object || state.importValid || !parent || !parent->isPlayer())
+    if (state.importValid || !parent || !parent->isPlayer())
     {
         return;
     }
 
-    object->setNameKnown(true);
-    object->setKursed(false);
+    object.setNameKnown(true);
+    object.setKursed(false);
 }
 
 PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
@@ -151,63 +162,66 @@ PlayerBindingDecision decidePlayerBinding(const spawn_file_info_t& spawnInfo,
 }
 
 void bindSpawnedPlayer(const spawn_file_info_t& spawnInfo,
-                       const std::shared_ptr<Object>& object,
+                       ObjectRef objectRef,
+                       const Object& object,
                        const SpawnRealizationState& state,
                        const SpawnRealizationOps& ops)
 {
-    if (!object)
+    if (objectRef == ObjectRef::Invalid)
     {
         return;
     }
 
-    const PlayerBindingDecision decision = decidePlayerBinding(spawnInfo, object->getProfileID(), state, ops);
+    const PlayerBindingDecision decision = decidePlayerBinding(spawnInfo, object.getProfileID(), state, ops);
     switch (decision.policy)
     {
         case PlayerBindingPolicy::None:
         break;
 
         case PlayerBindingPolicy::LocalDeviceSlot:
-            ops.addPlayer(object, decision.request);
+            ops.addPlayer(objectRef, decision.request);
         break;
 
         case PlayerBindingPolicy::ImportedLocalPlayer:
-            ops.addPlayer(object, decision.request);
+            ops.addPlayer(objectRef, decision.request);
         break;
     }
 }
 
 } // namespace
 
-std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
-                                          const std::shared_ptr<Object>& parent,
-                                          const SpawnRealizationState& state,
-                                          const SpawnRealizationOps& ops)
+ObjectRef realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
+                            ObjectRef parentRef,
+                            const SpawnRealizationState& state,
+                            const SpawnRealizationOps& ops)
 {
     if (!spawnInfo.do_spawn || spawnInfo.slot < 0)
     {
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
-    if (spawnInfo.attach != ATTACH_NONE && !parent)
+    if (spawnInfo.attach != ATTACH_NONE &&
+        (parentRef == ObjectRef::Invalid || !resolveObject(parentRef, ops)))
     {
         Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "failed to spawn ", "`", spawnInfo.spawn_name, "`",
                                          " due to missing parent", Log::EndOfEntry);
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
     if (!ops.spawnObject)
     {
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
-    std::shared_ptr<Object> object = ops.spawnObject(spawnInfo);
+    const ObjectRef objectRef = ops.spawnObject(spawnInfo);
+    Object* object = resolveObject(objectRef, ops);
     if (!object)
     {
         Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "unable to spawn ", "`", spawnInfo.spawn_name, "`",
                                          Log::EndOfEntry);
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
     object->giveMoney(spawnInfo.money);
@@ -218,19 +232,19 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
         case ATTACH_NONE:
             if (ops.makeCharacterMatrix)
             {
-                ops.makeCharacterMatrix(object);
+                ops.makeCharacterMatrix(objectRef);
             }
         break;
 
         case ATTACH_INVENTORY:
             if (ops.attachInventoryItem)
             {
-                ops.attachInventoryItem(parent, object);
+                ops.attachInventoryItem(parentRef, objectRef);
             }
 
-            if (isObjectTerminated(object, ops))
+            if (isObjectTerminated(objectRef, ops))
             {
-                return nullptr;
+                return ObjectRef::Invalid;
             }
 
             publishGrabbedAlert(*object);
@@ -241,7 +255,7 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
             if (ops.attachToGrip)
             {
                 const grip_offset_t grip = (ATTACH_LEFT == spawnInfo.attach) ? GRIP_LEFT : GRIP_RIGHT;
-                ops.attachToGrip(parent, object, grip);
+                ops.attachToGrip(parentRef, objectRef, grip);
             }
         break;
     }
@@ -251,9 +265,9 @@ std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
         object->setExperience(object->getProfile()->getXPNeededForLevel(spawnInfo.level));
     }
 
-    applyStartupEquipmentHook(object, parent, state);
-    bindSpawnedPlayer(spawnInfo, object, state, ops);
-    return object;
+    applyStartupEquipmentHook(*object, resolveObject(parentRef, ops), state);
+    bindSpawnedPlayer(spawnInfo, objectRef, *object, state, ops);
+    return objectRef;
 }
 
 } // namespace module_spawn_realization

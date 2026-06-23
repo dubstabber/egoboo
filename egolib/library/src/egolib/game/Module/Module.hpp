@@ -344,7 +344,7 @@ private:
     * @brief
     *   Spawns and setup a object from a spawn.txt entry
     **/
-    std::shared_ptr<Object> spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, const std::shared_ptr<Object> &parent);
+    ObjectRef spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, ObjectRef parentRef);
 
 private:
     static constexpr uint32_t PIT_CLOCK_RATE = 20;  ///< How many game ticks between each pit check

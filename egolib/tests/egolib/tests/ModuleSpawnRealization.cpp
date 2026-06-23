@@ -95,6 +95,26 @@ protected:
         return _objectHandler.insert(profile);
     }
 
+    Object* resolveObject(ObjectRef objectRef) const
+    {
+        return _objectHandler.get(objectRef);
+    }
+
+    void installResolver(module_spawn_realization::SpawnRealizationOps& ops)
+    {
+        ops.resolveObject = [this](ObjectRef objectRef)
+        {
+            return resolveObject(objectRef);
+        };
+    }
+
+    ObjectRef spawnFollower(const spawn_file_info_t& entry)
+    {
+        loadProfile("follower.obj", entry.slot);
+        std::shared_ptr<Object> object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return object ? object->getObjRef() : ObjectRef::Invalid;
+    }
+
     module_spawn_realization::SpawnRealizationState makeState() const
     {
         module_spawn_realization::SpawnRealizationState state;
@@ -130,13 +150,31 @@ TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnWithoutParentReturnsNullAndSk
     ops.spawnObject = [&](const spawn_file_info_t&)
     {
         spawnCalled = true;
-        return std::shared_ptr<Object>();
+        return ObjectRef::Invalid;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(70, ATTACH_LEFT), nullptr, state, ops);
+    const ObjectRef result = module_spawn_realization::realizeSpawnEntry(makeEntry(70, ATTACH_LEFT), ObjectRef::Invalid, state, ops);
 
-    EXPECT_EQ(result, nullptr);
+    EXPECT_EQ(result, ObjectRef::Invalid);
     EXPECT_FALSE(spawnCalled);
+}
+
+TEST_F(ModuleSpawnRealizationFixture, SpawnedRefWithoutResolverReturnsInvalid)
+{
+    auto state = makeState();
+    bool spawnCalled = false;
+
+    module_spawn_realization::SpawnRealizationOps ops;
+    ops.spawnObject = [&](const spawn_file_info_t&)
+    {
+        spawnCalled = true;
+        return ObjectRef(70);
+    };
+
+    const ObjectRef result = module_spawn_realization::realizeSpawnEntry(makeEntry(70), ObjectRef::Invalid, state, ops);
+
+    EXPECT_TRUE(spawnCalled);
+    EXPECT_EQ(result, ObjectRef::Invalid);
 }
 
 TEST_F(ModuleSpawnRealizationFixture, AttachNoneCallsMatrixSetupAndReturnsSpawnedObject)
@@ -145,21 +183,22 @@ TEST_F(ModuleSpawnRealizationFixture, AttachNoneCallsMatrixSetupAndReturnsSpawne
     std::vector<ObjectRef> matrixCalls;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        return _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return spawnFollower(entry);
     };
-    ops.makeCharacterMatrix = [&](const std::shared_ptr<Object>& object)
+    ops.makeCharacterMatrix = [&](ObjectRef objectRef)
     {
-        matrixCalls.push_back(object->getObjRef());
+        matrixCalls.push_back(objectRef);
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(71), nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(71), ObjectRef::Invalid, state, ops);
+    const Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     ASSERT_EQ(matrixCalls.size(), 1u);
-    EXPECT_EQ(matrixCalls.front(), result->getObjRef());
+    EXPECT_EQ(matrixCalls.front(), resultRef);
 }
 
 TEST_F(ModuleSpawnRealizationFixture, InventoryAttachMarksGrabbedAlertWhenChildSurvives)
@@ -172,20 +211,22 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachMarksGrabbedAlertWhenChildS
     size_t recordedSlot = INVEN_COUNT;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setAIAlertBits(0);
-        return object;
+        return objectRef;
     };
-    ops.attachInventoryItem = [&](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>&)
+    ops.attachInventoryItem = [&](ObjectRef parentRef, ObjectRef)
     {
         attachCalled = true;
-        recordedSlot = parentObject->getFirstFreeInventorySlot();
+        recordedSlot = resolveObject(parentRef)->getFirstFreeInventorySlot();
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(73, ATTACH_INVENTORY), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(73, ATTACH_INVENTORY), parent->getObjRef(), state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_TRUE(attachCalled);
@@ -204,26 +245,26 @@ TEST_F(ModuleSpawnRealizationFixture, InventoryAttachReturnsNullWhenMergeTermina
     size_t recordedSlot = INVEN_COUNT;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        return _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return spawnFollower(entry);
     };
-    ops.attachInventoryItem = [&](const std::shared_ptr<Object>& parentObject, const std::shared_ptr<Object>& object)
+    ops.attachInventoryItem = [&](ObjectRef parentRef, ObjectRef objectRef)
     {
         attachCalled = true;
-        recordedSlot = parentObject->getFirstFreeInventorySlot();
+        recordedSlot = resolveObject(parentRef)->getFirstFreeInventorySlot();
         mergedIntoStack = true;
-        object->setAIAlertBits(0);
+        resolveObject(objectRef)->setAIAlertBits(0);
     };
-    ops.isObjectTerminated = [&](const std::shared_ptr<Object>&)
+    ops.isObjectTerminated = [&](ObjectRef)
     {
         return mergedIntoStack;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(75, ATTACH_INVENTORY), parent, state, ops);
+    const ObjectRef result = module_spawn_realization::realizeSpawnEntry(makeEntry(75, ATTACH_INVENTORY), parent->getObjRef(), state, ops);
 
-    EXPECT_EQ(result, nullptr);
+    EXPECT_EQ(result, ObjectRef::Invalid);
     EXPECT_TRUE(attachCalled);
     EXPECT_EQ(recordedSlot, 0u);
 }
@@ -236,13 +277,14 @@ TEST_F(ModuleSpawnRealizationFixture, SpawnRealizationPublishesContentAndPassage
     entry.passage = 29;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& spawnEntry)
     {
-        loadProfile("follower.obj", spawnEntry.slot);
-        return _objectHandler.insert(ObjectProfileRef(spawnEntry.slot));
+        return spawnFollower(spawnEntry);
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(result->getAIContent(), 23);
@@ -258,18 +300,19 @@ TEST_F(ModuleSpawnRealizationFixture, AttachLeftUsesLeftGrip)
     std::vector<grip_offset_t> grips;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        return _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return spawnFollower(entry);
     };
-    ops.attachToGrip = [&](const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t grip)
+    ops.attachToGrip = [&](ObjectRef, ObjectRef, grip_offset_t grip)
     {
         grips.push_back(grip);
         return true;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(77, ATTACH_LEFT), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(77, ATTACH_LEFT), parent->getObjRef(), state, ops);
+    const Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     ASSERT_EQ(grips.size(), 1u);
@@ -285,18 +328,19 @@ TEST_F(ModuleSpawnRealizationFixture, AttachRightUsesRightGrip)
     std::vector<grip_offset_t> grips;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        return _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return spawnFollower(entry);
     };
-    ops.attachToGrip = [&](const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t grip)
+    ops.attachToGrip = [&](ObjectRef, ObjectRef, grip_offset_t grip)
     {
         grips.push_back(grip);
         return true;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(79, ATTACH_RIGHT), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(79, ATTACH_RIGHT), parent->getObjRef(), state, ops);
+    const Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     ASSERT_EQ(grips.size(), 1u);
@@ -310,16 +354,18 @@ TEST_F(ModuleSpawnRealizationFixture, SpawnLevelAssignmentUsesObjectAccessors)
     entry.level = 3;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& spawnEntry)
     {
-        loadProfile("follower.obj", spawnEntry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(spawnEntry.slot));
+        const ObjectRef objectRef = spawnFollower(spawnEntry);
+        Object* object = resolveObject(objectRef);
         object->setExperienceLevelIndex(1);
         object->setExperience(5u);
-        return object;
+        return objectRef;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(result->getExperienceLevelIndex(), 1);
@@ -336,16 +382,18 @@ TEST_F(ModuleSpawnRealizationFixture, NonImportPlayerParentIdentifiesStartupEqui
     state.importValid = false;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
         object->setKursed(true);
-        return object;
+        return objectRef;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(81, ATTACH_NONE), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(81, ATTACH_NONE), parent->getObjRef(), state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_TRUE(result->isNameKnown());
@@ -362,20 +410,22 @@ TEST_F(ModuleSpawnRealizationFixture, AttachedSpawnForLocalPlayerParentIdentifie
     state.importValid = false;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
         object->setKursed(true);
-        return object;
+        return objectRef;
     };
-    ops.attachToGrip = [&](const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t)
+    ops.attachToGrip = [&](ObjectRef, ObjectRef, grip_offset_t)
     {
         return true;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(85, ATTACH_LEFT), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(85, ATTACH_LEFT), parent->getObjRef(), state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_TRUE(result->isNameKnown());
@@ -392,16 +442,18 @@ TEST_F(ModuleSpawnRealizationFixture, ImportBackedPlayerParentSkipsStartupEquipm
     state.importValid = true;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
         object->setKursed(true);
-        return object;
+        return objectRef;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(87, ATTACH_NONE), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(87, ATTACH_NONE), parent->getObjRef(), state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_FALSE(result->isNameKnown());
@@ -418,16 +470,18 @@ TEST_F(ModuleSpawnRealizationFixture, NonPlayerParentSkipsStartupEquipmentIdenti
     state.importValid = false;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
         object->setKursed(true);
-        return object;
+        return objectRef;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(89, ATTACH_NONE), parent, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(89, ATTACH_NONE), parent->getObjRef(), state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_FALSE(result->isNameKnown());
@@ -443,22 +497,24 @@ TEST_F(ModuleSpawnRealizationFixture, NonStatSpawnSkipsPlayerBinding)
     size_t addPlayerCalls = 0;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 1u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
+    ops.addPlayer = [&](ObjectRef, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;
     };
 
-    auto result = module_spawn_realization::realizeSpawnEntry(makeEntry(82, ATTACH_NONE), nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(makeEntry(82, ATTACH_NONE), ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 0u);
@@ -477,20 +533,22 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
     std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
     ops.currentLocalPlayerCount = [&]() { return localPlayerCount; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
+    ops.addPlayer = [&](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {
         ++playerCount;
         ++localPlayerCount;
         bindingRequests.push_back(request);
+        Object* object = resolveObject(objectRef);
         object->setLocalPlayer(true);
         object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         if (request.identifySpawnOnSuccess)
@@ -502,7 +560,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsAddsNextLocalPlayer
 
     auto entry = makeEntry(82, ATTACH_NONE);
     entry.stat = true;
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     ASSERT_EQ(bindingRequests.size(), 1u);
@@ -521,16 +580,17 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
     size_t addPlayerCalls = 0;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 2u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
+    ops.addPlayer = [&](ObjectRef, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return false;
@@ -538,7 +598,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithoutImportsLeavesNameUnknownWh
 
     auto entry = makeEntry(83, ATTACH_NONE);
     entry.stat = true;
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 1u);
@@ -557,20 +618,22 @@ TEST_F(ModuleSpawnRealizationFixture, SequentialZeroImportSpawnsUseIncrementingL
     std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setNameKnown(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
     ops.currentLocalPlayerCount = [&]() { return localPlayerCount; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
+    ops.addPlayer = [&](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {
         ++playerCount;
         ++localPlayerCount;
         bindingRequests.push_back(request);
+        Object* object = resolveObject(objectRef);
         object->setLocalPlayer(true);
         object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         if (request.identifySpawnOnSuccess)
@@ -585,8 +648,10 @@ TEST_F(ModuleSpawnRealizationFixture, SequentialZeroImportSpawnsUseIncrementingL
     auto secondEntry = makeEntry(85, ATTACH_NONE);
     secondEntry.stat = true;
 
-    auto firstResult = module_spawn_realization::realizeSpawnEntry(firstEntry, nullptr, state, ops);
-    auto secondResult = module_spawn_realization::realizeSpawnEntry(secondEntry, nullptr, state, ops);
+    const ObjectRef firstResultRef = module_spawn_realization::realizeSpawnEntry(firstEntry, ObjectRef::Invalid, state, ops);
+    const ObjectRef secondResultRef = module_spawn_realization::realizeSpawnEntry(secondEntry, ObjectRef::Invalid, state, ops);
+    Object* firstResult = resolveObject(firstResultRef);
+    Object* secondResult = resolveObject(secondResultRef);
 
     ASSERT_NE(firstResult, nullptr);
     ASSERT_NE(secondResult, nullptr);
@@ -615,17 +680,18 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
     std::vector<module_spawn_realization::PlayerBindingRequest> bindingRequests;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        return _objectHandler.insert(ObjectProfileRef(entry.slot));
+        return spawnFollower(entry);
     };
     ops.currentPlayerCount = [&]() { return playerCount; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>& object, const module_spawn_realization::PlayerBindingRequest& request)
+    ops.addPlayer = [&](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {
         ++playerCount;
         bindingRequests.push_back(request);
+        Object* object = resolveObject(objectRef);
         object->setLocalPlayer(true);
         object->setPlayerNumber(static_cast<PLA_REF>(request.deviceIndex));
         return true;
@@ -633,7 +699,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportsMatchesLocalPlayerNumb
 
     auto entry = makeEntry(5, ATTACH_NONE);
     entry.stat = true;
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     ASSERT_EQ(bindingRequests.size(), 1u);
@@ -657,16 +724,17 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithNoImportMatchSkipsPlayerBindi
     size_t addPlayerCalls = 0;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setLocalPlayer(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
+    ops.addPlayer = [&](ObjectRef, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;
@@ -674,7 +742,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithNoImportMatchSkipsPlayerBindi
 
     auto entry = makeEntry(6, ATTACH_NONE);
     entry.stat = true;
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 0u);
@@ -695,16 +764,17 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportProfileOutsideLoadedRan
     size_t addPlayerCalls = 0;
 
     module_spawn_realization::SpawnRealizationOps ops;
+    installResolver(ops);
     ops.spawnObject = [&](const spawn_file_info_t& entry)
     {
-        loadProfile("follower.obj", entry.slot);
-        auto object = _objectHandler.insert(ObjectProfileRef(entry.slot));
+        const ObjectRef objectRef = spawnFollower(entry);
+        Object* object = resolveObject(objectRef);
         object->setLocalPlayer(false);
-        return object;
+        return objectRef;
     };
     ops.currentPlayerCount = []() { return 0u; };
     ops.currentLocalPlayerCount = []() { return 0u; };
-    ops.addPlayer = [&](const std::shared_ptr<Object>&, const module_spawn_realization::PlayerBindingRequest&)
+    ops.addPlayer = [&](ObjectRef, const module_spawn_realization::PlayerBindingRequest&)
     {
         ++addPlayerCalls;
         return true;
@@ -712,7 +782,8 @@ TEST_F(ModuleSpawnRealizationFixture, StatSpawnWithImportProfileOutsideLoadedRan
 
     auto entry = makeEntry(7, ATTACH_NONE);
     entry.stat = true;
-    auto result = module_spawn_realization::realizeSpawnEntry(entry, nullptr, state, ops);
+    const ObjectRef resultRef = module_spawn_realization::realizeSpawnEntry(entry, ObjectRef::Invalid, state, ops);
+    Object* result = resolveObject(resultRef);
 
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(addPlayerCalls, 0u);

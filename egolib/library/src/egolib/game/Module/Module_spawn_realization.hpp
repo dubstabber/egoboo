@@ -6,7 +6,6 @@
 #include "egolib/game/game.h"
 
 #include <functional>
-#include <memory>
 
 class Object;
 
@@ -33,19 +32,20 @@ struct SpawnRealizationState
 
 struct SpawnRealizationOps
 {
-    std::function<std::shared_ptr<Object>(const spawn_file_info_t&)> spawnObject;
-    std::function<void(const std::shared_ptr<Object>&)> makeCharacterMatrix;
-    std::function<void(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&)> attachInventoryItem;
-    std::function<bool(const std::shared_ptr<Object>&)> isObjectTerminated;
-    std::function<bool(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&, grip_offset_t)> attachToGrip;
+    std::function<ObjectRef(const spawn_file_info_t&)> spawnObject;
+    std::function<Object*(ObjectRef)> resolveObject;
+    std::function<void(ObjectRef)> makeCharacterMatrix;
+    std::function<void(ObjectRef, ObjectRef)> attachInventoryItem;
+    std::function<bool(ObjectRef)> isObjectTerminated;
+    std::function<bool(ObjectRef, ObjectRef, grip_offset_t)> attachToGrip;
     std::function<size_t()> currentPlayerCount;
     std::function<size_t()> currentLocalPlayerCount;
-    std::function<bool(const std::shared_ptr<Object>&, const PlayerBindingRequest&)> addPlayer;
+    std::function<bool(ObjectRef, const PlayerBindingRequest&)> addPlayer;
 };
 
-std::shared_ptr<Object> realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
-                                          const std::shared_ptr<Object>& parent,
-                                          const SpawnRealizationState& state,
-                                          const SpawnRealizationOps& ops);
+ObjectRef realizeSpawnEntry(const spawn_file_info_t& spawnInfo,
+                            ObjectRef parentRef,
+                            const SpawnRealizationState& state,
+                            const SpawnRealizationOps& ops);
 
 } // namespace module_spawn_realization
