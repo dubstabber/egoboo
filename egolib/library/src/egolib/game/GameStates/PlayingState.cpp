@@ -236,7 +236,7 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
 
                     if(!object->isPlayer() && object->isAlive())
                     {
-                        object->kill(Object::INVALID_OBJECT, false);
+                        object->kill(ObjectAttribution(), false);
                     }
                 }
                 return true;

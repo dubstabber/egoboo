@@ -146,17 +146,19 @@ A follow-up 2026-04-13 validator pass added narrow `data.txt` semantic checks fo
 
 A later 2026-04-15 remediation pass extended reconciliation JSON output to schema version `3` and applied a conservative spawn-reference repair batch to `archmage.mod`, `abyss2.mod`, and `palwater.mod`. That reduced the global error count without changing parser behavior or warning totals.
 
+A 2026-06-23 recheck after the combat-attribution cleanup restored the repeated live baseline to 42 modules, 10 warnings, and 245 errors. That matches the earlier 2026-06-23 Pass 276-era totals and differs from the transient 25-warning/230-error result recorded during Pass 278; this recheck did not include validator or content-loading changes.
+
 Summary:
 
 | Metric | Value |
 | --- | ---: |
 | Modules validated | 42 |
-| Passing modules | 11 |
-| Failing modules | 31 |
-| Validator warnings | 25 |
-| Validator errors | 230 |
+| Passing modules | 10 |
+| Failing modules | 32 |
+| Validator warnings | 10 |
+| Validator errors | 245 |
 
-Passing modules (the 11 modules whose run row shows `errors=0`):
+Passing modules (the 10 modules whose run row shows `errors=0`):
 
 - `archaeologist.mod`
 - `imprisoned2.mod`
@@ -166,11 +168,10 @@ Passing modules (the 11 modules whose run row shows `errors=0`):
 - `palshad.mod`
 - `palwater.mod`
 - `rcars.mod`
-- `spiderlair.mod`
 - `test.mod`
 - `valkyrie.mod`
 
-`palshad.mod` and `palwater.mod` now pass (`palwater.mod` was repaired by the 2026-04-15 spawn-reference batch and reached `errors=0`). `spiderlair.mod` also passes at the error level in the current validator behavior; its primary script fallback is reported as a warning, not as a hard content error.
+`palshad.mod` and `palwater.mod` now pass (`palwater.mod` was repaired by the 2026-04-15 spawn-reference batch and reached `errors=0`). `spiderlair.mod` is failing again in the current validator behavior because its script fallback path now reports a hard compile failure.
 
 ## 6. Error composition
 
@@ -179,16 +180,17 @@ The error distribution is highly concentrated.
 | Error category | JSON id | Count |
 | --- | --- | ---: |
 | spawn-referenced object missing from `mp_objects` | `missing_spawn_object` | 229 |
+| object script fallback compile/load failure | `script_compile_failure` | 15 |
 | missing required object data file | `missing_required_file` | 1 |
-| **Total** | | **230** |
+| **Total** | | **245** |
 
 The one `missing_required_file` error was:
 
 - `heist.mod`: `mp_objects/eyeballguard.obj/data.txt` missing
 
-The validator can emit `script_compile_failure` as an error if both the object script and fallback script fail to compile. The current shipped content baseline does not surface that category; successful fallback to `mp_data/script.txt` is counted as a warning.
+The validator emits `script_compile_failure` as an error if both the object script and fallback script fail to compile. The current shipped content baseline surfaces 15 such errors.
 
-The dominant failure class is still not parser breakage. It is content-reference integrity: `missing_spawn_object` alone accounts for 229 of 230 errors (~99.6%).
+The dominant failure class is still not parser breakage. It is content-reference integrity: `missing_spawn_object` alone accounts for 229 of 245 errors (~93.5%).
 
 ## 7. Warning composition
 
@@ -197,19 +199,18 @@ Current warning counts:
 | Warning category | JSON id | Count |
 | --- | --- | ---: |
 | missing object script with fallback to `mp_data/script.txt` | `script_missing` | 10 |
-| object script fallback after compile/load failure | `script_fallback` | 15 |
-| **Total** | | **25** |
+| **Total** | | **10** |
 
-`script_missing` and `script_fallback` are both compatibility warnings in the current shipped content baseline. They match runtime fallback behavior and are secondary compared to the missing spawn references.
+`script_missing` is a compatibility warning in the current shipped content baseline. It matches runtime fallback behavior and is secondary compared to the missing spawn references.
 
 Stable report categories in the current JSON output:
 
 - errors:
   - `missing_spawn_object`
   - `missing_required_file`
+  - `script_compile_failure`
 - warnings:
   - `script_missing`
-  - `script_fallback`
 
 The validator can now also emit `profile_field_invalid` warnings for a small set of post-load `data.txt` invariants, but the current shipped baseline did not surface any instances.
 
@@ -220,20 +221,20 @@ rechecked on 2026-06-23:
 
 | Module | Errors | Warnings | Spawn Entries |
 | --- | ---: | ---: | ---: |
-| `archmage.mod` | 39 | 1 | 164 |
+| `archmage.mod` | 40 | 0 | 164 |
 | `abyss2.mod` | 33 | 0 | 333 |
-| `zippy.mod` | 16 | 1 | 164 |
+| `zippy.mod` | 17 | 0 | 164 |
 | `heist.mod` | 15 | 0 | 112 |
+| `bishopiacity.mod` | 13 | 1 | 403 |
 | `palash.mod` | 13 | 0 | 154 |
 | `palsand.mod` | 12 | 0 | 105 |
 | `rogue.mod` | 11 | 0 | 135 |
-| `bishopiacity.mod` | 10 | 4 | 403 |
-| `advent.mod` | 9 | 2 | 92 |
+| `advent.mod` | 10 | 1 | 92 |
 | `soldier.mod` | 9 | 0 | 110 |
 
 `palwater.mod` is no longer in this table: it now passes with `errors=0` after the 2026-04-15 spawn-reference repair batch.
 
-Per-module error and warning counts above are aggregated from the validator JSON report (these sum exactly to the 230/25 run totals).
+Per-module error and warning counts above are aggregated from the validator JSON report (these sum exactly to the 245/10 run totals).
 
 ## 9. Most common unresolved spawn object names
 

@@ -33,9 +33,10 @@ IParticleHandler& particleHandler()
     return activeParticleHandler();
 }
 
-ObjectAttribution objectAttributionFor(const std::shared_ptr<Object>& object, TEAM_REF team)
+ObjectAttribution objectAttributionFor(ObjectRef objectRef, TEAM_REF team)
 {
-    return object ? object->attribution(team) : ObjectAttribution(team);
+    Object* object = activeModule().getObjectHandler().get(objectRef);
+    return object != nullptr ? object->attribution(team) : ObjectAttribution(team);
 }
 }
 
@@ -132,9 +133,8 @@ void Particle::updateAttachedDamage()
     }
 
     //---- do the damage
-    const std::shared_ptr<Object>& owner = activeModule().getObjectHandler()[owner_ref];
     int actual_damage = damageable.damage(ATK_BEHIND, local_damage, static_cast<DamageType>(damagetype),
-                                          objectAttributionFor(owner, team), getProfile()->hasBit(DAMFX_ARMO),
+                                          objectAttributionFor(owner_ref, team), getProfile()->hasBit(DAMFX_ARMO),
                                           !getProfile()->hasBit(DAMFX_TIME), false);
 
     // adjust any remaining particle damage

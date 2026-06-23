@@ -564,8 +564,8 @@ TEST_F(ScriptStateFunctionsFixture, RespawnHelpersUseLifecycleRoleAndPreserveTar
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
 
-    actor->kill(nullptr, true);
-    target->kill(nullptr, true);
+    actor->kill(ObjectAttribution(), true);
+    target->kill(ObjectAttribution(), true);
     const Ego::Vector3f targetPositionBeforeRespawn(88.0f, 44.0f, 3.0f);
     target->setPosition(targetPositionBeforeRespawn);
 
@@ -1167,7 +1167,7 @@ TEST_F(ScriptStateFunctionsFixture, CleanUpTouchesOnlySameTeamAndOnlyTimersDeadL
     aliveTeammate->setTeam(Team::TEAM_GOOD);
     deadTeammate->setTeam(Team::TEAM_GOOD);
     outsider->setTeam(Team::TEAM_EVIL);
-    deadTeammate->kill(nullptr, true);
+    deadTeammate->kill(ObjectAttribution(), true);
 
     actor->setAIAlertBits(0);
     aliveTeammate->setAIAlertBits(0);

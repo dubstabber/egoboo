@@ -186,29 +186,16 @@ inline ResolvedSelfContext resolveSelfContext(const ai_state_t& self)
     return resolveSelfContext(self.getSelf());
 }
 
-inline std::shared_ptr<Object> tryObjectShared(ObjectRef objectRef)
-{
-    return objectHandler().exists(objectRef) ? objectHandler()[objectRef] : nullptr;
-}
-
-inline ObjectAttribution objectAttributionFromHandle(const std::shared_ptr<Object>& object)
-{
-    return object ? object->attribution() : ObjectAttribution();
-}
-
-inline ObjectAttribution objectAttributionFromHandle(const std::shared_ptr<Object>& object, TEAM_REF sourceTeam)
-{
-    return object ? object->attribution(sourceTeam) : ObjectAttribution(sourceTeam);
-}
-
 inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef)
 {
-    return objectAttributionFromHandle(tryObjectShared(objectRef));
+    Object* object = tryObject(objectRef);
+    return object != nullptr ? object->attribution() : ObjectAttribution();
 }
 
 inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef, TEAM_REF sourceTeam)
 {
-    return objectAttributionFromHandle(tryObjectShared(objectRef), sourceTeam);
+    Object* object = tryObject(objectRef);
+    return object != nullptr ? object->attribution(sourceTeam) : ObjectAttribution(sourceTeam);
 }
 
 inline IScriptable* tryScriptable(ObjectRef objectRef)

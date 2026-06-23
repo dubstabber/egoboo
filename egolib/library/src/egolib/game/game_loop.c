@@ -249,13 +249,9 @@ void MainLoop::check_stats()
             Object* object = tryCheatPlayerObject(module, docheat);
             if (object)
             {
-                const std::shared_ptr<Object> objectHandle = module.getObjectHandler()[object->getObjRef()];
-                if (objectHandle)
-                {
-                    //Heal 1 life
-                    object->heal(objectHandle, 256, true);
-                    stat_check_delay = 1;
-                }
+                //Heal 1 life
+                object->heal(object->attribution(), 256, true);
+                stat_check_delay = 1;
             }
 
         }

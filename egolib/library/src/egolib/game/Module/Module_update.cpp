@@ -50,13 +50,19 @@ Object* tryObservedPlayerObject(const std::shared_ptr<Ego::Player>& player)
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
 
+ObjectAttribution terrainDamageAttribution(const ObjectHandler& objectHandler, ObjectRef attackerRef)
+{
+    const Object* attacker = objectHandler.get(attackerRef);
+    return attacker != nullptr
+        ? attacker->attribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE))
+        : ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE));
+}
+
 int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType damageType,
-                       const std::shared_ptr<Object>& attacker, bool setDamageTime)
+                       ObjectAttribution attacker, bool setDamageTime)
 {
     return target.damage(ATK_BEHIND, damage, damageType,
-                         attacker ? attacker->attribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE))
-                                  : ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE)),
-                         true, setDamageTime, false);
+                         attacker, true, setDamageTime, false);
 }
 }
 
@@ -178,7 +184,7 @@ void GameModule::updatePits()
 
                     // Do some damage (same as damage tile)
                     applyTerrainDamage(damageable, _damageTile.amount, static_cast<DamageType>(_damageTile.damagetype),
-                                       _gameObjects[pchr->getAIBumped()], false);
+                                       terrainDamageAttribution(_gameObjects, pchr->getAIBumped()), false);
                 }
             }
         }
@@ -243,7 +249,7 @@ void GameModule::updateDamageTiles()
         {
             int actual_damage = applyTerrainDamage(damageable, _damageTile.amount,
                                                    static_cast<DamageType>(_damageTile.damagetype),
-                                                   nullptr, false);
+                                                   ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE)), false);
 
             damageable.setDamageTimer(DAMAGETILETIME);
 

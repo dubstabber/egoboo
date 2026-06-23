@@ -266,7 +266,7 @@ void Enchantment::update()
     //Can we kill the target by draining life?
     if(target->isAlive()) {
         if (target->getLife() + _targetLifeDrain < 0.0f) {
-            target->kill(owner, false);
+            target->kill(owner != nullptr ? owner->attribution() : ObjectAttribution(), false);
         }
     }
 
@@ -275,7 +275,7 @@ void Enchantment::update()
 
         //Killed by draining life?
         if(owner->getLife() + _ownerLifeSustain < 0.0f) {
-            owner->kill(target, false);
+            owner->kill(target != nullptr ? target->attribution() : ObjectAttribution(), false);
 
             if(_enchantProfile->endIfCannotPay || !_enchantProfile->_target._stay) {
                 requestTerminate();

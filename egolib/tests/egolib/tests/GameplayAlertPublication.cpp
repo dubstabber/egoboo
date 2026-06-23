@@ -208,7 +208,7 @@ protected:
         occupant->setCanBeCrushed(true);
         if (occupant->getProfile()->canOpenStuff())
         {
-            occupant->kill(Object::INVALID_OBJECT, true);
+            occupant->kill(ObjectAttribution(), true);
         }
 
         return occupant;

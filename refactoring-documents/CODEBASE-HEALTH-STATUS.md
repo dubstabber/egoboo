@@ -23,7 +23,7 @@ since the April 2026 baseline are still intact:
 - The test suite is substantially larger than the April baseline and currently
   configures 920 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
-  25 warnings, 230 errors.
+  10 warnings, 245 errors.
 
 The main remaining debt is not raw file size anymore. It is interface,
 ownership, and dependency-visibility coupling: `Object` is still broad by
@@ -45,7 +45,7 @@ or engine/session service ownership.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,815 | Same scope as above |
+| Runtime source lines | 128,721 | Same scope as above |
 | Test files / lines | 50 / 24,154 | `egolib/tests`, source/header files only |
 | ctest cases | 920 | `ctest --test-dir build -N` |
 | ctest baseline | 920 / 920 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
@@ -93,16 +93,16 @@ runtime files:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 995 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 988 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
 | `egolib/library/src/egolib/game/game_combat.c` | 722 |
 | `egolib/library/src/egolib/Script/script.h` | 684 |
-| `egolib/library/src/egolib/Entities/Object_combat.cpp` | 684 |
 | `egolib/library/src/egolib/Audio/AudioSystem.cpp` | 675 |
 | `egolib/library/src/egolib/map_functions.c` | 668 |
 | `egolib/library/src/egolib/bbox.c` | 660 |
 | `egolib/library/src/egolib/vfs.c` | 658 |
+| `egolib/library/src/egolib/Entities/Object_combat.cpp` | 650 |
 
 Large non-runtime files still exist and are intentional test/tool hotspots:
 
@@ -231,12 +231,12 @@ Full validator baseline, last rechecked 2026-06-23:
 | Metric | Value |
 | --- | ---: |
 | Modules validated | 42 |
-| Warnings | 25 |
-| Errors | 230 |
+| Warnings | 10 |
+| Errors | 245 |
 
 The full validator exits nonzero because the shipped legacy content has
 pre-existing integrity errors. Treat parser crashes, new error categories, or
-baseline count changes as suspicious; do not treat the current 230 legacy
+baseline count changes as suspicious; do not treat the current 245 legacy
 content errors as a new regression by themselves.
 
 ## Build And Platform Status

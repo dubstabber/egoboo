@@ -2973,3 +2973,28 @@ back-edge proof was required. Singleton metrics are now **605** `::get()` lines,
 `cmake --build build -j20` clean; focused enchant/module/shop slices **11/11**, **53/53**, and **3/3**;
 ctest **920/920**; validator `test.mod` 0/0; full validator at the known legacy content baseline
 (**42 modules, 25 warnings, 230 errors**, nonzero exit from pre-existing content errors).
+
+### Pass 279 — Combat attribution ObjectRef cleanup (2026-06-23)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through combat attribution without
+changing script opcode APIs, source placement, CMake archive membership, object ownership, or legacy
+content behavior. `Object` no longer exposes public `damage(...)`, `heal(...)`, or `kill(...)` overloads
+that require `std::shared_ptr<Object>` attacker/healer/killer handles; the public combat surface now uses
+`ObjectAttribution`, with concrete object resolution quarantined inside `Object_combat.cpp`.
+
+Combat death-credit, last-attacker, team-experience, alert publication, mana-surplus healing, terrain
+damage, particle-owner attribution, and script helper paths now pass refs/attribution values instead of
+carrying temporary object handles solely for attribution. Death-alert filtering compares refs instead of
+shared-pointer identity, while stale/null attribution behavior remains preserved as `ObjectRef::Invalid`.
+The maintained validator docs were refreshed after repeated full-validator runs restored the live baseline
+to **42 modules, 10 warnings, 245 errors**, differing from the transient Pass 278 result; this pass did not
+touch validator or content-loading code.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics are now **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,721**, test files/lines are **50 / 24,154**, and ctest configures **920** cases. Gates:
+`cmake --build build -j20` clean; focused combat/module/script/collision slice **176/176**; ctest
+**920/920**; validator `test.mod` 0/0; full validator at the known legacy content baseline
+(**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing content errors);
+`git diff --check` clean.

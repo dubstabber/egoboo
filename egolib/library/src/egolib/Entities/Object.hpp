@@ -310,12 +310,7 @@ public:
     int damage(Facing direction, const IPair  damage, const DamageType damagetype, ObjectAttribution attacker,
                const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus) override;
 
-    int damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
-               const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus);
-
     bool heal(ObjectAttribution healer, const UFP8_T amount, const bool ignoreInvincibility) override;
-
-    bool heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility);
 
     bool isAttacking() const override;
 
@@ -480,8 +475,6 @@ public:
     void recalculateCollisionSize();
 
     void kill(ObjectAttribution originalKiller, bool ignoreInvincibility) override;
-
-    void kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility);
 
     /// @author ZZ
     /// @details This function fixes an item's transparency
@@ -966,7 +959,7 @@ private:
     *        handles if the attacker is a held item (so that the holder becomes the attacker). The function also
     *        updates alerts, timers, etc. This function can trigger character cries like "That tickles!" or "Be careful!"
     **/
-    void updateLastAttacker(const std::shared_ptr<Object> &attacker, bool healing);
+    void updateLastAttacker(ObjectAttribution attacker, bool healing);
 
     void updateResize();
     

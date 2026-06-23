@@ -50,34 +50,14 @@ const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t s
     return objectHandler()[object.getHeldObject(slot)];
 }
 
-ObjectAttribution attributionFor(const std::shared_ptr<Object>& object)
+Object* resolveObject(ObjectRef objectRef)
 {
-    if (!object)
-    {
-        return ObjectAttribution();
-    }
-
-    return object->attribution();
+    return objectHandler().get(objectRef);
 }
 
-ObjectAttribution attributionFor(const std::shared_ptr<Object>& object, TEAM_REF sourceTeam)
+Object* resolveAttributionObject(ObjectAttribution attribution)
 {
-    if (!object)
-    {
-        return ObjectAttribution(sourceTeam);
-    }
-
-    return object->attribution(sourceTeam);
-}
-
-std::shared_ptr<Object> resolveAttributionHandle(ObjectAttribution attribution)
-{
-    if (attribution.ref == ObjectRef::Invalid || !objectHandler().exists(attribution.ref))
-    {
-        return nullptr;
-    }
-
-    return objectHandler()[attribution.ref];
+    return resolveObject(attribution.ref);
 }
 
 ObjectRef resolveHolderOrMountAttribution(const Object& actor)
@@ -97,52 +77,53 @@ ObjectRef resolveHolderOrMountAttribution(const Object& actor)
 }
 
 bool resolveLastAttackerAttribution(const Object& target,
-                                    const std::shared_ptr<Object>& attacker,
+                                    ObjectAttribution attacker,
                                     ObjectRef& actualAttacker)
 {
     actualAttacker = ObjectRef::Invalid;
-    if (!attacker)
+    Object* attackerObject = resolveAttributionObject(attacker);
+    if (attackerObject == nullptr)
     {
         return true;
     }
 
-    if (attacker.get() == &target)
+    if (attackerObject == &target)
     {
         return false;
     }
 
-    if (attacker->getTeam() == Team::TEAM_NULL)
+    if (attackerObject->getTeam() == Team::TEAM_NULL)
     {
         return false;
     }
 
-    if (attacker->getHolderRef() == target.getObjRef())
+    if (attackerObject->getHolderRef() == target.getObjRef())
     {
         return false;
     }
 
-    actualAttacker = resolveHolderOrMountAttribution(*attacker);
+    actualAttacker = resolveHolderOrMountAttribution(*attackerObject);
     return true;
 }
 
-std::shared_ptr<Object> resolveKillCreditRecipient(const std::shared_ptr<Object>& originalKiller)
+ObjectRef resolveKillCreditRecipientRef(ObjectAttribution originalKiller)
 {
-    std::shared_ptr<Object> actualKiller = originalKiller;
-    if (!actualKiller)
+    Object* actualKiller = resolveAttributionObject(originalKiller);
+    if (actualKiller == nullptr)
     {
-        return actualKiller;
+        return ObjectRef::Invalid;
     }
 
     if (actualKiller->isBeingHeld() && !objectHandler().get(actualKiller->getHolderRef())->isMount())
     {
-        actualKiller = objectHandler()[actualKiller->getHolderRef()];
+        return actualKiller->getHolderRef();
     }
     else if (actualKiller->isMount() && heldItem(*actualKiller, SLOT_LEFT))
     {
-        actualKiller = heldItem(*actualKiller, SLOT_LEFT);
+        return actualKiller->getHeldObject(SLOT_LEFT);
     }
 
-    return actualKiller;
+    return actualKiller->getObjRef();
 }
 
 void publishKillerTarget(IScriptable& killedScript, ObjectRef killedRef, const Object& killer)
@@ -196,14 +177,17 @@ void publishTargetKilledAlert(IScriptable& listener, ObjectRef targetRef)
 }
 
 void publishDeathAlertsAndTeamExperience(Object& killed,
-                                         const std::shared_ptr<Object>& actualKiller,
+                                         const Object* actualKiller,
                                          uint16_t experience)
 {
     for (const std::shared_ptr<Object>& listener : objectHandler().iterator())
     {
         if (!listener->isAlive()) continue;
 
-        if (actualKiller && listener != actualKiller && !listener->getTeam().hatesTeam(actualKiller->getTeam()) && listener->getTeam().hatesTeam(killed.getTeam()))
+        if (actualKiller != nullptr &&
+            listener->getObjRef() != actualKiller->getObjRef() &&
+            !listener->getTeam().hatesTeam(actualKiller->getTeam()) &&
+            listener->getTeam().hatesTeam(killed.getTeam()))
         {
             listener->giveExperience(experience, XP_TEAMKILL, false);
         }
@@ -218,18 +202,10 @@ void publishDeathAlertsAndTeamExperience(Object& killed,
 }
 }
 
-int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, const TEAM_REF attackerTeam,
-                   const std::shared_ptr<Object> &attacker, const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
-{
-    return this->damage(direction, damage, damagetype, attributionFor(attacker, attackerTeam),
-                        ignoreArmour, setDamageTime, ignoreInvictus);
-}
-
 int Object::damage(Facing direction, const IPair  damage, const DamageType damagetype, ObjectAttribution attacker,
                    const bool ignoreArmour, const bool setDamageTime, const bool ignoreInvictus)
 {
     bool do_feedback = (Ego::FeedbackType::None != config().hud_feedback.getValue());
-    const std::shared_ptr<Object> attackerHandle = resolveAttributionHandle(attacker);
 
     // Simply ignore damaging invincible targets.
     if(invictus && !ignoreInvictus)
@@ -293,7 +269,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
     {
         setMana(getMana() - FP8_TO_FLOAT(actual_damage));
         actual_damage -= std::max<int>(FLOAT_TO_FP8(getMana()) - actual_damage, 0);
-        updateLastAttacker(attackerHandle, false);
+        updateLastAttacker(attacker, false);
     }
 
     // Allow charging (Invert actual_damage to mana)
@@ -376,7 +352,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
                     }
                     else
                     {
-                        updateLastAttacker(attackerHandle, false );
+                        updateLastAttacker(attacker, false );
                     }
                 }
 
@@ -496,7 +472,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
     return actual_damage;
 }
 
-void Object::updateLastAttacker(const std::shared_ptr<Object> &attacker, bool healing)
+void Object::updateLastAttacker(ObjectAttribution attacker, bool healing)
 {
     // Don't alert the character too much if under constant fire
     if (0 != careful_timer) return;
@@ -513,11 +489,6 @@ void Object::updateLastAttacker(const std::shared_ptr<Object> &attacker, bool he
     careful_timer = CAREFULTIME;
 }
 
-bool Object::heal(const std::shared_ptr<Object> &healer, const UFP8_T amount, const bool ignoreInvincibility)
-{
-    return this->heal(attributionFor(healer), amount, ignoreInvincibility);
-}
-
 bool Object::heal(ObjectAttribution healer, const UFP8_T amount, const bool ignoreInvincibility)
 {
     //Don't heal dead and invincible stuff
@@ -532,10 +503,10 @@ bool Object::heal(ObjectAttribution healer, const UFP8_T amount, const bool igno
     }
 
     // Set alerts, but don't alert that we healed ourselves
-    const std::shared_ptr<Object> healerHandle = resolveAttributionHandle(healer);
-    if (healerHandle && this != healerHandle.get() && healerHandle->attachedto != _objRef && amount > HURTDAMAGE)
+    const Object* healerObject = resolveAttributionObject(healer);
+    if (healerObject != nullptr && this != healerObject && healerObject->attachedto != _objRef && amount > HURTDAMAGE)
     {
-        updateLastAttacker(healerHandle, true);
+        updateLastAttacker(healer, true);
     }
 
     return true;
@@ -544,11 +515,6 @@ bool Object::heal(ObjectAttribution healer, const UFP8_T amount, const bool igno
 bool Object::isAttacking() const
 {
     return inst.getCurrentAnimation() >= ACTION_UA && inst.getCurrentAnimation() <= ACTION_FD;
-}
-
-void Object::kill(const std::shared_ptr<Object> &originalKiller, bool ignoreInvincibility)
-{
-    this->kill(attributionFor(originalKiller), ignoreInvincibility);
 }
 
 void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
@@ -586,7 +552,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
         }
     }
 
-    std::shared_ptr<Object> actualKiller = resolveKillCreditRecipient(resolveAttributionHandle(originalKiller));
+    Object* actualKiller = resolveObject(resolveKillCreditRecipientRef(originalKiller));
 
     _isAlive = false;
 
@@ -608,7 +574,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
     uint16_t experience = getProfile()->getExperienceValue() + (this->experience * getProfile()->getExperienceExchangeRate());
 
     // distribute experience to the attacker
-    if (actualKiller)
+    if (actualKiller != nullptr)
     {
         publishKillerTarget(*this, getObjRef(), *actualKiller);
         awardDirectKillExperience(*this, *actualKiller, experience, !_hasBeenKilled);
@@ -636,7 +602,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
 
 bool Object::costMana(int amount, const ObjectRef killer)
 {
-    const std::shared_ptr<Object> &pkiller = activeModule().getObjectHandler()[killer];
+    const Object* pkiller = activeModule().getObjectHandler().get(killer);
 
     bool manaPaid  = false;
     int manaFinal = static_cast<int>(FLOAT_TO_FP8(getMana())) - amount;
@@ -652,7 +618,7 @@ bool Object::costMana(int amount, const ObjectRef killer)
 
             if (_currentLife <= 0 && config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
             {
-                kill(pkiller != nullptr ? pkiller : activeModule().getObjectHandler()[this->getObjRef()], false);
+                kill(pkiller != nullptr ? pkiller->attribution() : attribution(), false);
             }
 
             manaPaid = true;
@@ -674,7 +640,7 @@ bool Object::costMana(int amount, const ObjectRef killer)
         if ( getAttribute(Ego::Attribute::CHANNEL_LIFE) > 0 && mana_surplus > 0 )
         {
             // use some factor, divide by 2
-            heal(pkiller, mana_surplus / 2, true);
+            heal(pkiller != nullptr ? pkiller->attribution() : ObjectAttribution(), mana_surplus / 2, true);
         }
 
         manaPaid = true;

@@ -248,10 +248,10 @@ TEST_F(CombatIntegrationFixture, NonLethalPhysicalHit_SubtractsLifeSetsTimerAndA
     const float lifeBefore = victim->getLife();
 
     // base_damage == 512 (FP8 == 2.0 life points), > HURTDAMAGE (256), reduction 0.
-    // attacker == nullptr, attackerTeam == TEAM_NULL (not TEAM_DAMAGE), ignoreArmour == true.
+    // Team-only TEAM_NULL attribution, ignoreArmour == true.
     const int actual = victim->damage(Facing(0), IPair(512, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, /*ignoreArmour*/ true, /*setDamageTime*/ true,
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      /*ignoreArmour*/ true, /*setDamageTime*/ true,
                                       /*ignoreInvictus*/ false);
 
     EXPECT_EQ(actual, 512);
@@ -282,8 +282,8 @@ TEST_F(CombatIntegrationFixture, FreshCarefulTimerSuppressesFirstAttackAlert)
 
     const float lifeBefore = victim->getLife();
     const int actual = victim->damage(Facing(0), IPair(512, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, /*ignoreArmour*/ true, /*setDamageTime*/ true,
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      /*ignoreArmour*/ true, /*setDamageTime*/ true,
                                       /*ignoreInvictus*/ false);
 
     EXPECT_EQ(actual, 512);
@@ -309,8 +309,8 @@ TEST_F(CombatIntegrationFixture, LethalHit_KillsVictimAndSetsKilledAlert)
     // -> Object::kill(...). kill() iterates activeModule().getObjectHandler(), which is why this
     // path requires the live module bring-up.
     const int actual = victim->damage(Facing(0), IPair(12800, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, /*ignoreArmour*/ true, /*setDamageTime*/ true,
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      /*ignoreArmour*/ true, /*setDamageTime*/ true,
                                       /*ignoreInvictus*/ false);
 
     EXPECT_EQ(actual, 12800);
@@ -333,14 +333,14 @@ TEST_F(CombatIntegrationFixture, DeadVictimTakesNoFurtherDamage)
     ASSERT_NE(victim, nullptr);
 
     primeNoReduction(victim, DAMAGE_SLASH);
-    victim->damage(Facing(0), IPair(12800, 0), DAMAGE_SLASH, static_cast<TEAM_REF>(Team::TEAM_NULL),
-                   nullptr, true, true, false);
+    victim->damage(Facing(0), IPair(12800, 0), DAMAGE_SLASH,
+                   ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)), true, true, false);
     ASSERT_FALSE(victim->isAlive());
     const float lifeAfterDeath = victim->getLife();
 
     const int actual = victim->damage(Facing(0), IPair(512, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, true, true, false);
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      true, true, false);
 
     EXPECT_EQ(actual, 0);
     EXPECT_FALSE(victim->isAlive());
@@ -365,16 +365,16 @@ TEST_F(CombatIntegrationFixture, InvictusGuardSkipsDamageUnlessIgnored)
 
     // ignoreInvictus == false: `if (invictus && !ignoreInvictus) return 0` fires first.
     const int blocked = victim->damage(Facing(0), IPair(512, 0), DAMAGE_SLASH,
-                                       static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                       nullptr, true, true, /*ignoreInvictus*/ false);
+                                       ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                       true, true, /*ignoreInvictus*/ false);
     EXPECT_EQ(blocked, 0);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
     EXPECT_TRUE(victim->isAlive());
 
     // ignoreInvictus == true: the guard is bypassed and the damage lands normally.
     const int landed = victim->damage(Facing(0), IPair(512, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, true, true, /*ignoreInvictus*/ true);
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      true, true, /*ignoreInvictus*/ true);
     EXPECT_EQ(landed, 512);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore - 2.0f);
 }
@@ -390,8 +390,8 @@ TEST_F(CombatIntegrationFixture, ZeroDamageIsANoOp)
 
     // max_damage == |base| + |rand| == 0 -> `if (!isAlive() || 0 == max_damage) return 0`.
     const int actual = victim->damage(Facing(0), IPair(0, 0), DAMAGE_SLASH,
-                                      static_cast<TEAM_REF>(Team::TEAM_NULL),
-                                      nullptr, true, true, false);
+                                      ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_NULL)),
+                                      true, true, false);
 
     EXPECT_EQ(actual, 0);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
