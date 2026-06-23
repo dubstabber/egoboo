@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 916 ctest cases.
+  configures 917 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -37,10 +37,10 @@ procedural, and the Windows runtime path remains unstable under Wine.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,666 | Same scope as above |
-| Test files / lines | 50 / 23,989 | `egolib/tests`, source/header files only |
-| ctest cases | 916 | `ctest --test-dir build -N` |
-| ctest baseline | 916 / 916 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Runtime source lines | 128,677 | Same scope as above |
+| Test files / lines | 50 / 24,016 | `egolib/tests`, source/header files only |
+| ctest cases | 917 | `ctest --test-dir build -N` |
+| ctest baseline | 917 / 917 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 602 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 131 | Dominant intentional session seam |

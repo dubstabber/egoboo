@@ -45,13 +45,12 @@ ObjectRef resolveLowestAttachmentOrSelfRef(ObjectRef selfRef)
 
 bool spawnPoofForSelf(ObjectRef selfRef)
 {
-    const std::shared_ptr<Object> selfObject = resolveSpawnObjectHandle(selfRef);
-    if (selfObject == nullptr)
+    if (!isLiveSpawnObjectRef(selfRef))
     {
         return false;
     }
 
-    activeParticleHandler().spawnPoof(selfObject);
+    activeParticleHandler().spawnPoof(selfRef);
     return true;
 }
 

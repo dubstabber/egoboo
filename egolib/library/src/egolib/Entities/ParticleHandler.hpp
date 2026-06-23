@@ -168,9 +168,9 @@ public:
     std::shared_ptr<const Ego::Texture> getLightParticleTexture() override;
     std::shared_ptr<const Ego::Texture> getTransparentParticleTexture() override;
 
-    void spawnPoof(const std::shared_ptr<Object>& object) override;
+    void spawnPoof(ObjectRef objectRef) override;
 
-    void spawnDefencePing(const std::shared_ptr<Object>& object, const std::shared_ptr<Object>& attacker) override;
+    void spawnDefencePing(ObjectRef objectRef, ObjectRef attackerRef) override;
 
 private:
     std::shared_ptr<Ego::Particle> getFreeParticle(bool force);

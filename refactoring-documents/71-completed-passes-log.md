@@ -2861,3 +2861,25 @@ back-edge proof was required. Singleton metrics are now **602** `::get()` lines,
 **128,666**, test files/lines are **50 / 23,989**, and ctest configures **916** cases. Gates:
 `cmake --build build -j20` clean; focused inventory/object/script/import slice **271/271**; ctest
 **916/916**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 273 — Particle and enchant ref API boundary cleanup (2026-06-23)
+
+Continued the stable-first ownership-boundary cleanup into the first particle/enchant public API seam
+without changing script opcode APIs, source placement, CMake archive membership, or deeper
+particle/enchantment storage behavior. `IParticleHandler::spawnPoof(...)` and
+`spawnDefencePing(...)` now accept `ObjectRef` values, with `ParticleHandler` resolving live object handles
+internally and preserving the stale-attacker behavior that publishes `ObjectRef::Invalid`.
+
+`IEnchantable::addEnchant(...)` now accepts owner/spawner refs. `Object::addEnchant(...)` resolves the
+legacy weak-owner/spawner handles internally, while keeping `Enchantment`'s weak-pointer storage,
+retargeting, overlay spawn, and active-enchant insertion behavior unchanged. Script enchant helpers no
+longer carry temporary `shared_ptr<Object>` handles solely for role API calls, and the particle collision
+spawn-enchant path now passes the particle owner ref directly. Focused coverage pins stale defence-ping
+attacker refs and the legacy missing-spawner add-enchant behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **602** `::get()` lines, including **417**
+`EngineContext::get()` and **131** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,677**, test files/lines are **50 / 24,016**, and ctest configures **917** cases. Gates:
+`cmake --build build -j20` clean; focused particle/enchant/script/collision slice **227/227**; ctest
+**917/917**; validator `test.mod` 0/0; `git diff --check` clean.

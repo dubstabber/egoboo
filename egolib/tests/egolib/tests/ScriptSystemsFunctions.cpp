@@ -583,8 +583,8 @@ protected:
                                                                                             INVALID_EVE_REF);
             auto enchant = target->addEnchant(enchantRef,
                                               source->getProfileID().get(),
-                                              source,
-                                              source);
+                                              source->getObjRef(),
+                                              source->getObjRef());
             if (enchant)
             {
                 return enchant;

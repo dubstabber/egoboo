@@ -638,8 +638,8 @@ public:
     void randomizeLevelUpSeed();
 
     std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile,
-                                                 const std::shared_ptr<Object>& owner,
-                                                 const std::shared_ptr<Object>& spawner) override;
+                                                 ObjectRef ownerRef,
+                                                 ObjectRef spawnerRef) override;
 
     void removeEnchantsWithIDSZ(const IDSZ2& idsz) override;
 

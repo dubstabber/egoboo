@@ -82,6 +82,17 @@ ObjectRef poofOwner(const IScriptable& object)
     return object.getAIOwner();
 }
 
+std::shared_ptr<Object> tryObjectHandle(ObjectRef objectRef)
+{
+    GameModule* module = tryActiveModule();
+    if (module == nullptr || !module->getObjectHandler().exists(objectRef))
+    {
+        return nullptr;
+    }
+
+    return module->getObjectHandler()[objectRef];
+}
+
 void publishBlockedAlert(IScriptable& object, ObjectRef attackerRef)
 {
     object.addAIAlertBits(ALERTIF_BLOCKED);
@@ -367,8 +378,14 @@ std::shared_ptr<const Ego::Texture> ParticleHandler::getTransparentParticleTextu
     return _transparentParticleTexture.get_ptr();
 }
 
-void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
+void ParticleHandler::spawnPoof(ObjectRef objectRef)
 {
+    const std::shared_ptr<Object> object = tryObjectHandle(objectRef);
+    if (object == nullptr || object->isTerminated())
+    {
+        return;
+    }
+
     const IScriptable& scriptableObject = static_cast<const IScriptable&>(*object);
     Facing facing_z = object->getFacingZ();
     for (int cnt = 0; cnt < object->getProfile()->getParticlePoofAmount(); cnt++)
@@ -380,14 +397,20 @@ void ParticleHandler::spawnPoof(const std::shared_ptr<Object> &object)
     }
 }
 
-void ParticleHandler::spawnDefencePing(const std::shared_ptr<Object> &object, const std::shared_ptr<Object> &attacker)
+void ParticleHandler::spawnDefencePing(ObjectRef objectRef, ObjectRef attackerRef)
 {
+    const std::shared_ptr<Object> object = tryObjectHandle(objectRef);
+    if (object == nullptr || object->isTerminated())
+    {
+        return;
+    }
+
     if (0 != object->getDamageTimer()) return;
 
     IScriptable& scriptableObject = scriptable(*object);
     spawnGlobalParticle(object->getPosition(), object->getFacingZ(), LocalParticleProfileRef(PIP_DEFEND), 0);
 
     object->setDamageTimer(DEFENDTIME);
-    const ObjectRef attackerRef = attacker != nullptr && !attacker->isTerminated() ? attacker->getObjRef() : ObjectRef::Invalid;
-    publishBlockedAlert(scriptableObject, attackerRef);
+    const std::shared_ptr<Object> attacker = tryObjectHandle(attackerRef);
+    publishBlockedAlert(scriptableObject, attacker != nullptr && !attacker->isTerminated() ? attackerRef : ObjectRef::Invalid);
 }

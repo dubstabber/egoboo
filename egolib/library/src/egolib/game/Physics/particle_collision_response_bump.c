@@ -110,7 +110,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
         if (ppip->spawnenchant)
         {
             const std::shared_ptr<ObjectProfile> &spawnerProfile = activeProfileSystem().getProfile(pprt->getSpawnerProfile());
-            pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), objectWorld().getObjectHandler()[pprt->owner_ref], Object::INVALID_OBJECT);
+            pchr->addEnchant(spawnerProfile->getEnchantRef(), pprt->getSpawnerProfile().get(), pprt->owner_ref, ObjectRef::Invalid);
         }
 
         // Spawn particles - this has been modded to maximize the visual effect

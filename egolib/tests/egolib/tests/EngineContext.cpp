@@ -154,8 +154,8 @@ public:
     size_t getFreeCount() const override { return 0; }
     std::shared_ptr<const Ego::Texture> getLightParticleTexture() override { return nullptr; }
     std::shared_ptr<const Ego::Texture> getTransparentParticleTexture() override { return nullptr; }
-    void spawnPoof(const std::shared_ptr<Object>&) override {}
-    void spawnDefencePing(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&) override {}
+    void spawnPoof(ObjectRef) override {}
+    void spawnDefencePing(ObjectRef, ObjectRef) override {}
 
 protected:
     ParticleList::const_iterator beginActiveParticles() override { return _particles.cbegin(); }

@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 
-class Object;
 namespace Ego
 {
 class Particle;
@@ -121,8 +120,8 @@ public:
     virtual size_t getFreeCount() const = 0;
     virtual std::shared_ptr<const Ego::Texture> getLightParticleTexture() = 0;
     virtual std::shared_ptr<const Ego::Texture> getTransparentParticleTexture() = 0;
-    virtual void spawnPoof(const std::shared_ptr<Object>& object) = 0;
-    virtual void spawnDefencePing(const std::shared_ptr<Object>& object, const std::shared_ptr<Object>& attacker) = 0;
+    virtual void spawnPoof(ObjectRef objectRef) = 0;
+    virtual void spawnDefencePing(ObjectRef objectRef, ObjectRef attackerRef) = 0;
 
 protected:
     virtual ParticleList::const_iterator beginActiveParticles() = 0;

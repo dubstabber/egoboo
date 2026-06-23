@@ -160,7 +160,7 @@ protected:
             return nullptr;
         }
 
-        return target->addEnchant(enchantRef, spawner->getProfileID().get(), spawner, spawner);
+        return target->addEnchant(enchantRef, spawner->getProfileID().get(), spawner->getObjRef(), spawner->getObjRef());
     }
 
     std::shared_ptr<Object> makeFollower(int slot)
@@ -949,8 +949,8 @@ TEST_F(ObjectAccessorFixture, EnchantableRolePublishesAddDisenchantAndLastSpawne
                                                           "mp_data/globalobjects/potions/ppotion.obj/enchant.txt",
                                                           INVALID_EVE_REF),
                                                       spawner->getProfileID().get(),
-                                                      spawner,
-                                                      spawner);
+                                                      spawner->getObjRef(),
+                                                      spawner->getObjRef());
     ASSERT_NE(enchant, nullptr);
 
     EXPECT_TRUE(targetEnchantable.hasActiveEnchants());
@@ -958,6 +958,33 @@ TEST_F(ObjectAccessorFixture, EnchantableRolePublishesAddDisenchantAndLastSpawne
     EXPECT_EQ(spawnerEnchantable.getLastEnchantmentSpawned(), enchant);
     EXPECT_TRUE(targetEnchantable.disenchant());
     EXPECT_TRUE(enchant->isTerminated());
+}
+
+TEST_F(ObjectAccessorFixture, AddEnchantWithMissingSpawnerPreservesLegacyApplicationBehavior)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 349);
+    auto owner = makeObject(objectHandler, "mp_data/globalobjects/potions/ppotion.obj", 350);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    const ENC_REF enchantRef = EngineContext::get().profileSystem().loadEnchantProfile(
+        "mp_data/globalobjects/potions/ppotion.obj/enchant.txt",
+        INVALID_EVE_REF);
+    ASSERT_LT(enchantRef, ENCHANTPROFILES_MAX);
+
+    IEnchantable& targetEnchantable = *target;
+    IEnchantable& ownerEnchantable = *owner;
+
+    const auto returnedEnchant = targetEnchantable.addEnchant(enchantRef,
+                                                              owner->getProfileID().get(),
+                                                              owner->getObjRef(),
+                                                              ObjectRef::Invalid);
+
+    EXPECT_EQ(returnedEnchant, nullptr);
+    ASSERT_TRUE(targetEnchantable.hasActiveEnchants());
+    EXPECT_NE(targetEnchantable.getFirstActiveEnchant(), nullptr);
+    EXPECT_EQ(ownerEnchantable.getLastEnchantmentSpawned(), nullptr);
 }
 
 TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedState)

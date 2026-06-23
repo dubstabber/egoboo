@@ -192,7 +192,7 @@ bool Object::hasNotFullMana() const
     return isAlive() && getMana() <= getAttribute(Ego::Attribute::MAX_MANA) - 1.0f;
 }
 
-std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, const std::shared_ptr<Object>& owner, const std::shared_ptr<Object> &spawner)
+std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile, ObjectRef ownerRef, ObjectRef spawnerRef)
 {
     if (enchantProfile >= ENCHANTPROFILES_MAX) {
         Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid enchant profile ", enchantProfile, Log::EndOfEntry);
@@ -204,6 +204,9 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
         Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to add enchant with invalid spawner object profile ", spawnerProfile, Log::EndOfEntry);
         return nullptr;
     }
+
+    std::shared_ptr<Object> owner = activeModule().getObjectHandler()[ownerRef];
+    std::shared_ptr<Object> spawner = activeModule().getObjectHandler()[spawnerRef];
 
     std::shared_ptr<Ego::Enchantment> enchant = std::make_shared<Ego::Enchantment>(enchantmentProfile, ObjectProfileRef(spawnerProfile), owner);
     enchant->applyEnchantment(selfHandle(*this));

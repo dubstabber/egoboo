@@ -10,17 +10,11 @@ GameSessionContext& gameSession()
     return GameSessionContext::get();
 }
 
-struct OwnedObjectHandle
-{
-    ObjectRef ref = ObjectRef::Invalid;
-    std::shared_ptr<Object> object;
-};
-
 struct EnchantInvocationContext
 {
     IEnchantable* target = nullptr;
-    OwnedObjectHandle owner;
-    OwnedObjectHandle spawner;
+    ObjectRef ownerRef = ObjectRef::Invalid;
+    ObjectRef spawnerRef = ObjectRef::Invalid;
 };
 
 struct TargetCompatibilityContext
@@ -48,13 +42,6 @@ struct SelfRoleContextEnchant
 {
     IEnchantable* enchantable = nullptr;
 };
-
-bool resolveOwnedObjectHandle(ObjectRef objectRef, OwnedObjectHandle& handle)
-{
-    handle.ref = objectRef;
-    handle.object = tryObjectShared(objectRef);
-    return handle.object != nullptr;
-}
 
 TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self)
 {
@@ -89,9 +76,11 @@ bool resolveEnchantInvocationContext(const ai_state_t& self,
                                      EnchantInvocationContext& context)
 {
     context.target = tryEnchantable(targetRef);
+    context.ownerRef = self.owner;
+    context.spawnerRef = self.getSelf();
     return context.target != nullptr &&
-           resolveOwnedObjectHandle(self.owner, context.owner) &&
-           resolveOwnedObjectHandle(self.getSelf(), context.spawner);
+           hasLiveObjectRef(context.ownerRef) &&
+           hasLiveObjectRef(context.spawnerRef);
 }
 
 SelfRoleContextEnchant makeSelfRoleContextEnchant(const ai_state_t& self)
@@ -238,8 +227,8 @@ uint8_t scr_EnchantTarget( script_state_t& state, ai_state_t& self )
 
     return enchantContext.target->addEnchant(selfContext.enchantRef,
                                              selfContext.profileRef.get(),
-                                             enchantContext.owner.object,
-                                             enchantContext.spawner.object) != nullptr;
+                                             enchantContext.ownerRef,
+                                             enchantContext.spawnerRef) != nullptr;
 }
 
 
@@ -263,8 +252,8 @@ uint8_t scr_EnchantChild( script_state_t& state, ai_state_t& self )
 
     return enchantContext.target->addEnchant(selfContext.enchantRef,
                                              selfContext.profileRef.get(),
-                                             enchantContext.owner.object,
-                                             enchantContext.spawner.object) != nullptr;
+                                             enchantContext.ownerRef,
+                                             enchantContext.spawnerRef) != nullptr;
 }
 
 

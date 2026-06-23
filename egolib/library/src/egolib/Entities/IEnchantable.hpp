@@ -1,10 +1,8 @@
 #pragma once
 
-#include "egolib/typedef.h"  // ENC_REF, PRO_REF
+#include "egolib/typedef.h"  // ENC_REF, ObjectRef, PRO_REF
 
 #include <memory>
-
-class Object;
 
 namespace Ego
 {
@@ -27,8 +25,8 @@ public:
     *   pointer to the enchant that was added (or nullptr if it failed)
     **/
     virtual std::shared_ptr<Ego::Enchantment> addEnchant(ENC_REF enchantProfile, PRO_REF spawnerProfile,
-                                                         const std::shared_ptr<Object>& owner,
-                                                         const std::shared_ptr<Object>& spawner) = 0;
+                                                         ObjectRef ownerRef,
+                                                         ObjectRef spawnerRef) = 0;
     virtual bool hasActiveEnchants() const = 0;
     virtual std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const = 0;
     /**

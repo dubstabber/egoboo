@@ -140,9 +140,9 @@ public:
         return nullptr;
     }
 
-    void spawnPoof(const std::shared_ptr<Object>&) override {}
+    void spawnPoof(ObjectRef) override {}
 
-    void spawnDefencePing(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&) override {}
+    void spawnDefencePing(ObjectRef, ObjectRef) override {}
 
     void addActiveParticle(const std::shared_ptr<Ego::Particle>& particle)
     {
@@ -359,14 +359,14 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker
     defender->setAILastAttacker(ObjectRef::Invalid);
     defender->clearAIAlertBits(ALERTIF_BLOCKED);
 
-    EngineContext::get().particleHandler().spawnDefencePing(defender, attacker);
+    EngineContext::get().particleHandler().spawnDefencePing(defender->getObjRef(), attacker->getObjRef());
 
     EXPECT_TRUE(defender->hasAnyAIAlertBits(ALERTIF_BLOCKED));
     EXPECT_EQ(defender->getAILastAttacker(), attacker->getObjRef());
     EXPECT_EQ(defender->getDamageTimer(), ParticleHandler::DEFENDTIME);
 }
 
-TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerIsMissing)
+TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerRefIsStale)
 {
     beginActiveTestModule();
     auto& session = GameSessionContext::get();
@@ -377,7 +377,7 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerIsMiss
     defender->setAILastAttacker(ObjectRef(77));
     defender->clearAIAlertBits(ALERTIF_BLOCKED);
 
-    EngineContext::get().particleHandler().spawnDefencePing(defender, nullptr);
+    EngineContext::get().particleHandler().spawnDefencePing(defender->getObjRef(), ObjectRef(77));
 
     EXPECT_TRUE(defender->hasAnyAIAlertBits(ALERTIF_BLOCKED));
     EXPECT_EQ(defender->getAILastAttacker(), ObjectRef::Invalid);
