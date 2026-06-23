@@ -525,11 +525,11 @@ void character_swipe( ObjectRef ichr, slot_t slot )
                             particle->phys.weight     = pchr->phys.weight;
                             particle->phys.bumpdampen = pweapon->phys.bumpdampen;
 
-                            particle->placeAtVertex(pweapon, spawn_vrt_offset);
+                            particle->placeAtVertex(iweapon, spawn_vrt_offset);
                         }
                         else if ( particle->getProfile()->startontarget && particle->hasValidTarget() )
                         {
-                            particle->placeAtVertex(particle->getTarget(), spawn_vrt_offset);
+                            particle->placeAtVertex(particle->getTargetID(), spawn_vrt_offset);
 
                             // Correct Z spacing base, but nothing else...
                             tmp_pos[kZ] += particle->getProfile()->getSpawnPositionOffsetZ().base;

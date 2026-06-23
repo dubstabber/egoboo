@@ -81,13 +81,12 @@ bool tryAttachParticleToResolvedSelf(const std::shared_ptr<Ego::Particle>& parti
                                      int xOffset,
                                      int yOffset)
 {
-    const std::shared_ptr<Object> selfObject = resolveSpawnObjectHandle(selfRef);
-    if (particle == nullptr || selfObject == nullptr)
+    if (particle == nullptr || !isLiveSpawnObjectRef(selfRef))
     {
         return false;
     }
 
-    particle->placeAtVertex(selfObject, vertex);
+    particle->placeAtVertex(selfRef, vertex);
     particle->attach(ObjectRef::Invalid);
 
     Ego::Vector3f adjustedPosition = particle->getPosition();

@@ -993,8 +993,7 @@ TEST_F(ScriptStateFunctionsFixture, AttachedParticleHelpersUseResolvedOwnerFallb
     particle = latestSpawnedParticle();
     ASSERT_NE(particle, nullptr);
     EXPECT_EQ(particle->owner_ref, holder->getObjRef());
-    ASSERT_NE(particle->getTarget(), nullptr);
-    EXPECT_EQ(particle->getTarget()->getObjRef(), target->getObjRef());
+    EXPECT_EQ(particle->getTargetID(), target->getObjRef());
 
     clearParticles();
     EXPECT_TRUE(scr_SpawnExactParticleEndSpawn(state, self));

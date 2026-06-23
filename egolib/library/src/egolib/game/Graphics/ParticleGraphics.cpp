@@ -171,7 +171,8 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     }
     else if (pprt->isAttached())
     {
-        if (chr_matrix_valid(pprt->getAttachedObject().get()))
+        const Object* attachedObject = GameSessionContext::get().tryObject(pprt->getAttachedObjectID());
+        if (attachedObject != nullptr && chr_matrix_valid(attachedObject))
         {
             // Use the character matrix to orient the particle.
             // Assume that the particle "up" is in the z-direction in the object's
@@ -179,10 +180,10 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
 
             switch (inst.orientation)
             {
-                case prt_ori_t::ORIENTATION_X: vup = mat_getChrForward(pprt->getAttachedObject()->getMatrix()); break;
-                case prt_ori_t::ORIENTATION_Y: vup = mat_getChrRight(pprt->getAttachedObject()->getMatrix());   break;
+                case prt_ori_t::ORIENTATION_X: vup = mat_getChrForward(attachedObject->getMatrix()); break;
+                case prt_ori_t::ORIENTATION_Y: vup = mat_getChrRight(attachedObject->getMatrix());   break;
                 default:
-                case prt_ori_t::ORIENTATION_Z: vup = mat_getChrUp(pprt->getAttachedObject()->getMatrix());      break;
+                case prt_ori_t::ORIENTATION_Z: vup = mat_getChrUp(attachedObject->getMatrix());      break;
             }
 
             vup = normalize(vup).get_vector();

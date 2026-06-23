@@ -426,7 +426,7 @@ void disaffirm_attached_particles(ObjectRef objectRef) {
 int number_of_attached_particles(ObjectRef objectRef) {
     int cnt = 0;
     for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
-		if (particle->isAttached() && !particle->isTerminated() && particle->getAttachedObject()->getObjRef() == objectRef) {
+        if (particle->isAttached() && !particle->isTerminated() && particle->getAttachedObjectID() == objectRef) {
             cnt++;
         }
     }
@@ -454,7 +454,7 @@ int reaffirm_attached_particles(ObjectRef objectRef) {
 			object->getTeam().toRef(), objectRef, ParticleRef::Invalid, number_attached);
 
         if (particle) {
-            particle->placeAtVertex(object, particle->attachedto_vrt_off);
+            particle->placeAtVertex(objectRef, particle->attachedto_vrt_off);
             number_added++;
             number_attached++;
         }

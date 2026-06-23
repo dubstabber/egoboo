@@ -176,7 +176,7 @@ int spawn_bump_particles(ObjectRef character, const ParticleRef particle)
                 {
                     if(particle->isTerminated()) continue;
 
-                    if (pchr != particle->getAttachedObject().get()) continue;
+                    if (pchr->getObjRef() != particle->getAttachedObjectID()) continue;
 
                     if (particle->attachedto_vrt_off < vertices)
                     {

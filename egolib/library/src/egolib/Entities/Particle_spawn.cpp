@@ -528,7 +528,7 @@ bool Particle::attach(const ObjectRef attach)
 
     _attachedTo = attach;
 
-    if(!placeAtVertex(pchr, attachedto_vrt_off)) {
+    if(!placeAtVertex(attach, attachedto_vrt_off)) {
         return false;
     }
 
@@ -541,8 +541,14 @@ bool Particle::attach(const ObjectRef attach)
     return true;
 }
 
-bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_offset)
+bool Particle::placeAtVertex(ObjectRef objectRef, int vertex_offset)
 {
+    Object* object = activeModule().getObjectHandler().get(objectRef);
+    if (object == nullptr) {
+        requestTerminate();
+        return false;
+    }
+
     int vertex;
     Vector4f point[1], nupoint[1];
 
@@ -553,13 +559,13 @@ bool Particle::placeAtVertex(const std::shared_ptr<Object> &object, int vertex_o
     }
 
     // Do we have a matrix???
-    if ( !chr_matrix_valid(object.get()) )
+    if ( !chr_matrix_valid(object) )
     {
         chr_update_matrix(*object, true);
     }
 
     // Do we have a matrix???
-    if ( chr_matrix_valid(object.get()) )
+    if ( chr_matrix_valid(object) )
     {
         // Transform the weapon vertex_offset from model to world space
 

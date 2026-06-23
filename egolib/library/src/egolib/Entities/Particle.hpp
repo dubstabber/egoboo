@@ -164,15 +164,9 @@ public:
 
     /**
     * @return
-    *   get the target of this Particle (or nullptr if no valid target)
+    *   get the stored ID of the Object that this Particle is targeting
     **/
-    const std::shared_ptr<Object>& getTarget() const;
-
-    /**
-    * @return
-    *   get the Object that this Particle is currently attached to (or nullptr if not attached)
-    **/
-    const std::shared_ptr<Object>& getAttachedObject() const;
+    ObjectRef getTargetID() const { return _target; }
 
     /**
     * @return
@@ -192,7 +186,7 @@ public:
     /// @author ZZ
     /// @details This function sets one particle's position to be attached to a character.
     ///    It will kill the particle if the character is no longer around
-    bool placeAtVertex(const std::shared_ptr<Object> &object, int vertex_offset);
+    bool placeAtVertex(ObjectRef objectRef, int vertex_offset);
 
     /**
     * @return

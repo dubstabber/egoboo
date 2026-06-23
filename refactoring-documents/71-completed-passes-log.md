@@ -2930,3 +2930,24 @@ back-edge proof was required. Runtime source lines are now **128,724**, test fil
 module-spawn/player/import slice **51/51**; ctest **919/919**; validator `test.mod` 0/0; full validator at
 the known legacy content baseline (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing
 content errors); `git diff --check` clean.
+
+### Pass 277 — Particle target and attachment ref API cleanup (2026-06-23)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup inside the particle runtime without
+changing script opcode APIs, source placement, CMake archive membership, object ownership, or particle
+storage. `Particle` no longer exposes public `shared_ptr<Object>` accessors for its target or attached
+object, and `Particle::placeAtVertex(...)` now takes an `ObjectRef`, resolving the concrete object inside
+the particle implementation only when vertex/matrix state is actually needed.
+
+Production callers in particle update/combat, particle physics, attached-particle reaffirmation, swipe
+attack particle spawning, particle debug drawing, and script particle spawning now pass or compare refs
+instead of carrying object handles solely for particle API calls. Target validity preserves the former
+object-handler lookup behavior, including refs that still resolve through the handler.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Gates: `cmake --build build -j20` clean; focused
+particle/collision/module-update/script slice **29/29**; ctest **919/919**; validator `test.mod` 0/0;
+`git diff --check` clean. A full validator run completed with **42 modules, 25 warnings, 230 errors**,
+which does not match the current documented baseline (**42 modules, 10 warnings, 245 errors**) and should
+be reconciled as a separate validator-baseline audit; this pass did not touch validator or content-loading
+code.

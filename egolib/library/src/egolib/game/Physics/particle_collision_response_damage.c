@@ -512,7 +512,8 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
     float knockbackFactor = 1.0f;
 
     //If we are attached to a Object then the attacker's Might can increase knockback
-    std::shared_ptr<Object> attacker = pdata.pprt->getAttachedObject();
+    const std::shared_ptr<Object> attachedObject = objectWorld().getObjectHandler()[pdata.pprt->getAttachedObjectID()];
+    std::shared_ptr<Object> attacker = attachedObject;
     if (attacker)
     {
         //If we are actually a weapon, use the weapon holder's strength
@@ -535,7 +536,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
         //Telekinetic Staff perk can give +500% knockback
         const std::shared_ptr<Object>& powner = objectWorld().getObjectHandler()[pdata.pprt->owner_ref];
         if(powner != nullptr && powner->hasPerk(Ego::Perks::TELEKINETIC_STAFF) &&
-            pdata.pprt->getAttachedObject()->getProfile()->getIDSZ(IDSZ_PARENT).equals('S','T','A','F')) {
+            attachedObject->getProfile()->getIDSZ(IDSZ_PARENT).equals('S','T','A','F')) {
 
             //+3% chance per owner Intellect and -1% per target Might
             float chance = attacker->getAttribute(Ego::Attribute::INTELLECT) * 0.03f - pdata.pchr->getAttribute(Ego::Attribute::MIGHT)*0.01f;

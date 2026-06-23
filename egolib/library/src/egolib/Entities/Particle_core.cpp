@@ -94,11 +94,6 @@ bool Particle::isAttached() const
     return activeModule().getObjectHandler().exists(_attachedTo);
 }
 
-const std::shared_ptr<Object>& Particle::getAttachedObject() const
-{
-    return activeModule().getObjectHandler()[_attachedTo];
-}
-
 BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure)
 {
     BIT_FIELD stoppedby = MAPFX_IMPASS;
@@ -234,7 +229,7 @@ bool Particle::isHidden() const
 
 bool Particle::hasValidTarget() const
 {
-    return getTarget() != nullptr;
+    return activeModule().getObjectHandler().get(_target) != nullptr;
 }
 
 PIP_REF Particle::getProfileID() const
@@ -261,11 +256,6 @@ void Particle::playSound(int8_t sound)
         GlobalSound globalSound = static_cast<GlobalSound>(sound);
         audioSystem().playSound(getPosition(), audioSystem().getGlobalSound(globalSound));
     }
-}
-
-const std::shared_ptr<Object>& Particle::getTarget() const
-{
-    return activeModule().getObjectHandler()[_target];
 }
 
 bool Particle::isOverWater() const

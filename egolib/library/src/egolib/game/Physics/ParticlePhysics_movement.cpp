@@ -220,7 +220,8 @@ void ParticlePhysics::updateMovement()
         }
         else if (_particle.hasValidTarget())
         {
-            const std::shared_ptr<Object> &ptarget = _particle.getTarget();
+            const Object* ptarget = objectWorld().getObjectHandler().get(_particle.getTargetID());
+            if (ptarget == nullptr) return;
 
             // face your target
             _particle.facing = Facing(vec_to_facing(ptarget->getPosX() - tmp_pos.x(), ptarget->getPosY() - tmp_pos.y()));

@@ -50,7 +50,7 @@ void Particle::update()
     if(_attachedTo != ObjectRef::Invalid) {
         if(isAttached()) {
             //keep particles with whomever they are attached to
-            placeAtVertex(getAttachedObject(), attachedto_vrt_off);
+            placeAtVertex(_attachedTo, attachedto_vrt_off);
         }
         else {
             _attachedTo = ObjectRef::Invalid;

@@ -51,7 +51,12 @@ void Particle::updateAttachedDamage()
     // we must be attached to something
     if (!isAttached()) return;
 
-    const std::shared_ptr<Object> &attachedObject = getAttachedObject();
+    Object* attachedObject = activeModule().getObjectHandler().get(_attachedTo);
+    if (attachedObject == nullptr)
+    {
+        return;
+    }
+
     IDamageable& damageable = *attachedObject;
     const IDamageable& constDamageable = *attachedObject;
 

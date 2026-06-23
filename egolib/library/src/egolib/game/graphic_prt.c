@@ -23,6 +23,7 @@
 
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 
 #include "egolib/game/renderer_3d.h"
@@ -494,7 +495,12 @@ void ParticleGraphicsRenderer::prt_draw_attached_point(const std::shared_ptr<Ego
         return;
     }
 
-    draw_one_attachment_point(*particle->getAttachedObject(), particle->attachedto_vrt_off);
+    const Object* object = GameSessionContext::get().tryObject(particle->getAttachedObjectID());
+    if (object == nullptr) {
+        return;
+    }
+
+    draw_one_attachment_point(*object, particle->attachedto_vrt_off);
 }
 
 void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Particle>& particle)

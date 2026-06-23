@@ -70,7 +70,9 @@ void ParticlePhysics::updateHoming()
     if (_particle.isAttached() || !_particle.hasValidTarget()) return;
 
     // grab a pointer to the target
-    const std::shared_ptr<Object> &ptarget = _particle.getTarget();
+    Object* ptarget = objectWorld().getObjectHandler().get(_particle.getTargetID());
+    if (ptarget == nullptr) return;
+
     const IPhysical& targetPhysical = physical(*ptarget);
 
     Vector3f vdiff = ptarget->getPosition() - _particle.getPosition();
@@ -233,7 +235,7 @@ void ParticlePhysics::updateGravity()
             }
 
             //Do not affect the object we are attached to
-            if(_particle.getAttachedObject().get() == object) continue;
+            if(_particle.getAttachedObjectID() == objectRef) continue;
 
             //Allow friendly fire?
             if(!_particle.getProfile()->hateonly && !particleTeam.hatesTeam(object->getTeam())) continue;
