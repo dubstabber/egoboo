@@ -99,7 +99,7 @@ Large non-runtime files still exist and are intentional test/tool hotspots:
 | File | Lines |
 | --- | ---: |
 | `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,211 |
-| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,844 |
+| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,871 |
 | `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,915 |
 | `tools/egoboo-content-validator.cpp` | 1,550 |
 | `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,256 |

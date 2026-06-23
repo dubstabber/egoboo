@@ -1,6 +1,6 @@
 # Refactoring Roadmap
 
-Snapshot date: 2026-06-22. This is the forward plan only. Completed-pass history
+Snapshot date: 2026-06-23. This is the forward plan only. Completed-pass history
 lives in `71-completed-passes-log.md`; current metrics live in
 `CODEBASE-HEALTH-STATUS.md`.
 
@@ -26,8 +26,9 @@ Superseded historical plans:
 
 `Object.hpp` is now below 1,000 lines, but it is still the broadest runtime
 interface. The useful next work is not mechanical line trimming; it is reducing
-multi-role call surfaces and keeping callers on the 18 existing role interfaces
-where those interfaces express the actual dependency.
+multi-role call surfaces and keeping callers on existing role interfaces where
+those interfaces express the actual dependency. Use `CODEBASE-HEALTH-STATUS.md`
+for the current role-interface count.
 
 Good candidates:
 

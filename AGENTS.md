@@ -119,20 +119,8 @@ virtual paths (`mp_data`, `mp_modules`, `mp_objects`).
 
 ## Link Layout
 
-`egolib` builds as nine static archives. Live archive member counts from the
-current build:
-
-| Archive | Members | Role |
-| --- | ---: | --- |
-| `egolib-foundation-base` | 162 | Dependency-closed base |
-| `egolib-physics` | 6 | Collision/physics nucleus |
-| `egolib-renderer` | 28 | SDL windowing and OpenGL backend |
-| `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 76 | Core gameplay remainder |
-| `egolib-game-graphics` | 21 | 3D scene rendering layer |
-| `egolib-hud-widgets` | 6 | Game-coupled HUD widgets |
-| `egolib-scriptvm` | 33 | EgoScript VM and dispatch family |
-| `egolib-gamestates` | 19 | Concrete game states |
+`egolib` builds as nine static archives. Current member counts and role notes
+live in `refactoring-documents/CODEBASE-HEALTH-STATUS.md`.
 
 Intended dependency direction:
 
@@ -149,24 +137,18 @@ headers to a layer source list where they can become stray `.h.o` members.
 
 ## Global State
 
-The former mutable globals are retired from active runtime code:
-
-- `_gameEngine`: 0 active references; engine access routes through
-  `EngineContext`.
-- `_currentModule`: 0 active references; module access routes through
-  `GameSessionContext` and `GameModule` accessors.
-- `update_wld`: variable removed; four text/comment/debug-label artifacts remain.
-
-Current coupling hotspot: about 623 `::get()` call sites in `egolib/library/src`,
-mostly intentional context seams (`EngineContext::get()` and
-`GameSessionContext::get()`). Avoid adding new hidden global dependencies.
+The former mutable globals are retired from active runtime code. Engine access
+routes through `EngineContext`, and module/session access routes through
+`GameSessionContext` and `GameModule` surfaces. The remaining coupling hotspot
+is service-locator access through `::get()` call sites; use
+`CODEBASE-HEALTH-STATUS.md` for the current count and avoid adding new hidden
+global dependencies.
 
 ## Hotspots
 
-Production runtime files are currently below 1,000 lines. The largest runtime
-file is `egolib/library/src/egolib/Entities/Object.hpp` at 971 lines. Do not
-chase file size mechanically; the remaining risk is interface breadth and
-cross-subsystem coupling.
+Production runtime files are currently below 1,000 lines. Do not chase file size
+mechanically; the remaining risk is interface breadth and cross-subsystem
+coupling. Use `CODEBASE-HEALTH-STATUS.md` for the current largest-file list.
 
 Large non-runtime files still exist in tests and tools, including
 `ScriptSystemsFunctions.cpp`, `ObjectAccessors.cpp`, `ScriptStateFunctions.cpp`,

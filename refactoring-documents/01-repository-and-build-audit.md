@@ -1,6 +1,6 @@
 # Repository And Build Audit
 
-Current audit date: 2026-06-22. Volatile quantitative metrics live in
+Current audit date: 2026-06-23. Volatile quantitative metrics live in
 `CODEBASE-HEALTH-STATUS.md`; this document records repository shape and build
 policy.
 
@@ -113,10 +113,9 @@ superproject build because the top-level `idlib/` path is passed in by CMake.
 
 ## Current Tooling Health
 
-- `ctest --test-dir build -N` configures 897 tests in the current build tree.
-- The full test baseline recorded by recent refactoring passes is 897/897.
+- Current ctest count and green baseline live in `CODEBASE-HEALTH-STATUS.md`.
 - `egoboo-content-validator` is integrated into the build and has a known
-  full-content baseline of 42 modules, 10 warnings, 245 pre-existing errors.
+  full-content baseline recorded in `06-validator-baseline.md`.
 - `utilities/` contains legacy helper tools with mixed maintenance status; they
   are not default-build verification surfaces.
 

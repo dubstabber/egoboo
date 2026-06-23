@@ -99,7 +99,13 @@ The old secondary session globals (`clock_chr_stat`, `clock_enc_stat`, `override
 
 ### Remaining coupling risk
 
-The raw-global boundary is gone, but coupling was migrated, not eliminated. Subsystems now reach into session/engine context singletons (`GameSessionContext::get()`, `EngineContext::get()`) rather than `_currentModule` directly, and the broader singleton count is about 615 `::get()` call sites in `egolib/library/src` (428 `EngineContext::get()`, 133 `GameSessionContext::get()`). A service-interface layer is partially in place — 15 services are now seamed through `EngineContext` (`IAudioSystem`, `ICameraSystem`, `IInputSystem`, `IPerkHandler`, `IImageManager`, `IFontManager`, `IGraphicsSystem`, `ITextureManager`, `IParticleHandler`, `IProfileSystem`, `IGFX`, `IBillboardSystem`, `ITextureAtlasManager`, plus config and logging) — but the context wrappers remain the dominant DIP boundary until the remaining direct singleton calls migrate onto them (roadmap T1.3).
+The raw-global boundary is gone, but coupling was migrated, not eliminated.
+Subsystems now reach into session/engine context singletons
+(`GameSessionContext::get()`, `EngineContext::get()`) rather than
+`_currentModule` directly. A service-interface layer is partially in place for
+engine-owned services, but the context wrappers remain the dominant dependency
+boundary. Use `CODEBASE-HEALTH-STATUS.md` for the current singleton counts and
+service-coupling metrics.
 
 ## 7. Module runtime
 
@@ -199,7 +205,10 @@ The result is not merely mixed language style. It is mixed ownership style:
 
 ### Pain point 1: singleton-mediated dependency graph
 
-Raw-global reach into `_currentModule` / `_gameEngine` is gone, but about 615 `::get()` call sites still flatten the effective dependency graph. Most "dependencies" in `egolib` are implicit access to context or concrete singletons, not declared constructor parameters.
+Raw-global reach into `_currentModule` / `_gameEngine` is gone, but hundreds of
+`::get()` call sites still flatten the effective dependency graph. Most
+"dependencies" in `egolib` are implicit access to context or concrete
+singletons, not declared constructor parameters.
 
 ### Pain point 2: initialization order as architecture
 

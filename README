@@ -1,2 +1,6 @@
-Egoboo is a working cool 3D dungeon crawling game in the spirit of nethack.
-Currently it is supported by Windows, Linux and Mac.
+Current project overview: README.md
+Current Linux build/run guide: doc/build-linux.md
+Current Windows cross-build guide: doc/build-windows.md
+
+This legacy root README is intentionally a pointer so platform status does not
+drift from the maintained Markdown docs.

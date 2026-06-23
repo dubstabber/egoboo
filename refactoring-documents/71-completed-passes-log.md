@@ -2883,3 +2883,11 @@ back-edge proof was required. Singleton metrics remain **602** `::get()` lines, 
 **128,677**, test files/lines are **50 / 24,016**, and ctest configures **917** cases. Gates:
 `cmake --build build -j20` clean; focused particle/enchant/script/collision slice **227/227**; ctest
 **917/917**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 274 — Documentation compaction refresh (2026-06-23)
+
+Compacted the maintained docs without changing code: `README.md` now stays a short entry point, root
+`README` is a pointer, Linux/Windows build docs avoid duplicated validator/platform detail, and `AGENTS.md`
+plus current refactoring docs defer volatile metrics to `CODEBASE-HEALTH-STATUS.md`. Refreshed stale
+current-state references for ctest count, singleton counts, archive/member counts, and large test-file
+metrics. Gates: `git diff --check` clean; `ctest --test-dir build -N` still reports **917** cases.

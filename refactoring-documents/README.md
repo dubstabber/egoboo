@@ -1,6 +1,6 @@
 # Refactoring Documents
 
-Architecture and refactoring reference for the current Egoboo workspace. Originally opened 2026-04-12. Index last rewritten 2026-04-18 as part of the documentation consolidation pass (`70-documentation-consolidation.md`); refreshed 2026-06-22 after the documentation cleanup and the latest file-split/model-loader passes.
+Architecture and refactoring reference for the current Egoboo workspace. Originally opened 2026-04-12. Index last rewritten 2026-04-18 as part of the documentation consolidation pass (`70-documentation-consolidation.md`); refreshed 2026-06-23 after the documentation compaction pass.
 
 This directory has three kinds of documents: **reference** (how the project is shaped today and how to change it safely), **roadmap** (what is outstanding), and **history** (what has already landed).
 

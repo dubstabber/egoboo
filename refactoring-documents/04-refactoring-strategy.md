@@ -86,7 +86,10 @@ Recommended representative modules:
 
 ## Phase 2: runtime context extraction
 
-Introduce explicit context objects without changing behavior yet.
+Introduce explicit context objects without changing behavior yet. The first
+version of this phase has landed: active engine access goes through
+`EngineContext`, and active module/session access goes through
+`GameSessionContext` and `GameModule` surfaces.
 
 Minimum targets:
 
@@ -104,8 +107,10 @@ Responsibilities to move behind explicit interfaces:
 
 Success criteria:
 
-- new code does not read `_currentModule` or `_gameEngine` directly
-- existing global access is wrapped and gradually reduced
+- new code does not reintroduce `_currentModule` or `_gameEngine`
+- context access is gradually narrowed toward installed service interfaces
+- new subsystem code declares dependencies where practical instead of adding
+  hidden singleton access
 
 ## Phase 3: split engine services from gameplay services
 
@@ -204,18 +209,19 @@ Only after dual-load parity and better tests:
 
 ## 4. First concrete refactor tasks
 
-These are high-value early tasks that do not require a full rewrite.
+The early setup tasks have mostly landed: current build docs live under `doc/`,
+the validator is integrated, and the former runtime globals are retired from
+active code. Current high-value work that still fits this strategy:
 
-1. Add a `docs/build-linux.md` or equivalent canonical build document.
-2. Add a content validation executable that loads module metadata and reports parse errors without launching the full game.
-3. Introduce a wrapper around `_currentModule` reads for newly touched code.
-4. Split `GameModule` loading into named phases instead of one constructor-heavy path.
-5. Split `ObjectProfile` loading into file-specific loaders and validation helpers.
-6. Convert hardcoded loader conventions into manifest-building helpers internally, even if the external content format remains legacy for now.
-7. Add golden-file tests for `spawn.txt` parsing.
-8. Add golden-file tests for `menu.txt` parsing.
-9. Capture a small representative set of module load logs as baseline artifacts.
-10. Start recording architecture decisions in versioned ADR-style markdown documents.
+1. Keep `GameModule` loading moving toward named phases and explicit inputs.
+2. Continue splitting object profile/model/script loading only when tests cover
+   the behavior being moved.
+3. Convert hardcoded loader conventions into internal manifest-building helpers
+   without changing the external legacy content format yet.
+4. Add focused tests around module load, model load, script fallback, and
+   high-risk state transitions before changing those paths.
+5. Keep architecture notes compact: append small pass entries to
+   `71-completed-passes-log.md` unless a new boundary needs its own document.
 
 ## 5. Areas to defer
 
