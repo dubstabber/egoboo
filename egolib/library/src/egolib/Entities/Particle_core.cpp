@@ -288,11 +288,11 @@ void Particle::setHoming(bool homing)
     _isHoming = homing;
 }
 
-bool Particle::hasCollided(const std::shared_ptr<Object> &object) const
+bool Particle::hasCollided(ObjectRef objectRef) const
 {
     for(const ObjectRef ref : _collidedObjects)
     {
-        if(ref == object->getObjRef())
+        if(ref == objectRef)
         {
             return true;
         }
@@ -300,10 +300,11 @@ bool Particle::hasCollided(const std::shared_ptr<Object> &object) const
     return false;
 }
 
-void Particle::addCollision(const std::shared_ptr<Object> &object)
+void Particle::addCollision(ObjectRef objectRef)
 {
     if(isTerminated()) return;
-    _collidedObjects.push_front(object->getObjRef());
+    if(objectRef == ObjectRef::Invalid) return;
+    _collidedObjects.push_front(objectRef);
 }
 
 bool Particle::isEternal() const

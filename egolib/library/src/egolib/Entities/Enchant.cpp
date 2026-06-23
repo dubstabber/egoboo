@@ -487,11 +487,6 @@ std::shared_ptr<Object> Enchantment::getTarget() const
     return _target.lock();   
 }
 
-std::shared_ptr<Object> Enchantment::getOwner() const
-{
-    return _owner.lock();
-}
-
 ObjectRef Enchantment::getOwnerRef() const
 {
     std::shared_ptr<Object> owner = _owner.lock();
@@ -499,6 +494,24 @@ ObjectRef Enchantment::getOwnerRef() const
         return ObjectRef::Invalid;
     }
     return owner->getObjRef();
+}
+
+ObjectAttribution Enchantment::getOwnerAttribution() const
+{
+    std::shared_ptr<Object> owner = _owner.lock();
+    if(!owner || owner->isTerminated()) {
+        return ObjectAttribution();
+    }
+    return owner->attribution();
+}
+
+bool Enchantment::payOwnerMissileTreatmentCost(ObjectRef killerRef) const
+{
+    std::shared_ptr<Object> owner = _owner.lock();
+    if(!owner || owner->isTerminated()) {
+        return false;
+    }
+    return owner->costMana(static_cast<int>(getMissileTreatmentCost()), killerRef);
 }
 
 void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain, float targetManaDrain, float targetLifeDrain)

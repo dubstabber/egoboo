@@ -242,14 +242,14 @@ public:
     * @return
     *   true if this Particle has previously collided with the specified Object
     **/
-    bool hasCollided(const std::shared_ptr<Object> &object) const;  
+    bool hasCollided(ObjectRef objectRef) const;
 
     /**
     * @brief
     *   Notify that this Particle has collided with the specified Object. It cannot
     *   collide with it again unless this particle is eternal
     **/
-    void addCollision(const std::shared_ptr<Object> &object);
+    void addCollision(ObjectRef objectRef);
 
     /**
     * @return

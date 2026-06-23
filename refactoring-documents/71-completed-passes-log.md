@@ -2891,3 +2891,20 @@ Compacted the maintained docs without changing code: `README.md` now stays a sho
 plus current refactoring docs defer volatile metrics to `CODEBASE-HEALTH-STATUS.md`. Refreshed stale
 current-state references for ctest count, singleton counts, archive/member counts, and large test-file
 metrics. Gates: `git diff --check` clean; `ctest --test-dir build -N` still reports **917** cases.
+
+### Pass 275 — Particle/enchant ObjectRef boundary cleanup (2026-06-23)
+
+Continued the stable-first ownership-boundary cleanup in the particle/enchant seam without changing script
+opcode APIs, source placement, CMake archive membership, or enchant storage. `Enchantment` no longer
+exposes a concrete owner handle publicly; kill-on-end and missile-treatment deflection now use owner
+attribution/payment helpers while the legacy weak-owner storage remains internal.
+
+`Particle` collision history is now ref-first: `hasCollided(...)` and `addCollision(...)` take
+`ObjectRef`, and the chr-prt collision response no longer resolves object handles solely to record or query
+collision history. Focused coverage now pins enchant-backed missile deflection through a real loaded
+missile-treatment enchant.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Runtime source lines are now **128,698**, test files/lines are
+**50 / 24,059**, and ctest configures **918** cases. Gates: `cmake --build build -j20` clean; focused
+collision/object/update slice **22/22**; ctest **918/918**; validator `test.mod` 0/0.

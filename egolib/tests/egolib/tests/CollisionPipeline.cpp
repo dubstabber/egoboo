@@ -310,7 +310,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_DamagingHit_SubtractsExactLife)
     // _currentLife -= FP8_TO_FLOAT(512) == 2.0 (reduction 0, ignoreArmour via DAMFX_ARMO path).
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore - 2.0f);
     // A successful damaging hit records the collision so the same particle cannot re-hit.
-    EXPECT_TRUE(particle->hasCollided(victim));
+    EXPECT_TRUE(particle->hasCollided(victim->getObjRef()));
 }
 
 // ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_ReHitSuppressed_HasCollidedGate)
     // First hit lands.
     ASSERT_TRUE(do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f));
     const float lifeAfterFirst = victim->getLife();
-    ASSERT_TRUE(particle->hasCollided(victim));
+    ASSERT_TRUE(particle->hasCollided(victim->getObjRef()));
 
     // The hit re-armed the damage timer; clear it so only the hasCollided gate (not the timer)
     // can suppress the second hit. The same non-eternal particle has already collided with this
@@ -375,7 +375,50 @@ TEST_F(CollisionPipelineFixture, ChrPrt_InvincibleTarget_NoDamage)
     // so the collision is "handled" (result true) but the damage branch is skipped.
     EXPECT_TRUE(result);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
-    EXPECT_FALSE(particle->hasCollided(victim));
+    EXPECT_FALSE(particle->hasCollided(victim->getObjRef()));
+}
+
+// ---------------------------------------------------------------------------
+// chr-prt: an active missile-treatment enchant can deflect an incoming particle.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrPrt_EnchantMissileTreatmentDeflectsParticle)
+{
+    auto& module = beginActiveTestModule();
+    const ObjectProfileRef victimProfile = loadFollowerProfile(6515);
+    auto victim = spawnFollower(module, victimProfile, static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                               Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto owner = spawnFollower(module, loadFollowerProfile(6516), static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                              Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    ASSERT_NE(victim, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    const ENC_REF enchantRef = EngineContext::get().profileSystem().loadEnchantProfile(
+        "mp_data/globalobjects/magic/metamorph.obj/enchant.txt",
+        INVALID_EVE_REF);
+    ASSERT_LT(enchantRef, ENCHANTPROFILES_MAX);
+    auto enchant = victim->addEnchant(enchantRef,
+                                      owner->getProfileID().get(),
+                                      owner->getObjRef(),
+                                      owner->getObjRef());
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_EQ(enchant->getMissileTreatment(), MissileTreatment_Deflect);
+
+    primeNoReduction(victim, DAMAGE_SLASH);
+    victim->setDamageTimer(1);
+    auto particle = spawnDamageParticle(victimProfile,
+                                        victim->getPosition() + Ego::Vector3f(-20.0f, 0.0f, 40.0f),
+                                        static_cast<TEAM_REF>(Team::TEAM_NULL), 512, DAMAGE_SLASH);
+    ASSERT_NE(particle, nullptr);
+    particle->setHoming(true);
+
+    const float lifeBefore = victim->getLife();
+    const bool result = do_chr_prt_collision(victim->getObjRef(), particle->getParticleID(), -1.0f, 1.0f);
+
+    EXPECT_TRUE(result);
+    EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
+    EXPECT_FALSE(particle->isHoming());
+    EXPECT_FALSE(particle->hasCollided(victim->getObjRef()));
 }
 
 // ---------------------------------------------------------------------------
@@ -404,7 +447,7 @@ TEST_F(CollisionPipelineFixture, ChrPrt_NeutralTargetRejectsNeutralParticle)
 
     EXPECT_FALSE(result);
     EXPECT_FLOAT_EQ(victim->getLife(), lifeBefore);
-    EXPECT_FALSE(particle->hasCollided(victim));
+    EXPECT_FALSE(particle->hasCollided(victim->getObjRef()));
 }
 
 // ---------------------------------------------------------------------------

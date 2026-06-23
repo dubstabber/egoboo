@@ -53,7 +53,7 @@ void Object::update()
                     enchant->playEndSound();
 
                     if(enchant->getProfile()->killtargetonend) {
-                        this->kill(enchant->getOwner(), true);
+                        this->kill(enchant->getOwnerAttribution(), true);
                     }
 
                     return true;

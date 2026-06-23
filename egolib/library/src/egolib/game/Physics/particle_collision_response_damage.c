@@ -121,13 +121,11 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 
                 //Does this enchant provide special missile protection?
                 if(enchant->getMissileTreatment() != MissileTreatment_Normal) {
-                    if(enchant->getOwner() != nullptr) {
-                        if(enchant->getOwner()->costMana(enchant->getMissileTreatmentCost(), pdata.pprt->owner_ref)) {
-                            pdata.mana_paid = true;
-                            treatment = enchant->getMissileTreatment();
-                            prt_deflected = true;
-                            break;
-                        }
+                    if(enchant->payOwnerMissileTreatmentCost(pdata.pprt->owner_ref)) {
+                        pdata.mana_paid = true;
+                        treatment = enchant->getMissileTreatment();
+                        prt_deflected = true;
+                        break;
                     }
                 }
             }

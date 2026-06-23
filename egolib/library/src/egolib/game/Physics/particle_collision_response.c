@@ -200,7 +200,7 @@ bool do_chr_prt_collision_bump( chr_prt_collision_data_t& pdata )
     }
 
     //Only allow one collision per particle unless that particle is eternal
-    if(!pdata.pprt->isEternal() && pdata.pprt->hasCollided(objectWorld().getObjectHandler()[pdata.pchr->getObjRef()])) {
+    if(!pdata.pprt->isEternal() && pdata.pprt->hasCollided(pdata.pchr->getObjRef())) {
         return false;
     }
 
@@ -404,7 +404,7 @@ bool do_chr_prt_collision(const ObjectRef object, const ParticleRef particle, co
                 if ( cn_data.prt_damages_chr )
                 {
                     //Remember the collision so that this doesn't happen again
-                    cn_data.pprt->addCollision(objectWorld().getObjectHandler()[cn_data.pchr->getObjRef()]);
+                    cn_data.pprt->addCollision(cn_data.pchr->getObjRef());
                     retval = true;
                 }
             }
@@ -418,7 +418,7 @@ bool do_chr_prt_collision(const ObjectRef object, const ParticleRef particle, co
         //Attack was dodged!
         else {
             //Cannot collide again
-            cn_data.pprt->addCollision(objectWorld().getObjectHandler()[cn_data.pchr->getObjRef()]);
+            cn_data.pprt->addCollision(cn_data.pchr->getObjRef());
 
             //Play sound effect
             audioSystem().playSound(cn_data.pchr->getPosition(), audioSystem().getGlobalSound(GSND_DODGE));

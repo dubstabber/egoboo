@@ -26,6 +26,7 @@
 #endif
 
 #include "egolib/typedef.h"
+#include "egolib/Entities/IDamageable.hpp"  // ObjectAttribution
 #include "egolib/Logic/Attribute.hpp"
 #include "egolib/Logic/MissileTreatment.hpp"
 #include "egolib/Profiles/_Include.hpp"
@@ -96,9 +97,15 @@ public:
 
     /**
     * @return
-    *   The owner of this enchant, or nullptr if it no longer has a valid owner
+    *   Damage attribution for the owner of this enchant, or empty attribution if there is no valid owner
     **/
-    std::shared_ptr<Object> getOwner() const;
+    ObjectAttribution getOwnerAttribution() const;
+
+    /**
+    * @brief
+    *   Attempt to pay the missile-treatment cost through the enchant owner.
+    **/
+    bool payOwnerMissileTreatmentCost(ObjectRef killerRef) const;
 
     float getOwnerManaSustain() const {return _ownerManaSustain;}
     float getOwnerLifeSustain() const {return _ownerLifeSustain;}
