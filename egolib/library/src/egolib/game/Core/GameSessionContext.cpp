@@ -4,8 +4,14 @@
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/Script/IScriptSystem.hpp"  // activeScriptSystem() driver seam
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/egoboo_setup.h"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/ICameraSystem.hpp"
+#include "egolib/Log/_Include.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
@@ -19,6 +25,7 @@
 #include <cmath>
 #include <ctime>
 #include <stdexcept>
+#include <utility>
 
 namespace
 {
@@ -216,7 +223,24 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     resetEnemySense();
     resetRespawnCooldown();
 
-    _activeModule = std::make_unique<GameModule>(module, seed);
+    GameModuleRuntime runtime;
+    runtime.profileSystem = []() -> IProfileSystem& { return activeProfileSystem(); };
+    runtime.audioSystem = []() -> IAudioSystem& { return activeAudioSystem(); };
+    runtime.particleHandler = []() -> IParticleHandler& { return activeParticleHandler(); };
+    runtime.cameraSystem = []() -> ICameraSystem& { return activeCameraSystem(); };
+    runtime.billboardSystem = []() -> Ego::Graphics::IBillboardSystem& { return Ego::Graphics::activeBillboardSystem(); };
+    runtime.config = []() -> egoboo_config_t& { return Ego::activeConfig(); };
+    runtime.logTarget = []() -> Log::Target& { return EngineContext::get().logTarget(); };
+    runtime.importList = [this]() -> import_list_t& { return importList(); };
+    runtime.overrideSlots = [this]() -> bool& { return overrideSlots(); };
+    runtime.worldUpdateCount = [this]() -> uint32_t& { return worldUpdateCount(); };
+    runtime.characterStatClock = [this]() -> uint32_t& { return characterStatClock(); };
+    runtime.enchantStatClock = [this]() -> uint32_t& { return enchantStatClock(); };
+    runtime.localPlayerCount = [this]() -> size_t { return localPlayerCount(); };
+    runtime.publishLocalPlayerCount = [this](size_t count) { publishLocalPlayerCount(count); };
+    runtime.resetClocks = [this]() { resetClocks(); };
+
+    _activeModule = std::make_unique<GameModule>(module, seed, std::move(runtime));
 
     // Publish the active module as the collision world so the lower-layer Collidable base can
     // validate positions without reaching up into GameModule. Installed before any spawning,
@@ -248,20 +272,36 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 void GameSessionContext::quitModule()
 {
+    const bool hadActiveModule = static_cast<bool>(_activeModule);
+
     Ego::Entities::clearWorldUpdateCounter();
     clearSessionState();
     clearModuleEnvironment();
     Ego::Entities::clearObjectWorld();
     Ego::Physics::clearCollisionWorld();
+
+    if (_activeModule)
+    {
+        _activeModule->shutdownRuntime();
+    }
     _activeModule.reset();
 
     Ego::Script::activeScriptSystem().endScriptingSystem();
 
-    EngineContext::get().profileSystem().reset();
+    if (!hadActiveModule)
+    {
+        if (auto* profileSystem = tryActiveProfileSystem())
+        {
+            profileSystem->reset();
+        }
+    }
     game_reset_players();
     reset_end_text();
 
-    EngineContext::get().audioSystem().fadeAllSounds();
+    if (auto* audioSystem = tryActiveAudioSystem())
+    {
+        audioSystem->fadeAllSounds();
+    }
 
     setup_clear_module_vfs_paths();
 }

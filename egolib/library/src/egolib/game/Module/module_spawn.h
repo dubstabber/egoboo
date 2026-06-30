@@ -22,9 +22,16 @@
 #include "egolib/Logic/TreasureTables.hpp"
 #include "egolib/FileFormats/SpawnFile/spawn_file.h"  // spawn_file_info_t
 
+class IProfileSystem;
+namespace Log { struct Target; }
+
 // module initialization / deinitialization - not accessible by scripts
 void game_load_profile_ai();
+void game_load_profile_ai(IProfileSystem& profileSystem);
 
 void convert_spawn_file_load_name(spawn_file_info_t& psp_info, const Ego::TreasureTables &treasureTables);
 
 bool activate_spawn_file_load_object( spawn_file_info_t& psp_info );
+bool activate_spawn_file_load_object( spawn_file_info_t& psp_info,
+                                      IProfileSystem& profileSystem,
+                                      Log::Target& logTarget );

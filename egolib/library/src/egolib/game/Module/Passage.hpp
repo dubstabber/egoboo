@@ -28,6 +28,7 @@
 #include "egolib/Mesh/Info.hpp"
 
 //Forward declarations
+class IAudioSystem;
 class Object;
 class IPhysical;
 class GameModule;
@@ -106,7 +107,7 @@ public:
     * @brief Plays the passage music assigned to this passage if the specified character is inside this passage
     * @return true if a new song is now playing
     **/
-    bool checkPassageMusic(const IPhysical& object) const;
+    bool checkPassageMusic(const IPhysical& object, IAudioSystem& audioSystem) const;
 
     /**
     * @return Sets the MusicID of this passage. If a player character enters this passage, the specified MusicID will be played

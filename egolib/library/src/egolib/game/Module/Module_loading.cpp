@@ -21,14 +21,31 @@
 /// @brief GameModule content-loading helpers and debug load reporting.
 
 #include "egolib/game/Module/Module_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
+
+namespace
+{
+void loadModuleProfiles(const std::string& modulePath, IProfileSystem& profileSystem)
+{
+    import_data.slot = -100;
+    const std::string folderPath = modulePath + "/objects";
+
+    SearchContext ctxt(Ego::VfsPath(folderPath), Ego::Extension("obj"), VFS_SEARCH_DIR);
+    while (ctxt.hasData())
+    {
+        profileSystem.loadOneProfile(ctxt.getData().string());
+        ctxt.nextData();
+    }
+}
+}
 
 void GameModule::loadProfiles()
 {
-    OverrideSlotsScope moduleSlotOverride(overrideSlots());
+    IProfileSystem& profileSystem = _runtime.profileSystem();
+    OverrideSlotsScope moduleSlotOverride(_runtime.overrideSlots());
 
     //Load the spell book profile
-    EngineContext::get().profileSystem().loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
+    profileSystem.loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
 
     // Clear the import slots...
     import_data.slot_lst.fill(INVALID_PRO_REF);
@@ -58,14 +75,14 @@ void GameModule::loadProfiles()
                 import_data.slot = cnt;
 
                 // load it
-                import_data.slot_lst[cnt] = EngineContext::get().profileSystem().loadOneProfile(importPath).get();
+                import_data.slot_lst[cnt] = profileSystem.loadOneProfile(importPath).get();
                 import_data.max_slot      = std::max(import_data.max_slot, cnt);
             }
         }
     }
 
     // load all module-specific object profiles
-    game_load_module_profiles(_moduleProfile->getPath());
+    loadModuleProfiles(_moduleProfile->getPath(), profileSystem);
 }
 
 void GameModule::loadAllPassages()
@@ -151,14 +168,15 @@ void GameModule::logSlotUsage(const std::string& savename)
         vfs_printf(hFileWrite, "Slot usage for objects in last module loaded...\n");
 
         ObjectProfileRef lastSlotNumber(0);
-        for (const auto &element : EngineContext::get().profileSystem().getLoadedProfiles())
+        IProfileSystem& profileSystem = _runtime.profileSystem();
+        for (const auto &element : profileSystem.getLoadedProfiles())
         {
             const std::shared_ptr<ObjectProfile> &profile = element.second;
 
             //ZF> ugh, import objects are currently handled in a weird special way.
             for (ObjectProfileRef i = lastSlotNumber; i < profile->getSlotNumber() && i <= ObjectProfileRef(36); ++i)
             {
-                if (!EngineContext::get().profileSystem().isLoaded(i))
+                if (!profileSystem.isLoaded(i))
                 {
                     vfs_printf(hFileWrite, "%3" PRIuZ " %32s.\n", i.get(), "Slot reserved for import players");
                 }

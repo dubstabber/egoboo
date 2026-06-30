@@ -49,9 +49,9 @@ or engine/session service ownership.
 | Test files / lines | 50 / 24,859 | `egolib/tests`, source/header files only |
 | ctest cases | 943 | `ctest --test-dir build -N` |
 | ctest baseline | 943 / 943 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 530 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
-| `EngineContext::get()` | 417 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 59 | Dominant intentional session seam |
+| `::get()` call sites | 498 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `EngineContext::get()` | 388 | Dominant intentional engine seam |
+| `GameSessionContext::get()` | 56 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 653 | Broad grep count, not semantic classification |
 | Interface headers | 62 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
@@ -144,9 +144,13 @@ object-handler and object lookup access routes through the lower-layer
 entity callers; `GameSessionContext` no longer exposes object lookup forwarding
 methods. Active module environment and read-only session state access now route
 through the narrower `IModuleEnvironment` and `ISessionState` seams for migrated
-rendering, camera, HUD, script, and spawn callers. `GameSessionContext` and
-`GameModule` still own lifetime and mutation. This keeps context APIs narrower
-while moving ownership seams toward lower archives.
+rendering, camera, HUD, script, and spawn callers. `GameModule` loading,
+spawning, update, passage music, weather, and player-startup code now receive
+session and engine services through an explicit `GameModuleRuntime` provider
+surface instead of directly reaching into `EngineContext` or
+`GameSessionContext`. `GameSessionContext` and `GameModule` still own lifetime
+and mutation. This keeps context APIs narrower while moving ownership seams
+toward lower archives.
 
 ## Design-Pattern Usage
 

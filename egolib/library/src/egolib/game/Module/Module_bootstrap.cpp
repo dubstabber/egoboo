@@ -21,17 +21,16 @@
 /// @brief GameModule construction, teardown, and bootstrap phases.
 
 #include "egolib/game/Module/Module_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Log/_Include.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 
-namespace
-{
-egoboo_config_t& config()
-{
-    return EngineContext::get().config();
-}
-}
+#include <utility>
 
-GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint32_t seed) :
+GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint32_t seed, GameModuleRuntime runtime) :
+    _runtime(std::move(runtime)),
+    _runtimeShutdown(false),
     _moduleProfile(profile),
     _gameObjects(),
     _playerNameList(),
@@ -60,7 +59,7 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
     _pitsTeleport(false),
     _pitsTeleportPos()
 {
-    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
+    _runtime.logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 
     initializeModuleRuntime();
     initializeModuleTeamsAndTextures();
@@ -102,8 +101,8 @@ void GameModule::initializeModuleTeamsAndTextures()
 void GameModule::initializeSharedModuleAssets()
 {
     // Load shared runtime assets that module content depends on.
-    EngineContext::get().audioSystem().loadGlobalSounds();
-    EngineContext::get().profileSystem().loadGlobalParticleProfiles();
+    _runtime.audioSystem().loadGlobalSounds();
+    _runtime.profileSystem().loadGlobalParticleProfiles();
 }
 
 void GameModule::loadModuleEnvironment()
@@ -115,7 +114,7 @@ void GameModule::loadModuleEnvironment()
         _damageTile.upload(wavalite->damagetile);
     }
     else {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
+        _runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
     }
     upload_wawalite(_fog, _weatherState, _animatedTilesState);
 }
@@ -139,34 +138,51 @@ void GameModule::loadModuleContent()
 void GameModule::finalizeModuleInitialization()
 {
     // log debug info for every object loaded into the module
-    if (config().debug_developerMode_enable.getValue()) {
+    if (_runtime.config().debug_developerMode_enable.getValue()) {
         logSlotUsage("/debug/slotused.txt");
     }
 
     // Reset module-local runtime counters after load completes.
     timeron = false;
-    gameSession().resetClocks();
+    _runtime.resetClocks();
+}
+
+void GameModule::shutdownRuntime()
+{
+    if (_runtimeShutdown)
+    {
+        return;
+    }
+    _runtimeShutdown = true;
+
+    //free all particles
+    _runtime.particleHandler().clear();
+
+    //Free all profiles loaded by the module
+    _runtime.profileSystem().reset();
+
+    //Free all textures (internally guarded against a torn-down GFX / texture manager)
+    gfx_system_release_all_graphics();
 }
 
 GameModule::~GameModule()
 {
-    // GameModule is owned by the GameSessionContext singleton, so this can run at
-    // static-destruction time, after GameEngine::uninitialize() has already cleared
-    // these services. A throw from a destructor terminates the process, so every
-    // service access must tolerate an already-cleared service.
+    // GameModule is normally shut down explicitly by GameSessionContext while services are still
+    // installed. This fallback keeps abnormal/static teardown paths from throwing in a destructor.
+    if (_runtimeShutdown)
+    {
+        return;
+    }
 
-    //free all particles
-    if (auto* particleHandler = EngineContext::get().tryParticleHandler())
+    if (auto* particleHandler = tryActiveParticleHandler())
     {
         particleHandler->clear();
     }
 
-    //Free all profiles loaded by the module
-    if (auto* profileSystem = EngineContext::get().tryProfileSystem())
+    if (auto* profileSystem = tryActiveProfileSystem())
     {
         profileSystem->reset();
     }
 
-    //Free all textures (internally guarded against a torn-down GFX / texture manager)
     gfx_system_release_all_graphics();
 }

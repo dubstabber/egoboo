@@ -188,3 +188,13 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   to assert empty, mirrored, and cleared active seams. Verified with the Linux
   build, focused object/module/script/camera ctest filter, full `ctest`, and the
   `test.mod` validator smoke.
+- Pass 298 on 2026-06-30 added the explicit `GameModuleRuntime` provider
+  surface and moved `GameModule` bootstrap/loading/spawn/update paths, passage
+  music checks, weather updates, and player-startup bookkeeping off direct
+  `EngineContext::get()` / `GameSessionContext::get()` access. Normal module
+  teardown now calls `GameModule::shutdownRuntime()` while services are still
+  installed, with the destructor kept as an abnormal-teardown fallback.
+  `GameSessionContext` remains the composition point for module services and
+  session-owned counters/import state. Verified with the Linux build, focused
+  module/player/object/shop ctest filter, full `ctest`, and the `test.mod`
+  validator smoke.

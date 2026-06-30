@@ -2,11 +2,11 @@
 
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/InputControl/InputDevice.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Logic/PlayerQuestLog.hpp"
 #include "egolib/game/game.h"
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -33,10 +33,11 @@ inline std::shared_ptr<Ego::Player> registerPlayerBinding(std::vector<std::share
 
 inline void applySuccessfulLocalPlayerBookkeeping(Object& object,
                                                   size_t registeredPlayerCount,
+                                                  const std::function<void(size_t)>& publishLocalPlayerCount,
                                                   bool identifySpawnOnSuccess)
 {
     object.setLocalPlayer(true);
-    GameSessionContext::get().publishLocalPlayerCount(registeredPlayerCount);
+    publishLocalPlayerCount(registeredPlayerCount);
 
     if (identifySpawnOnSuccess)
     {
@@ -47,16 +48,21 @@ inline void applySuccessfulLocalPlayerBookkeeping(Object& object,
 inline void finalizeLocalPlayerStartup(Object& object,
                                        const std::shared_ptr<Ego::Player>& player,
                                        size_t registeredPlayerCount,
+                                       const std::function<void(size_t)>& publishLocalPlayerCount,
                                        bool identifySpawnOnSuccess)
 {
     Ego::loadPlayerQuestLog(player->getQuestLog(), object.getProfile()->getPathname());
-    applySuccessfulLocalPlayerBookkeeping(object, registeredPlayerCount, identifySpawnOnSuccess);
+    applySuccessfulLocalPlayerBookkeeping(object,
+                                          registeredPlayerCount,
+                                          publishLocalPlayerCount,
+                                          identifySpawnOnSuccess);
 }
 
 inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
                       ObjectHandler& objectHandler,
                       ObjectRef objectRef,
                       const Ego::Input::InputDevice& device,
+                      const std::function<void(size_t)>& publishLocalPlayerCount,
                       bool identifySpawnOnSuccess)
 {
     Object* object = objectHandler.get(objectRef);
@@ -71,7 +77,11 @@ inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
         return false;
     }
 
-    finalizeLocalPlayerStartup(*object, player, playerList.size(), identifySpawnOnSuccess);
+    finalizeLocalPlayerStartup(*object,
+                               player,
+                               playerList.size(),
+                               publishLocalPlayerCount,
+                               identifySpawnOnSuccess);
     return true;
 }
 

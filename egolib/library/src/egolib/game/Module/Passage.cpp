@@ -22,7 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/Module/Passage.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/mesh.h"
 #include "egolib/Entities/_Include.hpp"
@@ -30,11 +30,6 @@
 
 namespace
 {
-IAudioSystem& audioSystem()
-{
-    return EngineContext::get().audioSystem();
-}
-
 void publishCrushedAlert(IScriptable& object)
 {
     object.addAIAlertBits(ALERTIF_CRUSHED);
@@ -249,7 +244,7 @@ bool Passage::isPointInside(float xpos, float ypos) const
            ypos <= _area.get_max().y();
 }
 
-bool Passage::checkPassageMusic(const IPhysical& object) const
+bool Passage::checkPassageMusic(const IPhysical& object, IAudioSystem& audioSystem) const
 {
     if (_music == INVALID_SOUND_ID) {
        return false; 
@@ -260,7 +255,7 @@ bool Passage::checkPassageMusic(const IPhysical& object) const
     }
 
     // character is inside, start music track
-    audioSystem().playMusic(_music);
+    audioSystem.playMusic(_music);
     return true;
 }
 

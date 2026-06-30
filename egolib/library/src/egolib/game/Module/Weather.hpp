@@ -4,6 +4,13 @@
 #include "egolib/Profiles/LocalParticleProfileRef.hpp"  // LocalParticleProfileRef
 #include "egolib/typedef.h"                             // PLA_REF
 
+#include <memory>
+#include <vector>
+
+class IParticleHandler;
+namespace Ego { class Player; }
+namespace Ego { namespace Physics { class ICollisionWorld; } }
+
 /// The state of the weather.
 struct WeatherState
 {
@@ -17,5 +24,7 @@ struct WeatherState
     void upload(const wawalite_weather_t& source);
     /// @brief Iterate the state of the weather.
     /// @remarks Drops snowflakes or rain or whatever.
-    void update();
+    void update(const std::vector<std::shared_ptr<Ego::Player>>& players,
+                IParticleHandler& particleHandler,
+                const Ego::Physics::ICollisionWorld& collisionWorld);
 };

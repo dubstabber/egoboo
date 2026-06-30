@@ -29,9 +29,6 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Logic/TreasureTables.hpp"
 
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"
@@ -50,31 +47,6 @@
 
 namespace module_detail
 {
-inline GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
-inline uint32_t& worldUpdateCount()
-{
-    return gameSession().worldUpdateCount();
-}
-
-inline uint32_t& characterStatClock()
-{
-    return gameSession().characterStatClock();
-}
-
-inline import_list_t& importList()
-{
-    return gameSession().importList();
-}
-
-inline bool& overrideSlots()
-{
-    return gameSession().overrideSlots();
-}
-
 class OverrideSlotsScope
 {
 public:

@@ -1,12 +1,12 @@
 #include "egolib/game/Module/Weather.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"
 
-void WeatherState::update()
+void WeatherState::update(const std::vector<std::shared_ptr<Ego::Player>>& players,
+                          IParticleHandler& particleHandler,
+                          const Ego::Physics::ICollisionWorld& collisionWorld)
 {
     //Does this module have valid weather?
     if (time < 0 || part_gpip == LocalParticleProfileRef::Invalid) {
@@ -18,17 +18,11 @@ void WeatherState::update()
     {
         time = timer_reset;
 
-        GameModule* module = GameSessionContext::get().tryActiveModule();
-        if (!module)
-        {
-            return;
-        }
-
         // Find a valid player
         std::shared_ptr<Ego::Player> player = nullptr;
-        if (!module->getPlayerList().empty()) {
-            iplayer = (iplayer + 1) % module->getPlayerList().size();
-            player = module->getPlayerList()[iplayer];
+        if (!players.empty()) {
+            iplayer = (iplayer + 1) % players.size();
+            player = players[iplayer];
         }
 
         // Did we find one?
@@ -38,16 +32,15 @@ void WeatherState::update()
             if (pchr)
             {
                 // Yes, so spawn nearby that character
-                std::shared_ptr<Ego::Particle> particle = EngineContext::get().particleHandler().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, part_gpip, 0, over_water);
+                std::shared_ptr<Ego::Particle> particle = particleHandler.spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, part_gpip, 0, over_water);
                 if (particle)
                 {
                     // Weather particles spawned at the edge of the map look ugly, so don't spawn them there
-                    auto& cw = Ego::Physics::activeCollisionWorld();
-                    if (particle->getPosX() < EDGE || particle->getPosX() > cw.getEdgeX() - EDGE)
+                    if (particle->getPosX() < EDGE || particle->getPosX() > collisionWorld.getEdgeX() - EDGE)
                     {
                         particle->requestTerminate();
                     }
-                    else if (particle->getPosY() < EDGE || particle->getPosY() > cw.getEdgeY() - EDGE)
+                    else if (particle->getPosY() < EDGE || particle->getPosY() > collisionWorld.getEdgeY() - EDGE)
                     {
                         particle->requestTerminate();
                     }

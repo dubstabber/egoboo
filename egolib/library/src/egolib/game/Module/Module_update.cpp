@@ -21,24 +21,13 @@
 /// @brief GameModule per-frame services, simulation, and terrain update helpers.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Graphics/IBillboardSystem.hpp"
+#include "egolib/Graphics/ICameraSystem.hpp"
 
 namespace
 {
-IAudioSystem& audioSystem()
-{
-    return EngineContext::get().audioSystem();
-}
-
-ICameraSystem& cameraSystem()
-{
-    return EngineContext::get().cameraSystem();
-}
-
-Ego::Graphics::IBillboardSystem& billboardSystem()
-{
-    return EngineContext::get().billboardSystem();
-}
-
 Object* tryObservedPlayerObject(const std::shared_ptr<Ego::Player>& player)
 {
     if (!player)
@@ -82,7 +71,7 @@ void GameModule::checkPassageMusic()
         //Loop through every passage
         for (const std::shared_ptr<Passage>& passage : _passages)
         {
-            if (passage->checkPassageMusic(*pchr))
+            if (passage->checkPassageMusic(*pchr, _runtime.audioSystem()))
             {
                 return;
             }
@@ -92,7 +81,7 @@ void GameModule::checkPassageMusic()
 
 void GameModule::updateAllObjects()
 {
-    const uint32_t currentUpdateFrame = worldUpdateCount();
+    const uint32_t currentUpdateFrame = _runtime.worldUpdateCount();
     ObjectHandler& objectHandler = getObjectHandler();
 
     for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
@@ -122,8 +111,8 @@ void GameModule::updateAllObjects()
     }
 
     // Reset the clock
-    if (characterStatClock() >= ONESECOND) {
-        characterStatClock() -= ONESECOND;
+    if (_runtime.characterStatClock() >= ONESECOND) {
+        _runtime.characterStatClock() -= ONESECOND;
     }
 }
 
@@ -145,7 +134,7 @@ void GameModule::updatePits()
         _pitsClock = PIT_CLOCK_RATE;
 
         // Kill any particles that fell in a pit, if they die in water...
-        for (const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
+        for (const std::shared_ptr<Ego::Particle> &particle : _runtime.particleHandler().iterator()) {
             if (particle->getPosZ() < PITDEPTH && particle->getProfile()->end_water)
             {
                 particle->requestTerminate();
@@ -189,10 +178,10 @@ void GameModule::updatePits()
 
                     // Play sound effect
                     if (pchr->isPlayer()) {
-                        audioSystem().playSoundFull(audioSystem().getGlobalSound(GSND_PITFALL));
+                        _runtime.audioSystem().playSoundFull(_runtime.audioSystem().getGlobalSound(GSND_PITFALL));
                     }
                     else {
-                        audioSystem().playSound(pchr->getPosition(), audioSystem().getGlobalSound(GSND_PITFALL));
+                        _runtime.audioSystem().playSound(pchr->getPosition(), _runtime.audioSystem().getGlobalSound(GSND_PITFALL));
                     }
 
                     // Do some damage (same as damage tile)
@@ -219,7 +208,7 @@ void GameModule::enablePitsKill()
 
 void GameModule::updateDamageTiles()
 {
-    const uint32_t currentUpdateFrame = worldUpdateCount();
+    const uint32_t currentUpdateFrame = _runtime.worldUpdateCount();
 
     // do the damage tile stuff
     for (const ObjectRef& objectRef : _gameObjects.objectRefIterator()) {
@@ -273,7 +262,7 @@ void GameModule::updateDamageTiles()
             damageable.setDamageTimer(DAMAGETILETIME);
 
             if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
-                EngineContext::get().particleHandler().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);
+                _runtime.particleHandler().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);
             }
         }
     }
@@ -302,20 +291,20 @@ void GameModule::updateModuleServices()
     _gameObjects.updateQuadTree(0.0f, 0.0f, _mesh->_info.getTileCountX() * Info<float>::Grid::Size(),
                                             _mesh->_info.getTileCountY() * Info<float>::Grid::Size());
 
-    audioSystem().update();
-    billboardSystem().update();
+    _runtime.audioSystem().update();
+    _runtime.billboardSystem().update();
     _animatedTilesState.update();
     getWater().update();
     updateDamageTiles();
     updatePits();
-    _weatherState.update();
+    _weatherState.update(_playerList, _runtime.particleHandler(), *this);
     checkPassageMusic();
 }
 
 void GameModule::updateModuleSimulation()
 {
     // Run AI after the first update frame, matching the legacy gate.
-    if (worldUpdateCount() > 0)
+    if (_runtime.worldUpdateCount() > 0)
     {
         MainLoop::let_all_characters_think();
         MainLoop::readPlayerInput();
@@ -326,7 +315,7 @@ void GameModule::updateModuleSimulation()
     chr_pressure_tests  = 0;
 
     updateAllObjects();
-    EngineContext::get().particleHandler().updateAllParticles();
+    _runtime.particleHandler().updateAllParticles();
     MainLoop::move_all_objects();
     Ego::Physics::CollisionSystem::get().update();
 }
@@ -334,8 +323,8 @@ void GameModule::updateModuleSimulation()
 void GameModule::finalizeModuleUpdate()
 {
     //Camera movement
-    cameraSystem().updateAll(_mesh.get());
+    _runtime.cameraSystem().updateAll(_mesh.get());
 
     //Increment update frame counter
-    worldUpdateCount()++;
+    _runtime.worldUpdateCount()++;
 }

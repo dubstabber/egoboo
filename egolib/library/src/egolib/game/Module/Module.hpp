@@ -26,6 +26,7 @@
 #include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
 #include "egolib/Mesh/ITerrainQuery.hpp"        // GameModule implements ITerrainQuery
 #include "egolib/game/Module/IModuleEnvironment.hpp" // GameModule implements IModuleEnvironment
+#include "egolib/game/Module/ModuleRuntime.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
@@ -64,12 +65,14 @@ public:
      * @brief
      *  Prepeares a module to be played
      */
-    GameModule(const std::shared_ptr<ModuleProfile> &module, const uint32_t seed);
+    GameModule(const std::shared_ptr<ModuleProfile> &module, const uint32_t seed, GameModuleRuntime runtime);
 
     /**
      * Destructor.
      */
     ~GameModule();
+
+    void shutdownRuntime();
 
     /**
      * @return
@@ -374,6 +377,8 @@ private:
     static constexpr uint32_t PIT_CLOCK_RATE = 20;  ///< How many game ticks between each pit check
     static constexpr uint32_t DAMAGETILETIME = 32;  ///< Invincibility time
 
+    GameModuleRuntime _runtime;
+    bool _runtimeShutdown;
     const std::shared_ptr<ModuleProfile> _moduleProfile;
     std::vector<std::shared_ptr<Passage>> _passages;    ///< All passages in this module
     std::vector<Team> _teamList;

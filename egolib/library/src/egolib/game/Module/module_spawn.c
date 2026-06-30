@@ -29,6 +29,13 @@
 
 bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
 {
+    return activate_spawn_file_load_object(psp_info, activeProfileSystem(), Log::activeTarget());
+}
+
+bool activate_spawn_file_load_object( spawn_file_info_t& psp_info,
+                                      IProfileSystem& profileSystem,
+                                      Log::Target& logTarget )
+{
     /// @author BB
     /// @details Try to load a global object named int psp_info->spawn_coment into
     ///               slot psp_info->slot
@@ -40,7 +47,7 @@ bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
 
     //Is it already loaded?
     ipro = ( PRO_REF )psp_info.slot;
-    if (activeProfileSystem().isLoaded(ipro)) return false;
+    if (profileSystem.isLoaded(ipro)) return false;
 
     // do the loading
     if ( CSTR_END != psp_info.spawn_comment[0] )
@@ -51,16 +58,16 @@ bool activate_spawn_file_load_object( spawn_file_info_t& psp_info )
 
         if(!vfs_exists(filename)) {
             if(psp_info.slot > MAX_IMPORT_PER_PLAYER * MAX_PLAYER) {
-				Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", filename, "`", " does not exist", Log::EndOfEntry);
+				logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "object ", "`", filename, "`", " does not exist", Log::EndOfEntry);
             }
 
             return false;
         }
 
-        psp_info.slot = activeProfileSystem().loadOneProfile(filename, psp_info.slot).get();
+        psp_info.slot = profileSystem.loadOneProfile(filename, psp_info.slot).get();
     }
 
-    return activeProfileSystem().isLoaded((PRO_REF)psp_info.slot);
+    return profileSystem.isLoaded((PRO_REF)psp_info.slot);
 }
 
 void convert_spawn_file_load_name(spawn_file_info_t& psp_info, const Ego::TreasureTables &treasureTables)
@@ -74,13 +81,18 @@ void convert_spawn_file_load_name(spawn_file_info_t& psp_info, const Ego::Treasu
 //--------------------------------------------------------------------------------------------
 void game_load_profile_ai()
 {
+    game_load_profile_ai(activeProfileSystem());
+}
+
+void game_load_profile_ai(IProfileSystem& profileSystem)
+{
     /// @author ZF
     /// @details load the AI for each profile, done last so that all reserved slot numbers are already set
     /// since AI scripts can dynamically load new objects if they require it
     // ensure that the script parser exists
     parser_state_t& ps = parser_state_t::get();
 
-    for (const auto &element : activeProfileSystem().getLoadedProfiles())
+    for (const auto &element : profileSystem.getLoadedProfiles())
     {
         const std::shared_ptr<ObjectProfile> &profile = element.second;
 

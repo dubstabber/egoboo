@@ -21,11 +21,13 @@
 /// @brief GameModule spawn, player-join, and spawn-file realization helpers.
 
 #include "egolib/game/Module/Module_internal.h"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Module/Module_player_startup.hpp"
 #include "egolib/game/Module/Module_spawn_plan.hpp"
 #include "egolib/game/Module/Module_spawn_realization.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
 {
@@ -33,11 +35,6 @@ namespace
 Ego::Physics::ICollisionWorld& collisionWorld()
 {
     return Ego::Physics::activeCollisionWorld();
-}
-
-egoboo_config_t& config()
-{
-    return EngineContext::get().config();
 }
 }
 
@@ -83,12 +80,12 @@ void GameModule::removeShopOwner(ObjectRef owner)
 ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
                                      const Facing& facing, const std::string& name, const ObjectRef override)
 {
-    const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(profile);
+    const std::shared_ptr<ObjectProfile> &ppro = _runtime.profileSystem().getProfile(profile);
     if (!ppro)
     {
         if (profile.get() > getImportAmount() * MAX_IMPORT_PER_PLAYER)
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "attempt to spawn object from an invalid object profile ", "`", profile, "`", Log::EndOfEntry);
+            _runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "attempt to spawn object from an invalid object profile ", "`", profile, "`", Log::EndOfEntry);
         }
         return ObjectRef::Invalid;
     }
@@ -99,7 +96,7 @@ ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef 
     // allocate a new character
     std::shared_ptr<Object> pchr = getObjectHandler().insert(profile, override);
     if (!pchr) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn character", Log::EndOfEntry);
+        _runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn character", Log::EndOfEntry);
         return ObjectRef::Invalid;
     }
 
@@ -210,11 +207,11 @@ ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef 
     if (ppro->isItem())
     {
         uint16_t kursechance = ppro->getKurseChance();
-        if (config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
+        if (_runtime.config().game_difficulty.getValue() >= Ego::GameDifficulty::Hard)
         {
             kursechance *= 2.0f;  // Hard mode doubles chance for Kurses
         }
-        if (config().game_difficulty.getValue() < Ego::GameDifficulty::Normal && kursechance != 100)
+        if (_runtime.config().game_difficulty.getValue() < Ego::GameDifficulty::Normal && kursechance != 100)
         {
             kursechance *= 0.5f;  // Easy mode halves chance for Kurses
         }
@@ -264,7 +261,7 @@ ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef 
     pchr->setSkin(pchr->getBaseSkin());
 
     // override the default behavior for an "easy" game
-    if (config().game_difficulty.getValue() < Ego::GameDifficulty::Normal)
+    if (_runtime.config().game_difficulty.getValue() < Ego::GameDifficulty::Normal)
     {
         pchr->setLife(pchr->getAttribute(Ego::Attribute::MAX_LIFE));
         pchr->setMana(pchr->getAttribute(Ego::Attribute::MAX_MANA));
@@ -293,7 +290,7 @@ ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef 
     // Particle attachments
     for (uint8_t tnc = 0; tnc < ppro->getAttachedParticleAmount(); tnc++)
     {
-        EngineContext::get().particleHandler().spawnParticle(pchr->getPosition(), pchr->getFacingZ(), ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
+        _runtime.particleHandler().spawnParticle(pchr->getPosition(), pchr->getFacingZ(), ppro->getSlotNumber(), ppro->getAttachedParticleProfile(),
                                              pchr->getObjRef(), GRIP_LAST + tnc, pchr->getTeamRef(), pchr->getObjRef(), ParticleRef::Invalid, tnc);
     }
 
@@ -338,7 +335,12 @@ bool GameModule::addPlayer(ObjectRef objectRef,
                            const Ego::Input::InputDevice& device,
                            const bool identifySpawnOnSuccess)
 {
-    return module_player_startup::addPlayer(_playerList, getObjectHandler(), objectRef, device, identifySpawnOnSuccess);
+    return module_player_startup::addPlayer(_playerList,
+                                            getObjectHandler(),
+                                            objectRef,
+                                            device,
+                                            _runtime.publishLocalPlayerCount,
+                                            identifySpawnOnSuccess);
 }
 
 void GameModule::spawnAllObjects()
@@ -348,9 +350,9 @@ void GameModule::spawnAllObjects()
     auto spawnPlan = module_spawn_plan::buildSpawnPlan(
         SpawnFileReader().read("mp_data/spawn.txt"),
         treasureTables,
-        [](ObjectProfileRef profileSlot)
+        [this](ObjectProfileRef profileSlot)
         {
-            return EngineContext::get().profileSystem().isLoaded(profileSlot);
+            return _runtime.profileSystem().isLoaded(profileSlot);
         },
         1 + MAX_IMPORT_PER_PLAYER * MAX_PLAYER);
 
@@ -358,16 +360,16 @@ void GameModule::spawnAllObjects()
     for (auto& spawnInfo : spawnPlan.entries)
     {
         // If nothing is already in that slot, try to load it.
-        if (!EngineContext::get().profileSystem().isLoaded(spawnInfo.slot))
+        if (!_runtime.profileSystem().isLoaded(spawnInfo.slot))
         {
             bool import_object = spawnInfo.slot > (getImportAmount() * MAX_IMPORT_PER_PLAYER);
 
-            if (!activate_spawn_file_load_object(spawnInfo))
+            if (!activate_spawn_file_load_object(spawnInfo, _runtime.profileSystem(), _runtime.logTarget()))
             {
                 // no, give a warning if it is useful
                 if (import_object)
                 {
-                    EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                    _runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                                      "the object ", "`", spawnInfo.spawn_comment, "`", " in slot ",
                                                      spawnInfo.slot, " in file ", "`", "mp_data/spawn,txt", "`",
                                                      "does not exist on this machine", Log::EndOfEntry);
@@ -389,7 +391,7 @@ void GameModule::spawnAllObjects()
     tiltCharactersToTerrain();
 
     //now load the profile AI, do last so that all reserved slot numbers are initialized
-    game_load_profile_ai();
+    game_load_profile_ai(_runtime.profileSystem());
 }
 
 ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, ObjectRef parentRef)
@@ -398,11 +400,11 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
     state.importValid = isImportValid();
     state.importAmount = getImportAmount();
     state.playerAmount = getPlayerAmount();
-    state.importList = &importList();
+    state.importList = &_runtime.importList();
     state.importData = &import_data;
-    state.isProfileLoaded = [](ObjectProfileRef profile)
+    state.isProfileLoaded = [this](ObjectProfileRef profile)
     {
-        return EngineContext::get().profileSystem().isLoaded(profile);
+        return _runtime.profileSystem().isLoaded(profile);
     };
 
     module_spawn_realization::SpawnRealizationOps ops;
@@ -439,9 +441,9 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
     {
         return getPlayerList().size();
     };
-    ops.currentLocalPlayerCount = []()
+    ops.currentLocalPlayerCount = [this]()
     {
-        return activeSessionState().localPlayerCount();
+        return _runtime.localPlayerCount();
     };
     ops.addPlayer = [this](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {

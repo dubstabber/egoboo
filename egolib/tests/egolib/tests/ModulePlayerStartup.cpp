@@ -131,6 +131,21 @@ protected:
         vfs_close(questFile);
     }
 
+    bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
+                   ObjectHandler& objectHandler,
+                   ObjectRef objectRef,
+                   const Ego::Input::InputDevice& device,
+                   bool identifySpawnOnSuccess) const
+    {
+        return module_player_startup::addPlayer(
+            playerList,
+            objectHandler,
+            objectRef,
+            device,
+            [](size_t count) { GameSessionContext::get().publishLocalPlayerCount(count); },
+            identifySpawnOnSuccess);
+    }
+
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ModulePlayerStartupFixture::s_runtime;
@@ -142,7 +157,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRejectsNullObjectsWithoutChangingMod
     ObjectHandler objectHandler;
     const std::shared_ptr<Object> object;
 
-    EXPECT_FALSE(module_player_startup::addPlayer(playerList, objectHandler, ObjectRef::Invalid, Ego::Input::InputDevice::DeviceList[0], false));
+    EXPECT_FALSE(addPlayer(playerList, objectHandler, ObjectRef::Invalid, Ego::Input::InputDevice::DeviceList[0], false));
     EXPECT_TRUE(playerList.empty());
     EXPECT_EQ(session.localPlayerCount(), 0u);
     EXPECT_FALSE(session.hasLocalPlayers());
@@ -162,7 +177,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerRegistersLocalPlayerAndKeepsMissingQ
     ASSERT_NE(object->getProfile(), nullptr);
     EXPECT_FALSE(vfs_exists((object->getProfile()->getPathname() + "/quest.txt").c_str()));
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     ASSERT_EQ(playerList.size(), 1u);
 
     const auto& player = playerList.front();
@@ -189,8 +204,8 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerPreservesRegistrationOrderInPlayerIn
     ASSERT_NE(firstObject, nullptr);
     ASSERT_NE(secondObject, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     ASSERT_EQ(playerList.size(), 2u);
 
     EXPECT_EQ(firstObject->getPlayerNumber(), 0);
@@ -213,7 +228,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerCanIdentifySpawnOnSuccessfulBinding)
     ASSERT_NE(object, nullptr);
     object->setNameKnown(false);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], true));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], true));
     ASSERT_EQ(playerList.size(), 1u);
 
     EXPECT_TRUE(object->isPlayer());
@@ -236,7 +251,7 @@ TEST_F(ModulePlayerStartupFixture, AddPlayerHydratesQuestLogFromProfilePath)
     auto object = objectHandler.insert(profile);
     ASSERT_NE(object, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     ASSERT_EQ(playerList.size(), 1u);
     ASSERT_NE(playerList.front(), nullptr);
     EXPECT_EQ(playerList.front()->getQuestLog()[IDSZ2('T', 'E', 'S', 'T')], 4);
@@ -254,7 +269,7 @@ TEST_F(ModulePlayerStartupFixture, LegacyLocalPlayerCountMirrorTracksPreModuleFa
 
     EXPECT_EQ(session.localPlayerCount(), 0u);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
     ASSERT_EQ(playerList.size(), 1u);
 
     EXPECT_EQ(session.localPlayerCount(), static_cast<size_t>(localStatsMirror().player_count));
@@ -325,7 +340,7 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusCountsAliveRegisteredPlayers
     auto object = makeFollower(objectHandler, 127);
     ASSERT_NE(object, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
 
     const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
 
@@ -342,7 +357,7 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusCountsDeadRegisteredPlayers)
     auto object = makeFollower(objectHandler, 128);
     ASSERT_NE(object, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, object->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
     object->_isAlive = false;
 
     const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
@@ -362,8 +377,8 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusDistinguishesMixedAliveAndDe
     ASSERT_NE(firstObject, nullptr);
     ASSERT_NE(secondObject, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     firstObject->_isAlive = false;
 
     const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
@@ -383,8 +398,8 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusSkipsNullAndTerminatedObject
     ASSERT_NE(aliveObject, nullptr);
     ASSERT_NE(terminatedObject, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, aliveObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, terminatedObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, aliveObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, terminatedObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     terminatedObject->_terminateRequested = true;
     playerList.push_back(std::make_shared<Ego::Player>(ObjectRef::Invalid, Ego::Input::InputDevice::DeviceList[2]));
 
@@ -409,10 +424,10 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerPerceptionAveragesAlivePlayersAndC
     ASSERT_NE(deadObject, nullptr);
     ASSERT_NE(terminatedObject, nullptr);
 
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, deadObject->getObjRef(), Ego::Input::InputDevice::DeviceList[2], false));
-    ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, terminatedObject->getObjRef(), Ego::Input::InputDevice::DeviceList[3], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, firstObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, secondObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, deadObject->getObjRef(), Ego::Input::InputDevice::DeviceList[2], false));
+    ASSERT_TRUE(addPlayer(playerList, objectHandler, terminatedObject->getObjRef(), Ego::Input::InputDevice::DeviceList[3], false));
 
     firstObject->setBaseAttribute(Ego::Attribute::SEE_INVISIBLE, 2.0f);
     firstObject->setBaseAttribute(Ego::Attribute::SENSE_KURSES, 6.0f);
