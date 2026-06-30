@@ -138,6 +138,12 @@ protected:
         return session.activeModule();
     }
 
+    void flushObjectHandler(GameModule& module) const
+    {
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
+    }
+
     std::shared_ptr<Object> makePricedItem(GameModule& module, int slotBase) const
     {
         static const std::vector<std::string> candidates = {
@@ -170,6 +176,46 @@ protected:
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ShopFixture::s_runtime;
+
+TEST_F(ShopFixture, MakeShopIgnoresInvalidOrMissingOwnerRefs)
+{
+    auto& module = beginActiveTestModule();
+    Passage passage(module, 0, 0, 1, 1, EMPTY_BIT_FIELD);
+
+    passage.makeShop(ObjectRef::Invalid);
+    EXPECT_FALSE(passage.isShop());
+    EXPECT_EQ(passage.getShopOwner(), Passage::SHOP_NOOWNER);
+
+    passage.makeShop(ObjectRef(77));
+    EXPECT_FALSE(passage.isShop());
+    EXPECT_EQ(passage.getShopOwner(), Passage::SHOP_NOOWNER);
+}
+
+TEST_F(ShopFixture, MakeShopMarksInPassageItemsAsShopInventory)
+{
+    auto& module = beginActiveTestModule();
+    auto owner = makeObject(module, "mp_objects/follower.obj", 5191);
+    auto item = makePricedItem(module, 5192);
+
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(item, nullptr);
+
+    owner->setPosition(64.0f, 64.0f, 0.0f);
+    item->setPosition(64.0f, 64.0f, 0.0f);
+    item->setShopItem(false);
+    item->setKursed(true);
+    item->setNameKnown(false);
+    flushObjectHandler(module);
+
+    Passage passage(module, 0, 0, 1, 1, EMPTY_BIT_FIELD);
+    passage.makeShop(owner->getObjRef());
+
+    EXPECT_TRUE(passage.isShop());
+    EXPECT_EQ(passage.getShopOwner(), owner->getObjRef());
+    EXPECT_TRUE(item->isShopItem());
+    EXPECT_FALSE(item->isKursed());
+    EXPECT_TRUE(item->isNameKnown());
+}
 
 TEST_F(ShopFixture, BuyPublishesSellOrderAndTransfersMoney)
 {

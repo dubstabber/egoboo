@@ -93,9 +93,16 @@ void GameModule::checkPassageMusic()
 void GameModule::updateAllObjects()
 {
     const uint32_t currentUpdateFrame = worldUpdateCount();
+    ObjectHandler& objectHandler = getObjectHandler();
 
-    for (const std::shared_ptr<Object> &object : getObjectHandler().iterator())
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
+        Object* object = objectHandler.get(objectRef);
+        if (object == nullptr)
+        {
+            continue;
+        }
+
         //Skip terminated objects
         if (object->isTerminated()) {
             continue;
@@ -146,7 +153,13 @@ void GameModule::updatePits()
         }
 
         // Kill or teleport any characters that fell in a pit...
-        for (const std::shared_ptr<Object> &pchr : _gameObjects.iterator()) {
+        for (const ObjectRef& objectRef : _gameObjects.objectRefIterator()) {
+            Object* pchr = _gameObjects.get(objectRef);
+            if (pchr == nullptr)
+            {
+                continue;
+            }
+
             IDamageable& damageable = *pchr;
 
             // Is it a valid character?
@@ -209,7 +222,13 @@ void GameModule::updateDamageTiles()
     const uint32_t currentUpdateFrame = worldUpdateCount();
 
     // do the damage tile stuff
-    for (const std::shared_ptr<Object> &pchr : _gameObjects.iterator()) {
+    for (const ObjectRef& objectRef : _gameObjects.objectRefIterator()) {
+        Object* pchr = _gameObjects.get(objectRef);
+        if (pchr == nullptr)
+        {
+            continue;
+        }
+
         IDamageable& damageable = *pchr;
         const IDamageable& constDamageable = *pchr;
 

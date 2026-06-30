@@ -325,6 +325,12 @@ protected:
         EXPECT_TRUE(began);
         return session.activeModule();
     }
+
+    void flushObjectHandler(GameModule& module) const
+    {
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
+    }
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ModuleUpdateFixture::s_runtime;
@@ -345,6 +351,66 @@ TEST_F(ModuleUpdateFixture, UpdateAllObjectsTerminatesObjectAtPoofBoundary)
     session.worldUpdateCount() = 11;
     module.updateAllObjects();
     EXPECT_TRUE(object->isTerminated());
+}
+
+TEST_F(ModuleUpdateFixture, UpdatePitsKillsLiveObjectBelowPitDepthAndSkipsInvincibleObjects)
+{
+    auto& module = beginActiveTestModule();
+    auto fallen = makeObject(module, "mp_objects/follower.obj", 4102,
+                             Ego::Vector3f(64.0f, 64.0f, GameModule::PITDEPTH - 8.0f));
+    auto invincible = makeObject(module, "mp_objects/follower.obj", 4103,
+                                 Ego::Vector3f(96.0f, 64.0f, GameModule::PITDEPTH - 8.0f));
+
+    ASSERT_NE(fallen, nullptr);
+    ASSERT_NE(invincible, nullptr);
+
+    fallen->setInvincible(false);
+    invincible->setInvincible(true);
+    flushObjectHandler(module);
+
+    module.enablePitsKill();
+    module._pitsClock = 1;
+
+    module.updatePits();
+
+    EXPECT_FALSE(fallen->isAlive());
+    EXPECT_TRUE(invincible->isAlive());
+    EXPECT_EQ(module._pitsClock, GameModule::PIT_CLOCK_RATE);
+}
+
+TEST_F(ModuleUpdateFixture, UpdateDamageTilesDamagesEligibleObjectsAndSkipsInvincibleObjects)
+{
+    auto& module = beginActiveTestModule();
+    auto victim = makeObject(module, "mp_objects/follower.obj", 41031,
+                             Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto invincible = makeObject(module, "mp_objects/follower.obj", 41032,
+                                 Ego::Vector3f(96.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(victim, nullptr);
+    ASSERT_NE(invincible, nullptr);
+
+    victim->setInvincible(false);
+    victim->setDamageTimer(0);
+    invincible->setInvincible(true);
+    invincible->setDamageTimer(0);
+    flushObjectHandler(module);
+
+    module.getMeshPointer()->add_fx(victim->getTile(), MAPFX_DAMAGE);
+    module.getMeshPointer()->add_fx(invincible->getTile(), MAPFX_DAMAGE);
+    module._damageTile.amount = IPair(512, 0);
+    module._damageTile.damagetype = DAMAGE_DIRECT;
+    module._damageTile.part_gpip = LocalParticleProfileRef::Invalid;
+    GameSessionContext::get().worldUpdateCount() = 1;
+
+    const float victimLifeBefore = victim->getLife();
+    const float invincibleLifeBefore = invincible->getLife();
+
+    module.updateDamageTiles();
+
+    EXPECT_FLOAT_EQ(victim->getLife(), victimLifeBefore - 2.0f);
+    EXPECT_EQ(victim->getDamageTimer(), static_cast<uint8_t>(GameModule::DAMAGETILETIME));
+    EXPECT_FLOAT_EQ(invincible->getLife(), invincibleLifeBefore);
+    EXPECT_EQ(invincible->getDamageTimer(), static_cast<uint8_t>(0));
 }
 
 TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker)

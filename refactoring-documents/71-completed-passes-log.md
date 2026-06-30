@@ -3063,3 +3063,22 @@ back-edge proof was required. Singleton metrics remain **605** `::get()` lines, 
 **128,683**, test files/lines are **50 / 24,170**, and ctest configures **920** cases. Gates:
 `cmake --build build -j20` clean; focused object-query/spawn-failure/target-search slice **9/9**; ctest
 **920/920**; validator `test.mod` 0/0.
+
+### Pass 283 — Passage, team, and module update ref-iteration cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through bounded gameplay object-iteration
+consumers without changing script opcode APIs, source placement, CMake archive membership, object ownership,
+or legacy content behavior. `Passage` door/shop/target scans, `Team` team-experience/help publication, and
+`GameModule` per-frame object update, pit, and damage-tile loops now iterate object refs and resolve concrete
+objects only at immediate read/mutation points.
+
+Focused coverage now pins pit-kill and damage-tile update behavior for ref-iterated module loops, plus
+invalid shop-owner rejection and in-passage shop-item marking through the passage shop scan. Existing
+passage-target, alert-publication, shop, team, and script-system coverage stayed green.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,743**, test files/lines are **50 / 24,282**, and ctest configures **924** cases. Gates:
+`cmake --build build -j20` clean; focused module/passage/shop/team/script slice **218/218**; ctest
+**924/924**; validator `test.mod` 0/0; `git diff --check` clean.

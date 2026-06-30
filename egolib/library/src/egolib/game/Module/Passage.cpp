@@ -96,11 +96,18 @@ bool Passage::close()
     // check to see if a wall can close
     if (0 != HAS_SOME_BITS(_mask, MAPFX_IMPASS | MAPFX_WALL))
     {
-        std::vector<std::shared_ptr<Object>> crushedCharacters;
+        ObjectHandler& objectHandler = _module.getObjectHandler();
+        std::vector<ObjectRef> crushedCharacters;
 
         // Make sure it isn't blocked
-        for(const std::shared_ptr<Object> &object : _module.getObjectHandler().iterator())
+        for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
         {
+            Object* object = objectHandler.get(objectRef);
+            if (object == nullptr)
+            {
+                continue;
+            }
+
             //Scenery can neither be crushed nor prevents doors from closing
             if(object->isScenery()) {
                 continue;
@@ -117,14 +124,19 @@ bool Passage::close()
                     }
                     else
                     {
-                        crushedCharacters.push_back(object);
+                        crushedCharacters.push_back(object->getObjRef());
                     }
                 }
             }
         }
 
         // Crush any unfortunate characters
-        for(const std::shared_ptr<Object> &character : crushedCharacters) {
+        for(const ObjectRef& characterRef : crushedCharacters) {
+            Object* character = objectHandler.get(characterRef);
+            if (character == nullptr)
+            {
+                continue;
+            }
             publishCrushedAlert(*character);
         }
     }
@@ -146,12 +158,19 @@ bool Passage::objectIsInPassage(const IPhysical& object) const
 ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, const BIT_FIELD targeting_bits, const IDSZ2& require_item ) const
 {
     // Skip if the one who is looking doesn't exist
-    if ( !_module.getObjectHandler().exists(objRef) ) return ObjectRef::Invalid;
-    Object *psrc = _module.getObjectHandler().get(objRef);
+    ObjectHandler& objectHandler = _module.getObjectHandler();
+    if ( !objectHandler.exists(objRef) ) return ObjectRef::Invalid;
+    Object *psrc = objectHandler.get(objRef);
 
     // Look at each character
-    for(const std::shared_ptr<Object> &pchr : _module.getObjectHandler().iterator())
+    for(const ObjectRef& characterRef : objectHandler.objectRefIterator())
     {
+        Object* pchr = objectHandler.get(characterRef);
+        if (pchr == nullptr)
+        {
+            continue;
+        }
+
         if(pchr->isTerminated()) {
             continue;
         }
@@ -184,7 +203,7 @@ ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, co
                 for (size_t slot = 0; slot < pchr->getInventoryMaxItems(); ++slot)
                 {
                     const ObjectRef itemRef = pchr->getInventoryItemRef(slot);
-                    const Object* pitem = _module.getObjectHandler().get(itemRef);
+                    const Object* pitem = objectHandler.get(itemRef);
                     if (pitem == nullptr)
                     {
                         continue;
@@ -261,17 +280,25 @@ ObjectRef Passage::getShopOwner() const {
 
 void Passage::makeShop(ObjectRef owner)
 {
+    ObjectHandler& objectHandler = _module.getObjectHandler();
+
     //Make sure owner is valid
-    const std::shared_ptr<Object> &powner = _module.getObjectHandler()[owner];
-    if ( !powner || powner->isTerminated() || !powner->isAlive() ) return;
+    const Object* powner = objectHandler.get(owner);
+    if ( powner == nullptr || powner->isTerminated() || !powner->isAlive() ) return;
 
     //Mark as shop
     _isShop = true;
     _shopOwner = owner;
 
     // flag every item in the shop as a shop item
-    for(const std::shared_ptr<Object> &object : _module.getObjectHandler().iterator())
+    for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
+        Object* object = objectHandler.get(objectRef);
+        if (object == nullptr)
+        {
+            continue;
+        }
+
         if (object->isTerminated()) continue;
 
         if ( object->isItem() )

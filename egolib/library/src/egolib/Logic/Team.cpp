@@ -94,8 +94,15 @@ Team::Team(const TEAM_REF teamID) :
 
 void Team::giveTeamExperience(const int amount, const XPType xptype) const
 {
-    for(const std::shared_ptr<Object> &chr : objectHandler().iterator())
+    ObjectHandler& handler = objectHandler();
+    for(const ObjectRef& objectRef : handler.objectRefIterator())
     {
+        Object* chr = handler.get(objectRef);
+        if (chr == nullptr)
+        {
+            continue;
+        }
+
         if ( chr->getTeam()._teamID == _teamID )
         {
             chr->giveExperience(amount, xptype, false);
@@ -133,9 +140,16 @@ void Team::callForHelp(ObjectRef callerRef)
     }
 
     //Notify all other characters who are friendly that this character has called for help
-    for(const std::shared_ptr<Object> &chr : objectHandler().iterator())
+    ObjectHandler& handler = objectHandler();
+    for(const ObjectRef& objectRef : handler.objectRefIterator())
     {
-        if ( chr.get() != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
+        Object* chr = handler.get(objectRef);
+        if (chr == nullptr)
+        {
+            continue;
+        }
+
+        if ( chr != caller && !chr->getTeam().hatesTeam(caller->getTeam()) )
         {
             scriptable(*chr).addAIAlertBits(ALERTIF_CALLEDFORHELP);
         }
