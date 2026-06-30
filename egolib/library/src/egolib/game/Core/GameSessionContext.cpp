@@ -321,41 +321,6 @@ bool GameSessionContext::finishModule()
     return game_copy_imports(importList());
 }
 
-std::shared_ptr<ego_mesh_t> GameSessionContext::mesh()
-{
-    return activeModule().getMeshPointer();
-}
-
-std::shared_ptr<const Ego::Texture> GameSessionContext::tileTexture(size_t index)
-{
-    return activeModule().getTileTexture(index);
-}
-
-std::shared_ptr<const Ego::Texture> GameSessionContext::waterTexture(uint8_t layer)
-{
-    return activeModule().getWaterTexture(layer);
-}
-
-water_instance_t& GameSessionContext::water()
-{
-    return activeModule().getWater();
-}
-
-WeatherState& GameSessionContext::weatherState()
-{
-    return activeModule().getWeatherState();
-}
-
-fog_instance_t& GameSessionContext::fog()
-{
-    return activeModule().getFog();
-}
-
-AnimatedTilesState& GameSessionContext::animatedTilesState()
-{
-    return activeModule().getAnimatedTilesState();
-}
-
 const std::vector<std::shared_ptr<Ego::Player>>& GameSessionContext::playerList() const
 {
     return activeModule().getPlayerList();

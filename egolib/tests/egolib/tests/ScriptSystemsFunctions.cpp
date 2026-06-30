@@ -33,6 +33,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
@@ -1091,7 +1092,7 @@ TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAn
     EXPECT_TRUE(scr_GetWaterLevel(state, self));
     EXPECT_EQ(state.argument, 85);
 
-    auto& fog = GameSessionContext::get().fog();
+    auto& fog = activeModuleEnvironment().fog();
     const float originalTop = fog._top;
     const float originalDistance = fog._distance;
     EngineContext::get().config().graphic_fog_enable.setValue(true);

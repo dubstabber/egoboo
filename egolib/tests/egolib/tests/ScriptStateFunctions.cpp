@@ -18,6 +18,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -1875,7 +1876,7 @@ TEST_F(ScriptStateFunctionsFixture, SetFogFunctionsRespectInstalledConfigToggle)
 
     auto& config = EngineContext::get().config();
     const bool previousFogEnabled = config.graphic_fog_enable.getValue();
-    auto& fog = GameSessionContext::get().fog();
+    auto& fog = activeModuleEnvironment().fog();
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor);
 

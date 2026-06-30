@@ -223,3 +223,11 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   seams. Verified with the Linux build, focused module/loading ctest filter,
   full `ctest`, the `test.mod` validator smoke, a no-stray-header archive check,
   and the live-archive `nm` back-edge check.
+- Pass 301 on 2026-06-30 retired the remaining `GameSessionContext` module
+  environment forwarding API for mesh, tile/water textures, water, weather, fog,
+  and animated-tile reads. The active `IModuleEnvironment` seam remains the
+  supported read path, while `GameSessionContext` keeps module lifecycle,
+  mutation, and concrete active-module ownership. The last test-only fog callers
+  moved to `activeModuleEnvironment()`. Verified with the Linux build, focused
+  `ObjectHandlerQueries|ScriptSystemsFunctions|ScriptStateFunctions` ctest
+  filter, full `ctest`, and the `test.mod` validator smoke.
