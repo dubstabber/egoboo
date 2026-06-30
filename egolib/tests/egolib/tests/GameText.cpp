@@ -158,7 +158,7 @@ TEST_F(GameTextFixture, ExpandEscapeCodesUsesScriptableOwnerAndTargetRefs)
     scriptState.distance = 12;
 
     const std::string text = "%t|%o|%s|%g|%0";
-    const std::string expanded = expandEscapeCodes(speaker, scriptState, text);
+    const std::string expanded = expandEscapeCodes(speaker->getObjRef(), scriptState, text);
     const std::string expected = target->getName()
                                + "|" + owner->getName(true, false, false)
                                + "|" + target->getProfile()->getClassName()
@@ -166,6 +166,25 @@ TEST_F(GameTextFixture, ExpandEscapeCodesUsesScriptableOwnerAndTargetRefs)
                                + target->getProfile()->getSkinInfo(0).name;
 
     EXPECT_EQ(expanded, expected);
+}
+
+TEST_F(GameTextFixture, ExpandEscapeCodesLeavesMissingOwnerAndTargetRefsEmpty)
+{
+    ObjectHandler& objectHandler = beginActiveTestModule();
+    auto speaker = makeObject(objectHandler, "mp_objects/follower.obj", 5104);
+
+    ASSERT_NE(speaker, nullptr);
+
+    IScriptable& scriptableSpeaker = *speaker;
+    scriptableSpeaker.setAIOwner(ObjectRef(9090));
+    scriptableSpeaker.setAITarget(ObjectRef(9091));
+
+    script_state_t scriptState;
+
+    const std::string text = "prefix:%t|%o|%s|%g|%0";
+    const std::string expanded = expandEscapeCodes(speaker->getObjRef(), scriptState, text);
+
+    EXPECT_EQ(expanded, "Prefix:||||");
 }
 
 } // namespace

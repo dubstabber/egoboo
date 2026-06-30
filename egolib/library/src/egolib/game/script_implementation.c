@@ -374,16 +374,17 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 }
 
 //--------------------------------------------------------------------------------------------
-uint8_t AddEndMessage( Object * pchr, const int message_index, script_state_t * pstate )
+uint8_t AddEndMessage( ObjectRef characterRef, const int message_index, script_state_t * pstate )
 {
     /// @author ZZ
     /// @details This function appends a message to the end-module text
 
+    Object* pchr = objectHandler().get(characterRef);
     if ( nullptr == pchr) return false;
 
     if ( !pchr->getProfile()->isValidMessageID( message_index ) ) return false;
 
-    std::string escapedText = g_endText.getText() + expandEscapeCodes(objectHandler()[pchr->getObjRef()], *pstate, pchr->getProfile()->getMessage(message_index));
+    std::string escapedText = g_endText.getText() + expandEscapeCodes(characterRef, *pstate, pchr->getProfile()->getMessage(message_index));
     g_endText.setText(escapedText);
     return true;
 }
@@ -448,10 +449,12 @@ uint8_t _display_message( const ObjectRef ichr, const PRO_REF iprofile, const in
     /// @author ZZ
     /// @details This function sticks a message_offset in the display queue and sets its timer
 
+    if ( objectHandler().get(ichr) == nullptr ) return false;
+
     const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(iprofile);
     if ( !ppro->isValidMessageID(message) ) return false;
 
-    std::string text = expandEscapeCodes(objectHandler()[ichr], *pstate, ppro->getMessage(message));
+    std::string text = expandEscapeCodes(ichr, *pstate, ppro->getMessage(message));
     DisplayMsg_print(text);
 
     return true;

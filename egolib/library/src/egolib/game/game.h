@@ -212,7 +212,7 @@ void reset_end_text();
 bool  chr_check_target( Object * psrc, const Object& ptst, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
 ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& idsz, const BIT_FIELD targeting_bits );
 
-std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const script_state_t &scriptState, const std::string &text);
+std::string expandEscapeCodes(ObjectRef objectRef, const script_state_t &scriptState, const std::string &text);
 
 uint8_t get_light( int alpha, float seedark_mag );
 

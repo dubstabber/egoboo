@@ -3146,3 +3146,23 @@ back-edge proof was required. Live singleton metrics are now **605** `::get()` l
 `cmake --build build -j20` clean; focused inventory/holder/script slice **23/23**; ctest **929/929**;
 validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules, 10 warnings,
 245 errors**, nonzero exit from pre-existing content errors).
+
+### Pass 287 — Ref-first message and export cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through message expansion and player
+export helpers without changing script opcode APIs, source placement, CMake archive membership, object
+ownership, or legacy content behavior. `expandEscapeCodes(...)` and `AddEndMessage(...)` now take
+`ObjectRef` values at their public edges, with concrete object resolution kept inside the helper body only
+where immediate profile/name/message reads are needed.
+
+Script message dispatch no longer calls `objectHandler()[ref]` solely to expand text. Missing owner and
+target refs still produce empty substitutions for the legacy `%t`, `%o`, `%s`, `%g`, and skin escapes, and
+missing speaker refs fail before message publication. Player export, character naming, and quest export
+now use `ObjectHandler::get(ObjectRef)` raw-pointer reads instead of shared-handle lookup syntax while
+preserving export validity checks, dense inventory numbering, held-item export paths, and no-player no-op
+behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Runtime source lines are now **128,827**, test files/lines are
+**50 / 24,507**, and ctest configures **930** cases. Gates: `cmake --build build -j20` clean; focused
+message/export slice **17/17**; ctest **930/930**; validator `test.mod` 0/0.

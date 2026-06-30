@@ -43,9 +43,9 @@ const IScriptable& scriptable(const Object& object)
     return object;
 }
 
-std::shared_ptr<Object> resolveScriptObject(GameModule& module, ObjectRef objectRef)
+Object* resolveScriptObject(GameModule& module, ObjectRef objectRef)
 {
-    return module.getObjectHandler().getHandle(objectRef);
+    return module.getObjectHandler().get(objectRef);
 }
 }
 
@@ -128,9 +128,15 @@ void reset_end_text()
     */
 }
 
-std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const script_state_t &scriptState, const std::string &text)
+std::string expandEscapeCodes(ObjectRef objectRef, const script_state_t &scriptState, const std::string &text)
 {
     GameModule& module = activeModule();
+    Object* object = module.getObjectHandler().get(objectRef);
+    if (object == nullptr)
+    {
+        return "";
+    }
+
     const IScriptable& scriptableObject = scriptable(*object);
     std::stringstream result;
     bool escapeEncountered = false;
@@ -159,7 +165,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //AI target name
                 case 't':
                 {
-                    const std::shared_ptr<Object> target = resolveScriptObject(module, scriptableObject.getAITarget());
+                    const Object* target = resolveScriptObject(module, scriptableObject.getAITarget());
                     if(target) {
                         result << target->getName();
                     }
@@ -169,7 +175,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Owner's name
                 case 'o':
                 {
-                    const std::shared_ptr<Object> owner = resolveScriptObject(module, scriptableObject.getAIOwner());
+                    const Object* owner = resolveScriptObject(module, scriptableObject.getAIOwner());
                     if(owner) {
                         result << owner->getName(true, false, false);
                     }
@@ -179,7 +185,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 //Target class name
                 case 's':
                 {
-                    const std::shared_ptr<Object> target = resolveScriptObject(module, scriptableObject.getAITarget());
+                    const Object* target = resolveScriptObject(module, scriptableObject.getAITarget());
                     if(target) {
                         result << target->getProfile()->getClassName();
                     }
@@ -234,7 +240,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
 
                 case 'g':  // Target's possessive
                 {
-                    const std::shared_ptr<Object> target = resolveScriptObject(module, scriptableObject.getAITarget());
+                    const Object* target = resolveScriptObject(module, scriptableObject.getAITarget());
                     if(target) {
                         if (target->getGender() == Gender::Female) {
                             result << "her";
@@ -261,7 +267,7 @@ std::string expandEscapeCodes(const std::shared_ptr<Object> &object, const scrip
                 case '8':
                 case '9':
                 {
-                    const std::shared_ptr<Object> target = resolveScriptObject(module, scriptableObject.getAITarget());
+                    const Object* target = resolveScriptObject(module, scriptableObject.getAITarget());
                     if(target) {
                         result << target->getProfile()->getSkinInfo(c-'0').name;
                     }

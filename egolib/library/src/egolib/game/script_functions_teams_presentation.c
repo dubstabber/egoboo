@@ -125,16 +125,14 @@ void clearEndMessageText()
     g_endText.setText("");
 }
 
-bool addEndMessageText(Object& object, int messageIndex, script_state_t& state)
+bool addEndMessageText(ObjectRef objectRef, int messageIndex, script_state_t& state)
 {
-    return ::AddEndMessage(&object, messageIndex, &state);
+    return ::AddEndMessage(objectRef, messageIndex, &state);
 }
 
 bool addSelfEndMessageText(const PresentationEffectsContext& context, int messageIndex, script_state_t& state)
 {
-    Object* selfObject = tryObject(context.selfRef);
-    return selfObject != nullptr &&
-           addEndMessageText(*selfObject, messageIndex, state);
+    return addEndMessageText(context.selfRef, messageIndex, state);
 }
 
 void logDeprecatedScriptFunctionUse(const std::string& functionName,

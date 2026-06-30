@@ -158,7 +158,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 
 /// @author ZZ
 /// @details This function appends a message to the end-module text
-uint8_t AddEndMessage( Object * pchr, const int message_index, script_state_t * pstate );
+uint8_t AddEndMessage( ObjectRef characterRef, const int message_index, script_state_t * pstate );
 
 /// @author ZZ
 /// @details This function finds the next tile in the passage, x0 and y0

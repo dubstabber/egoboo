@@ -56,7 +56,8 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
     std::string todirfullname;
 
     GameModule& module = activeModule();
-    const std::shared_ptr<Object> &object = module.getObjectHandler()[character];
+    ObjectHandler& objectHandler = module.getObjectHandler();
+    Object* object = objectHandler.get(character);
     if(!object) {
         return ExportCharacterResult::Error;
     }
@@ -66,8 +67,14 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
         return ExportCharacterResult::Skipped;
     }
 
+    const Object* ownerObject = objectHandler.get(owner);
+    if (!ownerObject)
+    {
+        return ExportCharacterResult::Error;
+    }
+
     // TWINK_BO.OBJ
-    todirname = str_encode_path(module.getObjectHandler()[owner]->getName());
+    todirname = str_encode_path(ownerObject->getName());
 
     // Is it a character or an item?
     if ( chr_obj_index < 0 )
@@ -108,7 +115,7 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
     fromdir = object->getProfile()->getPathname();
 
     // Build the DATA.TXT file
-    if(!ObjectProfile::exportCharacterToFile(todir + "/data.txt", object.get())) {
+    if(!ObjectProfile::exportCharacterToFile(todir + "/data.txt", object)) {
 		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save ", "`", todir, "/data.txt`", Log::EndOfEntry);
         return ExportCharacterResult::Error;
     }
@@ -156,6 +163,7 @@ bool export_all_players( bool require_local )
     int number;
 
     GameModule& module = activeModule();
+    ObjectHandler& objectHandler = module.getObjectHandler();
 
     // Stop if export isnt valid
     if ( !module.isExportValid() ) return false;
@@ -169,7 +177,7 @@ bool export_all_players( bool require_local )
 
         // Is it alive?
         const ObjectRef character = player->getObjectRef();
-        std::shared_ptr<Object> pchr = module.getObjectHandler()[character];
+        Object* pchr = objectHandler.get(character);
         if(!pchr || pchr->isTerminated()) continue;
 
         // don't export dead characters
@@ -184,7 +192,7 @@ bool export_all_players( bool require_local )
 
         // Export the left hand item
         item = pchr->getHeldObject(SLOT_LEFT);
-        if ( module.getObjectHandler().exists( item ) )
+        if ( objectHandler.exists( item ) )
         {
             exportResult = export_one_character( item, character, SLOT_LEFT, true );
             if ( ExportCharacterResult::Error == exportResult )
@@ -195,7 +203,7 @@ bool export_all_players( bool require_local )
 
         // Export the right hand item
         item = pchr->getHeldObject(SLOT_RIGHT);
-        if ( module.getObjectHandler().exists( item ) )
+        if ( objectHandler.exists( item ) )
         {
             exportResult = export_one_character( item, character, SLOT_RIGHT, true );
             if ( ExportCharacterResult::Error == exportResult )
@@ -233,7 +241,7 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
     /// @details This function makes the naming.txt file for the character
 
     GameModule& module = activeModule();
-    const std::shared_ptr<Object> &object = module.getObjectHandler()[character];
+    Object* object = module.getObjectHandler().get(character);
     if(!object) {
         return false;
     }
@@ -254,9 +262,10 @@ bool export_one_character_name_vfs( const char *szSaveName, ObjectRef character 
     /// @details This function makes the naming.txt file for the character
 
     GameModule& module = activeModule();
-    if ( !module.getObjectHandler().exists( character ) ) return false;
+    const Object* object = module.getObjectHandler().get(character);
+    if ( !object ) return false;
 
-    return RandomName::exportName(module.getObjectHandler()[character]->getName(), szSaveName);
+    return RandomName::exportName(object->getName(), szSaveName);
 }
 
 //--------------------------------------------------------------------------------------------
