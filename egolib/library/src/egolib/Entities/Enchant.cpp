@@ -38,18 +38,23 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
-std::shared_ptr<Object> heldItem(const IInventoryHolder& object, slot_t slot)
+Object* objectByRef(ObjectRef objectRef)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().getHandle(object.getHeldObject(slot));
+    if (objectRef == ObjectRef::Invalid || !GameSessionContext::get().hasActiveModule())
+    {
+        return nullptr;
+    }
+
+    return GameSessionContext::get().activeModule().getObjectHandler().get(objectRef);
 }
 
-std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
+Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().getHandle(objectRef);
+    return objectByRef(object.getHeldObject(slot));
 }
 }
 
-Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, const std::shared_ptr<Object> &owner) :
+Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, ObjectRef ownerRef) :
     _isTerminated(false),
     _enchantProfile(enchantmentProfile),
     _spawnerProfileID(spawnerProfile),
@@ -57,10 +62,9 @@ Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfi
     _lifeTime(enchantmentProfile->lifetime > 0 ? enchantmentProfile->lifetime * ONESECOND : -1),
     _spawnParticlesTimer(0),
 
-    _target(),
-    _owner(owner),
-    _spawner(),
-    _overlay(),
+    _targetRef(ObjectRef::Invalid),
+    _ownerRef(ownerRef),
+    _overlayRef(ObjectRef::Invalid),
 
     _modifiers(),
     _missileTreatment(MissileTreatment_Normal),
@@ -174,13 +178,13 @@ Enchantment::Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfi
 
 Enchantment::~Enchantment()
 {
-    std::shared_ptr<Object> overlay = _overlay.lock();
+    Object* overlay = objectByRef(_overlayRef);
     if(overlay) {
         overlay->requestTerminate();
     }
 
     //Remove enchantment modifiers from target
-    std::shared_ptr<Object> target = _target.lock();
+    Object* target = objectByRef(_targetRef);
     if(target != nullptr && !target->isTerminated()) {
         for(const EnchantModifier &modifier : _modifiers)
         {
@@ -200,7 +204,7 @@ Enchantment::~Enchantment()
     }
 
     //Remove boost effects from owner
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(owner != nullptr && !owner->isTerminated()) {
         owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -_ownerManaSustain);
         owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, -_ownerLifeSustain);
@@ -222,8 +226,8 @@ void Enchantment::update()
     if(isTerminated()) return;
 
     //Have we lost our target?
-    std::shared_ptr<Object> target = _target.lock();
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* target = objectByRef(_targetRef);
+    Object* owner = objectByRef(_ownerRef);
     if(target == nullptr || target->isTerminated()) {
         requestTerminate();
         return;
@@ -307,7 +311,7 @@ const std::shared_ptr<EnchantProfile>& Enchantment::getProfile() const
 
 void Enchantment::applyEnchantment(ObjectRef targetRef)
 {
-    std::shared_ptr<Object> target = objectHandle(targetRef);
+    Object* target = objectByRef(targetRef);
 
     //Invalid target?
     if( target == nullptr || target->isTerminated() || (!target->isAlive() && !_enchantProfile->_target._stay) ) {
@@ -317,7 +321,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     }
 
     //Already added to a target?
-    if(_target.lock()) {
+    if(objectByRef(_targetRef)) {
         auto e = Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to apply enchant: target locked", Log::EndOfEntry);
         Log::activeTarget() << e;
         throw std::logic_error(e.getText());
@@ -326,8 +330,8 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     // do retargeting, if necessary
     // Should it choose an inhand item?
     if (_enchantProfile->retarget) {
-        const std::shared_ptr<Object>& rightHandItem = heldItem(*target, SLOT_RIGHT);
-        const std::shared_ptr<Object>& leftHandItem = heldItem(*target, SLOT_LEFT);
+        Object* rightHandItem = heldItem(*target, SLOT_RIGHT);
+        Object* leftHandItem = heldItem(*target, SLOT_LEFT);
         // Left, right, or both are valid
         if (rightHandItem) {
             // Only right hand is valid
@@ -345,8 +349,8 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
         }
     }
 
-    //Set our target, stored as a weak_ptr
-    _target = target;
+    //Set our target, stored as a stable object reference
+    _targetRef = target->getObjRef();
 
     // Check damage type, 90% damage resistance is enough to resist the enchant
     if (_enchantProfile->required_damagetype < DAMAGE_COUNT) {
@@ -376,10 +380,10 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     {
         GameModule& module = GameSessionContext::get().activeModule();
         const ObjectRef overlayRef = module.spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
-        std::shared_ptr<Object> overlay = module.getObjectHandler().getHandle(overlayRef);
+        Object* overlay = module.getObjectHandler().get(overlayRef);
         if (overlay)
         {
-            _overlay = overlay;                             //Kill this character on end...
+            _overlayRef = overlay->getObjRef();             //Kill this character on end...
             overlay->setAITarget(target->getObjRef());
             overlay->setOverlay(true);
             overlay->setAIStateValue(_enchantProfile->spawn_overlay); // ??? WHY DO THIS ???
@@ -481,7 +485,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     }
 
     //Finally apply boost values to owner as well
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(owner != nullptr && !owner->isTerminated()) {
         owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, _ownerManaSustain);
         owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, _ownerLifeSustain);
@@ -493,7 +497,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
 
 ObjectRef Enchantment::getTargetRef() const
 {
-    std::shared_ptr<Object> target = _target.lock();
+    Object* target = objectByRef(_targetRef);
     if(!target || target->isTerminated()) {
         return ObjectRef::Invalid;
     }
@@ -502,7 +506,7 @@ ObjectRef Enchantment::getTargetRef() const
 
 ObjectRef Enchantment::getOwnerRef() const
 {
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(!owner || owner->isTerminated()) {
         return ObjectRef::Invalid;
     }
@@ -511,7 +515,7 @@ ObjectRef Enchantment::getOwnerRef() const
 
 ObjectAttribution Enchantment::getOwnerAttribution() const
 {
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(!owner || owner->isTerminated()) {
         return ObjectAttribution();
     }
@@ -520,7 +524,7 @@ ObjectAttribution Enchantment::getOwnerAttribution() const
 
 bool Enchantment::payOwnerMissileTreatmentCost(ObjectRef killerRef) const
 {
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(!owner || owner->isTerminated()) {
         return false;
     }
@@ -530,7 +534,7 @@ bool Enchantment::payOwnerMissileTreatmentCost(ObjectRef killerRef) const
 void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain, float targetManaDrain, float targetLifeDrain)
 {
     //Update boost effects to owner
-    std::shared_ptr<Object> owner = _owner.lock();
+    Object* owner = objectByRef(_ownerRef);
     if(owner && !owner->isTerminated()) {
         owner->adjustTempAttribute(Ego::Attribute::MANA_REGEN, -_ownerManaSustain);
         owner->adjustTempAttribute(Ego::Attribute::LIFE_REGEN, -_ownerLifeSustain);
@@ -541,7 +545,7 @@ void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain,
     _ownerLifeSustain = ownerLifeSustain;
 
     //Update boost effects to target
-    std::shared_ptr<Object> target = _target.lock();  
+    Object* target = objectByRef(_targetRef);
     if(target != nullptr) {
         for(EnchantModifier &modifier : _modifiers) {
             if(modifier._type == Ego::Attribute::MANA_REGEN) {
@@ -562,7 +566,7 @@ void Enchantment::setBoostValues(float ownerManaSustain, float ownerLifeSustain,
 
 void Enchantment::playEndSound() const
 {
-    std::shared_ptr<Object> target = _target.lock();
+    Object* target = objectByRef(_targetRef);
     if(target) {
         const std::shared_ptr<ObjectProfile> &spawnerProfile = activeProfileSystem().getProfile(_spawnerProfileID);
         audioSystem().playSound(target->getPosition(), spawnerProfile->getSoundID(getProfile()->endsound_index));

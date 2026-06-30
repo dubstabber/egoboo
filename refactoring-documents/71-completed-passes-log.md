@@ -3243,3 +3243,26 @@ No files moved between archives and `egolib/library/CMakeLists.txt` was untouche
 back-edge proof was required. Ctest still configures **933** cases. Gates: `cmake --build build -j20` clean;
 focused script-spawn slice **12/12**; ctest **933/933**; validator `test.mod` 0/0; script-spawn
 `getHandle(...)` guard clean; `git diff --check` clean.
+
+### Pass 292 — Enchantment ObjectRef identity cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through enchantment owner, target, and
+overlay identity without changing script opcode APIs, source placement, CMake archive membership, object
+ownership, or legacy content behavior. `Enchantment` now stores stable `ObjectRef` values for owner, target,
+and overlay identity, resolving borrowed `Object*` values only at immediate read or mutation points. The
+unused spawner weak object state was removed, and `Object::addEnchant(...)` no longer resolves an owner
+shared handle only to seed the enchant.
+
+Late enchant destruction is null-like when no active module is present, preserving teardown behavior after
+module shutdown. Focused coverage now pins removed-owner helper behavior, target-removal termination,
+retarget-right/left/missing-held-item behavior, and overlay termination through the normal
+enchant-removal/destruction path. Existing collision missile-treatment and script enchant paths stayed green.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Production `getHandle(...)` search guard now finds only the `ObjectHandler` API
+itself plus the intentional Player bootstrap and Billboard weak-attachment paths. Live singleton metrics
+remain **605** `::get()` lines, including **417** `EngineContext::get()` and **134**
+`GameSessionContext::get()` lines. Runtime source lines are now **128,777**, test files/lines are
+**50 / 24,728**, and ctest configures **937** cases. Gates: `cmake --build build -j20` clean; focused
+object/collision/script slice **179/179**; ctest **937/937**; validator `test.mod` 0/0; `git diff --check`
+clean.

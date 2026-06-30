@@ -58,7 +58,7 @@ struct EnchantModifier
 class Enchantment : public std::enable_shared_from_this<Enchantment>
 {
 public:
-    Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, const std::shared_ptr<Object> &owner);
+    Enchantment(const std::shared_ptr<EnchantProfile> &enchantmentProfile, ObjectProfileRef spawnerProfile, ObjectRef ownerRef);
 
     ~Enchantment();
 
@@ -147,10 +147,9 @@ private:
     int _lifeTime;                  ///< Time before end (in game logic frames)
     int _spawnParticlesTimer;       ///< Time before spawning particle effects (in game logic frames)
 
-    std::weak_ptr<Object> _target;  ///< Who it enchants
-    std::weak_ptr<Object> _owner;   ///< Who cast the enchant
-    std::weak_ptr<Object> _spawner; ///< The spellbook character
-    std::weak_ptr<Object> _overlay; ///< The overlay character
+    ObjectRef _targetRef;  ///< Who it enchants
+    ObjectRef _ownerRef;   ///< Who cast the enchant
+    ObjectRef _overlayRef; ///< The overlay character
 
     //Missile deflection enchant?
     MissileTreatment _missileTreatment;

@@ -290,6 +290,31 @@ bool findHealableInvalidAction(const std::shared_ptr<Object>& object,
     return false;
 }
 
+ENC_REF loadEnchantProfileFixture(const char* enchantPath)
+{
+    const ENC_REF enchantRef = EngineContext::get().profileSystem().loadEnchantProfile(enchantPath, INVALID_EVE_REF);
+    EXPECT_LT(enchantRef, ENCHANTPROFILES_MAX);
+    return enchantRef;
+}
+
+std::shared_ptr<EnchantProfile> mutableEnchantProfile(ENC_REF enchantRef)
+{
+    EXPECT_LT(enchantRef, ENCHANTPROFILES_MAX);
+    if (enchantRef >= ENCHANTPROFILES_MAX)
+    {
+        return nullptr;
+    }
+
+    return EngineContext::get().profileSystem().getEnchantProfile(enchantRef);
+}
+
+void placeInHand(Object& holder, Object& item, slot_t slot)
+{
+    holder.setHeldObject(slot, item.getObjRef());
+    item.setHolderRef(holder.getObjRef());
+    item.setAttachmentSlot(slot);
+}
+
 TEST_F(ObjectAccessorFixture, SelectedObjectRefsDefaultToInvalidAndRoundTripThroughAccessors)
 {
     auto object = makeFollower(301);
@@ -1006,6 +1031,142 @@ TEST_F(ObjectAccessorFixture, AddEnchantWithMissingSpawnerPreservesLegacyApplica
     ASSERT_TRUE(targetEnchantable.hasActiveEnchants());
     EXPECT_NE(targetEnchantable.getFirstActiveEnchant(), nullptr);
     EXPECT_EQ(ownerEnchantable.getLastEnchantmentSpawned(), nullptr);
+}
+
+TEST_F(ObjectAccessorFixture, EnchantOwnerHelpersTreatRemovedOwnerAsMissing)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 351);
+    auto owner = makeFollower(objectHandler, 352);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    const ENC_REF enchantRef = loadEnchantProfileFixture("mp_data/globalobjects/potions/ppotion.obj/enchant.txt");
+    auto enchantProfile = mutableEnchantProfile(enchantRef);
+    ASSERT_NE(enchantProfile, nullptr);
+    enchantProfile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].apply = true;
+    enchantProfile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].value = 1.0f;
+
+    auto enchant = target->addEnchant(enchantRef, owner->getProfileID().get(), owner->getObjRef(), owner->getObjRef());
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_EQ(enchant->getOwnerRef(), owner->getObjRef());
+
+    ASSERT_TRUE(objectHandler.remove(owner->getObjRef()));
+
+    EXPECT_EQ(enchant->getOwnerRef(), ObjectRef::Invalid);
+    EXPECT_FALSE(enchant->getOwnerAttribution().hasObject());
+    EXPECT_FALSE(enchant->payOwnerMissileTreatmentCost(ObjectRef::Invalid));
+}
+
+TEST_F(ObjectAccessorFixture, EnchantUpdateTerminatesAfterTargetRemoval)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 353);
+    auto owner = makeFollower(objectHandler, 354);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    const ENC_REF enchantRef = loadEnchantProfileFixture("mp_data/globalobjects/potions/ppotion.obj/enchant.txt");
+    auto enchant = target->addEnchant(enchantRef, owner->getProfileID().get(), owner->getObjRef(), owner->getObjRef());
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_EQ(enchant->getTargetRef(), target->getObjRef());
+
+    ASSERT_TRUE(objectHandler.remove(target->getObjRef()));
+
+    EXPECT_EQ(enchant->getTargetRef(), ObjectRef::Invalid);
+    enchant->update();
+    EXPECT_TRUE(enchant->isTerminated());
+}
+
+TEST_F(ObjectAccessorFixture, RetargetEnchantAppliesToHeldRightThenLeftAndFailsWithoutHeldItems)
+{
+    auto& objectHandler = beginActiveTestModule();
+    const ENC_REF enchantRef = loadEnchantProfileFixture("mp_data/globalobjects/potions/ppotion.obj/enchant.txt");
+    auto enchantProfile = mutableEnchantProfile(enchantRef);
+    ASSERT_NE(enchantProfile, nullptr);
+    enchantProfile->retarget = true;
+
+    auto bothHandsTarget = makeFollower(objectHandler, 355);
+    auto rightItem = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 356);
+    auto leftItem = makeObject(objectHandler, "mp_data/globalobjects/armor/atshield.obj", 357);
+    auto bothHandsOwner = makeFollower(objectHandler, 358);
+    ASSERT_NE(bothHandsTarget, nullptr);
+    ASSERT_NE(rightItem, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+    ASSERT_NE(bothHandsOwner, nullptr);
+    placeInHand(*bothHandsTarget, *leftItem, SLOT_LEFT);
+    placeInHand(*bothHandsTarget, *rightItem, SLOT_RIGHT);
+
+    auto rightEnchant = bothHandsTarget->addEnchant(enchantRef,
+                                                   bothHandsOwner->getProfileID().get(),
+                                                   bothHandsOwner->getObjRef(),
+                                                   bothHandsOwner->getObjRef());
+    ASSERT_NE(rightEnchant, nullptr);
+    EXPECT_FALSE(bothHandsTarget->hasActiveEnchants());
+    EXPECT_EQ(rightItem->getFirstActiveEnchant(), rightEnchant);
+    EXPECT_EQ(rightEnchant->getTargetRef(), rightItem->getObjRef());
+
+    auto leftOnlyTarget = makeFollower(objectHandler, 359);
+    auto leftOnlyItem = makeObject(objectHandler, "mp_data/globalobjects/weapons/stiletto.obj", 360);
+    auto leftOnlyOwner = makeFollower(objectHandler, 361);
+    ASSERT_NE(leftOnlyTarget, nullptr);
+    ASSERT_NE(leftOnlyItem, nullptr);
+    ASSERT_NE(leftOnlyOwner, nullptr);
+    placeInHand(*leftOnlyTarget, *leftOnlyItem, SLOT_LEFT);
+
+    auto leftEnchant = leftOnlyTarget->addEnchant(enchantRef,
+                                                  leftOnlyOwner->getProfileID().get(),
+                                                  leftOnlyOwner->getObjRef(),
+                                                  leftOnlyOwner->getObjRef());
+    ASSERT_NE(leftEnchant, nullptr);
+    EXPECT_FALSE(leftOnlyTarget->hasActiveEnchants());
+    EXPECT_EQ(leftOnlyItem->getFirstActiveEnchant(), leftEnchant);
+    EXPECT_EQ(leftEnchant->getTargetRef(), leftOnlyItem->getObjRef());
+
+    auto emptyHandsTarget = makeFollower(objectHandler, 362);
+    auto emptyHandsOwner = makeFollower(objectHandler, 363);
+    ASSERT_NE(emptyHandsTarget, nullptr);
+    ASSERT_NE(emptyHandsOwner, nullptr);
+
+    auto missingHeldEnchant = emptyHandsTarget->addEnchant(enchantRef,
+                                                           emptyHandsOwner->getProfileID().get(),
+                                                           emptyHandsOwner->getObjRef(),
+                                                           emptyHandsOwner->getObjRef());
+    EXPECT_EQ(missingHeldEnchant, nullptr);
+    EXPECT_FALSE(emptyHandsTarget->hasActiveEnchants());
+}
+
+TEST_F(ObjectAccessorFixture, OverlayEnchantTerminatesSpawnedOverlayWhenEnchantIsDestroyed)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto target = makeFollower(objectHandler, 364);
+    auto owner = makeFollower(objectHandler, 365);
+    ASSERT_NE(target, nullptr);
+    ASSERT_NE(owner, nullptr);
+
+    const ENC_REF enchantRef = loadEnchantProfileFixture("mp_data/globalobjects/potions/ppotion.obj/enchant.txt");
+    auto enchantProfile = mutableEnchantProfile(enchantRef);
+    ASSERT_NE(enchantProfile, nullptr);
+    enchantProfile->spawn_overlay = true;
+
+    std::shared_ptr<Ego::Enchantment> enchant = target->addEnchant(enchantRef,
+                                                                   owner->getProfileID().get(),
+                                                                   owner->getObjRef(),
+                                                                   owner->getObjRef());
+    ASSERT_NE(enchant, nullptr);
+    ASSERT_NE(enchant->_overlayRef, ObjectRef::Invalid);
+
+    Object* overlay = objectHandler.get(enchant->_overlayRef);
+    ASSERT_NE(overlay, nullptr);
+    EXPECT_TRUE(overlay->isOverlay());
+    EXPECT_EQ(overlay->getAITarget(), target->getObjRef());
+
+    enchant->requestTerminate();
+    target->update();
+    EXPECT_FALSE(target->hasActiveEnchants());
+
+    enchant.reset();
+    EXPECT_TRUE(overlay->isTerminated());
 }
 
 TEST_F(ObjectAccessorFixture, RuntimeTimerAndStatusAccessorsRoundTripSelectedState)
