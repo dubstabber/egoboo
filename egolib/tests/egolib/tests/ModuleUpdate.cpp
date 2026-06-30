@@ -17,6 +17,7 @@
 #include "egolib/game/game.h"
 #include "egolib/game/Module/Module.hpp"
 #undef private
+#include "egolib/Script/IScriptSystem.hpp"
 #include "egolib/vfs.h"
 
 namespace
@@ -198,6 +199,46 @@ public:
 
     ScopedInstalledParticleHandler(const ScopedInstalledParticleHandler&) = delete;
     ScopedInstalledParticleHandler& operator=(const ScopedInstalledParticleHandler&) = delete;
+};
+
+class RecordingScriptSystem : public Ego::Script::IScriptSystem
+{
+public:
+    void runCharacterScript(Object* object) override
+    {
+        runRefs.push_back(object != nullptr ? object->getObjRef() : ObjectRef::Invalid);
+    }
+
+    void setAlerts(ObjectRef character) override
+    {
+        alertRefs.push_back(character);
+    }
+
+    void endScriptingSystem() override {}
+
+    std::vector<ObjectRef> runRefs;
+    std::vector<ObjectRef> alertRefs;
+};
+
+class ScopedInstalledScriptSystem
+{
+public:
+    explicit ScopedInstalledScriptSystem(Ego::Script::IScriptSystem& system) :
+        _previous(Ego::Script::tryActiveScriptSystem())
+    {
+        Ego::Script::installScriptSystem(&system);
+    }
+
+    ~ScopedInstalledScriptSystem()
+    {
+        Ego::Script::installScriptSystem(_previous);
+    }
+
+    ScopedInstalledScriptSystem(const ScopedInstalledScriptSystem&) = delete;
+    ScopedInstalledScriptSystem& operator=(const ScopedInstalledScriptSystem&) = delete;
+
+private:
+    Ego::Script::IScriptSystem* _previous;
 };
 
 class ModuleUpdateFixture : public ::testing::Test
@@ -478,6 +519,37 @@ TEST_F(ModuleUpdateFixture, DisaffirmAttachedParticlesPublishesDisaffirmedAlert)
     disaffirm_attached_particles(object->getObjRef());
 
     EXPECT_TRUE(object->hasAnyAIAlertBits(ALERTIF_DISAFFIRMED));
+}
+
+TEST_F(ModuleUpdateFixture, LetAllCharactersThinkDispatchesEligibleLiveObjectsThroughScriptSystem)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+
+    auto eligible = makeObject(module, "mp_objects/follower.obj", 4109,
+                               Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto dead = makeObject(module, "mp_objects/follower.obj", 4110,
+                           Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto removed = makeObject(module, "mp_objects/follower.obj", 4111,
+                              Ego::Vector3f(128.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(eligible, nullptr);
+    ASSERT_NE(dead, nullptr);
+    ASSERT_NE(removed, nullptr);
+    flushObjectHandler(module);
+
+    dead->_isAlive = false;
+    removed->requestTerminate();
+
+    RecordingScriptSystem scriptSystem;
+    ScopedInstalledScriptSystem scopedScriptSystem(scriptSystem);
+
+    MainLoop::let_all_characters_think();
+
+    ASSERT_EQ(scriptSystem.alertRefs.size(), 1u);
+    ASSERT_EQ(scriptSystem.runRefs.size(), 1u);
+    EXPECT_EQ(scriptSystem.alertRefs.front(), eligible->getObjRef());
+    EXPECT_EQ(scriptSystem.runRefs.front(), eligible->getObjRef());
 }
 
 TEST_F(ModuleUpdateFixture, ObjectUpdateRoutesWaterSplashThroughInstalledParticleService)

@@ -4,7 +4,7 @@ Current-state health snapshot for the Egoboo workspace. This document is the
 canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
-Snapshot date: 2026-06-23. Measurements below were taken from the live tree and
+Snapshot date: 2026-06-30. Measurements below were taken from the live tree and
 the existing `build/products/x64/lib/libegolib-*.a` archives.
 
 ## Executive Summary
@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 920 ctest cases.
+  configures 928 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -45,12 +45,12 @@ or engine/session service ownership.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,721 | Same scope as above |
-| Test files / lines | 50 / 24,154 | `egolib/tests`, source/header files only |
-| ctest cases | 920 | `ctest --test-dir build -N` |
-| ctest baseline | 920 / 920 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 605 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
-| `EngineContext::get()` | 417 | Dominant intentional engine seam |
+| Runtime source lines | 128,759 | Same scope as above |
+| Test files / lines | 50 / 24,469 | `egolib/tests`, source/header files only |
+| ctest cases | 928 | `ctest --test-dir build -N` |
+| ctest baseline | 928 / 928 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| `::get()` call sites | 630 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `EngineContext::get()` | 422 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 134 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 648 | Broad grep count, not semantic classification |
@@ -96,7 +96,7 @@ runtime files:
 | `egolib/library/src/egolib/Entities/Object.hpp` | 988 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
-| `egolib/library/src/egolib/game/game_combat.c` | 722 |
+| `egolib/library/src/egolib/game/game_combat.c` | 723 |
 | `egolib/library/src/egolib/Script/script.h` | 684 |
 | `egolib/library/src/egolib/Audio/AudioSystem.cpp` | 675 |
 | `egolib/library/src/egolib/map_functions.c` | 668 |
@@ -108,12 +108,12 @@ Large non-runtime files still exist and are intentional test/tool hotspots:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,211 |
+| `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,248 |
 | `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,873 |
-| `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,914 |
+| `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,902 |
 | `tools/egoboo-content-validator.cpp` | 1,550 |
-| `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,256 |
-| `egolib/tests/egolib/tests/ScriptActionFunctions.cpp` | 1,231 |
+| `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,336 |
+| `egolib/tests/egolib/tests/ScriptActionFunctions.cpp` | 1,235 |
 | `egolib/tests/egolib/tests/ContentParsers.cpp` | 1,230 |
 
 Current file-size priority: do not chase production file size mechanically.

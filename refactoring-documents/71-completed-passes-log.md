@@ -3082,3 +3082,26 @@ back-edge proof was required. Singleton metrics remain **605** `::get()` lines, 
 **128,743**, test files/lines are **50 / 24,282**, and ctest configures **924** cases. Gates:
 `cmake --build build -j20` clean; focused module/passage/shop/team/script slice **218/218**; ctest
 **924/924**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 284 — Gameplay ObjectRef iteration cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the remaining gameplay
+object-iteration consumers touched by targeting, script helpers, and the main loop without changing script
+opcode APIs, source placement, CMake archive membership, object ownership, or legacy content behavior.
+`prt_find_target(...)`, `BreakPassage(...)`, `FindWeapon(...)`, `MainLoop::move_all_objects()`, and
+`MainLoop::let_all_characters_think()` now iterate object refs and resolve concrete objects only at the
+immediate read/mutation or script-dispatch point. The adjacent all-level target scan now also iterates
+`ObjectRef` values by const reference to avoid range-loop ref copies.
+
+Focused coverage now pins the ref-iterated paths directly: nearby melee weapon discovery chooses the
+closest valid ground weapon, particle targeting chooses the nearest facing enemy, passage breaking advances
+the occupied tile and reports the breaker position, and the character-think loop dispatches only eligible
+live objects through the installed script system. These tests also flush deferred object-handler work before
+asserting ref-iterator behavior, matching the handler's deferred-update contract.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Live singleton metrics are now **630** `::get()` lines, including **422**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,759**, test files/lines are **50 / 24,469**, and ctest configures **928** cases. Gates:
+`cmake --build build -j20` clean; focused target/system/module slice **126/126**; ctest **928/928**;
+validator `test.mod` 0/0; `git diff --check` clean.

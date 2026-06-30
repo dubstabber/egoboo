@@ -513,6 +513,12 @@ protected:
         return {passage, static_cast<int>(module._passages.size() - 1)};
     }
 
+    void flushObjectHandler(GameModule& module) const
+    {
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
+    }
+
     std::shared_ptr<Object> makeAmmoItem(GameModule& module, int slotBase) const
     {
         static const std::vector<std::string> candidates = {
@@ -3207,6 +3213,36 @@ TEST_F(ScriptSystemsFunctionsFixture, PassageMutatorsPreserveExistingPassageBeha
     EXPECT_FALSE(scr_ClosePassage(state, self));
     EXPECT_FALSE(scr_IfPassageOpen(state, self));
     EXPECT_TRUE(scr_FlashPassage(state, self));
+}
+
+TEST_F(ScriptSystemsFunctionsFixture, BreakPassageAdvancesOccupiedTileAndReportsBreakerPosition)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5681,
+                            Ego::Vector3f(64.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    auto [passage, passageId] = addPassage(module);
+    ASSERT_NE(passage, nullptr);
+    flushObjectHandler(module);
+
+    const Index1D tileIndex = actor->getTile();
+    const uint16_t originalType = tileTypeForIndex(module, tileIndex);
+    ASSERT_LT(originalType, static_cast<uint16_t>(255));
+
+    script_state_t state;
+    state.argument = passageId;
+    state.turn = originalType;
+    state.distance = 2;
+    state.x = 0;
+    state.y = MAPFX_DAMAGE;
+    ai_state_t self = makeScriptSelf(actor);
+
+    EXPECT_TRUE(scr_BreakPassage(state, self));
+    EXPECT_EQ(tileTypeForIndex(module, tileIndex), static_cast<uint16_t>(originalType + 1));
+    EXPECT_NE(module.getMeshPointer()->test_fx(tileIndex, MAPFX_DAMAGE), 0u);
+    EXPECT_EQ(state.x, static_cast<int32_t>(actor->getPosX()));
+    EXPECT_EQ(state.y, static_cast<int32_t>(actor->getPosY()));
 }
 
 } // namespace

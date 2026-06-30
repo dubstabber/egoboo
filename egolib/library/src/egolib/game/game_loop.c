@@ -84,9 +84,11 @@ void MainLoop::move_all_objects()
     }
 
     // Move every character
-    for(const std::shared_ptr<Object> &object : module.getObjectHandler().iterator())
+    ObjectHandler& objectHandler = module.getObjectHandler();
+    for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
-        if(object->isTerminated()) {
+        Object* object = objectHandler.get(objectRef);
+        if(object == nullptr || object->isTerminated()) {
             continue;
         }
         object->updatePhysics();
@@ -469,9 +471,11 @@ void MainLoop::let_all_characters_think()
     /// @author ZZ
     /// @details This function funst the ai scripts for all eligible objects
     GameModule& module = activeModule();
-    for(const std::shared_ptr<Object> &object : module.getObjectHandler().iterator())
+    ObjectHandler& objectHandler = module.getObjectHandler();
+    for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
-        if(object->isTerminated()) {
+        Object* object = objectHandler.get(objectRef);
+        if(object == nullptr || object->isTerminated()) {
             continue;
         }
 
@@ -504,7 +508,7 @@ void MainLoop::let_all_characters_think()
                 scriptableObject.setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
             }
 
-            Ego::Script::activeScriptSystem().runCharacterScript(object.get());
+            Ego::Script::activeScriptSystem().runCharacterScript(object);
         }
     }
 }

@@ -46,8 +46,12 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
     if ( !EngineContext::get().profileSystem().isParticleProfileLoaded( particletype ) ) return ObjectRef::Invalid;
     ppip = EngineContext::get().profileSystem().getParticleProfile( particletype );
 
-    for(const std::shared_ptr<Object> &pchr : module.getObjectHandler().iterator())
+    ObjectHandler& objectHandler = module.getObjectHandler();
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
+        Object* pchr = objectHandler.get(objectRef);
+        if (pchr == nullptr || pchr->isTerminated()) continue;
+
         if ( !pchr->isAlive() || pchr->isItem() || module.getObjectHandler().exists( pchr->getInventoryHolderRef() ) ) continue;
 
         // prefer targeting riders over the mount itself
@@ -253,7 +257,7 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     //All objects in level
     else if(max_dist == NEAREST)
     {
-        for (const ObjectRef objectRef : module.getObjectHandler().objectRefIterator())
+        for (const ObjectRef& objectRef : module.getObjectHandler().objectRefIterator())
         {
             Object* object = module.getObjectHandler().get(objectRef);
             if (object == nullptr || object->isTerminated())

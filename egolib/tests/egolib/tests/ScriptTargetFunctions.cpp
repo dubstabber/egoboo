@@ -15,7 +15,9 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/CharacterParticleOps.h"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/script_implementation.h"
 #undef private
 #include "egolib/Script/script.h"
 #include "egolib/game/script_functions.h"
@@ -155,6 +157,12 @@ protected:
         auto passage = std::make_shared<Passage>(module, 0, 0, 4, 4, mask);
         module._passages.push_back(passage);
         return {passage, static_cast<int>(module._passages.size() - 1)};
+    }
+
+    void flushObjectHandler(GameModule& module) const
+    {
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
     }
 };
 
@@ -643,6 +651,77 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetSearchHelpersPreserveExistingTarge
     self.setTarget(existingTarget->getObjRef());
     EXPECT_FALSE(scr_SetTargetToNearbyMeleeWeapon(state, self));
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, NearbyMeleeWeaponSelectionFindsGroundWeaponByRefIterator)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53450,
+                            Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearWeapon = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 53451,
+                                 Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farWeapon = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 53452,
+                                Ego::Vector3f(160.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(nearWeapon, nullptr);
+    ASSERT_NE(farWeapon, nullptr);
+    ASSERT_TRUE(nearWeapon->isItem());
+    ASSERT_TRUE(farWeapon->isItem());
+    flushObjectHandler(module);
+
+    EXPECT_EQ(FindWeapon(actor->getObjRef(), WIDE, IDSZ2('X', 'W', 'E', 'P'), false, false),
+              nearWeapon->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, ParticleTargetSelectionChoosesNearestFacingEnemyByRefIterator)
+{
+    auto& module = beginActiveTestModule();
+    EngineContext::get().profileSystem().loadGlobalParticleProfiles();
+
+    ASSERT_TRUE(EngineContext::get().profileSystem().isParticleProfileLoaded(PIP_DEFEND));
+    const std::shared_ptr<ParticleProfile>& particleProfile =
+        EngineContext::get().profileSystem().getParticleProfile(PIP_DEFEND);
+    ASSERT_NE(particleProfile, nullptr);
+    particleProfile->targetangle = 32768;
+    particleProfile->homing = false;
+    particleProfile->onlydamagefriendly = false;
+
+    auto friendly = makeObject(module, "mp_objects/follower.obj", 53453,
+                               Ego::Vector3f(80.0f, 64.0f, 0.0f));
+    auto nearEnemy = makeObject(module, "mp_objects/follower.obj", 53454,
+                                Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farEnemy = makeObject(module, "mp_objects/follower.obj", 53455,
+                               Ego::Vector3f(160.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(friendly, nullptr);
+    ASSERT_NE(nearEnemy, nullptr);
+    ASSERT_NE(farEnemy, nullptr);
+
+    friendly->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    friendly->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    nearEnemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    nearEnemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    farEnemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    farEnemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    friendly->setInvincible(false);
+    nearEnemy->setInvincible(false);
+    farEnemy->setInvincible(false);
+    friendly->setDamageTimer(0);
+    nearEnemy->setDamageTimer(0);
+    farEnemy->setDamageTimer(0);
+    flushObjectHandler(module);
+
+    Facing targetAngle(0);
+    const ObjectRef targetRef = prt_find_target(Ego::Vector3f(64.0f, 64.0f, 0.0f),
+                                                Facing(0),
+                                                PIP_DEFEND,
+                                                static_cast<TEAM_REF>(Team::TEAM_GOOD),
+                                                ObjectRef::Invalid,
+                                                ObjectRef::Invalid,
+                                                &targetAngle);
+
+    EXPECT_EQ(targetRef, nearEnemy->getObjRef());
 }
 
 TEST_F(ScriptTargetFunctionsFixture, IfTargetIsOnSameTeamReadsActorTeamThroughSelfResolver)

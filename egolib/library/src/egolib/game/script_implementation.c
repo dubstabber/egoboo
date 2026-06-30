@@ -313,8 +313,12 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 	uint32_t endtile = Ego::Math::constrain(loc_starttile + frames - 1, 0, 255);
 
 	bool useful = false;
-    for(const std::shared_ptr<Object> &pchr : objectHandler().iterator())
+    ObjectHandler& objects = objectHandler();
+    for(const ObjectRef& objectRef : objects.objectRefIterator())
     {
+        Object* pchr = objects.get(objectRef);
+        if (pchr == nullptr || pchr->isTerminated()) continue;
+
         // nothing in packs
         if (pchr->isBeingHeld()) continue;
 
@@ -481,10 +485,14 @@ ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& w
     los.z0 = pchr->getPosZ();
     los.stopped_by = pchr->getStoppedByMask();
 
-    for(const std::shared_ptr<Object> &pweapon : objectHandler().iterator())
+    ObjectHandler& objects = objectHandler();
+    for(const ObjectRef& weaponRef : objects.objectRefIterator())
     {
+        Object* pweapon = objects.get(weaponRef);
+        if (pweapon == nullptr || pweapon->isTerminated()) continue;
+
         //only do items on the ground
-        if ( objectHandler().exists( pweapon->getHolderRef() ) || !pweapon->isItem() ) continue;
+        if ( objects.exists( pweapon->getHolderRef() ) || !pweapon->isItem() ) continue;
         const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
         // only target those with a the given IDSZ
