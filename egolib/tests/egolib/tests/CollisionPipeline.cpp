@@ -212,7 +212,8 @@ protected:
         {
             return nullptr;
         }
-        auto object = module.spawnObject(pos, profile, team, 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(pos, profile, team, 0, Facing(0), "", ObjectRef::Invalid);
+        auto object = module.getObjectHandler()[objectRef];
         if (object)
         {
             // The collision volume (chr_min_cv) is normally computed during the per-frame physics

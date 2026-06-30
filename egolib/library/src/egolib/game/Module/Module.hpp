@@ -221,10 +221,8 @@ public:
      * @brief
      *  Spawn an Object into the game.
      * @return
-     *  The object that was spawned or nullptr on failure
+     *  The reference of the object that was spawned or ObjectRef::Invalid on failure.
      */
-     std::shared_ptr<Object> spawnObject(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
-                                         const Facing& facing, const std::string &name, const ObjectRef override);
      ObjectRef spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
                               const Facing& facing, const std::string& name, const ObjectRef override);
 
@@ -242,7 +240,6 @@ public:
 
     const std::vector<std::shared_ptr<Ego::Player>>& getPlayerList() const;
 
-    bool addPlayer(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device);
     bool addPlayer(ObjectRef objectRef, const Ego::Input::InputDevice& device);
 
     /**
@@ -277,9 +274,6 @@ private:
     void initializeSharedModuleAssets();
     void loadModuleEnvironment();
     void loadModuleContent();
-    bool addPlayer(const std::shared_ptr<Object>& object,
-                   const Ego::Input::InputDevice& device,
-                   bool identifySpawnOnSuccess);
     bool addPlayer(ObjectRef objectRef,
                    const Ego::Input::InputDevice& device,
                    bool identifySpawnOnSuccess);

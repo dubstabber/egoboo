@@ -48,10 +48,12 @@ inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
 }
 
 inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
-                      const std::shared_ptr<Object>& object,
+                      ObjectHandler& objectHandler,
+                      ObjectRef objectRef,
                       const Ego::Input::InputDevice& device,
                       bool identifySpawnOnSuccess)
 {
+    const std::shared_ptr<Object>& object = objectHandler[objectRef];
     if (!object || object->isTerminated())
     {
         return false;

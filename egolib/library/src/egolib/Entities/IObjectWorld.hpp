@@ -53,7 +53,7 @@ namespace Entities
 ///        reference; every existing call (exists/get/operator[]/iterator/findObjectRefs on the
 ///        handler, indexing on the team list) is reached through the returned reference. The
 ///        physics TUs are read-only consumers of this world (no spawn / insert / remove), so
-///        spawnObject() deliberately stays on GameModule and is not part of this seam.
+///        spawnObjectRef() deliberately stays on GameModule and is not part of this seam.
 class IObjectWorld
 {
 public:

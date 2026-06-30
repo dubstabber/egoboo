@@ -122,7 +122,8 @@ protected:
             return nullptr;
         }
 
-        return module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        return module.getObjectHandler()[objectRef];
     }
 
     GameModule& beginActiveTestModule()
@@ -1171,7 +1172,7 @@ TEST_F(ScriptTargetFunctionsFixture, TargetQuestQueryReadsThroughTargetInfoRole)
 
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
-    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(target->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     const IDSZ2 questId('T', 'Q', 'S', 'T');
     module.getPlayer(target->getPlayerNumber())->getQuestLog().setQuestProgress(questId, 7);

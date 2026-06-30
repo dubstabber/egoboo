@@ -203,7 +203,8 @@ protected:
             throw std::runtime_error("profile load failed");
         }
 
-        auto object = module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        auto object = module.getObjectHandler()[objectRef];
         EXPECT_NE(object, nullptr);
         if (!object)
         {

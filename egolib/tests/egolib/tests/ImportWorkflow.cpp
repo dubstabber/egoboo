@@ -260,7 +260,7 @@ TEST_F(ImportWorkflowFixture, FromPlayersBuildsImportEntriesForRegisteredPlayers
     auto object = module.getObjectHandler().insert(profile);
     ASSERT_NE(object, nullptr);
 
-    ASSERT_TRUE(module.addPlayer(object, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(object->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     import_list_t imports;
     import_list_t::init(imports);
@@ -294,10 +294,10 @@ TEST_F(ImportWorkflowFixture, FromPlayersSkipsMissingAndTerminatedPlayersWithout
     terminated->setName("Terminated Player");
     last->setName("Last Live Player");
 
-    ASSERT_TRUE(module.addPlayer(first, Ego::Input::InputDevice::DeviceList[0]));
-    ASSERT_TRUE(module.addPlayer(missing, Ego::Input::InputDevice::DeviceList[1]));
-    ASSERT_TRUE(module.addPlayer(terminated, Ego::Input::InputDevice::DeviceList[2]));
-    ASSERT_TRUE(module.addPlayer(last, Ego::Input::InputDevice::DeviceList[3]));
+    ASSERT_TRUE(module.addPlayer(first->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(missing->getObjRef(), Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(terminated->getObjRef(), Ego::Input::InputDevice::DeviceList[2]));
+    ASSERT_TRUE(module.addPlayer(last->getObjRef(), Ego::Input::InputDevice::DeviceList[3]));
 
     ASSERT_NE(module.getPlayer(1), nullptr);
     module.getPlayer(1)->_objectRef = ObjectRef::Invalid;
@@ -326,7 +326,7 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersReturnsFalseWhenExportIsDisabled)
     ASSERT_NE(player, nullptr);
 
     player->setName("Export Disabled Player");
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     module.setExportValid(false);
 
@@ -342,7 +342,7 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersExportsCharacterDirectoryForLivePl
     ASSERT_NE(player, nullptr);
 
     player->setName("Export Hero");
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     const std::string exportRoot = playerExportRoot(*player);
     ASSERT_TRUE(export_all_players(false));
@@ -361,7 +361,7 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersExportsHeldItemsIntoSlotDirectorie
     ASSERT_NE(rightItem, nullptr);
 
     player->setName("Held Export Hero");
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
     player->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
     player->setHeldObject(SLOT_RIGHT, rightItem->getObjRef());
 
@@ -390,7 +390,7 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersSkipsNonCarryableInventoryItemsWit
     exportedItem->getProfile()->_isItem = true;
     exportedItem->getProfile()->_canCarryToNextModule = true;
 
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
     player->setInventoryItemRef(0, skippedItem->getObjRef());
     player->setInventoryItemRef(2, exportedItem->getObjRef());
 

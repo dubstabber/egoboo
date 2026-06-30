@@ -374,7 +374,9 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     // Create an overlay character?
     if (_enchantProfile->spawn_overlay)
     {
-        std::shared_ptr<Object> overlay = GameSessionContext::get().activeModule().spawnObject(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid );
+        GameModule& module = GameSessionContext::get().activeModule();
+        const ObjectRef overlayRef = module.spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
+        std::shared_ptr<Object> overlay = module.getObjectHandler()[overlayRef];
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...

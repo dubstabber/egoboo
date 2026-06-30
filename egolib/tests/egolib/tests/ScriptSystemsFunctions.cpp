@@ -477,7 +477,8 @@ protected:
             return nullptr;
         }
 
-        return module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        return module.getObjectHandler()[objectRef];
     }
 
     GameModule& beginActiveTestModule()
@@ -1407,7 +1408,7 @@ TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsXpCheatUsesLivePlayerAnd
     ScopedPlayingStateHarness playingStateHarness;
     auto actor = makeObject(module, "mp_objects/follower.obj", 5618);
     ASSERT_NE(actor, nullptr);
-    ASSERT_TRUE(module.addPlayer(actor, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(actor->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     StubInputSystem idleInputSystem;
     EngineContext::get().clearInputSystem();
@@ -1448,7 +1449,7 @@ TEST_F(ScriptSystemsFunctionsFixture, MainLoopCheckStatsLifeCheatUsesLivePlayerA
     ScopedPlayingStateHarness playingStateHarness;
     auto actor = makeObject(module, "mp_objects/follower.obj", 5619);
     ASSERT_NE(actor, nullptr);
-    ASSERT_TRUE(module.addPlayer(actor, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(actor->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     StubInputSystem idleInputSystem;
     EngineContext::get().clearInputSystem();
@@ -1814,7 +1815,7 @@ TEST_F(ScriptSystemsFunctionsFixture, QuestHelpersResolvePlayersThroughTargetInf
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
     ASSERT_NE(nonPlayerTarget, nullptr);
-    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(target->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     const IDSZ2 questId('T', 'Q', 'S', 'T');
     auto& questLog = module.getPlayer(target->getPlayerNumber())->getQuestLog();
@@ -1851,7 +1852,7 @@ TEST_F(ScriptSystemsFunctionsFixture, SetQuestLevelResolvesPlayersThroughTargetI
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(target, nullptr);
     ASSERT_NE(nonPlayerTarget, nullptr);
-    ASSERT_TRUE(module.addPlayer(target, Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(target->getObjRef(), Ego::Input::InputDevice::DeviceList[1]));
 
     const IDSZ2 questId('L', 'V', 'L', 'Q');
     auto& questLog = module.getPlayer(target->getPlayerNumber())->getQuestLog();
@@ -1893,9 +1894,9 @@ TEST_F(ScriptSystemsFunctionsFixture, BeatQuestAllPlayersOnlyBeatsActiveQuests)
     ASSERT_NE(firstPlayer, nullptr);
     ASSERT_NE(secondPlayer, nullptr);
     ASSERT_NE(beatenPlayer, nullptr);
-    ASSERT_TRUE(module.addPlayer(firstPlayer, Ego::Input::InputDevice::DeviceList[0]));
-    ASSERT_TRUE(module.addPlayer(secondPlayer, Ego::Input::InputDevice::DeviceList[1]));
-    ASSERT_TRUE(module.addPlayer(beatenPlayer, Ego::Input::InputDevice::DeviceList[2]));
+    ASSERT_TRUE(module.addPlayer(firstPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(secondPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(beatenPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[2]));
 
     const IDSZ2 questId('B', 'E', 'A', 'T');
     auto& firstQuestLog = module.getPlayer(firstPlayer->getPlayerNumber())->getQuestLog();
@@ -1929,9 +1930,9 @@ TEST_F(ScriptSystemsFunctionsFixture, AddQuestAllPlayersOnlyRaisesNonBeatenQuest
     ASSERT_NE(lowPlayer, nullptr);
     ASSERT_NE(highPlayer, nullptr);
     ASSERT_NE(beatenPlayer, nullptr);
-    ASSERT_TRUE(module.addPlayer(lowPlayer, Ego::Input::InputDevice::DeviceList[0]));
-    ASSERT_TRUE(module.addPlayer(highPlayer, Ego::Input::InputDevice::DeviceList[1]));
-    ASSERT_TRUE(module.addPlayer(beatenPlayer, Ego::Input::InputDevice::DeviceList[2]));
+    ASSERT_TRUE(module.addPlayer(lowPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(highPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[1]));
+    ASSERT_TRUE(module.addPlayer(beatenPlayer->getObjRef(), Ego::Input::InputDevice::DeviceList[2]));
 
     const IDSZ2 questId('A', 'L', 'L', 'Q');
     auto& lowQuestLog = module.getPlayer(lowPlayer->getPlayerNumber())->getQuestLog();

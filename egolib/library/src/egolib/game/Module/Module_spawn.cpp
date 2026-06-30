@@ -80,8 +80,8 @@ void GameModule::removeShopOwner(ObjectRef owner)
     }
 }
 
-std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
-                                                const Facing& facing, const std::string &name, const ObjectRef override)
+ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
+                                     const Facing& facing, const std::string& name, const ObjectRef override)
 {
     const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(profile);
     if (!ppro)
@@ -90,7 +90,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
         {
             EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "attempt to spawn object from an invalid object profile ", "`", profile, "`", Log::EndOfEntry);
         }
-        return Object::INVALID_OBJECT;
+        return ObjectRef::Invalid;
     }
 
     // count all the requests for this character type
@@ -100,7 +100,7 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     std::shared_ptr<Object> pchr = getObjectHandler().insert(profile, override);
     if (!pchr) {
         EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to spawn character", Log::EndOfEntry);
-        return Object::INVALID_OBJECT;
+        return ObjectRef::Invalid;
     }
 
     // just set the spawn info
@@ -323,22 +323,10 @@ std::shared_ptr<Object> GameModule::spawnObject(const Ego::Vector3f& pos, Object
     ppro->_spawnCount++;
 
 #if defined(DEBUG_OBJECT_SPAWN) && defined(_DEBUG)
-    log_debug("spawnObject() - slot: %i, index: %i, name: %s, class: %s\n", REF_TO_INT(profile), REF_TO_INT(pchr->getCharacterID()), name.c_str(), ppro->getClassName().c_str());
+    log_debug("spawnObjectRef() - slot: %i, index: %i, name: %s, class: %s\n", REF_TO_INT(profile), REF_TO_INT(pchr->getCharacterID()), name.c_str(), ppro->getClassName().c_str());
 #endif
 
-    return pchr;
-}
-
-ObjectRef GameModule::spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
-                                     const Facing& facing, const std::string& name, const ObjectRef override)
-{
-    const std::shared_ptr<Object> object = spawnObject(pos, profile, team, skin, facing, name, override);
-    return object ? object->getObjRef() : ObjectRef::Invalid;
-}
-
-bool GameModule::addPlayer(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device)
-{
-    return addPlayer(object, device, false);
+    return pchr->getObjRef();
 }
 
 bool GameModule::addPlayer(ObjectRef objectRef, const Ego::Input::InputDevice& device)
@@ -346,19 +334,11 @@ bool GameModule::addPlayer(ObjectRef objectRef, const Ego::Input::InputDevice& d
     return addPlayer(objectRef, device, false);
 }
 
-bool GameModule::addPlayer(const std::shared_ptr<Object>& object,
-                           const Ego::Input::InputDevice& device,
-                           const bool identifySpawnOnSuccess)
-{
-    return module_player_startup::addPlayer(_playerList, object, device, identifySpawnOnSuccess);
-}
-
 bool GameModule::addPlayer(ObjectRef objectRef,
                            const Ego::Input::InputDevice& device,
                            const bool identifySpawnOnSuccess)
 {
-    const std::shared_ptr<Object>& object = getObjectHandler()[objectRef];
-    return addPlayer(object, device, identifySpawnOnSuccess);
+    return module_player_startup::addPlayer(_playerList, getObjectHandler(), objectRef, device, identifySpawnOnSuccess);
 }
 
 void GameModule::spawnAllObjects()

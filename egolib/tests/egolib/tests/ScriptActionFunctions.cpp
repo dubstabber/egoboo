@@ -557,7 +557,8 @@ protected:
             return nullptr;
         }
 
-        return module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        return module.getObjectHandler()[objectRef];
     }
 
     std::pair<std::shared_ptr<Object>, int> makeSoundingObject(GameModule& module, int slotBase) const
@@ -742,7 +743,7 @@ TEST_F(ScriptActionFunctionsFixture, CheckPassageMusicUsesLivePlayerObservation)
     auto player = makeObject(module, "mp_objects/follower.obj", 5902, Ego::Vector3f(2.0f, 2.0f, 0.0f));
 
     ASSERT_NE(player, nullptr);
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     auto [passage, passageId] = addPassage(module);
     ASSERT_NE(passage, nullptr);
@@ -988,13 +989,16 @@ TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSp
     const ObjectProfileRef sharedProfile = loadProfile("mp_objects/follower.obj", 5763);
     ASSERT_NE(sharedProfile, ObjectProfileRef::Invalid);
 
-    auto actor = module.spawnObject(Ego::Vector3f(64.0f, 64.0f, 0.0f), sharedProfile,
-                                    static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-    auto peer = module.spawnObject(Ego::Vector3f(96.0f, 64.0f, 0.0f), sharedProfile,
-                                   static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    const ObjectRef actorRef = module.spawnObjectRef(Ego::Vector3f(64.0f, 64.0f, 0.0f), sharedProfile,
+                                                     static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    auto actor = module.getObjectHandler()[actorRef];
+    const ObjectRef peerRef = module.spawnObjectRef(Ego::Vector3f(96.0f, 64.0f, 0.0f), sharedProfile,
+                                                    static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    auto peer = module.getObjectHandler()[peerRef];
     auto other = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5765);
-    auto terminatedPeer = module.spawnObject(Ego::Vector3f(128.0f, 64.0f, 0.0f), sharedProfile,
-                                             static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    const ObjectRef terminatedPeerRef = module.spawnObjectRef(Ego::Vector3f(128.0f, 64.0f, 0.0f), sharedProfile,
+                                                              static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+    auto terminatedPeer = module.getObjectHandler()[terminatedPeerRef];
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(peer, nullptr);
     ASSERT_NE(other, nullptr);
@@ -1179,7 +1183,7 @@ TEST_F(ScriptActionFunctionsFixture, DisplayChargeUsesPlayerOrHolderPlayerAndRej
     auto heldItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 5772);
     ASSERT_NE(player, nullptr);
     ASSERT_NE(heldItem, nullptr);
-    ASSERT_TRUE(module.addPlayer(player, Ego::Input::InputDevice::DeviceList[0]));
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
 
     player->setHeldObject(SLOT_LEFT, heldItem->getObjRef());
     heldItem->setHolderRef(player->getObjRef());

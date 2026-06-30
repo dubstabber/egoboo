@@ -128,7 +128,8 @@ protected:
             return nullptr;
         }
 
-        return module.spawnObject(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
+        return module.getObjectHandler()[objectRef];
     }
 
     GameModule& beginActiveTestModule()

@@ -2998,3 +2998,26 @@ back-edge proof was required. Singleton metrics are now **605** `::get()` lines,
 **920/920**; validator `test.mod` 0/0; full validator at the known legacy content baseline
 (**42 modules, 10 warnings, 245 errors**, nonzero exit from pre-existing content errors);
 `git diff --check` clean.
+
+### Pass 280 — GameModule ref-first spawn and player binding cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the public `GameModule` spawn
+and player-binding surface without changing script opcode APIs, source placement, CMake archive
+membership, object ownership, or legacy content behavior. The former public
+`GameModule::spawnObject(...) -> std::shared_ptr<Object>` surface is retired; spawning now exposes
+`spawnObjectRef(...)` as the public API and keeps concrete object-handle use inside spawn initialization
+or immediate caller-local resolution.
+
+`GameModule::addPlayer(...)` is now ref-only. The module player-startup helper resolves
+`ObjectHandler&` + `ObjectRef` internally, preserving invalid, missing, terminated, quest-log, and
+pre-active-module bootstrap behavior while removing shared-pointer player-binding entry points. Script
+character spawning, combat thrown-weapon spawning, particle end-spawns, enchant overlays, module spawn
+realization, and focused tests now pass refs at the API edge and resolve handles only where immediate
+mutation or legacy weak storage still requires it.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,700**, test files/lines are **50 / 24,172**, and ctest configures **920** cases. Gates:
+`cmake --build build -j20` clean; focused spawn/player/script/combat/collision/module slice
+**305/305**; ctest **920/920**; validator `test.mod` 0/0.

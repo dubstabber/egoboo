@@ -182,12 +182,14 @@ void publishSpawnChildState(const SpawnedCharacterContext& child,
     publishSpawnDismount(*child.lifecycle, dismountObjectRef);
 }
 
-std::shared_ptr<Object> spawnCharacterAt(const Ego::Vector3f& position,
+SpawnedCharacterContext spawnCharacterAt(const Ego::Vector3f& position,
                                          ObjectProfileRef profile,
                                          TEAM_REF teamRef,
                                          Facing facing)
 {
-    return activeModule().spawnObject(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
+    GameModule& module = activeModule();
+    const ObjectRef childRef = module.spawnObjectRef(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
+    return makeSpawnedCharacterContext(module.getObjectHandler()[childRef]);
 }
 
 void setModuleRespawnValid(bool valid)
@@ -195,7 +197,7 @@ void setModuleRespawnValid(bool valid)
     activeModule().setRespawnValid(valid);
 }
 
-std::shared_ptr<Object> spawnCharacterLikeSelf(const SpawnSelfContext& selfContext,
+SpawnedCharacterContext spawnCharacterLikeSelf(const SpawnSelfContext& selfContext,
                                                const Ego::Vector3f& position,
                                                Facing facing)
 {
@@ -232,11 +234,10 @@ bool publishCopiedChildState(const SpawnSelfContext& selfContext,
 }
 
 bool finalizeSafeSelfCopySpawn(const SpawnSelfContext& selfContext,
-                               const std::shared_ptr<Object>& child,
+                               SpawnedCharacterContext childContext,
                                ai_state_t& self,
                                int initialVelocity)
 {
-    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
     if (!childContext.isResolved())
     {
         logSelfCopySpawnFailure(selfContext);
@@ -343,9 +344,9 @@ uint8_t scr_SpawnCharacter( script_state_t& state, ai_state_t& self )
     const Ego::Vector3f position(static_cast<float>(state.x),
                                  static_cast<float>(state.y),
                                  selfContext.physical->getPosZ());
-    const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
-                                                                 position,
-                                                                 Facing(Ego::Math::clipBits<16>(state.turn)));
+    SpawnedCharacterContext child = spawnCharacterLikeSelf(selfContext,
+                                                           position,
+                                                           Facing(Ego::Math::clipBits<16>(state.turn)));
     return finalizeSafeSelfCopySpawn(selfContext, child, self, state.distance);
 }
 
@@ -377,16 +378,15 @@ uint8_t scr_SpawnCharacterXYZ( script_state_t& state, ai_state_t& self )
     const SpawnSelfContext selfContext = resolveSpawnSelfContext(self);
     if (!selfContext.isResolved()) return false;
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
-    const std::shared_ptr<Object> child = spawnCharacterLikeSelf(selfContext,
-                                                                 position,
-                                                                 Facing(Ego::Math::clipBits<16>(state.turn)));
-    if (child == nullptr)
+    SpawnedCharacterContext childContext = spawnCharacterLikeSelf(selfContext,
+                                                                  position,
+                                                                  Facing(Ego::Math::clipBits<16>(state.turn)));
+    if (!childContext.isResolved())
     {
         logSelfCopySpawnFailure(selfContext);
         return false;
     }
 
-    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
     return publishCopiedChildState(selfContext, childContext, self);
 }
 
@@ -406,17 +406,16 @@ uint8_t scr_SpawnExactCharacterXYZ( script_state_t& state, ai_state_t& self )
     const Ego::Vector3f position(Ego::Script::Interpreter::safeCast<float>(state.x),
                                  Ego::Script::Interpreter::safeCast<float>(state.y),
                                  Ego::Script::Interpreter::safeCast<float>(state.distance));
-    const std::shared_ptr<Object> child = spawnCharacterAt(position,
-                                                           ObjectProfileRef(static_cast<PRO_REF>(state.argument)),
-                                                           selfContext.targetInfo->getTeamRef(),
-                                                           Facing(Ego::Math::clipBits<16>(state.turn)));
+    SpawnedCharacterContext childContext = spawnCharacterAt(position,
+                                                            ObjectProfileRef(static_cast<PRO_REF>(state.argument)),
+                                                            selfContext.targetInfo->getTeamRef(),
+                                                            Facing(Ego::Math::clipBits<16>(state.turn)));
 
-    if (!child)
+    if (!childContext.isResolved())
     {
         return false;
     }
 
-    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
     return publishCopiedChildState(selfContext, childContext, self);
 }
 
@@ -472,18 +471,17 @@ uint8_t scr_SpawnAttachedCharacter( script_state_t& state, ai_state_t& self )
     }
 
     const Ego::Vector3f position(float(state.x), float(state.y), float(state.distance));
-    const std::shared_ptr<Object> child = spawnCharacterAt(position,
-                                                           ObjectProfileRef((PRO_REF)state.argument),
-                                                           selfContext.targetInfo->getTeamRef(),
-                                                           FACE_NORTH);
+    SpawnedCharacterContext childContext = spawnCharacterAt(position,
+                                                            ObjectProfileRef((PRO_REF)state.argument),
+                                                            selfContext.targetInfo->getTeamRef(),
+                                                            FACE_NORTH);
 
-    if (child == nullptr)
+    if (!childContext.isResolved())
     {
         logAttachedCharacterSpawnFailure(selfContext, state.argument);
         return false;
     }
 
-    SpawnedCharacterContext childContext = makeSpawnedCharacterContext(child);
     const uint8_t grip = Ego::Math::constrain<int>(state.distance,
                                                    ATTACH_INVENTORY,
                                                    ATTACH_RIGHT);
