@@ -3204,3 +3204,24 @@ back-edge proof was required. Search guard found no remaining `ObjectHandler::it
 Gates: `cmake --build build -j20` clean; focused object-handler/gameplay/script slice **203/203**; ctest
 **931/931**; validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules,
 10 warnings, 245 errors**, nonzero exit from pre-existing content errors); `git diff --check` clean.
+
+### Pass 290 — Borrowed shop and particle ObjectRef lookup cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through shop interaction and particle
+publication helpers without changing script opcode APIs, source placement, CMake archive membership, object
+ownership, or legacy content behavior. `Shop::drop`, `Shop::buy`, `Shop::steal`, `Shop::canGrabItem`,
+`ParticleHandler::spawnPoof`, and `ParticleHandler::spawnDefencePing` now resolve refs with borrowed
+`ObjectHandler::get(ObjectRef)` lookups where no shared ownership handle is needed.
+
+Focused shop coverage now pins the previously uncovered sell-to-shop and visible purchase paths, including
+shop order publication, clamped wallet transfer behavior, and the visibility precondition for the
+`canGrabItem` buy branch. Existing poof and defence-ping coverage stayed green, preserving missing-ref and
+stale-attacker behavior.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Search guard found no `getHandle(...)` call sites in the two targeted
+production files. Live singleton metrics remain **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,786**, test files/lines are **50 / 24,567**, and ctest configures **933** cases. Gates:
+`cmake --build build -j20` clean; focused shop/particle slice **12/12**; ctest **933/933**; validator
+`test.mod` 0/0; `git diff --check` clean.

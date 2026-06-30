@@ -82,7 +82,7 @@ ObjectRef poofOwner(const IScriptable& object)
     return object.getAIOwner();
 }
 
-std::shared_ptr<Object> tryObjectHandle(ObjectRef objectRef)
+Object* tryObjectByRef(ObjectRef objectRef)
 {
     GameModule* module = tryActiveModule();
     if (module == nullptr || !module->getObjectHandler().exists(objectRef))
@@ -90,7 +90,7 @@ std::shared_ptr<Object> tryObjectHandle(ObjectRef objectRef)
         return nullptr;
     }
 
-    return module->getObjectHandler().getHandle(objectRef);
+    return module->getObjectHandler().get(objectRef);
 }
 
 void publishBlockedAlert(IScriptable& object, ObjectRef attackerRef)
@@ -383,7 +383,7 @@ std::shared_ptr<const Ego::Texture> ParticleHandler::getTransparentParticleTextu
 
 void ParticleHandler::spawnPoof(ObjectRef objectRef)
 {
-    const std::shared_ptr<Object> object = tryObjectHandle(objectRef);
+    Object* object = tryObjectByRef(objectRef);
     if (object == nullptr || object->isTerminated())
     {
         return;
@@ -402,7 +402,7 @@ void ParticleHandler::spawnPoof(ObjectRef objectRef)
 
 void ParticleHandler::spawnDefencePing(ObjectRef objectRef, ObjectRef attackerRef)
 {
-    const std::shared_ptr<Object> object = tryObjectHandle(objectRef);
+    Object* object = tryObjectByRef(objectRef);
     if (object == nullptr || object->isTerminated())
     {
         return;
@@ -414,6 +414,6 @@ void ParticleHandler::spawnDefencePing(ObjectRef objectRef, ObjectRef attackerRe
     spawnGlobalParticle(object->getPosition(), object->getFacingZ(), LocalParticleProfileRef(PIP_DEFEND), 0);
 
     object->setDamageTimer(DEFENDTIME);
-    const std::shared_ptr<Object> attacker = tryObjectHandle(attackerRef);
+    const Object* attacker = tryObjectByRef(attackerRef);
     publishBlockedAlert(scriptableObject, attacker != nullptr && !attacker->isTerminated() ? attackerRef : ObjectRef::Invalid);
 }

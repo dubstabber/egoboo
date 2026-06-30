@@ -268,6 +268,65 @@ TEST_F(ShopFixture, BuyRejectsWhenBuyerCannotAffordItem)
     EXPECT_EQ(owner->getMoney(), ownerStartMoney);
 }
 
+TEST_F(ShopFixture, DropPublishesBuyOrderAndTransfersMoney)
+{
+    auto& module = beginActiveTestModule();
+    auto owner = makeObject(module, "mp_objects/follower.obj", 5216);
+    auto dropper = makeObject(module, "mp_objects/follower.obj", 5217);
+    auto item = makePricedItem(module, 5218);
+
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(dropper, nullptr);
+    ASSERT_NE(item, nullptr);
+
+    addShopPassage(module, owner);
+    item->setPosition(64.0f, 64.0f, 0.0f);
+
+    const uint32_t price = static_cast<uint32_t>(item->getPrice());
+    const uint16_t dropperStartMoney = dropper->getMoney();
+    const uint16_t ownerStartMoney = owner->getMoney();
+    const uint16_t expectedOwnerMoney = static_cast<uint32_t>(ownerStartMoney) > price
+                                        ? static_cast<uint16_t>(ownerStartMoney - price)
+                                        : 0;
+
+    EXPECT_TRUE(Shop::drop(dropper->getObjRef(), item->getObjRef()));
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_value, price);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_counter, Passage::SHOP_BUY);
+    EXPECT_EQ(dropper->getMoney(), static_cast<uint16_t>(dropperStartMoney + price));
+    EXPECT_EQ(owner->getMoney(), expectedOwnerMoney);
+}
+
+TEST_F(ShopFixture, CanGrabItemVisibleBuyerUsesPurchasePath)
+{
+    auto& module = beginActiveTestModule();
+    auto owner = makeObject(module, "mp_objects/follower.obj", 5219);
+    auto buyer = makeObject(module, "mp_objects/follower.obj", 5220);
+    auto item = makePricedItem(module, 5221);
+
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(buyer, nullptr);
+    ASSERT_NE(item, nullptr);
+
+    addShopPassage(module, owner);
+    owner->setPosition(64.0f, 64.0f, 0.0f);
+    buyer->setPosition(64.0f, 64.0f, 0.0f);
+    item->setPosition(64.0f, 64.0f, 0.0f);
+    buyer->setAlpha(200);
+    buyer->setLight(200);
+    ASSERT_TRUE(owner->canSeeObject(buyer->getObjRef()));
+
+    const uint32_t price = static_cast<uint32_t>(item->getPrice());
+    const uint16_t buyerStartMoney = buyer->getMoney();
+    const uint16_t ownerStartMoney = owner->getMoney();
+    buyer->giveMoney(static_cast<int>(price));
+
+    EXPECT_TRUE(Shop::canGrabItem(buyer->getObjRef(), item->getObjRef()));
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_value, price);
+    EXPECT_EQ(Ego::Script::runtimeState(*owner).order_counter, Passage::SHOP_SELL);
+    EXPECT_EQ(buyer->getMoney(), buyerStartMoney);
+    EXPECT_EQ(owner->getMoney(), static_cast<uint16_t>(ownerStartMoney + price));
+}
+
 TEST_F(ShopFixture, StealDetectionPublishesTheftTargetAndOrder)
 {
     auto& module = beginActiveTestModule();

@@ -26,8 +26,6 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
 
-#include <memory>
-
 namespace
 {
 GameModule& activeModule()
@@ -40,9 +38,9 @@ auto& objectHandler()
     return activeModule().getObjectHandler();
 }
 
-std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
+Object* objectByRef(ObjectRef objectRef)
 {
-    return objectHandler().getHandle(objectRef);
+    return objectHandler().get(objectRef);
 }
 
 IScriptable& scriptable(Object& object)
@@ -63,8 +61,8 @@ void publishTheftTarget(IScriptable& shopKeeper, ObjectRef thiefRef)
 
 bool Shop::drop(ObjectRef dropperRef, ObjectRef itemRef)
 {
-    std::shared_ptr<Object> dropper = objectHandle(dropperRef);
-    std::shared_ptr<Object> item = objectHandle(itemRef);
+    Object* dropper = objectByRef(dropperRef);
+    Object* item = objectByRef(itemRef);
     if (!dropper || !item) return false;
     if (dropper->isTerminated() || item->isTerminated()) return false;
 
@@ -100,8 +98,8 @@ bool Shop::drop(ObjectRef dropperRef, ObjectRef itemRef)
 
 bool Shop::buy(ObjectRef buyerRef, ObjectRef itemRef)
 {
-    std::shared_ptr<Object> buyer = objectHandle(buyerRef);
-    std::shared_ptr<Object> item = objectHandle(itemRef);
+    Object* buyer = objectByRef(buyerRef);
+    Object* item = objectByRef(itemRef);
     if (!buyer || !item) return false;
     if (buyer->isTerminated() || item->isTerminated()) return false;
 
@@ -163,8 +161,8 @@ bool Shop::buy(ObjectRef buyerRef, ObjectRef itemRef)
 
 bool Shop::steal(ObjectRef thiefRef, ObjectRef itemRef)
 {
-    std::shared_ptr<Object> thief = objectHandle(thiefRef);
-    std::shared_ptr<Object> item = objectHandle(itemRef);
+    Object* thief = objectByRef(thiefRef);
+    Object* item = objectByRef(itemRef);
     if (!thief || !item) return false;
     if (thief->isTerminated() || item->isTerminated()) return false;
 
@@ -192,8 +190,8 @@ bool Shop::steal(ObjectRef thiefRef, ObjectRef itemRef)
 
 bool Shop::canGrabItem(ObjectRef grabberRef, ObjectRef itemRef)
 {
-    std::shared_ptr<Object> grabber = objectHandle(grabberRef);
-    std::shared_ptr<Object> item = objectHandle(itemRef);
+    Object* grabber = objectByRef(grabberRef);
+    Object* item = objectByRef(itemRef);
     if (!grabber || !item) return false;
     if (grabber->isTerminated() || item->isTerminated()) return false;
     // Assume there is no shop so that the character can grab anything.
