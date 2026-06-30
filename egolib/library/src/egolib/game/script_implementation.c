@@ -31,22 +31,18 @@
 #include "egolib/AI/LineOfSight.hpp"   // line_of_sight_info_t
 #include "egolib/AI/AStar.hpp"         // g_astar
 
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Mesh/ITerrainQuery.hpp"
 #include "egolib/game/mesh.h"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
 
 namespace
 {
-GameModule& activeModule()
-{
-    return GameSessionContext::get().activeModule();
-}
-
 auto& objectHandler()
 {
     return Ego::Entities::activeObjectHandler();
@@ -55,6 +51,16 @@ auto& objectHandler()
 std::shared_ptr<ego_mesh_t> moduleMesh()
 {
     return activeModuleEnvironment().mesh();
+}
+
+IModuleCommands& moduleCommands()
+{
+    return activeModuleCommands();
+}
+
+Ego::Mesh::ITerrainQuery& terrainQuery()
+{
+    return Ego::Mesh::activeTerrainQuery();
 }
 
 uint32_t worldUpdateCount()
@@ -227,7 +233,7 @@ bool FindPath( waypoint_list_t& wplst,
     los_info.z1 = 0;
 
     // test for the simple case... a straight line
-    straight_line = !line_of_sight_info_t::blocked(los_info, activeModule());
+    straight_line = !line_of_sight_info_t::blocked(los_info, terrainQuery());
 
     if ( !straight_line )
     {
@@ -235,7 +241,7 @@ bool FindPath( waypoint_list_t& wplst,
         printf( "Finding a path from %d,%d to %d,%d: \n", src_ix, src_iy, dst_ix, dst_iy );
 #endif
         //Try to find a path with the AStar algorithm
-        if ( g_astar.find_path( activeModule(), stopped_by, src_ix, src_iy, dst_ix, dst_iy ) )
+        if ( g_astar.find_path( terrainQuery(), stopped_by, src_ix, src_iy, dst_ix, dst_iy ) )
         {
             returncode = g_astar.get_path( dst_x, dst_y, wplst);
         }
@@ -309,7 +315,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 		throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
 	}
 
-    const std::shared_ptr<Passage> &passage = activeModule().getPassageByID(passageID);
+    const std::shared_ptr<Passage> &passage = moduleCommands().getPassageByID(passageID);
 
     if ( !passage ) return false;
 
@@ -404,7 +410,7 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     ///    must be set first, and are set on a find.  Returns true or false
     ///    depending on if it finds one or not
 
-    const std::shared_ptr<Passage> &passage = activeModule().getPassageByID(passageID);
+    const std::shared_ptr<Passage> &passage = moduleCommands().getPassageByID(passageID);
     if ( !passage ) return false;
     auto mesh = moduleMesh();
     if (!mesh) {
@@ -534,7 +540,7 @@ ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& w
             los.y1 = pweapon->getPosY();
             los.z1 = pweapon->getPosZ();
 
-            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, activeModule()) )
+            if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, terrainQuery()) )
             {
                 //found a valid weapon!
                 best_target = pweapon->getObjRef();

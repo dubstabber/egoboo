@@ -5,11 +5,11 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/IModuleStatus.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace gfx_internal
 {
@@ -23,14 +23,9 @@ inline Ego::GUI::UIManager& uiManager()
     return *engine().getUIManager();
 }
 
-inline GameSessionContext& gameSession()
+inline IModuleCommands& moduleCommands()
 {
-    return GameSessionContext::get();
-}
-
-inline GameModule& activeModule()
-{
-    return gameSession().activeModule();
+    return activeModuleCommands();
 }
 
 inline IModuleEnvironment& moduleEnvironment()

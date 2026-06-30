@@ -96,6 +96,13 @@ ISessionState* tryActiveSessionState();
 /// @throw std::logic_error if no session state is installed.
 ISessionState& activeSessionState();
 
+/// @brief The installed session-state surface when one is active, otherwise
+///        the pre-module session context fallback.
+///
+/// This preserves legacy callers that can be exercised before a module is
+/// active, without weakening activeSessionState()'s lifetime check.
+ISessionState& activeOrFallbackSessionState();
+
 /// @brief Install @a publisher as the active session-state publisher. Passing
 ///        nullptr is equivalent to clearSessionStatePublisher().
 void installSessionStatePublisher(ISessionStatePublisher* publisher);

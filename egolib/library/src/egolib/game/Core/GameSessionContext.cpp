@@ -15,9 +15,11 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Mesh/ITerrainQuery.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"  // install/clearCollisionWorld
 #include "egolib/Entities/IObjectWorld.hpp"     // install/clearObjectWorld
 #include "egolib/game/game.h"
@@ -70,6 +72,16 @@ GameSessionContext& GameSessionContext::get()
 {
     static GameSessionContext instance;
     return instance;
+}
+
+ISessionState& activeOrFallbackSessionState()
+{
+    if (ISessionState* session = tryActiveSessionState())
+    {
+        return *session;
+    }
+
+    return GameSessionContext::get();
 }
 
 LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players)
@@ -247,6 +259,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // validate positions without reaching up into GameModule. Installed before any spawning,
     // since spawnAllObjects() sets object positions through Collidable::setPosition.
     Ego::Physics::installCollisionWorld(_activeModule.get());
+    Ego::Mesh::installTerrainQuery(_activeModule.get());
 
     // Publish the active module as the object world too, so the physics translation units can
     // reach the object/team containers through the IObjectWorld seam instead of up into
@@ -259,6 +272,7 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // session owner.
     installModuleEnvironment(_activeModule.get());
     installModuleStatus(_activeModule.get());
+    installModuleCommands(_activeModule.get());
     installSessionState(this);
     installSessionStatePublisher(this);
 
@@ -281,9 +295,11 @@ void GameSessionContext::quitModule()
     Ego::Entities::clearWorldUpdateCounter();
     clearSessionStatePublisher();
     clearSessionState();
+    clearModuleCommands();
     clearModuleStatus();
     clearModuleEnvironment();
     Ego::Entities::clearObjectWorld();
+    Ego::Mesh::clearTerrainQuery();
     Ego::Physics::clearCollisionWorld();
 
     if (_activeModule)

@@ -21,6 +21,7 @@
 /// @brief Combat damage-application and death pipeline (Object implementation).
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/game/CharacterParticleOps.h"                    // DisplayMsg_printf
 #include "egolib/Script/IScriptSystem.hpp"                       // activeScriptSystem() driver seam
 #include "egolib/Graphics/IBillboardSystem.hpp"  // Ego::Graphics::activeBillboardSystem

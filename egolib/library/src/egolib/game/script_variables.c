@@ -3,22 +3,16 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Script/script.h"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 
 namespace
 {
 egoboo_config_t& config()
 {
     return EngineContext::get().config();
-}
-
-GameModule& activeModule()
-{
-    return GameSessionContext::get().activeModule();
 }
 
 const IPhysical& physical(const Object& object)
@@ -140,7 +134,7 @@ int32_t load_VARSELFORDER(script_state_t& scriptState, ai_state_t& aiState, cons
 
 int32_t load_VARSELFMORALE(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)
 {
-    return activeModule().getTeamMorale(context.selfTargetInfo->getBaseTeamRef());
+    return activeModuleCommands().getTeamMorale(context.selfTargetInfo->getBaseTeamRef());
 }
 
 int32_t load_VARSELFLIFE(script_state_t& scriptState, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context)

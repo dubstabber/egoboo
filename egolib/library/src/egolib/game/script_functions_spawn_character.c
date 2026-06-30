@@ -2,6 +2,7 @@
 /// @brief EgoScript dispatch entries that spawn, respawn, attach, or morph characters.
 
 #include "egolib/game/script_functions_spawn_internal.h"
+#include "egolib/FileFormats/SpawnFile/spawn_file.h"
 
 namespace
 {
@@ -187,14 +188,13 @@ SpawnedCharacterContext spawnCharacterAt(const Ego::Vector3f& position,
                                          TEAM_REF teamRef,
                                          Facing facing)
 {
-    GameModule& module = activeModule();
-    const ObjectRef childRef = module.spawnObjectRef(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
-    return makeSpawnedCharacterContext(module.getObjectHandler().get(childRef));
+    const ObjectRef childRef = moduleCommands().spawnObjectRef(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
+    return makeSpawnedCharacterContext(tryObject(childRef));
 }
 
 void setModuleRespawnValid(bool valid)
 {
-    activeModule().setRespawnValid(valid);
+    moduleCommands().setRespawnValid(valid);
 }
 
 SpawnedCharacterContext spawnCharacterLikeSelf(const SpawnSelfContext& selfContext,

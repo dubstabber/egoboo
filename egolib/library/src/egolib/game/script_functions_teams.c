@@ -5,11 +5,6 @@
 
 namespace
 {
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 struct SelfRoleContext
 {
     const ITargetInfo* targetInfo = nullptr;
@@ -24,7 +19,7 @@ struct TargetTeamContext
 
 struct ModuleEffectsContext
 {
-    GameModule* module = nullptr;
+    IModuleCommands* module = nullptr;
 };
 
 SelfRoleContext makeSelfRoleContext(const ai_state_t& self)
@@ -47,18 +42,18 @@ TargetTeamContext makeTargetTeamContext(const ai_state_t& self)
 ModuleEffectsContext makeModuleEffectsContext(const ai_state_t& self)
 {
     ModuleEffectsContext context;
-    context.module = gameSession().tryActiveModule();
+    context.module = tryActiveModuleCommands();
     return context;
 }
 
-GameModule& compatibleModule(const ModuleEffectsContext& context)
+IModuleCommands& compatibleModule(const ModuleEffectsContext& context)
 {
     if (context.module != nullptr)
     {
         return *context.module;
     }
 
-    return activeModule();
+    return moduleCommands();
 }
 
 void giveGoodTeamExperience(const ModuleEffectsContext& context, int amount, XPType type)

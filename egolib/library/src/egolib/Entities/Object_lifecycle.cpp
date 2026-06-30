@@ -168,7 +168,7 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
 Object::~Object()
 {
     // Detach the character from the active game.
-    if (tryActiveModule()) {
+    if (tryModuleCommands()) {
         removeFromGame(this);
 
         for (const ObjectRef& itemRef : _inventory.getItemIDs()) {
@@ -204,7 +204,7 @@ void Object::removeFromGame(Object* obj)
         obj->clearTeamLeadershipIfSelf(obj->team);
     }
 
-    activeModule().removeShopOwner(objRef);
+    moduleCommands().removeShopOwner(objRef);
 
     if (worldObjectExists(obj->attachedto)) {
         obj->detachFromHolder(true, false);

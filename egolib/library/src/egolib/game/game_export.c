@@ -22,6 +22,9 @@
 
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 namespace
 {
@@ -55,14 +58,13 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
     std::string todirname;
     std::string todirfullname;
 
-    GameModule& module = activeModule();
-    ObjectHandler& objectHandler = module.getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
     Object* object = objectHandler.get(character);
     if(!object) {
         return ExportCharacterResult::Error;
     }
 
-    if ( !module.isExportValid() || ( object->getProfile()->isItem() && !object->getProfile()->canCarryToNextModule() ) )
+    if ( !activeModuleStatus().isExportValid() || ( object->getProfile()->isItem() && !object->getProfile()->canCarryToNextModule() ) )
     {
         return ExportCharacterResult::Skipped;
     }
@@ -162,14 +164,13 @@ bool export_all_players( bool require_local )
     bool exportedAllPlayers = true;
     int number;
 
-    GameModule& module = activeModule();
-    ObjectHandler& objectHandler = module.getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
 
     // Stop if export isnt valid
-    if ( !module.isExportValid() ) return false;
+    if ( !activeModuleStatus().isExportValid() ) return false;
 
     // Check each player
-    for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : activeSessionState().playerList()) {
         ObjectRef item;
         if (!player) {
             continue;
@@ -240,8 +241,7 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
     /// @author ZZ
     /// @details This function makes the naming.txt file for the character
 
-    GameModule& module = activeModule();
-    Object* object = module.getObjectHandler().get(character);
+    Object* object = Ego::Entities::activeObjectHandler().get(character);
     if(!object) {
         return false;
     }
@@ -250,7 +250,11 @@ bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character
         return false;
     }
 
-    std::shared_ptr<Ego::Player>& player = module.getPlayer(object->getPlayerNumber());
+    std::shared_ptr<Ego::Player> player = moduleCommands().tryGetPlayer(object->getPlayerNumber());
+    if (!player)
+    {
+        return false;
+    }
 
     return player->getQuestLog().exportToFile(szSaveName);
 }
@@ -261,8 +265,7 @@ bool export_one_character_name_vfs( const char *szSaveName, ObjectRef character 
     /// @author ZZ
     /// @details This function makes the naming.txt file for the character
 
-    GameModule& module = activeModule();
-    const Object* object = module.getObjectHandler().get(character);
+    const Object* object = Ego::Entities::activeObjectHandler().get(character);
     if ( !object ) return false;
 
     return RandomName::exportName(object->getName(), szSaveName);
@@ -351,13 +354,13 @@ void import_list_t::init(import_list_t& self)
 //--------------------------------------------------------------------------------------------
 size_t import_list_t::from_players(import_list_t& self)
 {
-    GameModule& module = activeModule();
     // blank out the ImportList list
     import_list_t::init(self);
 
     // generate the ImportList list from the player info
-    for(size_t player_idx = 0; player_idx < module.getPlayerList().size(); ++player_idx) {
-        const std::shared_ptr<Ego::Player>& player = module.getPlayerList()[player_idx];
+    const auto& playerList = activeSessionState().playerList();
+    for(size_t player_idx = 0; player_idx < playerList.size(); ++player_idx) {
+        const std::shared_ptr<Ego::Player>& player = playerList[player_idx];
         const Object* pchr = tryPlayerExportObject(player);
         if(!pchr) {
             continue;

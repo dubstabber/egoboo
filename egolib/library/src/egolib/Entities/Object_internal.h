@@ -32,25 +32,24 @@
 #include "egolib/Entities/Enchant.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Mesh/ITerrainQuery.hpp"
+#include "egolib/game/mesh.h"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/Water.hpp"
 
 namespace object_detail
 {
-inline GameSessionContext& gameSession()
+inline constexpr float PitKillDepth = -60.0f;
+
+inline IModuleCommands* tryModuleCommands()
 {
-    return GameSessionContext::get();
+    return tryActiveModuleCommands();
 }
 
-inline GameModule* tryActiveModule()
+inline IModuleCommands& moduleCommands()
 {
-    return gameSession().tryActiveModule();
-}
-
-inline GameModule& activeModule()
-{
-    return gameSession().activeModule();
+    return activeModuleCommands();
 }
 
 inline ObjectHandler* tryWorldObjectHandler()
@@ -88,6 +87,11 @@ inline IModuleEnvironment& moduleEnvironment()
     return activeModuleEnvironment();
 }
 
+inline Ego::Mesh::ITerrainQuery& terrainQuery()
+{
+    return Ego::Mesh::activeTerrainQuery();
+}
+
 inline water_instance_t& moduleWater()
 {
     return moduleEnvironment().water();
@@ -100,12 +104,7 @@ inline std::shared_ptr<ego_mesh_t> moduleMesh()
 
 inline ISessionState& sessionState()
 {
-    if (ISessionState* session = tryActiveSessionState())
-    {
-        return *session;
-    }
-
-    return gameSession();
+    return activeOrFallbackSessionState();
 }
 
 inline ISessionStatePublisher& sessionPublisher()

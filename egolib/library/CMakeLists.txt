@@ -341,6 +341,7 @@ set(EGOLIB_MATH_SOURCES
 
 # -- Mesh --------------------------------------------------------------------
 set(EGOLIB_MESH_SOURCES
+    src/egolib/Mesh/ITerrainQuery.cpp
     src/egolib/Mesh/ITerrainQuery.hpp
     src/egolib/Mesh/Info.cpp
     src/egolib/Mesh/Info.hpp
@@ -743,6 +744,8 @@ set(EGOLIB_GAME_LOGIC_SOURCES
 # -- game/Module -------------------------------------------------------------
 set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/damagetile_instance.h
+    src/egolib/game/Module/IModuleCommands.cpp
+    src/egolib/game/Module/IModuleCommands.hpp
     src/egolib/game/Module/IModuleEnvironment.cpp
     src/egolib/game/Module/IModuleEnvironment.hpp
     src/egolib/game/Module/IModuleStatus.cpp
@@ -991,6 +994,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Debug.cpp
     src/egolib/Entities/IObjectWorld.cpp
     src/egolib/Script/IScriptSystem.cpp
+    src/egolib/Mesh/ITerrainQuery.cpp
     src/egolib/game/Core/ISessionState.cpp
     src/egolib/game/Module/IModuleEnvironment.cpp
     src/egolib/game/Module/IModuleStatus.cpp

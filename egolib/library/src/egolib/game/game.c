@@ -24,6 +24,7 @@
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 
 EndText g_endText;
 
@@ -357,16 +358,16 @@ void game_reset_players()
 //--------------------------------------------------------------------------------------------
 float get_mesh_max_vertex_1( ego_mesh_t *mesh, const Index2D& point, oct_bb_t& bump, bool waterwalk )
 {
-    GameModule& module = activeModule();
     float zdone = mesh->get_max_vertex_1( point, bump._mins[OCT_X], bump._mins[OCT_Y], bump._maxs[OCT_X], bump._maxs[OCT_Y] );
+    water_instance_t& water = activeModuleEnvironment().water();
 
-    if ( waterwalk && module.getWater()._surface_level > zdone && module.getWater()._is_water )
+    if ( waterwalk && water._surface_level > zdone && water._is_water )
     {
         Index1D tile = mesh->getTileIndex( point );
 
         if ( 0 != mesh->test_fx( tile, MAPFX_WATER ) )
         {
-            zdone = module.getWater()._surface_level;
+            zdone = water._surface_level;
         }
     }
 

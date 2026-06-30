@@ -35,6 +35,7 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Passage.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
 #include "egolib/Physics/physics.h"
@@ -57,6 +58,11 @@ inline GameSessionContext& gameSession()
 inline GameModule& activeModule()
 {
     return gameSession().activeModule();
+}
+
+inline IModuleCommands& moduleCommands()
+{
+    return activeModuleCommands();
 }
 
 inline uint32_t& worldUpdateCount()

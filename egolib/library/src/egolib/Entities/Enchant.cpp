@@ -26,8 +26,7 @@
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Log/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 
 namespace Ego
 {
@@ -374,8 +373,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     // Create an overlay character?
     if (_enchantProfile->spawn_overlay)
     {
-        GameModule& module = GameSessionContext::get().activeModule();
-        const ObjectRef overlayRef = module.spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
+        const ObjectRef overlayRef = activeModuleCommands().spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
         Object* overlay = objectByRef(overlayRef);
         if (overlay)
         {

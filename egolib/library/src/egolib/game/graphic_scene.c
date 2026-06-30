@@ -224,7 +224,7 @@ void draw_passages(Camera& cam)
 
     for (int i = 0; i < moduleStatus().passageCount(); ++i)
     {
-        const Ego::AxisAlignedBox2f& passageABB = activeModule().getPassageByID(i)->getAxisAlignedBox2f();
+        const Ego::AxisAlignedBox2f& passageABB = moduleCommands().getPassageByID(i)->getAxisAlignedBox2f();
 
         oct_bb_t bb;
         bb._mins[OCT_X] = passageABB.get_min().x();

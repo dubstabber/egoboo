@@ -25,6 +25,7 @@
 #include "egolib/Physics/ICollisionWorld.hpp"  // GameModule implements ICollisionWorld
 #include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
 #include "egolib/Mesh/ITerrainQuery.hpp"        // GameModule implements ITerrainQuery
+#include "egolib/game/Module/IModuleCommands.hpp" // GameModule implements IModuleCommands
 #include "egolib/game/Module/IModuleEnvironment.hpp" // GameModule implements IModuleEnvironment
 #include "egolib/game/Module/IModuleStatus.hpp" // GameModule implements IModuleStatus
 #include "egolib/game/Module/ModuleRuntime.hpp"
@@ -57,6 +58,7 @@ class GameModule : private idlib::non_copyable,
                    public Ego::Physics::ICollisionWorld,
                    public Ego::Entities::IObjectWorld,
                    public Ego::Mesh::ITerrainQuery,
+                   public IModuleCommands,
                    public IModuleEnvironment,
                    public IModuleStatus
 {
@@ -103,7 +105,7 @@ public:
      *  Make the players win the module.
      *  If they press ESC the game ends and the end screen is shown instead of going to the pause menu
      */
-    void beatModule() {_isBeaten = true;}
+    void beatModule() override {_isBeaten = true;}
 
     /**
      * @return
@@ -117,21 +119,21 @@ public:
      */
     bool isExportValid() const override {return _exportValid;}
 
-    void setExportValid(bool valid) {_exportValid = valid;}
+    void setExportValid(bool valid) override {_exportValid = valid;}
 
     bool canRespawnAnyTime() const override;
 
-    void setRespawnValid(bool valid) {_isRespawnValid = valid;}
+    void setRespawnValid(bool valid) override {_isRespawnValid = valid;}
 
     /// @author ZZ
     /// @details This function returns the owner of a item in a shop
-    ObjectRef getShopOwner(const float x, const float y);
+    ObjectRef getShopOwner(const float x, const float y) override;
 
     /**
      * @brief
      *  Mark all shop passages having this owner as no longer a shop
      */
-    void removeShopOwner(ObjectRef owner);
+    void removeShopOwner(ObjectRef owner) override;
 
     /**
      * @return
@@ -146,13 +148,13 @@ public:
      * @return
      *  @a nullptr if the id is invalid else the Passage located in the ordered index number
      */
-    std::shared_ptr<Passage> getPassageByID(int id);
+    std::shared_ptr<Passage> getPassageByID(int id) override;
 
     /**
      * @brief
      *  Get folder path to the Profile of this module
      */
-    const std::string& getPath() const;
+    const std::string& getPath() const override;
 
     uint8_t getMaxPlayers() const;
     uint8_t getMinPlayers() const;
@@ -160,7 +162,7 @@ public:
     const std::shared_ptr<ModuleProfile>& getModuleProfile() const {return _moduleProfile;}
     const std::shared_ptr<ModuleProfile>& moduleProfile() const override {return getModuleProfile();}
 
-    void setImportPlayers(const std::list<std::string> &players) {_playerNameList = players;}
+    void setImportPlayers(const std::list<std::string> &players) override {_playerNameList = players;}
 
     const std::list<std::string>& getImportPlayers() const {return _playerNameList;}
     const std::list<std::string>& importPlayers() const override {return getImportPlayers();}
@@ -171,13 +173,13 @@ public:
     **/
     std::vector<Team>& getTeamList() override {return _teamList;}
 
-    ObjectRef getTeamLeaderRef(TEAM_REF teamRef) const;
+    ObjectRef getTeamLeaderRef(TEAM_REF teamRef) const override;
 
-    ObjectRef getTeamCallerForHelpRef(TEAM_REF teamRef) const;
+    ObjectRef getTeamCallerForHelpRef(TEAM_REF teamRef) const override;
 
-    uint16_t getTeamMorale(TEAM_REF teamRef) const;
+    uint16_t getTeamMorale(TEAM_REF teamRef) const override;
 
-    void giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const;
+    void giveTeamExperience(TEAM_REF teamRef, int amount, XPType type) const override;
 
     /**
     * @return
@@ -229,13 +231,13 @@ public:
     size_t getTileCountY() const override;
     /// @}
 
-    bool isInsidePitBounds(float x, float y) const;
+    bool isInsidePitBounds(float x, float y) const override;
 
-    bool setTileType(Index1D tileIndex, uint16_t tileType);
+    bool setTileType(Index1D tileIndex, uint16_t tileType) override;
 
-    bool tryGetTileTypeAtPosition(const Ego::Vector2f& position, uint16_t& tileType) const;
+    bool tryGetTileTypeAtPosition(const Ego::Vector2f& position, uint16_t& tileType) const override;
 
-    bool setTileTypeAtPosition(const Ego::Vector2f& position, uint16_t tileType);
+    bool setTileTypeAtPosition(const Ego::Vector2f& position, uint16_t tileType) override;
 
     /**
     * Porting hack, TODO: remove
@@ -250,7 +252,7 @@ public:
      *  The reference of the object that was spawned or ObjectRef::Invalid on failure.
      */
      ObjectRef spawnObjectRef(const Ego::Vector3f& pos, ObjectProfileRef profile, const TEAM_REF team, const int skin,
-                              const Facing& facing, const std::string& name, const ObjectRef override);
+                              const Facing& facing, const std::string& name, const ObjectRef override) override;
 
      std::shared_ptr<const Ego::Texture> getTileTexture(const size_t index);
      std::shared_ptr<const Ego::Texture> tileTexture(size_t index) override { return getTileTexture(index); }
@@ -267,7 +269,7 @@ public:
      AnimatedTilesState& animatedTilesState() override { return getAnimatedTilesState(); }
 
     std::shared_ptr<Ego::Player>& getPlayer(size_t index);
-    std::shared_ptr<Ego::Player> tryGetPlayer(size_t index);
+    std::shared_ptr<Ego::Player> tryGetPlayer(size_t index) override;
     std::shared_ptr<const Ego::Player> tryGetPlayer(size_t index) const;
 
     const std::vector<std::shared_ptr<Ego::Player>>& getPlayerList() const;
@@ -280,7 +282,7 @@ public:
     *   This is mutual exclusive with setPitsTeleport() and will disable
     *   teleporting in pits.
     **/
-    void enablePitsKill();
+    void enablePitsKill() override;
 
     /**
     * @brief
@@ -288,7 +290,7 @@ public:
     *   location. This is mutual exclusive to setPitsKill() and will disable
     *   killing in pits.
     **/
-    void enablePitsTeleport(const Ego::Vector3f &location);
+    void enablePitsTeleport(const Ego::Vector3f &location) override;
 
     /**
     * @brief
@@ -298,7 +300,7 @@ public:
 
     /// @details This function does several iterations of character movements and such
     ///    to keep the game in sync.
-    void update();
+    void update() override;
 
 private:
     bool addPlayer(ObjectRef objectRef,

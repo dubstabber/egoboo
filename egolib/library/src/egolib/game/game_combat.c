@@ -370,7 +370,6 @@ void character_swipe( ObjectRef ichr, slot_t slot )
 {
     /// @author ZZ
     /// @details This function spawns an attack particle
-    GameModule& module = activeModule();
     Object* pchr = objectHandler().get(ichr);
     if(!pchr) {
         return;
@@ -426,7 +425,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     if ( !unarmed_attack && (( weaponProfile->isStackable() && pweapon->getAmmo() > 1 ) || ACTION_IS_TYPE( pweapon->getCurrentAnimation(), F ) ) )
     {
         // Throw the weapon if it's stacked or a hurl animation
-        const ObjectRef thrownRef = module.spawnObjectRef(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), holderInfo.getTeamRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
+        const ObjectRef thrownRef = moduleCommands().spawnObjectRef(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), holderInfo.getTeamRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
         Object* pthrown = objectHandler().get(thrownRef);
         if (pthrown)
         {

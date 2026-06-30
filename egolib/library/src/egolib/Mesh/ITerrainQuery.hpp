@@ -53,5 +53,19 @@ public:
     virtual bool isFanOff(const Index1D& tile) const = 0;
 };
 
+/// @brief Install @a terrain as the active terrain-query surface. Passing nullptr is
+///        equivalent to clearTerrainQuery().
+void installTerrainQuery(ITerrainQuery* terrain);
+
+/// @brief Clear the installed active terrain-query surface.
+void clearTerrainQuery();
+
+/// @brief The installed terrain-query surface, or nullptr if none is installed.
+ITerrainQuery* tryActiveTerrainQuery();
+
+/// @brief The installed active terrain-query surface.
+/// @throw std::logic_error if no terrain query is installed.
+ITerrainQuery& activeTerrainQuery();
+
 } // namespace Mesh
 } // namespace Ego

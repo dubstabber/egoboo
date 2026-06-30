@@ -247,7 +247,7 @@ void Object::dropMoney(int amount)
 
     amount = Ego::Math::constrain<int>(amount, 0, getMoney());
 
-    if (getPosZ() <= (GameModule::PITDEPTH / 2) || amount <= 0) {
+    if (getPosZ() <= (PitKillDepth / 2) || amount <= 0) {
         return;
     }
 
@@ -270,7 +270,7 @@ void Object::dropMoney(int amount)
 
 void Object::dropKeys()
 {
-    if (getPosZ() <= (GameModule::PITDEPTH / 2)) return;
+    if (getPosZ() <= (PitKillDepth / 2)) return;
 
     const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
 

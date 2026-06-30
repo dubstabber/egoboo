@@ -22,8 +22,18 @@
 
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
+#include "egolib/Mesh/ITerrainQuery.hpp"
+
+namespace
+{
+Ego::Mesh::ITerrainQuery& terrainQuery()
+{
+    return Ego::Mesh::activeTerrainQuery();
+}
+}
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -33,8 +43,6 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 {
     /// @author ZF
     /// @details This is the new improved targeting system for particles. Also includes distance in the Z direction.
-    GameModule& module = activeModule();
-
     const float max_dist2 = WIDE * WIDE;
 
     std::shared_ptr<ParticleProfile> ppip;
@@ -69,7 +77,7 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
         // Don't retarget someone we already had or not supposed to target
         if ( pchr->getObjRef() == oldtarget || pchr->getObjRef() == donttarget ) continue;
 
-        Team &particleTeam = module.getTeamList()[team];
+        Team &particleTeam = Ego::Entities::activeObjectWorld().getTeamList()[team];
 
         bool target_friend = ppip->onlydamagefriendly && particleTeam == pchr->getTeam();
         bool target_enemy  = !ppip->onlydamagefriendly && particleTeam.hatesTeam(pchr->getTeam() );
@@ -100,7 +108,6 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
 //--------------------------------------------------------------------------------------------
 bool chr_check_target( Object * psrc, const Object& ptst, const IDSZ2 &idsz, const BIT_FIELD targeting_bits )
 {
-    GameModule& module = activeModule();
     bool retval = false;
 
     // Skip non-existing objects
@@ -137,7 +144,11 @@ bool chr_check_target( Object * psrc, const Object& ptst, const IDSZ2 &idsz, con
             return false;
         }
 
-        std::shared_ptr<Ego::Player>& player = module.getPlayer(ptst.getPlayerNumber());
+        std::shared_ptr<Ego::Player> player = moduleCommands().tryGetPlayer(ptst.getPlayerNumber());
+        if (!player)
+        {
+            return false;
+        }
 
         // find only active quests?
         // this makes it backward-compatible with zefz's version
@@ -188,7 +199,6 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     /// @details This is the new improved AI targeting algorithm. Also includes distance in the Z direction.
     ///     If max_dist is 0 then it searches without a max limit.
 
-    GameModule& module = activeModule();
     line_of_sight_info_t los_info;
 
     ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
@@ -223,7 +233,7 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
                 los_info.y1 = target.getPosition()[kY];
                 los_info.z1 = target.getPosition()[kZ] + std::max( 1.0f, target.getCurrentBump().height );
 
-                if ( line_of_sight_info_t::blocked( los_info, module ) ) return;
+                if ( line_of_sight_info_t::blocked( los_info, terrainQuery() ) ) return;
             }
 
             //Set the new best target found
@@ -235,7 +245,7 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     //Only loop through the players
     if ( HAS_SOME_BITS( targeting_bits, TARGET_PLAYERS ) || HAS_SOME_BITS( targeting_bits, TARGET_QUEST ) )
     {
-        for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
+        for(const std::shared_ptr<Ego::Player> &player : activeSessionState().playerList())
         {
             if (!player) {
                 continue;

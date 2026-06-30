@@ -20,8 +20,7 @@
 /// @file egolib/game/Shop.cpp
 /// @brief Shop interaction
 #include "egolib/game/Shop.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -29,9 +28,9 @@
 
 namespace
 {
-GameModule& activeModule()
+IModuleCommands& moduleCommands()
 {
-    return GameSessionContext::get().activeModule();
+    return activeModuleCommands();
 }
 
 auto& objectHandler()
@@ -70,7 +69,7 @@ bool Shop::drop(ObjectRef dropperRef, ObjectRef itemRef)
     bool inShop = false;
     if (item->isItem())
     {
-        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        ObjectRef ownerRef = moduleCommands().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))
         {
             Object *owner = objectHandler().get(ownerRef);
@@ -107,7 +106,7 @@ bool Shop::buy(ObjectRef buyerRef, ObjectRef itemRef)
     bool canGrab = true;
     if (item->isItem())
     {
-        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        ObjectRef ownerRef = moduleCommands().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))
         {
             Object *owner = objectHandler().get(ownerRef);
@@ -170,7 +169,7 @@ bool Shop::steal(ObjectRef thiefRef, ObjectRef itemRef)
     bool canSteal = true;
     if (item->isItem())
     {
-        ObjectRef ownerRef = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+        ObjectRef ownerRef = moduleCommands().getShopOwner(item->getPosX(), item->getPosY());
         if (objectHandler().exists(ownerRef))
         {
             int detection = Random::getPercent();
@@ -199,7 +198,7 @@ bool Shop::canGrabItem(ObjectRef grabberRef, ObjectRef itemRef)
     bool canGrab = true;
 
     // check if we are doing this inside a shop
-    ObjectRef iShopKeeper = activeModule().getShopOwner(item->getPosX(), item->getPosY());
+    ObjectRef iShopKeeper = moduleCommands().getShopOwner(item->getPosX(), item->getPosY());
     Object *shopKeeper = objectHandler().get(iShopKeeper);
     if (INGAME_PCHR(shopKeeper))
     {

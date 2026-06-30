@@ -23,6 +23,7 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/game/game_internal.h"
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/Script/IScriptSystem.hpp"  // activeScriptSystem() driver seam
 
 int chr_stoppedby_tests = 0;
@@ -50,14 +51,15 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-Object* tryCheatPlayerObject(GameModule& module, PLA_REF playerIndex)
+Object* tryCheatPlayerObject(PLA_REF playerIndex)
 {
-    if (playerIndex == INVALID_PLA_REF || playerIndex >= module.getPlayerList().size())
+    const auto& playerList = activeSessionState().playerList();
+    if (playerIndex == INVALID_PLA_REF || playerIndex >= playerList.size())
     {
         return nullptr;
     }
 
-    const std::shared_ptr<Ego::Player>& player = module.getPlayer(playerIndex);
+    const std::shared_ptr<Ego::Player>& player = playerList[playerIndex];
     if (!player)
     {
         return nullptr;
@@ -98,13 +100,13 @@ void MainLoop::move_all_objects()
 
 void MainLoop::updateLocalStats()
 {
-    GameModule& module = activeModule();
     ISessionStatePublisher& sessionPublisher = activeSessionStatePublisher();
-    const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
-    const LocalPlayerPerceptionState localPlayerPerception = collectLocalPlayerPerception(module.getPlayerList());
+    const auto& playerList = activeSessionState().playerList();
+    const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(playerList);
+    const LocalPlayerPerceptionState localPlayerPerception = collectLocalPlayerPerception(playerList);
     audioSystem().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
 
-    for(const std::shared_ptr<Ego::Player> &player : module.getPlayerList())
+    for(const std::shared_ptr<Ego::Player> &player : playerList)
     {
         Object* pchr = player != nullptr ? player->tryObject() : nullptr;
         if(!pchr || pchr->isTerminated()) {
@@ -135,10 +137,10 @@ void MainLoop::updateLocalStats()
 //--------------------------------------------------------------------------------------------
 void MainLoop::readPlayerInput()
 {
-    GameModule& module = activeModule();
     ISessionState& sessionState = activeSessionState();
+    IModuleStatus& moduleStatus = activeModuleStatus();
     Ego::Input::IInputSystem& input = inputSystem();
-    for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
+    for(const std::shared_ptr<Ego::Player>& player : sessionState.playerList()) {
 
         //Only valid players
         Object* pchr = player != nullptr ? player->tryObject() : nullptr;
@@ -152,15 +154,15 @@ void MainLoop::readPlayerInput()
         //Press space to respawn!
         bool respawnRequested = false;
         if (input.isKeyDown(SDLK_SPACE)
-            && (sessionState.allLocalPlayersDead() || module.canRespawnAnyTime())
-            && module.isRespawnValid()
+            && (sessionState.allLocalPlayersDead() || moduleStatus.canRespawnAnyTime())
+            && moduleStatus.isRespawnValid()
             && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
         {
             respawnRequested = true;
         }
 
         // Let players respawn
-        if (config().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
+        if (config().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && moduleStatus.isRespawnValid())
         {
             if (!pchr->isAlive() && 0 == sessionState.respawnCooldown())
             {
@@ -186,8 +188,8 @@ void MainLoop::check_stats()
 {
     /// @author ZZ
     /// @details This function lets the players check character stats
-    GameModule& module = activeModule();
     Ego::Input::IInputSystem& input = inputSystem();
+    const auto& playerList = activeSessionState().playerList();
 
     static int stat_check_timer = 0;
     static int stat_check_delay = 0;
@@ -222,9 +224,9 @@ void MainLoop::check_stats()
         else if (input.isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
-        if ( docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size() )
+        if ( docheat != INVALID_PLA_REF && docheat < playerList.size() )
         {
-            Object* object = tryCheatPlayerObject(module, docheat);
+            Object* object = tryCheatPlayerObject(docheat);
             if(object)
             {
                 //Give 10% of XP needed for next level
@@ -247,8 +249,8 @@ void MainLoop::check_stats()
         else if (input.isKeyDown( SDLK_4 ) )  docheat = 3;
 
         //Apply the cheat if valid
-        if(docheat != INVALID_PLA_REF && docheat < module.getPlayerList().size()) {
-            Object* object = tryCheatPlayerObject(module, docheat);
+        if(docheat != INVALID_PLA_REF && docheat < playerList.size()) {
+            Object* object = tryCheatPlayerObject(docheat);
             if (object)
             {
                 //Heal 1 life

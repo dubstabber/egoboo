@@ -21,6 +21,7 @@
 /// @brief Polymorph, stealth, team, skill, and money Object implementation.
 
 #include "egolib/Entities/Object_internal.h"
+#include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/game/CharacterParticleOps.h"                          // DisplayMsg_printf / disaffirm_attached_particles
 #include "egolib/Graphics/IBillboardSystem.hpp"        // Ego::Graphics::tryActiveBillboardSystem
 #include "egolib/Logic/IPerkHandler.hpp"               // Ego::Perks::activePerkHandler + Perk
@@ -309,7 +310,7 @@ bool Object::activateStealth()
         lineOfSightInfo.y0         = object->getPosY();
         lineOfSightInfo.z0         = object->getPosZ() + std::max(1.0f, object->bump.height);
         lineOfSightInfo.stopped_by = object->stoppedby;
-        if (line_of_sight_info_t::blocked(lineOfSightInfo, activeModule())) {
+        if (line_of_sight_info_t::blocked(lineOfSightInfo, terrainQuery())) {
             continue;
         }
 

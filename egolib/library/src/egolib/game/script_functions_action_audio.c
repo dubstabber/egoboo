@@ -6,6 +6,7 @@
 ///          live in this TU's anonymous namespace.
 
 #include "egolib/game/script_functions_action_internal.h"
+#include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 
 namespace

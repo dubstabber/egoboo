@@ -31,7 +31,7 @@
 #include "egolib/game/link.h"
 #include "egolib/game/game.h"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Inventory.hpp"
@@ -39,11 +39,11 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/Physics/PhysicalConstants.hpp"
 #include "egolib/Script/Interpreter/SafeCast.hpp"
 
@@ -106,9 +106,9 @@ inline std::shared_ptr<IPlayingStateController> tryActivePlayingState()
     return EngineContext::get().tryActivePlayingState();
 }
 
-inline GameModule& activeModule()
+inline IModuleCommands& moduleCommands()
 {
-    return GameSessionContext::get().activeModule();
+    return activeModuleCommands();
 }
 
 inline auto& objectHandler()
@@ -118,12 +118,12 @@ inline auto& objectHandler()
 
 inline std::shared_ptr<Passage> tryPassage(int passageId)
 {
-    return activeModule().getPassageByID(passageId);
+    return moduleCommands().getPassageByID(passageId);
 }
 
 inline ObjectRef teamLeaderRef(TEAM_REF teamRef)
 {
-    return activeModule().getTeamLeaderRef(teamRef);
+    return moduleCommands().getTeamLeaderRef(teamRef);
 }
 
 inline ObjectRef teamLeaderRef(const ITargetInfo& targetInfo)
@@ -133,7 +133,7 @@ inline ObjectRef teamLeaderRef(const ITargetInfo& targetInfo)
 
 inline ObjectRef teamCallerForHelpRef(TEAM_REF teamRef)
 {
-    return activeModule().getTeamCallerForHelpRef(teamRef);
+    return moduleCommands().getTeamCallerForHelpRef(teamRef);
 }
 
 inline ObjectRef teamCallerForHelpRef(const ITargetInfo& targetInfo)
@@ -310,7 +310,7 @@ inline const ITargetInfo* tryTargetInfo(ObjectRef objectRef)
 
 inline std::shared_ptr<Ego::Player> tryPlayer(size_t playerIndex)
 {
-    return activeModule().tryGetPlayer(playerIndex);
+    return moduleCommands().tryGetPlayer(playerIndex);
 }
 
 inline std::shared_ptr<Ego::Player> tryPlayer(const ITargetInfo& targetInfo)

@@ -26,22 +26,18 @@
 
 #include "egolib/Entities/Particle.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/game/mesh.h"
 #include "egolib/game/Core/ISessionState.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/Water.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 namespace particle_detail
 {
-inline GameSessionContext& gameSession()
+inline IModuleCommands& moduleCommands()
 {
-    return GameSessionContext::get();
-}
-
-inline GameModule& activeModule()
-{
-    return gameSession().activeModule();
+    return activeModuleCommands();
 }
 
 inline ObjectHandler& worldObjectHandler()
@@ -81,12 +77,7 @@ inline std::shared_ptr<ego_mesh_t> moduleMesh()
 
 inline ISessionState& sessionState()
 {
-    if (ISessionState* session = tryActiveSessionState())
-    {
-        return *session;
-    }
-
-    return gameSession();
+    return activeOrFallbackSessionState();
 }
 
 inline uint32_t worldUpdateCount()

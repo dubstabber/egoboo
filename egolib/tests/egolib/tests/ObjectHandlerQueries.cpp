@@ -17,9 +17,11 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Mesh/ITerrainQuery.hpp"
 #include "egolib/game/game.h"
 #include "egolib/vfs.h"
 
@@ -191,10 +193,14 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateAreEmp
 {
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
     EXPECT_EQ(tryActiveModuleStatus(), nullptr);
+    EXPECT_EQ(tryActiveModuleCommands(), nullptr);
+    EXPECT_EQ(Ego::Mesh::tryActiveTerrainQuery(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
     EXPECT_EQ(tryActiveSessionStatePublisher(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
     EXPECT_THROW(activeModuleStatus(), std::logic_error);
+    EXPECT_THROW(activeModuleCommands(), std::logic_error);
+    EXPECT_THROW(Ego::Mesh::activeTerrainQuery(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
     EXPECT_THROW(activeSessionStatePublisher(), std::logic_error);
 }
@@ -208,6 +214,10 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     ASSERT_EQ(&activeModuleEnvironment(), &module);
     ASSERT_EQ(tryActiveModuleStatus(), &module);
     ASSERT_EQ(&activeModuleStatus(), &module);
+    ASSERT_EQ(tryActiveModuleCommands(), &module);
+    ASSERT_EQ(&activeModuleCommands(), &module);
+    ASSERT_EQ(Ego::Mesh::tryActiveTerrainQuery(), &module);
+    ASSERT_EQ(&Ego::Mesh::activeTerrainQuery(), &module);
     ASSERT_EQ(tryActiveSessionState(), &session);
     ASSERT_EQ(&activeSessionState(), &session);
     ASSERT_EQ(tryActiveSessionStatePublisher(), &session);
@@ -225,6 +235,10 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     EXPECT_EQ(activeModuleStatus().passageCount(), module.getPassageCount());
     EXPECT_EQ(activeModuleStatus().moduleProfile(), module.getModuleProfile());
     EXPECT_EQ(activeModuleStatus().importPlayers(), module.getImportPlayers());
+    EXPECT_EQ(activeModuleCommands().getTeamMorale(static_cast<TEAM_REF>(Team::TEAM_GOOD)),
+              module.getTeamMorale(static_cast<TEAM_REF>(Team::TEAM_GOOD)));
+    EXPECT_EQ(Ego::Mesh::activeTerrainQuery().getTileIndex(Index2D(0, 0)),
+              module.getTileIndex(Index2D(0, 0)));
 
     LocalPlayerStatus status;
     status.registeredCount = 2;
@@ -278,6 +292,8 @@ TEST_F(ObjectHandlerQueriesFixture, ModuleConstructionPublishesExpectedLoadedSta
     EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
     EXPECT_EQ(&activeModuleEnvironment(), &module);
     EXPECT_EQ(&activeModuleStatus(), &module);
+    EXPECT_EQ(&activeModuleCommands(), &module);
+    EXPECT_EQ(&Ego::Mesh::activeTerrainQuery(), &module);
     EXPECT_EQ(&activeSessionState(), &session);
     EXPECT_EQ(&activeSessionStatePublisher(), &session);
     EXPECT_EQ(activeModuleEnvironment().mesh().get(), module.getMeshPointer().get());
@@ -293,6 +309,8 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearO
 
     ASSERT_NE(tryActiveModuleEnvironment(), nullptr);
     ASSERT_NE(tryActiveModuleStatus(), nullptr);
+    ASSERT_NE(tryActiveModuleCommands(), nullptr);
+    ASSERT_NE(Ego::Mesh::tryActiveTerrainQuery(), nullptr);
     ASSERT_NE(tryActiveSessionState(), nullptr);
     ASSERT_NE(tryActiveSessionStatePublisher(), nullptr);
 
@@ -300,10 +318,14 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearO
 
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
     EXPECT_EQ(tryActiveModuleStatus(), nullptr);
+    EXPECT_EQ(tryActiveModuleCommands(), nullptr);
+    EXPECT_EQ(Ego::Mesh::tryActiveTerrainQuery(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
     EXPECT_EQ(tryActiveSessionStatePublisher(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
     EXPECT_THROW(activeModuleStatus(), std::logic_error);
+    EXPECT_THROW(activeModuleCommands(), std::logic_error);
+    EXPECT_THROW(Ego::Mesh::activeTerrainQuery(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
     EXPECT_THROW(activeSessionStatePublisher(), std::logic_error);
 }

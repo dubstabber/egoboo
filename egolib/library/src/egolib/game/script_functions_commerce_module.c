@@ -5,11 +5,6 @@
 
 namespace
 {
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 egoboo_config_t& config()
 {
     return Ego::activeConfig();
@@ -18,25 +13,25 @@ egoboo_config_t& config()
 struct ModuleEffectsContext
 {
     ObjectRef selfRef = ObjectRef::Invalid;
-    GameModule* module = nullptr;
+    IModuleCommands* module = nullptr;
 };
 
 ModuleEffectsContext makeModuleEffectsContext(const ai_state_t& self)
 {
     ModuleEffectsContext context;
     context.selfRef = self.getSelf();
-    context.module = gameSession().tryActiveModule();
+    context.module = tryActiveModuleCommands();
     return context;
 }
 
-GameModule& compatibleModule(const ModuleEffectsContext& context)
+IModuleCommands& compatibleModule(const ModuleEffectsContext& context)
 {
     if (context.module != nullptr)
     {
         return *context.module;
     }
 
-    return activeModule();
+    return moduleCommands();
 }
 
 water_instance_t& moduleWater(const ModuleEffectsContext& context)

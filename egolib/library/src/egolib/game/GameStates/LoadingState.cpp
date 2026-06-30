@@ -39,6 +39,7 @@
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/link.h"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -214,7 +215,7 @@ void LoadingState::loadModuleData()
             endState();
             return;
         }
-        GameSessionContext::get().activeModule().setImportPlayers(_playersToLoad);
+        activeModuleCommands().setImportPlayers(_playersToLoad);
 
         setProgressText("Almost done...", 90);
 

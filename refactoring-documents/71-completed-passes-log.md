@@ -253,3 +253,18 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   with the Linux build, focused
   `ModuleLoadSmoke|ObjectHandlerQueries|ModuleUpdate` ctest filter, full
   `ctest`, and the `test.mod` validator smoke.
+- Pass 304 on 2026-06-30 added active `ITerrainQuery` and `IModuleCommands`
+  seams, installed and cleared by `GameSessionContext` for the active module
+  lifetime. Migrated terrain line-of-sight/path callers and bounded module
+  command/mutation callers in scripts, entities, shop logic, graphics, loading,
+  and game-loop code off direct `GameSessionContext` / concrete `GameModule`
+  access where they only needed terrain, spawn, passage, tile, pit, shop, team,
+  player, import, respawn, export, beaten, path, or module-update operations.
+  `activeSessionState()` remains strict, with an explicit pre-module fallback
+  accessor for legacy object/particle construction paths that can still run
+  before an active module publishes the seam. Coverage was extended in
+  `ObjectHandlerQueries` to assert empty, mirrored, and cleared module command
+  and terrain-query seams. Verified with the Linux build, targeted fallback
+  ctest rerun, full `ctest`, the `test.mod` validator smoke, the full validator
+  baseline (`42 modules / 10 warnings / 245 errors`, expected nonzero exit),
+  no-stray-header archive check, and the live-archive `nm` back-edge check.
