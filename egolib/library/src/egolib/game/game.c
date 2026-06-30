@@ -45,7 +45,7 @@ const IScriptable& scriptable(const Object& object)
 
 std::shared_ptr<Object> resolveScriptObject(GameModule& module, ObjectRef objectRef)
 {
-    return module.getObjectHandler()[objectRef];
+    return module.getObjectHandler().getHandle(objectRef);
 }
 }
 

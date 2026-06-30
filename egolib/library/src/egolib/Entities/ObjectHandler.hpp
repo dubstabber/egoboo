@@ -181,6 +181,12 @@ public:
 	const std::shared_ptr<Object>& operator[] (ObjectRef ref);
 
 	/**
+	 * @brief Return an owning handle for the specified object reference.
+	 * @return the object handle or nullptr if the object reference was not found.
+	 */
+	std::shared_ptr<Object> getHandle(ObjectRef ref) const;
+
+	/**
 	 * @brief Return number of object currently active in the game.
 	 * @return number of objects currently active in the game
 	 */

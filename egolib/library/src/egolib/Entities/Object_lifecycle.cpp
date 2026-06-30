@@ -234,7 +234,9 @@ void Object::respawn()
     activeParticleHandler().spawnPoof(getObjRef());
     disaffirm_attached_particles(getObjRef());
 
-    for (std::shared_ptr<Object>& object : activeModule().getObjectHandler().iterator()) {
+    ObjectHandler& objectHandler = activeModule().getObjectHandler();
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator()) {
+        Object* object = objectHandler.get(objectRef);
         if (object && object->getAttachedPlatformRef() == getObjRef()) {
             object->detachFromPlatform();
         }

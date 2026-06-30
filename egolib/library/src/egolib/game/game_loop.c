@@ -433,7 +433,7 @@ int number_of_attached_particles(ObjectRef objectRef) {
 
 int reaffirm_attached_particles(ObjectRef objectRef) {
     GameModule& module = activeModule();
-    const std::shared_ptr<Object>& object = module.getObjectHandler()[objectRef];
+    Object* object = module.getObjectHandler().get(objectRef);
     if(!object) {
         return 0;
     }

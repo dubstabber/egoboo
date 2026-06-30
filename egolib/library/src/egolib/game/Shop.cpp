@@ -42,7 +42,7 @@ auto& objectHandler()
 
 std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
 {
-    return objectHandler()[objectRef];
+    return objectHandler().getHandle(objectRef);
 }
 
 IScriptable& scriptable(Object& object)

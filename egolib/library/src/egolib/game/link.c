@@ -181,12 +181,18 @@ bool link_pop_module()
         // restore the heroes' positions before jumping out of the module
         for ( i = 0; i < pentry->hero_count; i++ )
         {
-            std::shared_ptr<Object> pchr;
+            Object* pchr;
             hero_spawn_data_t * phero = pentry->hero + i;
+            ObjectHandler& handler = gameSession().objectHandler();
 
-            pchr = NULL;
-            for(const std::shared_ptr<Object> &object : gameSession().objectHandler().iterator())
+            pchr = nullptr;
+            for(const ObjectRef& objectRef : handler.objectRefIterator())
             {
+                Object* object = handler.get(objectRef);
+                if (object == nullptr) {
+                    continue;
+                }
+
                 if(object->isTerminated()) {
                     continue;
                 }

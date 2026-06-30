@@ -455,8 +455,14 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
 
 void GameModule::tiltCharactersToTerrain()
 {
-    for (const std::shared_ptr<Object> &object : getObjectHandler().iterator())
+    ObjectHandler& objectHandler = getObjectHandler();
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
+        Object* object = objectHandler.get(objectRef);
+        if (object == nullptr) {
+            continue;
+        }
+
         if (object->isTerminated()) {
             continue;
         }

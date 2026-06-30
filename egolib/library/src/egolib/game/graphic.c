@@ -272,8 +272,14 @@ gfx_rv GFX::update_object_instances(Camera& cam)
     // assume the best
     retval = gfx_success;
 
-    for (const std::shared_ptr<Object> &pchr : activeModule().getObjectHandler().iterator())
+    ObjectHandler& objectHandler = activeModule().getObjectHandler();
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
+        Object* pchr = objectHandler.get(objectRef);
+        if (pchr == nullptr) {
+            continue;
+        }
+
         //Dont do terminated characters
         if (pchr->isTerminated()) {
             continue;

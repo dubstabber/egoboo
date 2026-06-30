@@ -3105,3 +3105,23 @@ back-edge proof was required. Live singleton metrics are now **630** `::get()` l
 **128,759**, test files/lines are **50 / 24,469**, and ctest configures **928** cases. Gates:
 `cmake --build build -j20` clean; focused target/system/module slice **126/126**; ctest **928/928**;
 validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 285 — ObjectHandler iterator and explicit handle lookup cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the remaining production
+`ObjectHandler::iterator()` consumers without changing script opcode APIs, source placement, CMake archive
+membership, object ownership, or legacy content behavior. Link-pop hero restoration, collision-system
+object passes, spawn cleanup publication, object-instance graphics refresh, terrain tilt, developer
+kill-all handling, death-alert publication, and respawn platform detachment now iterate object refs and
+resolve concrete objects only at immediate read/mutation points.
+
+`ObjectHandler` gained an explicit `getHandle(ObjectRef)` compatibility API for sites that still genuinely
+need a `std::shared_ptr<Object>`, while simple adjacent lookups moved to raw `get(ObjectRef)` where
+ownership is not needed. The legacy `operator[]` remains available for broader inventory, render, particle,
+export, and compatibility surfaces, but no newly touched production code depends on it.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Production runtime code now has no direct `ObjectHandler::iterator()` call
+sites; remaining uses are test/fixture coverage or non-object iterators. Gates: `cmake --build build -j20`
+clean; focused object-query/collision/module/alert/script slice **42/42**; ctest **928/928**; validator
+`test.mod` 0/0; `git diff --check` clean.

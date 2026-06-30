@@ -182,6 +182,20 @@ Object *ObjectHandler::get(ObjectRef ref) const {
 	return (*result).second.get();
 }
 
+std::shared_ptr<Object> ObjectHandler::getHandle(ObjectRef ref) const
+{
+	if (ref == ObjectRef::Invalid || ref.get() >= _totalCharactersSpawned) {
+		return nullptr;
+	}
+
+	const auto& result = _internalCharacterList.find(ref);
+	if (result == _internalCharacterList.end()) {
+		return nullptr;
+	}
+
+	return (*result).second;
+}
+
 const std::shared_ptr<Object>& ObjectHandler::operator[] (ObjectRef ref)
 {
 	if (ref == ObjectRef::Invalid || ref.get() >= _totalCharactersSpawned) {

@@ -60,10 +60,15 @@ CollisionSystem::~CollisionSystem()
 
 void CollisionSystem::update()
 {
+    ObjectHandler& objectHandler = objectWorld().getObjectHandler();
+
     // blank the accumulators
-    for(const std::shared_ptr<Object> &object : objectWorld().getObjectHandler().iterator())
+    for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
-        object->phys.clear();
+        Object* object = objectHandler.get(objectRef);
+        if (object != nullptr) {
+            object->phys.clear();
+        }
     }
     for(const std::shared_ptr<Ego::Particle> &particle : activeParticleHandler().iterator())
     {
@@ -74,9 +79,10 @@ void CollisionSystem::update()
     updateParticleCollisions();
 
     // accumulate the accumulators
-    for(const std::shared_ptr<Object> &pchr : objectWorld().getObjectHandler().iterator())
+    for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
-        if(pchr->isTerminated()) {
+        Object* pchr = objectHandler.get(objectRef);
+        if(pchr == nullptr || pchr->isTerminated()) {
             continue;
         }
         
@@ -282,11 +288,12 @@ void CollisionSystem::updateObjectCollisions()
     ObjectHandler& handler = objectWorld().getObjectHandler();
 
     //Detect character -> character collisions
-    for(const std::shared_ptr<Object> &objectHandle : handler.iterator()) {
-        if (!objectHandle) {
+    for(const ObjectRef& objectRef : handler.objectRefIterator()) {
+        Object* objectPtr = handler.get(objectRef);
+        if (objectPtr == nullptr) {
             continue;
         }
-        Object& object = *objectHandle;
+        Object& object = *objectPtr;
 
         //Can we collide?
         if (!object.canCollide()) {

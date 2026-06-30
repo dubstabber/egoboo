@@ -45,7 +45,7 @@ const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t s
 
 std::shared_ptr<Object> objectHandle(ObjectRef objectRef)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
+    return GameSessionContext::get().activeModule().getObjectHandler().getHandle(objectRef);
 }
 }
 
@@ -376,7 +376,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     {
         GameModule& module = GameSessionContext::get().activeModule();
         const ObjectRef overlayRef = module.spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
-        std::shared_ptr<Object> overlay = module.getObjectHandler()[overlayRef];
+        std::shared_ptr<Object> overlay = module.getObjectHandler().getHandle(overlayRef);
         if (overlay)
         {
             _overlay = overlay;                             //Kill this character on end...

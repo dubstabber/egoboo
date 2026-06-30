@@ -95,7 +95,7 @@ std::shared_ptr<Player> Player::createForObject(ObjectHandler& objectHandler,
                                                 ObjectRef objectRef,
                                                 const Ego::Input::InputDevice& device)
 {
-    const std::shared_ptr<Object>& object = objectHandler[objectRef];
+    std::shared_ptr<Object> object = objectHandler.getHandle(objectRef);
     if (!object)
     {
         return nullptr;

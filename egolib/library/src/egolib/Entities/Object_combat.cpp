@@ -180,8 +180,12 @@ void publishDeathAlertsAndTeamExperience(Object& killed,
                                          const Object* actualKiller,
                                          uint16_t experience)
 {
-    for (const std::shared_ptr<Object>& listener : objectHandler().iterator())
+    ObjectHandler& handler = objectHandler();
+    for (const ObjectRef& listenerRef : handler.objectRefIterator())
     {
+        Object* listener = handler.get(listenerRef);
+        if (listener == nullptr) continue;
+
         if (!listener->isAlive()) continue;
 
         if (actualKiller != nullptr &&

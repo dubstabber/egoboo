@@ -18,9 +18,8 @@ void forEachLiveSpawnObjectRef(Fn&& fn)
         return;
     }
 
-    for (const auto& object : handler->iterator())
+    for (const ObjectRef& ref : handler->objectRefIterator())
     {
-        const ObjectRef ref = object != nullptr ? object->getObjRef() : ObjectRef::Invalid;
         if (ref != ObjectRef::Invalid)
         {
             fn(ref);

@@ -189,7 +189,7 @@ SpawnedCharacterContext spawnCharacterAt(const Ego::Vector3f& position,
 {
     GameModule& module = activeModule();
     const ObjectRef childRef = module.spawnObjectRef(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
-    return makeSpawnedCharacterContext(module.getObjectHandler()[childRef]);
+    return makeSpawnedCharacterContext(module.getObjectHandler().getHandle(childRef));
 }
 
 void setModuleRespawnValid(bool valid)

@@ -90,7 +90,7 @@ std::shared_ptr<Object> tryObjectHandle(ObjectRef objectRef)
         return nullptr;
     }
 
-    return module->getObjectHandler()[objectRef];
+    return module->getObjectHandler().getHandle(objectRef);
 }
 
 void publishBlockedAlert(IScriptable& object, ObjectRef attackerRef)
@@ -178,7 +178,10 @@ std::shared_ptr<Ego::Particle> ParticleHandler::spawnParticle(const Ego::Vector3
     if (!ppip)
     {
         GameModule* module = tryActiveModule();
-        const std::string spawnOriginName = module && module->getObjectHandler().exists(spawnOrigin) ? module->getObjectHandler()[spawnOrigin]->getName() : "INVALID";
+        Object* spawnOriginObject = module && module->getObjectHandler().exists(spawnOrigin)
+                                    ? module->getObjectHandler().get(spawnOrigin)
+                                    : nullptr;
+        const std::string spawnOriginName = spawnOriginObject ? spawnOriginObject->getName() : "INVALID";
         const std::string spawnProfileName = activeProfileSystem().isLoaded(spawnProfile) ? activeProfileSystem().getProfile(spawnProfile)->getPathname() : "INVALID";
         Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__, "unable to spawn particle with invalid particle profile ", REF_TO_INT(particleProfile),
                                          ", spawn origin == ", spawnOrigin.get(), " (`", spawnOriginName, "`), spawn profile == ", spawnProfile, " (`", spawnProfileName, "`)",

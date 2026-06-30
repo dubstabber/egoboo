@@ -228,8 +228,14 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
             if (EngineContext::get().config().debug_developerMode_enable.getValue())
             {
                 GameModule& activeModule = GameSessionContext::get().activeModule();
-                for(const std::shared_ptr<Object> &object : activeModule.getObjectHandler().iterator())
+                ObjectHandler& objectHandler = activeModule.getObjectHandler();
+                for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
                 {
+                    Object* object = objectHandler.get(objectRef);
+                    if (object == nullptr) {
+                        continue;
+                    }
+
                     if(object->isTerminated() || object->getProfile()->isInvincible()) {
                         continue;
                     }
