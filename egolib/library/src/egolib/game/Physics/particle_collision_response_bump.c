@@ -51,9 +51,9 @@ bool do_chr_prt_collision_handle_bump( chr_prt_collision_data_t& pdata )
             if (pdata.pchr->isMount())
             {
                 // if the mount's rider can't get money, the mount gets to keep the money!
-                const std::shared_ptr<Object> &rider = heldItem(*pdata.pchr, SLOT_LEFT);
+                Object* rider = heldItem(*pdata.pchr, SLOT_LEFT);
                 if (rider != nullptr && rider->getProfile()->canGrabMoney()) {
-                    pcollector = rider.get();
+                    pcollector = rider;
                 }
             }
 

@@ -66,8 +66,8 @@ float Object::getAttribute(const Ego::Attribute::AttributeType type) const
         //Wolverine perk gives +0.25 Life Regeneration while holding a Claw weapon
         case Ego::Attribute::LIFE_REGEN:
             if(hasPerk(Ego::Perks::WOLVERINE)) {
-                const std::shared_ptr<Object>& leftHandItem = heldItem(*this, SLOT_LEFT);
-                const std::shared_ptr<Object>& rightHandItem = heldItem(*this, SLOT_RIGHT);
+                const Object* leftHandItem = heldItem(*this, SLOT_LEFT);
+                const Object* rightHandItem = heldItem(*this, SLOT_RIGHT);
                 if( (leftHandItem && leftHandItem->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W'))
                  || (rightHandItem && rightHandItem->getProfile()->getIDSZ(IDSZ_PARENT).equals('C','L','A','W')))
                  {
@@ -205,8 +205,8 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
         return nullptr;
     }
 
-    std::shared_ptr<Object> owner = activeModule().getObjectHandler()[ownerRef];
-    std::shared_ptr<Object> spawner = activeModule().getObjectHandler()[spawnerRef];
+    std::shared_ptr<Object> owner = activeModule().getObjectHandler().getHandle(ownerRef);
+    Object* spawner = activeModule().getObjectHandler().get(spawnerRef);
 
     std::shared_ptr<Ego::Enchantment> enchant = std::make_shared<Ego::Enchantment>(enchantmentProfile, ObjectProfileRef(spawnerProfile), owner);
     enchant->applyEnchantment(getObjRef());

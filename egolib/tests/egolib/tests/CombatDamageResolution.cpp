@@ -171,7 +171,7 @@ protected:
         }
         const ObjectRef objectRef = module.spawnObjectRef(Ego::Vector3f(64.0f, 64.0f, 0.0f), profile,
                                                           static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-        return module.getObjectHandler()[objectRef];
+        return module.getObjectHandler().getHandle(objectRef);
     }
 
     /// Fully control the three inputs the resistance/reduction math reads for `type`,

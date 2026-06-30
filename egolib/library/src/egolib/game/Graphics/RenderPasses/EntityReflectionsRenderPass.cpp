@@ -49,7 +49,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
             size_t i = j - 1;
             if (ParticleRef::Invalid == el.get(i).iprt && ObjectRef::Invalid != el.get(i).iobj)
             {
-                const std::shared_ptr<Object> &object = objectHandler[el.get(i).iobj];
+                Object* object = objectHandler.get(el.get(i).iobj);
                 if (!object || object->isTerminated())
                 {
                     continue;

@@ -45,7 +45,7 @@ ObjectPhysics::ObjectPhysics(Object &object) :
 
 void ObjectPhysics::keepItemsWithHolder()
 {
-    const std::shared_ptr<Object>& holder = objectByRef(_object.getHolderRef());
+    const Object* holder = objectByRef(_object.getHolderRef());
     if (holder)
     {
         // Keep in hand weapons with iattached
@@ -259,7 +259,8 @@ void ObjectPhysics::updatePhysics()
 {
     // Keep inventory items with the carrier
     if(_object.isInsideInventory()) {
-        _object.setPosition(objectWorld().getObjectHandler()[_object.getInventoryHolderRef()]->getPosition());
+        Object* inventoryHolder = objectWorld().getObjectHandler().get(_object.getInventoryHolderRef());
+        _object.setPosition(inventoryHolder->getPosition());
         return;
     }
 
@@ -301,7 +302,7 @@ void ObjectPhysics::updatePhysics()
 float ObjectPhysics::recalculateGroundElevation()
 {
     //Standing on a platform?
-    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
+    const Object* platform = objectByRef(_object.getAttachedPlatformRef());
     if (platform) {
         return platform->getPosZ() + platform->getMinCollisionVolume()._maxs[OCT_Z];
     }
@@ -427,7 +428,7 @@ void ObjectPhysics::updateFacing()
             {
                 //Only proceed if we have a valid AI target that is not ourselves
                 const IScriptable& scriptableObject = scriptable(_object);
-                std::shared_ptr<Object> aiTarget = objectWorld().getObjectHandler()[scriptableObject.getAITarget()];
+                Object* aiTarget = objectWorld().getObjectHandler().get(scriptableObject.getAITarget());
                 if (aiTarget != nullptr && aiTarget->getObjRef() != _object.getObjRef())
                 {
                     _object.setFacingZ(idlib::canonicalize(rotate(_object.getFacingZ(), vec_to_facing(aiTarget->getPosX() - _object.getPosX(), aiTarget->getPosY() - _object.getPosY()), 8.0f)));

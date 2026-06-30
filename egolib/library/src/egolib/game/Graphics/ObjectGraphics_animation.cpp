@@ -42,10 +42,10 @@ using namespace detail;    // shared file-local helpers (see ObjectGraphics_inte
 
 static void chr_invalidate_child_instances(const IInventoryHolder &object)
 {
-    if (const std::shared_ptr<Object>& leftHandItem = heldItem(object, SLOT_LEFT)) {
+    if (Object* leftHandItem = heldItem(object, SLOT_LEFT)) {
         leftHandItem->getGraphics().setMatrixCacheValid(false);
     }
-    if (const std::shared_ptr<Object>& rightHandItem = heldItem(object, SLOT_RIGHT)) {
+    if (Object* rightHandItem = heldItem(object, SLOT_RIGHT)) {
         rightHandItem->getGraphics().setMatrixCacheValid(false);
     }
 }
@@ -147,14 +147,14 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPLEFT ) )
     {
-        if (const std::shared_ptr<Object>& leftHandItem = heldItem(_object, SLOT_LEFT)) {
+        if (Object* leftHandItem = heldItem(_object, SLOT_LEFT)) {
             leftHandItem->detachFromHolder(false, true);
         }
     }
 
     if ( HAS_SOME_BITS( framefx, MADFX_DROPRIGHT ) )
     {
-        if (const std::shared_ptr<Object>& rightHandItem = heldItem(_object, SLOT_RIGHT)) {
+        if (Object* rightHandItem = heldItem(_object, SLOT_RIGHT)) {
             rightHandItem->detachFromHolder(false, true);
         }
     }
@@ -411,7 +411,7 @@ bool ObjectGraphics::applyMountedAnimationRatePolicy()
         return false;
     }
 
-    const std::shared_ptr<Object>& holder = attachmentObject(_object.getHolderRef());
+    const Object* holder = attachmentObject(_object.getHolderRef());
     if (!holder) {
         return false;
     }

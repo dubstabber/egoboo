@@ -50,7 +50,7 @@ void publishScoredHit(IScriptable& attacker, ObjectRef targetRef)
     attacker.setAILastHit(targetRef);
 }
 
-bool publishWeaponScoredHit(const std::shared_ptr<Object>& weapon, ObjectRef targetRef, ObjectRef lastUsedItem)
+bool publishWeaponScoredHit(Object* weapon, ObjectRef targetRef, ObjectRef lastUsedItem)
 {
     if (!weapon)
     {
@@ -70,7 +70,7 @@ bool publishWeaponScoredHit(const std::shared_ptr<Object>& weapon, ObjectRef tar
 
 ObjectAttribution objectAttributionFor(ObjectRef objectRef, TEAM_REF team)
 {
-    const std::shared_ptr<Object>& object = objectWorld().getObjectHandler()[objectRef];
+    const Object* object = objectWorld().getObjectHandler().get(objectRef);
     return object ? object->attribution(team) : ObjectAttribution(team);
 }
 }
@@ -235,7 +235,7 @@ bool do_chr_prt_collision_deflect(chr_prt_collision_data_t& pdata)
 //--------------------------------------------------------------------------------------------
 bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 {
-    std::shared_ptr<Object> powner = objectWorld().getObjectHandler()[pdata.pprt->owner_ref];
+    Object* powner = objectWorld().getObjectHandler().get(pdata.pprt->owner_ref);
     IDamageable& damageableCharacter = damageable(*pdata.pchr);
     IScriptable& scriptableCharacter = scriptable(*pdata.pchr);
 
@@ -396,10 +396,10 @@ bool do_chr_prt_collision_damage( chr_prt_collision_data_t& pdata )
 
                 // Tell the weapons who the attacker hit last
                 bool meleeAttack = false;
-                const std::shared_ptr<Object> &leftHanditem = heldItem(*powner, SLOT_RIGHT);
+                Object* leftHanditem = heldItem(*powner, SLOT_RIGHT);
                 meleeAttack = publishWeaponScoredHit(leftHanditem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
-                const std::shared_ptr<Object> &rightHandItem = heldItem(*powner, SLOT_RIGHT);
+                Object* rightHandItem = heldItem(*powner, SLOT_RIGHT);
                 meleeAttack = publishWeaponScoredHit(rightHandItem, pdata.pchr->getObjRef(), scriptableOwner.getAILastItemUsed()) || meleeAttack;
 
                 //Unarmed attack?
@@ -512,13 +512,13 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
     float knockbackFactor = 1.0f;
 
     //If we are attached to a Object then the attacker's Might can increase knockback
-    const std::shared_ptr<Object> attachedObject = objectWorld().getObjectHandler()[pdata.pprt->getAttachedObjectID()];
-    std::shared_ptr<Object> attacker = attachedObject;
+    const Object* attachedObject = objectWorld().getObjectHandler().get(pdata.pprt->getAttachedObjectID());
+    const Object* attacker = attachedObject;
     if (attacker)
     {
         //If we are actually a weapon, use the weapon holder's strength
         if(attacker->isBeingHeld()) {
-            attacker = objectWorld().getObjectHandler()[attacker->getHolderRef()];
+            attacker = objectWorld().getObjectHandler().get(attacker->getHolderRef());
         }
 
         const float attackerMight = attacker->getAttribute(Ego::Attribute::MIGHT) - 10.0f;
@@ -534,7 +534,7 @@ void do_chr_prt_collision_knockback(chr_prt_collision_data_t &pdata)
         }
 
         //Telekinetic Staff perk can give +500% knockback
-        const std::shared_ptr<Object>& powner = objectWorld().getObjectHandler()[pdata.pprt->owner_ref];
+        const Object* powner = objectWorld().getObjectHandler().get(pdata.pprt->owner_ref);
         if(powner != nullptr && powner->hasPerk(Ego::Perks::TELEKINETIC_STAFF) &&
             attachedObject->getProfile()->getIDSZ(IDSZ_PARENT).equals('S','T','A','F')) {
 

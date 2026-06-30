@@ -64,9 +64,9 @@ inline const IPhysical& physical(const Object& object)
     return object;
 }
 
-inline const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
+inline Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return objectWorld().getObjectHandler()[object.getHeldObject(slot)];
+    return objectWorld().getObjectHandler().get(object.getHeldObject(slot));
 }
 }
 using namespace particle_collision_response_detail;

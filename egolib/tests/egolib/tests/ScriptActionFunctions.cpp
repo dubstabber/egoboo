@@ -558,7 +558,7 @@ protected:
         }
 
         const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-        return module.getObjectHandler()[objectRef];
+        return module.getObjectHandler().getHandle(objectRef);
     }
 
     std::pair<std::shared_ptr<Object>, int> makeSoundingObject(GameModule& module, int slotBase) const
@@ -991,14 +991,14 @@ TEST_F(ScriptActionFunctionsFixture, VisualIdentityHelpersPreserveShiftFlagAndSp
 
     const ObjectRef actorRef = module.spawnObjectRef(Ego::Vector3f(64.0f, 64.0f, 0.0f), sharedProfile,
                                                      static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-    auto actor = module.getObjectHandler()[actorRef];
+    auto actor = module.getObjectHandler().getHandle(actorRef);
     const ObjectRef peerRef = module.spawnObjectRef(Ego::Vector3f(96.0f, 64.0f, 0.0f), sharedProfile,
                                                     static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-    auto peer = module.getObjectHandler()[peerRef];
+    auto peer = module.getObjectHandler().getHandle(peerRef);
     auto other = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5765);
     const ObjectRef terminatedPeerRef = module.spawnObjectRef(Ego::Vector3f(128.0f, 64.0f, 0.0f), sharedProfile,
                                                               static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-    auto terminatedPeer = module.getObjectHandler()[terminatedPeerRef];
+    auto terminatedPeer = module.getObjectHandler().getHandle(terminatedPeerRef);
     ASSERT_NE(actor, nullptr);
     ASSERT_NE(peer, nullptr);
     ASSERT_NE(other, nullptr);

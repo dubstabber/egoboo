@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 930 ctest cases.
+  configures 931 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -45,10 +45,10 @@ or engine/session service ownership.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 164 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 773 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 279 `.cpp`, 73 `.h`, 318 `.hpp` |
-| Runtime source lines | 128,827 | Same scope as above |
-| Test files / lines | 50 / 24,507 | `egolib/tests`, source/header files only |
-| ctest cases | 930 | `ctest --test-dir build -N` |
-| ctest baseline | 930 / 930 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Runtime source lines | 128,798 | Same scope as above |
+| Test files / lines | 50 / 24,532 | `egolib/tests`, source/header files only |
+| ctest cases | 931 | `ctest --test-dir build -N` |
+| ctest baseline | 931 / 931 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 605 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 134 | Dominant intentional session seam |
@@ -93,16 +93,16 @@ runtime files:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 988 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 987 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
 | `egolib/library/src/egolib/game/game_combat.c` | 723 |
 | `egolib/library/src/egolib/Script/script.h` | 684 |
 | `egolib/library/src/egolib/Audio/AudioSystem.cpp` | 675 |
 | `egolib/library/src/egolib/map_functions.c` | 668 |
+| `egolib/library/src/egolib/game/Physics/CollisionSystem.cpp` | 660 |
 | `egolib/library/src/egolib/bbox.c` | 660 |
 | `egolib/library/src/egolib/vfs.c` | 658 |
-| `egolib/library/src/egolib/Entities/Object_combat.cpp` | 650 |
 
 Large non-runtime files still exist and are intentional test/tool hotspots:
 

@@ -434,7 +434,7 @@ bool chr_update_matrix(Object& object, bool update_size)
     needs_update = matrix_cache_needs_update(object, mc_tmp);
 
     // Update the grip vertices no matter what (if they are used)
-    const std::shared_ptr<Object> &heldItem = objectHandler()[mc_tmp.grip_chr];
+    Object* heldItem = objectHandler().get(mc_tmp.grip_chr);
     if ( HAS_SOME_BITS(mc_tmp.type_bits, MAT_WEAPON) && heldItem)
     {
         // has that character changes its animation?

@@ -174,13 +174,6 @@ public:
 	std::shared_ptr<Object> insert(ObjectProfileRef profileRef, ObjectRef overrideRef = ObjectRef::Invalid);
 
 	/**
-	 * @brief Return a pointer object for the specifiec object reference.
-	 * @return a pointer object for the specified object reference.
-	 *		   Return nullptr object if the object reference was not found.
-	 */
-	const std::shared_ptr<Object>& operator[] (ObjectRef ref);
-
-	/**
 	 * @brief Return an owning handle for the specified object reference.
 	 * @return the object handle or nullptr if the object reference was not found.
 	 */

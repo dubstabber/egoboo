@@ -136,7 +136,7 @@ protected:
             return nullptr;
         }
 
-        auto object = module.getObjectHandler()[objectRef];
+        auto object = module.getObjectHandler().getHandle(objectRef);
         EXPECT_NE(object, nullptr);
         if (object == nullptr)
         {
@@ -271,6 +271,31 @@ TEST_F(ObjectHandlerQueriesFixture, QueryRefsCanBeResolvedSafelyAfterRemoval)
     }
 
     EXPECT_EQ(resolvedRefs, expectedResolvedRefs);
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ExplicitLookupsDistinguishBorrowedAndOwningAccess)
+{
+    const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6107);
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
+
+    auto follower = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(follower, nullptr);
+
+    const ObjectRef liveRef = follower->getObjRef();
+    EXPECT_EQ(handler.get(liveRef), follower.get());
+    EXPECT_EQ(handler.getHandle(liveRef).get(), follower.get());
+
+    EXPECT_EQ(handler.get(ObjectRef::Invalid), nullptr);
+    EXPECT_EQ(handler.getHandle(ObjectRef::Invalid), nullptr);
+
+    const ObjectRef neverSpawnedRef(liveRef.get() + 1000);
+    EXPECT_EQ(handler.get(neverSpawnedRef), nullptr);
+    EXPECT_EQ(handler.getHandle(neverSpawnedRef), nullptr);
+
+    ASSERT_TRUE(handler.remove(liveRef));
+    EXPECT_EQ(handler.get(liveRef), nullptr);
+    EXPECT_EQ(handler.getHandle(liveRef), nullptr);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProjectionOrder)

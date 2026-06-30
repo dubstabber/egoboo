@@ -23,9 +23,6 @@
 
 #include "egolib/Entities/Object_internal.h"
 
-//Declare class static constants
-const std::shared_ptr<Object> Object::INVALID_OBJECT = nullptr;
-
 /// @brief Ouf-of-class definition for GCC & Clang.
 /// @todo Remove this if GCC & Clang are fixed.
 constexpr float Object::DROPZVEL;
@@ -157,13 +154,13 @@ bool Object::isTouchingGround() const
 
 bool Object::canMount(ObjectRef mountRef) const
 {
-    const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[mountRef];
+    const Object* mount = activeModule().getObjectHandler().get(mountRef);
     if (!mount) {
         return false;
     }
 
     //Cannot mount ourselves!
-    if(this == mount.get())
+    if(this == mount)
     {
         return false;
     }

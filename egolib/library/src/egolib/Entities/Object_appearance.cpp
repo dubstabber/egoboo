@@ -198,7 +198,7 @@ bool Object::isFacingLocation(const float x, const float y) const
 
 bool Object::canSeeObject(ObjectRef targetRef) const
 {
-    const std::shared_ptr<Object>& target = activeModule().getObjectHandler()[targetRef];
+    const Object* target = activeModule().getObjectHandler().get(targetRef);
     if (!target) {
         return false;
     }

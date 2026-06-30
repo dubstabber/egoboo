@@ -34,7 +34,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
 
             if (ParticleRef::Invalid == el.get(i).iprt && ObjectRef::Invalid != el.get(i).iobj)
             {
-                const auto& object = objectHandler[el.get(i).iobj];
+                Object* object = objectHandler.get(el.get(i).iobj);
                 if (object)
                 {
                     ObjectGraphicsRenderer::render_solid(camera, *object);

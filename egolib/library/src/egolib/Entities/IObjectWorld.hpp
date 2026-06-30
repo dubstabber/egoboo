@@ -50,7 +50,7 @@ namespace Entities
 ///        sub-library.
 ///
 ///        Both ObjectHandler and Team are already lower-layer types, so they are returned by
-///        reference; every existing call (exists/get/operator[]/iterator/findObjectRefs on the
+///        reference; every existing call (exists/get/getHandle/iterator/findObjectRefs on the
 ///        handler, indexing on the team list) is reached through the returned reference. The
 ///        physics TUs are read-only consumers of this world (no spawn / insert / remove), so
 ///        spawnObjectRef() deliberately stays on GameModule and is not part of this seam.

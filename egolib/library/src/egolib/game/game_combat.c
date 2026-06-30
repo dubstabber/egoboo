@@ -230,7 +230,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         // Rearing mount
-        const std::shared_ptr<Object> &pmount = module.getObjectHandler()[characterInfo.getHolderRef()];
+        Object* pmount = module.getObjectHandler().get(characterInfo.getHolderRef());
 
         if (pmount)
         {
@@ -371,7 +371,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     /// @author ZZ
     /// @details This function spawns an attack particle
     GameModule& module = activeModule();
-    const std::shared_ptr<Object> &pchr = module.getObjectHandler()[ichr];
+    Object* pchr = module.getObjectHandler().get(ichr);
     if(!pchr) {
         return;
     }
@@ -395,12 +395,12 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         spawn_vrt_offset = GRIP_LAST;
     }
 
-    const std::shared_ptr<Object> &pweapon = module.getObjectHandler()[iweapon];
+    Object* pweapon = module.getObjectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
     // find the 1st non-item that is holding the weapon
     ObjectRef iholder = chr_get_lowest_attachment( iweapon, true );
-    const std::shared_ptr<Object> &pholder = module.getObjectHandler()[iholder];
+    Object* pholder = module.getObjectHandler().get(iholder);
     const ITargetInfo& holderInfo = targetInfoRole(*pholder);
 
     /*

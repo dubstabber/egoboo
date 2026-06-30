@@ -218,7 +218,7 @@ void Particle::setElevation(const float level)
 
 bool Particle::isHidden() const
 {
-    const std::shared_ptr<Object>& attachedToObject = activeModule().getObjectHandler()[_attachedTo];
+    const Object* attachedToObject = activeModule().getObjectHandler().get(_attachedTo);
 
     if(!attachedToObject) {
         return false;

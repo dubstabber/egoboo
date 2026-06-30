@@ -42,9 +42,9 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
-const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
+Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
 }
 }
 
@@ -249,8 +249,8 @@ bool Object::isInvictusDirection(Facing direction) const
         if (ACTION_IS_TYPE(inst.getCurrentAnimation(), P))
         {
             bool parry_left = ( inst.getCurrentAnimation() < ACTION_PC );
-            const std::shared_ptr<Object>& leftHandItem = heldItem(*this, SLOT_LEFT);
-            const std::shared_ptr<Object>& rightHandItem = heldItem(*this, SLOT_RIGHT);
+            const Object* leftHandItem = heldItem(*this, SLOT_LEFT);
+            const Object* rightHandItem = heldItem(*this, SLOT_RIGHT);
 
             // Using a shield?
             if (parry_left && leftHandItem)

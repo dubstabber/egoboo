@@ -42,7 +42,7 @@ void NonOpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, co
             // A character.
             if (ParticleRef::Invalid == el.get(j).iprt && ObjectRef::Invalid != el.get(j).iobj)
             {
-                const auto& object = objectHandler[el.get(j).iobj];
+                Object* object = objectHandler.get(el.get(j).iobj);
                 if (object)
                 {
                     ObjectGraphicsRenderer::render_trans(camera, *object);

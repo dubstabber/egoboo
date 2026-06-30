@@ -125,7 +125,7 @@ protected:
         }
 
         const ObjectRef objectRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-        return module.getObjectHandler()[objectRef];
+        return module.getObjectHandler().getHandle(objectRef);
     }
 
     std::optional<Ego::Vector3f> findSpawnCharacterPosition(const std::string& profilePath,
@@ -165,7 +165,7 @@ protected:
             }
 
             const ObjectRef probeRef = module.spawnObjectRef(position, profile, static_cast<TEAM_REF>(Team::TEAM_NULL), 0, Facing(0), "", ObjectRef::Invalid);
-            auto probe = module.getObjectHandler()[probeRef];
+            auto probe = module.getObjectHandler().getHandle(probeRef);
             if (!probe)
             {
                 return false;

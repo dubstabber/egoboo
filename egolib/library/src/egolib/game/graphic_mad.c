@@ -397,7 +397,7 @@ void ObjectGraphicsRenderer::_draw_one_grip_raw(const Object& object, int slot)
 
 void ObjectGraphicsRenderer::draw_chr_attached_grip(const std::shared_ptr<Object>& pchr)
 {
-    const auto& pholder = GameSessionContext::get().activeModule().getObjectHandler()[pchr->getHolderRef()];
+    const Object* pholder = GameSessionContext::get().activeModule().getObjectHandler().get(pchr->getHolderRef());
     if (!pholder || pholder->isTerminated()) return;
 
     draw_one_grip(*pholder, pchr->getAttachmentSlot());

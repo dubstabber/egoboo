@@ -45,9 +45,9 @@ ObjectHandler& objectHandler()
     return GameSessionContext::get().activeModule().getObjectHandler();
 }
 
-const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
+Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return objectHandler()[object.getHeldObject(slot)];
+    return objectHandler().get(object.getHeldObject(slot));
 }
 
 Object* resolveObject(ObjectRef objectRef)

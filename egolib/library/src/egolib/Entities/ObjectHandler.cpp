@@ -196,21 +196,6 @@ std::shared_ptr<Object> ObjectHandler::getHandle(ObjectRef ref) const
 	return (*result).second;
 }
 
-const std::shared_ptr<Object>& ObjectHandler::operator[] (ObjectRef ref)
-{
-	if (ref == ObjectRef::Invalid || ref.get() >= _totalCharactersSpawned) {
-		return Object::INVALID_OBJECT;
-	}
-
-	// Check if object exists in map.
-	const auto& result = _internalCharacterList.find(ref);
-	if (result == _internalCharacterList.end()) {
-		return Object::INVALID_OBJECT;
-	}
-
-	return (*result).second;
-}
-
 void ObjectHandler::clear()
 {
 	_internalCharacterList.clear();

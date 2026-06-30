@@ -34,9 +34,9 @@
 
 namespace object_attributes_detail {
 
-inline const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+inline Object* heldItem(const Object& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
 }
 
 }

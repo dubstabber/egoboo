@@ -32,7 +32,7 @@ namespace Physics
 void ObjectPhysics::detachFromPlatform()
 {
     // adjust the platform weight, if necessary
-    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
+    Object* platform = objectByRef(_object.getAttachedPlatformRef());
     if (platform) {
         platform->adjustHoldingWeight(-static_cast<int>(_object.phys.weight));
     }
@@ -47,13 +47,13 @@ void ObjectPhysics::detachFromPlatform()
 
 bool ObjectPhysics::attachToPlatform(ObjectRef platformRef)
 {
-    const std::shared_ptr<Object>& platform = objectByRef(platformRef);
+    Object* platform = objectByRef(platformRef);
     if (!platform) {
         return false;
     }
 
     // check if they can be connected
-    if(!_object.canUsePlatforms() || _object.isFlying() || !platform->isPlatform() || platform.get() == &_object) {
+    if(!_object.canUsePlatforms() || _object.isFlying() || !platform->isPlatform() || platform == &_object) {
         return false;
     }
 
@@ -87,7 +87,7 @@ bool ObjectPhysics::attachToPlatform(ObjectRef platformRef)
 
 void ObjectPhysics::updatePlatformPhysics()
 {
-    const std::shared_ptr<Object>& platform = objectByRef(_object.getAttachedPlatformRef());
+    const Object* platform = objectByRef(_object.getAttachedPlatformRef());
     if(!platform) {
         return;
     }

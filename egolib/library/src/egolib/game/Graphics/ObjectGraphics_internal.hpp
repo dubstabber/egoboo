@@ -55,12 +55,12 @@ inline const IMovementControl& movementControl(const Object& object)
     return object;
 }
 
-inline const std::shared_ptr<Object>& attachmentObject(ObjectRef objectRef)
+inline Object* attachmentObject(ObjectRef objectRef)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[objectRef];
+    return GameSessionContext::get().activeModule().getObjectHandler().get(objectRef);
 }
 
-inline const std::shared_ptr<Object>& heldItem(const IInventoryHolder& object, slot_t slot)
+inline Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
     return attachmentObject(object.getHeldObject(slot));
 }

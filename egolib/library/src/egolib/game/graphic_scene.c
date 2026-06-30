@@ -431,7 +431,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
 
         ObjectRef iobj = el.get(i).iobj;
 
-        const std::shared_ptr<Object>& object = activeModule().getObjectHandler()[iobj];
+        Object* object = activeModule().getObjectHandler().get(iobj);
         if (!object) continue;
 
         if (DONTFLASH != object->getProfile()->getFlashAND())

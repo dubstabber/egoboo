@@ -707,8 +707,8 @@ TEST_F(ObjectAccessorFixture, MissingHolderAndPlatformRefsRemainNullLikeThroughR
     object->setHolderRef(ObjectRef(41));
     object->onwhichplatform_ref = ObjectRef(42);
 
-    EXPECT_FALSE(objectHandler[object->getHolderRef()]);
-    EXPECT_FALSE(objectHandler[object->getAttachedPlatformRef()]);
+    EXPECT_EQ(objectHandler.get(object->getHolderRef()), nullptr);
+    EXPECT_EQ(objectHandler.get(object->getAttachedPlatformRef()), nullptr);
     EXPECT_FALSE(object->isBeingHeld());
 }
 

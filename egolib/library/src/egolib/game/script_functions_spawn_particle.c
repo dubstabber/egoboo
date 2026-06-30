@@ -13,7 +13,7 @@ std::shared_ptr<Object> resolveSpawnObjectHandle(ObjectRef objectRef)
         return nullptr;
     }
 
-    return (*handler)[objectRef];
+    return handler->getHandle(objectRef);
 }
 
 ObjectRef resolveHolderOrSelfRef(const ITargetInfo& object)

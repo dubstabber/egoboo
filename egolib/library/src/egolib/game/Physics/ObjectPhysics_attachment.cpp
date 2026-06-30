@@ -163,7 +163,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
     }
 
     if(bestMatch != nullptr) {
-        const std::shared_ptr<Object> &grabber = objectWorld().getObjectHandler()[_object.getObjRef()];
+        const Object* grabber = objectWorld().getObjectHandler().get(_object.getObjRef());
         if (Shop::canGrabItem(_object.getObjRef(), bestMatch->getObjRef()))
         {
             // Stick 'em together and quit
@@ -193,7 +193,7 @@ bool ObjectPhysics::grabStuff(grip_offset_t grip_off, bool grab_people)
 
 bool ObjectPhysics::attachToObject(ObjectRef holderRef, grip_offset_t grip_off)
 {
-    const std::shared_ptr<Object>& holder = objectByRef(holderRef);
+    Object* holder = objectByRef(holderRef);
     if (!holder) {
         return false;
     }

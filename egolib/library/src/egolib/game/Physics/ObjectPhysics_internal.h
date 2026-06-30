@@ -62,9 +62,9 @@ inline IScriptable& scriptable(Object& object)
     return object;
 }
 
-inline const std::shared_ptr<Object>& objectByRef(ObjectRef objectRef)
+inline Object* objectByRef(ObjectRef objectRef)
 {
-    return objectWorld().getObjectHandler()[objectRef];
+    return objectWorld().getObjectHandler().get(objectRef);
 }
 
 }}} // Ego::Physics::object_physics_detail

@@ -3166,3 +3166,22 @@ No files moved between archives and `egolib/library/CMakeLists.txt` was untouche
 back-edge proof was required. Runtime source lines are now **128,827**, test files/lines are
 **50 / 24,507**, and ctest configures **930** cases. Gates: `cmake --build build -j20` clean; focused
 message/export slice **17/17**; ctest **930/930**; validator `test.mod` 0/0.
+
+### Pass 288 — ObjectHandler explicit lookup API cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup by retiring the legacy
+`ObjectHandler::operator[](ObjectRef)` compatibility surface without changing script opcode APIs, source
+placement, CMake archive membership, object ownership, or legacy content behavior. Runtime callers now
+choose `ObjectHandler::get(ObjectRef)` for borrowed immediate access or `getHandle(ObjectRef)` only where
+shared ownership is still required.
+
+The removed bracket operator also allowed the `Object::INVALID_OBJECT` shared-pointer sentinel to be
+deleted. Object, graphics, physics, particle, collision-response, render-pass, spawn, and affected test
+helpers now make lookup intent explicit. Enchantment retargeting and script spawn-particle helpers keep
+owning handles where weak/shared storage still requires them.
+
+Focused coverage now pins the explicit lookup contract directly: live refs resolve through both borrowed
+and owning APIs, while invalid, never-spawned, and removed refs resolve to null. No files moved between
+archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive back-edge proof was
+required. Gates: `cmake --build build -j20` clean; focused object/module/collision/combat/script/camera
+slice **224/224**; ctest **931/931**; validator `test.mod` 0/0; `git diff --check` clean.

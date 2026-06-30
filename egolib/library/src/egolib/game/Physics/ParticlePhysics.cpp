@@ -137,14 +137,14 @@ void ParticlePhysics::updateFloorFriction()
     Vector3f floor_acc = idlib::zero<Vector3f>();
     float temp_friction_xy = 1.0f;
 
-    const std::shared_ptr<Object> &platform = objectWorld().getObjectHandler()[_particle.onwhichplatform_ref];
+    Object* platform = objectWorld().getObjectHandler().get(_particle.onwhichplatform_ref);
     if (platform)
     {
         temp_friction_xy = 1.0f - PLATFORM_STICKINESS;
 
         floor_acc = platform->getVelocity() - platform->getOldVelocity();
 
-        chr_getMatUp(platform.get(), vup);
+        chr_getMatUp(platform, vup);
     }
     else
     {
@@ -283,7 +283,7 @@ void ParticlePhysics::updateEnviroment()
 
     Ego::prt_environment_t *penviro = &(_particle.enviro);
 
-    const std::shared_ptr<Object>& platform = objectWorld().getObjectHandler()[_particle.onwhichplatform_ref];
+    Object* platform = objectWorld().getObjectHandler().get(_particle.onwhichplatform_ref);
 
     //---- character "floor" level
     penviro->floor_level = collisionWorld().getElevation(Vector2f(_particle.getPosX(), _particle.getPosY()));
@@ -334,7 +334,7 @@ void ParticlePhysics::updateEnviroment()
 
         Vector3f platform_up;
 
-        chr_getMatUp(platform.get(), platform_up);
+        chr_getMatUp(platform, platform_up);
         platform_up = normalize(platform_up).get_vector();
 
         penviro->traction = std::abs(platform_up.z()) * (1.0f - penviro->zlerp) + 0.25f * penviro->zlerp;

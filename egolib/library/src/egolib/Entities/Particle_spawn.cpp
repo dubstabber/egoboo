@@ -209,7 +209,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
             // Find a target
             Facing targetAngle;
             _target = prt_find_target(spawnPos, idlib::canonicalize(loc_facing), _particleProfileID, spawnTeam, owner_ref, spawnTarget, &targetAngle);
-            const std::shared_ptr<Object> &target = activeModule().getObjectHandler()[_target];
+            const Object* target = activeModule().getObjectHandler().get(_target);
 
             if (target && !getProfile()->homing)
             {
@@ -263,7 +263,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
             }
         }
 
-        const std::shared_ptr<Object> &target = activeModule().getObjectHandler()[_target];
+        const Object* target = activeModule().getObjectHandler().get(_target);
 
         // Does it go away?
         if (!target && getProfile()->needtarget)
@@ -413,7 +413,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     damage = range_to_pair(getProfile()->damage);
 
     //If it is a FIRE particle spawned by a Pyromaniac, increase damage by 25%
-    const std::shared_ptr<Object> &owner = activeModule().getObjectHandler()[owner_ref];
+    const Object* owner = activeModule().getObjectHandler().get(owner_ref);
     if(owner != nullptr && owner->hasPerk(Ego::Perks::PYROMANIAC)) {
         damage.base *= 1.25f;
         damage.rand *= 1.25f;
@@ -521,7 +521,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
 
 bool Particle::attach(const ObjectRef attach)
 {
-    const std::shared_ptr<Object> &pchr = activeModule().getObjectHandler()[attach];
+    Object* pchr = activeModule().getObjectHandler().get(attach);
     if(!pchr) {
         return false;
     }
