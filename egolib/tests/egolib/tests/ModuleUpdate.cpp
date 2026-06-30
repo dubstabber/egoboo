@@ -17,6 +17,7 @@
 #include "egolib/game/game.h"
 #include "egolib/game/Module/Module.hpp"
 #undef private
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Script/IScriptSystem.hpp"
 #include "egolib/vfs.h"
 
@@ -380,7 +381,7 @@ TEST_F(ModuleUpdateFixture, UpdateAllObjectsTerminatesObjectAtPoofBoundary)
 {
     auto& module = beginActiveTestModule();
     auto& session = GameSessionContext::get();
-    auto object = makeFollower(session.objectHandler(), 4101);
+    auto object = makeFollower(module.getObjectHandler(), 4101);
     ASSERT_NE(object, nullptr);
 
     object->setAIPoofTime(11);
@@ -457,9 +458,9 @@ TEST_F(ModuleUpdateFixture, UpdateDamageTilesDamagesEligibleObjectsAndSkipsInvin
 TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker)
 {
     beginActiveTestModule();
-    auto& session = GameSessionContext::get();
-    auto defender = makeFollower(session.objectHandler(), 4104);
-    auto attacker = makeFollower(session.objectHandler(), 4105);
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
+    auto defender = makeFollower(objectHandler, 4104);
+    auto attacker = makeFollower(objectHandler, 4105);
     ASSERT_NE(defender, nullptr);
     ASSERT_NE(attacker, nullptr);
 
@@ -477,8 +478,7 @@ TEST_F(ModuleUpdateFixture, SpawnDefencePingPublishesBlockedAlertAndLastAttacker
 TEST_F(ModuleUpdateFixture, SpawnDefencePingClearsLastAttackerWhenAttackerRefIsStale)
 {
     beginActiveTestModule();
-    auto& session = GameSessionContext::get();
-    auto defender = makeFollower(session.objectHandler(), 4108);
+    auto defender = makeFollower(Ego::Entities::activeObjectHandler(), 4108);
     ASSERT_NE(defender, nullptr);
 
     defender->setDamageTimer(0);
@@ -510,8 +510,7 @@ TEST_F(ModuleUpdateFixture, ReaffirmAttachedParticlesPublishesReaffirmedAlert)
 TEST_F(ModuleUpdateFixture, DisaffirmAttachedParticlesPublishesDisaffirmedAlert)
 {
     beginActiveTestModule();
-    auto& session = GameSessionContext::get();
-    auto object = makeFollower(session.objectHandler(), 4107);
+    auto object = makeFollower(Ego::Entities::activeObjectHandler(), 4107);
     ASSERT_NE(object, nullptr);
 
     object->clearAIAlertBits(ALERTIF_DISAFFIRMED);
@@ -582,8 +581,7 @@ TEST_F(ModuleUpdateFixture, ParticleInitializeResolvesOwnerThroughInstalledParen
     beginActiveTestModule();
     EngineContext::get().profileSystem().loadGlobalParticleProfiles();
 
-    auto& session = GameSessionContext::get();
-    auto owner = makeFollower(session.objectHandler(), 4109);
+    auto owner = makeFollower(Ego::Entities::activeObjectHandler(), 4109);
     ASSERT_NE(owner, nullptr);
 
     auto parent = std::make_shared<Ego::Particle>();
@@ -619,8 +617,7 @@ TEST_F(ModuleUpdateFixture, ParticleGetOwnerUsesInstalledParticleServiceForParen
 {
     beginActiveTestModule();
 
-    auto& session = GameSessionContext::get();
-    auto owner = makeFollower(session.objectHandler(), 4110);
+    auto owner = makeFollower(Ego::Entities::activeObjectHandler(), 4110);
     ASSERT_NE(owner, nullptr);
 
     auto parent = std::make_shared<Ego::Particle>();

@@ -270,26 +270,6 @@ bool GameSessionContext::finishModule()
     return game_copy_imports(importList());
 }
 
-ObjectHandler* GameSessionContext::tryObjectHandler()
-{
-    return Ego::Entities::tryActiveObjectHandler();
-}
-
-Object* GameSessionContext::tryObject(ObjectRef objectRef)
-{
-    return Ego::Entities::tryActiveObject(objectRef);
-}
-
-const Object* GameSessionContext::tryObject(ObjectRef objectRef) const
-{
-    return Ego::Entities::tryActiveConstObject(objectRef);
-}
-
-ObjectHandler& GameSessionContext::objectHandler()
-{
-    return Ego::Entities::activeObjectHandler();
-}
-
 std::shared_ptr<ego_mesh_t> GameSessionContext::mesh()
 {
     return activeModule().getMeshPointer();

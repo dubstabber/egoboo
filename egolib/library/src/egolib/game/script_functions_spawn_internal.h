@@ -54,11 +54,6 @@ struct SpawnSelfContext
     }
 };
 
-inline GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 inline bool isLiveSpawnObjectRef(ObjectRef objectRef)
 {
     return tryObject(objectRef) != nullptr;

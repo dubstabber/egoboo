@@ -168,3 +168,10 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   direct `GameSessionContext` / `GameModule` object-handler access. Module-owned
   spawn/export/passage/editor behavior stayed on `GameModule`; coverage was
   extended in `ObjectHandlerQueries`.
+- Pass 296 on 2026-06-30 retired the remaining `GameSessionContext` object
+  lookup compatibility API after moving the last script/link callers and test
+  fixtures to the active `IObjectWorld` helpers. `GameSessionContext` still
+  installs and clears the active object world during module lifetime, but no
+  longer exposes object-handler or object-lookup forwarding methods. Verified
+  with the Linux build, focused object/module/script gtest filter, full
+  `ctest`, and the `test.mod` validator smoke.

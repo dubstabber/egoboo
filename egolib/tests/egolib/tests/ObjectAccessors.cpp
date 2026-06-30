@@ -10,6 +10,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/vfs.h"
 #include "egolib/game/Module/Module.hpp"
 #include "ObjectGraphicsTestAccess.hpp"
@@ -179,7 +180,7 @@ protected:
 
         const bool began = GameSessionContext::get().beginModule(module, 17);
         EXPECT_TRUE(began);
-        return GameSessionContext::get().objectHandler();
+        return Ego::Entities::activeObjectHandler();
     }
 };
 

@@ -9,8 +9,6 @@
 #include <memory>
 #include <vector>
 
-class ObjectHandler;
-class Object;
 class GameModule;
 class ModuleProfile;
 class ego_mesh_t;
@@ -77,10 +75,6 @@ public:
     void quitModule();
     bool finishModule();
 
-    ObjectHandler* tryObjectHandler();
-    Object* tryObject(ObjectRef objectRef);
-    const Object* tryObject(ObjectRef objectRef) const;
-    ObjectHandler& objectHandler();
     std::shared_ptr<ego_mesh_t> mesh();
     std::shared_ptr<const Ego::Texture> tileTexture(size_t index);
     std::shared_ptr<const Ego::Texture> waterTexture(uint8_t layer);

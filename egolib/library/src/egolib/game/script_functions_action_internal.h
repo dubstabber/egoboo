@@ -76,11 +76,6 @@ struct SelfActionContext
     }
 };
 
-inline GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 inline SelfActionContext makeSelfActionContext(const ai_state_t& self)
 {
     SelfActionContext context;

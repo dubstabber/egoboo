@@ -310,7 +310,7 @@ TEST_F(ObjectHandlerQueriesFixture, ExplicitLookupsDistinguishBorrowedAndOwningA
     EXPECT_EQ(handler.getHandle(liveRef), nullptr);
 }
 
-TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesSessionCompatibility)
+TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesActiveModule)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6108);
     GameModule& module = beginActiveTestModule();
@@ -322,12 +322,9 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesSessionCompati
     const ObjectRef liveRef = follower->getObjRef();
     EXPECT_EQ(Ego::Entities::tryActiveObjectHandler(), &handler);
     EXPECT_EQ(&Ego::Entities::activeObjectHandler(), &handler);
-    EXPECT_EQ(GameSessionContext::get().tryObjectHandler(), &handler);
-    EXPECT_EQ(&GameSessionContext::get().objectHandler(), &handler);
     EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), follower.get());
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), follower.get());
     EXPECT_TRUE(Ego::Entities::activeObjectExists(liveRef));
-    EXPECT_EQ(GameSessionContext::get().tryObject(liveRef), follower.get());
 
     EXPECT_EQ(Ego::Entities::tryActiveObject(ObjectRef::Invalid), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(ObjectRef::Invalid), nullptr);
@@ -337,7 +334,6 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesSessionCompati
     EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), nullptr);
     EXPECT_FALSE(Ego::Entities::activeObjectExists(liveRef));
-    EXPECT_EQ(GameSessionContext::get().tryObject(liveRef), nullptr);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesSpawnInsertionOrder)

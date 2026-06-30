@@ -5,11 +5,6 @@
 
 namespace
 {
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 struct EnchantInvocationContext
 {
     IEnchantable* target = nullptr;
@@ -145,7 +140,7 @@ bool disenchantResolvedTarget(const TargetCompatibilityContext& targetContext)
 template <typename Fn>
 void forEachResolvedObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = gameSession().tryObjectHandler();
+    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
     if (handler == nullptr)
     {
         return;

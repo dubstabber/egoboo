@@ -40,7 +40,7 @@ bool sendSelfProfileMessage(const SelfActionContext& context,
 template <typename Fn>
 void forEachLiveActionObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = gameSession().tryObjectHandler();
+    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
     if (handler == nullptr)
     {
         return;

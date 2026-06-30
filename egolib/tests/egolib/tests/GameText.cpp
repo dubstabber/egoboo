@@ -15,6 +15,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #undef private
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/vfs.h"
 
 namespace
@@ -129,7 +130,7 @@ protected:
 
         const bool began = GameSessionContext::get().beginModule(module, 31);
         EXPECT_TRUE(began);
-        return GameSessionContext::get().objectHandler();
+        return Ego::Entities::activeObjectHandler();
     }
 };
 

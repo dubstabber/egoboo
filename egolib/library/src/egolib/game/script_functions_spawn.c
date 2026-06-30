@@ -12,7 +12,7 @@ namespace
 template <typename Fn>
 void forEachLiveSpawnObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = gameSession().tryObjectHandler();
+    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
     if (handler == nullptr)
     {
         return;
