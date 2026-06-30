@@ -109,7 +109,7 @@ A typical object directory contains:
 - `enchant.txt` optional
 - `part0.txt` and friends
 - `sound0.wav` and friends
-- `tris.md2`
+- one object model candidate: `tris.gltf`, `tris.glb`, or `tris.md2`
 - `tris0.bmp` or `tris0.png`
 - `icon0.bmp`
 
@@ -159,9 +159,40 @@ Most text formats are positional and parser-driven rather than schema-driven.
 - binary map format
 - loader supports versions 1 through 4
 
-#### `tris.md2`
+#### Object models
 
-- Quake-era MD2 model format, still central to the object pipeline
+- legacy objects still mostly use Quake-era `tris.md2`
+- object model discovery now prefers `tris.gltf`, then `tris.glb`, then
+  `tris.md2`
+- preferred glTF/GLB assets are authoritative: if one exists and fails to load,
+  the loader reports that asset instead of silently falling back to MD2
+- runtime and validator discovery both go through `ObjectModelAsset` and
+  `ObjectModelLoader`
+
+The runtime consumes `Ego::Graphics::AnimatedModel` regardless of file format.
+`MD2Model` and `GltfModel` are loader adapters; `ModelDescriptor` remains the
+facade used by object graphics and model drawing.
+
+`ModelAnimationMetadata` owns the legacy action ranges, frame effects, walk-lip
+tables, and `copy.txt` healing behavior. MD2 derives that metadata from legacy
+frame names. glTF/GLB supplies it through `extras.egoboo` metadata, with a
+single-frame `DA` fallback only for minimal static smoke assets.
+
+Current glTF/GLB loader v1 intentionally accepts a narrow static-frame subset:
+
+- triangle primitives only, indexed or unindexed
+- `POSITION` as `VEC3/FLOAT`
+- optional `NORMAL` as `VEC3/FLOAT`
+- optional `TEXCOORD_0` as `VEC2/FLOAT`
+- optional scalar indices as unsigned 8/16/32-bit values
+- one glTF mesh per Egoboo animation frame, with the same vertex count for every
+  frame
+
+The loader rejects required extensions, skins, morph targets, Draco or meshopt
+compression, sparse accessors, non-triangle primitives, missing meshes, and
+non-identity node transforms. This keeps the first format-forward path close to
+the existing frame-table model instead of accepting arbitrary glTF scene
+semantics.
 
 ## 6. Hardcoded naming conventions are part of the runtime contract
 

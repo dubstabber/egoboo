@@ -1,6 +1,6 @@
 # Refactoring Roadmap
 
-Snapshot date: 2026-06-23. This is the forward plan only. Completed-pass history
+Snapshot date: 2026-06-30. This is the forward plan only. Completed-pass history
 lives in `71-completed-passes-log.md`; current metrics live in
 `CODEBASE-HEALTH-STATUS.md`.
 
@@ -127,6 +127,13 @@ Object profile parsing, model loading, script compilation, and validator startup
 still need runtime services. Continue separating pure data parsing from runtime
 service access where the tests and validator can prove behavior.
 
+### T3.5 Cartman Follow-Ups
+
+`cartman` now builds and launches behind `EGOBOO_BUILD_CARTMAN=OFF`, and
+`run-cartman.sh` builds it on demand. Keep it off the default build until the
+legacy editor has broader module smoke coverage and the pre-existing
+no-argument/bad-argument shutdown crash is fixed.
+
 ## Recently Completed Fronts To Treat As Closed
 
 - Runtime globals retired through `EngineContext` and `GameSessionContext`.
@@ -135,5 +142,8 @@ service access where the tests and validator can prove behavior.
 - `vfs.c`, script dispatch files, collision response, `GameEngine`, and object
   profile loading have been split below the old monolithic sizes.
 - glTF/GLB object model loading has landed behind the current static-mesh subset.
-- The full validator baseline remains 42 modules, 25 warnings, 230 known content
+- Public object enumeration and most gameplay ownership edges are ref-first
+  through `ObjectRef`; remaining shared handles are intentional ownership or
+  weak-storage paths.
+- The full validator baseline remains 42 modules, 10 warnings, 245 known content
   errors.

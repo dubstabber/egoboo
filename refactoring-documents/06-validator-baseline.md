@@ -116,7 +116,7 @@ This is an execution-environment note, not a gameplay bug.
 
 ## 5. Latest full baseline results
 
-**Last verified:** 2026-06-23. Regenerate these numbers with:
+**Last verified:** 2026-06-30. Regenerate these numbers with:
 
 ```bash
 HOME=/tmp/egoboo-home \
@@ -147,6 +147,8 @@ A follow-up 2026-04-13 validator pass added narrow `data.txt` semantic checks fo
 A later 2026-04-15 remediation pass extended reconciliation JSON output to schema version `3` and applied a conservative spawn-reference repair batch to `archmage.mod`, `abyss2.mod`, and `palwater.mod`. That reduced the global error count without changing parser behavior or warning totals.
 
 A 2026-06-23 recheck after the combat-attribution cleanup restored the repeated live baseline to 42 modules, 10 warnings, and 245 errors. That matches the earlier 2026-06-23 Pass 276-era totals and differs from the transient 25-warning/230-error result recorded during Pass 278; this recheck did not include validator or content-loading changes.
+
+A 2026-06-30 documentation-refresh recheck matched the same live baseline: 42 modules, 10 warnings, and 245 errors. The full validator still exits nonzero because of pre-existing legacy content errors.
 
 Summary:
 
@@ -217,7 +219,7 @@ The validator can now also emit `profile_field_invalid` warnings for a small set
 ## 8. Highest-error modules
 
 Top failing modules from the detailed baseline table, with top-level totals
-rechecked on 2026-06-23:
+rechecked on 2026-06-30:
 
 | Module | Errors | Warnings | Spawn Entries |
 | --- | ---: | ---: | ---: |

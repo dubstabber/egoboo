@@ -9,9 +9,15 @@ Runtime startup is:
 1. `egoboo/src/game/Main.cpp`
 2. `Ego::Core::System::initialize(argv[0])`
 3. `EngineContext::get().setEngine(std::make_unique<GameEngine>())` — the engine is installed in the `EngineContext` (the former `_gameEngine` global is retired, 0 references)
-4. `engine().start()`, then `EngineContext::get().clearEngine()` on shutdown
+4. install the main-menu factory on the engine
+5. install the default script system from `egolib-scriptvm`
+6. install the default graphics bootstrap from `egolib-game-graphics`
+7. `engine().start()`, then `EngineContext::get().clearEngine()` on shutdown
 
-This means the executable layer currently does almost nothing except install the engine into the `EngineContext` and hand off control.
+This means the executable layer is now the composition root for the systems that
+live above `egolib-library`. It installs those upper-layer services before
+handing control to `GameEngine`, while `GameEngine::initialize()` still triggers
+the graphics bootstrap at the original order-sensitive point.
 
 ## 2. System initialization
 

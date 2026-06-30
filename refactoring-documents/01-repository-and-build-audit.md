@@ -1,6 +1,6 @@
 # Repository And Build Audit
 
-Current audit date: 2026-06-23. Volatile quantitative metrics live in
+Current audit date: 2026-06-30. Volatile quantitative metrics live in
 `CODEBASE-HEALTH-STATUS.md`; this document records repository shape and build
 policy.
 
@@ -11,7 +11,7 @@ policy.
 | `egoboo/` | Executable wrapper | `egoboo/src/game/Main.cpp` installs runtime systems and starts `GameEngine` |
 | `egolib/` | Main runtime library | Primary source area; nine static archives under one CMake package |
 | `tools/` | Active tools | Builds `egoboo-content-validator` |
-| `cartman/` | Map editor | In CMake behind `EGOBOO_BUILD_CARTMAN=OFF`; not part of default build |
+| `cartman/` | Map editor | Builds and launches behind `EGOBOO_BUILD_CARTMAN=OFF`; not part of default build |
 | `data/` | Game content | Submodule |
 | `idlib/` | Foundation library | Submodule |
 | `idlib-game-engine/` | Engine support | Submodule; root CMake passes top-level `idlib/` into it |
@@ -58,6 +58,10 @@ as dependency evidence.
 
 Legacy platform READMEs were quarantined under `doc/legacy/` and should not be
 used as active setup instructions.
+
+The standalone Cartman editor is available through `./run-cartman.sh`; the
+helper configures/builds the gated target on demand and validates the module
+argument before launching.
 
 Preferred local build on this machine:
 
@@ -116,6 +120,9 @@ superproject build because the top-level `idlib/` path is passed in by CMake.
 - Current ctest count and green baseline live in `CODEBASE-HEALTH-STATUS.md`.
 - `egoboo-content-validator` is integrated into the build and has a known
   full-content baseline recorded in `06-validator-baseline.md`.
+- `cartman` is integrated as a gated target and runtime-smoke verified on Linux;
+  known follow-ups are broader module coverage and its legacy no-argument
+  shutdown crash.
 - `utilities/` contains legacy helper tools with mixed maintenance status; they
   are not default-build verification surfaces.
 

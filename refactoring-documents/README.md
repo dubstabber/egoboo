@@ -1,6 +1,6 @@
 # Refactoring Documents
 
-Architecture and refactoring reference for the current Egoboo workspace. Originally opened 2026-04-12. Index last rewritten 2026-04-18 as part of the documentation consolidation pass (`70-documentation-consolidation.md`); refreshed 2026-06-23 after the documentation compaction pass.
+Architecture and refactoring reference for the current Egoboo workspace. Originally opened 2026-04-12. Index last rewritten 2026-04-18 as part of the documentation consolidation pass (`70-documentation-consolidation.md`); refreshed 2026-06-30 after the second documentation compaction pass.
 
 This directory has three kinds of documents: **reference** (how the project is shaped today and how to change it safely), **roadmap** (what is outstanding), and **history** (what has already landed).
 
@@ -24,13 +24,8 @@ This directory has three kinds of documents: **reference** (how the project is s
 ## History
 
 - [`70-documentation-consolidation.md`](70-documentation-consolidation.md) — meta-record of the 2026-04-18 documentation consolidation pass that collapsed ~50 per-pass docs and four overlapping plans.
-- [`71-completed-passes-log.md`](71-completed-passes-log.md) — chronological log of numbered refactors from 2026-04-13 through 2026-06-22. The former per-pass documents (10–16, 20–21, 23–24, 26–31, 34–45, 47–69) are preserved in git history at their original paths; later passes append directly to this log.
-- [`72-uber-header-teardown.md`](72-uber-header-teardown.md) — the uber-header teardown plan, per-pass work-list, and the reusable `EGOBOO_NO_UBER_INCLUDE` selfcheck technique + symbol→home dictionary. **Front COMPLETE** (`egolib.h` deleted, 2026-06-07); retained as a technique reference.
-- [`73-cartman-build-integration-scouting.md`](73-cartman-build-integration-scouting.md) — the cartman build-integration record: the port (compile-drift fixes, `nm` ODR-collision trick), the `run-cartman.sh` launch recipe, and open items (default-flip, no-arg atexit crash). **Front COMPLETE through Phase 3** (cartman builds/links/runs, gated off, 2026-06-07).
-- [`74-entities-game-decoupling.md`](74-entities-game-decoupling.md) — completed Entities/game include-decoupling scouting and pass notes.
-- [`74-egolib-game-graphics-carve-plan.md`](74-egolib-game-graphics-carve-plan.md) — completed ninth archive carve plan and measurement record.
-- [`75-md2-to-gltf-prep.md`](75-md2-to-gltf-prep.md) — current MD2 to glTF/GLB runtime-prep record.
+- [`71-completed-passes-log.md`](71-completed-passes-log.md) — compact history of completed refactoring fronts through Pass 293. Former long-form per-pass and completed-front notes are preserved in git history; live guidance was folded into the reference docs.
 
 ## How to add to this directory
 
-Per the follow-on recommendation in `70-documentation-consolidation.md`: future refactoring passes append a compact entry (2–4 lines: date, theme, what moved behind a seam or got split) to `71-completed-passes-log.md` under the appropriate theme heading. Reserve a new numbered document only for work that introduces a new architectural boundary or requires multi-page design context.
+Future refactoring passes append a compact entry to `71-completed-passes-log.md` with date, theme, what boundary moved or split, and verification. Reserve a new numbered document only for active work that introduces a new architectural boundary or requires multi-page design context.

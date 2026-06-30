@@ -53,7 +53,7 @@ or engine/session service ownership.
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 134 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
-| `throw` references | 648 | Broad grep count, not semantic classification |
+| `throw` references | 649 | Broad grep count, not semantic classification |
 | Interface headers | 39 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
 | Object role interfaces | 19 | 21 `Entities/I*.hpp` files total, including 2 service interfaces |
 | `idlib::singleton` references | 19 | Intentional services plus legacy-singleton remnants |
@@ -226,7 +226,7 @@ ctest --test-dir build -j20 --output-on-failure
 The test runner is parallel-safe in the current harness. Each test process gets
 its own `EGOBOO_USER_DIR` through per-PID isolation.
 
-Full validator baseline, last rechecked 2026-06-23:
+Full validator baseline, last rechecked 2026-06-30:
 
 | Metric | Value |
 | --- | ---: |
