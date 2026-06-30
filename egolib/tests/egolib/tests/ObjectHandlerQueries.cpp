@@ -258,6 +258,30 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     EXPECT_EQ(activeSessionState().enchantStatClock(), 9u);
 }
 
+TEST_F(ObjectHandlerQueriesFixture, ModuleConstructionPublishesExpectedLoadedState)
+{
+    GameModule& module = beginActiveTestModule();
+    GameSessionContext& session = GameSessionContext::get();
+
+    ASSERT_NE(module.getModuleProfile(), nullptr);
+    EXPECT_EQ(module.getName(), module.getModuleProfile()->getName());
+    EXPECT_EQ(module.getPath(), module.getModuleProfile()->getFolderName());
+    EXPECT_EQ(module.getTeamList().size(), static_cast<size_t>(Team::TEAM_MAX));
+    ASSERT_NE(module.getMeshPointer(), nullptr);
+    EXPECT_GT(module.getMeshPointer()->_info.getTileCountX(), 0u);
+    EXPECT_GT(module.getMeshPointer()->_info.getTileCountY(), 0u);
+
+    EXPECT_EQ(&GameSessionContext::get().activeModule(), &module);
+    EXPECT_EQ(&activeModuleEnvironment(), &module);
+    EXPECT_EQ(&activeModuleStatus(), &module);
+    EXPECT_EQ(&activeSessionState(), &session);
+    EXPECT_EQ(activeModuleEnvironment().mesh().get(), module.getMeshPointer().get());
+    EXPECT_EQ(activeModuleStatus().moduleProfile(), module.getModuleProfile());
+    EXPECT_EQ(activeSessionState().worldUpdateCount(), 0u);
+    EXPECT_EQ(activeSessionState().characterStatClock(), 0u);
+    EXPECT_EQ(activeSessionState().enchantStatClock(), 0u);
+}
+
 TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearOnQuitModule)
 {
     beginActiveTestModule();

@@ -750,6 +750,8 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/Module.cpp
     src/egolib/game/Module/Module_bootstrap.cpp
     src/egolib/game/Module/Module_internal.h
+    src/egolib/game/Module/Module_load_phase.cpp
+    src/egolib/game/Module/Module_load_phase.hpp
     src/egolib/game/Module/Module_loading.cpp
     src/egolib/game/Module/Module_spawn.cpp
     src/egolib/game/Module/Module_spawn_realization.cpp

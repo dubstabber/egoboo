@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 943 ctest cases.
+  configures 944 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -43,12 +43,12 @@ or engine/session service ownership.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 167 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 780 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 282 `.cpp`, 73 `.h`, 322 `.hpp` |
-| Runtime source lines | 129,322 | Same scope as above |
-| Test files / lines | 50 / 24,889 | `egolib/tests`, source/header files only |
-| ctest cases | 943 | `ctest --test-dir build -N` |
-| ctest baseline | 943 / 943 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Archive members | 167 / 6 / 28 / 24 / 80 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Runtime source files | 782 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 283 `.cpp`, 73 `.h`, 323 `.hpp` |
+| Runtime source lines | 129,391 | Same scope as above |
+| Test files / lines | 50 / 24,913 | `egolib/tests`, source/header files only |
+| ctest cases | 944 | `ctest --test-dir build -N` |
+| ctest baseline | 944 / 944 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 487 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 388 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 43 | Dominant intentional session seam |
@@ -68,7 +68,7 @@ The live archive member counts are:
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 79 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
+| `egolib-library` | 80 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
 | `egolib-game-graphics` | 21 | 3D scene-rendering layer: camera, billboard, texture atlas, render passes, GFX bootstrap |
 | `egolib-hud-widgets` | 6 | Game-coupled in-game HUD widgets |
 | `egolib-scriptvm` | 33 | EgoScript VM and `script_functions_*` dispatch family |

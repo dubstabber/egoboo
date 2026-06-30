@@ -212,3 +212,14 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   status. Verified with the Linux build, focused fallback and
   object/module/script/camera ctest filters, full `ctest`, the `test.mod`
   validator smoke, and the live-archive `nm` back-edge check.
+- Pass 300 on 2026-06-30 extracted `module_loading::ModuleLoadPhase` as the
+  named constructor-load orchestration boundary for `GameModule`. The new phase
+  owns the existing VFS/RNG, team/texture, shared asset, environment, content,
+  and final clock/debug setup order while `GameModule` still owns loaded state
+  and `GameSessionContext` still controls module lifetime and active seam
+  publication. No spawn realization, import/export, profile-slot, parser, or
+  legacy content-format behavior changed. Coverage was extended in
+  `ObjectHandlerQueries` for loaded constructor state and installed active
+  seams. Verified with the Linux build, focused module/loading ctest filter,
+  full `ctest`, the `test.mod` validator smoke, a no-stray-header archive check,
+  and the live-archive `nm` back-edge check.

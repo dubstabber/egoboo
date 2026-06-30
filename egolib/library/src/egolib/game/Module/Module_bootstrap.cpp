@@ -21,7 +21,7 @@
 /// @brief GameModule construction, teardown, and bootstrap phases.
 
 #include "egolib/game/Module/Module_internal.h"
-#include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/game/Module/Module_load_phase.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
@@ -61,90 +61,7 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
 {
     _runtime.logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 
-    initializeModuleRuntime();
-    initializeModuleTeamsAndTextures();
-    initializeSharedModuleAssets();
-    loadModuleEnvironment();
-    loadModuleContent();
-    finalizeModuleInitialization();
-}
-
-void GameModule::initializeModuleRuntime()
-{
-    // Set up the virtual file system for the module before any module-local loads.
-    if (!setup_init_module_vfs_paths(getPath())) {
-        throw idlib::runtime_error(__FILE__, __LINE__, "Failed to setup module vfs");
-    }
-
-    // Initialize random seeds before content loading starts.
-    srand(_seed);
-    Random::setSeed(_seed);
-}
-
-void GameModule::initializeModuleTeamsAndTextures()
-{
-    // Initialize all teams before module state is populated.
-    for (int i = 0; i < Team::TEAM_MAX; ++i) {
-        _teamList.push_back(Team(i));
-    }
-
-    // Load tile textures up front so rendering assets are ready once the mesh loads.
-    for (size_t i = 0; i < _tileTextures.size(); ++i) {
-        _tileTextures[i] = Ego::DeferredTexture("mp_data/tile" + std::to_string(i));
-    }
-
-    // Load water textures used by the module environment.
-    _waterTextures[0] = Ego::DeferredTexture("mp_data/waterlow");
-    _waterTextures[1] = Ego::DeferredTexture("mp_data/watertop");
-}
-
-void GameModule::initializeSharedModuleAssets()
-{
-    // Load shared runtime assets that module content depends on.
-    _runtime.audioSystem().loadGlobalSounds();
-    _runtime.profileSystem().loadGlobalParticleProfiles();
-}
-
-void GameModule::loadModuleEnvironment()
-{
-    // Load environment state before module content starts referencing it.
-    wawalite_data_t *wavalite = read_wawalite_vfs();
-    if (wavalite != nullptr) {
-        _water.upload(wavalite->water);
-        _damageTile.upload(wavalite->damagetile);
-    }
-    else {
-        _runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load wawalite.txt for ", "`", _moduleProfile->getPath(), "`", Log::EndOfEntry);
-    }
-    upload_wawalite(_fog, _weatherState, _animatedTilesState);
-}
-
-void GameModule::loadModuleContent()
-{
-    // Load the profiles and world data in the same order as the legacy constructor.
-    loadProfiles();
-
-    // Load mesh.
-    MeshLoader meshLoader;
-    _mesh = meshLoader(_moduleProfile->getPath());
-
-    // Load passage.txt.
-    loadAllPassages();
-
-    // Load alliance.txt.
-    loadTeamAlliances();
-}
-
-void GameModule::finalizeModuleInitialization()
-{
-    // log debug info for every object loaded into the module
-    if (_runtime.config().debug_developerMode_enable.getValue()) {
-        logSlotUsage("/debug/slotused.txt");
-    }
-
-    // Reset module-local runtime counters after load completes.
-    timeron = false;
-    _runtime.resetClocks();
+    module_loading::ModuleLoadPhase(*this).run();
 }
 
 void GameModule::shutdownRuntime()
