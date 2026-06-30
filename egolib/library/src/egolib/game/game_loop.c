@@ -22,6 +22,7 @@
 
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/game/game_internal.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Script/IScriptSystem.hpp"  // activeScriptSystem() driver seam
 
 int chr_stoppedby_tests = 0;
@@ -70,7 +71,6 @@ Object* tryCheatPlayerObject(GameModule& module, PLA_REF playerIndex)
 //--------------------------------------------------------------------------------------------
 void MainLoop::move_all_objects()
 {
-    GameModule& module = activeModule();
 	g_meshStats.mpdfxTests = 0;
     chr_stoppedby_tests = 0;
 
@@ -84,7 +84,7 @@ void MainLoop::move_all_objects()
     }
 
     // Move every character
-    ObjectHandler& objectHandler = module.getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
     for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
         Object* object = objectHandler.get(objectRef);
@@ -306,7 +306,7 @@ void show_armor( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character
 
-    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    Object *pchr = Ego::Entities::tryActiveObject(activePlayingState()->getStatusCharacterRef(statindex));
     if(!pchr || pchr->isTerminated()) {
         return;
     }
@@ -354,7 +354,7 @@ void show_full_status( int statindex )
     /// @author ZF
     /// @details This function shows detailed armor information for the character including magic
 
-    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    Object *pchr = Ego::Entities::tryActiveObject(activePlayingState()->getStatusCharacterRef(statindex));
     if(!pchr || pchr->isTerminated()) {
         return;
     }
@@ -386,7 +386,7 @@ void show_magic_status( int statindex )
     /// @author ZF
     /// @details Displays special enchantment effects for the character
 
-    Object *pchr = GameSessionContext::get().tryObject(activePlayingState()->getStatusCharacterRef(statindex));
+    Object *pchr = Ego::Entities::tryActiveObject(activePlayingState()->getStatusCharacterRef(statindex));
     if(!pchr || pchr->isTerminated()) {
         return;
     }
@@ -408,15 +408,14 @@ void show_magic_status( int statindex )
 
 //--------------------------------------------------------------------------------------------
 void disaffirm_attached_particles(ObjectRef objectRef) {
-    GameModule& module = activeModule();
     for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator()) {
         if (!particle->isTerminated() && particle->getAttachedObjectID() == objectRef) {
             particle->requestTerminate();
         }
     }
-    if (module.getObjectHandler().exists(objectRef)) {
+    if (Ego::Entities::activeObjectExists(objectRef)) {
         // Set the alert for disaffirmation (wet torch).
-        IScriptable& scriptableObject = scriptable(*module.getObjectHandler().get(objectRef));
+        IScriptable& scriptableObject = scriptable(*Ego::Entities::tryActiveObject(objectRef));
         scriptableObject.addAIAlertBits(ALERTIF_DISAFFIRMED);
     }
 }
@@ -432,8 +431,7 @@ int number_of_attached_particles(ObjectRef objectRef) {
 }
 
 int reaffirm_attached_particles(ObjectRef objectRef) {
-    GameModule& module = activeModule();
-    Object* object = module.getObjectHandler().get(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     if(!object) {
         return 0;
     }
@@ -470,8 +468,7 @@ void MainLoop::let_all_characters_think()
 {
     /// @author ZZ
     /// @details This function funst the ai scripts for all eligible objects
-    GameModule& module = activeModule();
-    ObjectHandler& objectHandler = module.getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
     for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
         Object* object = objectHandler.get(objectRef);

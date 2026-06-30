@@ -35,7 +35,7 @@ IParticleHandler& particleHandler()
 
 ObjectAttribution objectAttributionFor(ObjectRef objectRef, TEAM_REF team)
 {
-    Object* object = activeModule().getObjectHandler().get(objectRef);
+    Object* object = tryWorldObject(objectRef);
     return object != nullptr ? object->attribution(team) : ObjectAttribution(team);
 }
 }
@@ -52,7 +52,7 @@ void Particle::updateAttachedDamage()
     // we must be attached to something
     if (!isAttached()) return;
 
-    Object* attachedObject = activeModule().getObjectHandler().get(_attachedTo);
+    Object* attachedObject = tryWorldObject(_attachedTo);
     if (attachedObject == nullptr)
     {
         return;
@@ -190,7 +190,7 @@ void Particle::destroy()
     {
         GameModule& module = activeModule();
         const ObjectRef childRef = module.spawnObjectRef(getPosition(), _spawnerProfile, team, 0, facing, "", ObjectRef::Invalid);
-        Object* child = module.getObjectHandler().get(childRef);
+        Object* child = tryWorldObject(childRef);
         if (child)
         {
             child->setAIStateValue(endspawn_characterstate);

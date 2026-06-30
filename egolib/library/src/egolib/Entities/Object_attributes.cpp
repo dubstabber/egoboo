@@ -205,7 +205,7 @@ std::shared_ptr<Ego::Enchantment> Object::addEnchant(ENC_REF enchantProfile, PRO
         return nullptr;
     }
 
-    Object* spawner = activeModule().getObjectHandler().get(spawnerRef);
+    Object* spawner = tryWorldObject(spawnerRef);
 
     std::shared_ptr<Ego::Enchantment> enchant = std::make_shared<Ego::Enchantment>(enchantmentProfile, ObjectProfileRef(spawnerProfile), ownerRef);
     enchant->applyEnchantment(getObjRef());

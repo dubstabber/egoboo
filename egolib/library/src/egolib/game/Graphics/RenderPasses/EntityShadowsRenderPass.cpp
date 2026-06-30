@@ -3,6 +3,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_prt.h"  // ParticleGraphicsRenderer
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Graphics/VertexFormat.hpp"
 #include "egolib/Renderer/Renderer.hpp"
@@ -36,7 +37,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
 
     // Keep track of the number of rendered shadows.
     size_t count = 0;
-    auto& objectHandler = GameSessionContext::get().objectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectHandler();
 
     if (gfx.shadows_highQuality_enable)
     {
@@ -67,7 +68,7 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
 void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 {
     auto& session = GameSessionContext::get();
-    Object *pchr = session.objectHandler().get(character);
+    Object *pchr = Ego::Entities::activeObjectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
     // If the object is hidden it is not drawn at all, so it has no shadow.
@@ -154,7 +155,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
 {
     auto& session = GameSessionContext::get();
-    Object *pchr = session.objectHandler().get(character);
+    Object *pchr = Ego::Entities::activeObjectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
     // if the character is hidden, not drawn at all, so no shadow

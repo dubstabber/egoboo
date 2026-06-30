@@ -34,7 +34,7 @@ IAudioSystem& audioSystem()
 
 auto& objectHandler()
 {
-    return GameSessionContext::get().activeModule().getObjectHandler();
+    return worldObjectHandler();
 }
 
 bool isKeyIDSZ(const IDSZ2& value)

@@ -30,13 +30,13 @@
 ///          Object_internal.h.
 #pragma once
 
-#include "egolib/Entities/Object_internal.h"  // Object (full), GameSessionContext, ObjectHandler, slot_t
+#include "egolib/Entities/Object_internal.h"  // Object (full), ObjectHandler, slot_t
 
 namespace object_attributes_detail {
 
 inline Object* heldItem(const Object& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
+    return worldObjectHandler().get(object.getHeldObject(slot));
 }
 
 }

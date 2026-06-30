@@ -91,7 +91,7 @@ Particle::Particle() :
 
 bool Particle::isAttached() const
 {
-    return activeModule().getObjectHandler().exists(_attachedTo);
+    return worldObjectExists(_attachedTo);
 }
 
 BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure)
@@ -218,7 +218,7 @@ void Particle::setElevation(const float level)
 
 bool Particle::isHidden() const
 {
-    const Object* attachedToObject = activeModule().getObjectHandler().get(_attachedTo);
+    const Object* attachedToObject = tryWorldConstObject(_attachedTo);
 
     if(!attachedToObject) {
         return false;
@@ -229,7 +229,7 @@ bool Particle::isHidden() const
 
 bool Particle::hasValidTarget() const
 {
-    return activeModule().getObjectHandler().get(_target) != nullptr;
+    return tryWorldConstObject(_target) != nullptr;
 }
 
 PIP_REF Particle::getProfileID() const
@@ -377,7 +377,7 @@ ObjectRef Particle::getOwner(int depth)
     }
 
     ObjectRef iowner = ObjectRef::Invalid;
-    if (activeModule().getObjectHandler().exists(owner_ref))
+    if (worldObjectExists(owner_ref))
     {
         iowner = owner_ref;
     }

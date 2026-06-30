@@ -32,6 +32,7 @@
 #include "egolib/Time/Time.hpp"  // ::Time::now
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"
@@ -61,24 +62,23 @@ MiniMap::MiniMap() :
     }
 }
 
-void MiniMap::queueEnemySenseBlips(const EnemySenseState& enemySense, GameModule& activeModule)
+void MiniMap::queueEnemySenseBlips(const EnemySenseState& enemySense)
 {
     if (static_cast<TEAM_REF>(Team::TEAM_MAX) == enemySense.team)
     {
         return;
     }
 
-    GameSessionContext& session = GameSessionContext::get();
-    for (const ObjectRef objectRef : activeModule.getObjectHandler().objectRefIterator())
+    for (const ObjectRef objectRef : Ego::Entities::activeObjectHandler().objectRefIterator())
     {
-        const Object* object = session.tryObject(objectRef);
+        const Object* object = Ego::Entities::tryActiveConstObject(objectRef);
         if (object == nullptr || object->isTerminated())
         {
             continue;
         }
 
         const std::shared_ptr<ObjectProfile>& profile = object->getProfile();
-        if (object->getTeam().hatesTeam(activeModule.getTeamList()[enemySense.team]) &&
+        if (object->getTeam().hatesTeam(Ego::Entities::activeObjectWorld().getTeamList()[enemySense.team]) &&
             (enemySense.idsz == IDSZ2::None ||
              enemySense.idsz == profile->getIDSZ(IDSZ_PARENT) ||
              enemySense.idsz == profile->getIDSZ(IDSZ_TYPE)))
@@ -100,7 +100,7 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
-    queueEnemySenseBlips(session.enemySense(), *activeModule);
+    queueEnemySenseBlips(session.enemySense());
 
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {

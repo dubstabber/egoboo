@@ -54,10 +54,20 @@ IObjectWorld& activeObjectWorld()
 {
     if (!g_activeObjectWorld)
     {
-        // Mirrors GameSessionContext::activeModule(), which the physics TUs routed through.
+        // Mirrors GameSessionContext::activeModule(), which legacy callers routed through.
         throw std::logic_error("no active object world");
     }
     return *g_activeObjectWorld;
+}
+
+ObjectHandler* tryActiveObjectHandler()
+{
+    return g_activeObjectWorld ? &g_activeObjectWorld->getObjectHandler() : nullptr;
+}
+
+ObjectHandler& activeObjectHandler()
+{
+    return activeObjectWorld().getObjectHandler();
 }
 
 Object* tryActiveObject(ObjectRef objectRef)

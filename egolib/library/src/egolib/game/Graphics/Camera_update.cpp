@@ -32,13 +32,14 @@
 #include "egolib/game/game.h" // TODO: remove only needed for mesh
 
 #include "egolib/game/mesh.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 namespace
 {
 Object* tryLiveTrackedObject(ObjectRef objectRef)
 {
-    Object* object = GameSessionContext::get().tryObject(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() && object->isAlive() ? object : nullptr;
 }
 }
@@ -452,7 +453,7 @@ void Camera::updateEffects()
 void Camera::addTrackTarget(ObjectRef targetRef)
 {
     //Make sure the target is valid
-    Object* object = GameSessionContext::get().tryObject(targetRef);
+    Object* object = Ego::Entities::tryActiveObject(targetRef);
     if(!object) {
         return;
     }

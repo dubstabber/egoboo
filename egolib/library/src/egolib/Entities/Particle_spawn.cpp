@@ -155,7 +155,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     // try to get an idea of who our owner is even if we are
     // given bogus info
     ObjectRef loc_chr_origin = spawnOrigin;
-    if (!activeModule().getObjectHandler().exists(spawnOrigin) && particleHandler()[spawnParticleOrigin])
+    if (!worldObjectExists(spawnOrigin) && particleHandler()[spawnParticleOrigin])
     {
         loc_chr_origin = particleHandler()[spawnParticleOrigin]->getOwner();
     }
@@ -199,17 +199,18 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
         else
         {
             const float PERFECT_AIM = 45.0f;   // 45 dex is perfect aim
-            float attackerAgility = activeModule().getObjectHandler().get(owner_ref)->getAttribute(Ego::Attribute::AGILITY);
+            Object* owner = tryWorldObject(owner_ref);
+            float attackerAgility = owner->getAttribute(Ego::Attribute::AGILITY);
 
             //Sharpshooter Perk improves aim by 25%
-            if(activeModule().getObjectHandler().get(owner_ref)->hasPerk(Ego::Perks::SHARPSHOOTER)) {
+            if(owner->hasPerk(Ego::Perks::SHARPSHOOTER)) {
                 attackerAgility = std::min(PERFECT_AIM, attackerAgility*1.25f);
             }
 
             // Find a target
             Facing targetAngle;
             _target = prt_find_target(spawnPos, idlib::canonicalize(loc_facing), _particleProfileID, spawnTeam, owner_ref, spawnTarget, &targetAngle);
-            const Object* target = activeModule().getObjectHandler().get(_target);
+            const Object* target = tryWorldConstObject(_target);
 
             if (target && !getProfile()->homing)
             {
@@ -263,7 +264,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
             }
         }
 
-        const Object* target = activeModule().getObjectHandler().get(_target);
+        const Object* target = tryWorldConstObject(_target);
 
         // Does it go away?
         if (!target && getProfile()->needtarget)
@@ -413,7 +414,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
     damage = range_to_pair(getProfile()->damage);
 
     //If it is a FIRE particle spawned by a Pyromaniac, increase damage by 25%
-    const Object* owner = activeModule().getObjectHandler().get(owner_ref);
+    const Object* owner = tryWorldConstObject(owner_ref);
     if(owner != nullptr && owner->hasPerk(Ego::Perks::PYROMANIAC)) {
         damage.base *= 1.25f;
         damage.rand *= 1.25f;
@@ -501,7 +502,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
         "\n",
         _particleID,
         worldUpdateCount(), static_cast<int>(lifetime_remaining),
-        loc_chr_origin, activeModule().getObjectHandler().exists( loc_chr_origin ) ? activeModule().getObjectHandler().get(loc_chr_origin)->Name : "INVALID",
+        loc_chr_origin, worldObjectExists(loc_chr_origin) ? tryWorldConstObject(loc_chr_origin)->Name : "INVALID",
         _particleProfileID, getProfile()->getName().c_str(),
         getProfile()->comment,
         _spawnerProfile, spawnerProfile ? spawnerProfile->getPathname().c_str() : "INVALID");
@@ -521,7 +522,7 @@ bool Particle::initialize(const ParticleRef particleID, const Vector3f& spawnPos
 
 bool Particle::attach(const ObjectRef attach)
 {
-    Object* pchr = activeModule().getObjectHandler().get(attach);
+    Object* pchr = tryWorldObject(attach);
     if(!pchr) {
         return false;
     }
@@ -543,7 +544,7 @@ bool Particle::attach(const ObjectRef attach)
 
 bool Particle::placeAtVertex(ObjectRef objectRef, int vertex_offset)
 {
-    Object* object = activeModule().getObjectHandler().get(objectRef);
+    Object* object = tryWorldObject(objectRef);
     if (object == nullptr) {
         requestTerminate();
         return false;

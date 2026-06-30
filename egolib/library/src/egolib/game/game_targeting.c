@@ -22,6 +22,7 @@
 
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/AI/LineOfSight.hpp" // line_of_sight_info_t
 
 //--------------------------------------------------------------------------------------------
@@ -46,16 +47,16 @@ ObjectRef prt_find_target( const Ego::Vector3f& pos, Facing facing,
     if ( !EngineContext::get().profileSystem().isParticleProfileLoaded( particletype ) ) return ObjectRef::Invalid;
     ppip = EngineContext::get().profileSystem().getParticleProfile( particletype );
 
-    ObjectHandler& objectHandler = module.getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
     for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
         Object* pchr = objectHandler.get(objectRef);
         if (pchr == nullptr || pchr->isTerminated()) continue;
 
-        if ( !pchr->isAlive() || pchr->isItem() || module.getObjectHandler().exists( pchr->getInventoryHolderRef() ) ) continue;
+        if ( !pchr->isAlive() || pchr->isItem() || objectHandler.exists( pchr->getInventoryHolderRef() ) ) continue;
 
         // prefer targeting riders over the mount itself
-        if ( pchr->isMount() && ( module.getObjectHandler().exists( pchr->getHeldObject(SLOT_LEFT) ) || module.getObjectHandler().exists( pchr->getHeldObject(SLOT_RIGHT) ) ) ) continue;
+        if ( pchr->isMount() && ( objectHandler.exists( pchr->getHeldObject(SLOT_LEFT) ) || objectHandler.exists( pchr->getHeldObject(SLOT_RIGHT) ) ) ) continue;
 
         // ignore invictus
         if ( pchr->isInvincible() ) continue;
@@ -190,9 +191,8 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     GameModule& module = activeModule();
     line_of_sight_info_t los_info;
 
-    Object* psrc = module.getObjectHandler().exists(sourceRef)
-        ? module.getObjectHandler().get(sourceRef)
-        : nullptr;
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
+    Object* psrc = Ego::Entities::tryActiveObject(sourceRef);
     if (!psrc || psrc->isTerminated()) return ObjectRef::Invalid;
 
     // set the line-of-sight source
@@ -257,9 +257,9 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     //All objects in level
     else if(max_dist == NEAREST)
     {
-        for (const ObjectRef& objectRef : module.getObjectHandler().objectRefIterator())
+        for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
         {
-            Object* object = module.getObjectHandler().get(objectRef);
+            Object* object = objectHandler.get(objectRef);
             if (object == nullptr || object->isTerminated())
             {
                 continue;
@@ -273,10 +273,10 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     else
     {
         std::vector<ObjectRef> nearbyObjectRefs;
-        module.getObjectHandler().findObjectRefs(psrc->getPosX(), psrc->getPosY(), max_dist, nearbyObjectRefs, true);
+        objectHandler.findObjectRefs(psrc->getPosX(), psrc->getPosY(), max_dist, nearbyObjectRefs, true);
         for (const ObjectRef& objectRef : nearbyObjectRefs)
         {
-            Object* object = module.getObjectHandler().get(objectRef);
+            Object* object = objectHandler.get(objectRef);
             if (object == nullptr || object->isTerminated())
             {
                 continue;

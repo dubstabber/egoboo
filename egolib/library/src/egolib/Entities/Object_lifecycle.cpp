@@ -33,7 +33,7 @@ IAudioSystem& audioSystem()
 
 Object* heldItem(const Object& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
+    return worldObjectHandler().get(object.getHeldObject(slot));
 }
 }
 
@@ -168,11 +168,11 @@ Object::Object(ObjectProfileRef proRef, ObjectRef objRef) :
 Object::~Object()
 {
     // Detach the character from the active game.
-    if (GameModule* module = tryActiveModule()) {
+    if (tryActiveModule()) {
         removeFromGame(this);
 
         for (const ObjectRef& itemRef : _inventory.getItemIDs()) {
-            if (Object* pitem = module->getObjectHandler().get(itemRef)) {
+            if (Object* pitem = tryWorldObject(itemRef)) {
                 pitem->requestTerminate();
             }
         }
@@ -189,7 +189,7 @@ Object::~Object()
 
 void Object::requestTerminate()
 {
-    activeModule().getObjectHandler().remove(getObjRef());
+    worldObjectHandler().remove(getObjRef());
 }
 
 void Object::removeFromGame(Object* obj)
@@ -206,7 +206,7 @@ void Object::removeFromGame(Object* obj)
 
     activeModule().removeShopOwner(objRef);
 
-    if (activeModule().getObjectHandler().exists(obj->attachedto)) {
+    if (worldObjectExists(obj->attachedto)) {
         obj->detachFromHolder(true, false);
     }
 
@@ -234,7 +234,7 @@ void Object::respawn()
     activeParticleHandler().spawnPoof(getObjRef());
     disaffirm_attached_particles(getObjRef());
 
-    ObjectHandler& objectHandler = activeModule().getObjectHandler();
+    ObjectHandler& objectHandler = worldObjectHandler();
     for (const ObjectRef& objectRef : objectHandler.objectRefIterator()) {
         Object* object = objectHandler.get(objectRef);
         if (object && object->getAttachedPlatformRef() == getObjRef()) {
@@ -286,7 +286,7 @@ void Object::respawn()
     grog_timer = 0;
     daze_timer = 0;
 
-    ObjectHandler& handler = activeModule().getObjectHandler();
+    ObjectHandler& handler = worldObjectHandler();
     for (const ObjectRef& itemRef : _inventory.getItemIDs()) {
         Object* pitem = handler.get(itemRef);
         if (pitem != nullptr && pitem->isequipped) {

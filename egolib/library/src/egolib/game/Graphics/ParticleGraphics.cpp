@@ -4,6 +4,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/game/graphic.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 
@@ -171,7 +172,7 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     }
     else if (pprt->isAttached())
     {
-        const Object* attachedObject = GameSessionContext::get().tryObject(pprt->getAttachedObjectID());
+        const Object* attachedObject = Ego::Entities::tryActiveConstObject(pprt->getAttachedObjectID());
         if (attachedObject != nullptr && chr_matrix_valid(attachedObject))
         {
             // Use the character matrix to orient the particle.

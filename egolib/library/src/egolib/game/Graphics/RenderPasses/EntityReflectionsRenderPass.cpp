@@ -1,7 +1,7 @@
 #include "egolib/game/Graphics/RenderPasses/EntityReflectionsRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/graphic_mad.h"  // ObjectGraphicsRenderer
@@ -29,7 +29,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
         return;
     }
 
-    auto& objectHandler = GameSessionContext::get().objectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectHandler();
 
     OpenGL::Utilities::isError();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_CURRENT_BIT);

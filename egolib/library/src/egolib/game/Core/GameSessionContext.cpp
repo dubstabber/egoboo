@@ -272,12 +272,7 @@ bool GameSessionContext::finishModule()
 
 ObjectHandler* GameSessionContext::tryObjectHandler()
 {
-    GameModule* module = tryActiveModule();
-    if (!module)
-    {
-        return nullptr;
-    }
-    return &module->getObjectHandler();
+    return Ego::Entities::tryActiveObjectHandler();
 }
 
 Object* GameSessionContext::tryObject(ObjectRef objectRef)
@@ -292,12 +287,7 @@ const Object* GameSessionContext::tryObject(ObjectRef objectRef) const
 
 ObjectHandler& GameSessionContext::objectHandler()
 {
-    ObjectHandler* handler = tryObjectHandler();
-    if (!handler)
-    {
-        throw std::logic_error("no active game module");
-    }
-    return *handler;
+    return Ego::Entities::activeObjectHandler();
 }
 
 std::shared_ptr<ego_mesh_t> GameSessionContext::mesh()

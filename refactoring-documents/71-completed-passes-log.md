@@ -161,3 +161,10 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   `GameModule`/`ObjectHandler`; coverage was added in `ObjectHandlerQueries`.
   Verified with the Linux build, focused object/session ctest filter, full
   `ctest`, and the `test.mod` validator smoke.
+- Pass 295 on 2026-06-30 widened the same seam with active object-handler
+  helpers, redirected the session object-handler compatibility methods through
+  them, and moved entity object/particle code plus graphics, audio, script,
+  targeting, matrix, inventory, shop, HUD, and UI object-container callers off
+  direct `GameSessionContext` / `GameModule` object-handler access. Module-owned
+  spawn/export/passage/editor behavior stayed on `GameModule`; coverage was
+  extended in `ObjectHandlerQueries`.

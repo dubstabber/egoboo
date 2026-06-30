@@ -32,6 +32,7 @@
 #include "egolib/game/script_functions.h"
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/script_variables.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 
@@ -271,7 +272,7 @@ struct OrderRecipient
 template <typename Fn>
 void forEachLiveRuntimeObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = GameSessionContext::get().tryObjectHandler();
+    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
     if (handler == nullptr)
     {
         return;

@@ -20,7 +20,7 @@
 
 #include "egolib/Audio/AudioSystem.hpp"
 
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Core/EngineContext.hpp"  // EngineContext (audio service access) — was transitively via game.h
@@ -98,7 +98,7 @@ bool is_audio_disabled_by_environment()
 
 ObjectHandler* tryObjectHandler()
 {
-    return GameSessionContext::get().tryObjectHandler();
+    return Ego::Entities::tryActiveObjectHandler();
 }
 
 Object* tryOwnerObject(ObjectRef ownerRef)

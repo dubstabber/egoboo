@@ -279,9 +279,9 @@ bool Object::activateStealth()
 
     //Check if there are any nearby Objects disrupting our stealth attempt
     std::vector<ObjectRef> nearbyObjectRefs;
-    activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+    worldObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
     for (const ObjectRef& objectRef : nearbyObjectRefs) {
-        Object* object = activeModule().getObjectHandler().get(objectRef);
+        Object* object = tryWorldObject(objectRef);
         if (object == nullptr) {
             continue;
         }
@@ -378,7 +378,7 @@ void Object::setTeam(TEAM_REF team_new, bool permanent)
 
     if(permanent) {
         //Set the team of our mount as well
-        Object* holder = activeModule().getObjectHandler().get(getHolderRef());
+        Object* holder = tryWorldObject(getHolderRef());
         if (holder && holder->isMount()) {
             holder->setTeam(team_new, false);
         }

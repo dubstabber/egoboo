@@ -25,6 +25,7 @@
 #define GAME_ENTITIES_PRIVATE 1
 
 #include "egolib/Entities/Particle.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -39,6 +40,26 @@ inline GameSessionContext& gameSession()
 inline GameModule& activeModule()
 {
     return gameSession().activeModule();
+}
+
+inline ObjectHandler& worldObjectHandler()
+{
+    return Ego::Entities::activeObjectHandler();
+}
+
+inline Object* tryWorldObject(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveObject(objectRef);
+}
+
+inline const Object* tryWorldConstObject(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveConstObject(objectRef);
+}
+
+inline bool worldObjectExists(ObjectRef objectRef)
+{
+    return Ego::Entities::activeObjectExists(objectRef);
 }
 
 inline uint32_t worldUpdateCount()

@@ -28,10 +28,9 @@
 
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/Module/Module.hpp"
 
 namespace Ego
 {
@@ -57,7 +56,7 @@ inline const IMovementControl& movementControl(const Object& object)
 
 inline Object* attachmentObject(ObjectRef objectRef)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().get(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 inline Object* heldItem(const IInventoryHolder& object, slot_t slot)

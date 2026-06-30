@@ -22,6 +22,7 @@
 
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/Enchant.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Log/_Include.hpp"
@@ -40,12 +41,7 @@ IAudioSystem& audioSystem()
 
 Object* objectByRef(ObjectRef objectRef)
 {
-    if (objectRef == ObjectRef::Invalid || !GameSessionContext::get().hasActiveModule())
-    {
-        return nullptr;
-    }
-
-    return GameSessionContext::get().activeModule().getObjectHandler().get(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 Object* heldItem(const IInventoryHolder& object, slot_t slot)
@@ -380,7 +376,7 @@ void Enchantment::applyEnchantment(ObjectRef targetRef)
     {
         GameModule& module = GameSessionContext::get().activeModule();
         const ObjectRef overlayRef = module.spawnObjectRef(target->getPosition(), _spawnerProfileID, target->getTeamRef(), 0, target->getFacingZ(), "", ObjectRef::Invalid);
-        Object* overlay = module.getObjectHandler().get(overlayRef);
+        Object* overlay = objectByRef(overlayRef);
         if (overlay)
         {
             _overlayRef = overlay->getObjRef();             //Kill this character on end...

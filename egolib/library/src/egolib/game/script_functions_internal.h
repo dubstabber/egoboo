@@ -35,6 +35,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Inventory.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Core/GameEngine.hpp"
@@ -111,7 +112,7 @@ inline GameModule& activeModule()
 
 inline auto& objectHandler()
 {
-    return activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 inline std::shared_ptr<Passage> tryPassage(int passageId)
@@ -141,7 +142,7 @@ inline ObjectRef teamCallerForHelpRef(const ITargetInfo& targetInfo)
 
 inline Object* tryObject(ObjectRef objectRef)
 {
-    return objectHandler().exists(objectRef) ? objectHandler().get(objectRef) : nullptr;
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 inline bool hasLiveObjectRef(ObjectRef objectRef)

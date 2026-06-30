@@ -25,6 +25,7 @@
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/Object.hpp"
 
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/Entities/ObjectHandler.hpp"
 #include "egolib/Entities/ParticleHandler.hpp"
@@ -48,6 +49,36 @@ inline GameModule* tryActiveModule()
 inline GameModule& activeModule()
 {
     return gameSession().activeModule();
+}
+
+inline ObjectHandler* tryWorldObjectHandler()
+{
+    return Ego::Entities::tryActiveObjectHandler();
+}
+
+inline ObjectHandler& worldObjectHandler()
+{
+    return Ego::Entities::activeObjectHandler();
+}
+
+inline Object* tryWorldObject(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveObject(objectRef);
+}
+
+inline const Object* tryWorldConstObject(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveConstObject(objectRef);
+}
+
+inline bool worldObjectExists(ObjectRef objectRef)
+{
+    return Ego::Entities::activeObjectExists(objectRef);
+}
+
+inline std::vector<Team>& worldTeams()
+{
+    return Ego::Entities::activeObjectWorld().getTeamList();
 }
 
 inline uint32_t worldUpdateCount()

@@ -22,6 +22,7 @@
 
 #include "egolib/game/graphic_internal.h"
 
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 
 #include "egolib/game/GUI/Material.hpp"
@@ -171,7 +172,7 @@ float draw_debug(float y)
         os.str(std::string()); os << "~~FREEPRT: " << EngineContext::get().particleHandler().getFreeCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
-        os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - activeModule().getObjectHandler().getObjectCount();
+        os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - Ego::Entities::activeObjectHandler().getObjectCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
         os.str(std::string()); os << "~~EXPORT:  " << (activeModule().isExportValid() ? "TRUE" : "FALSE");

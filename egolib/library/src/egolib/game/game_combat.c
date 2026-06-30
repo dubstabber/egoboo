@@ -22,6 +22,7 @@
 
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 #define THROWFIX            30.0f                    ///< To correct thrown velocities
 #define MINTHROWVELOCITY    15.0f
@@ -36,12 +37,12 @@ egoboo_config_t& config()
 
 ObjectHandler& objectHandler()
 {
-    return activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 Object* tryObject(ObjectRef ref)
 {
-    return objectHandler().exists(ref) ? objectHandler().get(ref) : nullptr;
+    return Ego::Entities::tryActiveObject(ref);
 }
 
 IScriptable& scriptableRole(Object& object)
@@ -140,7 +141,6 @@ bool isItemAttachment(ObjectRef ref)
 //--------------------------------------------------------------------------------------------
 bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 {
-    GameModule& module = activeModule();
     bool action_valid, allowedtoattack;
 
     bool retval = false;
@@ -158,12 +158,12 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
 
     // Which iweapon?
     auto iweapon = characterInventory.getHeldObject(which_slot);
-    if ( !module.getObjectHandler().exists( iweapon ) )
+    if ( !objectHandler().exists( iweapon ) )
     {
         // Unarmed means object itself is the weapon
         iweapon = iobj;
     }
-    Object *pweapon = module.getObjectHandler().get(iweapon);
+    Object *pweapon = objectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
     IScriptable& scriptableCharacter = scriptableRole(*pchr);
     IScriptable& scriptableWeapon = scriptableRole(*pweapon);
@@ -230,7 +230,7 @@ bool chr_do_latch_attack( Object * pchr, slot_t which_slot )
     if ( allowedtoattack )
     {
         // Rearing mount
-        Object* pmount = module.getObjectHandler().get(characterInfo.getHolderRef());
+        Object* pmount = objectHandler().get(characterInfo.getHolderRef());
 
         if (pmount)
         {
@@ -371,7 +371,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     /// @author ZZ
     /// @details This function spawns an attack particle
     GameModule& module = activeModule();
-    Object* pchr = module.getObjectHandler().get(ichr);
+    Object* pchr = objectHandler().get(ichr);
     if(!pchr) {
         return;
     }
@@ -383,7 +383,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     // See if it's an unarmed attack...
     bool unarmed_attack;
     int spawn_vrt_offset;
-    if ( !module.getObjectHandler().exists(iweapon) )
+    if ( !objectHandler().exists(iweapon) )
     {
         unarmed_attack   = true;
         iweapon          = ichr;
@@ -395,12 +395,12 @@ void character_swipe( ObjectRef ichr, slot_t slot )
         spawn_vrt_offset = GRIP_LAST;
     }
 
-    Object* pweapon = module.getObjectHandler().get(iweapon);
+    Object* pweapon = objectHandler().get(iweapon);
     const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
 
     // find the 1st non-item that is holding the weapon
     ObjectRef iholder = chr_get_lowest_attachment( iweapon, true );
-    Object* pholder = module.getObjectHandler().get(iholder);
+    Object* pholder = objectHandler().get(iholder);
     const ITargetInfo& holderInfo = targetInfoRole(*pholder);
 
     /*
@@ -427,7 +427,7 @@ void character_swipe( ObjectRef ichr, slot_t slot )
     {
         // Throw the weapon if it's stacked or a hurl animation
         const ObjectRef thrownRef = module.spawnObjectRef(pchr->getPosition(), ObjectProfileRef(pweapon->getProfileID()), holderInfo.getTeamRef(), pweapon->getSkin(), pchr->getFacingZ(), pweapon->getName(), ObjectRef::Invalid);
-        Object* pthrown = module.getObjectHandler().get(thrownRef);
+        Object* pthrown = objectHandler().get(thrownRef);
         if (pthrown)
         {
             IScriptable& scriptableThrown = scriptableRole(*pthrown);
@@ -678,7 +678,6 @@ void character_swipe( ObjectRef ichr, slot_t slot )
 //--------------------------------------------------------------------------------------------
 ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
 {
-    GameModule& module = activeModule();
     /// @author BB
     /// @details Find the lowest attachment for a given object.
     ///               This was basically taken from the script function scr_set_TargetToLowestTarget()
@@ -686,9 +685,9 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
     ///               You should be able to find the holder of a weapon by specifying non_item == true
     ///
     ///               To prevent possible loops in the data structures, use a counter to limit
-    ///               the depth of the search, and make sure that ichr != module.getObjectHandler().get(object)->attachedto
+    ///               the depth of the search, and make sure that ichr != objectHandler().get(object)->attachedto
 
-    if (!module.getObjectHandler().exists(ichr)) return ObjectRef::Invalid;
+    if (!objectHandler().exists(ichr)) return ObjectRef::Invalid;
 
     ObjectRef original_object, object;
     original_object = object = ichr;
@@ -704,7 +703,7 @@ ObjectRef chr_get_lowest_attachment( ObjectRef ichr, bool non_item )
         ObjectRef object_next = nextAttachmentRef(object);
 
         // check for an end of the list
-        if (!module.getObjectHandler().exists(object_next))
+        if (!objectHandler().exists(object_next))
         {
             break;
         }

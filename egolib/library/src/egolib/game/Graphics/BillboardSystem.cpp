@@ -235,7 +235,7 @@ void BillboardSystem::render_all(::Camera& camera)
 
 std::shared_ptr<Billboard> BillboardSystem::makeBillboard(ObjectRef obj_ref, const std::string& text, const Ego::Colour4f& textColor, const Ego::Colour4f& tint, int lifetime_secs, const BIT_FIELD opt_bits, const float size)
 {
-    auto obj_ptr = Ego::Entities::activeObjectWorld().getObjectHandler().getHandle(obj_ref);
+    auto obj_ptr = Ego::Entities::activeObjectHandler().getHandle(obj_ref);
     if (!obj_ptr)
     {
         return nullptr;

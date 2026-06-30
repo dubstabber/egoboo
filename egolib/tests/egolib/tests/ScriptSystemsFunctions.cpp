@@ -1226,7 +1226,7 @@ TEST_F(ScriptSystemsFunctionsFixture, MiniMapEnemySenseQueueSkipsTerminatedObser
 
     minimap->_blips.clear();
     GameSessionContext::get().publishEnemySense(EnemySenseState(static_cast<TEAM_REF>(Team::TEAM_GOOD), IDSZ2::None));
-    minimap->queueEnemySenseBlips(GameSessionContext::get().enemySense(), module);
+    minimap->queueEnemySenseBlips(GameSessionContext::get().enemySense());
 
     ASSERT_EQ(minimap->_blips.size(), 1u);
     EXPECT_FLOAT_EQ(minimap->_blips.front().x, liveEnemy->getPosX());

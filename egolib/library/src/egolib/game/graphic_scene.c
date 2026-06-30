@@ -23,6 +23,7 @@
 #include "egolib/game/graphic_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"
@@ -385,7 +386,7 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam)
     el.clear();
 
     std::vector<ObjectRef> visibleObjectRefs;
-    activeModule().getObjectHandler().findObjectRefs(
+    Ego::Entities::activeObjectHandler().findObjectRefs(
         cam.getCenter()[kX],
         cam.getCenter()[kY],
         Info<float>::Grid::Size() * 10,
@@ -394,7 +395,7 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam)
 
     for (const ObjectRef& objectRef : visibleObjectRefs)
     {
-        Object* object = activeModule().getObjectHandler().get(objectRef);
+        Object* object = Ego::Entities::tryActiveObject(objectRef);
         if (object == nullptr || object->isTerminated())
         {
             continue;
@@ -431,7 +432,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
 
         ObjectRef iobj = el.get(i).iobj;
 
-        Object* object = activeModule().getObjectHandler().get(iobj);
+        Object* object = Ego::Entities::tryActiveObject(iobj);
         if (!object) continue;
 
         if (DONTFLASH != object->getProfile()->getFlashAND())

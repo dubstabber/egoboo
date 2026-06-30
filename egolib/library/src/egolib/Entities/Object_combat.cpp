@@ -42,7 +42,7 @@ IAudioSystem& audioSystem()
 
 ObjectHandler& objectHandler()
 {
-    return GameSessionContext::get().activeModule().getObjectHandler();
+    return worldObjectHandler();
 }
 
 Object* heldItem(const IInventoryHolder& object, slot_t slot)
@@ -606,7 +606,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
 
 bool Object::costMana(int amount, const ObjectRef killer)
 {
-    const Object* pkiller = activeModule().getObjectHandler().get(killer);
+    const Object* pkiller = tryWorldConstObject(killer);
 
     bool manaPaid  = false;
     int manaFinal = static_cast<int>(FLOAT_TO_FP8(getMana())) - amount;

@@ -44,6 +44,7 @@
 #include "egolib/font_bmp.h" // fontyspacing
 
 //For cheats
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Module/Module.hpp"
 
@@ -61,7 +62,7 @@ Ego::Input::IInputSystem& inputSystem()
 
 Object* tryObservedUiObject(ObjectRef objectRef)
 {
-    Object* object = GameSessionContext::get().tryObject(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
 }

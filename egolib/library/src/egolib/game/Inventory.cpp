@@ -1,9 +1,8 @@
 #include "egolib/game/Inventory.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
-#include "egolib/game/Module/Module.hpp"
 
 //Class constants
 const size_t Inventory::MAXNUMINPACK;
@@ -12,12 +11,12 @@ namespace
 {
 auto& objectHandler()
 {
-    return GameSessionContext::get().activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 ObjectHandler* tryObjectHandler()
 {
-    return GameSessionContext::get().tryObjectHandler();
+    return Ego::Entities::tryActiveObjectHandler();
 }
 
 ObjectRef liveItemRef(ObjectRef itemRef)

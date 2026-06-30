@@ -23,6 +23,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/game.h"
 
@@ -35,12 +36,12 @@ GameModule& activeModule()
 
 auto& objectHandler()
 {
-    return activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 Object* objectByRef(ObjectRef objectRef)
 {
-    return objectHandler().get(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 IScriptable& scriptable(Object& object)

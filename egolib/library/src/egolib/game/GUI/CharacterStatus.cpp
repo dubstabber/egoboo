@@ -24,6 +24,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
@@ -38,7 +39,7 @@ namespace
 {
 Object* tryObservedObject(ObjectRef objectRef)
 {
-    Object* object = GameSessionContext::get().tryObject(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
 }
@@ -59,8 +60,7 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 	///     If the object is invalid, draw the null icon instead of failing
 	///     If NOSPARKLE is specified the default item sparkle will be used (default behaviour)
 
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-	Object * pitem = activeModule ? activeModule->getObjectHandler().get(item) : nullptr;
+	Object * pitem = Ego::Entities::tryActiveObject(item);
 
 	// grab the icon reference
 	std::shared_ptr<const Texture> icon_ref = (pitem != nullptr) ? pitem->getIcon() : EngineContext::get().textureManager().getTexture("mp_data/nullicon");

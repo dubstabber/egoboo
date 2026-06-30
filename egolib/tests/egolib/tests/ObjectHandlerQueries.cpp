@@ -177,6 +177,8 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupIsEmptyWithoutActiveM
 {
     const ObjectRef ref(0);
 
+    EXPECT_EQ(Ego::Entities::tryActiveObjectHandler(), nullptr);
+    EXPECT_THROW(Ego::Entities::activeObjectHandler(), std::logic_error);
     EXPECT_EQ(Ego::Entities::tryActiveObject(ref), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(ref), nullptr);
     EXPECT_FALSE(Ego::Entities::activeObjectExists(ref));
@@ -318,6 +320,10 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesSessionCompati
     ASSERT_NE(follower, nullptr);
 
     const ObjectRef liveRef = follower->getObjRef();
+    EXPECT_EQ(Ego::Entities::tryActiveObjectHandler(), &handler);
+    EXPECT_EQ(&Ego::Entities::activeObjectHandler(), &handler);
+    EXPECT_EQ(GameSessionContext::get().tryObjectHandler(), &handler);
+    EXPECT_EQ(&GameSessionContext::get().objectHandler(), &handler);
     EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), follower.get());
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), follower.get());
     EXPECT_TRUE(Ego::Entities::activeObjectExists(liveRef));

@@ -44,7 +44,7 @@ IAudioSystem& audioSystem()
 
 Object* heldItem(const IInventoryHolder& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
+    return worldObjectHandler().get(object.getHeldObject(slot));
 }
 }
 

@@ -198,7 +198,7 @@ bool Object::isFacingLocation(const float x, const float y) const
 
 bool Object::canSeeObject(ObjectRef targetRef) const
 {
-    const Object* target = activeModule().getObjectHandler().get(targetRef);
+    const Object* target = tryWorldConstObject(targetRef);
     if (!target) {
         return false;
     }

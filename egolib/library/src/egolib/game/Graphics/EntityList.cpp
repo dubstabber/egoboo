@@ -17,7 +17,7 @@ void EntityList::clear() {
     }
 
     set.clear();
-    auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectHandler();
     auto& particleHandler = EngineContext::get().particleHandler();
     for (auto& entry : list) {
         if (ParticleRef::Invalid == entry.iprt && ObjectRef::Invalid != entry.iobj) {
@@ -48,7 +48,7 @@ size_t EntityList::add(::Camera& camera, Object& object) {
     count++;
 
     // Add any weapons it is holding.
-    auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectHandler();
     Object *holding;
     holding = objectHandler.get(object.getHeldObject(SLOT_LEFT));
     if (holding) {
@@ -89,7 +89,7 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
     size_t count = 0;
     for (size_t i = 0; i < list.size(); ++i) {
         Vector3f vtmp;
-        auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
+        auto& objectHandler = Ego::Entities::activeObjectHandler();
 
         if (ParticleRef::Invalid == list[i].iprt && ObjectRef::Invalid != list[i].iobj) {
             Vector3f pos_tmp;

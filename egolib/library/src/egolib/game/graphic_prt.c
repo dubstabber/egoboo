@@ -23,7 +23,7 @@
 
 #include "egolib/game/graphic_prt.h"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 
 #include "egolib/game/renderer_3d.h"
@@ -495,7 +495,7 @@ void ParticleGraphicsRenderer::prt_draw_attached_point(const std::shared_ptr<Ego
         return;
     }
 
-    const Object* object = GameSessionContext::get().tryObject(particle->getAttachedObjectID());
+    const Object* object = Ego::Entities::tryActiveConstObject(particle->getAttachedObjectID());
     if (object == nullptr) {
         return;
     }

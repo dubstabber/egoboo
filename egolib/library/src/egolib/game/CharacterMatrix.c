@@ -20,18 +20,17 @@
 /// @file egolib/game/CharacterMatrix.c
 
 #include "egolib/game/CharacterMatrix.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/renderer_3d.h"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/CharacterMatrix_internal.h"
 
 namespace
 {
 auto& objectHandler()
 {
-    return GameSessionContext::get().activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 const ITargetInfo& targetInfoRole(const Object& object)

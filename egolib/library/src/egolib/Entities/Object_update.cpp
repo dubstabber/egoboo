@@ -228,10 +228,10 @@ void Object::update()
         //Give Rally bonus to friends within 6 tiles
         if(hasPerk(Ego::Perks::RALLY)) {
             std::vector<ObjectRef> nearbyObjectRefs;
-            activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+            worldObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
             for (const ObjectRef& objectRef : nearbyObjectRefs)
             {
-                Object* object = activeModule().getObjectHandler().get(objectRef);
+                Object* object = tryWorldObject(objectRef);
                 if (object == nullptr)
                 {
                     continue;
@@ -263,9 +263,9 @@ void Object::update()
 
             //Check for nearby enemies
             std::vector<ObjectRef> nearbyObjectRefs;
-            activeModule().getObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
+            worldObjectHandler().findObjectRefs(getPosX(), getPosY(), WIDE, nearbyObjectRefs, false);
             for (const ObjectRef& objectRef : nearbyObjectRefs) {
-                Object* target = activeModule().getObjectHandler().get(objectRef);
+                Object* target = tryWorldObject(objectRef);
                 if (target == nullptr) {
                     continue;
                 }

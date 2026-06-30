@@ -32,6 +32,7 @@
 // needs the RenderPass *base* here (reinitClocks touches RenderPass::clock through the IGFX
 // accessors) and reaches the billboard/atlas systems through the EngineContext interfaces.
 #include "egolib/game/Graphics/RenderPass.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/font_bmp.h"                  // font_bmp_init
 #include "egolib/Graphics/TextureManager.hpp" // Ego::TextureManager
@@ -272,7 +273,7 @@ gfx_rv GFX::update_object_instances(Camera& cam)
     // assume the best
     retval = gfx_success;
 
-    ObjectHandler& objectHandler = activeModule().getObjectHandler();
+    ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
     for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
         Object* pchr = objectHandler.get(objectRef);

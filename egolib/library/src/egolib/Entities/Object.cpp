@@ -43,7 +43,7 @@ Team& Object::getMutableTeam() const
 
 Team& Object::getMutableTeam(TEAM_REF teamRef) const
 {
-    return activeModule().getTeamList()[teamRef];
+    return worldTeams()[teamRef];
 }
 
 void Object::becomeTeamLeader()
@@ -154,7 +154,7 @@ bool Object::isTouchingGround() const
 
 bool Object::canMount(ObjectRef mountRef) const
 {
-    const Object* mount = activeModule().getObjectHandler().get(mountRef);
+    const Object* mount = tryWorldConstObject(mountRef);
     if (!mount) {
         return false;
     }
@@ -184,7 +184,7 @@ bool Object::canMount(ObjectRef mountRef) const
     }
 
     //Make sure they aren't mounted already
-    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || activeModule().getObjectHandler().exists(mount->getHeldObject(SLOT_LEFT)))
+    if(!mount->getProfile()->isSlotValid(SLOT_LEFT) || worldObjectExists(mount->getHeldObject(SLOT_LEFT)))
     {
         return false;
     }

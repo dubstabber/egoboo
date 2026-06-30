@@ -36,7 +36,7 @@ IScriptable& scriptable(Object& object)
 
 ObjectHandler& objectHandler()
 {
-    return Ego::Entities::activeObjectWorld().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 std::vector<Team>& teamList()

@@ -18,7 +18,7 @@
 //********************************************************************************************
 
 /// @file egolib/Entities/IObjectWorld.hpp
-/// @brief Lower-layer entity-world access seam for the physics step.
+/// @brief Lower-layer active entity-world access seam.
 
 #pragma once
 
@@ -40,23 +40,21 @@ namespace Ego
 namespace Entities
 {
 
-/// @brief The minimal entity-world surface the physics step needs: access to the object
-///        container and the team list of the active world.
+/// @brief The active entity-world surface: access to the object container and the team
+///        list of the active world.
 ///
 ///        It is implemented by the game-layer GameModule and installed for the lifetime of
-///        the active module, which lets the physics translation units
-///        (ObjectPhysics / ParticlePhysics / CollisionSystem / particle_collision) reach the
-///        object/team world without depending on the game/ layer (GameModule /
+///        the active module, which lets lower-layer and archive-boundary-sensitive callers
+///        reach the object/team world without depending on the game/ layer (GameModule /
 ///        GameSessionContext). This is the sibling of Ego::Physics::ICollisionWorld (which
-///        already seams the terrain/mesh queries) and, together with it, keeps the physics
-///        TUs game-free at the symbol level — a prerequisite to a future egolib-physics
-///        sub-library.
+///        already seams the terrain/mesh queries) and, together with it, keeps callers that
+///        only need entity-world state off the concrete module/session API.
 ///
 ///        Both ObjectHandler and Team are already lower-layer types, so they are returned by
 ///        reference; every existing call (exists/get/getHandle/iterator/findObjectRefs on the
 ///        handler, indexing on the team list) is reached through the returned reference. The
-///        physics TUs are read-only consumers of this world (no spawn / insert / remove), so
-///        spawnObjectRef() deliberately stays on GameModule and is not part of this seam.
+///        object world seam deliberately does not own module lifecycle, spawning, export,
+///        passages, mesh, water, or player access; those stay on GameModule/session surfaces.
 class IObjectWorld
 {
 public:
@@ -91,6 +89,13 @@ IObjectWorld* tryActiveObjectWorld();
 /// @brief The installed object world.
 /// @throw std::logic_error if no object world is installed.
 IObjectWorld& activeObjectWorld();
+
+/// @brief The installed world object container, or @a nullptr if no world is installed.
+ObjectHandler* tryActiveObjectHandler();
+
+/// @brief The installed world object container.
+/// @throw std::logic_error if no object world is installed.
+ObjectHandler& activeObjectHandler();
 
 /// @brief The live object in the installed world, or @a nullptr if no world is installed
 ///        or the ref is invalid/stale.

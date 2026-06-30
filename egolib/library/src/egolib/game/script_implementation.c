@@ -33,6 +33,7 @@
 
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/Module.hpp"
@@ -47,7 +48,7 @@ GameModule& activeModule()
 
 auto& objectHandler()
 {
-    return activeModule().getObjectHandler();
+    return Ego::Entities::activeObjectHandler();
 }
 
 uint32_t worldUpdateCount()

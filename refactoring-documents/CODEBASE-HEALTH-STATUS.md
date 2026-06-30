@@ -49,9 +49,9 @@ or engine/session service ownership.
 | Test files / lines | 50 / 24,764 | `egolib/tests`, source/header files only |
 | ctest cases | 939 | `ctest --test-dir build -N` |
 | ctest baseline | 939 / 939 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 596 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `::get()` call sites | 565 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 417 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 125 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 94 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 649 | Broad grep count, not semantic classification |
 | Interface headers | 39 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
@@ -138,8 +138,11 @@ or moving code, prefer existing service interfaces and `active*()` seams over
 new hidden global access.
 
 Directly owned `EngineContext` services now delegate through active service
-registries for input, image, font, texture-atlas, and GFX access. This keeps the
-context API stable while moving ownership seams toward lower archives.
+registries for input, image, font, texture-atlas, and GFX access. Active
+object-handler and object lookup access also routes through the lower-layer
+`IObjectWorld` seam for the migrated gameplay, graphics, script, audio, and
+entity callers. This keeps context APIs stable while moving ownership seams
+toward lower archives.
 
 ## Design-Pattern Usage
 

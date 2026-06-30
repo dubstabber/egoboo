@@ -1,8 +1,8 @@
 #include "egolib/game/Graphics/RenderPasses/OpaqueEntitiesRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/graphic_mad.h"
 #include "egolib/game/graphic_prt.h"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Renderer/Renderer.hpp"
 
@@ -15,7 +15,7 @@ OpaqueEntitiesRenderPass::OpaqueEntitiesRenderPass() :
 
 void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    auto& objectHandler = GameSessionContext::get().objectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectHandler();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
         // scan for solid objects
