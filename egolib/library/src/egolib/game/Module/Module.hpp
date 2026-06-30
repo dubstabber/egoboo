@@ -51,7 +51,6 @@ class Passage;
 class Team;
 namespace Ego { class Player; }
 namespace Ego { namespace Input { class InputDevice; } }
-namespace module_loading { class ModuleLoadPhase; }
 
 /// The module data that the game needs.
 class GameModule : private idlib::non_copyable,
@@ -302,8 +301,6 @@ public:
     void update();
 
 private:
-    friend class module_loading::ModuleLoadPhase;
-
     bool addPlayer(ObjectRef objectRef,
                    const Ego::Input::InputDevice& device,
                    bool identifySpawnOnSuccess);

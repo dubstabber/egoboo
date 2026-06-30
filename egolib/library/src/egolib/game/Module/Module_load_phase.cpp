@@ -21,18 +21,26 @@
 /// @brief Named GameModule construction loading phases.
 
 #include "egolib/game/Module/Module_load_phase.hpp"
-#include "egolib/game/Module/Module_internal.h"
 #include "egolib/Audio/IAudioSystem.hpp"
+#include "egolib/egoboo_setup.h"
+#include "egolib/game/egoboo.h"
+#include "egolib/game/game.h"
+#include "egolib/game/mesh.h"
+#include "egolib/Logic/Team.hpp"
 #include "egolib/Log/_Include.hpp"
+#include "egolib/Math/Random.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/Profiles/ModuleProfile.hpp"
 
+#include <cstddef>
 #include <cstdlib>
+#include <utility>
 
 namespace module_loading
 {
 
-ModuleLoadPhase::ModuleLoadPhase(GameModule& module) :
-    _module(module)
+ModuleLoadPhase::ModuleLoadPhase(ModuleLoadContext context) :
+    _context(std::move(context))
 {}
 
 void ModuleLoadPhase::run()
@@ -48,37 +56,37 @@ void ModuleLoadPhase::run()
 void ModuleLoadPhase::initializeRuntime()
 {
     // Set up the virtual file system for the module before any module-local loads.
-    if (!setup_init_module_vfs_paths(_module.getPath())) {
+    if (!setup_init_module_vfs_paths(_context.moduleProfile->getFolderName())) {
         throw idlib::runtime_error(__FILE__, __LINE__, "Failed to setup module vfs");
     }
 
     // Initialize random seeds before content loading starts.
-    srand(_module._seed);
-    Random::setSeed(_module._seed);
+    srand(_context.seed);
+    Random::setSeed(_context.seed);
 }
 
 void ModuleLoadPhase::initializeTeamsAndTextures()
 {
     // Initialize all teams before module state is populated.
     for (int i = 0; i < Team::TEAM_MAX; ++i) {
-        _module._teamList.push_back(Team(i));
+        _context.teamList.push_back(Team(i));
     }
 
     // Load tile textures up front so rendering assets are ready once the mesh loads.
-    for (size_t i = 0; i < _module._tileTextures.size(); ++i) {
-        _module._tileTextures[i] = Ego::DeferredTexture("mp_data/tile" + std::to_string(i));
+    for (size_t i = 0; i < _context.tileTextures.size(); ++i) {
+        _context.tileTextures[i] = Ego::DeferredTexture("mp_data/tile" + std::to_string(i));
     }
 
     // Load water textures used by the module environment.
-    _module._waterTextures[0] = Ego::DeferredTexture("mp_data/waterlow");
-    _module._waterTextures[1] = Ego::DeferredTexture("mp_data/watertop");
+    _context.waterTextures[0] = Ego::DeferredTexture("mp_data/waterlow");
+    _context.waterTextures[1] = Ego::DeferredTexture("mp_data/watertop");
 }
 
 void ModuleLoadPhase::initializeSharedAssets()
 {
     // Load shared runtime assets that module content depends on.
-    _module._runtime.audioSystem().loadGlobalSounds();
-    _module._runtime.profileSystem().loadGlobalParticleProfiles();
+    _context.runtime.audioSystem().loadGlobalSounds();
+    _context.runtime.profileSystem().loadGlobalParticleProfiles();
 }
 
 void ModuleLoadPhase::loadEnvironment()
@@ -86,43 +94,43 @@ void ModuleLoadPhase::loadEnvironment()
     // Load environment state before module content starts referencing it.
     wawalite_data_t *wavalite = read_wawalite_vfs();
     if (wavalite != nullptr) {
-        _module._water.upload(wavalite->water);
-        _module._damageTile.upload(wavalite->damagetile);
+        _context.water.upload(wavalite->water);
+        _context.damageTile.upload(wavalite->damagetile);
     }
     else {
-        _module._runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        _context.runtime.logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                             "unable to load wawalite.txt for ", "`",
-                                            _module._moduleProfile->getPath(), "`", Log::EndOfEntry);
+                                            _context.moduleProfile->getPath(), "`", Log::EndOfEntry);
     }
-    upload_wawalite(_module._fog, _module._weatherState, _module._animatedTilesState);
+    upload_wawalite(_context.fog, _context.weatherState, _context.animatedTilesState);
 }
 
 void ModuleLoadPhase::loadContent()
 {
     // Load the profiles and world data in the same order as the legacy constructor.
-    _module.loadProfiles();
+    _context.loadProfiles();
 
     // Load mesh.
     MeshLoader meshLoader;
-    _module._mesh = meshLoader(_module._moduleProfile->getPath());
+    _context.mesh = meshLoader(_context.moduleProfile->getPath());
 
     // Load passage.txt.
-    _module.loadAllPassages();
+    _context.loadAllPassages();
 
     // Load alliance.txt.
-    _module.loadTeamAlliances();
+    _context.loadTeamAlliances();
 }
 
 void ModuleLoadPhase::finalizeInitialization()
 {
     // log debug info for every object loaded into the module
-    if (_module._runtime.config().debug_developerMode_enable.getValue()) {
-        _module.logSlotUsage("/debug/slotused.txt");
+    if (_context.runtime.config().debug_developerMode_enable.getValue()) {
+        _context.logSlotUsage("/debug/slotused.txt");
     }
 
     // Reset module-local runtime counters after load completes.
     timeron = false;
-    _module._runtime.resetClocks();
+    _context.runtime.resetClocks();
 }
 
 } // namespace module_loading

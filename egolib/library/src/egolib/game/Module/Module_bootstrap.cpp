@@ -61,7 +61,26 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
 {
     _runtime.logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 
-    module_loading::ModuleLoadPhase(*this).run();
+    module_loading::ModuleLoadContext loadContext{
+        _runtime,
+        _moduleProfile,
+        _seed,
+        _teamList,
+        _tileTextures,
+        _waterTextures,
+        _water,
+        _damageTile,
+        _weatherState,
+        _fog,
+        _animatedTilesState,
+        _mesh,
+        [this]() { loadProfiles(); },
+        [this]() { loadAllPassages(); },
+        [this]() { loadTeamAlliances(); },
+        [this](const std::string& savename) { logSlotUsage(savename); }
+    };
+
+    module_loading::ModuleLoadPhase(std::move(loadContext)).run();
 }
 
 void GameModule::shutdownRuntime()

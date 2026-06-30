@@ -242,3 +242,14 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   active publisher state. Verified with the Linux build, focused
   `ObjectHandlerQueries|GameplayAlertPublication|ModuleUpdate|ScriptSystemsFunctions|ScriptStateFunctions`
   ctest filter, full `ctest`, and the `test.mod` validator smoke.
+- Pass 303 on 2026-06-30 replaced `ModuleLoadPhase`'s direct `GameModule`
+  friend access with an explicit `ModuleLoadContext` carrying only constructor
+  load state, runtime providers, and callbacks for the existing private load
+  helpers. `GameModule` still owns loaded state and module lifetime, while the
+  named phase preserves the existing VFS/RNG, team/texture, shared asset,
+  environment, content, and final clock/debug setup order. No spawn
+  realization, import/export, profile-slot, parser, legacy content-format,
+  active seam publication, or archive membership behavior changed. Verified
+  with the Linux build, focused
+  `ModuleLoadSmoke|ObjectHandlerQueries|ModuleUpdate` ctest filter, full
+  `ctest`, and the `test.mod` validator smoke.
