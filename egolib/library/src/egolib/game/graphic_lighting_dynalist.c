@@ -26,7 +26,7 @@
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Graphics/TileList.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/FileFormats/Globals.hpp"
@@ -59,7 +59,7 @@ float get_ambient_level()
     }
 
     // determine the minimum ambient, based on darkvision
-    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
+    const LocalPlayerPerceptionState& localPlayerPerception = activeSessionState().localPlayerPerception();
     min_amb = INVISIBLE / 4;
     if (localPlayerPerception.seeDarkMagnitude > 0.0f)
     {

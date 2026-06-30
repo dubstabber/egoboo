@@ -4,8 +4,10 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace gfx_internal
@@ -30,14 +32,24 @@ inline GameModule& activeModule()
     return gameSession().activeModule();
 }
 
+inline IModuleEnvironment& moduleEnvironment()
+{
+    return activeModuleEnvironment();
+}
+
+inline ISessionState& sessionState()
+{
+    return activeSessionState();
+}
+
 inline uint32_t renderedFrameCount()
 {
     return engine().getNumberOfFramesRendered();
 }
 
-inline uint32_t& worldUpdateCount()
+inline uint32_t worldUpdateCount()
 {
-    return gameSession().worldUpdateCount();
+    return sessionState().worldUpdateCount();
 }
 } // namespace gfx_internal
 

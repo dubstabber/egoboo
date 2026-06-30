@@ -27,7 +27,7 @@
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"
 #include "egolib/Graphics/Viewport.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 
 #include "egolib/game/game.h" // TODO: remove only needed for mesh
 
@@ -164,7 +164,7 @@ void Camera::readInput(const Ego::Input::InputDevice &device)
 
     auto& inputSystem = EngineContext::get().inputSystem();
     // Autoturn camera only works in single player and when it is enabled.
-    bool autoturn_camera = (CameraTurnMode::Good == _turnMode) && (1 == GameSessionContext::get().localPlayerCount());
+    bool autoturn_camera = (CameraTurnMode::Good == _turnMode) && (1 == activeSessionState().localPlayerCount());
 
     switch(device.getDeviceType())
     {

@@ -1,6 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/EntityShadowsRenderPass.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_prt.h"  // ParticleGraphicsRenderer
 #include "egolib/Entities/IObjectWorld.hpp"
@@ -67,7 +67,6 @@ void EntityShadowsRenderPass::doRun(::Camera& camera, const TileList& tl, const 
 
 void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 {
-    auto& session = GameSessionContext::get();
     Object *pchr = Ego::Entities::activeObjectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
@@ -87,7 +86,7 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
     if (pchr->getLight() <= INVISIBLE || pchr->getAlpha() <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
-    auto mesh = session.mesh();
+    auto mesh = activeModuleEnvironment().mesh();
     if (0 != mesh->test_fx(pchr->getTile(), MAPFX_REFLECTIVE))
     {
         alpha *= 0.1f;
@@ -154,7 +153,6 @@ void EntityShadowsRenderPass::doLowQualityShadow(const ObjectRef character)
 
 void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
 {
-    auto& session = GameSessionContext::get();
     Object *pchr = Ego::Entities::activeObjectHandler().get(character);
     if (pchr->isBeingHeld()) return;
 
@@ -170,7 +168,7 @@ void EntityShadowsRenderPass::doHighQualityShadow(const ObjectRef character)
     if (pchr->getLight() <= INVISIBLE || pchr->getAlpha() <= INVISIBLE) return;
 
     // much reduced shadow if on a reflective tile
-    auto mesh = session.mesh();
+    auto mesh = activeModuleEnvironment().mesh();
     if (0 != mesh->test_fx(pchr->getTile(), MAPFX_REFLECTIVE))
     {
         alpha *= 0.1f;

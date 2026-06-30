@@ -53,7 +53,7 @@ auto& objectHandler()
 
 uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return activeSessionState().worldUpdateCount();
 }
 }
 

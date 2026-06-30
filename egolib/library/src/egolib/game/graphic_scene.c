@@ -25,7 +25,6 @@
 
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"
 #include "egolib/game/graphic_fan.h"
 #include "egolib/game/graphic_prt.h"
@@ -139,7 +138,7 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
             ClockScope<ClockPolicy::NonRecursive> clockScope2(sortDoListReflected_timer);
             el.sort(cam, true);
         }
-        animate_all_tiles(*tl.getMesh(), GameSessionContext::get().animatedTilesState());
+        animate_all_tiles(*tl.getMesh(), moduleEnvironment().animatedTilesState());
         EngineContext::get().gfx().getNonReflective().run(cam, tl, el);
         EngineContext::get().gfx().getReflective0().run(cam, tl, el);
         EngineContext::get().gfx().getEntityReflections().run(cam, tl, el);
@@ -424,7 +423,7 @@ gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el)
         return gfx_error;
     }
 
-    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
+    const LocalPlayerPerceptionState& localPlayerPerception = sessionState().localPlayerPerception();
     retval = gfx_success;
     for (size_t i = 0, n = el.getSize(); i < n; ++i)
     {

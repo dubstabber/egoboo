@@ -1,7 +1,7 @@
 #include "egolib/game/Graphics/RenderPasses/ForegroundRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -19,8 +19,8 @@ ForegroundRenderPass::ForegroundRenderPass() :
 
 void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    auto& session = GameSessionContext::get();
-    auto& water = session.water();
+    IModuleEnvironment& environment = activeModuleEnvironment();
+    auto& water = environment.water();
 
     // This pass renders the second water/background layer as a screen-space overlay.
     // Legacy modules can request a background while providing fewer than two layers.
@@ -97,7 +97,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
             vertices[3].t = ilayer->_tx[TT] + loc_foregroundrepeat;
         }
 
-        renderer.getTextureUnit().setActivated(session.waterTexture(1).get());
+        renderer.getTextureUnit().setActivated(environment.waterTexture(1).get());
 
         {
             OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT | GL_HINT_BIT);
@@ -127,7 +127,7 @@ void ForegroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
                 renderer.setBlendingEnabled(true);
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_color);
 
-                renderer.getTextureUnit().setActivated(session.waterTexture(1).get());
+                renderer.getTextureUnit().setActivated(environment.waterTexture(1).get());
 
                 renderer.setColour(Colour4f(1.0f, 1.0f, 1.0f, 1.0f - std::abs(alpha)));
                 renderer.render(*_vertexBuffer, _vertexDescriptor, idlib::primitive_type::triangle_fan, 0, 4);

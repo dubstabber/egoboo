@@ -26,11 +26,24 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 
 namespace Ego
 {
 namespace Graphics
 {
+namespace
+{
+uint32_t vertexCacheWorldUpdateCount()
+{
+    if (ISessionState* session = tryActiveSessionState())
+    {
+        return session->worldUpdateCount();
+    }
+
+    return GameSessionContext::get().worldUpdateCount();
+}
+}
 
 // the flip tolerance is the default flip increment / 2
 static constexpr float FLIP_TOLERANCE = 0.25f * 0.5f;
@@ -341,7 +354,7 @@ bool ObjectGraphics::updateVertexCache(int vmin, int vmax, bool force, bool vert
     _vertexCache.frame_nxt = _targetFrameIndex;
     _vertexCache.frame_lst = _sourceFrameIndex;
     _vertexCache.flip      = _animationProgress;
-    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
+    const uint32_t currentUpdateFrame = vertexCacheWorldUpdateCount();
 
     // store the last time there was an update to the animation
     bool frames_updated = false;

@@ -165,7 +165,7 @@ uint8_t scr_SetWeatherTime( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     // Set the weather timer
-    WeatherState& weatherState = GameSessionContext::get().weatherState();
+    WeatherState& weatherState = activeModuleEnvironment().weatherState();
     weatherState.timer_reset = state.argument;
     weatherState.time = state.argument;
 

@@ -39,6 +39,7 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/Graphics/CameraSystem.hpp"
 #include "egolib/game/Graphics/Billboard.hpp"
@@ -331,7 +332,7 @@ inline IWallet* tryWallet(ObjectRef objectRef)
 
 inline uint32_t worldUpdateCount()
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return activeSessionState().worldUpdateCount();
 }
 
 struct SelfProfileSnapshot

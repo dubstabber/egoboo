@@ -22,7 +22,8 @@
 #include "egolib/Graphics/GraphicsWindow.hpp"  // Ego::GraphicsWindow
 #include "egolib/Graphics/Viewport.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/graphic.h"
 #include "egolib/game/game.h"
@@ -51,8 +52,6 @@ CameraSystem::~CameraSystem()
 
 void CameraSystem::setNumberOfCameras(const size_t numberOfCameras)
 {
-    auto& session = GameSessionContext::get();
-
     //Clear cameras
     _cameraList.clear();
 	//Add cameras
@@ -75,7 +74,7 @@ void CameraSystem::setNumberOfCameras(const size_t numberOfCameras)
     autoSetTargets();
 
     // make sure the cameras are centered on something or there will be a graphics error
-    resetAllTargets(session.mesh().get());
+    resetAllTargets(activeModuleEnvironment().mesh().get());
 }
 
 void CameraSystem::updateAll( const ego_mesh_t * mesh )
@@ -297,7 +296,7 @@ void CameraSystem::autoSetTargets()
     size_t cameraIndex = 0;
    
     // put all the valid players into camera 0
-    for(const std::shared_ptr<Ego::Player> &player : GameSessionContext::get().playerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : activeSessionState().playerList()) {
         Object* object = player != nullptr ? player->tryObject() : nullptr;
         if (object == nullptr) {
             continue;

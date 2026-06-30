@@ -1,7 +1,7 @@
 #include "egolib/game/Graphics/TextureAtlasManager.hpp"
 #include "egolib/Renderer/Renderer.hpp" // EngineContext::get().renderer()
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/Image/SDL_Image_Extensions.h"
 #include "egolib/game/graphic.h" //only for MESH_IMG_COUNT constant
 
@@ -86,16 +86,16 @@ void TextureAtlasManager::loadTileSet() {
     _smallTiles.clear();
     _bigTiles.clear();
 
-    auto& session = GameSessionContext::get();
+    IModuleEnvironment& environment = activeModuleEnvironment();
 
     // Do the "small" textures.
     for (size_t i = 0; i < 4; ++i) {
-        decimate(session.tileTexture(i), _smallTiles, 1);
+        decimate(environment.tileTexture(i), _smallTiles, 1);
     }
 
     // Do the "big" textures.
     for (size_t i = 0; i < 4; ++i) {
-        decimate(session.tileTexture(i), _bigTiles, 2);
+        decimate(environment.tileTexture(i), _bigTiles, 2);
     }
 }
 

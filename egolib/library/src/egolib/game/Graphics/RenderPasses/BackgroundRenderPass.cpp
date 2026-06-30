@@ -1,6 +1,6 @@
 #include "egolib/game/Graphics/RenderPasses/BackgroundRenderPass.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -18,9 +18,9 @@ BackgroundRenderPass::BackgroundRenderPass() :
 
 void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    auto& session = GameSessionContext::get();
-    auto mesh = session.mesh();
-    auto& water = session.water();
+    IModuleEnvironment& environment = activeModuleEnvironment();
+    auto mesh = environment.mesh();
+    auto& water = environment.water();
     auto& renderer = EngineContext::get().renderer();
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
@@ -113,7 +113,7 @@ void BackgroundRenderPass::doRun(::Camera& camera, const TileList& tl, const Ent
         intens = Math::constrain(intens, 0.0f, 1.0f);
     }
 
-    renderer.getTextureUnit().setActivated(session.waterTexture(0).get());
+    renderer.getTextureUnit().setActivated(environment.waterTexture(0).get());
 
     {
         OpenGL::PushAttrib pa(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);

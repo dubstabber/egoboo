@@ -23,7 +23,7 @@
 
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/graphic.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -124,7 +124,7 @@ gfx_rv TileList::insert(const Index1D& index, const ::Camera &cam)
 
 std::shared_ptr<ego_mesh_t> TileList::getMesh() const
 {
-	return GameSessionContext::get().mesh();
+	return activeModuleEnvironment().mesh();
 }
 
 gfx_rv TileList::add(const Index1D& index, ::Camera& camera)

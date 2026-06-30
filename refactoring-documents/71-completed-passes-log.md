@@ -175,3 +175,16 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   longer exposes object-handler or object-lookup forwarding methods. Verified
   with the Linux build, focused object/module/script gtest filter, full
   `ctest`, and the `test.mod` validator smoke.
+- Pass 297 on 2026-06-30 added lower-layer `IModuleEnvironment` and
+  `ISessionState` seams for active module environment and read-only session
+  state access. `GameSessionContext` installs and clears the active session
+  state during module lifetime, while `GameModule` implements the environment
+  view; ownership and mutation remain with the concrete runtime owners. A
+  bounded batch of rendering, camera, HUD, script, spawn, and texture-atlas
+  callers moved off direct `GameSessionContext` / `GameModule` access, with
+  lifecycle-only pre-module fallbacks kept in object/particle/vertex-cache
+  construction paths, render-state accessors, and engine frame-rate/update-frame
+  reporting before module load. Coverage was extended in `ObjectHandlerQueries`
+  to assert empty, mirrored, and cleared active seams. Verified with the Linux
+  build, focused object/module/script/camera ctest filter, full `ctest`, and the
+  `test.mod` validator smoke.

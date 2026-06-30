@@ -1,14 +1,14 @@
 /// @file egolib/game/mesh_bridge.c
-/// @brief Water-aware getElevation — stays in egolib-library for GameSessionContext access.
+/// @brief Water-aware getElevation through the active module-environment seam.
 
 #include "egolib/game/mesh.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Water.hpp"
 
 float ego_mesh_t::getElevation(const Ego::Vector2f& p, bool waterwalk) const
 {
     const float floorElevation = getElevation(p);
-    water_instance_t& water = GameSessionContext::get().water();
+    water_instance_t& water = activeModuleEnvironment().water();
 
     if (waterwalk && water._surface_level > floorElevation && water._is_water) {
         if (0 != test_fx(getTileIndex(p), MAPFX_WATER)) {

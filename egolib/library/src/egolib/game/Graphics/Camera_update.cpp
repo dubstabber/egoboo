@@ -27,7 +27,8 @@
 #include "egolib/game/Graphics/TileList.hpp"
 #include "egolib/game/Graphics/EntityList.hpp"
 #include "egolib/Graphics/Viewport.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 
 #include "egolib/game/game.h" // TODO: remove only needed for mesh
 
@@ -226,8 +227,7 @@ void Camera::updateFreeControl()
     _pitch = Ego::Math::constrain(_pitch, 0.05f, idlib::pi<float>() - 0.05f);
 
     //Prevent the camera target from being below the mesh
-    auto& session = GameSessionContext::get();
-    auto mesh = session.mesh();
+    auto mesh = activeModuleEnvironment().mesh();
     _center.z() = std::max(_center.z(), mesh->getElevation({ _center.x(), _center.y() }));
 
     //Calculate camera position from desired zoom and rotation
@@ -364,7 +364,7 @@ void Camera::update(const ego_mesh_t *mesh)
     }
 
     // Camera controls.
-    for(const std::shared_ptr<Ego::Player> &player : GameSessionContext::get().playerList()) {
+    for(const std::shared_ptr<Ego::Player> &player : activeSessionState().playerList()) {
         readInput(player->getInputDevice());
     }
 
@@ -390,7 +390,7 @@ void Camera::update(const ego_mesh_t *mesh)
 void Camera::updateEffects()
 {
     float local_swingamp = _swingAmp;
-    const LocalPlayerPerceptionState& localPlayerPerception = GameSessionContext::get().localPlayerPerception();
+    const LocalPlayerPerceptionState& localPlayerPerception = activeSessionState().localPlayerPerception();
 
     _motionBlurOld = _motionBlur;
 

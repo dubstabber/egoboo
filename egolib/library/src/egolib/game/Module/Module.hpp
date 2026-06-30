@@ -25,6 +25,7 @@
 #include "egolib/Physics/ICollisionWorld.hpp"  // GameModule implements ICollisionWorld
 #include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
 #include "egolib/Mesh/ITerrainQuery.hpp"        // GameModule implements ITerrainQuery
+#include "egolib/game/Module/IModuleEnvironment.hpp" // GameModule implements IModuleEnvironment
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
@@ -53,7 +54,8 @@ namespace Ego { namespace Input { class InputDevice; } }
 class GameModule : private idlib::non_copyable,
                    public Ego::Physics::ICollisionWorld,
                    public Ego::Entities::IObjectWorld,
-                   public Ego::Mesh::ITerrainQuery
+                   public Ego::Mesh::ITerrainQuery,
+                   public IModuleEnvironment
 {
 public:
     static constexpr float PITDEPTH = -60;  ///< Depth to kill character
@@ -231,6 +233,7 @@ public:
     * Porting hack, TODO: remove
     **/
     std::shared_ptr<ego_mesh_t> getMeshPointer() { return _mesh; }
+    std::shared_ptr<ego_mesh_t> mesh() override { return getMeshPointer(); }
 
     /**
      * @brief
@@ -242,12 +245,18 @@ public:
                               const Facing& facing, const std::string& name, const ObjectRef override);
 
      std::shared_ptr<const Ego::Texture> getTileTexture(const size_t index);
+     std::shared_ptr<const Ego::Texture> tileTexture(size_t index) override { return getTileTexture(index); }
      std::shared_ptr<const Ego::Texture> getWaterTexture(const uint8_t layer);
+     std::shared_ptr<const Ego::Texture> waterTexture(uint8_t layer) override { return getWaterTexture(layer); }
 
      water_instance_t& getWater();
+     water_instance_t& water() override { return getWater(); }
      WeatherState& getWeatherState() { return _weatherState; }
+     WeatherState& weatherState() override { return getWeatherState(); }
      fog_instance_t& getFog() { return _fog; }
+     fog_instance_t& fog() override { return getFog(); }
      AnimatedTilesState& getAnimatedTilesState() { return _animatedTilesState; }
+     AnimatedTilesState& animatedTilesState() override { return getAnimatedTilesState(); }
 
     std::shared_ptr<Ego::Player>& getPlayer(size_t index);
     std::shared_ptr<Ego::Player> tryGetPlayer(size_t index);

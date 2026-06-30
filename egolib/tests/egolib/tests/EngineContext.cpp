@@ -14,6 +14,8 @@
 #include "egolib/game/Core/ActiveGameEngine.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
 #include "egolib/game/Graphics/ICameraSystem.hpp"
@@ -374,6 +376,21 @@ TEST_F(EngineContextFixture, SetEnginePublishesActiveGameEngineSeam)
     context.clearEngine();
     EXPECT_EQ(tryActiveGameEngine(), nullptr);
     EXPECT_THROW(activeGameEngine(), std::logic_error);
+}
+
+TEST_F(EngineContextFixture, GameEngineCurrentUpdateFrameUsesPreModuleSessionFallback)
+{
+    GameSessionContext& session = GameSessionContext::get();
+    ASSERT_FALSE(session.hasActiveModule());
+    clearSessionState();
+    session.worldUpdateCount() = 37;
+
+    GameEngine engine;
+
+    EXPECT_EQ(tryActiveSessionState(), nullptr);
+    EXPECT_EQ(engine.getCurrentUpdateFrame(), 37u);
+
+    session.worldUpdateCount() = 0;
 }
 
 TEST_F(EngineContextFixture, AudioSystemThrowsWhenNoAudioSystemIsInstalled)

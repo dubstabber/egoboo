@@ -565,6 +565,8 @@ set(EGOLIB_GAME_CORE_SOURCES
     src/egolib/game/Core/GameEngine.hpp
     src/egolib/game/Core/GameSessionContext.cpp
     src/egolib/game/Core/GameSessionContext.hpp
+    src/egolib/game/Core/ISessionState.cpp
+    src/egolib/game/Core/ISessionState.hpp
 )
 
 # -- game/GameStates ---------------------------------------------------------
@@ -741,6 +743,8 @@ set(EGOLIB_GAME_LOGIC_SOURCES
 # -- game/Module -------------------------------------------------------------
 set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/damagetile_instance.h
+    src/egolib/game/Module/IModuleEnvironment.cpp
+    src/egolib/game/Module/IModuleEnvironment.hpp
     src/egolib/game/Module/Module.cpp
     src/egolib/game/Module/Module_bootstrap.cpp
     src/egolib/game/Module/Module_internal.h
@@ -982,6 +986,8 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Debug.cpp
     src/egolib/Entities/IObjectWorld.cpp
     src/egolib/Script/IScriptSystem.cpp
+    src/egolib/game/Core/ISessionState.cpp
+    src/egolib/game/Module/IModuleEnvironment.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
     src/egolib/FileFormats/ConfigFile/configfile.c

@@ -24,6 +24,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
@@ -67,7 +68,7 @@ void CharacterStatus::draw_one_character_icon(const ObjectRef item, float x, flo
 
 	// draw the icon
 	if (draw_sparkle == NOSPARKLE) draw_sparkle = (NULL == pitem) ? NOSPARKLE : pitem->getSparkle();
-	draw_game_icon(icon_ref, x, y, draw_sparkle, GameSessionContext::get().worldUpdateCount(), -1);
+	draw_game_icon(icon_ref, x, y, draw_sparkle, activeSessionState().worldUpdateCount(), -1);
 
 	// draw the ammo, if requested
 	if (draw_ammo && (NULL != pitem))
@@ -400,7 +401,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
     //Finally draw charge bar if applicable
     if (pchr->isPlayer()) {
         const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->getPlayerNumber());
-        if (player->getChargeBarFrame() >= GameSessionContext::get().worldUpdateCount()) {
+        if (player->getChargeBarFrame() >= activeSessionState().worldUpdateCount()) {
             _chargeBar->setVisible(true);
             _chargeBar->setMaxValue(player->getBarMaxCharge());
             _chargeBar->setValue(player->getBarCurrentCharge());

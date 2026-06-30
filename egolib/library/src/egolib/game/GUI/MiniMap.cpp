@@ -27,6 +27,7 @@
 #include "egolib/Image/ImageManager.hpp"  // ego_texture_exists_vfs (was via fileutil.h)
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/Time/Time.hpp"  // ::Time::now
@@ -89,8 +90,7 @@ void MiniMap::queueEnemySenseBlips(const EnemySenseState& enemySense)
 }
 
 void MiniMap::draw(DrawingContext& drawingContext) {
-    GameSessionContext& session = GameSessionContext::get();
-    GameModule* activeModule = session.tryActiveModule();
+    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
     if (!_minimapTexture || !activeModule) {
         return;
     }
@@ -100,11 +100,11 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
-    queueEnemySenseBlips(session.enemySense());
+    queueEnemySenseBlips(activeSessionState().enemySense());
 
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {
-        for (const std::shared_ptr<Player> &player : activeModule->getPlayerList()) {
+        for (const std::shared_ptr<Player> &player : activeSessionState().playerList()) {
             const Object* object = player != nullptr ? player->tryObject() : nullptr;
             if (!object || object->isTerminated() || !object->isAlive()) {
                 continue;

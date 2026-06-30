@@ -1,7 +1,7 @@
 #include "egolib/game/Graphics/RenderPasses/WaterTilesRenderPass.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_fan.h"
@@ -18,8 +18,7 @@ WaterTilesRenderPass::WaterTilesRenderPass() :
 
 void WaterTilesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
-    auto& session = GameSessionContext::get();
-    auto& water = session.water();
+    auto& water = activeModuleEnvironment().water();
 
     if (!tl.getMesh())
     {
@@ -66,8 +65,8 @@ void WaterTilesRenderPass::render_water(ego_mesh_t& mesh, const std::vector<Clip
 
 gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& tileIndex, const Uint8 layer)
 {
-    auto& session = GameSessionContext::get();
-    auto& water = session.water();
+    IModuleEnvironment& environment = activeModuleEnvironment();
+    auto& water = environment.water();
 
     static const int ix_off[4] = {1, 1, 0, 0}, iy_off[4] = {0, 1, 1, 0};
 
@@ -102,7 +101,7 @@ gfx_rv WaterTilesRenderPass::render_water_fan(ego_mesh_t& mesh, const Index1D& t
     float offv = water._layers[layer]._tx[YY];
     uint16_t frame = water._layers[layer]._frame;                // Frame
 
-    std::shared_ptr<const Texture> ptex = session.waterTexture(layer);
+    std::shared_ptr<const Texture> ptex = environment.waterTexture(layer);
 
     float x1 = (float)ptex->getWidth() / (float)ptex->getSourceWidth();
     float y1 = (float)ptex->getHeight() / (float)ptex->getSourceHeight();

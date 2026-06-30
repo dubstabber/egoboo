@@ -9,6 +9,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/LegacyLocalStats.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Physics/ICollisionWorld.hpp"  // install/clearCollisionWorld
 #include "egolib/Entities/IObjectWorld.hpp"     // install/clearObjectWorld
@@ -228,6 +229,11 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // world above.
     Ego::Entities::installObjectWorld(_activeModule.get());
 
+    // Publish module environment and session state separately so read-only runtime callers can
+    // describe the state they need without depending on the concrete session owner.
+    installModuleEnvironment(_activeModule.get());
+    installSessionState(this);
+
     // Publish the session-owned world-update counter so the physics translation units read the
     // current tick through the lower-layer activeWorldUpdateCount() seam instead of reaching into
     // GameSessionContext. The pointer aliases _worldUpdateCount (this singleton outlives every
@@ -242,9 +248,11 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
 
 void GameSessionContext::quitModule()
 {
-    Ego::Physics::clearCollisionWorld();
-    Ego::Entities::clearObjectWorld();
     Ego::Entities::clearWorldUpdateCounter();
+    clearSessionState();
+    clearModuleEnvironment();
+    Ego::Entities::clearObjectWorld();
+    Ego::Physics::clearCollisionWorld();
     _activeModule.reset();
 
     Ego::Script::activeScriptSystem().endScriptingSystem();
@@ -437,12 +445,27 @@ uint32_t& GameSessionContext::worldUpdateCount()
     return _worldUpdateCount;
 }
 
+uint32_t GameSessionContext::worldUpdateCount() const
+{
+    return _worldUpdateCount;
+}
+
 uint32_t& GameSessionContext::characterStatClock()
 {
     return _characterStatClock;
 }
 
+uint32_t GameSessionContext::characterStatClock() const
+{
+    return _characterStatClock;
+}
+
 uint32_t& GameSessionContext::enchantStatClock()
+{
+    return _enchantStatClock;
+}
+
+uint32_t GameSessionContext::enchantStatClock() const
 {
     return _enchantStatClock;
 }

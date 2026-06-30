@@ -31,6 +31,7 @@
 
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Module/Passage.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/graphic.h"

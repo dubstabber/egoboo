@@ -1,7 +1,7 @@
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/lighting.h"
 #include "egolib/game/graphic.h"
 #include "egolib/Entities/IObjectWorld.hpp"
@@ -366,7 +366,7 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
     uint32_t alpha = trans;
 
     // interpolate the lighting for the origin of the object
-    auto mesh = GameSessionContext::get().mesh();
+    auto mesh = activeModuleEnvironment().mesh();
     if (!mesh)
     {
         throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");

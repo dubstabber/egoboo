@@ -22,6 +22,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/Core/System.hpp"                 // Ego::Core::System
 #include "egolib/Console/Console.hpp"             // Ego::Core::Console
 #include "egolib/Graphics/GraphicsWindow.hpp"     // Ego::GraphicsWindow (complete type)
@@ -55,6 +56,16 @@ egoboo_config_t& config()
 Ego::Input::IInputSystem& inputSystem()
 {
     return EngineContext::get().inputSystem();
+}
+
+uint32_t currentUpdateFrame()
+{
+    if (ISessionState* sessionState = tryActiveSessionState())
+    {
+        return sessionState->worldUpdateCount();
+    }
+
+    return GameSessionContext::get().worldUpdateCount();
 }
 }
 
@@ -199,7 +210,7 @@ void GameEngine::estimateFrameRate()
     }
 
     _estimatedFPS = (_totalFramesRendered-_lastFPSCount) / dt;
-    const uint32_t worldUpdateCount = GameSessionContext::get().worldUpdateCount();
+    const uint32_t worldUpdateCount = currentUpdateFrame();
     _estimatedUPS = (worldUpdateCount - _lastUPSCount) / dt;
 
     _lastFPSCount = _totalFramesRendered;
@@ -421,7 +432,7 @@ std::shared_ptr<GameState> GameEngine::getActiveGameState() const
 
 uint32_t GameEngine::getCurrentUpdateFrame() const
 {
-    return GameSessionContext::get().worldUpdateCount();
+    return currentUpdateFrame();
 }
 
 uint32_t GameEngine::getNumberOfFramesRendered() const

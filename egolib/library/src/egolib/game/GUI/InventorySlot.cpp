@@ -2,6 +2,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum
@@ -60,7 +61,7 @@ void InventorySlot::draw(DrawingContext& drawingContext) {
     }
 
     //Draw the icon
-    draw_game_icon(icon_ref, getDerivedPosition().x(), getDerivedPosition().y(), selected ? COLOR_WHITE : NOSPARKLE, GameSessionContext::get().worldUpdateCount(), getWidth());
+    draw_game_icon(icon_ref, getDerivedPosition().x(), getDerivedPosition().y(), selected ? COLOR_WHITE : NOSPARKLE, activeSessionState().worldUpdateCount(), getWidth());
 
     //Draw ammo
     if (item) {

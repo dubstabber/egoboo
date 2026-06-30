@@ -27,8 +27,8 @@
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/graphic.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h" //only for character_swipe()
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Graphics/ObjectGraphics_internal.hpp"
@@ -161,7 +161,7 @@ bool ObjectGraphics::handleAnimationFX() const
 
     if ( HAS_SOME_BITS( framefx, MADFX_POOF ) && !_object.isPlayer() )
     {
-        _object.setAIPoofTime(GameSessionContext::get().worldUpdateCount());
+        _object.setAIPoofTime(activeSessionState().worldUpdateCount());
     }
 
     //Do footfall sound effect

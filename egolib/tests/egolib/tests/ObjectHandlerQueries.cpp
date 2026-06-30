@@ -16,6 +16,8 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 #include "egolib/vfs.h"
@@ -182,6 +184,81 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupIsEmptyWithoutActiveM
     EXPECT_EQ(Ego::Entities::tryActiveObject(ref), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(ref), nullptr);
     EXPECT_FALSE(Ego::Entities::activeObjectExists(ref));
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateAreEmptyWithoutActiveModule)
+{
+    EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
+    EXPECT_EQ(tryActiveSessionState(), nullptr);
+    EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
+    EXPECT_THROW(activeSessionState(), std::logic_error);
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirrorActiveModuleAndSession)
+{
+    GameModule& module = beginActiveTestModule();
+    GameSessionContext& session = GameSessionContext::get();
+
+    ASSERT_EQ(tryActiveModuleEnvironment(), &module);
+    ASSERT_EQ(&activeModuleEnvironment(), &module);
+    ASSERT_EQ(tryActiveSessionState(), &session);
+    ASSERT_EQ(&activeSessionState(), &session);
+
+    EXPECT_EQ(activeModuleEnvironment().mesh().get(), module.getMeshPointer().get());
+    EXPECT_EQ(&activeModuleEnvironment().water(), &module.getWater());
+    EXPECT_EQ(&activeModuleEnvironment().weatherState(), &module.getWeatherState());
+    EXPECT_EQ(&activeModuleEnvironment().fog(), &module.getFog());
+    EXPECT_EQ(&activeModuleEnvironment().animatedTilesState(), &module.getAnimatedTilesState());
+
+    LocalPlayerStatus status;
+    status.registeredCount = 2;
+    status.aliveCount = 1;
+    status.deadCount = 1;
+    session.publishLocalPlayerStatus(status);
+
+    LocalPlayerPerceptionState perception;
+    perception.grogLevel = 3.0f;
+    perception.seeInvisibleLevel = 1.0f;
+    perception.seeInvisibleMagnitude = 2.0f;
+    perception.seeDarkLevel = 4.0f;
+    perception.seeDarkMagnitude = 5.0f;
+    session.publishLocalPlayerPerception(perception);
+
+    const EnemySenseState enemySense(static_cast<TEAM_REF>(Team::TEAM_GOOD), IDSZ2('T', 'E', 'S', 'T'));
+    session.publishEnemySense(enemySense);
+    session.publishRespawnCooldown(17);
+    session.worldUpdateCount() = 123;
+    session.characterStatClock() = 7;
+    session.enchantStatClock() = 9;
+
+    EXPECT_EQ(&activeSessionState().playerList(), &session.playerList());
+    EXPECT_EQ(activeSessionState().localPlayerCount(), session.localPlayerCount());
+    EXPECT_EQ(activeSessionState().localPlayerStatus().registeredCount, 2u);
+    EXPECT_EQ(activeSessionState().localPlayerStatus().aliveCount, 1u);
+    EXPECT_EQ(activeSessionState().localPlayerStatus().deadCount, 1u);
+    EXPECT_FLOAT_EQ(activeSessionState().localPlayerPerception().grogLevel, 3.0f);
+    EXPECT_FLOAT_EQ(activeSessionState().localPlayerPerception().seeDarkMagnitude, 5.0f);
+    EXPECT_EQ(activeSessionState().enemySense().team, static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    EXPECT_EQ(activeSessionState().enemySense().idsz, IDSZ2('T', 'E', 'S', 'T'));
+    EXPECT_EQ(activeSessionState().respawnCooldown(), 17);
+    EXPECT_EQ(activeSessionState().worldUpdateCount(), 123u);
+    EXPECT_EQ(activeSessionState().characterStatClock(), 7u);
+    EXPECT_EQ(activeSessionState().enchantStatClock(), 9u);
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearOnQuitModule)
+{
+    beginActiveTestModule();
+
+    ASSERT_NE(tryActiveModuleEnvironment(), nullptr);
+    ASSERT_NE(tryActiveSessionState(), nullptr);
+
+    GameSessionContext::get().quitModule();
+
+    EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
+    EXPECT_EQ(tryActiveSessionState(), nullptr);
+    EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
+    EXPECT_THROW(activeSessionState(), std::logic_error);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsReturnNearbyNonSceneryObjects)

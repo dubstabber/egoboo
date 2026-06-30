@@ -441,7 +441,7 @@ ObjectRef GameModule::spawnObjectFromFileEntry(const spawn_file_info_t& psp_info
     };
     ops.currentLocalPlayerCount = []()
     {
-        return GameSessionContext::get().localPlayerCount();
+        return activeSessionState().localPlayerCount();
     };
     ops.addPlayer = [this](ObjectRef objectRef, const module_spawn_realization::PlayerBindingRequest& request)
     {

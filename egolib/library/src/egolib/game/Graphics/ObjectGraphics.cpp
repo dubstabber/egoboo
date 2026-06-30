@@ -1,8 +1,10 @@
 #include "egolib/game/Graphics/ObjectGraphics.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/graphic.h"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
+#include "egolib/game/graphic.h"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/game.h" // get_light() used by ObjectGraphics_internal.hpp
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Graphics/ObjectGraphics_internal.hpp"
@@ -11,6 +13,18 @@ namespace Ego
 {
 namespace Graphics
 {
+namespace
+{
+const LocalPlayerPerceptionState& localPlayerPerception()
+{
+    if (ISessionState* session = tryActiveSessionState())
+    {
+        return session->localPlayerPerception();
+    }
+
+    return GameSessionContext::get().localPlayerPerception();
+}
+}
 
 using namespace detail;    // shared file-local helpers (see ObjectGraphics_internal.hpp)
 
@@ -65,8 +79,8 @@ void ObjectGraphics::updateLighting()
 {
     static constexpr uint32_t FRAME_SKIP = 1 << 2;
     static constexpr uint32_t FRAME_MASK = FRAME_SKIP - 1;
-    auto mesh = GameSessionContext::get().mesh();
-    const uint32_t currentUpdateFrame = GameSessionContext::get().worldUpdateCount();
+    auto mesh = activeModuleEnvironment().mesh();
+    const uint32_t currentUpdateFrame = activeSessionState().worldUpdateCount();
 
     // make sure the matrix is valid
     //chr_update_matrix(&_object, true);
@@ -234,7 +248,7 @@ const AnimatedModelFrame& ObjectGraphics::getLastFrame() const
 void ObjectGraphics::getTint(GLXvector4f tint, const bool reflection, const int type) const
 {
     TintRenderState tintState = makeTintRenderState(_object, alpha, light, sheen, colorshift, reflection);
-    applyLocalPlayerPerception(tintState, GameSessionContext::get().localPlayerPerception());
+    applyLocalPlayerPerception(tintState, localPlayerPerception());
     encodeTint(tint, tintState, type);
 }
 

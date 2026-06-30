@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/IDSZ.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/typedef.h"
 #include "idlib/non_copyable.hpp"
 
@@ -19,42 +19,11 @@ struct water_instance_t;
 struct WeatherState;
 namespace Ego { class Player; class Texture; }
 
-struct LocalPlayerStatus
-{
-    size_t registeredCount = 0;
-    size_t aliveCount = 0;
-    size_t deadCount = 0;
-
-    bool allPlayersDead() const
-    {
-        return deadCount >= registeredCount;
-    }
-};
-
-struct LocalPlayerPerceptionState
-{
-    float grogLevel = 0.0f;
-    float dazeLevel = 0.0f;
-    float seeInvisibleLevel = 0.0f;
-    float seeInvisibleMagnitude = 1.0f;
-    float seeDarkLevel = 0.0f;
-    float seeDarkMagnitude = 1.0f;
-    float seeKurseLevel = 0.0f;
-};
-
-struct EnemySenseState
-{
-    EnemySenseState();
-    EnemySenseState(TEAM_REF team, const IDSZ2& idsz);
-
-    TEAM_REF team;
-    IDSZ2 idsz;
-};
-
 LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego::Player>>& players);
 LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::shared_ptr<Ego::Player>>& players);
 
-class GameSessionContext : private idlib::non_copyable
+class GameSessionContext : public ISessionState,
+                           private idlib::non_copyable
 {
 public:
     static GameSessionContext& get();
@@ -82,14 +51,14 @@ public:
     WeatherState& weatherState();
     fog_instance_t& fog();
     AnimatedTilesState& animatedTilesState();
-    const std::vector<std::shared_ptr<Ego::Player>>& playerList() const;
-    size_t localPlayerCount() const;
-    const LocalPlayerStatus& localPlayerStatus() const;
-    const LocalPlayerPerceptionState& localPlayerPerception() const;
-    const EnemySenseState& enemySense() const;
-    int respawnCooldown() const;
-    bool hasLocalPlayers() const;
-    bool allLocalPlayersDead() const;
+    const std::vector<std::shared_ptr<Ego::Player>>& playerList() const override;
+    size_t localPlayerCount() const override;
+    const LocalPlayerStatus& localPlayerStatus() const override;
+    const LocalPlayerPerceptionState& localPlayerPerception() const override;
+    const EnemySenseState& enemySense() const override;
+    int respawnCooldown() const override;
+    bool hasLocalPlayers() const override;
+    bool allLocalPlayersDead() const override;
 
     void publishLocalPlayerCount(size_t count);
     void publishLocalPlayerStatus(const LocalPlayerStatus& status);
@@ -107,8 +76,11 @@ public:
 
     bool& overrideSlots();
     uint32_t& worldUpdateCount();
+    uint32_t worldUpdateCount() const override;
     uint32_t& characterStatClock();
+    uint32_t characterStatClock() const override;
     uint32_t& enchantStatClock();
+    uint32_t enchantStatClock() const override;
 
     void resetClocks();
 

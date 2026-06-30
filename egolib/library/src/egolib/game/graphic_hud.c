@@ -257,7 +257,7 @@ float draw_game_status(float y)
     else if (g_serverState.player_count > 0 )
 #endif
     {
-        if (GameSessionContext::get().allLocalPlayersDead() || activeModule().canRespawnAnyTime())
+        if (sessionState().allLocalPlayersDead() || activeModule().canRespawnAnyTime())
         {
             if (activeModule().isRespawnValid() && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
             {
