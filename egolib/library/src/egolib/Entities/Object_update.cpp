@@ -218,12 +218,12 @@ void Object::update()
 
             //Danger Sense reveals enemies on the minimap
             if(hasPerk(Ego::Perks::DANGER_SENSE)) {
-                gameSession().publishEnemySense(EnemySenseState(this->team, IDSZ2::None));     //Reveal all
+                sessionPublisher().publishEnemySense(EnemySenseState(this->team, IDSZ2::None));     //Reveal all
             }
 
             //Danger Sense reveals enemies on the minimap
             else if(hasPerk(Ego::Perks::SENSE_UNDEAD)) {
-                gameSession().publishEnemySense(EnemySenseState(this->team, IDSZ2('U','N','D','E')));     //Reveal only undead
+                sessionPublisher().publishEnemySense(EnemySenseState(this->team, IDSZ2('U','N','D','E')));     //Reveal only undead
             }
         }
 

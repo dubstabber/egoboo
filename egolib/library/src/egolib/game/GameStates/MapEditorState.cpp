@@ -100,6 +100,8 @@ void MapEditorState::update()
 {
     GameSessionContext& session = GameSessionContext::get();
     GameModule& module = session.activeModule();
+    const ISessionState& sessionState = activeSessionState();
+    ISessionStatePublisher& sessionPublisher = activeSessionStatePublisher();
 
     // Get immediate mode state for the rest of the game
     inputSystem().update();
@@ -110,10 +112,10 @@ void MapEditorState::update()
                                                          cw.getTileCountY()*Info<float>::Grid::Size());
 
     //Always reveal all invisible monsters and objects in Map Editor mode
-    LocalPlayerPerceptionState localPlayerPerception = session.localPlayerPerception();
+    LocalPlayerPerceptionState localPlayerPerception = sessionState.localPlayerPerception();
     localPlayerPerception.seeInvisibleLevel = 100.0f;
     localPlayerPerception.seeInvisibleMagnitude = std::exp(0.32f * localPlayerPerception.seeInvisibleLevel);
-    session.publishLocalPlayerPerception(localPlayerPerception);
+    sessionPublisher.publishLocalPlayerPerception(localPlayerPerception);
 
     //Animate water
     module.getWater().update();

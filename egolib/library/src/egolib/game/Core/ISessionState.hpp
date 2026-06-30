@@ -66,6 +66,22 @@ public:
     virtual uint32_t enchantStatClock() const = 0;
 };
 
+/// @brief The active live-session publication surface for runtime callers that
+///        publish player, enemy-sense, or respawn state without depending on
+///        GameSessionContext.
+class ISessionStatePublisher
+{
+public:
+    virtual ~ISessionStatePublisher() = default;
+
+    virtual void publishLocalPlayerStatus(const LocalPlayerStatus& status) = 0;
+    virtual void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state) = 0;
+    virtual void publishEnemySense(const EnemySenseState& state) = 0;
+    virtual void resetEnemySense() = 0;
+    virtual void publishRespawnCooldown(int ticks) = 0;
+    virtual void tickRespawnCooldown() = 0;
+};
+
 /// @brief Install @a state as the active session-state surface. Passing nullptr
 ///        is equivalent to clearSessionState().
 void installSessionState(ISessionState* state);
@@ -79,3 +95,17 @@ ISessionState* tryActiveSessionState();
 /// @brief The installed active session-state surface.
 /// @throw std::logic_error if no session state is installed.
 ISessionState& activeSessionState();
+
+/// @brief Install @a publisher as the active session-state publisher. Passing
+///        nullptr is equivalent to clearSessionStatePublisher().
+void installSessionStatePublisher(ISessionStatePublisher* publisher);
+
+/// @brief Clear the installed active session-state publisher.
+void clearSessionStatePublisher();
+
+/// @brief The installed session-state publisher, or nullptr if none is installed.
+ISessionStatePublisher* tryActiveSessionStatePublisher();
+
+/// @brief The installed active session-state publisher.
+/// @throw std::logic_error if no session-state publisher is installed.
+ISessionStatePublisher& activeSessionStatePublisher();

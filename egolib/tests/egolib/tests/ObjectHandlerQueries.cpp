@@ -192,9 +192,11 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateAreEmp
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
     EXPECT_EQ(tryActiveModuleStatus(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
+    EXPECT_EQ(tryActiveSessionStatePublisher(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
     EXPECT_THROW(activeModuleStatus(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
+    EXPECT_THROW(activeSessionStatePublisher(), std::logic_error);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirrorActiveModuleAndSession)
@@ -208,6 +210,8 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     ASSERT_EQ(&activeModuleStatus(), &module);
     ASSERT_EQ(tryActiveSessionState(), &session);
     ASSERT_EQ(&activeSessionState(), &session);
+    ASSERT_EQ(tryActiveSessionStatePublisher(), &session);
+    ASSERT_EQ(&activeSessionStatePublisher(), &session);
 
     EXPECT_EQ(activeModuleEnvironment().mesh().get(), module.getMeshPointer().get());
     EXPECT_EQ(&activeModuleEnvironment().water(), &module.getWater());
@@ -226,7 +230,7 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     status.registeredCount = 2;
     status.aliveCount = 1;
     status.deadCount = 1;
-    session.publishLocalPlayerStatus(status);
+    activeSessionStatePublisher().publishLocalPlayerStatus(status);
 
     LocalPlayerPerceptionState perception;
     perception.grogLevel = 3.0f;
@@ -234,11 +238,11 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     perception.seeInvisibleMagnitude = 2.0f;
     perception.seeDarkLevel = 4.0f;
     perception.seeDarkMagnitude = 5.0f;
-    session.publishLocalPlayerPerception(perception);
+    activeSessionStatePublisher().publishLocalPlayerPerception(perception);
 
     const EnemySenseState enemySense(static_cast<TEAM_REF>(Team::TEAM_GOOD), IDSZ2('T', 'E', 'S', 'T'));
-    session.publishEnemySense(enemySense);
-    session.publishRespawnCooldown(17);
+    activeSessionStatePublisher().publishEnemySense(enemySense);
+    activeSessionStatePublisher().publishRespawnCooldown(17);
     session.worldUpdateCount() = 123;
     session.characterStatClock() = 7;
     session.enchantStatClock() = 9;
@@ -275,6 +279,7 @@ TEST_F(ObjectHandlerQueriesFixture, ModuleConstructionPublishesExpectedLoadedSta
     EXPECT_EQ(&activeModuleEnvironment(), &module);
     EXPECT_EQ(&activeModuleStatus(), &module);
     EXPECT_EQ(&activeSessionState(), &session);
+    EXPECT_EQ(&activeSessionStatePublisher(), &session);
     EXPECT_EQ(activeModuleEnvironment().mesh().get(), module.getMeshPointer().get());
     EXPECT_EQ(activeModuleStatus().moduleProfile(), module.getModuleProfile());
     EXPECT_EQ(activeSessionState().worldUpdateCount(), 0u);
@@ -289,15 +294,18 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearO
     ASSERT_NE(tryActiveModuleEnvironment(), nullptr);
     ASSERT_NE(tryActiveModuleStatus(), nullptr);
     ASSERT_NE(tryActiveSessionState(), nullptr);
+    ASSERT_NE(tryActiveSessionStatePublisher(), nullptr);
 
     GameSessionContext::get().quitModule();
 
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
     EXPECT_EQ(tryActiveModuleStatus(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
+    EXPECT_EQ(tryActiveSessionStatePublisher(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
     EXPECT_THROW(activeModuleStatus(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
+    EXPECT_THROW(activeSessionStatePublisher(), std::logic_error);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsReturnNearbyNonSceneryObjects)

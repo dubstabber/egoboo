@@ -254,11 +254,13 @@ bool GameSessionContext::beginModule(const std::shared_ptr<ModuleProfile>& modul
     // world above.
     Ego::Entities::installObjectWorld(_activeModule.get());
 
-    // Publish module environment and session state separately so read-only runtime callers can
-    // describe the state they need without depending on the concrete session owner.
+    // Publish module environment, session state, and live-session publication separately so
+    // runtime callers can describe the state they need without depending on the concrete
+    // session owner.
     installModuleEnvironment(_activeModule.get());
     installModuleStatus(_activeModule.get());
     installSessionState(this);
+    installSessionStatePublisher(this);
 
     // Publish the session-owned world-update counter so the physics translation units read the
     // current tick through the lower-layer activeWorldUpdateCount() seam instead of reaching into
@@ -277,6 +279,7 @@ void GameSessionContext::quitModule()
     const bool hadActiveModule = static_cast<bool>(_activeModule);
 
     Ego::Entities::clearWorldUpdateCounter();
+    clearSessionStatePublisher();
     clearSessionState();
     clearModuleStatus();
     clearModuleEnvironment();

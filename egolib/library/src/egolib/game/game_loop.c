@@ -99,7 +99,7 @@ void MainLoop::move_all_objects()
 void MainLoop::updateLocalStats()
 {
     GameModule& module = activeModule();
-    GameSessionContext& session = GameSessionContext::get();
+    ISessionStatePublisher& sessionPublisher = activeSessionStatePublisher();
     const LocalPlayerStatus localPlayerStatus = collectLocalPlayerStatus(module.getPlayerList());
     const LocalPlayerPerceptionState localPlayerPerception = collectLocalPlayerPerception(module.getPlayerList());
     audioSystem().setMaxHearingDistance(AudioSystem::DEFAULT_MAX_DISTANCE);
@@ -122,21 +122,21 @@ void MainLoop::updateLocalStats()
         }
     }
 
-    session.publishLocalPlayerStatus(localPlayerStatus);
-    session.publishLocalPlayerPerception(localPlayerPerception);
+    sessionPublisher.publishLocalPlayerStatus(localPlayerStatus);
+    sessionPublisher.publishLocalPlayerPerception(localPlayerPerception);
 
     // Timers
     characterStatClock()++;
 
     // Reset the respawn timer
-    session.tickRespawnCooldown();
+    sessionPublisher.tickRespawnCooldown();
 }
 
 //--------------------------------------------------------------------------------------------
 void MainLoop::readPlayerInput()
 {
     GameModule& module = activeModule();
-    GameSessionContext& session = GameSessionContext::get();
+    ISessionState& sessionState = activeSessionState();
     Ego::Input::IInputSystem& input = inputSystem();
     for(const std::shared_ptr<Ego::Player>& player : module.getPlayerList()) {
 
@@ -152,7 +152,7 @@ void MainLoop::readPlayerInput()
         //Press space to respawn!
         bool respawnRequested = false;
         if (input.isKeyDown(SDLK_SPACE)
-            && (session.allLocalPlayersDead() || module.canRespawnAnyTime())
+            && (sessionState.allLocalPlayersDead() || module.canRespawnAnyTime())
             && module.isRespawnValid()
             && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
         {
@@ -162,7 +162,7 @@ void MainLoop::readPlayerInput()
         // Let players respawn
         if (config().game_difficulty.getValue() < Ego::GameDifficulty::Hard && respawnRequested && module.isRespawnValid())
         {
-            if (!pchr->isAlive() && 0 == session.respawnCooldown())
+            if (!pchr->isAlive() && 0 == sessionState.respawnCooldown())
             {
                 IScriptable& scriptableCharacter = scriptable(*pchr);
                 pchr->respawn();

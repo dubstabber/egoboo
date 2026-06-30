@@ -8,11 +8,6 @@ namespace
 {
 using FollowLinkByModuleNameFn = bool (*)(const std::string&, bool);
 
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 FollowLinkByModuleNameFn g_followLinkByModuleName = &link_follow_modname;
 
 struct FollowLinkRequest
@@ -206,12 +201,12 @@ bool followLinkFromMessageId(const SelfProfileSnapshot& context,
 
 void publishEnemySense(const EnemySenseState& state)
 {
-    gameSession().publishEnemySense(state);
+    activeSessionStatePublisher().publishEnemySense(state);
 }
 
 void resetEnemySense()
 {
-    gameSession().resetEnemySense();
+    activeSessionStatePublisher().resetEnemySense();
 }
 
 void publishEnemySenseFromResolvedTarget(const TargetCompatibilityContext& targetContext,

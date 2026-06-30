@@ -108,6 +108,11 @@ inline ISessionState& sessionState()
     return gameSession();
 }
 
+inline ISessionStatePublisher& sessionPublisher()
+{
+    return activeSessionStatePublisher();
+}
+
 inline uint32_t worldUpdateCount()
 {
     return sessionState().worldUpdateCount();

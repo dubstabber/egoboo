@@ -231,3 +231,14 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   moved to `activeModuleEnvironment()`. Verified with the Linux build, focused
   `ObjectHandlerQueries|ScriptSystemsFunctions|ScriptStateFunctions` ctest
   filter, full `ctest`, and the `test.mod` validator smoke.
+- Pass 302 on 2026-06-30 added the active `ISessionStatePublisher` seam for
+  live local-player, enemy-sense, and respawn publication. `GameSessionContext`
+  still owns session state and module lifecycle, but module-time publication in
+  the game loop, map editor, script presentation functions, and object death and
+  perk update paths now routes through the active publisher instead of concrete
+  session access. Teardown-local reset behavior remains on `GameSessionContext`
+  because active seams are cleared before legacy player reset. Coverage was
+  extended in `ObjectHandlerQueries` to assert empty, mirrored, and cleared
+  active publisher state. Verified with the Linux build, focused
+  `ObjectHandlerQueries|GameplayAlertPublication|ModuleUpdate|ScriptSystemsFunctions|ScriptStateFunctions`
+  ctest filter, full `ctest`, and the `test.mod` validator smoke.

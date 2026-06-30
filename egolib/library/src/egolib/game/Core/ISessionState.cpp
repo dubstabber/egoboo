@@ -8,6 +8,7 @@
 namespace
 {
 ISessionState* g_activeSessionState = nullptr;
+ISessionStatePublisher* g_activeSessionStatePublisher = nullptr;
 }
 
 void installSessionState(ISessionState* state)
@@ -32,4 +33,28 @@ ISessionState& activeSessionState()
         throw std::logic_error("no active session state");
     }
     return *g_activeSessionState;
+}
+
+void installSessionStatePublisher(ISessionStatePublisher* publisher)
+{
+    g_activeSessionStatePublisher = publisher;
+}
+
+void clearSessionStatePublisher()
+{
+    g_activeSessionStatePublisher = nullptr;
+}
+
+ISessionStatePublisher* tryActiveSessionStatePublisher()
+{
+    return g_activeSessionStatePublisher;
+}
+
+ISessionStatePublisher& activeSessionStatePublisher()
+{
+    if (!g_activeSessionStatePublisher)
+    {
+        throw std::logic_error("no active session-state publisher");
+    }
+    return *g_activeSessionStatePublisher;
 }

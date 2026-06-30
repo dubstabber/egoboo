@@ -595,7 +595,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
 
     // If it's a player, let it die properly before enabling respawn
     if (isPlayer())  {
-        gameSession().publishRespawnCooldown(ONESECOND); // 1 second
+        sessionPublisher().publishRespawnCooldown(ONESECOND); // 1 second
     }
 
     // Let it's AI script run one last time

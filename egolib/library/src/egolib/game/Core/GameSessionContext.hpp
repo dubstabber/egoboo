@@ -18,6 +18,7 @@ LocalPlayerStatus collectLocalPlayerStatus(const std::vector<std::shared_ptr<Ego
 LocalPlayerPerceptionState collectLocalPlayerPerception(const std::vector<std::shared_ptr<Ego::Player>>& players);
 
 class GameSessionContext : public ISessionState,
+                           public ISessionStatePublisher,
                            private idlib::non_copyable
 {
 public:
@@ -49,14 +50,14 @@ public:
     bool allLocalPlayersDead() const override;
 
     void publishLocalPlayerCount(size_t count);
-    void publishLocalPlayerStatus(const LocalPlayerStatus& status);
-    void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state);
-    void publishEnemySense(const EnemySenseState& state);
-    void publishRespawnCooldown(int ticks);
-    void tickRespawnCooldown();
+    void publishLocalPlayerStatus(const LocalPlayerStatus& status) override;
+    void publishLocalPlayerPerception(const LocalPlayerPerceptionState& state) override;
+    void publishEnemySense(const EnemySenseState& state) override;
+    void publishRespawnCooldown(int ticks) override;
+    void tickRespawnCooldown() override;
     void resetLocalPlayerState();
     void resetLocalPlayerPerception();
-    void resetEnemySense();
+    void resetEnemySense() override;
     void resetRespawnCooldown();
 
     import_list_t& importList();
