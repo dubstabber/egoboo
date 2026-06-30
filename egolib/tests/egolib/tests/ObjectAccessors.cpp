@@ -829,6 +829,25 @@ TEST_F(ObjectAccessorFixture, InventoryMutationHelpersSupportStaticInventoryOper
     EXPECT_EQ(owner->getHeldObject(SLOT_LEFT), ObjectRef::Invalid);
 }
 
+TEST_F(ObjectAccessorFixture, InventoryMutationHelpersRejectMissingStaticRefs)
+{
+    auto& objectHandler = beginActiveTestModule();
+    auto owner = makeFollower(objectHandler, 3054);
+    auto inventoryItem = makeFollower(objectHandler, 3055);
+    ASSERT_NE(owner, nullptr);
+    ASSERT_NE(inventoryItem, nullptr);
+
+    const ObjectRef missingRef(9999);
+
+    EXPECT_FALSE(Inventory::add_item(missingRef, inventoryItem->getObjRef(), 0, true));
+    EXPECT_FALSE(Inventory::add_item(owner->getObjRef(), missingRef, 0, true));
+    EXPECT_FALSE(Inventory::remove_item(missingRef, 0, true));
+    EXPECT_FALSE(Inventory::swap_item(missingRef, 0, SLOT_LEFT, true));
+
+    inventoryItem->requestTerminate();
+    EXPECT_FALSE(Inventory::add_item(owner->getObjRef(), inventoryItem->getObjRef(), 0, true));
+}
+
 TEST_F(ObjectAccessorFixture, InventoryRoleSurfaceSupportsInterfaceBasedStaticOperations)
 {
     auto& objectHandler = beginActiveTestModule();

@@ -259,8 +259,8 @@ bool Inventory::add_item(IInventoryHolder& owner, ObjectRef itemRef, uint8_t inv
 bool Inventory::swap_item( ObjectRef iobj, uint8_t inventory_slot, const slot_t grip_off, const bool ignorekurse )
 {
     //valid character?
-    const std::shared_ptr<Object>& owner = objectHandler()[iobj];
-    if(!owner) {
+    Object* owner = objectHandler().get(iobj);
+    if(owner == nullptr) {
         return false;
     }
 
@@ -279,10 +279,10 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
 
     const ObjectRef inventoryItemRef = owner.getInventoryItemRef(inventory_slot);
     Object* inventory_item = objectHandler().get(inventoryItemRef);
-    const std::shared_ptr<Object> item = objectHandler()[owner.getHeldObject(grip_off)];
+    Object* item = objectHandler().get(owner.getHeldObject(grip_off));
 
     //Nothing to do?
-    if(!item && !inventory_item) {
+    if(item == nullptr && inventory_item == nullptr) {
         return true;
     }
 
@@ -327,8 +327,8 @@ bool Inventory::swap_item(IInventoryHolder& owner, uint8_t inventory_slot, slot_
 
 bool Inventory::remove_item( ObjectRef iholder, const size_t inventory_slot, const bool ignorekurse )
 {
-    const std::shared_ptr<Object>& holder = objectHandler()[iholder];
-    if(!holder) {
+    Object* holder = objectHandler().get(iholder);
+    if(holder == nullptr) {
         return false;
     }
 

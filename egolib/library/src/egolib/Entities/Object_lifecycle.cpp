@@ -31,9 +31,9 @@ IAudioSystem& audioSystem()
     return activeAudioSystem();
 }
 
-const std::shared_ptr<Object>& heldItem(const Object& object, slot_t slot)
+Object* heldItem(const Object& object, slot_t slot)
 {
-    return GameSessionContext::get().activeModule().getObjectHandler()[object.getHeldObject(slot)];
+    return GameSessionContext::get().activeModule().getObjectHandler().get(object.getHeldObject(slot));
 }
 }
 
@@ -210,13 +210,13 @@ void Object::removeFromGame(Object* obj)
         obj->detachFromHolder(true, false);
     }
 
-    const std::shared_ptr<Object>& leftItem = heldItem(*obj, SLOT_LEFT);
-    if (leftItem && leftItem->isItem()) {
+    Object* leftItem = heldItem(*obj, SLOT_LEFT);
+    if (leftItem != nullptr && leftItem->isItem()) {
         leftItem->detachFromHolder(true, false);
     }
 
-    const std::shared_ptr<Object>& rightItem = heldItem(*obj, SLOT_RIGHT);
-    if (rightItem && rightItem->isItem()) {
+    Object* rightItem = heldItem(*obj, SLOT_RIGHT);
+    if (rightItem != nullptr && rightItem->isItem()) {
         rightItem->detachFromHolder(true, false);
     }
 

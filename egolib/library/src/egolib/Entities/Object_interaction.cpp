@@ -49,8 +49,8 @@ bool isKeyIDSZ(const IDSZ2& value)
 bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
 {
     ObjectRef holder = getHolderRef();
-    const std::shared_ptr<Object>& pholder = activeModule().getObjectHandler()[holder];
-    if (!pholder) {
+    Object* pholder = objectHandler().get(holder);
+    if (pholder == nullptr) {
         return false;
     }
 
@@ -151,8 +151,8 @@ bool Object::detachFromHolder(const bool ignoreKurse, const bool doShop)
 
 void Object::resetAlpha()
 {
-    const std::shared_ptr<Object>& mount = activeModule().getObjectHandler()[getHolderRef()];
-    if (!mount) {
+    Object* mount = objectHandler().get(getHolderRef());
+    if (mount == nullptr) {
         return;
     }
 
@@ -202,8 +202,8 @@ bool Object::isBeingHeld() const
         return true;
     }
 
-    const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[getHolderRef()];
-    if (holder && !holder->isTerminated()) {
+    Object* holder = objectHandler().get(getHolderRef());
+    if (holder != nullptr && !holder->isTerminated()) {
         return true;
     }
 
@@ -216,8 +216,8 @@ bool Object::isInsideInventory() const
         return false;
     }
 
-    const std::shared_ptr<Object>& holder = activeModule().getObjectHandler()[getInventoryHolderRef()];
-    if (!holder || holder->isTerminated()) {
+    Object* holder = objectHandler().get(getInventoryHolderRef());
+    if (holder == nullptr || holder->isTerminated()) {
         return false;
     }
 
@@ -226,13 +226,13 @@ bool Object::isInsideInventory() const
 
 bool Object::wieldsItemIDSZ(const IDSZ2& idsz) const
 {
-    const std::shared_ptr<Object>& leftHandItem = objectHandler()[getHeldObject(SLOT_LEFT)];
-    if (leftHandItem && leftHandItem->getProfile()->hasTypeIDSZ(idsz)) {
+    Object* leftHandItem = objectHandler().get(getHeldObject(SLOT_LEFT));
+    if (leftHandItem != nullptr && leftHandItem->getProfile()->hasTypeIDSZ(idsz)) {
         return true;
     }
 
-    const std::shared_ptr<Object>& rightHandItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
-    return rightHandItem && rightHandItem->getProfile()->hasTypeIDSZ(idsz);
+    Object* rightHandItem = objectHandler().get(getHeldObject(SLOT_RIGHT));
+    return rightHandItem != nullptr && rightHandItem->getProfile()->hasTypeIDSZ(idsz);
 }
 
 void Object::dropMoney(int amount)
@@ -275,12 +275,8 @@ void Object::dropKeys()
     const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
 
     for (const ObjectRef& keyRef : inventoryItemRefs) {
-        if (!objectHandler().exists(keyRef)) {
-            continue;
-        }
-
-        const std::shared_ptr<Object> pkey = objectHandler()[keyRef];
-        if (!pkey) {
+        Object* pkey = objectHandler().get(keyRef);
+        if (pkey == nullptr || pkey->isTerminated()) {
             continue;
         }
 
@@ -316,19 +312,20 @@ void Object::dropKeys()
 
 void Object::dropAllItems()
 {
-    const std::shared_ptr<Object>& leftItem = objectHandler()[getHeldObject(SLOT_LEFT)];
-    if (leftItem) {
+    Object* leftItem = objectHandler().get(getHeldObject(SLOT_LEFT));
+    if (leftItem != nullptr) {
         leftItem->detachFromHolder(true, false);
     }
-    const std::shared_ptr<Object>& rightItem = objectHandler()[getHeldObject(SLOT_RIGHT)];
-    if (rightItem) {
+    Object* rightItem = objectHandler().get(getHeldObject(SLOT_RIGHT));
+    if (rightItem != nullptr) {
         rightItem->detachFromHolder(true, false);
     }
 
     const std::vector<ObjectRef> inventoryItemRefs = getInventoryItemRefs();
     uint8_t pack_count = 0;
     for (const ObjectRef& itemRef : inventoryItemRefs) {
-        if (objectHandler().exists(itemRef)) {
+        Object* item = objectHandler().get(itemRef);
+        if (item != nullptr && !item->isTerminated()) {
             ++pack_count;
         }
     }
@@ -340,12 +337,8 @@ void Object::dropAllItems()
 
     Facing direction = ori.facing_z + ATK_BEHIND - Facing(diradd * (pack_count / 2));
     for (const ObjectRef& itemRef : inventoryItemRefs) {
-        if (!objectHandler().exists(itemRef)) {
-            continue;
-        }
-
-        const std::shared_ptr<Object> pitem = objectHandler()[itemRef];
-        if (!pitem) {
+        Object* pitem = objectHandler().get(itemRef);
+        if (pitem == nullptr || pitem->isTerminated()) {
             continue;
         }
 
@@ -447,7 +440,7 @@ void Object::updateLatchButtons()
 
     if (_inputLatchesPressed[LATCHBUTTON_ALTLEFT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = GRABDELAY;
-        if (!objectHandler()[getHeldObject(SLOT_LEFT)]) {
+        if (objectHandler().get(getHeldObject(SLOT_LEFT)) == nullptr) {
             if (!getProfile()->getModel()->isActionValid(ACTION_ME)) {
                 grabStuff(GRIP_LEFT, false);
             } else {
@@ -460,7 +453,7 @@ void Object::updateLatchButtons()
 
     if (_inputLatchesPressed[LATCHBUTTON_ALTRIGHT] && inst.canBeInterrupted() && 0 == reload_timer) {
         reload_timer = GRABDELAY;
-        if (!objectHandler()[getHeldObject(SLOT_RIGHT)]) {
+        if (objectHandler().get(getHeldObject(SLOT_RIGHT)) == nullptr) {
             if (!getProfile()->getModel()->isActionValid(ACTION_MF)) {
                 grabStuff(GRIP_RIGHT, false);
             } else {

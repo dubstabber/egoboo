@@ -3125,3 +3125,24 @@ back-edge proof was required. Production runtime code now has no direct `ObjectH
 sites; remaining uses are test/fixture coverage or non-object iterators. Gates: `cmake --build build -j20`
 clean; focused object-query/collision/module/alert/script slice **42/42**; ctest **928/928**; validator
 `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 286 — Inventory and holder ObjectRef lookup cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through inventory and holder interaction
+code without changing script opcode APIs, source placement, CMake archive membership, object ownership, or
+legacy content behavior. Static inventory entry points, held-item swap checks, holder/inventory presence
+queries, key and pack item drops, and lifecycle held-item cleanup now resolve refs through
+`ObjectHandler::get(ObjectRef)` where no shared ownership handle is needed.
+
+Focused coverage now pins missing static inventory refs and preserves the existing held-slot, attachment,
+inventory-drop, and spawned-attached-character behavior. The targeted production files
+`Inventory.cpp`, `Object_interaction.cpp`, and `Object_lifecycle.cpp` now have no direct
+`ObjectHandler::operator[]` lookup sites.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Live singleton metrics are now **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,811**, test files/lines are **50 / 24,488**, and ctest configures **929** cases. Gates:
+`cmake --build build -j20` clean; focused inventory/holder/script slice **23/23**; ctest **929/929**;
+validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules, 10 warnings,
+245 errors**, nonzero exit from pre-existing content errors).
