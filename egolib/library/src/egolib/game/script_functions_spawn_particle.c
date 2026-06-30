@@ -5,17 +5,6 @@
 
 namespace
 {
-std::shared_ptr<Object> resolveSpawnObjectHandle(ObjectRef objectRef)
-{
-    ObjectHandler* handler = gameSession().tryObjectHandler();
-    if (handler == nullptr || !handler->exists(objectRef))
-    {
-        return nullptr;
-    }
-
-    return handler->getHandle(objectRef);
-}
-
 ObjectRef resolveHolderOrSelfRef(const ITargetInfo& object)
 {
     const ObjectRef holderRef = object.getHolderRef();

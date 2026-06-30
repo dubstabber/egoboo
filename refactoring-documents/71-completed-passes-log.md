@@ -3225,3 +3225,21 @@ production files. Live singleton metrics remain **605** `::get()` lines, includi
 **128,786**, test files/lines are **50 / 24,567**, and ctest configures **933** cases. Gates:
 `cmake --build build -j20` clean; focused shop/particle slice **12/12**; ctest **933/933**; validator
 `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 291 — Script spawn ObjectRef context cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the script spawn helpers without
+changing script opcode APIs, source placement, CMake archive membership, object ownership, or legacy content
+behavior. Spawned-character script helpers now build their internal child context from `spawnObjectRef(...)`
+plus borrowed `ObjectHandler::get(ObjectRef)` resolution, carrying the child ref and immediate role pointers
+instead of a shared object handle.
+
+The unused particle-spawn `resolveSpawnObjectHandle(...)` helper was removed. Script spawn character and
+particle production files now have no `getHandle(...)` call sites. Remaining production handle lookups are
+the intentional weak/shared ownership paths in player bootstrap, enchant owner/target/overlay handling, and
+billboard attachment.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Ctest still configures **933** cases. Gates: `cmake --build build -j20` clean;
+focused script-spawn slice **12/12**; ctest **933/933**; validator `test.mod` 0/0; script-spawn
+`getHandle(...)` guard clean; `git diff --check` clean.
