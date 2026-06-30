@@ -157,8 +157,8 @@ protected:
 
     static void flushSpawnedObjects(GameModule& module)
     {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
     }
 };
 

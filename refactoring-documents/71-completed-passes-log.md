@@ -3185,3 +3185,22 @@ and owning APIs, while invalid, never-spawned, and removed refs resolve to null.
 archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive back-edge proof was
 required. Gates: `cmake --build build -j20` clean; focused object/module/collision/combat/script/camera
 slice **224/224**; ctest **931/931**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 289 — Public ObjectHandler handle-iterator retirement (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup by retiring the public
+`ObjectHandler::iterator()` shared-handle enumeration surface without changing script opcode APIs, source
+placement, CMake archive membership, object ownership, or legacy content behavior. `ObjectHandler` now
+keeps its shared-pointer iterator as an internal implementation detail used by `objectRefIterator()`, so
+external enumeration stays ref-first while the existing lock/unlock deferred-update behavior is preserved.
+
+The remaining test and fixture users that only needed a deferred object-handler flush now snapshot
+`objectRefIterator()`. Object-handler query coverage now checks ref iterator spawn order and deferred
+removal stability directly, and the thrown-weapon alert fixture scans refs before resolving borrowed
+objects with `ObjectHandler::get(ObjectRef)`.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Search guard found no remaining `ObjectHandler::iterator()` call sites.
+Gates: `cmake --build build -j20` clean; focused object-handler/gameplay/script slice **203/203**; ctest
+**931/931**; validator `test.mod` 0/0; full validator at the known legacy content baseline (**42 modules,
+10 warnings, 245 errors**, nonzero exit from pre-existing content errors); `git diff --check` clean.

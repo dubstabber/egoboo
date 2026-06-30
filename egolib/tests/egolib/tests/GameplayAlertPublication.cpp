@@ -140,8 +140,8 @@ protected:
 
     void flushObjectHandler(GameModule& module) const
     {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
     }
 
     std::shared_ptr<Object> makeAliveItem(GameModule& module, int slotBase) const
@@ -299,9 +299,11 @@ TEST_F(GameplayAlertPublicationFixture, CharacterSwipePublishesThrownAlertOnSpaw
     flushObjectHandler(module);
 
     bool foundThrownCopy = false;
-    for (const std::shared_ptr<Object>& object : module.getObjectHandler().iterator())
+    ObjectHandler& objectHandler = module.getObjectHandler();
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
-        if (object == nullptr || object->getObjRef() == holder->getObjRef() || object->getObjRef() == thrownWeapon->getObjRef())
+        Object* object = objectHandler.get(objectRef);
+        if (object == nullptr || objectRef == holder->getObjRef() || objectRef == thrownWeapon->getObjRef())
         {
             continue;
         }

@@ -337,10 +337,7 @@ TEST_F(ScriptTargetFunctionsFixture, PassageTargetHelpersSelectMatchingOccupants
     occupant->setLight(200);
     static_cast<IInventoryHolder&>(*occupant).setHeldObject(SLOT_LEFT, heldItem->getObjRef());
 
-    {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
-    }
+    flushObjectHandler(module);
 
     EXPECT_FALSE(passage->objectIsInPassage(*actor));
     EXPECT_TRUE(passage->objectIsInPassage(*occupant));
@@ -435,10 +432,7 @@ TEST_F(ScriptTargetFunctionsFixture, PassageLookupIgnoresInvalidOrTerminatedRefs
     occupant->setLight(200);
     static_cast<IInventoryHolder&>(*occupant).setHeldObject(SLOT_LEFT, heldItem->getObjRef());
 
-    {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
-    }
+    flushObjectHandler(module);
 
     constexpr int kPassageTargetMask = (1 << 8) | (1 << 2) | (1 << 1);
 

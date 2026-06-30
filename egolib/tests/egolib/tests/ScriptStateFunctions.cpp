@@ -306,8 +306,8 @@ protected:
 
     void flushObjectHandler(GameModule& module) const
     {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
+        auto refs = module.getObjectHandler().objectRefIterator();
+        (void)refs;
     }
 
     std::shared_ptr<Ego::Particle> latestSpawnedParticle() const

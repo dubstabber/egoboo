@@ -163,8 +163,8 @@ protected:
     static void refreshQuadTree(ObjectHandler& handler)
     {
         {
-            auto objects = handler.iterator();
-            (void)objects;
+            auto refs = handler.objectRefIterator();
+            (void)refs;
         }
         handler.updateQuadTree(0.0f, 0.0f, 512.0f, 512.0f);
     }
@@ -298,7 +298,7 @@ TEST_F(ObjectHandlerQueriesFixture, ExplicitLookupsDistinguishBorrowedAndOwningA
     EXPECT_EQ(handler.getHandle(liveRef), nullptr);
 }
 
-TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProjectionOrder)
+TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesSpawnInsertionOrder)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6105);
     GameModule& module = beginActiveTestModule();
@@ -314,25 +314,17 @@ TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProject
 
     refreshQuadTree(handler);
 
-    std::vector<ObjectRef> legacyRefs;
-    {
-        auto objects = handler.iterator();
-        for (const auto& object : objects)
-        {
-            if (object != nullptr)
-            {
-                legacyRefs.push_back(object->getObjRef());
-            }
-        }
-    }
-
     std::vector<ObjectRef> refIteratorRefs;
     {
         auto refs = handler.objectRefIterator();
         refIteratorRefs.assign(refs.begin(), refs.end());
     }
 
-    EXPECT_EQ(refIteratorRefs, legacyRefs);
+    ASSERT_GE(refIteratorRefs.size(), 3u);
+    const auto spawnedRefs = refIteratorRefs.end() - 3;
+    EXPECT_EQ(spawnedRefs[0], nearA->getObjRef());
+    EXPECT_EQ(spawnedRefs[1], nearB->getObjRef());
+    EXPECT_EQ(spawnedRefs[2], farAway->getObjRef());
 }
 
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorRemainsStableAcrossDeferredRemoval)
@@ -353,14 +345,8 @@ TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorRemainsStableAcrossDeferredRe
 
     std::vector<ObjectRef> expectedRefs;
     {
-        auto objects = handler.iterator();
-        for (const auto& object : objects)
-        {
-            if (object != nullptr)
-            {
-                expectedRefs.push_back(object->getObjRef());
-            }
-        }
+        auto refs = handler.objectRefIterator();
+        expectedRefs.assign(refs.begin(), refs.end());
     }
 
     std::vector<ObjectRef> iteratedRefs;

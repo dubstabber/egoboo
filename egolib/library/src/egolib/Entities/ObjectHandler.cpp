@@ -316,11 +316,6 @@ void ObjectHandler::unlock()
 	maybeRunDeferred();
 }
 
-ObjectHandler::ObjectIterator ObjectHandler::iterator()
-{
-    return ObjectIterator(*this);
-}
-
 ObjectHandler::ObjectRefIterator ObjectHandler::objectRefIterator()
 {
     return ObjectRefIterator(*this);

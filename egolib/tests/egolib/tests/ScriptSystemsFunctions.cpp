@@ -1212,10 +1212,7 @@ TEST_F(ScriptSystemsFunctionsFixture, MiniMapEnemySenseQueueSkipsTerminatedObser
     ASSERT_NE(liveEnemy, nullptr);
     ASSERT_NE(terminatedEnemy, nullptr);
 
-    {
-        auto objects = module.getObjectHandler().iterator();
-        (void)objects;
-    }
+    flushObjectHandler(module);
 
     liveEnemy->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
     terminatedEnemy->setTeam(static_cast<TEAM_REF>(Team::TEAM_EVIL));
@@ -2737,10 +2734,7 @@ TEST_F(ScriptSystemsFunctionsFixture, DisenchantAllHandlesMixedEnchantedAndPlain
 
     script_state_t state;
     ai_state_t self = makeScriptSelf(actor, enchanted);
-    for (const auto& object : module.getObjectHandler().iterator())
-    {
-        (void)object;
-    }
+    flushObjectHandler(module);
 
     EXPECT_TRUE(scr_DisenchantAll(state, self));
     ASSERT_NE(enchanted->getFirstActiveEnchant(), nullptr);

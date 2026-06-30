@@ -42,8 +42,7 @@ bool INGAME_PCHR(const IInventoryHolder *pobj);
 **/
 class ObjectHandler : private idlib::non_copyable
 {
-public:
-
+private:
 	class ObjectIterator
 	{
 	public:
@@ -84,8 +83,7 @@ public:
 	    // Disable copy assignment operator
 	    ObjectIterator& operator=(const ObjectIterator&) = delete;
     
-	private:
-		ObjectIterator(ObjectHandler &handler) :
+		explicit ObjectIterator(ObjectHandler &handler) :
 			_handler(handler)
 		{
 			// Ensure the ObjectHandler is locked as long as we are in existance.
@@ -96,6 +94,8 @@ public:
 
 		friend class ObjectHandler;
 	};
+
+public:
 
 	class ObjectRefIterator
 	{
@@ -144,11 +144,6 @@ public:
 	 * @brief Default constructor.
 	 */
 	ObjectHandler();
-
-	/**
-	 * @brief Returns a safe deferred iterator that ensure nothing is modified while iterating.
-	 */
-	ObjectIterator iterator();
 
 	/**
 	 * @brief Returns a safe deferred iterator over object references in iterator order.
