@@ -3,6 +3,7 @@
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/ModelDescriptor.hpp"  //for model action enum
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Inventory.hpp"
@@ -16,14 +17,14 @@ namespace
 {
 Object* tryObservedCharacter(ObjectRef objectRef)
 {
-    Object* object = GameSessionContext::get().tryObject(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
 
 const Object* tryObservedInventoryItem(const IInventoryHolder& holder, size_t slotNumber)
 {
     const ObjectRef itemRef = holder.getInventoryItemRef(slotNumber);
-    const Object* item = GameSessionContext::get().tryObject(itemRef);
+    const Object* item = Ego::Entities::tryActiveConstObject(itemRef);
     return item != nullptr && !item->isTerminated() ? item : nullptr;
 }
 }

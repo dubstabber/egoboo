@@ -23,6 +23,7 @@
 #include "egolib/game/Logic/Player.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
@@ -49,22 +50,22 @@ uint32_t worldUpdateCount()
 
 Object* trySessionObject(ObjectRef objectRef)
 {
-    if (objectRef == ObjectRef::Invalid || !gameSession().hasActiveModule())
+    if (objectRef == ObjectRef::Invalid)
     {
         return nullptr;
     }
 
-    return gameSession().tryObject(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 const Object* tryConstSessionObject(ObjectRef objectRef)
 {
-    if (objectRef == ObjectRef::Invalid || !gameSession().hasActiveModule())
+    if (objectRef == ObjectRef::Invalid)
     {
         return nullptr;
     }
 
-    return static_cast<const GameSessionContext&>(gameSession()).tryObject(objectRef);
+    return Ego::Entities::tryActiveConstObject(objectRef);
 }
 }
 

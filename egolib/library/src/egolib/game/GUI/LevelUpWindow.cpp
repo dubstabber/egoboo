@@ -7,6 +7,7 @@
 #include "egolib/game/GUI/Image.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Time/Time.hpp"  // ::Time::now
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
@@ -21,7 +22,7 @@ IAudioSystem& audioSystem()
 
 Object* tryObservedCharacter(ObjectRef objectRef)
 {
-    Object* object = GameSessionContext::get().tryObject(objectRef);
+    Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
 }

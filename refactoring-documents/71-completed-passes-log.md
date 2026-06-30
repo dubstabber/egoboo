@@ -154,3 +154,10 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   standalone historical-front notes, folded live glTF and cartman guidance into
   canonical docs, and rechecked current archive, test, singleton, and validator
   metrics.
+- Pass 294 on 2026-06-30 widened the lower-layer `IObjectWorld` seam with live
+  object lookup helpers, redirected `GameSessionContext::tryObject()` through
+  that seam, and moved a bounded batch of team/player/graphics/HUD callers off
+  direct session object lookup. Ownership and lifetime behavior stayed with
+  `GameModule`/`ObjectHandler`; coverage was added in `ObjectHandlerQueries`.
+  Verified with the Linux build, focused object/session ctest filter, full
+  `ctest`, and the `test.mod` validator smoke.

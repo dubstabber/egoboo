@@ -175,6 +175,21 @@ public:
     **/
     ObjectHandler& getObjectHandler() override {return _gameObjects;}
 
+    Object* tryObject(ObjectRef objectRef) override
+    {
+        return _gameObjects.exists(objectRef) ? _gameObjects.get(objectRef) : nullptr;
+    }
+
+    const Object* tryObject(ObjectRef objectRef) const override
+    {
+        return _gameObjects.exists(objectRef) ? _gameObjects.get(objectRef) : nullptr;
+    }
+
+    bool hasObject(ObjectRef objectRef) const override
+    {
+        return _gameObjects.exists(objectRef);
+    }
+
     /**
     * @return
     *   true if the specified position is inside the level

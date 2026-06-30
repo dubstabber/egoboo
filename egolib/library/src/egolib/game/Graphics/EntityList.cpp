@@ -2,8 +2,8 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/graphic_prt.h"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 namespace Ego {
 namespace Graphics {
@@ -17,7 +17,7 @@ void EntityList::clear() {
     }
 
     set.clear();
-    auto& objectHandler = GameSessionContext::get().objectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
     auto& particleHandler = EngineContext::get().particleHandler();
     for (auto& entry : list) {
         if (ParticleRef::Invalid == entry.iprt && ObjectRef::Invalid != entry.iobj) {
@@ -48,7 +48,7 @@ size_t EntityList::add(::Camera& camera, Object& object) {
     count++;
 
     // Add any weapons it is holding.
-    auto& objectHandler = GameSessionContext::get().objectHandler();
+    auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
     Object *holding;
     holding = objectHandler.get(object.getHeldObject(SLOT_LEFT));
     if (holding) {
@@ -89,7 +89,7 @@ void EntityList::sort(Camera& cam, const bool do_reflect) {
     size_t count = 0;
     for (size_t i = 0; i < list.size(); ++i) {
         Vector3f vtmp;
-        auto& objectHandler = GameSessionContext::get().objectHandler();
+        auto& objectHandler = Ego::Entities::activeObjectWorld().getObjectHandler();
 
         if (ParticleRef::Invalid == list[i].iprt && ObjectRef::Invalid != list[i].iobj) {
             Vector3f pos_tmp;
@@ -146,7 +146,7 @@ bool EntityList::test(::Camera& camera, const Object& object) {
         return false;
     }
     // The object is not a candidate if it is in another object's inventory. 
-    if (GameSessionContext::get().objectHandler().exists(object.getInventoryHolderRef())) {
+    if (Ego::Entities::activeObjectExists(object.getInventoryHolderRef())) {
         return false;
     }
     // The object is not a candidate if it is already in this entity list.

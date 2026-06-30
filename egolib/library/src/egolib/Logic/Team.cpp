@@ -34,12 +34,6 @@ IScriptable& scriptable(Object& object)
     return object;
 }
 
-ObjectHandler* tryObjectHandler()
-{
-    Ego::Entities::IObjectWorld* world = Ego::Entities::tryActiveObjectWorld();
-    return world ? &world->getObjectHandler() : nullptr;
-}
-
 ObjectHandler& objectHandler()
 {
     return Ego::Entities::activeObjectWorld().getObjectHandler();
@@ -52,13 +46,7 @@ std::vector<Team>& teamList()
 
 Object* tryLiveObject(ObjectRef objectRef)
 {
-    ObjectHandler* objectHandler = tryObjectHandler();
-    if (objectHandler == nullptr || !objectHandler->exists(objectRef))
-    {
-        return nullptr;
-    }
-
-    return objectHandler->get(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 ObjectRef resolvedObjectRef(ObjectRef objectRef)

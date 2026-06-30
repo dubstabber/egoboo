@@ -60,6 +60,21 @@ IObjectWorld& activeObjectWorld()
     return *g_activeObjectWorld;
 }
 
+Object* tryActiveObject(ObjectRef objectRef)
+{
+    return g_activeObjectWorld ? g_activeObjectWorld->tryObject(objectRef) : nullptr;
+}
+
+const Object* tryActiveConstObject(ObjectRef objectRef)
+{
+    return g_activeObjectWorld ? g_activeObjectWorld->tryObject(objectRef) : nullptr;
+}
+
+bool activeObjectExists(ObjectRef objectRef)
+{
+    return g_activeObjectWorld != nullptr && g_activeObjectWorld->hasObject(objectRef);
+}
+
 void installWorldUpdateCounter(const uint32_t* counter)
 {
     g_activeWorldUpdateCounter = counter;

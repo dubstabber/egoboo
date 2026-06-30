@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "egolib/typedef.h"  // ObjectRef
+
 #include <cstdint>
 #include <vector>
 
@@ -29,6 +31,7 @@
 //   ObjectHandler -> egolib/Entities/ObjectHandler.hpp
 //   Team          -> egolib/Logic/Team.hpp
 // so the interface can return them by reference without dragging in any game/ header.
+class Object;
 class ObjectHandler;
 class Team;
 
@@ -62,6 +65,15 @@ public:
     /// @brief The object container of the active world.
     virtual ObjectHandler& getObjectHandler() = 0;
 
+    /// @brief The live object for @a objectRef, or @a nullptr if the ref is invalid/stale.
+    virtual Object* tryObject(ObjectRef objectRef) = 0;
+
+    /// @brief The live object for @a objectRef, or @a nullptr if the ref is invalid/stale.
+    virtual const Object* tryObject(ObjectRef objectRef) const = 0;
+
+    /// @brief Whether @a objectRef currently resolves to a live object.
+    virtual bool hasObject(ObjectRef objectRef) const = 0;
+
     /// @brief The team list of the active world.
     virtual std::vector<Team>& getTeamList() = 0;
 };
@@ -79,6 +91,17 @@ IObjectWorld* tryActiveObjectWorld();
 /// @brief The installed object world.
 /// @throw std::logic_error if no object world is installed.
 IObjectWorld& activeObjectWorld();
+
+/// @brief The live object in the installed world, or @a nullptr if no world is installed
+///        or the ref is invalid/stale.
+Object* tryActiveObject(ObjectRef objectRef);
+
+/// @brief The live object in the installed world, or @a nullptr if no world is installed
+///        or the ref is invalid/stale.
+const Object* tryActiveConstObject(ObjectRef objectRef);
+
+/// @brief Whether the installed world contains a live object for @a objectRef.
+bool activeObjectExists(ObjectRef objectRef);
 
 /// @name Active-world update clock
 /// @brief A sibling seam to the object world: the active world's update-tick counter, which the

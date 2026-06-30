@@ -11,6 +11,7 @@
 #define private public
 #include "egolib/Entities/_Include.hpp"
 #undef private
+#include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -172,6 +173,15 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ObjectHandlerQueriesFixture::s_runtime;
 
+TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupIsEmptyWithoutActiveModule)
+{
+    const ObjectRef ref(0);
+
+    EXPECT_EQ(Ego::Entities::tryActiveObject(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveConstObject(ref), nullptr);
+    EXPECT_FALSE(Ego::Entities::activeObjectExists(ref));
+}
+
 TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsReturnNearbyNonSceneryObjects)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6101);
@@ -296,6 +306,32 @@ TEST_F(ObjectHandlerQueriesFixture, ExplicitLookupsDistinguishBorrowedAndOwningA
     ASSERT_TRUE(handler.remove(liveRef));
     EXPECT_EQ(handler.get(liveRef), nullptr);
     EXPECT_EQ(handler.getHandle(liveRef), nullptr);
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesSessionCompatibility)
+{
+    const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6108);
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
+
+    auto follower = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(follower, nullptr);
+
+    const ObjectRef liveRef = follower->getObjRef();
+    EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), follower.get());
+    EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), follower.get());
+    EXPECT_TRUE(Ego::Entities::activeObjectExists(liveRef));
+    EXPECT_EQ(GameSessionContext::get().tryObject(liveRef), follower.get());
+
+    EXPECT_EQ(Ego::Entities::tryActiveObject(ObjectRef::Invalid), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveConstObject(ObjectRef::Invalid), nullptr);
+    EXPECT_FALSE(Ego::Entities::activeObjectExists(ObjectRef::Invalid));
+
+    ASSERT_TRUE(handler.remove(liveRef));
+    EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), nullptr);
+    EXPECT_FALSE(Ego::Entities::activeObjectExists(liveRef));
+    EXPECT_EQ(GameSessionContext::get().tryObject(liveRef), nullptr);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesSpawnInsertionOrder)

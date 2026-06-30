@@ -282,30 +282,12 @@ ObjectHandler* GameSessionContext::tryObjectHandler()
 
 Object* GameSessionContext::tryObject(ObjectRef objectRef)
 {
-    ObjectHandler* handler = tryObjectHandler();
-    if (handler == nullptr || !handler->exists(objectRef))
-    {
-        return nullptr;
-    }
-
-    return handler->get(objectRef);
+    return Ego::Entities::tryActiveObject(objectRef);
 }
 
 const Object* GameSessionContext::tryObject(ObjectRef objectRef) const
 {
-    const GameModule* module = tryActiveModule();
-    if (module == nullptr)
-    {
-        return nullptr;
-    }
-
-    const ObjectHandler& handler = const_cast<GameModule*>(module)->getObjectHandler();
-    if (!handler.exists(objectRef))
-    {
-        return nullptr;
-    }
-
-    return handler.get(objectRef);
+    return Ego::Entities::tryActiveConstObject(objectRef);
 }
 
 ObjectHandler& GameSessionContext::objectHandler()
