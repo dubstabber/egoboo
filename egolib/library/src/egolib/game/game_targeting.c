@@ -253,9 +253,10 @@ ObjectRef chr_find_target( ObjectRef sourceRef, float max_dist, const IDSZ2& ids
     //All objects in level
     else if(max_dist == NEAREST)
     {
-        for (const std::shared_ptr<Object>& object : module.getObjectHandler().getAllObjects())
+        for (const ObjectRef objectRef : module.getObjectHandler().objectRefIterator())
         {
-            if (object == nullptr)
+            Object* object = module.getObjectHandler().get(objectRef);
+            if (object == nullptr || object->isTerminated())
             {
                 continue;
             }

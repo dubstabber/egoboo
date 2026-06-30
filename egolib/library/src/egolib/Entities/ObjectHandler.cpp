@@ -364,14 +364,6 @@ void ObjectHandler::updateQuadTree(float minX, float minY, float maxX, float max
     }
 }
 
-std::vector<std::shared_ptr<Object>> ObjectHandler::findObjects(const float x, const float y, const float distance, bool includeSceneryObjects) const { 
-    std::vector<std::shared_ptr<Object>> result;
-	Ego::AxisAlignedBox2f searchArea = Ego::AxisAlignedBox2f(Ego::Point2f(x-distance, y-distance), Ego::Point2f(x+distance, y+distance));
-    _dynamicObjects.find(searchArea, result);
-    if(includeSceneryObjects) _staticObjects.find(searchArea, result);
-    return result;
-}
-
 void ObjectHandler::findObjectRefs(float x, float y, float distance, std::vector<ObjectRef>& result, bool includeSceneryObjects) const
 {
     std::vector<std::shared_ptr<Object>> objects;
@@ -383,14 +375,6 @@ void ObjectHandler::findObjectRefs(float x, float y, float distance, std::vector
         _staticObjects.find(searchArea, objects);
     }
     appendObjectRefs(objects, result);
-}
-
-void ObjectHandler::findObjects(const Ego::AxisAlignedBox2f &searchArea, std::vector<std::shared_ptr<Object>> &result, bool includeSceneryObjects) const
-{
-    if(includeSceneryObjects) { 
-    	_staticObjects.find(searchArea, result);
-    }
-    return _dynamicObjects.find(searchArea, result);
 }
 
 void ObjectHandler::findObjectRefs(const Ego::AxisAlignedBox2f& searchArea, std::vector<ObjectRef>& result, bool includeSceneryObjects) const

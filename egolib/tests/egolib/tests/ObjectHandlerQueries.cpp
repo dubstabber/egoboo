@@ -15,20 +15,15 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 #include "egolib/vfs.h"
 
 namespace
 {
-std::vector<ObjectRef> collectRefs(const std::vector<std::shared_ptr<Object>>& objects)
+bool containsRef(const std::vector<ObjectRef>& refs, ObjectRef ref)
 {
-    std::vector<ObjectRef> refs;
-    refs.reserve(objects.size());
-    for (const auto& object : objects)
-    {
-        refs.push_back(object ? object->getObjRef() : ObjectRef::Invalid);
-    }
-    return refs;
+    return std::find(refs.begin(), refs.end(), ref) != refs.end();
 }
 
 class ObjectHandlerQueriesFixture : public ::testing::Test
@@ -118,7 +113,7 @@ protected:
         return EngineContext::get().profileSystem().loadOneProfile(objectPath, slot);
     }
 
-    std::shared_ptr<Object> spawnObject(ObjectHandler& handler,
+    std::shared_ptr<Object> spawnObject(GameModule& module,
                                         ObjectProfileRef profile,
                                         const Ego::Vector3f& position) const
     {
@@ -128,18 +123,30 @@ protected:
             return nullptr;
         }
 
-        auto object = handler.insert(profile);
+        const ObjectRef objectRef = module.spawnObjectRef(position,
+                                                          profile,
+                                                          static_cast<TEAM_REF>(Team::TEAM_NULL),
+                                                          0,
+                                                          Facing(0),
+                                                          "",
+                                                          ObjectRef::Invalid);
+        EXPECT_NE(objectRef, ObjectRef::Invalid);
+        if (objectRef == ObjectRef::Invalid)
+        {
+            return nullptr;
+        }
+
+        auto object = module.getObjectHandler()[objectRef];
         EXPECT_NE(object, nullptr);
         if (object == nullptr)
         {
             return nullptr;
         }
 
-        object->setPosition(position);
         return object;
     }
 
-    ObjectHandler& beginActiveTestModule()
+    GameModule& beginActiveTestModule()
     {
         auto module = findTestModule();
         EXPECT_NE(module, nullptr);
@@ -150,7 +157,7 @@ protected:
 
         const bool began = GameSessionContext::get().beginModule(module, 29);
         EXPECT_TRUE(began);
-        return GameSessionContext::get().objectHandler();
+        return GameSessionContext::get().activeModule();
     }
 
     static void refreshQuadTree(ObjectHandler& handler)
@@ -165,14 +172,15 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ObjectHandlerQueriesFixture::s_runtime;
 
-TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsMatchLegacySharedPtrResults)
+TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsReturnNearbyNonSceneryObjects)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6101);
-    ObjectHandler& handler = beginActiveTestModule();
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
 
-    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
-    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
-    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+    auto nearA = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(module, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(module, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
 
     ASSERT_NE(nearA, nullptr);
     ASSERT_NE(nearB, nullptr);
@@ -184,22 +192,24 @@ TEST_F(ObjectHandlerQueriesFixture, PointQueryRefsMatchLegacySharedPtrResults)
 
     refreshQuadTree(handler);
 
-    const auto legacy = handler.findObjects(64.0f, 64.0f, 48.0f, false);
     std::vector<ObjectRef> refs;
     handler.findObjectRefs(64.0f, 64.0f, 48.0f, refs, false);
 
-    EXPECT_EQ(refs, collectRefs(legacy));
-    EXPECT_EQ(std::find(refs.begin(), refs.end(), farAway->getObjRef()), refs.end());
+    EXPECT_EQ(refs.size(), 2u);
+    EXPECT_TRUE(containsRef(refs, nearA->getObjRef()));
+    EXPECT_TRUE(containsRef(refs, nearB->getObjRef()));
+    EXPECT_FALSE(containsRef(refs, farAway->getObjRef()));
 }
 
-TEST_F(ObjectHandlerQueriesFixture, AreaQueryRefsMatchLegacySharedPtrResultsAndPreserveSceneryFiltering)
+TEST_F(ObjectHandlerQueriesFixture, AreaQueryRefsPreserveSceneryFiltering)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6102);
     const ObjectProfileRef rockProfile = loadProfile("mp_modules/archaeologist.mod", "mp_objects/rock.obj", 6103);
-    ObjectHandler& handler = beginActiveTestModule();
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
 
-    auto follower = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
-    auto rock = spawnObject(handler, rockProfile, Ego::Vector3f(72.0f, 64.0f, 0.0f));
+    auto follower = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto rock = spawnObject(module, rockProfile, Ego::Vector3f(72.0f, 64.0f, 0.0f));
 
     ASSERT_NE(follower, nullptr);
     ASSERT_NE(rock, nullptr);
@@ -210,27 +220,28 @@ TEST_F(ObjectHandlerQueriesFixture, AreaQueryRefsMatchLegacySharedPtrResultsAndP
 
     const Ego::AxisAlignedBox2f searchArea(Ego::Point2f(32.0f, 32.0f), Ego::Point2f(96.0f, 96.0f));
 
-    std::vector<std::shared_ptr<Object>> legacyWithoutScenery;
-    handler.findObjects(searchArea, legacyWithoutScenery, false);
     std::vector<ObjectRef> refsWithoutScenery;
     handler.findObjectRefs(searchArea, refsWithoutScenery, false);
-    EXPECT_EQ(refsWithoutScenery, collectRefs(legacyWithoutScenery));
+    EXPECT_EQ(refsWithoutScenery.size(), 1u);
+    EXPECT_TRUE(containsRef(refsWithoutScenery, follower->getObjRef()));
+    EXPECT_FALSE(containsRef(refsWithoutScenery, rock->getObjRef()));
 
-    std::vector<std::shared_ptr<Object>> legacyWithScenery;
-    handler.findObjects(searchArea, legacyWithScenery, true);
     std::vector<ObjectRef> refsWithScenery;
     handler.findObjectRefs(searchArea, refsWithScenery, true);
-    EXPECT_EQ(refsWithScenery, collectRefs(legacyWithScenery));
+    EXPECT_EQ(refsWithScenery.size(), 2u);
+    EXPECT_TRUE(containsRef(refsWithScenery, follower->getObjRef()));
+    EXPECT_TRUE(containsRef(refsWithScenery, rock->getObjRef()));
 }
 
 TEST_F(ObjectHandlerQueriesFixture, QueryRefsCanBeResolvedSafelyAfterRemoval)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6104);
-    ObjectHandler& handler = beginActiveTestModule();
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
 
-    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
-    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
-    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+    auto nearA = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(module, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(module, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
 
     ASSERT_NE(nearA, nullptr);
     ASSERT_NE(nearB, nullptr);
@@ -265,11 +276,12 @@ TEST_F(ObjectHandlerQueriesFixture, QueryRefsCanBeResolvedSafelyAfterRemoval)
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProjectionOrder)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6105);
-    ObjectHandler& handler = beginActiveTestModule();
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
 
-    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
-    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
-    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+    auto nearA = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(module, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(module, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
 
     ASSERT_NE(nearA, nullptr);
     ASSERT_NE(nearB, nullptr);
@@ -301,11 +313,12 @@ TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesLegacySharedPtrProject
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorRemainsStableAcrossDeferredRemoval)
 {
     const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6106);
-    ObjectHandler& handler = beginActiveTestModule();
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
 
-    auto nearA = spawnObject(handler, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
-    auto nearB = spawnObject(handler, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
-    auto farAway = spawnObject(handler, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
+    auto nearA = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto nearB = spawnObject(module, followerProfile, Ego::Vector3f(96.0f, 64.0f, 0.0f));
+    auto farAway = spawnObject(module, followerProfile, Ego::Vector3f(256.0f, 256.0f, 0.0f));
 
     ASSERT_NE(nearA, nullptr);
     ASSERT_NE(nearB, nullptr);
@@ -328,7 +341,7 @@ TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorRemainsStableAcrossDeferredRe
     std::vector<ObjectRef> iteratedRefs;
     {
         auto refs = handler.objectRefIterator();
-        for (const ObjectRef ref : refs)
+        for (const ObjectRef& ref : refs)
         {
             iteratedRefs.push_back(ref);
             if (ref == nearA->getObjRef())

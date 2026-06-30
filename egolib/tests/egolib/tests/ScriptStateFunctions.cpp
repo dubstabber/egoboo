@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
@@ -303,6 +304,12 @@ protected:
         ParticleHandler::get().clear();
     }
 
+    void flushObjectHandler(GameModule& module) const
+    {
+        auto objects = module.getObjectHandler().iterator();
+        (void)objects;
+    }
+
     std::shared_ptr<Ego::Particle> latestSpawnedParticle() const
     {
         auto& handler = ParticleHandler::get();
@@ -321,45 +328,24 @@ protected:
 
     std::vector<ObjectRef> collectObjectRefs(GameModule& module) const
     {
-        std::vector<ObjectRef> refs;
-        for (const auto& object : module.getObjectHandler().getAllObjects())
-        {
-            if (object != nullptr)
-            {
-                refs.push_back(object->getObjRef());
-            }
-        }
-
-        return refs;
+        flushObjectHandler(module);
+        auto refs = module.getObjectHandler().objectRefIterator();
+        return std::vector<ObjectRef>(refs.begin(), refs.end());
     }
 
-    std::shared_ptr<Object> findNewObject(GameModule& module,
-                                          const std::vector<ObjectRef>& existingRefs) const
+    ObjectRef findNewObjectRef(GameModule& module,
+                               const std::vector<ObjectRef>& existingRefs) const
     {
-        for (const auto& object : module.getObjectHandler().getAllObjects())
+        flushObjectHandler(module);
+        for (const ObjectRef& objectRef : module.getObjectHandler().objectRefIterator())
         {
-            if (object == nullptr)
+            if (std::find(existingRefs.begin(), existingRefs.end(), objectRef) == existingRefs.end())
             {
-                continue;
-            }
-
-            bool knownRef = false;
-            for (const ObjectRef& ref : existingRefs)
-            {
-                if (ref == object->getObjRef())
-                {
-                    knownRef = true;
-                    break;
-                }
-            }
-
-            if (!knownRef)
-            {
-                return object;
+                return objectRef;
             }
         }
 
-        return nullptr;
+        return ObjectRef::Invalid;
     }
 
     ai_state_t makeScriptSelf(const std::shared_ptr<Object>& selfObject) const
@@ -1094,7 +1080,7 @@ TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterTerminatesChildWhenTar
     EXPECT_EQ(self.child, ObjectRef::Invalid);
     EXPECT_EQ(target->getInventoryItemRefs().size(), inventoryItemCountBefore);
     EXPECT_EQ(module.getObjectHandler().getObjectCount(), objectCountBefore);
-    EXPECT_EQ(findNewObject(module, refsBefore), nullptr);
+    EXPECT_EQ(findNewObjectRef(module, refsBefore), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterTerminatesChildWhenGripAlreadyUsed)
@@ -1131,7 +1117,7 @@ TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterTerminatesChildWhenGri
     EXPECT_EQ(self.child, ObjectRef::Invalid);
     EXPECT_EQ(target->getHeldObject(SLOT_LEFT), previousLeftHand);
     EXPECT_EQ(module.getObjectHandler().getObjectCount(), objectCountBefore);
-    EXPECT_EQ(findNewObject(module, refsBefore), nullptr);
+    EXPECT_EQ(findNewObjectRef(module, refsBefore), ObjectRef::Invalid);
 }
 
 TEST_F(ScriptStateFunctionsFixture, RespawnToggleHelpersUseModuleWrapper)

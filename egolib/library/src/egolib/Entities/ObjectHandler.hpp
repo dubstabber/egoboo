@@ -200,39 +200,10 @@ public:
 
 	/**
 	* @brief
-	*	Find all elements that are within range of a specified point in this QuadTree's
-	*	bounding box
-	* @param x
-	*	x position of point to search from
-	* @param y
-	*	y position of point to search from
-	* @param distance
-	*	range of search from point
-	* @param includeSceneryObjects
-	*	if true, it will also include Scenery objects in the search as defined by Object::isScenery()
-	* @return
-	*	A vector containing all elements that fit the search
-	**/
-	std::vector<std::shared_ptr<Object>> findObjects(const float x, const float y, const float distance, bool includeSceneryObjects = true) const;
-
-	/**
-	* @brief
 	*	Find all object references that are within range of a specified point in this
 	*	QuadTree's bounding box.
 	**/
 	void findObjectRefs(float x, float y, float distance, std::vector<ObjectRef>& result, bool includeSceneryObjects = true) const;
-
-	/**
-	* @brief
-	*	Find all elements that collide with a 2D bounding box area
-	* @param searchArea
-	*	The bounding box to scan
-	* @param result
-	*	reference to the vector where the result is stored
-	* @param includeSceneryObjects
-	*	if true, it will also include Scenery objects in the search as defined by Object::isScenery()
-	**/
-	void findObjects(const Ego::AxisAlignedBox2f &searchArea, std::vector<std::shared_ptr<Object>> &result, bool includeSceneryObjects = true) const;
 
 	/**
 	* @brief
@@ -248,12 +219,6 @@ public:
 	*	Sets the bounds of this quad tree (size of the entire current level)
 	**/
 	void updateQuadTree(float minX, float minY, float maxX, float maxY);
-
-	/**
-	* @return
-	*	All objects contained in this ObjectHandler
-	**/
-	const std::vector<std::shared_ptr<Object>>& getAllObjects() const {return _iteratorList; }
 
 private:
 

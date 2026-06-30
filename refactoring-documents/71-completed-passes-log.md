@@ -3042,3 +3042,24 @@ back-edge proof was required. Singleton metrics remain **605** `::get()` lines, 
 **128,733**, test files/lines are **50 / 24,171**, and ctest configures **920** cases. Gates:
 `cmake --build build -j20` clean; focused player/import/spawn/script slice **183/183**; ctest
 **920/920**; validator `test.mod` 0/0; `git diff --check` clean.
+
+### Pass 282 — ObjectHandler ref-query surface cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the public object-query surface
+without changing script opcode APIs, source placement, CMake archive membership, object ownership, or
+legacy content behavior. `ObjectHandler` no longer exposes public handle-returning spatial query helpers
+or raw all-object vector access; spatial discovery and all-object discovery now use `findObjectRefs(...)`
+and `objectRefIterator()` at the API edge, with local `get(ObjectRef)` resolution only where object reads
+or mutation are immediately needed.
+
+The remaining production `getAllObjects()` caller in character targeting now iterates refs before resolving
+live objects. Object-handler query tests now assert ref-query behavior directly, including scenery
+filtering and deferred-removal stability, and the script spawn-failure helper was adjusted to snapshot
+live refs after deferred object-handler work is flushed.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,683**, test files/lines are **50 / 24,170**, and ctest configures **920** cases. Gates:
+`cmake --build build -j20` clean; focused object-query/spawn-failure/target-search slice **9/9**; ctest
+**920/920**; validator `test.mod` 0/0.
