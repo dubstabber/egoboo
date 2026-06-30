@@ -300,8 +300,7 @@ TEST_F(ImportWorkflowFixture, FromPlayersSkipsMissingAndTerminatedPlayersWithout
     ASSERT_TRUE(module.addPlayer(last->getObjRef(), Ego::Input::InputDevice::DeviceList[3]));
 
     ASSERT_NE(module.getPlayer(1), nullptr);
-    module.getPlayer(1)->_objectRef = ObjectRef::Invalid;
-    module.getPlayer(1)->_bootstrapObject.reset();
+    ASSERT_TRUE(module.getObjectHandler().remove(missing->getObjRef()));
     terminated->requestTerminate();
 
     import_list_t imports;

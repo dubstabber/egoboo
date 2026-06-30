@@ -28,8 +28,11 @@
 #include "egolib/InputControl/InputDevice.hpp"
 #include "egolib/game/Logic/QuestLog.hpp"
 
+#include <memory>
+
 //Forward declarations
 class Object;
+class ObjectHandler;
 
 namespace Ego
 {
@@ -38,7 +41,11 @@ namespace Ego
 class Player
 {
 public:
-    Player(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device);
+    Player(ObjectRef objectRef, const Ego::Input::InputDevice &device);
+
+    static std::shared_ptr<Player> createForObject(ObjectHandler& objectHandler,
+                                                   ObjectRef objectRef,
+                                                   const Ego::Input::InputDevice& device);
 
     /**
     * @brief

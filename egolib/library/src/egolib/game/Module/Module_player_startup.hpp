@@ -14,36 +14,42 @@ namespace module_player_startup
 {
 
 inline std::shared_ptr<Ego::Player> registerPlayerBinding(std::vector<std::shared_ptr<Ego::Player>>& playerList,
-                                                          const std::shared_ptr<Object>& object,
+                                                          ObjectHandler& objectHandler,
+                                                          Object& object,
                                                           const Ego::Input::InputDevice& device)
 {
-    std::shared_ptr<Ego::Player> player = std::make_shared<Ego::Player>(object, device);
+    std::shared_ptr<Ego::Player> player = Ego::Player::createForObject(objectHandler, object.getObjRef(), device);
+    if (!player)
+    {
+        return nullptr;
+    }
+
     playerList.push_back(player);
 
     // Set the reference before any startup side effects can observe the player.
-    object->setPlayerNumber(playerList.size() - 1);
+    object.setPlayerNumber(playerList.size() - 1);
     return player;
 }
 
-inline void applySuccessfulLocalPlayerBookkeeping(const std::shared_ptr<Object>& object,
+inline void applySuccessfulLocalPlayerBookkeeping(Object& object,
                                                   size_t registeredPlayerCount,
                                                   bool identifySpawnOnSuccess)
 {
-    object->setLocalPlayer(true);
+    object.setLocalPlayer(true);
     GameSessionContext::get().publishLocalPlayerCount(registeredPlayerCount);
 
     if (identifySpawnOnSuccess)
     {
-        object->setNameKnown(true);
+        object.setNameKnown(true);
     }
 }
 
-inline void finalizeLocalPlayerStartup(const std::shared_ptr<Object>& object,
+inline void finalizeLocalPlayerStartup(Object& object,
                                        const std::shared_ptr<Ego::Player>& player,
                                        size_t registeredPlayerCount,
                                        bool identifySpawnOnSuccess)
 {
-    Ego::loadPlayerQuestLog(player->getQuestLog(), object->getProfile()->getPathname());
+    Ego::loadPlayerQuestLog(player->getQuestLog(), object.getProfile()->getPathname());
     applySuccessfulLocalPlayerBookkeeping(object, registeredPlayerCount, identifySpawnOnSuccess);
 }
 
@@ -53,14 +59,19 @@ inline bool addPlayer(std::vector<std::shared_ptr<Ego::Player>>& playerList,
                       const Ego::Input::InputDevice& device,
                       bool identifySpawnOnSuccess)
 {
-    const std::shared_ptr<Object>& object = objectHandler[objectRef];
-    if (!object || object->isTerminated())
+    Object* object = objectHandler.get(objectRef);
+    if (object == nullptr || object->isTerminated())
     {
         return false;
     }
 
-    const std::shared_ptr<Ego::Player> player = registerPlayerBinding(playerList, object, device);
-    finalizeLocalPlayerStartup(object, player, playerList.size(), identifySpawnOnSuccess);
+    const std::shared_ptr<Ego::Player> player = registerPlayerBinding(playerList, objectHandler, *object, device);
+    if (!player)
+    {
+        return false;
+    }
+
+    finalizeLocalPlayerStartup(*object, player, playerList.size(), identifySpawnOnSuccess);
     return true;
 }
 

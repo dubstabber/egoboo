@@ -3021,3 +3021,24 @@ back-edge proof was required. Singleton metrics remain **605** `::get()` lines, 
 **128,700**, test files/lines are **50 / 24,172**, and ctest configures **920** cases. Gates:
 `cmake --build build -j20` clean; focused spawn/player/script/combat/collision/module slice
 **305/305**; ctest **920/920**; validator `test.mod` 0/0.
+
+### Pass 281 — Player ObjectRef binding cleanup (2026-06-30)
+
+Continued the stable-first `ObjectRef` ownership-boundary cleanup through the `Player` construction and
+module player-startup seam without changing script opcode APIs, source placement, CMake archive
+membership, object ownership, or legacy content behavior. `Player` construction is now ref-first; the
+remaining pre-active-module weak object fallback is seeded only by `Player::createForObject(...)`, keeping
+shared-object handles out of the public player binding API.
+
+`module_player_startup` now resolves `ObjectHandler&` + `ObjectRef` for validation and immediate startup
+mutation, then creates players through the new factory. The startup path still preserves invalid, missing,
+terminated, quest-log hydration, local-player mirror, and spawn-identification behavior. Tests now model a
+missing registered player by removing the object from `ObjectHandler` instead of mutating the player's
+private bootstrap handle.
+
+No files moved between archives and `egolib/library/CMakeLists.txt` was untouched, so no live-archive
+back-edge proof was required. Singleton metrics remain **605** `::get()` lines, including **417**
+`EngineContext::get()` and **134** `GameSessionContext::get()` lines. Runtime source lines are now
+**128,733**, test files/lines are **50 / 24,171**, and ctest configures **920** cases. Gates:
+`cmake --build build -j20` clean; focused player/import/spawn/script slice **183/183**; ctest
+**920/920**; validator `test.mod` 0/0; `git diff --check` clean.

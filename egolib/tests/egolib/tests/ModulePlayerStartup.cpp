@@ -386,7 +386,7 @@ TEST_F(ModulePlayerStartupFixture, LocalPlayerStatusSkipsNullAndTerminatedObject
     ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, aliveObject->getObjRef(), Ego::Input::InputDevice::DeviceList[0], false));
     ASSERT_TRUE(module_player_startup::addPlayer(playerList, objectHandler, terminatedObject->getObjRef(), Ego::Input::InputDevice::DeviceList[1], false));
     terminatedObject->_terminateRequested = true;
-    playerList.push_back(std::make_shared<Ego::Player>(std::shared_ptr<Object>(), Ego::Input::InputDevice::DeviceList[2]));
+    playerList.push_back(std::make_shared<Ego::Player>(ObjectRef::Invalid, Ego::Input::InputDevice::DeviceList[2]));
 
     const LocalPlayerStatus status = collectLocalPlayerStatus(playerList);
 

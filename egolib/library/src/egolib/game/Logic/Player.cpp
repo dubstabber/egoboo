@@ -71,9 +71,9 @@ const Object* tryConstSessionObject(ObjectRef objectRef)
 namespace Ego
 {
 
-Player::Player(const std::shared_ptr<Object>& object, const Ego::Input::InputDevice &device) :
-    _objectRef(object ? object->getObjRef() : ObjectRef::Invalid),
-    _bootstrapObject(object),
+Player::Player(ObjectRef objectRef, const Ego::Input::InputDevice &device) :
+    _objectRef(objectRef),
+    _bootstrapObject(),
     _unspentLevelUp(false),
 
     _currentCharge(0),
@@ -89,6 +89,21 @@ Player::Player(const std::shared_ptr<Object>& object, const Ego::Input::InputDev
 
     _inputDevice(device)
 {
+}
+
+std::shared_ptr<Player> Player::createForObject(ObjectHandler& objectHandler,
+                                                ObjectRef objectRef,
+                                                const Ego::Input::InputDevice& device)
+{
+    const std::shared_ptr<Object>& object = objectHandler[objectRef];
+    if (!object)
+    {
+        return nullptr;
+    }
+
+    std::shared_ptr<Player> player = std::make_shared<Player>(objectRef, device);
+    player->_bootstrapObject = object;
+    return player;
 }
 
 ObjectRef Player::getObjectRef() const
