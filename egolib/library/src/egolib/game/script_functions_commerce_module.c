@@ -41,12 +41,12 @@ GameModule& compatibleModule(const ModuleEffectsContext& context)
 
 water_instance_t& moduleWater(const ModuleEffectsContext& context)
 {
-    return compatibleModule(context).getWater();
+    return activeModuleEnvironment().water();
 }
 
 fog_instance_t& moduleFog(const ModuleEffectsContext&)
 {
-    return gameSession().fog();
+    return activeModuleEnvironment().fog();
 }
 
 void setModuleWaterLevel(const ModuleEffectsContext& context, int waterLevelTimesTen)

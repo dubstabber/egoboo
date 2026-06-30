@@ -18,6 +18,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/game.h"
 #include "egolib/vfs.h"
@@ -189,8 +190,10 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupIsEmptyWithoutActiveM
 TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateAreEmptyWithoutActiveModule)
 {
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
+    EXPECT_EQ(tryActiveModuleStatus(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
+    EXPECT_THROW(activeModuleStatus(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
 }
 
@@ -201,6 +204,8 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
 
     ASSERT_EQ(tryActiveModuleEnvironment(), &module);
     ASSERT_EQ(&activeModuleEnvironment(), &module);
+    ASSERT_EQ(tryActiveModuleStatus(), &module);
+    ASSERT_EQ(&activeModuleStatus(), &module);
     ASSERT_EQ(tryActiveSessionState(), &session);
     ASSERT_EQ(&activeSessionState(), &session);
 
@@ -209,6 +214,13 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateMirror
     EXPECT_EQ(&activeModuleEnvironment().weatherState(), &module.getWeatherState());
     EXPECT_EQ(&activeModuleEnvironment().fog(), &module.getFog());
     EXPECT_EQ(&activeModuleEnvironment().animatedTilesState(), &module.getAnimatedTilesState());
+    EXPECT_EQ(activeModuleStatus().isExportValid(), module.isExportValid());
+    EXPECT_EQ(activeModuleStatus().isRespawnValid(), module.isRespawnValid());
+    EXPECT_EQ(activeModuleStatus().canRespawnAnyTime(), module.canRespawnAnyTime());
+    EXPECT_EQ(activeModuleStatus().isBeaten(), module.isBeaten());
+    EXPECT_EQ(activeModuleStatus().passageCount(), module.getPassageCount());
+    EXPECT_EQ(activeModuleStatus().moduleProfile(), module.getModuleProfile());
+    EXPECT_EQ(activeModuleStatus().importPlayers(), module.getImportPlayers());
 
     LocalPlayerStatus status;
     status.registeredCount = 2;
@@ -251,13 +263,16 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateClearO
     beginActiveTestModule();
 
     ASSERT_NE(tryActiveModuleEnvironment(), nullptr);
+    ASSERT_NE(tryActiveModuleStatus(), nullptr);
     ASSERT_NE(tryActiveSessionState(), nullptr);
 
     GameSessionContext::get().quitModule();
 
     EXPECT_EQ(tryActiveModuleEnvironment(), nullptr);
+    EXPECT_EQ(tryActiveModuleStatus(), nullptr);
     EXPECT_EQ(tryActiveSessionState(), nullptr);
     EXPECT_THROW(activeModuleEnvironment(), std::logic_error);
+    EXPECT_THROW(activeModuleStatus(), std::logic_error);
     EXPECT_THROW(activeSessionState(), std::logic_error);
 }
 

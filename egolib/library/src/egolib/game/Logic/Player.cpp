@@ -26,10 +26,10 @@
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/IPlayingStateController.hpp"
-#include "egolib/game/Module/Module.hpp"
 
 namespace
 {
@@ -38,14 +38,19 @@ IMovementControl& movementControl(Object& object)
     return object;
 }
 
-GameSessionContext& gameSession()
+ISessionState& sessionState()
 {
+    if (ISessionState* session = tryActiveSessionState())
+    {
+        return *session;
+    }
+
     return GameSessionContext::get();
 }
 
 uint32_t worldUpdateCount()
 {
-    return gameSession().worldUpdateCount();
+    return sessionState().worldUpdateCount();
 }
 
 Object* trySessionObject(ObjectRef objectRef)
@@ -114,7 +119,7 @@ ObjectRef Player::getObjectRef() const
 
 Object* Player::tryObject()
 {
-    if (gameSession().hasActiveModule())
+    if (Ego::Entities::tryActiveObjectWorld() != nullptr)
     {
         return trySessionObject(_objectRef);
     }
@@ -125,7 +130,7 @@ Object* Player::tryObject()
 
 const Object* Player::tryObject() const
 {
-    if (gameSession().hasActiveModule())
+    if (Ego::Entities::tryActiveObjectWorld() != nullptr)
     {
         return tryConstSessionObject(_objectRef);
     }
@@ -160,7 +165,7 @@ void Player::updateLatches()
     }
 
     // fast camera turn if it is enabled and there is only 1 local player
-    bool fast_camera_turn = (1 == gameSession().localPlayerCount()) && (CameraTurnMode::Good == pcam->getTurnMode());
+    bool fast_camera_turn = (1 == sessionState().localPlayerCount()) && (CameraTurnMode::Good == pcam->getTurnMode());
 
     // Clear the player's latch buffers
     Vector2f movementInput = idlib::zero<Vector2f>();
@@ -255,9 +260,9 @@ void Player::updateLatches()
     //enable inventory mode?
     if ( worldUpdateCount() > _inventoryCooldown && getInputDevice().isButtonPressed(Ego::Input::InputDevice::InputButton::INVENTORY) )
     {
-        GameModule& module = gameSession().activeModule();
-        for(uint8_t ipla = 0; ipla < module.getPlayerList().size(); ++ipla) {
-            if(module.getPlayer(ipla).get() == this) {
+        const auto& players = sessionState().playerList();
+        for(uint8_t ipla = 0; ipla < players.size(); ++ipla) {
+            if(players[ipla].get() == this) {
                 if (auto playingState = EngineContext::get().tryActivePlayingState())
                 {
                     playingState->displayCharacterWindow(ipla);

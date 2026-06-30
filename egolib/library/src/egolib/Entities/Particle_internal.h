@@ -26,7 +26,9 @@
 
 #include "egolib/Entities/Particle.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Entities/_Include.hpp"
 
@@ -62,9 +64,34 @@ inline bool worldObjectExists(ObjectRef objectRef)
     return Ego::Entities::activeObjectExists(objectRef);
 }
 
+inline IModuleEnvironment& moduleEnvironment()
+{
+    return activeModuleEnvironment();
+}
+
+inline water_instance_t& moduleWater()
+{
+    return moduleEnvironment().water();
+}
+
+inline std::shared_ptr<ego_mesh_t> moduleMesh()
+{
+    return moduleEnvironment().mesh();
+}
+
+inline ISessionState& sessionState()
+{
+    if (ISessionState* session = tryActiveSessionState())
+    {
+        return *session;
+    }
+
+    return gameSession();
+}
+
 inline uint32_t worldUpdateCount()
 {
-    return gameSession().worldUpdateCount();
+    return sessionState().worldUpdateCount();
 }
 } // namespace particle_detail
 

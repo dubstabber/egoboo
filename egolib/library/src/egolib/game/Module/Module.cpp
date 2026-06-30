@@ -40,6 +40,11 @@ int GameModule::getPassageCount()
     return _passages.size();
 }
 
+int GameModule::passageCount() const
+{
+    return static_cast<int>(_passages.size());
+}
+
 std::shared_ptr<Passage> GameModule::getPassageByID(int id)
 {
     if (id < 0 || id >= _passages.size())

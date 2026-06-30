@@ -28,10 +28,9 @@
 #include "egolib/game/GameStates/LoadingState.hpp"
 #include "egolib/game/GameStates/OptionsScreen.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/game.h"
 #include "egolib/game/GUI/Button.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
 
@@ -43,10 +42,10 @@ InGameMenuState::InGameMenuState(GameState &gameState) :
     _slidyButtons(),
     _backgroundState(gameState)
 {
-    GameModule& activeModule = GameSessionContext::get().activeModule();
-    const bool exportValid = activeModule.isExportValid();
-    const std::shared_ptr<ModuleProfile> moduleProfile = activeModule.getModuleProfile();
-    const std::list<std::string> importPlayers = activeModule.getImportPlayers();
+    const IModuleStatus& moduleStatus = activeModuleStatus();
+    const bool exportValid = moduleStatus.isExportValid();
+    const std::shared_ptr<ModuleProfile> moduleProfile = moduleStatus.moduleProfile();
+    const std::list<std::string> importPlayers = moduleStatus.importPlayers();
 
     // Add the buttons
     int yOffset = Ego::activeGraphicsSystem().getWindow()->size().y() - 80;

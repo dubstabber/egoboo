@@ -5,11 +5,6 @@
 
 namespace
 {
-GameSessionContext& gameSession()
-{
-    return GameSessionContext::get();
-}
-
 struct QuestCompatibilityContext
 {
     Ego::QuestLog* targetQuestLog = nullptr;
@@ -76,7 +71,7 @@ template <typename Fn>
 bool updatePlayerQuestLogs(Fn&& fn)
 {
     bool updated = false;
-    for (const std::shared_ptr<Ego::Player>& player : gameSession().playerList())
+    for (const std::shared_ptr<Ego::Player>& player : activeSessionState().playerList())
     {
         if (player != nullptr && fn(player->getQuestLog()))
         {

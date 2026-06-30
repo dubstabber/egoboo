@@ -88,7 +88,7 @@ bool Object::isOnWaterTile() const
 
 bool Object::isSubmerged() const
 {
-    return isOnWaterTile() && getPosZ() <= activeModule().getWater().get_level();
+    return isOnWaterTile() && getPosZ() <= moduleWater().get_level();
 }
 
 void Object::movePosition(const float x, const float y, const float z)
@@ -125,7 +125,7 @@ void Object::setSheen(const int sheen)
 
 bool Object::teleport(const Ego::Vector3f& position, Facing facing_z)
 {
-    if (!activeModule().isInside(position[kX], position[kY])) {
+    if (!collisionWorld().isInside(position[kX], position[kY])) {
         return false;
     }
 
@@ -277,7 +277,7 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    BIT_FIELD result = activeModule().getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure);
+    BIT_FIELD result = moduleMesh()->hit_wall(pos, radius, stoppedby, nrm, pressure);
     chr_stoppedby_tests += g_meshStats.mpdfxTests;
     chr_pressure_tests += g_meshStats.pressureTests;
 
@@ -299,7 +299,7 @@ BIT_FIELD Object::hit_wall(const Ego::Vector3f& pos, Ego::Vector2f& nrm, float* 
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    BIT_FIELD result = activeModule().getMeshPointer()->hit_wall(pos, radius, stoppedby, nrm, pressure, data);
+    BIT_FIELD result = moduleMesh()->hit_wall(pos, radius, stoppedby, nrm, pressure, data);
     chr_stoppedby_tests += g_meshStats.mpdfxTests;
     chr_pressure_tests += g_meshStats.pressureTests;
 
@@ -321,7 +321,7 @@ BIT_FIELD Object::test_wall(const Ego::Vector3f& pos)
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
 
-    BIT_FIELD result = activeModule().getMeshPointer()->test_wall(pos, radius, stoppedby);
+    BIT_FIELD result = moduleMesh()->test_wall(pos, radius, stoppedby);
     chr_stoppedby_tests += g_meshStats.mpdfxTests;
     chr_pressure_tests += g_meshStats.pressureTests;
 

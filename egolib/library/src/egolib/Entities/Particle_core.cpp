@@ -102,7 +102,7 @@ BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    return activeModule().getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure);
+    return moduleMesh()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure);
 }
 
 BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure, mesh_wall_data_t& data)
@@ -113,7 +113,7 @@ BIT_FIELD Particle::hit_wall(const Vector3f& pos, Vector2f& nrm, float *pressure
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    return activeModule().getMeshPointer()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure, data);
+    return moduleMesh()->hit_wall(pos, 0.0f, stoppedby, nrm, pressure, data);
 }
 
 BIT_FIELD Particle::test_wall(const Vector3f& pos)
@@ -125,7 +125,7 @@ BIT_FIELD Particle::test_wall(const Vector3f& pos)
     g_meshStats.mpdfxTests = 0;
     g_meshStats.boundTests = 0;
     g_meshStats.pressureTests = 0;
-    return activeModule().getMeshPointer()->test_wall(pos, 0.0f, stoppedby);
+    return moduleMesh()->test_wall(pos, 0.0f, stoppedby);
 }
 
 const std::shared_ptr<ParticleProfile>& Particle::getProfile() const

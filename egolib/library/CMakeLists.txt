@@ -745,6 +745,8 @@ set(EGOLIB_GAME_MODULE_SOURCES
     src/egolib/game/Module/damagetile_instance.h
     src/egolib/game/Module/IModuleEnvironment.cpp
     src/egolib/game/Module/IModuleEnvironment.hpp
+    src/egolib/game/Module/IModuleStatus.cpp
+    src/egolib/game/Module/IModuleStatus.hpp
     src/egolib/game/Module/Module.cpp
     src/egolib/game/Module/Module_bootstrap.cpp
     src/egolib/game/Module/Module_internal.h
@@ -989,6 +991,7 @@ set(EGOLIB_FOUNDATION_BASE_SOURCES
     src/egolib/Script/IScriptSystem.cpp
     src/egolib/game/Core/ISessionState.cpp
     src/egolib/game/Module/IModuleEnvironment.cpp
+    src/egolib/game/Module/IModuleStatus.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileToken.cpp
     src/egolib/FileFormats/ConfigFile/ConfigFileTokenKind.cpp
     src/egolib/FileFormats/ConfigFile/configfile.c

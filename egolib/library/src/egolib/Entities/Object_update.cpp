@@ -74,13 +74,15 @@ void Object::update()
     // do the character interaction with water
     if (!isHidden() && isSubmerged() && !isScenery())
     {
+        water_instance_t& water = moduleWater();
+
         // do splash when entering water the first time
         if (!inwater)
         {
             // Splash
-            activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
+            activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), water.get_level() + 10}, ATK_FRONT, LocalParticleProfileRef(PIP_SPLASH), 0);
 
-            if ( activeModule().getWater()._is_water )
+            if ( water._is_water )
             {
                 SET_BIT(ai.alert, ALERTIF_INWATER);
             }
@@ -93,11 +95,11 @@ void Object::update()
             if(isAlive())
             {
                 if ( !isBeingHeld() && getProfile()->causesRipples()
-                    && getPosZ() + chr_min_cv._maxs[OCT_Z] + RIPPLETOLERANCE > activeModule().getWater().get_level()
-                    && getPosZ() + chr_min_cv._mins[OCT_Z] < activeModule().getWater().get_level())
+                    && getPosZ() + chr_min_cv._maxs[OCT_Z] + RIPPLETOLERANCE > water.get_level()
+                    && getPosZ() + chr_min_cv._mins[OCT_Z] < water.get_level())
                 {
                     // suppress ripples if we are far below the surface
-                    int ripple_suppression = 4 * (activeModule().getWater().get_level() - (getPosZ() + chr_min_cv._maxs[OCT_Z]));
+                    int ripple_suppression = 4 * (water.get_level() - (getPosZ() + chr_min_cv._maxs[OCT_Z]));
                     ripple_suppression = ripple_suppression / RIPPLETOLERANCE;
                     ripple_suppression = Ego::Math::constrain(ripple_suppression, 0, 4);
 
@@ -116,12 +118,12 @@ void Object::update()
 
                     if ( 0 == ( (worldUpdateCount() + getObjRef().get()) & ripand ))
                     {
-                        activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), activeModule().getWater().get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
+                        activeParticleHandler().spawnGlobalParticle({getPosX(), getPosY(), water.get_level()}, ATK_FRONT, LocalParticleProfileRef(PIP_RIPPLE), 0);
                     }
                 }
             }
 
-            if (activeModule().getWater()._is_water && HAS_NO_BITS(worldUpdateCount(), 7))
+            if (water._is_water && HAS_NO_BITS(worldUpdateCount(), 7))
             {
                 jumpready = true;
                 jumpnumber = 1; //Limit to 1 jump while in water

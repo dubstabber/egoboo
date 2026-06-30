@@ -27,11 +27,10 @@
 #include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/ProgressBar.hpp"
 #include "egolib/game/GUI/Material.hpp"
+#include "egolib/Renderer/Renderer.hpp"
 
 namespace Ego {
 namespace GUI {
@@ -338,8 +337,8 @@ float CharacterStatus::draw_character_xp_bar(const Object& character, float x, f
 
 
 void CharacterStatus::draw(DrawingContext& drawingContext) {
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-    if (!activeModule) {
+    ISessionState* session = tryActiveSessionState();
+    if (session == nullptr) {
         destroy();
         return;
     }
@@ -363,7 +362,7 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     bool levelUp = false;
     if (pchr->isPlayer()) {
-        levelUp = activeModule->getPlayer(pchr->getPlayerNumber())->hasUnspentLevel();
+        levelUp = session->playerList()[pchr->getPlayerNumber()]->hasUnspentLevel();
     }
 
     // draw the character's main icon
@@ -400,8 +399,8 @@ void CharacterStatus::draw(DrawingContext& drawingContext) {
 
     //Finally draw charge bar if applicable
     if (pchr->isPlayer()) {
-        const std::shared_ptr<Player> &player = activeModule->getPlayer(pchr->getPlayerNumber());
-        if (player->getChargeBarFrame() >= activeSessionState().worldUpdateCount()) {
+        const std::shared_ptr<Player> &player = session->playerList()[pchr->getPlayerNumber()];
+        if (player->getChargeBarFrame() >= session->worldUpdateCount()) {
             _chargeBar->setVisible(true);
             _chargeBar->setMaxValue(player->getBarMaxCharge());
             _chargeBar->setValue(player->getBarCurrentCharge());

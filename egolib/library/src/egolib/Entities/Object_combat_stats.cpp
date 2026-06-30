@@ -61,7 +61,7 @@ void Object::checkLevelUp()
         {
             // The character is ready to advance...
             if(isPlayer()) {
-                const std::shared_ptr<Ego::Player> &player = activeModule().getPlayer(is_which_player);
+                const std::shared_ptr<Ego::Player> &player = sessionState().playerList()[is_which_player];
                 if(!player->hasUnspentLevel()) {
                     player->setLevelUpIndicator(true);
                     DisplayMsg_printf("%s gained a level!!!", getName().c_str());

@@ -36,6 +36,7 @@
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/mesh.h"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/game/Module/Passage.hpp"
 
@@ -49,6 +50,11 @@ GameModule& activeModule()
 auto& objectHandler()
 {
     return Ego::Entities::activeObjectHandler();
+}
+
+std::shared_ptr<ego_mesh_t> moduleMesh()
+{
+    return activeModuleEnvironment().mesh();
 }
 
 uint32_t worldUpdateCount()
@@ -298,7 +304,7 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
     /// @details This function breaks the tiles of a passage if there is a character standing
     ///               on 'em.  Turns the tiles into damage terrain if it reaches last frame.
 
-	auto mesh = activeModule().getMeshPointer();
+	auto mesh = moduleMesh();
 	if (!mesh) {
 		throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
 	}
@@ -400,6 +406,10 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
 
     const std::shared_ptr<Passage> &passage = activeModule().getPassageByID(passageID);
     if ( !passage ) return false;
+    auto mesh = moduleMesh();
+    if (!mesh) {
+        throw idlib::argument_null_error(__FILE__, __LINE__, "mesh");
+    }
 
     int x = std::max<int>(x0, passage->getAxisAlignedBox2f().get_min().x()) / Info<int>::Grid::Size();
     int y = std::max<int>(y0, passage->getAxisAlignedBox2f().get_min().y()) / Info<int>::Grid::Size();
@@ -411,9 +421,9 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     {
         for ( /*nothing*/; x <= right; x++ )
         {
-            Index1D fan = activeModule().getMeshPointer()->getTileIndex(Index2D(x, y));
+            Index1D fan = mesh->getTileIndex(Index2D(x, y));
 
-			ego_tile_info_t& ptile = activeModule().getMeshPointer()->getTileInfo(fan);
+			ego_tile_info_t& ptile = mesh->getTileInfo(fan);
             if (tiletype == ( ptile._img & TILE_LOWER_MASK ) )
             {
                 *px1 = x * Info<float>::Grid::Size() + 64;
@@ -429,9 +439,9 @@ uint8_t FindTileInPassage( const int x0, const int y0, const int tiletype, const
     {
         for ( x = passage->getAxisAlignedBox2f().get_min().x() / Info<int>::Grid::Size(); x <= right; x++ )
         {
-            Index1D fan = activeModule().getMeshPointer()->getTileIndex(Index2D(x, y));
+            Index1D fan = mesh->getTileIndex(Index2D(x, y));
 
-			ego_tile_info_t& ptile = activeModule().getMeshPointer()->getTileInfo(fan);
+			ego_tile_info_t& ptile = mesh->getTileInfo(fan);
             if (tiletype == ( ptile._img & TILE_LOWER_MASK ) )
             {
                 *px1 = x * Info<float>::Grid::Size() + 64;

@@ -26,6 +26,7 @@
 #include "egolib/Entities/IObjectWorld.hpp"     // GameModule implements IObjectWorld
 #include "egolib/Mesh/ITerrainQuery.hpp"        // GameModule implements ITerrainQuery
 #include "egolib/game/Module/IModuleEnvironment.hpp" // GameModule implements IModuleEnvironment
+#include "egolib/game/Module/IModuleStatus.hpp" // GameModule implements IModuleStatus
 #include "egolib/game/Module/ModuleRuntime.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
@@ -56,7 +57,8 @@ class GameModule : private idlib::non_copyable,
                    public Ego::Physics::ICollisionWorld,
                    public Ego::Entities::IObjectWorld,
                    public Ego::Mesh::ITerrainQuery,
-                   public IModuleEnvironment
+                   public IModuleEnvironment,
+                   public IModuleStatus
 {
 public:
     static constexpr float PITDEPTH = -60;  ///< Depth to kill character
@@ -94,7 +96,7 @@ public:
      * @return
      *  @a true if the players have won
      */
-    bool isBeaten() const {return _isBeaten;}
+    bool isBeaten() const override {return _isBeaten;}
 
     /**
      * @brief
@@ -107,17 +109,17 @@ public:
      * @return
      *  @a true if the players are allowed to respawn upon death
      */
-    bool isRespawnValid() const {return _isRespawnValid;}
+    bool isRespawnValid() const override {return _isRespawnValid;}
 
     /**
      * @return
      *  @a true if the players are allowed to export (save) their progress in this module upon exit
      */
-    bool isExportValid() const {return _exportValid;}
+    bool isExportValid() const override {return _exportValid;}
 
     void setExportValid(bool valid) {_exportValid = valid;}
 
-    bool canRespawnAnyTime() const;
+    bool canRespawnAnyTime() const override;
 
     void setRespawnValid(bool valid) {_isRespawnValid = valid;}
 
@@ -136,6 +138,7 @@ public:
      *  number of passages currently loaded
      */
     int getPassageCount();
+    int passageCount() const override;
 
     /**
      * @brief
@@ -155,10 +158,12 @@ public:
     uint8_t getMinPlayers() const;
 
     const std::shared_ptr<ModuleProfile>& getModuleProfile() const {return _moduleProfile;}
+    const std::shared_ptr<ModuleProfile>& moduleProfile() const override {return getModuleProfile();}
 
     void setImportPlayers(const std::list<std::string> &players) {_playerNameList = players;}
 
     const std::list<std::string>& getImportPlayers() const {return _playerNameList;}
+    const std::list<std::string>& importPlayers() const override {return getImportPlayers();}
 
     /**
     * @brief

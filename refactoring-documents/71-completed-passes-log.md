@@ -198,3 +198,17 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   session-owned counters/import state. Verified with the Linux build, focused
   module/player/object/shop ctest filter, full `ctest`, and the `test.mod`
   validator smoke.
+- Pass 299 on 2026-06-30 added the lower-layer `IModuleStatus` seam for active
+  module export, respawn, beaten, passage-count, module-profile, and import-list
+  reads. `GameSessionContext` now installs and clears this status surface with
+  the active module, and `GameModule` implements the read-only view while
+  retaining concrete ownership and mutation. A bounded batch of HUD, menu,
+  victory, GUI status, entity/particle environment, player, loading, and script
+  callers moved off direct `GameSessionContext` / `GameModule` access where they
+  only needed active status, environment, or session-state reads. Module
+  mutation, passage mutation, lifecycle orchestration, and pre-module bootstrap
+  fallbacks stay on the concrete owners. Coverage was extended in
+  `ObjectHandlerQueries` to assert empty, mirrored, and cleared active module
+  status. Verified with the Linux build, focused fallback and
+  object/module/script/camera ctest filters, full `ctest`, the `test.mod`
+  validator smoke, and the live-archive `nm` back-edge check.

@@ -128,9 +128,9 @@ float draw_debug(float y)
            << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kY]
            << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kZ];
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
-        if (activeModule().getPlayerList().size() > 0)
+        if (sessionState().playerList().size() > 0)
         {
-            Object* pchr = activeModule().getPlayer(0)->tryObject();
+            Object* pchr = sessionState().playerList()[0]->tryObject();
             if (pchr != nullptr)
             {
                 os << "~~PLA0DEF"
@@ -150,9 +150,9 @@ float draw_debug(float y)
             }
         }
 
-        if (activeModule().getPlayerList().size() > 1)
+        if (sessionState().playerList().size() > 1)
         {
-            Object* pchr = activeModule().getPlayer(1)->tryObject();
+            Object* pchr = sessionState().playerList()[1]->tryObject();
             if (pchr != nullptr)
             {
                 std::ostringstream os;
@@ -175,10 +175,10 @@ float draw_debug(float y)
         os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - Ego::Entities::activeObjectHandler().getObjectCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
-        os.str(std::string()); os << "~~EXPORT:  " << (activeModule().isExportValid() ? "TRUE" : "FALSE");
+        os.str(std::string()); os << "~~EXPORT:  " << (moduleStatus().isExportValid() ? "TRUE" : "FALSE");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
-        os.str(std::string()); os << "~~PASS:    " << activeModule().getPassageCount();
+        os.str(std::string()); os << "~~PASS:    " << moduleStatus().passageCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
@@ -257,9 +257,9 @@ float draw_game_status(float y)
     else if (g_serverState.player_count > 0 )
 #endif
     {
-        if (sessionState().allLocalPlayersDead() || activeModule().canRespawnAnyTime())
+        if (sessionState().allLocalPlayersDead() || moduleStatus().canRespawnAnyTime())
         {
-            if (activeModule().isRespawnValid() && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
+            if (moduleStatus().isRespawnValid() && config().game_difficulty.getValue() < Ego::GameDifficulty::Hard)
             {
                 y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "PRESS SPACE TO RESPAWN");
             }
@@ -268,7 +268,7 @@ float draw_game_status(float y)
                 y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "PRESS ESCAPE TO QUIT");
             }
         }
-        else if (activeModule().isBeaten())
+        else if (moduleStatus().isBeaten())
         {
             y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "VICTORY!  PRESS ESCAPE");
         }

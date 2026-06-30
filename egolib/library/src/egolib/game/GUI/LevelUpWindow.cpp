@@ -9,9 +9,8 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Time/Time.hpp"  // ::Time::now
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 
 namespace
 {
@@ -256,7 +255,6 @@ void LevelUpWindow::draw(DrawingContext& drawingContext) {
 }
 
 void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
-    GameModule& activeModule = GameSessionContext::get().activeModule();
     Object* character = tryObservedCharacter(_characterRef);
     if (character == nullptr) {
         destroy();
@@ -366,7 +364,7 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
     //Increase character level by 1
     character->setExperienceLevelIndex(character->getExperienceLevelIndex() + 1);
     character->addAIAlertBits(ALERTIF_LEVELUP);
-    activeModule.getPlayer(character->getPlayerNumber())->setLevelUpIndicator(false);
+    activeSessionState().playerList()[character->getPlayerNumber()]->setLevelUpIndicator(false);
 
     //Generate random seed for next level increase
     character->randomizeLevelUpSeed();

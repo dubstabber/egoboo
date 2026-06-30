@@ -46,6 +46,7 @@
 //For cheats
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -214,7 +215,7 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
         case SDLK_ESCAPE:
 
             //If we have won show the Victory Screen
-            if(GameSessionContext::get().activeModule().isBeaten()) {
+            if(activeModuleStatus().isBeaten()) {
                 engine().pushGameState(std::make_shared<VictoryScreen>(this));
             }
 

@@ -263,7 +263,7 @@ int Object::damage(Facing direction, const IPair  damage, const DamageType damag
     int actual_damage = base_damage - base_damage*getDamageReduction(damagetype, !ignoreArmour);
 
     // Increase electric damage when in water
-    if (damagetype == DAMAGE_ZAP && isSubmerged() && activeModule().getWater()._is_water)
+    if (damagetype == DAMAGE_ZAP && isSubmerged() && moduleWater()._is_water)
     {
         actual_damage *= 2.0f;     /// @note ZF> Is double damage too much?
     }

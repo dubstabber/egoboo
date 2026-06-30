@@ -26,10 +26,9 @@
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/SelectPlayersState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Label.hpp"
-#include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/game.h"
 #include "egolib/Graphics/GraphicsSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp" // Ego::GraphicsWindow
@@ -37,7 +36,7 @@
 VictoryScreen::VictoryScreen(PlayingState *playingState, const bool forceExit) :
 	_playingState(playingState)
 {
-    const bool exportValid = GameSessionContext::get().activeModule().isExportValid();
+    const bool exportValid = activeModuleStatus().isExportValid();
 
 	//Add the buttons
 	int yOffset = Ego::activeGraphicsSystem().getWindow()->size().y() - 80;

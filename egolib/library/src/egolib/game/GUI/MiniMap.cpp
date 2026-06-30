@@ -28,10 +28,8 @@
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Logic/Team.hpp"
 #include "egolib/Time/Time.hpp"  // ::Time::now
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Material.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
@@ -90,8 +88,9 @@ void MiniMap::queueEnemySenseBlips(const EnemySenseState& enemySense)
 }
 
 void MiniMap::draw(DrawingContext& drawingContext) {
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-    if (!_minimapTexture || !activeModule) {
+    Ego::Physics::ICollisionWorld* collisionWorld = Ego::Physics::tryActiveCollisionWorld();
+    ISessionState* session = tryActiveSessionState();
+    if (!_minimapTexture || !collisionWorld || session == nullptr) {
         return;
     }
 
@@ -100,11 +99,11 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     uiManager().drawImage(Point2f(getX(), getY()), Vector2f(getWidth(), getHeight()), material);
 
     // If one of the players can sense enemies via ESP, draw them as blips on the map
-    queueEnemySenseBlips(activeSessionState().enemySense());
+    queueEnemySenseBlips(session->enemySense());
 
     // Show local player position(s)
     if (_showPlayerPosition && ::Time::now<::Time::Unit::Ticks>() < _markerBlinkTimer) {
-        for (const std::shared_ptr<Player> &player : activeSessionState().playerList()) {
+        for (const std::shared_ptr<Player> &player : session->playerList()) {
             const Object* object = player != nullptr ? player->tryObject() : nullptr;
             if (!object || object->isTerminated() || !object->isAlive()) {
                 continue;
@@ -121,9 +120,8 @@ void MiniMap::draw(DrawingContext& drawingContext) {
     //Draw all queued blips
     for (const Blip &blip : _blips) {
         //Adjust the position values so that they fit inside the minimap
-        auto& cw = Ego::Physics::activeCollisionWorld();
-        float x = getX() + (blip.x * getWidth() / cw.getEdgeX());
-        float y = getY() + (blip.y * getHeight() / cw.getEdgeY());
+        float x = getX() + (blip.x * getWidth() / collisionWorld->getEdgeX());
+        float y = getY() + (blip.y * getHeight() / collisionWorld->getEdgeY());
 
         if (blip.icon != nullptr) {
             //Center icon on blip position
@@ -144,8 +142,8 @@ void MiniMap::setShowPlayerPosition(bool show) {
 }
 
 void MiniMap::addBlip(const float x, const float y, const HUDColors color) {
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-    if (!activeModule || !activeModule->isInside(x, y)) {
+    Ego::Physics::ICollisionWorld* collisionWorld = Ego::Physics::tryActiveCollisionWorld();
+    if (!collisionWorld || !collisionWorld->isInside(x, y)) {
         return;
     }
 
@@ -153,8 +151,8 @@ void MiniMap::addBlip(const float x, const float y, const HUDColors color) {
 }
 
 void MiniMap::addBlip(const float x, const float y, const std::shared_ptr<const Texture>& icon) {
-    GameModule* activeModule = GameSessionContext::get().tryActiveModule();
-    if (!activeModule || !activeModule->isInside(x, y)) {
+    Ego::Physics::ICollisionWorld* collisionWorld = Ego::Physics::tryActiveCollisionWorld();
+    if (!collisionWorld || !collisionWorld->isInside(x, y)) {
         return;
     }
 

@@ -8,6 +8,7 @@
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
+#include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace gfx_internal
@@ -35,6 +36,11 @@ inline GameModule& activeModule()
 inline IModuleEnvironment& moduleEnvironment()
 {
     return activeModuleEnvironment();
+}
+
+inline IModuleStatus& moduleStatus()
+{
+    return activeModuleStatus();
 }
 
 inline ISessionState& sessionState()

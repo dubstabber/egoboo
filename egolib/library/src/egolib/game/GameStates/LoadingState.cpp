@@ -27,6 +27,7 @@
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/graphic.h"
 #include "egolib/game/GUI/Button.hpp"
 #include "egolib/game/GUI/Label.hpp"
@@ -219,7 +220,7 @@ void LoadingState::loadModuleData()
 
         // set up the cameras *after* game_begin_module() or the player devices will not be initialized
         // and camera_system_begin() will not set up thte correct view
-        EngineContext::get().cameraSystem().setNumberOfCameras(GameSessionContext::get().localPlayerCount());
+        EngineContext::get().cameraSystem().setNumberOfCameras(activeSessionState().localPlayerCount());
 
         // Fade out music when finished loading
         audioSystem().stopMusic();

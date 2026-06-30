@@ -43,18 +43,18 @@ or engine/session service ownership.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 166 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 777 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 281 `.cpp`, 73 `.h`, 320 `.hpp` |
-| Runtime source lines | 129,047 | Same scope as above |
-| Test files / lines | 50 / 24,859 | `egolib/tests`, source/header files only |
+| Archive members | 167 / 6 / 28 / 24 / 79 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Runtime source files | 780 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 282 `.cpp`, 73 `.h`, 322 `.hpp` |
+| Runtime source lines | 129,322 | Same scope as above |
+| Test files / lines | 50 / 24,889 | `egolib/tests`, source/header files only |
 | ctest cases | 943 | `ctest --test-dir build -N` |
 | ctest baseline | 943 / 943 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 498 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `::get()` call sites | 487 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 388 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 56 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 43 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
-| `throw` references | 653 | Broad grep count, not semantic classification |
-| Interface headers | 62 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
+| `throw` references | 655 | Broad grep count, not semantic classification |
+| Interface headers | 63 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
 | Object role interfaces | 19 | 21 `Entities/I*.hpp` files total, including 2 service interfaces |
 | `idlib::singleton` references | 19 | Intentional services plus legacy-singleton remnants |
 
@@ -64,7 +64,7 @@ The live archive member counts are:
 
 | Archive | Members | Role |
 | --- | ---: | --- |
-| `egolib-foundation-base` | 166 | Dependency-closed base: math, logging, VFS, file formats, profiles data/model loading, script compiler pieces, low-level services |
+| `egolib-foundation-base` | 167 | Dependency-closed base: math, logging, VFS, file formats, profiles data/model loading, script compiler pieces, low-level services |
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
@@ -142,15 +142,15 @@ registries for input, image, font, texture-atlas, and GFX access. Active
 object-handler and object lookup access routes through the lower-layer
 `IObjectWorld` seam for the migrated gameplay, graphics, script, audio, and
 entity callers; `GameSessionContext` no longer exposes object lookup forwarding
-methods. Active module environment and read-only session state access now route
-through the narrower `IModuleEnvironment` and `ISessionState` seams for migrated
-rendering, camera, HUD, script, and spawn callers. `GameModule` loading,
-spawning, update, passage music, weather, and player-startup code now receive
-session and engine services through an explicit `GameModuleRuntime` provider
-surface instead of directly reaching into `EngineContext` or
-`GameSessionContext`. `GameSessionContext` and `GameModule` still own lifetime
-and mutation. This keeps context APIs narrower while moving ownership seams
-toward lower archives.
+methods. Active module environment, read-only module status, and read-only
+session state access now route through the narrower `IModuleEnvironment`,
+`IModuleStatus`, and `ISessionState` seams for migrated rendering, camera, HUD,
+menu, script, entity, and spawn callers. `GameModule` loading, spawning, update,
+passage music, weather, and player-startup code now receive session and engine
+services through an explicit `GameModuleRuntime` provider surface instead of
+directly reaching into `EngineContext` or `GameSessionContext`.
+`GameSessionContext` and `GameModule` still own lifetime and mutation. This
+keeps context APIs narrower while moving ownership seams toward lower archives.
 
 ## Design-Pattern Usage
 

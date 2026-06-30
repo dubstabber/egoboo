@@ -222,7 +222,7 @@ void draw_passages(Camera& cam)
     EngineContext::get().renderer().setViewMatrix(cam.getViewMatrix());
     EngineContext::get().renderer().setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
 
-    for (int i = 0; i < activeModule().getPassageCount(); ++i)
+    for (int i = 0; i < moduleStatus().passageCount(); ++i)
     {
         const Ego::AxisAlignedBox2f& passageABB = activeModule().getPassageByID(i)->getAxisAlignedBox2f();
 

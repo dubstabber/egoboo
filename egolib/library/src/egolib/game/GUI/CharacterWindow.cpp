@@ -11,9 +11,8 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/game/Core/GameSessionContext.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Logic/Player.hpp"
-#include "egolib/game/Module/Module.hpp"
 #include "egolib/game/GUI/Layout.hpp"
 #include "egolib/game/GUI/JoinBounds.hpp"
 
@@ -45,8 +44,13 @@ std::shared_ptr<Ego::Player> tryObservedPlayer(PLA_REF playerNumber)
         return nullptr;
     }
 
-    GameModule* module = GameSessionContext::get().tryActiveModule();
-    return module != nullptr ? module->tryGetPlayer(playerNumber) : nullptr;
+    ISessionState* session = tryActiveSessionState();
+    if (session == nullptr || playerNumber >= session->playerList().size())
+    {
+        return nullptr;
+    }
+
+    return session->playerList()[playerNumber];
 }
 }
 
@@ -292,11 +296,11 @@ bool CharacterWindow::notifyMousePointerMoved(const Events::MousePointerMovedEve
 }
 
 void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
-    GameModule& activeModule = GameSessionContext::get().activeModule();
     Object* character = tryObservedCharacter(_characterRef);
     if (character == nullptr) {
         return;
     }
+    std::shared_ptr<Ego::Player> observedPlayer = tryObservedPlayer(_playerNumber);
 
     int xPos, yPos = 0;
 
@@ -376,7 +380,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     for (size_t i = 0; i < inventorySlots; ++i) {
         std::shared_ptr<InventorySlot> slot = std::make_shared<InventorySlot>(_characterRef,
                                                                               i,
-                                                                              _playerNumber != INVALID_PLA_REF ? activeModule.getPlayer(_playerNumber) : nullptr);
+                                                                              observedPlayer);
         slot->setSize(Vector2f(slotSize, slotSize));
         target->addComponent(slot);
         slots.push_back(slot);
@@ -385,8 +389,8 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
     layoutRows(slots);
 
     //If the character is a local player, then we consume that players input events for inventory managment
-    if (_playerNumber != INVALID_PLA_REF) {
-        activeModule.getPlayer(_playerNumber)->setInventoryMode(true);
+    if (observedPlayer) {
+        observedPlayer->setInventoryMode(true);
     }
 
     JoinBounds joinBounds;
@@ -415,7 +419,7 @@ void CharacterWindow::buildCharacterStatisticTab(std::shared_ptr<Tab> target) {
         target->addComponent(_levelUpButton);
 
         //Make level up button visible if needed
-        _levelUpButton->setVisible(activeModule.getPlayer(_playerNumber)->hasUnspentLevel());
+        _levelUpButton->setVisible(observedPlayer && observedPlayer->hasUnspentLevel());
     }
     float newHeight = yPos + 30 + BorderPadding;
     target->setHeight(newHeight);
