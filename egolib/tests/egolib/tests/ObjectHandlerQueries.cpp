@@ -12,6 +12,7 @@
 #include "egolib/Entities/_Include.hpp"
 #undef private
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/Entities/ObjectRoleAccess.hpp"
 #include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
@@ -30,6 +31,32 @@ namespace
 bool containsRef(const std::vector<ObjectRef>& refs, ObjectRef ref)
 {
     return std::find(refs.begin(), refs.end(), ref) != refs.end();
+}
+
+void expectNoActiveRoles(ObjectRef ref)
+{
+    EXPECT_EQ(Ego::Entities::tryActiveProfiled(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveScriptable(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveScriptRuntimeState(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveAnimationControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveDamageable(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveEquipmentControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveCharacterState(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveEnchantable(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveAppearanceProfile(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveInventoryHolder(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveAttachmentControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveLifecycleControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveMorphControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveItemInfo(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveMovementControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveRenderable(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveTeamMember(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveVisualControl(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveWallet(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActivePhysical(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveTargetInfo(ref), nullptr);
+    EXPECT_EQ(Ego::Entities::tryActiveVisibilityObserver(ref), nullptr);
 }
 
 class ObjectHandlerQueriesFixture : public ::testing::Test
@@ -187,6 +214,8 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupIsEmptyWithoutActiveM
     EXPECT_EQ(Ego::Entities::tryActiveObject(ref), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(ref), nullptr);
     EXPECT_FALSE(Ego::Entities::activeObjectExists(ref));
+    EXPECT_TRUE(Ego::Entities::activeObjectRefs().empty());
+    expectNoActiveRoles(ref);
 }
 
 TEST_F(ObjectHandlerQueriesFixture, ActiveModuleEnvironmentAndSessionStateAreEmptyWithoutActiveModule)
@@ -480,6 +509,51 @@ TEST_F(ObjectHandlerQueriesFixture, ActiveObjectWorldLookupMatchesActiveModule)
     EXPECT_EQ(Ego::Entities::tryActiveObject(liveRef), nullptr);
     EXPECT_EQ(Ego::Entities::tryActiveConstObject(liveRef), nullptr);
     EXPECT_FALSE(Ego::Entities::activeObjectExists(liveRef));
+}
+
+TEST_F(ObjectHandlerQueriesFixture, ActiveObjectRoleAccessResolvesLiveAndRejectsInvalidOrStaleRefs)
+{
+    const ObjectProfileRef followerProfile = loadProfile("mp_modules/test.mod", "mp_objects/follower.obj", 6109);
+    GameModule& module = beginActiveTestModule();
+    ObjectHandler& handler = module.getObjectHandler();
+
+    auto follower = spawnObject(module, followerProfile, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(follower, nullptr);
+    {
+        auto refs = handler.objectRefIterator();
+        (void)refs;
+    }
+
+    const ObjectRef liveRef = follower->getObjRef();
+    EXPECT_TRUE(containsRef(Ego::Entities::activeObjectRefs(), liveRef));
+    EXPECT_EQ(Ego::Entities::tryActiveProfiled(liveRef), static_cast<const IProfiled*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveScriptable(liveRef), static_cast<IScriptable*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveScriptRuntimeState(liveRef), static_cast<IScriptRuntimeState*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveAnimationControl(liveRef), static_cast<IAnimationControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveDamageable(liveRef), static_cast<IDamageable*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveEquipmentControl(liveRef), static_cast<IEquipmentControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveCharacterState(liveRef), static_cast<ICharacterState*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveEnchantable(liveRef), static_cast<IEnchantable*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveAppearanceProfile(liveRef), static_cast<IAppearanceProfile*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveInventoryHolder(liveRef), static_cast<IInventoryHolder*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveAttachmentControl(liveRef), static_cast<IAttachmentControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveLifecycleControl(liveRef), static_cast<ILifecycleControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveMorphControl(liveRef), static_cast<IMorphControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveItemInfo(liveRef), static_cast<const IItemInfo*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveMovementControl(liveRef), static_cast<IMovementControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveRenderable(liveRef), static_cast<IRenderable*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveTeamMember(liveRef), static_cast<ITeamMember*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveVisualControl(liveRef), static_cast<IVisualControl*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveWallet(liveRef), static_cast<IWallet*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActivePhysical(liveRef), static_cast<const IPhysical*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveTargetInfo(liveRef), static_cast<const ITargetInfo*>(follower.get()));
+    EXPECT_EQ(Ego::Entities::tryActiveVisibilityObserver(liveRef), static_cast<const IVisibilityObserver*>(follower.get()));
+
+    expectNoActiveRoles(ObjectRef::Invalid);
+
+    ASSERT_TRUE(handler.remove(liveRef));
+    expectNoActiveRoles(liveRef);
+    EXPECT_FALSE(containsRef(Ego::Entities::activeObjectRefs(), liveRef));
 }
 
 TEST_F(ObjectHandlerQueriesFixture, FullRefIteratorMatchesSpawnInsertionOrder)

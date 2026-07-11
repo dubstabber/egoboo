@@ -8,7 +8,7 @@ namespace
 {
 bool isLiveStateObjectRef(ObjectRef objectRef)
 {
-    return tryObject(objectRef) != nullptr;
+    return hasLiveObjectRef(objectRef);
 }
 }
 

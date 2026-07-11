@@ -602,7 +602,7 @@ void Object::kill(ObjectAttribution originalKiller, bool ignoreInvincibility)
     // Let it's AI script run one last time
     _hasBeenKilled = true;
     ai.timer = worldUpdateCount() + 1;            // Prevent IfTimeOut in scr_run_chr_script()
-    Ego::Script::activeScriptSystem().runCharacterScript(this);
+    Ego::Script::activeScriptSystem().runCharacterScript(getObjRef());
 }
 
 bool Object::costMana(int amount, const ObjectRef killer)

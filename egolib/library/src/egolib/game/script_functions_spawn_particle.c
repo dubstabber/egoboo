@@ -3,6 +3,10 @@
 
 #include "egolib/game/script_functions_spawn_internal.h"
 
+#define GAME_ENTITIES_PRIVATE 1
+#include "egolib/Entities/Particle.hpp"
+#undef GAME_ENTITIES_PRIVATE
+
 namespace
 {
 ObjectRef resolveHolderOrSelfRef(const ITargetInfo& object)

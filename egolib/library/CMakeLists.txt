@@ -80,8 +80,13 @@ set(EGOLIB_ENTITIES_SOURCES
     src/egolib/Entities/IPhysical.hpp
     src/egolib/Entities/IRenderable.hpp
     src/egolib/Entities/IScriptable.hpp
+    src/egolib/Entities/IScriptRuntimeState.hpp
     src/egolib/Entities/ITargetInfo.hpp
+    src/egolib/Entities/IVisibilityObserver.hpp
     src/egolib/Entities/_Include.hpp
+    src/egolib/Entities/ObjectConstants.hpp
+    src/egolib/Entities/ObjectRoleAccess.cpp
+    src/egolib/Entities/ObjectRoleAccess.hpp
     src/egolib/Entities/Object_accessors.cpp
     src/egolib/Entities/Object_attributes.cpp
     src/egolib/Entities/Object_attributes_behaviors.cpp

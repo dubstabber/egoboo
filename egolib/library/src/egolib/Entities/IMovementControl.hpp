@@ -33,6 +33,9 @@ class IMovementControl
 public:
     virtual ~IMovementControl() = default;
 
+    /// @brief Clear pending input latches and reset desired movement.
+    virtual void resetInputCommands() = 0;
+
     virtual float getFat() const = 0;
     virtual uint8_t getStoppedByMask() const = 0;
 

@@ -34,7 +34,7 @@ SelfStateContext makeSelfStateContext(const ai_state_t& self)
 
 bool isLiveAlertObjectRef(ObjectRef objectRef)
 {
-    return tryObject(objectRef) != nullptr;
+    return hasLiveObjectRef(objectRef);
 }
 
 bool hasExistingHolder(const ITargetInfo& objectTargetInfo)

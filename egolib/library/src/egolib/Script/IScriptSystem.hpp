@@ -24,8 +24,6 @@
 
 #include "egolib/typedef.h"  // ObjectRef
 
-class Object;
-
 namespace Ego
 {
 namespace Script
@@ -37,21 +35,21 @@ namespace Script
 ///        It is implemented by a VM-side adapter (ScriptSystemAdapter, which forwards to the
 ///        VM driver free functions) and installed once at boot from a layer above
 ///        egolib-library. Routing the three library call sites (game_loop's per-object AI tick,
-///        Object::kill's final-script run, and the game session teardown) through this interface
+///        the death path's final-script run, and the game session teardown) through this interface
 ///        removes the only remaining egolib-library -> VM-driver link edges, so the EgoScript VM
 ///        (script.c + script_driver.c + the script_functions_*.c family) can be carved into an above-library
 ///        egolib-scriptvm archive. This mirrors Ego::Entities::IObjectWorld (the entity-world
 ///        seam) and the GameEngine main-menu-state factory used by the gamestates carve.
 ///
-///        Object* and ObjectRef are both already lower-layer, so the interface drags in no
-///        game/ header (Object is forward-declared; ObjectRef comes from typedef.h).
+///        ObjectRef is already lower-layer, so the interface drags in no concrete entity or
+///        game/ header.
 class IScriptSystem
 {
 public:
     virtual ~IScriptSystem() = default;
 
-    /// @brief Run @a pchr's AI script once (the per-tick / final-kill dispatch).
-    virtual void runCharacterScript(Object* pchr) = 0;
+    /// @brief Run @a character's AI script once (the per-tick / final-kill dispatch).
+    virtual void runCharacterScript(ObjectRef character) = 0;
 
     /// @brief Poll @a character's per-tick alert conditions (waypoint arrival, etc.).
     virtual void setAlerts(ObjectRef character) = 0;

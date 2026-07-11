@@ -26,7 +26,6 @@
 #include "egolib/Script/script.h"
 #include "egolib/Script/script_internal.h"
 
-#include "egolib/Entities/_Include.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Profiles/_Include.hpp" // ObjectProfile (complete type)
 #include "egolib/Script/IRuntimeStatistics.hpp"
@@ -35,16 +34,6 @@
 
 namespace
 {
-IMovementControl& movementControl(Object& object)
-{
-    return object;
-}
-
-const IMovementControl& movementControl(const Object& object)
-{
-    return object;
-}
-
 ObjectRef heldItemRef(const IInventoryHolder& holder, slot_t slot)
 {
     return holder.getHeldObject(slot);
@@ -61,10 +50,10 @@ bool isRuntimeObjectAlive(ObjectRef ref)
     return holder != nullptr && !holder->isTerminated();
 }
 
-void updateScriptErrorContext(const Object& object)
+void updateScriptErrorContext(const IProfiled& profiled)
 {
     script_error_classname = "UNKNOWN";
-    script_error_model = object.getProfileID();
+    script_error_model = ObjectProfileRef(profiled.getProfileRef());
     if (script_error_model != ObjectProfileRef::Invalid)
     {
         script_error_classname = activeProfileSystem().getProfile(script_error_model)->getClassName().c_str();
@@ -109,14 +98,15 @@ void dumpDebugScriptState(vfs_FILE* scr_file, const script_info_t& script, const
 
 struct RuntimeActorContext
 {
-    Object* object = nullptr;
+    ObjectRef ref = ObjectRef::Invalid;
     ai_state_t* aiState = nullptr;
     script_info_t* script = nullptr;
-
-    Object& actor() const
-    {
-        return *object;
-    }
+    const IProfiled* profiled = nullptr;
+    IInventoryHolder* inventory = nullptr;
+    IMovementControl* movement = nullptr;
+    const IPhysical* physical = nullptr;
+    const ITargetInfo* targetInfo = nullptr;
+    const IVisibilityObserver* visibility = nullptr;
 
     ai_state_t& state() const
     {
@@ -130,28 +120,42 @@ struct RuntimeActorContext
 
     bool isPlayerActor() const
     {
-        return object != nullptr && object->isPlayer();
+        return targetInfo != nullptr && targetInfo->isPlayer();
+    }
+
+    bool isResolved() const
+    {
+        return ref != ObjectRef::Invalid && aiState != nullptr && script != nullptr &&
+               profiled != nullptr && inventory != nullptr && movement != nullptr &&
+               physical != nullptr && targetInfo != nullptr && visibility != nullptr;
     }
 };
 
-bool tryResolveRuntimeActorContext(Object& object, RuntimeActorContext& context)
-{
-    context.object = &object;
-    context.aiState = &Ego::Script::runtimeState(object);
-    context.script = &object.getProfile()->getAIScript();
-    return true;
-}
-
 bool tryResolveRuntimeActorContext(ObjectRef actorRef, RuntimeActorContext& context)
 {
-    Object* object = tryObject(actorRef);
-    return object != nullptr && tryResolveRuntimeActorContext(*object, context);
+    IScriptRuntimeState* runtimeStateRole = tryScriptRuntimeState(actorRef);
+    context.ref = actorRef;
+    context.profiled = tryProfiled(actorRef);
+    context.inventory = tryInventoryHolder(actorRef);
+    context.movement = tryMovementControl(actorRef);
+    context.physical = tryPhysical(actorRef);
+    context.targetInfo = tryTargetInfo(actorRef);
+    context.visibility = tryVisibilityObserver(actorRef);
+    if (runtimeStateRole == nullptr || context.profiled == nullptr ||
+        context.profiled->getProfile() == nullptr)
+    {
+        return false;
+    }
+
+    context.aiState = &Ego::Script::runtimeState(*runtimeStateRole);
+    context.script = &context.profiled->getProfile()->getAIScript();
+    return context.isResolved();
 }
 
 bool shouldSkipScriptRun(const RuntimeActorContext& context)
 {
     const ai_state_t& aiState = context.state();
-    return context.actor().isTerminated() ||
+    return context.inventory->isTerminated() ||
            (aiState.poof_time >= 0 && aiState.poof_time <= static_cast<int32_t>(worldUpdateCount()));
 }
 
@@ -170,7 +174,7 @@ void resetNonPlayerInputCommands(RuntimeActorContext& context)
 {
     if (!context.isPlayerActor())
     {
-        context.actor().resetInputCommands();
+        context.movement->resetInputCommands();
     }
 }
 
@@ -182,7 +186,7 @@ void resetInvisibleTargetToSelf(RuntimeActorContext& context)
         return;
     }
 
-    if (!context.actor().canSeeObject(aiState.getTarget()))
+    if (!context.visibility->canSeeObject(aiState.getTarget()))
     {
         aiState.setTarget(aiState.getSelf());
     }
@@ -191,23 +195,21 @@ void resetInvisibleTargetToSelf(RuntimeActorContext& context)
 void publishWaypointVelocity(RuntimeActorContext& context)
 {
     const ai_state_t& aiState = context.state();
-    Object& object = context.actor();
-    movementControl(object).setDesiredVelocity(Ego::Vector2f(
-        (aiState.wp[kX] - object.getPosX()) / Info<float>::Grid::Size(),
-        (aiState.wp[kY] - object.getPosY()) / Info<float>::Grid::Size()));
+    context.movement->setDesiredVelocity(Ego::Vector2f(
+        (aiState.wp[kX] - context.physical->getPosX()) / Info<float>::Grid::Size(),
+        (aiState.wp[kY] - context.physical->getPosY()) / Info<float>::Grid::Size()));
 }
 
 void applyNonPlayerMovementLatchUpdate(RuntimeActorContext& context)
 {
-    Object& object = context.actor();
     ai_state_t& aiState = context.state();
     ai_state_t::ensure_wp(aiState);
 
-    if (const Object* rider = tryObject(leftHandRiderRef(object));
-        object.isMount() && rider != nullptr)
+    IMovementControl* riderMovement = tryMovementControl(leftHandRiderRef(*context.inventory));
+    if (context.targetInfo->isMount() && riderMovement != nullptr)
     {
         // Mount (rider is held in left grip)
-        movementControl(object).setDesiredVelocity(movementControl(*rider).getDesiredVelocity());
+        context.movement->setDesiredVelocity(riderMovement->getDesiredVelocity());
     }
     else if (aiState.wp_valid)
     {
@@ -218,11 +220,10 @@ void applyNonPlayerMovementLatchUpdate(RuntimeActorContext& context)
 
 bool isAtCurrentWaypoint(const RuntimeActorContext& context)
 {
-    const Object& object = context.actor();
     const ai_state_t& aiState = context.state();
     return aiState.wp_valid &&
-           (std::abs(object.getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
-           (std::abs(object.getPosY() - aiState.wp[kY]) < WAYTHRESH);
+           (std::abs(context.physical->getPosX() - aiState.wp[kX]) < WAYTHRESH) &&
+           (std::abs(context.physical->getPosY() - aiState.wp[kY]) < WAYTHRESH);
 }
 
 void publishWaypointArrivalAlert(ai_state_t& aiState)
@@ -232,7 +233,6 @@ void publishWaypointArrivalAlert(ai_state_t& aiState)
 
 void advanceWaypointPathAfterArrival(RuntimeActorContext& context)
 {
-    const Object& object = context.actor();
     ai_state_t& aiState = context.state();
     if (waypoint_list_t::finished(aiState.wp_lst))
     {
@@ -240,7 +240,7 @@ void advanceWaypointPathAfterArrival(RuntimeActorContext& context)
         // if the object can be alerted to last waypoint, do it
         // this test needs to be done because the ALERTIF_ATLASTWAYPOINT
         // doubles for "at last waypoint" and "not put away"
-        if (!object.getProfile()->isEquipment())
+        if (!context.profiled->getProfile()->isEquipment())
         {
             SET_BIT(aiState.alert, ALERTIF_ATLASTWAYPOINT);
         }
@@ -273,7 +273,7 @@ void pollWaypointAlerts(RuntimeActorContext& context)
     // waypoints around a track or something
 
     // mounts do not get alerts
-    // if ( objectHandler().exists(pchr->attachedto) ) return;
+    // Attached actors are handled by their holder and return earlier.
 
     // is the current waypoint is not valid, try to load up the top waypoint
     ai_state_t::ensure_wp(aiState);
@@ -294,7 +294,6 @@ void runCharacterScript(RuntimeActorContext& context)
         return;
     }
 
-    Object& actor = context.actor();
     ai_state_t& aiState = context.state();
     script_info_t& script = context.scriptInfo();
 
@@ -309,7 +308,7 @@ void runCharacterScript(RuntimeActorContext& context)
     aiState.setOldTarget(aiState.getTarget());
 
     // Make life easier
-    updateScriptErrorContext(actor);
+    updateScriptErrorContext(*context.profiled);
 
     if (debug_scripts && debug_script_file)
     {
@@ -376,24 +375,6 @@ void scripting_system_end()
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
-void scr_run_chr_script(Object *pchr)
-{
-    // Make sure that this module is initialized.
-    scripting_system_begin();
-
-    if (pchr == nullptr)
-    {
-        return;
-    }
-    RuntimeActorContext context;
-    if (!tryResolveRuntimeActorContext(*pchr, context))
-    {
-        return;
-    }
-
-    runCharacterScript(context);
-}
-
 void scr_run_chr_script(const ObjectRef character)
 {
     /// @author ZZ

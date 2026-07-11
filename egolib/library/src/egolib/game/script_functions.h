@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include <cstdint>  // uint8_t (return type; state/self/Object are forward-declared below)
+#include <cstdint>  // uint8_t
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
 struct script_state_t;
 struct ai_state_t;
-class Object;
 
 //--------------------------------------------------------------------------------------------
 // helper functions

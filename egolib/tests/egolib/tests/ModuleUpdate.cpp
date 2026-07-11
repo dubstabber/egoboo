@@ -205,9 +205,9 @@ public:
 class RecordingScriptSystem : public Ego::Script::IScriptSystem
 {
 public:
-    void runCharacterScript(Object* object) override
+    void runCharacterScript(ObjectRef objectRef) override
     {
-        runRefs.push_back(object != nullptr ? object->getObjRef() : ObjectRef::Invalid);
+        runRefs.push_back(objectRef);
     }
 
     void setAlerts(ObjectRef character) override
@@ -549,6 +549,26 @@ TEST_F(ModuleUpdateFixture, LetAllCharactersThinkDispatchesEligibleLiveObjectsTh
     ASSERT_EQ(scriptSystem.runRefs.size(), 1u);
     EXPECT_EQ(scriptSystem.alertRefs.front(), eligible->getObjRef());
     EXPECT_EQ(scriptSystem.runRefs.front(), eligible->getObjRef());
+}
+
+TEST_F(ModuleUpdateFixture, FinalDeathScriptDispatchUsesTheVictimObjectRef)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+
+    auto victim = makeObject(module, "mp_objects/follower.obj", 4112,
+                             Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    ASSERT_NE(victim, nullptr);
+    flushObjectHandler(module);
+
+    const ObjectRef victimRef = victim->getObjRef();
+    RecordingScriptSystem scriptSystem;
+    ScopedInstalledScriptSystem scopedScriptSystem(scriptSystem);
+
+    victim->kill(ObjectAttribution(), true);
+
+    ASSERT_EQ(scriptSystem.runRefs.size(), 1u);
+    EXPECT_EQ(scriptSystem.runRefs.front(), victimRef);
 }
 
 TEST_F(ModuleUpdateFixture, ObjectUpdateRoutesWaterSplashThroughInstalledParticleService)

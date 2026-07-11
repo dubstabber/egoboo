@@ -56,7 +56,7 @@ struct SpawnSelfContext
 
 inline bool isLiveSpawnObjectRef(ObjectRef objectRef)
 {
-    return tryObject(objectRef) != nullptr;
+    return hasLiveObjectRef(objectRef);
 }
 
 inline SpawnSelfContext resolveSpawnSelfContext(const ai_state_t& self)

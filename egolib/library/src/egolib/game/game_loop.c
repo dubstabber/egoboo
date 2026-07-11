@@ -507,7 +507,7 @@ void MainLoop::let_all_characters_think()
                 scriptableObject.setAITimer(worldUpdateCount() + 1);  //Prevents IfTimeOut from triggering
             }
 
-            Ego::Script::activeScriptSystem().runCharacterScript(object);
+            Ego::Script::activeScriptSystem().runCharacterScript(objectRef);
         }
     }
 }

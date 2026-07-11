@@ -192,11 +192,56 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptResetsInvisibleTargetAndAppliesWa
     waypoint_list_t::clear(aiState.wp_lst);
     waypoint_list_t::push(aiState.wp_lst, actor->getPosX() + Info<float>::Grid::Size(), actor->getPosY());
 
-    scr_run_chr_script(actor.get());
+    scr_run_chr_script(actor->getObjRef());
 
     EXPECT_EQ(aiState.getTarget(), actor->getObjRef());
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), 1.0f);
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), 0.0f);
+}
+
+TEST_F(ScriptRuntimeFixture, RunCharacterScriptClearsNonPlayerVelocityWithoutWaypointInput)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5803);
+    ASSERT_NE(actor, nullptr);
+    ASSERT_FALSE(actor->isPlayer());
+
+    actor->getProfile()->getAIScript()._instructions.clear();
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    aiState.setTarget(actor->getObjRef());
+    aiState.wp_valid = false;
+    waypoint_list_t::clear(aiState.wp_lst);
+    movementControl(*actor).setDesiredVelocity(Ego::Vector2f(3.0f, -2.0f));
+
+    scr_run_chr_script(actor->getObjRef());
+
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), 0.0f);
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), 0.0f);
+}
+
+TEST_F(ScriptRuntimeFixture, RunCharacterScriptPreservesPlayerVelocityInput)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5804);
+    ASSERT_NE(actor, nullptr);
+    actor->setLocalPlayer(true);
+    ASSERT_TRUE(actor->isPlayer());
+
+    actor->getProfile()->getAIScript()._instructions.clear();
+    auto& aiState = Ego::Script::runtimeState(*actor);
+    aiState.setTarget(actor->getObjRef());
+    aiState.wp_valid = false;
+    waypoint_list_t::clear(aiState.wp_lst);
+    const Ego::Vector2f playerInput(3.0f, -2.0f);
+    movementControl(*actor).setDesiredVelocity(playerInput);
+    const Ego::Vector2f latchedPlayerInput = movementControl(*actor).getDesiredVelocity();
+
+    scr_run_chr_script(actor->getObjRef());
+
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), latchedPlayerInput.x());
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), latchedPlayerInput.y());
 }
 
 // Characterizes the script.c instruction-dispatch loop (runCharacterScript, the
@@ -237,7 +282,7 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptExecutesCompiledOperationAndFunct
     aiState.content = -1;   // sentinel distinct from the script's value
     aiState.terminate = false;
 
-    scr_run_chr_script(actor.get());
+    scr_run_chr_script(actor->getObjRef());
 
     // If the loop had not dispatched the compiled instructions (or had silently
     // fallen back to the default script, which has no top-level SetContent), content
@@ -274,7 +319,7 @@ TEST_F(ScriptRuntimeFixture, TruncatedScriptStopsInsteadOfReadingInstructionsOut
     auto& aiState = Ego::Script::runtimeState(*actor);
     aiState.terminate = false;
 
-    EXPECT_NO_THROW(scr_run_chr_script(actor.get()));
+    EXPECT_NO_THROW(scr_run_chr_script(actor->getObjRef()));
 }
 
 TEST_F(ScriptRuntimeFixture, SetAlertsPublishesLastWaypointAlertForNonEquipmentObjects)
@@ -353,7 +398,7 @@ TEST_F(ScriptRuntimeFixture, RunCharacterScriptMountCopiesRiderDesiredVelocityFr
     aiState.wp_valid = false;
     waypoint_list_t::clear(aiState.wp_lst);
 
-    scr_run_chr_script(mount.get());
+    scr_run_chr_script(mount->getObjRef());
 
     EXPECT_FLOAT_EQ(movementControl(*mount).getDesiredVelocity().x(), movementControl(*rider).getDesiredVelocity().x());
     EXPECT_FLOAT_EQ(movementControl(*mount).getDesiredVelocity().y(), movementControl(*rider).getDesiredVelocity().y());
@@ -378,6 +423,30 @@ TEST_F(ScriptRuntimeFixture, InvalidCharacterRefsAreQuietNoOpsForAlertPollingAnd
 
     EXPECT_EQ(actorState.alert, ALERTIF_ORDERED);
     EXPECT_EQ(actorState.getTarget(), actor->getObjRef());
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), initialDesiredVelocity.x());
+    EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), initialDesiredVelocity.y());
+}
+
+TEST_F(ScriptRuntimeFixture, StaleCharacterRefsAreQuietNoOpsForAlertPollingAndScriptRun)
+{
+    auto& module = beginActiveTestModule();
+    module.getObjectHandler().clear();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 58119);
+    ASSERT_NE(actor, nullptr);
+
+    const ObjectRef staleRef = actor->getObjRef();
+    movementControl(*actor).setDesiredVelocity(Ego::Vector2f(3.0f, -2.0f));
+    const Ego::Vector2f initialDesiredVelocity = movementControl(*actor).getDesiredVelocity();
+    auto& actorState = Ego::Script::runtimeState(*actor);
+    actorState.alert = ALERTIF_ORDERED;
+    actorState.setTarget(staleRef);
+
+    ASSERT_TRUE(module.getObjectHandler().remove(staleRef));
+    set_alerts(staleRef);
+    scr_run_chr_script(staleRef);
+
+    EXPECT_EQ(actorState.alert, ALERTIF_ORDERED);
+    EXPECT_EQ(actorState.getTarget(), staleRef);
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().x(), initialDesiredVelocity.x());
     EXPECT_FLOAT_EQ(movementControl(*actor).getDesiredVelocity().y(), initialDesiredVelocity.y());
 }

@@ -87,22 +87,16 @@ SelfRoleContextEnchant makeSelfRoleContextEnchant(const ai_state_t& self)
 
 bool setSelfEnchantBoostValues(const script_state_t& state, SelfRoleContextEnchant& selfContext)
 {
-    if (selfContext.enchantable == nullptr || !selfContext.enchantable->hasActiveEnchants())
+    if (selfContext.enchantable == nullptr)
     {
         return false;
     }
 
-    const std::shared_ptr<Ego::Enchantment> enchant = selfContext.enchantable->getFirstActiveEnchant();
-    if (enchant == nullptr || enchant->isTerminated())
-    {
-        return false;
-    }
-
-    enchant->setBoostValues(FP8_TO_FLOAT(state.argument),
-                            FP8_TO_FLOAT(state.distance),
-                            FP8_TO_FLOAT(state.x),
-                            FP8_TO_FLOAT(state.y));
-    return true;
+    return selfContext.enchantable->setFirstActiveEnchantBoostValues(
+        FP8_TO_FLOAT(state.argument),
+        FP8_TO_FLOAT(state.distance),
+        FP8_TO_FLOAT(state.x),
+        FP8_TO_FLOAT(state.y));
 }
 
 bool kurseResolvedTarget(const TargetCompatibilityContext& targetContext)
@@ -140,13 +134,7 @@ bool disenchantResolvedTarget(const TargetCompatibilityContext& targetContext)
 template <typename Fn>
 void forEachResolvedObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
-    if (handler == nullptr)
-    {
-        return;
-    }
-
-    for (const ObjectRef& objectRef : handler->objectRefIterator())
+    for (const ObjectRef& objectRef : Ego::Entities::activeObjectRefs())
     {
         fn(objectRef);
     }
@@ -259,13 +247,7 @@ uint8_t scr_UndoEnchant( script_state_t& state, ai_state_t& self )
     SelfRoleContextEnchant selfContext = makeSelfRoleContextEnchant(self);
     if (selfContext.enchantable == nullptr) return false;
 
-    std::shared_ptr<Ego::Enchantment> lastEnchant = selfContext.enchantable->getLastEnchantmentSpawned();
-    if(lastEnchant == nullptr || lastEnchant->isTerminated()) {
-        return false;
-    }
-
-    lastEnchant->requestTerminate();
-    return true;
+    return selfContext.enchantable->terminateLastEnchantmentSpawned();
 }
 
 

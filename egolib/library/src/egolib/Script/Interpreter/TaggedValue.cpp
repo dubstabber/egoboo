@@ -26,6 +26,8 @@
 #include "egolib/Script/Interpreter/Tag.hpp"
 #include "egolib/Script/Interpreter/InvalidCastException.hpp"
 
+#include <new>
+
 namespace Ego {
 namespace Script {
 namespace Interpreter {
@@ -34,20 +36,20 @@ TaggedValue::TaggedValue(const TaggedValue& other) : tag(other.tag) {
     switch (tag) {
         case Tag::Boolean: booleanValue = other.booleanValue; break;
         case Tag::Integer: integerValue = other.integerValue; break;
-        case Tag::Object: objectValue = other.objectValue; break;
+        case Tag::Object: new (&objectValue) ObjectValue(other.objectValue); break;
         case Tag::Real: realValue = other.realValue; break;
-        case Tag::Vector2: vector2Value = other.vector2Value; break;
-        case Tag::Vector3: vector3Value = other.vector3Value; break;
-        case Tag::Void: voidValue = other.voidValue; break;
+        case Tag::Vector2: new (&vector2Value) Vector2Value(other.vector2Value); break;
+        case Tag::Vector3: new (&vector3Value) Vector3Value(other.vector3Value); break;
+        case Tag::Void: new (&voidValue) VoidValue(other.voidValue); break;
 #if defined(Ego_Script_Interpreter_WithProfileRefs) && 1 == Ego_Script_Interpreter_WithProfileRefs
-		case Tag::EnchantProfileRef: enchantProfileRefValue = other.enchantProfileRefValue; break;
-		case Tag::ObjectProfileRef: objectProfileRefValue = other.objectProfileRefValue; break;
-		case Tag::ParticleProfileRef: particleProfileRefValue = other.particleProfileRefValue; break;
+		case Tag::EnchantProfileRef: new (&enchantProfileRefValue) EnchantProfileRefValue(other.enchantProfileRefValue); break;
+		case Tag::ObjectProfileRef: new (&objectProfileRefValue) ObjectProfileRefValue(other.objectProfileRefValue); break;
+		case Tag::ParticleProfileRef: new (&particleProfileRefValue) ParticleProfileRefValue(other.particleProfileRefValue); break;
 #endif
         default:
         {
             tag = Tag::Void;
-            voidValue = VoidValue();
+            new (&voidValue) VoidValue();
             throw idlib::unhandled_switch_case_error(__FILE__, __LINE__);
         }
     };
@@ -197,27 +199,32 @@ void TaggedValue::destructValue() {
 }
 
 TaggedValue& TaggedValue::operator=(const TaggedValue& other) {
-    switch (tag) {
+    if (this == &other) {
+        return *this;
+    }
+
+    destructValue();
+    tag = other.tag;
+    switch (other.tag) {
         case Tag::Boolean: booleanValue = other.booleanValue; break;
         case Tag::Integer: integerValue = other.integerValue; break;
-        case Tag::Object: objectValue = other.objectValue; break;
+        case Tag::Object: new (&objectValue) ObjectValue(other.objectValue); break;
         case Tag::Real: realValue = other.realValue; break;
-        case Tag::Vector2: vector2Value = other.vector2Value; break;
-        case Tag::Vector3: vector3Value = other.vector3Value; break;
-        case Tag::Void: voidValue = other.voidValue; break;
+        case Tag::Vector2: new (&vector2Value) Vector2Value(other.vector2Value); break;
+        case Tag::Vector3: new (&vector3Value) Vector3Value(other.vector3Value); break;
+        case Tag::Void: new (&voidValue) VoidValue(other.voidValue); break;
 #if defined(Ego_Script_Interpreter_WithProfileRefs) && 1 == Ego_Script_Interpreter_WithProfileRefs
-        case Tag::EnchantProfileRef: enchantProfileRefValue = other.enchantProfileRefValue; break;
-        case Tag::ParticleProfileRef: particleProfileRefValue = other.particleProfileRefValue; break;
-        case Tag::ObjectProfileRef: objectProfileRefValue = other.objectProfileRefValue; break;
+        case Tag::EnchantProfileRef: new (&enchantProfileRefValue) EnchantProfileRefValue(other.enchantProfileRefValue); break;
+        case Tag::ParticleProfileRef: new (&particleProfileRefValue) ParticleProfileRefValue(other.particleProfileRefValue); break;
+        case Tag::ObjectProfileRef: new (&objectProfileRefValue) ObjectProfileRefValue(other.objectProfileRefValue); break;
 #endif
         default:
         {
             tag = Tag::Void;
-            voidValue = VoidValue();
+            new (&voidValue) VoidValue();
             throw idlib::unhandled_switch_case_error(__FILE__, __LINE__);
         }
     };
-    tag = other.tag;
     return *this;
 }
 
@@ -235,6 +242,13 @@ TaggedValue& TaggedValue::operator=(IntegerValue other) {
     return *this;
 }
 
+TaggedValue& TaggedValue::operator=(ObjectValue other) {
+    destructValue();
+    tag = Tag::Object;
+    new (&objectValue) ObjectValue(other);
+    return *this;
+}
+
 TaggedValue& TaggedValue::operator=(RealValue other) {
     destructValue();
     tag = Tag::Real;
@@ -245,21 +259,21 @@ TaggedValue& TaggedValue::operator=(RealValue other) {
 TaggedValue& TaggedValue::operator=(Vector2Value other) {
     destructValue();
     tag = Tag::Vector2;
-    vector2Value = other;
+    new (&vector2Value) Vector2Value(other);
     return *this;
 }
 
 TaggedValue& TaggedValue::operator=(Vector3Value other) {
     destructValue();
     tag = Tag::Vector3;
-    vector3Value = other;
+    new (&vector3Value) Vector3Value(other);
     return *this;
 }
 
 TaggedValue& TaggedValue::operator=(VoidValue other) {
     destructValue();
     tag = Tag::Void;
-    voidValue = other;
+    new (&voidValue) VoidValue(other);
     return *this;
 }
 
@@ -268,21 +282,21 @@ TaggedValue& TaggedValue::operator=(VoidValue other) {
 TaggedValue& TaggedValue::operator=(EnchantProfileRefValue other) {
     destructValue();
     tag = Tag::EnchantProfileRef;
-    enchantProfileRefValue = other;
+    new (&enchantProfileRefValue) EnchantProfileRefValue(other);
     return *this;
 }
 
 TaggedValue& TaggedValue::operator=(ParticleProfileRefValue other) {
     destructValue();
     tag = Tag::ParticleProfileRef;
-    particleProfileRefValue = other;
+    new (&particleProfileRefValue) ParticleProfileRefValue(other);
     return *this;
 }
 
 TaggedValue& TaggedValue::operator=(ObjectProfileRefValue other) {
     destructValue();
     tag = Tag::ObjectProfileRef;
-    objectProfileRefValue = other;
+    new (&objectProfileRefValue) ObjectProfileRefValue(other);
     return *this;
 }
 
@@ -305,7 +319,7 @@ std::ostream& operator<<(std::ostream& os, const Ego::Script::Interpreter::Tagge
     switch (taggedValue.getTag()) {
         case Ego::Script::Interpreter::Tag::Boolean: os << taggedValue.booleanValue; break;
         case Ego::Script::Interpreter::Tag::Integer: os << taggedValue.integerValue; break;
-        case Ego::Script::Interpreter::Tag::Object: os << taggedValue.objectValue; break;
+        case Ego::Script::Interpreter::Tag::Object: os << taggedValue.objectValue.get(); break;
         case Ego::Script::Interpreter::Tag::Real: os << taggedValue.realValue; break;
         case Ego::Script::Interpreter::Tag::Vector2: os << taggedValue.vector2Value; break;
         case Ego::Script::Interpreter::Tag::Vector3: os << taggedValue.vector3Value; break;

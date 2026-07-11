@@ -54,7 +54,7 @@ IScriptSystem& activeScriptSystem()
     if (!g_activeScriptSystem)
     {
         // Mirrors Ego::Entities::activeObjectWorld(): the library call sites all run mid-engine
-        // (per-object AI tick, Object::kill, session teardown) after the boot install, so the
+        // (per-object AI tick, final death dispatch, session teardown) after the boot install, so the
         // uninstalled state is a programmer error rather than an expected boundary outcome.
         throw std::logic_error("no active script system");
     }

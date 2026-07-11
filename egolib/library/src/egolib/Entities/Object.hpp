@@ -46,10 +46,13 @@
 #include "egolib/Entities/IProfiled.hpp"
 #include "egolib/Entities/IRenderable.hpp"
 #include "egolib/Entities/IScriptable.hpp"
+#include "egolib/Entities/IScriptRuntimeState.hpp"
 #include "egolib/Entities/ITeamMember.hpp"
 #include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/IVisibilityObserver.hpp"
 #include "egolib/Entities/IVisualControl.hpp"
 #include "egolib/Entities/IWallet.hpp"
+#include "egolib/Entities/ObjectConstants.hpp"
 #include "egolib/PhysicsData.h"  // orientation_t (lower-layer primitive; game/physics.h not needed here)
 #include "egolib/Entities/Common.hpp"
 #include "egolib/game/Inventory.hpp"
@@ -81,21 +84,23 @@ class Object : public PhysicsData, private idlib::non_copyable, public Ego::Phys
                public IProfiled,
                public IRenderable,
                public IScriptable,
+               public IScriptRuntimeState,
                public ITeamMember,
                public ITargetInfo,
+               public IVisibilityObserver,
                public IVisualControl,
                public IWallet,
                public std::enable_shared_from_this<Object>,
                private ObjectState
 {
 public:
-    static constexpr int SIZETIME = 100;                    //< Time it takes to resize a character
+    static constexpr int SIZETIME = Ego::Entities::ObjectConstants::SIZETIME; //< Time it takes to resize a character
     static constexpr uint16_t MAXMONEY = 9999;              ///< Maximum money a character can carry
     static constexpr float DROPZVEL = 7;                    //< Vertical velocity of dropped items
     static constexpr uint8_t JUMPINFINITE = 255;            ///< Flying character TODO> deprecated?
-    static constexpr uint8_t JUMPDELAY = 20;                ///< Time between jumps (game updates)
-    static constexpr uint32_t PHYS_DISMOUNT_TIME = 50;      ///< time delay for full object-object interaction (approximately 1 second)
-    static constexpr float DISMOUNTZVEL = 12;               //< Vertical velocity when jumping off mounts
+    static constexpr uint8_t JUMPDELAY = Ego::Entities::ObjectConstants::JUMPDELAY; ///< Time between jumps (game updates)
+    static constexpr uint32_t PHYS_DISMOUNT_TIME = Ego::Entities::ObjectConstants::PHYS_DISMOUNT_TIME; ///< delay for object interaction
+    static constexpr float DISMOUNTZVEL = Ego::Entities::ObjectConstants::DISMOUNTZVEL; //< Velocity when dismounting
 
 public:
     Object(ObjectProfileRef proRef, ObjectRef objRef);
@@ -404,7 +409,7 @@ public:
     * @return
     *   true if this Object has line of sight and can see the specified Object
     **/
-    bool canSeeObject(ObjectRef targetRef) const;
+    bool canSeeObject(ObjectRef targetRef) const override;
 
     /**
     * @brief Set the fat value of a character.
@@ -644,6 +649,10 @@ public:
     bool hasActiveEnchants() const override;
 
     std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const override;
+    bool setFirstActiveEnchantBoostValues(float ownerManaSustain,
+                                          float ownerLifeSustain,
+                                          float targetManaDrain,
+                                          float targetLifeDrain) override;
 
     void addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant);
 
@@ -694,6 +703,7 @@ public:
     void clearTempAttribute(Ego::Attribute::AttributeType type);
 
     std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const override;
+    bool terminateLastEnchantmentSpawned() override;
 
     void setName(const std::string &name);
 
@@ -897,7 +907,7 @@ public:
 
     void resetBoredTimer();
 
-    void resetInputCommands();
+    void resetInputCommands() override;
 
     void setLatchButton(const LatchButton latchButton, const bool pressed) override;
 
@@ -970,14 +980,11 @@ private:
 
     void updateLatchButtons();
 
-    ai_state_t& scriptRuntimeState() noexcept;
+    ai_state_t& scriptRuntimeState() noexcept override;
 
-    const ai_state_t& scriptRuntimeState() const noexcept;
+    const ai_state_t& scriptRuntimeState() const noexcept override;
 
 private:
-    friend ai_state_t& Ego::Script::runtimeState(Object& object);
-    friend const ai_state_t& Ego::Script::runtimeState(const Object& object);
-
     Ego::Graphics::ObjectGraphics inst;
     Ego::Physics::ObjectPhysics _objectPhysics;
 

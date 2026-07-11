@@ -25,9 +25,7 @@
 
 #include "egolib/Script/Interpreter/Configuration.hpp"
 #include "egolib/Math/_Include.hpp"
-
-// Forward declaration.
-class Object;
+#include "egolib/typedef.h"  // ObjectRef
 
 namespace Ego {
 namespace Script {
@@ -40,7 +38,7 @@ enum class Tag;
 using BooleanValue = bool;
 
 /// @brief The C++ representation of a raw \f$Object\f$ value.
-using ObjectValue = std::shared_ptr<Object>;
+using ObjectValue = ObjectRef;
 
 /// @brief The C++ representation of a raw \f$Vector2\f$ value.
 using Vector2Value = Vector2f;
@@ -190,6 +188,9 @@ public:
     /// @brief Assign this tagged value with the specified \f$Integer\f$ value.
     /// @param other the \f$Integer\f$ value
     TaggedValue& operator=(IntegerValue other);
+
+    /// @brief Assign this tagged value with the specified non-owning object reference.
+    TaggedValue& operator=(ObjectValue other);
 
     /// @brief Assign this tagged value with the specified \f$Real\f$ value.
     /// @param other the \f$Real\f$ value

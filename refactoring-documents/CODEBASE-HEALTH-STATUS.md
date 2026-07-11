@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 947 ctest cases.
+  configures 955 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -43,19 +43,19 @@ or engine/session service ownership.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 168 / 6 / 28 / 24 / 81 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 786 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 285 `.cpp`, 73 `.h`, 325 `.hpp` |
-| Runtime source lines | 129,610 | Same scope as above |
-| Test files / lines | 50 / 25,032 | `egolib/tests`, source/header files only |
-| ctest cases | 947 | `ctest --test-dir build -N` |
-| ctest baseline | 947 / 947 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Archive members | 168 / 6 / 28 / 24 / 82 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Runtime source files | 791 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 286 `.cpp`, 73 `.h`, 329 `.hpp` |
+| Runtime source lines | 129,833 | Same scope as above |
+| Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
+| ctest cases | 955 | `ctest --test-dir build -N` |
+| ctest baseline | 955 / 955 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 474 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 388 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 30 | Dominant intentional session seam |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 662 | Broad grep count, not semantic classification |
-| Interface headers | 65 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
-| Object role interfaces | 20 | 22 `Entities/I*.hpp` files total, including 2 service interfaces |
+| Interface headers | 67 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
+| Object role interfaces | 22 | 24 `Entities/I*.hpp` files total, including 2 service interfaces |
 | `idlib::singleton` references | 19 | Intentional services plus legacy-singleton remnants |
 
 ## Link Layout
@@ -68,7 +68,7 @@ The live archive member counts are:
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 81 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
+| `egolib-library` | 82 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
 | `egolib-game-graphics` | 21 | 3D scene-rendering layer: camera, billboard, texture atlas, render passes, GFX bootstrap |
 | `egolib-hud-widgets` | 6 | Game-coupled in-game HUD widgets |
 | `egolib-scriptvm` | 33 | EgoScript VM and `script_functions_*` dispatch family |
@@ -93,11 +93,11 @@ runtime files:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/library/src/egolib/Entities/Object.hpp` | 991 |
+| `egolib/library/src/egolib/Entities/Object.hpp` | 998 |
 | `egolib/library/src/egolib/Profiles/ObjectProfile.hpp` | 808 |
 | `egolib/library/src/egolib/FileFormats/wawalite_file.h` | 736 |
-| `egolib/library/src/egolib/game/game_combat.c` | 723 |
-| `egolib/library/src/egolib/Script/script.h` | 685 |
+| `egolib/library/src/egolib/game/game_combat.c` | 721 |
+| `egolib/library/src/egolib/Script/script.h` | 684 |
 | `egolib/library/src/egolib/Audio/AudioSystem.cpp` | 675 |
 | `egolib/library/src/egolib/map_functions.c` | 668 |
 | `egolib/library/src/egolib/game/Physics/CollisionSystem.cpp` | 660 |
@@ -108,11 +108,12 @@ Large non-runtime files still exist and are intentional test/tool hotspots:
 
 | File | Lines |
 | --- | ---: |
-| `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,248 |
-| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 2,873 |
+| `egolib/tests/egolib/tests/ScriptSystemsFunctions.cpp` | 3,243 |
+| `egolib/tests/egolib/tests/ObjectAccessors.cpp` | 3,054 |
 | `egolib/tests/egolib/tests/ScriptStateFunctions.cpp` | 1,928 |
 | `tools/egoboo-content-validator.cpp` | 1,550 |
 | `egolib/tests/egolib/tests/ScriptTargetFunctions.cpp` | 1,360 |
+| `egolib/tests/egolib/tests/EngineContext.cpp` | 1,236 |
 | `egolib/tests/egolib/tests/ScriptActionFunctions.cpp` | 1,235 |
 | `egolib/tests/egolib/tests/ContentParsers.cpp` | 1,230 |
 
@@ -165,6 +166,15 @@ script, and character-state roles. These seams reduce concrete `Object`
 dependencies inside `egolib-scriptvm` while preserving the existing script ABI
 and behavior.
 
+The VM driver and legacy script-operation family now resolve active entity roles
+through the lower-layer `ObjectRoleAccess` adapter. `IScriptSystem` and
+`scr_run_chr_script()` dispatch only `ObjectRef`; VM-owned runtime state and
+visibility use `IScriptRuntimeState` and `IVisibilityObserver`; movement reset
+is part of `IMovementControl`; and interpreter `ObjectValue` stores `ObjectRef`
+instead of a raw pointer. The strict script sources no longer include the
+aggregate entity header or name concrete `Object`/`ObjectHandler`, while the
+`IObjectWorld` virtual interface remains unchanged.
+
 ## Design-Pattern Usage
 
 Egoboo now uses several recognizable patterns intentionally, but not yet
@@ -176,7 +186,7 @@ uniformly:
 | Factory / composition root | `Main.cpp` injects the main-menu-state factory and installs script/graphics bootstraps from higher archives | Good archive-boundary tool, but `GameEngine::initialize()` still directly orchestrates many concrete systems |
 | Service locator / singleton | `EngineContext`, `GameSessionContext`, `idlib::singleton`, and active-service registries | Useful migration path away from raw globals, but still hides dependencies from call signatures and tests |
 | Facade / context object | `GameSessionContext` centralizes active module, import list, local-player state, clocks, and session-owned environment state | Better than exported globals; risk is continued API growth |
-| Interface / adapter | `IAudioSystem`, `IProfileSystem`, `IScriptSystem`, graphics/input/image interfaces, `ScriptSystemAdapter`, and object role interfaces such as `IAttachmentControl` | Improving DIP/ISP story; several interfaces still expose broad subsystem surfaces |
+| Interface / adapter | `IAudioSystem`, `IProfileSystem`, `IScriptSystem`, graphics/input/image interfaces, `ScriptSystemAdapter`, `ObjectRoleAccess`, and object roles such as `IAttachmentControl` and `IScriptRuntimeState` | Improving DIP/ISP story; several interfaces still expose broad subsystem surfaces |
 | Function table / registry | EgoScript dispatch maps script function values to native function pointers through `Ego::Script::Runtime` | More extensible than a monolithic switch; still requires edits to central function/variable lists and focused regression tests |
 | RAII ownership | `unique_ptr`/`shared_ptr` are used for engine, module, UI, player/object/profile ownership | Generally improving; still mixed with C globals, raw pointers, and legacy lifecycle calls |
 

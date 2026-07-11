@@ -296,3 +296,23 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   Verified with the same Linux build, focused and full ctest gates, validator
   baselines, and Windows cross-build, plus no-stray-header and live-archive `nm`
   boundary checks.
+- Pass 308 on 2026-07-11 completed the strict EgoScript/concrete-object cut.
+  The new lower-layer `ObjectRoleAccess` adapter resolves live `ObjectRef`
+  handles to existing roles without widening `IObjectWorld`; new
+  `IScriptRuntimeState` and `IVisibilityObserver` roles expose the two remaining
+  VM driver needs, while input reset moved onto `IMovementControl` and bounded
+  enchant operations stayed behind `IEnchantable`. `IScriptSystem` and
+  `scr_run_chr_script()` are now reference-only, the VM driver and legacy script
+  operations no longer include the aggregate entity header or name concrete
+  `Object`/`ObjectHandler`, script constants use the neutral
+  `ObjectConstants` surface, and interpreter `ObjectValue` stores `ObjectRef`
+  with corrected cross-tag copy assignment. Coverage asserts live/invalid/stale
+  role resolution, AI-versus-player movement reset, stale dispatch no-ops,
+  final-death ref dispatch, and tagged-value construction/copy/conversion/
+  streaming. Verified with the Linux and MinGW builds, focused **8 / 8** tests,
+  full ctest **955 / 955**, `test.mod` validation **0 / 0**, the JSON full
+  baseline (**42 modules / 10 warnings / 245 errors**, expected nonzero), strict
+  concrete-object scans, no stray header archive members, and the live-archive
+  `nm` DAG check. The console validator also reproduced its previously observed
+  alternate **25-warning / 230-error** fallback classification; no validator,
+  content, or compiler behavior changed in this pass.

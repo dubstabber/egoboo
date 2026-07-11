@@ -34,10 +34,10 @@
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
-class Object;
 class ICharacterState;
 class IInventoryHolder;
 class IPhysical;
+class IScriptRuntimeState;
 class ITargetInfo;
 class IWallet;
 
@@ -572,7 +572,6 @@ struct script_state_t : private idlib::non_copyable
 // FUNCTION PROTOTYPES
 //--------------------------------------------------------------------------------------------
 
-void scr_run_chr_script(Object *pchr);
 void scr_run_chr_script(const ObjectRef character);
 
 void issue_order( const ObjectRef character, uint32_t order );
@@ -582,8 +581,8 @@ void set_alerts( const ObjectRef character );
 namespace Ego {
 namespace Script {
 
-ai_state_t& runtimeState(::Object& object);
-const ai_state_t& runtimeState(const ::Object& object);
+ai_state_t& runtimeState(::IScriptRuntimeState& object);
+const ai_state_t& runtimeState(const ::IScriptRuntimeState& object);
 
 // Forward declaration.
 template <typename FunctionType>

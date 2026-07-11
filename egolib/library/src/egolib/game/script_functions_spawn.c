@@ -12,13 +12,7 @@ namespace
 template <typename Fn>
 void forEachLiveSpawnObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
-    if (handler == nullptr)
-    {
-        return;
-    }
-
-    for (const ObjectRef& ref : handler->objectRefIterator())
+    for (const ObjectRef& ref : Ego::Entities::activeObjectRefs())
     {
         if (ref != ObjectRef::Invalid)
         {
@@ -183,9 +177,9 @@ void applyDismountVelocity(IMovementControl& movement)
 {
     movement.setVelocity({movement.getVelocity().x(),
                         movement.getVelocity().y(),
-                        Object::DISMOUNTZVEL});
-    movement.setJumpTimer(Object::JUMPDELAY);
-    movement.movePosition(0.0f, 0.0f, Object::DISMOUNTZVEL);
+                        Ego::Entities::ObjectConstants::DISMOUNTZVEL});
+    movement.setJumpTimer(Ego::Entities::ObjectConstants::JUMPDELAY);
+    movement.movePosition(0.0f, 0.0f, Ego::Entities::ObjectConstants::DISMOUNTZVEL);
 }
 
 void dropHeldObject(const IInventoryHolder& holder, slot_t slot, bool holderIsMount)
@@ -588,7 +582,8 @@ uint8_t scr_SetTargetSize( script_state_t& state, ai_state_t& self )
     }
 
     targetMorph->setTargetFat(targetMorph->getTargetFat() * state.argument / 100.0f);
-    targetMorph->setResizeTimeRemaining(targetMorph->getResizeTimeRemaining() + Object::SIZETIME);
+    targetMorph->setResizeTimeRemaining(targetMorph->getResizeTimeRemaining() +
+                                        Ego::Entities::ObjectConstants::SIZETIME);
 
     return true;
 }

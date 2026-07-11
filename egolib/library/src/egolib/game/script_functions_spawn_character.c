@@ -121,7 +121,7 @@ void applySpawnVelocity(IMovementControl& movement, Facing facing, int distance)
 
 void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObjectRef)
 {
-    lifecycle.setDismountTimer(Object::PHYS_DISMOUNT_TIME);
+    lifecycle.setDismountTimer(Ego::Entities::ObjectConstants::PHYS_DISMOUNT_TIME);
     lifecycle.setDismountObject(dismountObjectRef);
 }
 
@@ -513,7 +513,7 @@ uint8_t scr_MorphToTarget( script_state_t& state, ai_state_t& self )
 
     // let the resizing take some time
     selfMorph->setTargetFat(targetMorph->getFat());
-    selfMorph->setResizeTimeRemaining(Object::SIZETIME);
+    selfMorph->setResizeTimeRemaining(Ego::Entities::ObjectConstants::SIZETIME);
 
     // Keep the current AI script behavior unchanged.
 

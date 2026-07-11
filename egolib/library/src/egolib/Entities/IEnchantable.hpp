@@ -29,10 +29,15 @@ public:
                                                          ObjectRef spawnerRef) = 0;
     virtual bool hasActiveEnchants() const = 0;
     virtual std::shared_ptr<Ego::Enchantment> getFirstActiveEnchant() const = 0;
+    virtual bool setFirstActiveEnchantBoostValues(float ownerManaSustain,
+                                                  float ownerLifeSustain,
+                                                  float targetManaDrain,
+                                                  float targetLifeDrain) = 0;
     /**
     * @brief
     *   Removes all enchantments from character
     **/
     virtual bool disenchant() = 0;
     virtual std::shared_ptr<Ego::Enchantment> getLastEnchantmentSpawned() const = 0;
+    virtual bool terminateLastEnchantmentSpawned() = 0;
 };

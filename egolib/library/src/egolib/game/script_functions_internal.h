@@ -36,7 +36,31 @@
 #include "egolib/game/Graphics/BillboardSystem.hpp"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
-#include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IAnimationControl.hpp"
+#include "egolib/Entities/IAppearanceProfile.hpp"
+#include "egolib/Entities/IAttachmentControl.hpp"
+#include "egolib/Entities/ICharacterState.hpp"
+#include "egolib/Entities/IDamageable.hpp"
+#include "egolib/Entities/IEnchantable.hpp"
+#include "egolib/Entities/IEquipmentControl.hpp"
+#include "egolib/Entities/IInventoryHolder.hpp"
+#include "egolib/Entities/IItemInfo.hpp"
+#include "egolib/Entities/ILifecycleControl.hpp"
+#include "egolib/Entities/IMorphControl.hpp"
+#include "egolib/Entities/IMovementControl.hpp"
+#include "egolib/Entities/IPhysical.hpp"
+#include "egolib/Entities/IProfiled.hpp"
+#include "egolib/Entities/IRenderable.hpp"
+#include "egolib/Entities/IScriptable.hpp"
+#include "egolib/Entities/IScriptRuntimeState.hpp"
+#include "egolib/Entities/ITeamMember.hpp"
+#include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/IVisibilityObserver.hpp"
+#include "egolib/Entities/IVisualControl.hpp"
+#include "egolib/Entities/IWallet.hpp"
+#include "egolib/Entities/ObjectConstants.hpp"
+#include "egolib/Entities/ObjectRoleAccess.hpp"
+#include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Module/IModuleCommands.hpp"
@@ -111,11 +135,6 @@ inline IModuleCommands& moduleCommands()
     return activeModuleCommands();
 }
 
-inline auto& objectHandler()
-{
-    return Ego::Entities::activeObjectHandler();
-}
-
 inline std::shared_ptr<Passage> tryPassage(int passageId)
 {
     return moduleCommands().getPassageByID(passageId);
@@ -141,14 +160,9 @@ inline ObjectRef teamCallerForHelpRef(const ITargetInfo& targetInfo)
     return teamCallerForHelpRef(targetInfo.getTeamRef());
 }
 
-inline Object* tryObject(ObjectRef objectRef)
-{
-    return Ego::Entities::tryActiveObject(objectRef);
-}
-
 inline bool hasLiveObjectRef(ObjectRef objectRef)
 {
-    return tryObject(objectRef) != nullptr;
+    return Ego::Entities::activeObjectExists(objectRef);
 }
 
 inline bool hasLiveSelf(const ai_state_t& self)
@@ -158,8 +172,7 @@ inline bool hasLiveSelf(const ai_state_t& self)
 
 inline const IProfiled* tryProfiled(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const IProfiled*>(object) : nullptr;
+    return Ego::Entities::tryActiveProfiled(objectRef);
 }
 
 struct ResolvedSelfContext
@@ -195,32 +208,46 @@ inline ResolvedSelfContext resolveSelfContext(const ai_state_t& self)
 
 inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object != nullptr ? object->attribution() : ObjectAttribution();
+    const ITargetInfo* targetInfo = Ego::Entities::tryActiveTargetInfo(objectRef);
+    const IInventoryHolder* inventory = Ego::Entities::tryActiveInventoryHolder(objectRef);
+    if (targetInfo == nullptr || inventory == nullptr)
+    {
+        return ObjectAttribution();
+    }
+    return ObjectAttribution(objectRef, targetInfo->getTeamRef(), targetInfo->getTeamRef(),
+                             targetInfo->isPlayer(), inventory->isTerminated());
 }
 
 inline ObjectAttribution objectAttributionFromRef(ObjectRef objectRef, TEAM_REF sourceTeam)
 {
-    Object* object = tryObject(objectRef);
-    return object != nullptr ? object->attribution(sourceTeam) : ObjectAttribution(sourceTeam);
+    const ITargetInfo* targetInfo = Ego::Entities::tryActiveTargetInfo(objectRef);
+    const IInventoryHolder* inventory = Ego::Entities::tryActiveInventoryHolder(objectRef);
+    if (targetInfo == nullptr || inventory == nullptr)
+    {
+        return ObjectAttribution(sourceTeam);
+    }
+    return ObjectAttribution(objectRef, targetInfo->getTeamRef(), sourceTeam,
+                             targetInfo->isPlayer(), inventory->isTerminated());
 }
 
 inline IScriptable* tryScriptable(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IScriptable*>(object) : nullptr;
+    return Ego::Entities::tryActiveScriptable(objectRef);
+}
+
+inline IScriptRuntimeState* tryScriptRuntimeState(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveScriptRuntimeState(objectRef);
 }
 
 inline IAnimationControl* tryAnimationControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IAnimationControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveAnimationControl(objectRef);
 }
 
 inline IDamageable* tryDamageable(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IDamageable*>(object) : nullptr;
+    return Ego::Entities::tryActiveDamageable(objectRef);
 }
 
 inline IDamageable* tryLivingDamageable(ObjectRef objectRef)
@@ -231,14 +258,12 @@ inline IDamageable* tryLivingDamageable(ObjectRef objectRef)
 
 inline IEquipmentControl* tryEquipmentControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IEquipmentControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveEquipmentControl(objectRef);
 }
 
 inline ICharacterState* tryCharacterState(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<ICharacterState*>(object) : nullptr;
+    return Ego::Entities::tryActiveCharacterState(objectRef);
 }
 
 inline ICharacterState* tryLivingCharacterState(ObjectRef objectRef)
@@ -248,80 +273,72 @@ inline ICharacterState* tryLivingCharacterState(ObjectRef objectRef)
 
 inline IEnchantable* tryEnchantable(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IEnchantable*>(object) : nullptr;
+    return Ego::Entities::tryActiveEnchantable(objectRef);
 }
 
 inline IAppearanceProfile* tryAppearanceProfile(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IAppearanceProfile*>(object) : nullptr;
+    return Ego::Entities::tryActiveAppearanceProfile(objectRef);
 }
 
 inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IInventoryHolder*>(object) : nullptr;
+    return Ego::Entities::tryActiveInventoryHolder(objectRef);
 }
 
 inline IAttachmentControl* tryAttachmentControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IAttachmentControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveAttachmentControl(objectRef);
 }
 
 inline ILifecycleControl* tryLifecycleControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<ILifecycleControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveLifecycleControl(objectRef);
 }
 
 inline IMorphControl* tryMorphControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IMorphControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveMorphControl(objectRef);
 }
 
 inline const IItemInfo* tryItemInfo(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const IItemInfo*>(object) : nullptr;
+    return Ego::Entities::tryActiveItemInfo(objectRef);
 }
 
 inline IMovementControl* tryMovementControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IMovementControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveMovementControl(objectRef);
 }
 
 inline IRenderable* tryRenderable(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IRenderable*>(object) : nullptr;
+    return Ego::Entities::tryActiveRenderable(objectRef);
 }
 
 inline ITeamMember* tryTeamMember(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<ITeamMember*>(object) : nullptr;
+    return Ego::Entities::tryActiveTeamMember(objectRef);
 }
 
 inline IVisualControl* tryVisualControl(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IVisualControl*>(object) : nullptr;
+    return Ego::Entities::tryActiveVisualControl(objectRef);
 }
 
 inline const IPhysical* tryPhysical(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const IPhysical*>(object) : nullptr;
+    return Ego::Entities::tryActivePhysical(objectRef);
 }
 
 inline const ITargetInfo* tryTargetInfo(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const ITargetInfo*>(object) : nullptr;
+    return Ego::Entities::tryActiveTargetInfo(objectRef);
+}
+
+inline const IVisibilityObserver* tryVisibilityObserver(ObjectRef objectRef)
+{
+    return Ego::Entities::tryActiveVisibilityObserver(objectRef);
 }
 
 inline std::shared_ptr<Ego::Player> tryPlayer(size_t playerIndex)
@@ -342,8 +359,7 @@ inline Ego::QuestLog* tryQuestLog(const ITargetInfo& targetInfo)
 
 inline IWallet* tryWallet(ObjectRef objectRef)
 {
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<IWallet*>(object) : nullptr;
+    return Ego::Entities::tryActiveWallet(objectRef);
 }
 
 inline uint32_t worldUpdateCount()
@@ -410,6 +426,3 @@ using namespace script_detail;
 #if defined _MSC_VER
 #    pragma warning(disable : 4189) // local variable is initialized but not referenced
 #endif
-
-#define SET_TARGET_1(ITARGET,PTARGET) if( NULL != PTARGET ) { PTARGET = objectHandler().get(ITARGET); }
-#define SET_TARGET(ITARGET,PTARGET)   self.setTarget(ITARGET); SET_TARGET_1(ITARGET,PTARGET)

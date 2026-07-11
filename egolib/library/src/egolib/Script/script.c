@@ -33,7 +33,7 @@
 #include "egolib/game/script_functions_internal.h"
 #include "egolib/game/script_variables.h"
 #include "egolib/Entities/IObjectWorld.hpp"
-#include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IScriptRuntimeState.hpp"
 
 
 namespace Ego {
@@ -104,12 +104,12 @@ Runtime::~Runtime()
     /* Intentionally empty. */
 }
 
-ai_state_t& runtimeState(Object& object)
+ai_state_t& runtimeState(IScriptRuntimeState& object)
 {
     return object.scriptRuntimeState();
 }
 
-const ai_state_t& runtimeState(const Object& object)
+const ai_state_t& runtimeState(const IScriptRuntimeState& object)
 {
     return object.scriptRuntimeState();
 }
@@ -272,13 +272,7 @@ struct OrderRecipient
 template <typename Fn>
 void forEachLiveRuntimeObjectRef(Fn&& fn)
 {
-    ObjectHandler* handler = Ego::Entities::tryActiveObjectHandler();
-    if (handler == nullptr)
-    {
-        return;
-    }
-
-    for (const ObjectRef& ref : handler->objectRefIterator())
+    for (const ObjectRef& ref : Ego::Entities::activeObjectRefs())
     {
         fn(ref);
     }

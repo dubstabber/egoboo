@@ -33,9 +33,15 @@
 
 #include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/game.h"
+#include "egolib/Entities/IInventoryHolder.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
-#include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IMovementControl.hpp"
+#include "egolib/Entities/IPhysical.hpp"
+#include "egolib/Entities/IProfiled.hpp"
+#include "egolib/Entities/ITargetInfo.hpp"
+#include "egolib/Entities/ObjectRoleAccess.hpp"
 #include "egolib/Mesh/ITerrainQuery.hpp"
+#include "egolib/Profiles/_Include.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
@@ -43,11 +49,6 @@
 
 namespace
 {
-auto& objectHandler()
-{
-    return Ego::Entities::activeObjectHandler();
-}
-
 std::shared_ptr<ego_mesh_t> moduleMesh()
 {
     return activeModuleEnvironment().mesh();
@@ -326,25 +327,27 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 	uint32_t endtile = Ego::Math::constrain(loc_starttile + frames - 1, 0, 255);
 
 	bool useful = false;
-    ObjectHandler& objects = objectHandler();
-    for(const ObjectRef& objectRef : objects.objectRefIterator())
+    for(const ObjectRef& objectRef : Ego::Entities::activeObjectRefs())
     {
-        Object* pchr = objects.get(objectRef);
-        if (pchr == nullptr || pchr->isTerminated()) continue;
+        const IInventoryHolder* inventory = Ego::Entities::tryActiveInventoryHolder(objectRef);
+        const ITargetInfo* targetInfo = Ego::Entities::tryActiveTargetInfo(objectRef);
+        const IPhysical* physical = Ego::Entities::tryActivePhysical(objectRef);
+        if (inventory == nullptr || targetInfo == nullptr || physical == nullptr ||
+            inventory->isTerminated()) continue;
 
         // nothing in packs
-        if (pchr->isBeingHeld()) continue;
+        if (targetInfo->isBeingHeld()) continue;
 
         // nothing flying
-        if (pchr->isFlying()) continue;
+        if (targetInfo->isFlying()) continue;
 
 		float lerp_z;
-        lerp_z = ( pchr->getPosZ() - pchr->getFloorElevation() ) / DAMAGERAISE;
+        lerp_z = ( physical->getPosZ() - physical->getFloorElevation() ) / DAMAGERAISE;
         lerp_z = 1.0f - Ego::Math::constrain( lerp_z, 0.0f, 1.0f );
 
-        if ( pchr->phys.weight * lerp_z <= 20 ) continue;
+        if ( physical->getPhysicsWeight() * lerp_z <= 20 ) continue;
 
-        Index1D fan = mesh->getTileIndex(Ego::Vector2f(pchr->getPosX(), pchr->getPosY()));
+        Index1D fan = mesh->getTileIndex(Ego::Vector2f(physical->getPosX(), physical->getPosY()));
 
 		ego_tile_info_t& ptile = mesh->getTileInfo(fan);
         {
@@ -353,11 +356,11 @@ uint8_t BreakPassage( int mesh_fx_or, const uint16_t become, const int frames, c
 
             if ( img >= loc_starttile && img < endtile )
             {
-                if (passage->objectIsInPassage(*pchr))
+                if (passage->objectIsInPassage(*physical))
                 {
                     // Remember where the hit occured.
-                    *ptilex = pchr->getPosX();
-                    *ptiley = pchr->getPosY();
+                    *ptilex = physical->getPosX();
+                    *ptiley = physical->getPosY();
 
                     useful = true;
 
@@ -392,12 +395,13 @@ uint8_t AddEndMessage( ObjectRef characterRef, const int message_index, script_s
     /// @author ZZ
     /// @details This function appends a message to the end-module text
 
-    Object* pchr = objectHandler().get(characterRef);
-    if ( nullptr == pchr) return false;
+    const IProfiled* profiled = Ego::Entities::tryActiveProfiled(characterRef);
+    if (profiled == nullptr || profiled->getProfile() == nullptr) return false;
 
-    if ( !pchr->getProfile()->isValidMessageID( message_index ) ) return false;
+    const std::shared_ptr<ObjectProfile>& profile = profiled->getProfile();
+    if ( !profile->isValidMessageID( message_index ) ) return false;
 
-    std::string escapedText = g_endText.getText() + expandEscapeCodes(characterRef, *pstate, pchr->getProfile()->getMessage(message_index));
+    std::string escapedText = g_endText.getText() + expandEscapeCodes(characterRef, *pstate, profile->getMessage(message_index));
     g_endText.setText(escapedText);
     return true;
 }
@@ -466,7 +470,7 @@ uint8_t _display_message( const ObjectRef ichr, const PRO_REF iprofile, const in
     /// @author ZZ
     /// @details This function sticks a message_offset in the display queue and sets its timer
 
-    if ( objectHandler().get(ichr) == nullptr ) return false;
+    if ( !Ego::Entities::activeObjectExists(ichr) ) return false;
 
     const std::shared_ptr<ObjectProfile> &ppro = EngineContext::get().profileSystem().getProfile(iprofile);
     if ( !ppro->isValidMessageID(message) ) return false;
@@ -490,60 +494,68 @@ ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& w
 
     line_of_sight_info_t los;
 
-    Object* pchr = objectHandler().exists(characterRef)
-        ? objectHandler().get(characterRef)
-        : nullptr;
-    if (pchr == nullptr || pchr->isTerminated()) return ObjectRef::Invalid;
+    const IInventoryHolder* characterInventory = Ego::Entities::tryActiveInventoryHolder(characterRef);
+    const IMovementControl* characterMovement = Ego::Entities::tryActiveMovementControl(characterRef);
+    const IPhysical* characterPhysical = Ego::Entities::tryActivePhysical(characterRef);
+    const IProfiled* characterProfiled = Ego::Entities::tryActiveProfiled(characterRef);
+    const ITargetInfo* characterTargetInfo = Ego::Entities::tryActiveTargetInfo(characterRef);
+    if (characterInventory == nullptr || characterMovement == nullptr || characterPhysical == nullptr ||
+        characterProfiled == nullptr || characterProfiled->getProfile() == nullptr ||
+        characterTargetInfo == nullptr || characterInventory->isTerminated()) return ObjectRef::Invalid;
 
     // set up the target
     best_target = ObjectRef::Invalid;
     best_dist   = idlib::sq(max_distance);
 
     //setup line of sight data
-    los.x0 = pchr->getPosX();
-    los.y0 = pchr->getPosY();
-    los.z0 = pchr->getPosZ();
-    los.stopped_by = pchr->getStoppedByMask();
+    los.x0 = characterPhysical->getPosX();
+    los.y0 = characterPhysical->getPosY();
+    los.z0 = characterPhysical->getPosZ();
+    los.stopped_by = characterMovement->getStoppedByMask();
 
-    ObjectHandler& objects = objectHandler();
-    for(const ObjectRef& weaponRef : objects.objectRefIterator())
+    for(const ObjectRef& weaponRef : Ego::Entities::activeObjectRefs())
     {
-        Object* pweapon = objects.get(weaponRef);
-        if (pweapon == nullptr || pweapon->isTerminated()) continue;
+        const IInventoryHolder* weaponInventory = Ego::Entities::tryActiveInventoryHolder(weaponRef);
+        const IPhysical* weaponPhysical = Ego::Entities::tryActivePhysical(weaponRef);
+        const IProfiled* weaponProfiled = Ego::Entities::tryActiveProfiled(weaponRef);
+        const ITargetInfo* weaponTargetInfo = Ego::Entities::tryActiveTargetInfo(weaponRef);
+        if (weaponInventory == nullptr || weaponPhysical == nullptr || weaponProfiled == nullptr ||
+            weaponProfiled->getProfile() == nullptr || weaponTargetInfo == nullptr ||
+            weaponInventory->isTerminated()) continue;
 
         //only do items on the ground
-        if ( objects.exists( pweapon->getHolderRef() ) || !pweapon->isItem() ) continue;
-        const std::shared_ptr<ObjectProfile> &weaponProfile = pweapon->getProfile();
+        if ( Ego::Entities::activeObjectExists(weaponTargetInfo->getHolderRef()) || !weaponInventory->isItem() ) continue;
+        const std::shared_ptr<ObjectProfile> &weaponProfile = weaponProfiled->getProfile();
 
         // only target those with a the given IDSZ
-        if ( !pweapon->getProfile()->hasIDSZ(weap_idsz) ) continue;
+        if ( !weaponProfile->hasIDSZ(weap_idsz) ) continue;
 
         // ignore ranged weapons
         if ( !find_ranged && weaponProfile->isRangedWeapon() ) continue;
 
         // see if the character can use this weapon (we assume everyone has a left grip here)
-        if ( ACTION_COUNT == pchr->getProfile()->getModel()->randomizeAction(static_cast<ModelAction>(weaponProfile->getWeaponAction()), SLOT_LEFT)) continue;
+        if ( ACTION_COUNT == characterProfiled->getProfile()->getModel()->randomizeAction(static_cast<ModelAction>(weaponProfile->getWeaponAction()), SLOT_LEFT)) continue;
 
         // then check if a skill is needed
         if ( weaponProfile->requiresSkillIDToUse() )
         {
-            if (!pchr->hasSkillIDSZ(pweapon->getProfile()->getIDSZ(IDSZ_SKILL))) continue;
+            if (!characterTargetInfo->hasSkillIDSZ(weaponProfile->getIDSZ(IDSZ_SKILL))) continue;
         }
 
         //check distance
-		Ego::Vector3f diff = pchr->getPosition() - pweapon->getPosition();
+		Ego::Vector3f diff = characterPhysical->getPosition() - weaponPhysical->getPosition();
         float dist = idlib::squared_euclidean_norm(diff);
         if ( dist < best_dist )
         {
             //finally, check line of sight. we only care for weapons we can see
-            los.x1 = pweapon->getPosX();
-            los.y1 = pweapon->getPosY();
-            los.z1 = pweapon->getPosZ();
+            los.x1 = weaponPhysical->getPosX();
+            los.y1 = weaponPhysical->getPosY();
+            los.z1 = weaponPhysical->getPosZ();
 
             if ( !use_line_of_sight || !line_of_sight_info_t::blocked(los, terrainQuery()) )
             {
                 //found a valid weapon!
-                best_target = pweapon->getObjRef();
+                best_target = weaponRef;
                 best_dist = dist;
             }
         }
@@ -551,7 +563,7 @@ ObjectRef FindWeapon( ObjectRef characterRef, float max_distance, const IDSZ2& w
 
     //Did we find anything?
     retval = ObjectRef::Invalid;
-    if ( objectHandler().exists( best_target ) )
+    if ( Ego::Entities::activeObjectExists( best_target ) )
     {
         retval = best_target;
     }

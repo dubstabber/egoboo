@@ -36,7 +36,7 @@ namespace
 {
 struct ScriptSystemAdapter final : IScriptSystem
 {
-    void runCharacterScript(Object* pchr) override { scr_run_chr_script(pchr); }
+    void runCharacterScript(ObjectRef character) override { scr_run_chr_script(character); }
     void setAlerts(ObjectRef character) override { set_alerts(character); }
     void endScriptingSystem() override { scripting_system_end(); }
 };

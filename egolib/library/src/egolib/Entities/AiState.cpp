@@ -27,7 +27,13 @@
 ///   driver entries (scr_run_chr_script / set_alerts / scripting_system_end) stay in script.c.
 
 #include "egolib/Script/script.h"
-#include "egolib/game/script_functions_internal.h"
+#include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/Entities/IPhysical.hpp"
+#include "egolib/Entities/IProfiled.hpp"
+#include "egolib/Entities/ObjectRoleAccess.hpp"
+#include "egolib/Profiles/_Include.hpp"
+#include "egolib/game/Core/GameEngine.hpp"
+#include "egolib/game/Core/ISessionState.hpp"
 
 namespace
 {
@@ -36,12 +42,12 @@ namespace
 
 bool isRuntimeObjectRefValid(ObjectRef ref)
 {
-    return tryObject(ref) != nullptr;
+    return Ego::Entities::activeObjectExists(ref);
 }
 
-const Object* tryRuntimeSpawnObject(ObjectRef ref)
+uint32_t worldUpdateCount()
 {
-    return tryObject(ref);
+    return activeSessionState().worldUpdateCount();
 }
 
 void publishSpawnIdentity(ai_state_t& self, ObjectRef index)
@@ -240,17 +246,18 @@ bool ai_state_t::set_bumplast(ai_state_t& self, const ObjectRef ichr)
 
 void ai_state_t::spawn(ai_state_t& self, const ObjectRef index, const PRO_REF iobj, uint16_t rank)
 {
-    const Object* pchr = tryRuntimeSpawnObject(index);
+    const IProfiled* profiled = Ego::Entities::tryActiveProfiled(index);
+    const IPhysical* physical = Ego::Entities::tryActivePhysical(index);
     ai_state_t::reset(self);
 
-    if (pchr == nullptr)
+    if (profiled == nullptr || profiled->getProfile() == nullptr || physical == nullptr)
     {
         return;
     }
 
     publishSpawnIdentity(self, index);
-    publishSpawnOverrides(self, *pchr);
-    publishSpawnWaypoint(self, *pchr);
+    publishSpawnOverrides(self, *profiled);
+    publishSpawnWaypoint(self, *physical);
     self.maxSpeed = 1.0f;
     publishSpawnOrderDefaults(self, rank);
 }

@@ -249,6 +249,21 @@ std::shared_ptr<Ego::Enchantment> Object::getFirstActiveEnchant() const
     return _activeEnchants.empty() ? nullptr : _activeEnchants.front();
 }
 
+bool Object::setFirstActiveEnchantBoostValues(float ownerManaSustain,
+                                              float ownerLifeSustain,
+                                              float targetManaDrain,
+                                              float targetLifeDrain)
+{
+    const std::shared_ptr<Ego::Enchantment> enchant = getFirstActiveEnchant();
+    if (enchant == nullptr || enchant->isTerminated())
+    {
+        return false;
+    }
+
+    enchant->setBoostValues(ownerManaSustain, ownerLifeSustain, targetManaDrain, targetLifeDrain);
+    return true;
+}
+
 void Object::addActiveEnchant(const std::shared_ptr<Ego::Enchantment>& enchant)
 {
     _activeEnchants.push_front(enchant);
@@ -346,6 +361,18 @@ bool Object::isHatedByTeam(TEAM_REF teamRef) const
 std::shared_ptr<Ego::Enchantment> Object::getLastEnchantmentSpawned() const
 {
     return _lastEnchantSpawned.lock();
+}
+
+bool Object::terminateLastEnchantmentSpawned()
+{
+    const std::shared_ptr<Ego::Enchantment> enchant = getLastEnchantmentSpawned();
+    if (enchant == nullptr || enchant->isTerminated())
+    {
+        return false;
+    }
+
+    enchant->requestTerminate();
+    return true;
 }
 
 void Object::setMana(const float value)
