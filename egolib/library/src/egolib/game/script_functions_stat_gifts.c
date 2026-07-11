@@ -32,11 +32,7 @@ TargetCompatibilityContext makeTargetCompatibilityContext(const ai_state_t& self
 
 ICharacterState* resolveAliveTargetState(const ai_state_t& self)
 {
-    const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* resolvedTargetState = tryCharacterState(self.getTarget());
-    return resolvedTargetInfo != nullptr &&
-           resolvedTargetState != nullptr &&
-           resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
+    return tryLivingCharacterState(self.getTarget());
 }
 
 bool resolveTargetStateCompatibilityContext(const ai_state_t& self,
@@ -49,14 +45,11 @@ bool resolveTargetStateCompatibilityContext(const ai_state_t& self,
 bool resolveAliveTargetHealingContext(const ai_state_t& self,
                                       HealingInvocationContext& context)
 {
-    const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
-    context.targetState = tryCharacterState(self.getTarget());
-    context.damageable = tryDamageable(self.getTarget());
+    context.targetState = tryLivingCharacterState(self.getTarget());
+    context.damageable = tryLivingDamageable(self.getTarget());
     context.healer = objectAttributionFromRef(self.getSelf());
-    return resolvedTargetInfo != nullptr &&
-           context.targetState != nullptr &&
+    return context.targetState != nullptr &&
            context.damageable != nullptr &&
-           resolvedTargetInfo->isAlive() &&
            context.healer.hasObject();
 }
 

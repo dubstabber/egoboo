@@ -124,9 +124,9 @@ uint8_t scr_TargetDoAction( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ITargetInfo* target = tryTargetInfo(self.getTarget());
+    const IDamageable* targetDamageable = tryLivingDamageable(self.getTarget());
     IAnimationControl* targetAnimation = tryAnimationControl(self.getTarget());
-    if ( target != nullptr && targetAnimation != nullptr && target->isAlive() )
+    if ( targetDamageable != nullptr && targetAnimation != nullptr )
     {
         return startResolvedAnimation(*targetAnimation, state.argument, false);
     }

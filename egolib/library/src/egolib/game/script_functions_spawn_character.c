@@ -15,7 +15,8 @@ struct SpawnAttachmentTargetContext
 struct SpawnedCharacterContext
 {
     ObjectRef ref = ObjectRef::Invalid;
-    Object* object = nullptr;
+    const IPhysical* physical = nullptr;
+    IAttachmentControl* attachment = nullptr;
     IScriptable* scriptable = nullptr;
     ICharacterState* characterState = nullptr;
     ILifecycleControl* lifecycle = nullptr;
@@ -24,7 +25,8 @@ struct SpawnedCharacterContext
     bool isResolved() const
     {
         return ref != ObjectRef::Invalid &&
-               object != nullptr &&
+               physical != nullptr &&
+               attachment != nullptr &&
                scriptable != nullptr &&
                characterState != nullptr &&
                lifecycle != nullptr &&
@@ -32,20 +34,16 @@ struct SpawnedCharacterContext
     }
 };
 
-SpawnedCharacterContext makeSpawnedCharacterContext(Object* child)
+SpawnedCharacterContext makeSpawnedCharacterContext(ObjectRef childRef)
 {
-    if (child == nullptr)
-    {
-        return {};
-    }
-
     return SpawnedCharacterContext{
-        child->getObjRef(),
-        child,
-        static_cast<IScriptable*>(child),
-        static_cast<ICharacterState*>(child),
-        static_cast<ILifecycleControl*>(child),
-        static_cast<IMovementControl*>(child)
+        childRef,
+        tryPhysical(childRef),
+        tryAttachmentControl(childRef),
+        tryScriptable(childRef),
+        tryCharacterState(childRef),
+        tryLifecycleControl(childRef),
+        tryMovementControl(childRef)
     };
 }
 
@@ -129,14 +127,14 @@ void publishSpawnDismount(ILifecycleControl& lifecycle, ObjectRef dismountObject
 
 bool hasSafeSpawnPosition(const SpawnedCharacterContext& child)
 {
-    return child.object != nullptr && child.object->hasSafePosition();
+    return child.physical != nullptr && child.physical->hasSafePosition();
 }
 
 void terminateSpawnedCharacter(const SpawnedCharacterContext& child)
 {
-    if (child.object != nullptr)
+    if (child.lifecycle != nullptr)
     {
-        child.object->requestTerminate();
+        child.lifecycle->requestTerminate();
     }
 }
 
@@ -144,14 +142,14 @@ bool attachSpawnedCharacterToGrip(const SpawnedCharacterContext& child,
                                   ObjectRef targetRef,
                                   grip_offset_t gripOffset)
 {
-    return child.object != nullptr && child.object->attachToObject(targetRef, gripOffset);
+    return child.attachment != nullptr && child.attachment->attachToObject(targetRef, gripOffset);
 }
 
 void setSpawnedCharacterHolder(const SpawnedCharacterContext& child, ObjectRef holderRef)
 {
-    if (child.object != nullptr)
+    if (child.attachment != nullptr)
     {
-        child.object->setHolderRef(holderRef);
+        child.attachment->setHolderRef(holderRef);
     }
 }
 
@@ -189,7 +187,7 @@ SpawnedCharacterContext spawnCharacterAt(const Ego::Vector3f& position,
                                          Facing facing)
 {
     const ObjectRef childRef = moduleCommands().spawnObjectRef(position, profile, teamRef, 0, facing, "", ObjectRef::Invalid);
-    return makeSpawnedCharacterContext(tryObject(childRef));
+    return makeSpawnedCharacterContext(childRef);
 }
 
 void setModuleRespawnValid(bool valid)

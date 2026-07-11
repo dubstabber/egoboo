@@ -152,9 +152,9 @@ bool trySetSelfInvincibility(ai_state_t& self, bool invincible)
     return true;
 }
 
-void publishCleanupTimerForDeadListener(const ITargetInfo& listenerInfo, IScriptable& listener)
+void publishCleanupTimerForDeadListener(const IDamageable& listenerDamageable, IScriptable& listener)
 {
-    if (!listenerInfo.isAlive())
+    if (!listenerDamageable.isAlive())
     {
         listener.setAITimer(worldUpdateCount() + 2);  // Don't let it think too much...
     }
@@ -163,8 +163,9 @@ void publishCleanupTimerForDeadListener(const ITargetInfo& listenerInfo, IScript
 void publishCleanUpForSameTeamListener(TEAM_REF teamRef, ObjectRef listenerRef)
 {
     const ITargetInfo* listenerInfo = tryTargetInfo(listenerRef);
+    const IDamageable* listenerDamageable = tryDamageable(listenerRef);
     IScriptable* listener = tryScriptable(listenerRef);
-    if (listenerInfo == nullptr || listener == nullptr)
+    if (listenerInfo == nullptr || listenerDamageable == nullptr || listener == nullptr)
     {
         return;
     }
@@ -174,7 +175,7 @@ void publishCleanUpForSameTeamListener(TEAM_REF teamRef, ObjectRef listenerRef)
         return;
     }
 
-    publishCleanupTimerForDeadListener(*listenerInfo, *listener);
+    publishCleanupTimerForDeadListener(*listenerDamageable, *listener);
     publishCleanedUpState(*listener);
 }
 

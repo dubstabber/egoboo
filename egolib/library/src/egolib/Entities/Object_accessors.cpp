@@ -121,6 +121,8 @@ const Ego::Vector3f& Object::getSpawnPosition() const { return Ego::Physics::Col
 
 const Ego::Vector3f& Object::getOldPosition() const { return Ego::Physics::Collidable::getOldPosition(); }
 
+bool Object::hasSafePosition() const { return Ego::Physics::Collidable::hasSafePosition(); }
+
 float Object::getPosX() const { return Ego::Physics::Collidable::getPosX(); }
 
 float Object::getPosY() const { return Ego::Physics::Collidable::getPosY(); }

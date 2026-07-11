@@ -26,9 +26,6 @@ Ego::Script::ScriptOperandContext makeOperandContext(const Object* self,
                                                      const Object* leader = nullptr)
 {
     Ego::Script::ScriptOperandContext context;
-    context.selfObject = self;
-    context.targetObject = target;
-    context.ownerObject = owner;
 
     if (self != nullptr)
     {
@@ -183,6 +180,41 @@ protected:
 };
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptVariablesFixture::s_runtime;
+
+TEST_F(ScriptVariablesFixture, OperandContextRequiresValidRefAndCompleteSelfRoleBundle)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_data/globalobjects/players/rogue.obj", 5900);
+
+    ASSERT_NE(actor, nullptr);
+
+    const auto complete = makeOperandContext(actor.get());
+    EXPECT_TRUE(complete.hasSelf());
+
+    Ego::Script::ScriptOperandContext incomplete = complete;
+    incomplete.selfRef = ObjectRef::Invalid;
+    EXPECT_FALSE(incomplete.hasSelf());
+
+    incomplete = complete;
+    incomplete.selfPhysical = nullptr;
+    EXPECT_FALSE(incomplete.hasSelf());
+
+    incomplete = complete;
+    incomplete.selfCharacterState = nullptr;
+    EXPECT_FALSE(incomplete.hasSelf());
+
+    incomplete = complete;
+    incomplete.selfTargetInfo = nullptr;
+    EXPECT_FALSE(incomplete.hasSelf());
+
+    incomplete = complete;
+    incomplete.selfWallet = nullptr;
+    EXPECT_FALSE(incomplete.hasSelf());
+
+    incomplete = complete;
+    incomplete.selfInventoryHolder = nullptr;
+    EXPECT_FALSE(incomplete.hasSelf());
+}
 
 TEST_F(ScriptVariablesFixture, SpatialReadersUseRoleSeamsAndPreserveFallbacks)
 {

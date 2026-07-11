@@ -23,6 +23,7 @@ public:
     virtual const Ego::Vector3f& getVelocity() const = 0;
     virtual const Ego::Vector3f& getSpawnPosition() const = 0;
     virtual const Ego::Vector3f& getOldPosition() const = 0;
+    virtual bool hasSafePosition() const = 0;
 
     virtual const bumper_t& getInitialBump() const = 0;
     virtual const bumper_t& getCurrentBump() const = 0;

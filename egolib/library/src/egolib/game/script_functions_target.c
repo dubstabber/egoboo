@@ -72,14 +72,17 @@ uint8_t scr_IfTargetIsOnOtherTeam( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
+    const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (target == nullptr || selfContext.info == nullptr)
+    if (targetContext.info == nullptr ||
+        targetContext.damageable == nullptr ||
+        selfContext.info == nullptr)
     {
         return false;
     }
 
-    return ( target->isAlive() && !target->isOnSameTeam(selfContext.info->getTeamRef()) );
+    return ( targetContext.damageable->isAlive() &&
+             !targetContext.info->isOnSameTeam(selfContext.info->getTeamRef()) );
 }
 
 
@@ -92,16 +95,17 @@ uint8_t scr_IfTargetIsOnHatedTeam( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
     const TargetCompatibilityContext targetContext = makeTargetCompatibilityContext(self);
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    if (target == nullptr || targetContext.damageable == nullptr || selfContext.info == nullptr)
+    if (targetContext.info == nullptr ||
+        targetContext.damageable == nullptr ||
+        selfContext.info == nullptr)
     {
         return false;
     }
 
-    return target->isAlive() &&
-           target->isHatedByTeam(selfContext.info->getTeamRef()) &&
+    return targetContext.damageable->isAlive() &&
+           targetContext.info->isHatedByTeam(selfContext.info->getTeamRef()) &&
            !targetContext.damageable->isInvincible();
 }
 
@@ -166,13 +170,7 @@ uint8_t scr_IfTargetIsAlive( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return target->isAlive();
+    return tryLivingDamageable(self.getTarget()) != nullptr;
 }
 
 
@@ -540,13 +538,8 @@ uint8_t scr_IfTargetIsOwner( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    const ITargetInfo* target = tryResolvedTargetInfo(self);
-    if (target == nullptr)
-    {
-        return false;
-    }
-
-    return ( target->isAlive() && self.owner == self.getTarget() );
+    return tryLivingDamageable(self.getTarget()) != nullptr &&
+           self.owner == self.getTarget();
 }
 
 

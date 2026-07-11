@@ -47,12 +47,6 @@ ObjectRef resolveLeaderRefForVariables(const ITargetInfo& selfInfo)
 
 void populateSelfOperandContext(Ego::Script::ScriptOperandContext& context)
 {
-    context.selfObject = tryObject(context.selfRef);
-    if (context.selfObject == nullptr)
-    {
-        return;
-    }
-
     context.selfPhysical = tryPhysical(context.selfRef);
     context.selfCharacterState = tryCharacterState(context.selfRef);
     context.selfTargetInfo = tryTargetInfo(context.selfRef);
@@ -62,12 +56,6 @@ void populateSelfOperandContext(Ego::Script::ScriptOperandContext& context)
 
 void populateTargetOperandContext(Ego::Script::ScriptOperandContext& context)
 {
-    context.targetObject = tryObject(context.targetRef);
-    if (context.targetObject == nullptr)
-    {
-        return;
-    }
-
     context.targetPhysical = tryPhysical(context.targetRef);
     context.targetCharacterState = tryCharacterState(context.targetRef);
     context.targetTargetInfo = tryTargetInfo(context.targetRef);
@@ -76,12 +64,6 @@ void populateTargetOperandContext(Ego::Script::ScriptOperandContext& context)
 
 void populateOwnerOperandContext(Ego::Script::ScriptOperandContext& context)
 {
-    context.ownerObject = tryObject(context.ownerRef);
-    if (context.ownerObject == nullptr)
-    {
-        return;
-    }
-
     context.ownerPhysical = tryPhysical(context.ownerRef);
 }
 

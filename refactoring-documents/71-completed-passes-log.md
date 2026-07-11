@@ -268,3 +268,31 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   ctest rerun, full `ctest`, the `test.mod` validator smoke, the full validator
   baseline (`42 modules / 10 warnings / 245 errors`, expected nonzero exit),
   no-stray-header archive check, and the live-archive `nm` back-edge check.
+- Pass 305 on 2026-07-11 made `ScriptOperandContext` and
+  `ResolvedSelfContext` role-only boundaries. Script operand population now
+  resolves the existing physical, character-state, target, wallet, inventory,
+  and profile roles directly instead of retaining concrete `Object*` pointers,
+  and `hasSelf()` requires a valid reference plus the complete self-role bundle.
+  Existing invalid-reference sentinels, leader fallback, conversions, and
+  profile metadata mutation behavior remain unchanged. Coverage now asserts the
+  complete-context invariant. Verified with a clean Linux build, the focused
+  217-case script/object ctest filter, full `ctest` (`947 / 947`), both content
+  validator modes, and the Linux-hosted Windows cross-build.
+- Pass 306 on 2026-07-11 removed duplicated liveness from `ITargetInfo` and made
+  `IDamageable` the authoritative script-visible alive/dead role. Shared living
+  damageable and character-state adapters now gate target predicates, actions,
+  combat, enchantment, stat-gift, and spawn-cleanup paths consistently, while
+  target relationship data stays on `ITargetInfo`. Coverage now asserts that a
+  killed target fails living team and owner predicates. Verified with the same
+  Linux build, focused and full ctest gates, validator baselines, and Windows
+  cross-build as Pass 305.
+- Pass 307 on 2026-07-11 added the narrow `IAttachmentControl` object role and
+  exposed safe-position state through `IPhysical`. Spawned-character script
+  handling now retains only an `ObjectRef` and resolved attachment, physical,
+  script, character-state, lifecycle, and movement roles; attachment, holder,
+  safe-position, and termination operations no longer require a concrete
+  `Object*`. Coverage now checks unresolved child profiles and verifies that the
+  temporary holder reference is cleared after held-object script execution.
+  Verified with the same Linux build, focused and full ctest gates, validator
+  baselines, and Windows cross-build, plus no-stray-header and live-archive `nm`
+  boundary checks.

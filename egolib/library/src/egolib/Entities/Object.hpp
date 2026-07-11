@@ -32,6 +32,7 @@
 
 #include "egolib/Entities/IAnimationControl.hpp"
 #include "egolib/Entities/IAppearanceProfile.hpp"
+#include "egolib/Entities/IAttachmentControl.hpp"
 #include "egolib/Entities/IDamageable.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
@@ -66,6 +67,7 @@ namespace Ego { class Enchantment; }
 class Object : public PhysicsData, private idlib::non_copyable, public Ego::Physics::Collidable,
                public IAnimationControl,
                public IAppearanceProfile,
+               public IAttachmentControl,
                public IDamageable,
                public ICharacterState,
                public IEnchantable,
@@ -132,6 +134,8 @@ public:
 
     const Ego::Vector3f& getOldPosition() const override;
 
+    bool hasSafePosition() const override;
+
     void updatePhysics();
 
     bool attachToPlatform(ObjectRef platformRef);
@@ -142,7 +146,7 @@ public:
 
     bool grabStuff(grip_offset_t gripOffset, bool grabPeople);
 
-    bool attachToObject(ObjectRef holderRef, grip_offset_t gripOffset);
+    bool attachToObject(ObjectRef holderRef, grip_offset_t gripOffset) override;
 
     void updateCollisionSize(bool updateMatrix);
 
@@ -193,7 +197,7 @@ public:
 
     ObjectRef getHolderRef() const override;
 
-    void setHolderRef(ObjectRef holderRef);
+    void setHolderRef(ObjectRef holderRef) override;
 
     ObjectRef getAttachedPlatformRef() const;
 

@@ -916,6 +916,30 @@ TEST_F(ScriptStateFunctionsFixture, SpawnExactCharacterXYZPublishesRequestedProf
     EXPECT_FLOAT_EQ(child->getVelocity().z(), 0.0f);
 }
 
+TEST_F(ScriptStateFunctionsFixture, SpawnExactCharacterXYZRejectsUnresolvedChildProfile)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 55345);
+
+    ASSERT_NE(actor, nullptr);
+
+    const size_t objectCountBefore = module.getObjectHandler().getObjectCount();
+
+    script_state_t state;
+    state.argument = INVALID_PRO_REF;
+    state.x = 72;
+    state.y = 84;
+    state.distance = 18;
+    state.turn = 44444;
+
+    ai_state_t self = makeScriptSelf(actor);
+    self.child = ObjectRef::Invalid;
+
+    EXPECT_FALSE(scr_SpawnExactCharacterXYZ(state, self));
+    EXPECT_EQ(self.child, ObjectRef::Invalid);
+    EXPECT_EQ(module.getObjectHandler().getObjectCount(), objectCountBefore);
+}
+
 TEST_F(ScriptStateFunctionsFixture, AttachedParticleHelpersUseResolvedOwnerFallbacks)
 {
     auto& module = beginActiveTestModule();
@@ -1027,6 +1051,7 @@ TEST_F(ScriptStateFunctionsFixture, SpawnAttachedCharacterPreservesInventoryAndW
     ASSERT_NE(target->getInventoryItemRef(firstInventorySlot), ObjectRef::Invalid);
     EXPECT_EQ(target->getInventoryItemRef(firstInventorySlot), inventoryChild->getObjRef());
     EXPECT_EQ(inventoryChild->getInventoryHolderRef(), target->getObjRef());
+    EXPECT_EQ(inventoryChild->getHolderRef(), ObjectRef::Invalid);
     EXPECT_EQ(inventoryChild->getAIOwner(), self.owner);
     EXPECT_EQ(inventoryChild->getAIPassage(), self.passage);
 

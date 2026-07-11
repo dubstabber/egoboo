@@ -3,6 +3,7 @@
 #define GAME_ENTITIES_PRIVATE 1
 #include "egolib/Entities/IAnimationControl.hpp"
 #include "egolib/Entities/IAppearanceProfile.hpp"
+#include "egolib/Entities/IAttachmentControl.hpp"
 #include "egolib/Entities/ICharacterState.hpp"
 #include "egolib/Entities/IEnchantable.hpp"
 #include "egolib/Entities/Enchant.hpp"

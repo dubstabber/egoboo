@@ -505,10 +505,6 @@ struct ScriptOperandContext
     ObjectRef ownerRef = ObjectRef::Invalid;
     ObjectRef leaderRef = ObjectRef::Invalid;
 
-    const Object* selfObject = nullptr;
-    const Object* targetObject = nullptr;
-    const Object* ownerObject = nullptr;
-
     const IPhysical* selfPhysical = nullptr;
     const IPhysical* targetPhysical = nullptr;
     const IPhysical* ownerPhysical = nullptr;
@@ -527,7 +523,12 @@ struct ScriptOperandContext
 
     bool hasSelf() const
     {
-        return selfObject != nullptr;
+        return selfRef != ObjectRef::Invalid &&
+               selfPhysical != nullptr &&
+               selfCharacterState != nullptr &&
+               selfTargetInfo != nullptr &&
+               selfWallet != nullptr &&
+               selfInventoryHolder != nullptr;
     }
 };
 

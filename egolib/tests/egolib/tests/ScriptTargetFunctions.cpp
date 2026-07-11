@@ -1277,6 +1277,36 @@ TEST_F(ScriptTargetFunctionsFixture, TargetOwnerPredicateReadsThroughTargetInfoR
     EXPECT_FALSE(scr_IfTargetIsOwner(state, self));
 }
 
+TEST_F(ScriptTargetFunctionsFixture, KilledTargetFailsLivingTeamAndOwnerPredicates)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 5363);
+    auto target = makeObject(module, "mp_objects/follower.obj", 5364);
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(target, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    target->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, target);
+    self.owner = target->getObjRef();
+
+    EXPECT_TRUE(scr_IfTargetIsAlive(state, self));
+    EXPECT_TRUE(scr_IfTargetIsOnOtherTeam(state, self));
+    EXPECT_TRUE(scr_IfTargetIsOnHatedTeam(state, self));
+    EXPECT_TRUE(scr_IfTargetIsOwner(state, self));
+
+    static_cast<IDamageable&>(*target).kill(actor->attribution(), true);
+    ASSERT_FALSE(target->isAlive());
+
+    EXPECT_FALSE(scr_IfTargetIsAlive(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnOtherTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOnHatedTeam(state, self));
+    EXPECT_FALSE(scr_IfTargetIsOwner(state, self));
+}
+
 TEST_F(ScriptTargetFunctionsFixture, FacingQueriesReadThroughPhysicalRole)
 {
     auto& module = beginActiveTestModule();

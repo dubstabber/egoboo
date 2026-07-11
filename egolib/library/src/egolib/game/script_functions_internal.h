@@ -156,15 +156,20 @@ inline bool hasLiveSelf(const ai_state_t& self)
     return hasLiveObjectRef(self.getSelf());
 }
 
+inline const IProfiled* tryProfiled(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<const IProfiled*>(object) : nullptr;
+}
+
 struct ResolvedSelfContext
 {
     ObjectRef ref = ObjectRef::Invalid;
-    Object* object = nullptr;
-    ObjectProfile* profile = nullptr;
+    const ObjectProfile* profile = nullptr;
 
     bool isResolved() const
     {
-        return ref != ObjectRef::Invalid && object != nullptr && profile != nullptr;
+        return ref != ObjectRef::Invalid && profile != nullptr;
     }
 };
 
@@ -172,13 +177,13 @@ inline ResolvedSelfContext resolveSelfContext(ObjectRef objectRef)
 {
     ResolvedSelfContext context;
     context.ref = objectRef;
-    context.object = tryObject(objectRef);
-    if (context.object == nullptr)
+    const IProfiled* profiled = tryProfiled(objectRef);
+    if (profiled == nullptr)
     {
         return context;
     }
 
-    const std::shared_ptr<ObjectProfile>& profile = context.object->getProfile();
+    const std::shared_ptr<ObjectProfile>& profile = profiled->getProfile();
     context.profile = profile.get();
     return context;
 }
@@ -218,6 +223,12 @@ inline IDamageable* tryDamageable(ObjectRef objectRef)
     return object ? static_cast<IDamageable*>(object) : nullptr;
 }
 
+inline IDamageable* tryLivingDamageable(ObjectRef objectRef)
+{
+    IDamageable* damageable = tryDamageable(objectRef);
+    return damageable != nullptr && damageable->isAlive() ? damageable : nullptr;
+}
+
 inline IEquipmentControl* tryEquipmentControl(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
@@ -228,6 +239,11 @@ inline ICharacterState* tryCharacterState(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<ICharacterState*>(object) : nullptr;
+}
+
+inline ICharacterState* tryLivingCharacterState(ObjectRef objectRef)
+{
+    return tryLivingDamageable(objectRef) != nullptr ? tryCharacterState(objectRef) : nullptr;
 }
 
 inline IEnchantable* tryEnchantable(ObjectRef objectRef)
@@ -242,16 +258,16 @@ inline IAppearanceProfile* tryAppearanceProfile(ObjectRef objectRef)
     return object ? static_cast<IAppearanceProfile*>(object) : nullptr;
 }
 
-inline const IProfiled* tryProfiled(ObjectRef objectRef)
-{
-    Object* object = tryObject(objectRef);
-    return object ? static_cast<const IProfiled*>(object) : nullptr;
-}
-
 inline IInventoryHolder* tryInventoryHolder(ObjectRef objectRef)
 {
     Object* object = tryObject(objectRef);
     return object ? static_cast<IInventoryHolder*>(object) : nullptr;
+}
+
+inline IAttachmentControl* tryAttachmentControl(ObjectRef objectRef)
+{
+    Object* object = tryObject(objectRef);
+    return object ? static_cast<IAttachmentControl*>(object) : nullptr;
 }
 
 inline ILifecycleControl* tryLifecycleControl(ObjectRef objectRef)

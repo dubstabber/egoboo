@@ -20,7 +20,6 @@ public:
     virtual slot_t getAttachmentSlot() const = 0;
     virtual PLA_REF getPlayerNumber() const = 0;
 
-    virtual bool isAlive() const = 0;
     /**
     * @brief
     *   This function returns true if this Object is being held by another Object

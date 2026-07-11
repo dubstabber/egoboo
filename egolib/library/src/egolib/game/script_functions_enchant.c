@@ -174,11 +174,7 @@ void unkurseTargetHeldAndActorPocketItems(const InventoryCompatibilityContext& c
 
 ICharacterState* resolveAliveTargetState(const ai_state_t& self)
 {
-    const ITargetInfo* resolvedTargetInfo = tryTargetInfo(self.getTarget());
-    ICharacterState* resolvedTargetState = tryCharacterState(self.getTarget());
-    return resolvedTargetInfo != nullptr &&
-           resolvedTargetState != nullptr &&
-           resolvedTargetInfo->isAlive() ? resolvedTargetState : nullptr;
+    return tryLivingCharacterState(self.getTarget());
 }
 
 bool resolveTargetStateCompatibilityContext(const ai_state_t& self,
