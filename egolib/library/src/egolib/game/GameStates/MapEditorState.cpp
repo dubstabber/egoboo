@@ -35,7 +35,9 @@
 #include "egolib/game/Graphics/Camera.hpp"
 
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/Entities/_Include.hpp"
+#include "egolib/Entities/IObjectWorld.hpp"
 
 #include "egolib/Graphics/GraphicsWindow.hpp"    // Ego::GraphicsWindow
 
@@ -98,8 +100,6 @@ void MapEditorState::addModeEditButton(EditorMode mode, const std::string &label
 
 void MapEditorState::update()
 {
-    GameSessionContext& session = GameSessionContext::get();
-    GameModule& module = session.activeModule();
     const ISessionState& sessionState = activeSessionState();
     ISessionStatePublisher& sessionPublisher = activeSessionStatePublisher();
 
@@ -108,8 +108,8 @@ void MapEditorState::update()
 
     //Rebuild the quadtree for fast object lookup
     auto& cw = Ego::Physics::activeCollisionWorld();
-    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, cw.getTileCountX()*Info<float>::Grid::Size(),
-                                                         cw.getTileCountY()*Info<float>::Grid::Size());
+    Ego::Entities::activeObjectHandler().updateQuadTree(0.0f, 0.0f, cw.getTileCountX()*Info<float>::Grid::Size(),
+                                                                    cw.getTileCountY()*Info<float>::Grid::Size());
 
     //Always reveal all invisible monsters and objects in Map Editor mode
     LocalPlayerPerceptionState localPlayerPerception = sessionState.localPlayerPerception();
@@ -118,7 +118,7 @@ void MapEditorState::update()
     sessionPublisher.publishLocalPlayerPerception(localPlayerPerception);
 
     //Animate water
-    module.getWater().update();
+    activeModuleEnvironment().water().update();
 
     //Update camera movement
     EngineContext::get().cameraSystem().getMainCamera()->updateFreeControl();

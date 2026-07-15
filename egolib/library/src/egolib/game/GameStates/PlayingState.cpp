@@ -47,6 +47,7 @@
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Module/IModuleStatus.hpp"
+#include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Module.hpp"
 
 namespace
@@ -78,16 +79,16 @@ PlayingState::PlayingState() :
     {
         auto debugWindow = std::make_shared<Ego::GUI::InternalDebugWindow>("CurrentModule");
         debugWindow->addWatchVariable("Passages", []{
-            GameModule* module = GameSessionContext::get().tryActiveModule();
-            return module ? std::to_string(module->getPassageCount()) : std::string("0");
+            IModuleStatus* status = tryActiveModuleStatus();
+            return status ? std::to_string(status->passageCount()) : std::string("0");
         });
         debugWindow->addWatchVariable("ExportValid", []{
-            GameModule* module = GameSessionContext::get().tryActiveModule();
-            return module && module->isExportValid() ? "true" : "false";
+            IModuleStatus* status = tryActiveModuleStatus();
+            return status && status->isExportValid() ? "true" : "false";
         });
         debugWindow->addWatchVariable("ModuleBeaten", []{
-            GameModule* module = GameSessionContext::get().tryActiveModule();
-            return module && module->isBeaten() ? "true" : "false";
+            IModuleStatus* status = tryActiveModuleStatus();
+            return status && status->isBeaten() ? "true" : "false";
         });
         debugWindow->addWatchVariable("Players", []{
             GameModule* module = GameSessionContext::get().tryActiveModule();
@@ -102,8 +103,8 @@ PlayingState::PlayingState() :
             return module ? module->getName() : std::string("n/a");
         });
         debugWindow->addWatchVariable("Path", []{
-            GameModule* module = GameSessionContext::get().tryActiveModule();
-            return module ? module->getPath() : std::string("n/a");
+            IModuleCommands* commands = tryActiveModuleCommands();
+            return commands ? commands->getPath() : std::string("n/a");
         });
         addComponent(debugWindow);        
     }
@@ -130,8 +131,8 @@ PlayingState::PlayingState() :
 PlayingState::~PlayingState()
 {
     //Check for player exports
-    if (GameModule* module = GameSessionContext::get().tryActiveModule();
-        module && module->isExportValid())
+    if (IModuleStatus* status = tryActiveModuleStatus();
+        status && status->isExportValid())
     {
         // export the players
         export_all_players(false);
@@ -229,8 +230,7 @@ bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPresse
         case SDLK_F9:
             if (EngineContext::get().config().debug_developerMode_enable.getValue())
             {
-                GameModule& activeModule = GameSessionContext::get().activeModule();
-                ObjectHandler& objectHandler = activeModule.getObjectHandler();
+                ObjectHandler& objectHandler = Ego::Entities::activeObjectHandler();
                 for(const ObjectRef& objectRef : objectHandler.objectRefIterator())
                 {
                     Object* object = objectHandler.get(objectRef);

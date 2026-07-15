@@ -316,3 +316,28 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   `nm` DAG check. The console validator also reproduced its previously observed
   alternate **25-warning / 230-error** fallback classification; no validator,
   content, or compiler behavior changed in this pass.
+- Pass 309 on 2026-07-15 finished migrating the last read-only `GameModule`
+  accesses in the top-of-DAG `egolib-gamestates` screens onto the already
+  installed lower-layer seams. In `PlayingState.cpp` the developer-mode debug
+  watches for passages/export-valid/module-beaten now read `tryActiveModuleStatus()`
+  (`IModuleStatus`), the path watch reads `tryActiveModuleCommands()->getPath()`
+  (`IModuleCommands`), the destructor export check reads `tryActiveModuleStatus()`,
+  and the `SDLK_F9` win-module cheat resolves the object container through
+  `Ego::Entities::activeObjectHandler()` (`IObjectWorld`). In `MapEditorState::update()`
+  the concrete `GameSessionContext`/`GameModule` locals were dropped: the quad-tree
+  rebuild uses `Ego::Entities::activeObjectHandler()` and the water animation uses
+  `activeModuleEnvironment().water()` (`IModuleEnvironment`). The three debug
+  watches with no matching seam (players/imports/name), the player-list ctor loop,
+  and the per-frame `activeModule().update()` / map-editor `beginModule()`
+  lifecycle calls were deliberately left on the concrete owner rather than widen a
+  seam for debug-only display. No new types, no archive moves; both files stay in
+  `egolib-gamestates` and only add downward calls. `GameSessionContext::get()`
+  dropped 30 -> 23. Seam-method equivalence, null/throw timing (the status seam is
+  installed and cleared atomically with `_activeModule`, and `~PlayingState` runs
+  before `quitModule()` in `GameEngine::uninitialize`), and throw equivalence for
+  the cheat/editor paths were adversarially verified. Verified with the Linux
+  build (no new warnings), full ctest **955 / 955**, `test.mod` validation
+  **0 / 0**, the full validator baseline (**42 modules / 10 warnings / 245 errors**,
+  expected nonzero), and the live-archive `nm` back-edge check (all four seam
+  symbols resolve from `foundation-base`/`library`, referenced-only in
+  `egolib-gamestates`).

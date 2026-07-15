@@ -4,7 +4,7 @@ Current-state health snapshot for the Egoboo workspace. This document is the
 canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
-Snapshot date: 2026-07-11. Measurements below were taken from the live tree and
+Snapshot date: 2026-07-15. Measurements below were taken from the live tree and
 the existing `build/products/x64/lib/libegolib-*.a` archives.
 
 ## Executive Summary
@@ -49,9 +49,9 @@ or engine/session service ownership.
 | Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
 | ctest cases | 955 | `ctest --test-dir build -N` |
 | ctest baseline | 955 / 955 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 474 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `::get()` call sites | 467 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 388 | Dominant intentional engine seam |
-| `GameSessionContext::get()` | 30 | Dominant intentional session seam |
+| `GameSessionContext::get()` | 23 | Dominant intentional session seam; Pass 309 moved the last gamestates read-only module accesses onto lower-layer seams |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 662 | Broad grep count, not semantic classification |
 | Interface headers | 67 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
@@ -150,7 +150,10 @@ menu, script, entity, and spawn callers. Terrain queries now use the active
 `ITerrainQuery` seam, and active module command/mutation paths such as spawning,
 team experience, passages, shops, pit controls, respawn/export/beaten flags, and
 tile changes route through `IModuleCommands` for migrated script, entity,
-graphics, shop, loading, and game-loop callers. `GameModule` loading, spawning,
+graphics, shop, loading, game-loop, and now top-of-DAG gamestates-screen callers
+(`PlayingState` debug watches/export check/cheat and `MapEditorState::update`
+were the last read-only stragglers, moved onto the status/commands/object-world/
+environment seams in Pass 309). `GameModule` loading, spawning,
 update, passage music, weather, and player-startup code now receive session and
 engine services through an explicit `GameModuleRuntime` provider surface instead
 of directly reaching into `EngineContext` or `GameSessionContext`.
