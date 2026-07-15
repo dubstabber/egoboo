@@ -376,3 +376,36 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   full ctest **955 / 955**, `test.mod` validation **0 / 0**, the full validator
   baseline (**42 modules / 10 warnings / 245 errors**, expected nonzero), the
   header-closure measurement above, and the archive-member/`nm` check.
+- Pass 311 on 2026-07-15 extracted the in-game developer console setup out of
+  `GameEngine::initialize()` / `uninitialize()` into a new same-archive RAII
+  object, `ConsoleBootstrap` (egolib-library, `EGOLIB_GAME_CORE_SOURCES`), the
+  third composition-root bootstrap after `ContentRuntimeBootstrap` and
+  `GameplaySubsystemsBootstrap`. Its constructor sizes and initializes the
+  console from the active graphics window and subscribes the built-in
+  grog/daze/exit command handler; its destructor uninitializes the console.
+  `GameEngine` holds it as a `std::unique_ptr` member constructed at the
+  original console-init point in `initialize()` and `reset()` at the original
+  teardown point in `uninitialize()` (between `_contentRuntimeBootstrap.reset()`
+  and `_gameplaySubsystemsBootstrap.reset()`). The command handler's sole
+  game-state dependency — whether a module is being played — is injected as a
+  `std::function<bool()>` predicate (`[this]{ return getActivePlayingState() !=
+  nullptr; }`), so the bootstrap does not depend on the concrete `GameEngine` or
+  playing-state types; `!isPlaying()` is logically identical to the original
+  `nullptr == getActivePlayingState()` guard, and the rectangle computation,
+  command comparisons, output string, and `exit()` no-op are byte-identical.
+  This is primarily a STRUCTURAL/encapsulation pass: `Console.hpp` is a light
+  header, so the header win is small (`GameEngine_lifecycle.cpp` closure 1466 ->
+  1460) and `Console.hpp` STAYS in `GameEngine.cpp` (still used at the event
+  poll for `Console::get().handle_event`). Adversarially verified
+  behavior-preserving on all six review dimensions. Error-path note (same class
+  as Pass 310, and verified even safer): if an exception skips `uninitialize()`,
+  `~GameEngine` now runs `~ConsoleBootstrap` -> `Console::uninitialize()` where
+  the console previously leaked; this is non-throwing (empty `~Console`,
+  `noexcept ~signal`), does not dereference the captured `this` (the subscription
+  is destroyed, never emitted during teardown), and touches ONLY the Console
+  singleton — never `EngineContext` or already-cleared services. `egolib-library`
+  member count 83 -> 84; no archive-boundary or DAG change (`ConsoleBootstrap`
+  symbols resolve within `egolib-library`). Verified with the Linux build (no new
+  warnings), full ctest **955 / 955**, `test.mod` validation **0 / 0**, the full
+  validator baseline (**42 modules / 10 warnings / 245 errors**, expected
+  nonzero), the header-closure measurement, and the archive-member/`nm` check.

@@ -21,10 +21,10 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/GameplaySubsystemsBootstrap.hpp"
+#include "egolib/game/Core/ConsoleBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Core/System.hpp"                 // Ego::Core::System
-#include "egolib/Console/Console.hpp"             // Ego::Core::Console
 #include "egolib/Graphics/GraphicsWindow.hpp"     // Ego::GraphicsWindow (complete type)
 
 #include "egolib/Graphics/Font.hpp"               // Ego::Font (complete type)
@@ -98,23 +98,8 @@ bool GameEngine::initialize()
     // Install the gameplay audio + particle subsystems (audio then particle).
     _gameplaySubsystemsBootstrap = std::make_unique<GameplaySubsystemsBootstrap>();
 
-	// Initialize the console.
-	auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { EngineContext::get().graphicsSystem().getWindow()->drawable_size()(0),
-		                                                             EngineContext::get().graphicsSystem().getWindow()->drawable_size()(1) * 0.25 });
-
-	Ego::Core::Console::initialize(rectangle);
-	Ego::Core::Console::get().ExecuteCommand.subscribe([this](std::string command) {
-		if (command == "grog()" || command == "daze()")
-		{
-			auto activePlayingState = getActivePlayingState();
-			if (nullptr == activePlayingState)
-			{
-				Ego::Core::Console::get().add_output(command + " can only be invoked when playing\n");
-			}
-		}
-		if (command == "exit()")
-		{}
-	});
+    // Install the in-game developer console (sized from the graphics window).
+    _consoleBootstrap = std::make_unique<ConsoleBootstrap>([this]{ return getActivePlayingState() != nullptr; });
 
 
     // load the bitmapped font (must be done after gfx_system_init_all_graphics())
@@ -244,8 +229,8 @@ void GameEngine::uninitialize()
 
     _contentRuntimeBootstrap.reset();
 
-    // Uninitialize the console.
-    Ego::Core::Console::uninitialize();
+    // Uninitialize the in-game developer console.
+    _consoleBootstrap.reset();
 
     // Tear down the gameplay audio + particle subsystems (particle then audio).
     _gameplaySubsystemsBootstrap.reset();

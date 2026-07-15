@@ -29,6 +29,7 @@ class CameraSystem;
 class GameModule;
 class ContentRuntimeBootstrap;
 class GameplaySubsystemsBootstrap;
+class ConsoleBootstrap;
 class ObjectHandler;
 class ego_mesh_t;
 struct status_list_t;
@@ -288,5 +289,6 @@ private:
     //GameEngine Submodules
     std::unique_ptr<ContentRuntimeBootstrap> _contentRuntimeBootstrap;
     std::unique_ptr<GameplaySubsystemsBootstrap> _gameplaySubsystemsBootstrap;
+    std::unique_ptr<ConsoleBootstrap> _consoleBootstrap;
     std::unique_ptr<Ego::GUI::UIManager> _uiManager;
 };

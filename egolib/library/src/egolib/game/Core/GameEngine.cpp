@@ -21,6 +21,7 @@
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/GameplaySubsystemsBootstrap.hpp"
+#include "egolib/game/Core/ConsoleBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
@@ -113,6 +114,7 @@ GameEngine::GameEngine() :
     // Submodules
     _contentRuntimeBootstrap(nullptr),
     _gameplaySubsystemsBootstrap(nullptr),
+    _consoleBootstrap(nullptr),
     _uiManager(nullptr)
 {
     //ctor

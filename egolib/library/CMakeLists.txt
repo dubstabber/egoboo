@@ -565,6 +565,8 @@ set(EGOLIB_GAME_CORE_SOURCES
     src/egolib/game/Core/ContentRuntimeBootstrap.hpp
     src/egolib/game/Core/GameplaySubsystemsBootstrap.cpp
     src/egolib/game/Core/GameplaySubsystemsBootstrap.hpp
+    src/egolib/game/Core/ConsoleBootstrap.cpp
+    src/egolib/game/Core/ConsoleBootstrap.hpp
     src/egolib/game/Core/EngineContext.cpp
     src/egolib/game/Core/EngineContext_services_owned.cpp
     src/egolib/game/Core/EngineContext_services_seam.cpp
