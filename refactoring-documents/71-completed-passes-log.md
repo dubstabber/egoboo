@@ -341,3 +341,38 @@ When moving sources between archives, measure live `.a` archives with `nm` and
   expected nonzero), and the live-archive `nm` back-edge check (all four seam
   symbols resolve from `foundation-base`/`library`, referenced-only in
   `egolib-gamestates`).
+- Pass 310 on 2026-07-15 extracted the inline audio + particle subsystem
+  lifecycle out of `GameEngine::initialize()` / `uninitialize()` into a new
+  same-archive RAII composition-root object,
+  `GameplaySubsystemsBootstrap` (egolib-library, `EGOLIB_GAME_CORE_SOURCES`).
+  Its constructor installs the audio system then the particle handler (the exact
+  original order); its destructor clears the particle handler then the audio
+  system (the exact original reverse order). `GameEngine` holds it as a
+  `std::unique_ptr` member constructed at the original install point in
+  `initialize()` and `reset()` at the original teardown point in
+  `uninitialize()` (after `Console::uninitialize()`, before `unsubscribe()`),
+  mirroring the existing `ContentRuntimeBootstrap` member exactly. This removes
+  the last direct `AudioSystem`/`ParticleHandler` uses from the two `GameEngine`
+  translation units, letting them drop the `Entities/_Include.hpp` (heavy
+  `Object.hpp` aggregate) and `AudioSystem.hpp` includes; `CollisionSystem.hpp`
+  stays in the lifecycle TU (still used) and was removed from `GameEngine.cpp`
+  where it was already dead. Measured header impact (real compile flags):
+  `Object.hpp` dropped from BOTH `GameEngine.cpp` (closure 1511 -> 1465) and
+  `GameEngine_lifecycle.cpp` (1511 -> 1466) and is now confined to the single
+  ~48-line bootstrap TU. Normal startup/shutdown is byte-for-byte equivalent.
+  Adversarially verified; the one flagged divergence is error-path only: if an
+  unhandled exception skips `uninitialize()`, `Main.cpp`'s `clearEngine()` ->
+  `~GameEngine` now runs the bootstrap's audio+particle teardown (previously the
+  singletons leaked on that crash-exit path). This is (a) architecturally
+  identical to the already-shipped `ContentRuntimeBootstrap`, which likewise
+  tears down the profile system via `~GameEngine` on that path; (b) non-throwing
+  (the `clearActive*` seams are pure `nullptr` assignments, audio teardown is
+  self-contained SDL_mixer, particle teardown is container destruction); and
+  (c) safely ordered, since reverse member-destruction runs the audio+particle
+  teardown before `ContentRuntimeBootstrap` (profile), keeping any
+  particle->profile dependency valid. `egolib-library` member count 82 -> 83; no
+  archive-boundary or DAG change (`GameplaySubsystemsBootstrap` symbols resolve
+  within `egolib-library`). Verified with the Linux build (no new warnings),
+  full ctest **955 / 955**, `test.mod` validation **0 / 0**, the full validator
+  baseline (**42 modules / 10 warnings / 245 errors**, expected nonzero), the
+  header-closure measurement above, and the archive-member/`nm` check.

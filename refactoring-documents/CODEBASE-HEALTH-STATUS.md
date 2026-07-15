@@ -43,7 +43,7 @@ or engine/session service ownership.
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
-| Archive members | 168 / 6 / 28 / 24 / 82 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
+| Archive members | 168 / 6 / 28 / 24 / 83 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 791 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 286 `.cpp`, 73 `.h`, 329 `.hpp` |
 | Runtime source lines | 129,833 | Same scope as above |
 | Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
@@ -68,7 +68,7 @@ The live archive member counts are:
 | `egolib-physics` | 6 | Collision nucleus and physics primitives |
 | `egolib-renderer` | 28 | SDL windowing and OpenGL renderer backend |
 | `egolib-gui` | 24 | Generic GUI toolkit and abstract `GameState` base |
-| `egolib-library` | 82 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
+| `egolib-library` | 83 | Core gameplay remainder: entities, session/module runtime, lower service holders, game physics, object graphics |
 | `egolib-game-graphics` | 21 | 3D scene-rendering layer: camera, billboard, texture atlas, render passes, GFX bootstrap |
 | `egolib-hud-widgets` | 6 | Game-coupled in-game HUD widgets |
 | `egolib-scriptvm` | 33 | EgoScript VM and `script_functions_*` dispatch family |
@@ -186,7 +186,7 @@ uniformly:
 | Pattern | Current usage | Health |
 | --- | --- | --- |
 | State | `GameState` plus concrete menu/loading/playing/debug states on the engine state stack | Healthy for screen flow; preserve this shape for new screens |
-| Factory / composition root | `Main.cpp` injects the main-menu-state factory and installs script/graphics bootstraps from higher archives | Good archive-boundary tool, but `GameEngine::initialize()` still directly orchestrates many concrete systems |
+| Factory / composition root | `Main.cpp` injects the main-menu-state factory and installs script/graphics bootstraps from higher archives; `GameEngine` now delegates the content (`ContentRuntimeBootstrap`) and audio+particle (`GameplaySubsystemsBootstrap`) subsystem lifecycles to RAII bootstrap objects | Good archive-boundary tool; `GameEngine::initialize()` still directly orchestrates the remaining concrete systems (gfx hook, console, collision), but the ordered subsystem lifecycles are increasingly encapsulated |
 | Service locator / singleton | `EngineContext`, `GameSessionContext`, `idlib::singleton`, and active-service registries | Useful migration path away from raw globals, but still hides dependencies from call signatures and tests |
 | Facade / context object | `GameSessionContext` centralizes active module, import list, local-player state, clocks, and session-owned environment state | Better than exported globals; risk is continued API growth |
 | Interface / adapter | `IAudioSystem`, `IProfileSystem`, `IScriptSystem`, graphics/input/image interfaces, `ScriptSystemAdapter`, `ObjectRoleAccess`, and object roles such as `IAttachmentControl` and `IScriptRuntimeState` | Improving DIP/ISP story; several interfaces still expose broad subsystem surfaces |

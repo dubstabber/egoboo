@@ -20,6 +20,7 @@
 
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/GameplaySubsystemsBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Core/ISessionState.hpp"
@@ -42,9 +43,6 @@
 #include "egolib/game/graphic.h"
 #include "egolib/Renderer/OpenGL/Renderer.hpp"  // drainPendingTextureDeletions (deferred GL deletes)
 #include "egolib/game/game.h"
-#include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Physics/CollisionSystem.hpp"
-#include "egolib/Audio/AudioSystem.hpp"
 
 namespace
 {
@@ -114,6 +112,7 @@ GameEngine::GameEngine() :
 #endif
     // Submodules
     _contentRuntimeBootstrap(nullptr),
+    _gameplaySubsystemsBootstrap(nullptr),
     _uiManager(nullptr)
 {
     //ctor

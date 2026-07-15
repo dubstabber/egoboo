@@ -20,6 +20,7 @@
 
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
+#include "egolib/game/Core/GameplaySubsystemsBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Core/System.hpp"                 // Ego::Core::System
@@ -41,9 +42,7 @@
 #include "egolib/game/graphic.h"
 #include "egolib/Renderer/OpenGL/Renderer.hpp"  // drainPendingTextureDeletions (deferred GL deletes)
 #include "egolib/game/game.h"
-#include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Physics/CollisionSystem.hpp"
-#include "egolib/Audio/AudioSystem.hpp"
 
 void GameEngine::renderPreloadText(const std::string &text)
 {
@@ -96,13 +95,8 @@ bool GameEngine::initialize()
 	gfx_system_init_all_graphics();
 	gfx_do_clear_screen();
 
-	// Initialize the audio system.
-	AudioSystem::initialize();
-    EngineContext::get().installAudioSystem(AudioSystem::get());
-
-	// Initialize the particle handler.
-	ParticleHandler::initialize();
-    EngineContext::get().installParticleHandler(ParticleHandler::get());
+    // Install the gameplay audio + particle subsystems (audio then particle).
+    _gameplaySubsystemsBootstrap = std::make_unique<GameplaySubsystemsBootstrap>();
 
 	// Initialize the console.
 	auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { EngineContext::get().graphicsSystem().getWindow()->drawable_size()(0),
@@ -253,13 +247,8 @@ void GameEngine::uninitialize()
     // Uninitialize the console.
     Ego::Core::Console::uninitialize();
 
-	// Uninitialize the particle handler.
-    EngineContext::get().clearParticleHandler();
-	ParticleHandler::uninitialize();
-
-    // Uninitialize the audio system.
-    EngineContext::get().clearAudioSystem();
-    AudioSystem::uninitialize();
+    // Tear down the gameplay audio + particle subsystems (particle then audio).
+    _gameplaySubsystemsBootstrap.reset();
 
     // Unsubscribe from window events.
     unsubscribe();
