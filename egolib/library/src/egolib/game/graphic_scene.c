@@ -59,7 +59,7 @@ gfx_rv gfx_make_entityList(Ego::Graphics::EntityList& el, Camera& cam);
 gfx_rv gfx_make_tileList(Ego::Graphics::TileList& tl, Camera& cam);
 gfx_rv gfx_update_flashing(Ego::Graphics::EntityList& el);
 
-gfx_rv render_scene_init(Ego::Graphics::TileList& tl, Ego::Graphics::EntityList& el, dynalist_t& dyl, Camera& cam)
+gfx_rv render_scene_init(Ego::Graphics::TileList& tl, Ego::Graphics::EntityList& el, dynalist_t& dyl, Camera& cam, IGFX& gfx)
 {
     gfx_rv retval = gfx_success;
 
@@ -99,16 +99,16 @@ gfx_rv render_scene_init(Ego::Graphics::TileList& tl, Ego::Graphics::EntityList&
     }
 
     {
-        ClockScope<ClockPolicy::NonRecursive> scope(EngineContext::get().gfx().updateObjectInstancesTimer());
-        if (gfx_error == EngineContext::get().gfx().update_object_instances(cam))
+        ClockScope<ClockPolicy::NonRecursive> scope(gfx.updateObjectInstancesTimer());
+        if (gfx_error == gfx.update_object_instances(cam))
         {
             retval = gfx_error;
         }
     }
 
     {
-        ClockScope<ClockPolicy::NonRecursive> scope(EngineContext::get().gfx().updateParticleInstancesTimer());
-        if (gfx_error == EngineContext::get().gfx().update_particle_instances(cam))
+        ClockScope<ClockPolicy::NonRecursive> scope(gfx.updateParticleInstancesTimer());
+        if (gfx_error == gfx.update_particle_instances(cam))
         {
             retval = gfx_error;
         }
@@ -122,12 +122,12 @@ gfx_rv render_scene_init(Ego::Graphics::TileList& tl, Ego::Graphics::EntityList&
     return retval;
 }
 
-gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::EntityList& el)
+gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::EntityList& el, IGFX& gfx)
 {
     gfx_rv retval = gfx_success;
     {
         ClockScope<ClockPolicy::NonRecursive> clockScope(render_scene_init_timer);
-        if (gfx_error == render_scene_init(tl, el, EngineContext::get().gfx().getDynalist(), cam))
+        if (gfx_error == render_scene_init(tl, el, gfx.getDynalist(), cam, gfx))
         {
             retval = gfx_error;
         }
@@ -139,21 +139,21 @@ gfx_rv render_scene(Camera& cam, Ego::Graphics::TileList& tl, Ego::Graphics::Ent
             el.sort(cam, true);
         }
         animate_all_tiles(*tl.getMesh(), moduleEnvironment().animatedTilesState());
-        EngineContext::get().gfx().getNonReflective().run(cam, tl, el);
-        EngineContext::get().gfx().getReflective0().run(cam, tl, el);
-        EngineContext::get().gfx().getEntityReflections().run(cam, tl, el);
-        EngineContext::get().gfx().getReflective1().run(cam, tl, el);
-        EngineContext::get().gfx().getHeightmap().run(cam, tl, el);
-        EngineContext::get().gfx().getEntityShadows().run(cam, tl, el);
+        gfx.getNonReflective().run(cam, tl, el);
+        gfx.getReflective0().run(cam, tl, el);
+        gfx.getEntityReflections().run(cam, tl, el);
+        gfx.getReflective1().run(cam, tl, el);
+        gfx.getHeightmap().run(cam, tl, el);
+        gfx.getEntityShadows().run(cam, tl, el);
     }
     {
         ClockScope<ClockPolicy::NonRecursive> scope(sortDoListUnreflected_timer);
         el.sort(cam, false);
     }
 
-    EngineContext::get().gfx().getOpaqueEntities().run(cam, tl, el);
-    EngineContext::get().gfx().getWater().run(cam, tl, el);
-    EngineContext::get().gfx().getNonOpaqueEntities().run(cam, tl, el);
+    gfx.getOpaqueEntities().run(cam, tl, el);
+    gfx.getWater().run(cam, tl, el);
+    gfx.getNonOpaqueEntities().run(cam, tl, el);
 
     if (EngineContext::get().inputSystem().isKeyDown(SDLK_F8))
     {
@@ -191,11 +191,13 @@ void gfx_system_render_world(std::shared_ptr<Camera> camera, std::shared_ptr<Ego
         throw idlib::argument_null_error(__FILE__, __LINE__, "entityList");
     }
 
+    auto& gfx = EngineContext::get().gfx();
+
     Renderer3D::begin3D(*camera);
     {
-        EngineContext::get().gfx().getBackground().run(*camera, *tileList, *entityList);
-        render_scene(*camera, *tileList, *entityList);
-        EngineContext::get().gfx().getForeground().run(*camera, *tileList, *entityList);
+        gfx.getBackground().run(*camera, *tileList, *entityList);
+        render_scene(*camera, *tileList, *entityList, gfx);
+        gfx.getForeground().run(*camera, *tileList, *entityList);
 
         if (camera->getMotionBlur() > 0)
         {
@@ -213,7 +215,7 @@ void gfx_system_render_world(std::shared_ptr<Camera> camera, std::shared_ptr<Ego
     }
     Renderer3D::end3D();
 
-    EngineContext::get().gfx().renderBillboards(*camera);
+    gfx.renderBillboards(*camera);
 }
 
 void draw_passages(Camera& cam)

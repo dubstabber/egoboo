@@ -214,10 +214,19 @@ throughout.
   sites; debug-only helpers and non-renderer fetches were left as is. A scout
   scoped the follow-on: the single-root closures under
   `gfx_system_render_world` (`graphic_scene.c`, ~20 reducible sites) and
-  `draw_hud` (`graphic_hud.c`, ~11) are the next candidates, but need a
-  services-struct design decision; multi-root utilities (`draw_blip`,
-  `gfx_do_clear_screen/flip_pages`, init/teardown paths) stay on the
-  singleton.
+  `draw_hud` (`graphic_hud.c`, ~11) are the next candidates; multi-root
+  utilities (`draw_blip`, `gfx_do_clear_screen/flip_pages`, init/teardown
+  paths) stay on the singleton.
+- Pass 314 (2026-07-21) resolved the `graphic_scene.c` half of that scope
+  without a new services struct: `gfx()` was the single dominant service
+  (17 of the file's 24 sites), so `gfx_system_render_world` now fetches
+  `IGFX&` once and threads it through the anonymous-namespace
+  `render_scene`/`render_scene_init` chain as a plain trailing reference
+  parameter — the same idiom as Pass 313. `graphic_scene.c` dropped 24 → 8
+  sites and `EngineContext::get()` 380 → 364, zero external signature
+  changes. The `draw_hud` half was deliberately left: its 11 sites split
+  across three services (input, camera-system, particle-handler), so the
+  churn-to-visibility trade is worse and it needs its own call.
 
 ## Documentation Passes
 
