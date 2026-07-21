@@ -351,6 +351,26 @@ throughout.
   semantic delta: capture-at-initialize instead of per-call resolution,
   observable only if a log-target seam were re-pointed mid-lifetime,
   which nothing does.
+- Pass 321 (2026-07-21) threaded `Ego::Renderer&` and
+  `Ego::IGraphicsSystem&` through the `CameraSystem` render chain — the
+  Pass 313-315 trailing-parameter idiom, chosen after the characterization
+  ruled out constructor injection for this service. Two hard blockers:
+  the `ScriptSystemsFunctions` harness initializes the real
+  `CameraSystem` singleton in a headless ctest fixture that installs a
+  mock graphics system but no renderer (injection would force
+  `EngineContext::get().renderer()` where no renderer can exist), and the
+  runtime never calls `CameraSystem::uninitialize()` — the graphics
+  bootstrap teardown hook only clears the seam — so the singleton object
+  outlives `~AppImpl`, where the renderer and graphics system die,
+  leaving captured references dangling for the process tail.
+  `renderAll` now resolves both services once at its per-frame root next
+  to the existing `renderedFrameCount` fetch and passes them as trailing
+  reference parameters into the private `beginCameraMode`/`endCameraMode`
+  (no external callers, so zero public signature changes); this also
+  hoists five per-camera singleton re-fetches out of the per-frame
+  camera loop. `autoFormatTargets` keeps its single load-time fetch
+  (one-per-function residual). `CameraSystem.cpp` 7 → 4 sites;
+  `EngineContext::get()` 288 → 285 (total `::get()` 369 → 366).
 
 ## Documentation Passes
 

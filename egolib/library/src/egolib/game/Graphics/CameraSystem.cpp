@@ -105,6 +105,8 @@ void CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, std::sh
     //Store main camera to restore
     auto storeMainCam = _mainCamera;
     const uint32_t renderedFrameCount = EngineContext::get().renderedFrameCount();
+    auto& renderer = EngineContext::get().renderer();
+    auto& graphicsSystem = EngineContext::get().graphicsSystem();
 
     for(const auto &camera : _cameraList) 
     {
@@ -117,13 +119,13 @@ void CameraSystem::renderAll(std::function<void(std::shared_ptr<Camera>, std::sh
         }
 
         // set up everything for this camera
-        beginCameraMode(camera);
+        beginCameraMode(camera, renderer, graphicsSystem);
 
         // render the world for this camera
         renderFunction(camera, camera->getTileList(), camera->getEntityList());
 
         // undo the camera setup
-        endCameraMode();
+        endCameraMode(renderer, graphicsSystem);
 
         //Set last update frame
         camera->setLastFrame(renderedFrameCount);
@@ -174,21 +176,20 @@ std::shared_ptr<Camera> CameraSystem::getCamera(ObjectRef targetRef) const
     return _mainCamera;
 }
 
-void CameraSystem::endCameraMode()
+void CameraSystem::endCameraMode(Ego::Renderer& renderer, Ego::IGraphicsSystem& graphicsSystem)
 {
     // make the viewport the entire screen
-    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
-    EngineContext::get().renderer().setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
+    auto drawableSize = graphicsSystem.getWindow()->drawable_size();
+    renderer.setViewportRectangle(0, 0, drawableSize.x(), drawableSize.y());
 
     // turn off the scissor mode
-    EngineContext::get().renderer().setScissorTestEnabled(false);
+    renderer.setScissorTestEnabled(false);
 }
 
 
-void CameraSystem::beginCameraMode( const std::shared_ptr<Camera> &camera)
+void CameraSystem::beginCameraMode( const std::shared_ptr<Camera> &camera, Ego::Renderer& renderer, Ego::IGraphicsSystem& graphicsSystem)
 {
-    auto& renderer = EngineContext::get().renderer();
-    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
+    auto drawableSize = graphicsSystem.getWindow()->drawable_size();
     // scissor the output to the this area
     renderer.setScissorTestEnabled(true);
     renderer.setScissorRectangle(camera->getViewport().getLeftPixels(), drawableSize.y() - (camera->getViewport().getTopPixels() + camera->getViewport().getHeightPixels()), camera->getViewport().getWidthPixels(), camera->getViewport().getHeightPixels());

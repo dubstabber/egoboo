@@ -26,6 +26,8 @@
 
 // Forward declaration.
 class ego_mesh_t;
+namespace Ego { class Renderer; }
+namespace Ego { class IGraphicsSystem; }
 
 static constexpr size_t MAX_CAMERAS = MAX_LOCAL_PLAYERS;
 
@@ -95,8 +97,8 @@ public:
 
 private:
 
-	void beginCameraMode(const std::shared_ptr<Camera> &camera);
-	void endCameraMode();
+	void beginCameraMode(const std::shared_ptr<Camera> &camera, Ego::Renderer& renderer, Ego::IGraphicsSystem& graphicsSystem);
+	void endCameraMode(Ego::Renderer& renderer, Ego::IGraphicsSystem& graphicsSystem);
 
 	/**
 	 * @brief Determines the size of each camera depending on number of cameras and screen resolution.
