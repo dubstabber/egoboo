@@ -4,7 +4,7 @@ Current-state health snapshot for the Egoboo workspace. This document is the
 canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
-Snapshot date: 2026-07-15. Measurements below were taken from the live tree and
+Snapshot date: 2026-07-21. Measurements below were taken from the live tree and
 the existing `build/products/x64/lib/libegolib-*.a` archives.
 
 ## Executive Summary
@@ -38,14 +38,54 @@ and layer-preserving file splits. It is still hard to extend safely when a
 change crosses object lifecycle, module loading, script semantics, VFS behavior,
 or engine/session service ownership.
 
+## Progress Versus The Pre-Refactoring Baseline
+
+`backup-copy/` is a read-only snapshot of the project as it stood before the
+refactoring campaign began. Both columns below were measured with identical
+commands on 2026-07-21 over the same runtime scope
+(`egolib/library/src` + `egoboo/src`, `.c/.cpp/.h/.hpp`).
+
+| Metric | Pre-refactoring (`backup-copy/`) | Current |
+| --- | --- | --- |
+| Runtime source files | 556 | 795 |
+| Runtime source lines | 111,495 | 129,998 |
+| Runtime files over 1,000 lines | 15 (largest: `game/script_functions.c`, 8,153) | 0 (largest: `Entities/Object.hpp`, 998) |
+| `_currentModule` references | 592 | 0 |
+| `_gameEngine` references | 266 | 0 |
+| `update_wld` references | 65 | 4 comment/debug-label artifacts |
+| `egolib` link layout | 1 monolithic archive | 9 archives, acyclic DAG |
+| `egolib/egolib.h` uber-header | present, 17 direct includers | deleted |
+| Test files / lines | 5 / 383 | 51 / 25,258 |
+| Test cases | 10 | 955 |
+| Content validation tooling | none | `egoboo-content-validator` with known full baseline |
+| Cartman map editor | not in the build graph | CMake-gated `EGOBOO_BUILD_CARTMAN` target, runtime-verified |
+| Windows story | Visual Studio + AppVeyor | Linux-hosted MinGW cross-build; VS/AppVeyor quarantined as legacy |
+
+Reading the table: raw size grew (splits add headers and seam interfaces, and
+the test suite is 66× larger), but every structural-debt metric collapsed. The
+three mutable globals that defined the old architecture are gone from active
+code, the 8,000-line monoliths are gone, and behavior is now pinned by 955
+tests plus a content-validator baseline where the old tree had 10 tests and no
+validation tooling.
+
+What this progress has **not** yet bought — the remaining gap to "done" — is
+listed in `19-refactoring-roadmap.md`. In one paragraph: coupling was migrated
+into `EngineContext`/`GameSessionContext` service locators rather than
+eliminated (467 `::get()` sites), `Object` is still the broadest interface in
+the runtime, `GameModule` still mixes ownership with loading and update logic,
+content is still the legacy positional-text format (the glTF loader accepts
+only a static-mesh subset and virtually all shipped models remain MD2), EgoScript
+is untouched by design, and Windows support is still cross-build-plus-Wine, not
+native.
+
 ## Key Metrics
 
 | Metric | Current value | Notes |
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 168 / 6 / 28 / 24 / 84 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 791 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 286 `.cpp`, 73 `.h`, 329 `.hpp` |
-| Runtime source lines | 129,833 | Same scope as above |
+| Runtime source files | 795 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 288 `.cpp`, 73 `.h`, 331 `.hpp` |
+| Runtime source lines | 129,998 | Same scope as above |
 | Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
 | ctest cases | 955 | `ctest --test-dir build -N` |
 | ctest baseline | 955 / 955 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
@@ -53,7 +93,7 @@ or engine/session service ownership.
 | `EngineContext::get()` | 388 | Dominant intentional engine seam |
 | `GameSessionContext::get()` | 23 | Dominant intentional session seam; Pass 309 moved the last gamestates read-only module accesses onto lower-layer seams |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
-| `throw` references | 662 | Broad grep count, not semantic classification |
+| `throw` references | 622 | Broad grep count, not semantic classification |
 | Interface headers | 67 | `I*.hpp`/`I*.h` headers under `egolib/library/src/egolib`, excluding `IDSZ.hpp` |
 | Object role interfaces | 22 | 24 `Entities/I*.hpp` files total, including 2 service interfaces |
 | `idlib::singleton` references | 19 | Intentional services plus legacy-singleton remnants |
@@ -138,45 +178,32 @@ Actionable direct singleton calls should remain small and justified. When adding
 or moving code, prefer existing service interfaces and `active*()` seams over
 new hidden global access.
 
-Directly owned `EngineContext` services now delegate through active service
-registries for input, image, font, texture-atlas, and GFX access. Active
-object-handler and object lookup access routes through the lower-layer
-`IObjectWorld` seam for the migrated gameplay, graphics, script, audio, and
-entity callers; `GameSessionContext` no longer exposes object lookup forwarding
-methods. Active module environment, read-only module status, and read-only
-session state access now route through the narrower `IModuleEnvironment`,
-`IModuleStatus`, and `ISessionState` seams for migrated rendering, camera, HUD,
-menu, script, entity, and spawn callers. Terrain queries now use the active
-`ITerrainQuery` seam, and active module command/mutation paths such as spawning,
-team experience, passages, shops, pit controls, respawn/export/beaten flags, and
-tile changes route through `IModuleCommands` for migrated script, entity,
-graphics, shop, loading, game-loop, and now top-of-DAG gamestates-screen callers
-(`PlayingState` debug watches/export check/cheat and `MapEditorState::update`
-were the last read-only stragglers, moved onto the status/commands/object-world/
-environment seams in Pass 309). `GameModule` loading, spawning,
-update, passage music, weather, and player-startup code now receive session and
-engine services through an explicit `GameModuleRuntime` provider surface instead
-of directly reaching into `EngineContext` or `GameSessionContext`.
-`GameSessionContext` and `GameModule` still own lifetime, lifecycle orchestration,
-and concrete pre-module fallback state. This keeps context APIs narrower while
-moving ownership seams toward lower archives.
+The active-seam layer now covers, for migrated callers:
 
-Script operand and resolved-self contexts now carry object role views rather
-than cached concrete `Object*` pointers. Script-visible liveness is derived from
-`IDamageable`, not duplicated on `ITargetInfo`, and spawned-character handling
-uses `IAttachmentControl`, `IPhysical`, and the existing lifecycle, movement,
-script, and character-state roles. These seams reduce concrete `Object`
-dependencies inside `egolib-scriptvm` while preserving the existing script ABI
-and behavior.
+- object-handler and object lookup access through `IObjectWorld`
+  (`GameSessionContext` no longer forwards object lookups);
+- module environment, read-only module status, and read-only session state
+  through `IModuleEnvironment`, `IModuleStatus`, and `ISessionState`;
+- terrain queries through `ITerrainQuery`, and module command/mutation paths
+  (spawning, team experience, passages, shops, pits, respawn/export/beaten
+  flags, tile changes) through `IModuleCommands`, including the top-of-DAG
+  gamestates screens as of Pass 309;
+- `GameModule` loading/spawning/update code receiving session and engine
+  services through the explicit `GameModuleRuntime` provider surface;
+- directly owned `EngineContext` services delegating through active service
+  registries for input, image, font, texture-atlas, and GFX access.
 
-The VM driver and legacy script-operation family now resolve active entity roles
-through the lower-layer `ObjectRoleAccess` adapter. `IScriptSystem` and
-`scr_run_chr_script()` dispatch only `ObjectRef`; VM-owned runtime state and
-visibility use `IScriptRuntimeState` and `IVisibilityObserver`; movement reset
-is part of `IMovementControl`; and interpreter `ObjectValue` stores `ObjectRef`
-instead of a raw pointer. The strict script sources no longer include the
-aggregate entity header or name concrete `Object`/`ObjectHandler`, while the
-`IObjectWorld` virtual interface remains unchanged.
+`GameSessionContext` and `GameModule` still own lifetime, lifecycle
+orchestration, and concrete pre-module fallback state; the seams narrow the
+context APIs while moving read/command surfaces toward lower archives.
+
+On the script side, operand and resolved-self contexts carry object role views
+instead of cached concrete `Object*` pointers; script-visible liveness derives
+from `IDamageable`; the VM driver resolves entity roles through the lower-layer
+`ObjectRoleAccess` adapter; `IScriptSystem` and `scr_run_chr_script()` dispatch
+only `ObjectRef`; and interpreter `ObjectValue` stores `ObjectRef` rather than
+a raw pointer. The strict script sources no longer name concrete
+`Object`/`ObjectHandler`, while the script ABI and behavior are preserved.
 
 ## Design-Pattern Usage
 
@@ -263,7 +290,7 @@ ctest --test-dir build -j20 --output-on-failure
 The test runner is parallel-safe in the current harness. Each test process gets
 its own `EGOBOO_USER_DIR` through per-PID isolation.
 
-Full validator baseline, last rechecked 2026-07-11:
+Full validator baseline, last rechecked 2026-07-15:
 
 | Metric | Value |
 | --- | ---: |

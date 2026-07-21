@@ -1,149 +1,171 @@
-# Refactoring Roadmap
+# Refactoring Strategy And Roadmap
 
-Snapshot date: 2026-06-30. This is the forward plan only. Completed-pass history
-lives in `71-completed-passes-log.md`; current metrics live in
+Snapshot date: 2026-07-21. This is the single forward-looking document: the
+rules the refactor runs under, where the original phase plan stands, and what
+is still left. It absorbs the former `04-refactoring-strategy.md`.
+Completed-pass history lives in `71-completed-passes-log.md`; current metrics
+and the measured pre-refactoring comparison live in
 `CODEBASE-HEALTH-STATUS.md`.
 
-Superseded historical plans:
+## Goals
 
-- `19-new-refactoring-plan.md`
-- `22-module-runtime-ownership-plan.md`
-- `25-entity-layer-decomposition-plan.md`
-- `33-maintainability-improvement-plan.md`
+- Make the runtime understandable and reduce global/hidden coupling.
+- Preserve shipped content behavior while modernizing the pipeline.
+- Move remaining active runtime code from the C/C++ mix toward C++.
+- Make Linux native, native Windows (open-source toolchain), and Linux-hosted
+  Windows cross-builds first-class and as similar as practical; never
+  reintroduce Visual Studio-only requirements.
+- Treat compiler warnings and stale docs as debt; target warning-clean
+  supported configurations.
+- Stabilize the runtime through tests, validation, and playtesting before
+  claiming platform support is healthy.
 
-## Principles
+## Non-Negotiable Rules
 
-1. No flag-day rewrites.
-2. Characterization tests before risky restructuring.
-3. Preserve observable behavior unless the task explicitly changes it.
-4. Reduce coupling and ownership ambiguity before cosmetic cleanup.
-5. Keep Windows tooling open source; do not revive Visual Studio-only paths.
-6. Treat warnings and stale docs as portability and maintenance debt.
+1. **No flag-day rewrites.** The codebase is behavior-dense; the replacement
+   cost is accumulated undocumented semantics, not code volume.
+2. **Characterization tests before risky restructuring.**
+3. **Preserve observable behavior** unless the task explicitly changes it.
+4. **Do not mix data migration with engine decomposition** in one change set.
+5. **Keep legacy loaders alive until parity is measurable** — especially module
+   metadata, object profiles, spawn data, scripts, and mesh data.
+6. Reduce coupling and ownership ambiguity before cosmetic cleanup.
 
-## Tier 1: Runtime Structure
+## Phase Status
 
-### T1.1 Keep `Object` Role Work Incremental
+The original phase plan, with where each phase actually stands:
 
-`Object.hpp` is now below 1,000 lines, but it is still the broadest runtime
-interface. The useful next work is not mechanical line trimming; it is reducing
-multi-role call surfaces and keeping callers on existing role interfaces where
-those interfaces express the actual dependency. Use `CODEBASE-HEALTH-STATUS.md`
-for the current role-interface count.
+| Phase | Scope | Status |
+| --- | --- | --- |
+| 0 Baseline freeze | Canonical build docs, source-scope rules, portability capture | **Done** — `doc/build-linux.md`, `doc/build-windows.md`, these docs |
+| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 955 ctest cases |
+| 2 Context extraction | Retire raw globals behind explicit contexts | **Done** — `_gameEngine`/`_currentModule`/`update_wld` gone from active code |
+| 3 Engine/gameplay service split | Real boundaries between platform services, content, session, presentation | **Largely done** — nine-archive acyclic DAG, active `I*` seams, composition-root bootstraps; constructor injection is the remaining frontier |
+| 4 File/subsystem decomposition | Break oversized hotspots | **Done for production code** — zero runtime files over 1,000 lines; mechanical split fronts are substantially exhausted |
+| 5 Content pipeline normalization | Schemas/IR, importers, dual-load parity | **Not started** |
+| 6 Scripting replacement prep | Documented script API surface, compatibility layer | **Not started** (deliberately deferred; EgoScript untouched by design) |
+| 7 Compatibility cleanup | Retire legacy parsers, dead experiments, stale docs | **Partial** — legacy platform docs quarantined, uber-header deleted; parsers intentionally alive per Rule 5 |
 
-Good candidates:
+## What Is Left
 
-- move mixed-domain script helpers toward narrower role parameters where this is
-  behavior-preserving
-- avoid adding broad `Object&` parameters to new code
-- add focused tests before changing multi-role combat, inventory, or script paths
+### Tier 1: Runtime Structure
 
-### T1.2 Continue Service-Seam Cleanup
+- **T1.1 `Object` interface breadth.** `Object.hpp` (998 lines) is still the
+  broadest runtime interface. Useful work is reducing multi-role call surfaces
+  and keeping callers on role interfaces that express the real dependency —
+  not mechanical line trimming. A by-value state-aggregate extraction was
+  scoped and deliberately banked as flag-day-scale. Avoid broad `Object&`
+  parameters in new code.
+- **T1.2 Service-locator narrowing.** `EngineContext::get()` (388 sites) and
+  `GameSessionContext::get()` (23 sites) are intentional seams but still
+  flatten dependency visibility. The frontier is constructor/parameter
+  injection where a call path already has the dependency; do not add new
+  hidden globals. Remove remaining low-count direct singleton calls where a
+  service seam already exists.
+- **T1.3 `GameModule` ownership.** `GameModule` still mixes world ownership
+  with loading and update logic. `ModuleLoadPhase`/`ModuleLoadContext` and the
+  `GameModuleRuntime` provider are in place; continue moving load orchestration
+  toward named phases with explicit inputs.
+- **T1.4 Error-handling policy.** `doc/error-handling-policy.md` is the active
+  target. New code must not add silent failures; migrate the mixed
+  exception/boolean/null-return styles only in bounded subsystem passes with
+  tests.
+- **T1.5 Future file splits** only when they improve ownership, navigation, or
+  archive boundaries — the routine size-driven split queue is exhausted.
+  Verify symbol ownership after archive moves; never let private headers
+  become stray compiled `.h.o` archive members.
 
-`EngineContext::get()` and `GameSessionContext::get()` are intentional seams but
-still act as service locators. Prefer existing installed services and `active*()`
-helpers over raw concrete singleton access.
+### Tier 2: Build And Platform
 
-Good candidates:
+- **T2.1 Keep the nine-archive DAG acyclic.** Any source movement in
+  `egolib/library/CMakeLists.txt` must preserve
+  `foundation-base <- {physics, renderer <- gui} <- library <- game-graphics
+  <- hud-widgets <- {scriptvm, gamestates}`. Verify with live-archive `nm`
+  checks, not object-directory globs.
+- **T2.2 Native Windows open-source build.** Still open. Add a native path
+  (for example MSYS2/UCRT64) once cross-build assumptions are stable.
+- **T2.3 Wine runtime stabilization.** The cross-build works, but Wine
+  execution still needs the mipmap/audio compatibility defaults in
+  `run-egoboo-windows.sh`. Not yet a credible runtime verification target.
+- **T2.4 Retire legacy CI/project artifacts** (AppVeyor, Visual Studio
+  remnants) once they stop serving a compatibility purpose.
 
-- remove remaining low-count direct singleton calls where a service seam already
-  exists
-- keep subsystem-local bootstrap exceptions explicit
-- do not create new hidden globals for convenience
+### Tier 3: Content, Script, And Deeper Design
 
-### T1.3 Keep File Splits Behavior-Preserving
+- **T3.1 Content pipeline normalization** (Phase 5, unstarted). Staged model:
+  define schemas/IR → build importers+validators+exporters → dual-load and
+  compare representative modules → only then retire legacy parsers.
+  Precondition surfaced by the validator: a spawn-reference reconciliation
+  pass (229 of 245 baseline errors are `missing_spawn_object`) and a
+  per-module triage list. See `03-data-and-content-audit.md` §7–8 for design
+  guidance.
+- **T3.2 Model asset migration.** The glTF/GLB loader v1 accepts only a
+  narrow static-frame subset, and virtually all shipped objects are still
+  MD2 (`tris.md2`). Remaining: animated glTF support and an automated
+  MD2→glTF conversion/validation path for the ~950 model assets.
+- **T3.3 Scripting replacement preparation** (Phase 6, unstarted). Do not
+  jump to Lua. First: document the script API surface, an event/command model
+  independent of EgoScript syntax, and a compatibility layer. Dispatch already
+  uses a registry table; remaining near-term value is dispatch-coverage tests
+  and narrowing helper dependencies as role surfaces improve.
+- **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
+  remaining shared handles are intentional ownership or weak-storage paths.
+  Continue preferring `ObjectRef`/non-owning references where the handler
+  guarantees lifetime.
+- **T3.5 Rendering and GUI characterization.** Rendering correctness and
+  concrete state-transition behavior remain thin on tests. Add focused
+  characterization before changing render passes, camera, HUD widgets, or
+  state-stack transitions.
+- **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
+  loading, script compilation, and validator startup still require runtime
+  services (`ImageManager`, `PerkHandler`, config). Keep separating pure data
+  parsing from runtime service access where tests can prove behavior.
+- **T3.7 Cartman follow-ups.** Builds and launches behind
+  `EGOBOO_BUILD_CARTMAN=OFF`. Keep it off the default build until broader
+  module smoke coverage exists and the pre-existing no-argument shutdown
+  crash is fixed.
+- **T3.8 Playtesting discipline.** The plan in
+  `05-playtesting-and-bug-hunt-plan.md` is still mostly unexecuted; known
+  open runtime findings (for example the wizard.mod continuous-firing latch
+  bug) need runtime debugging, not static fixes.
 
-The production runtime no longer has >1,000-line files. Future file splits should
-be done only when they improve ownership, navigation, or archive boundaries.
+### Deferred By Design
 
-Required discipline:
+Not early targets unless a blocker demands them: renderer modernization,
+large-scale gameplay rebalance, asset visual upgrades, networking, save-format
+replacement.
 
-- verify symbol ownership after moving sources between archive layers
-- keep private helper promotions minimal
-- do not put private headers into carve-layer source lists where they can become
-  stray compiled `.h.o` archive members
+## Risks To Manage
 
-### T1.4 Enforce The Error-Handling Policy
+| Risk | Mitigation |
+| --- | --- |
+| Accidentally changing content semantics | Dual-load comparison, golden assets, validator gate |
+| Deleting useful legacy behavior because it looks ugly | Document first; attach behavior notes to loader/script migrations |
+| Refactoring giant files without adding seams | Seam interfaces and targeted tests before splits |
+| Portability regressions during cleanup | Preserve the documented Fedora/Linux behavior; keep the three build paths aligned |
+| Warning debt masking portability problems | Keep warning baselines; treat new warning classes as regressions |
+| Architecture work outpacing playtesting | Every risky change gets a smoke target; no large structural merges without validation |
 
-`doc/error-handling-policy.md` is the active target. New code should not add
-silent failures. Existing mixed exception/boolean/null-return behavior should be
-migrated only in bounded subsystem passes with tests.
+## Definition Of Success
 
-## Tier 2: Build And Platform
+- A new contributor can build and launch reliably from one document.
+- Gameplay code reads without chasing globals through unrelated systems.
+- Content can be validated without starting the full game.
+- Content semantics live in schemas and code, not folklore.
+- Scripting has a stable API boundary.
+- Regressions are caught by repeatable tests and playtests.
+- Linux and Windows builds are close enough that portability fixes are shared
+  work, and the Windows artifact runs natively as well as cross-built.
+- Supported C++ configurations are free of routine warning noise.
 
-### T2.1 Keep The Nine-Archive DAG Acyclic
+## Fronts To Treat As Closed
 
-Any CMake source movement in `egolib/library/CMakeLists.txt` must preserve the
-current direction:
-
-```text
-foundation-base <- {physics, renderer <- gui} <- library
-library <- game-graphics <- hud-widgets <- {scriptvm, gamestates}
-```
-
-Verify with live archive `nm` checks, not object-directory globs.
-
-### T2.2 Native Windows Open-Source Build
-
-Still open. Add a native Windows path based on an open-source toolchain
-(for example MSYS2/UCRT64) once the current cross-build assumptions are stable.
-Do not add Visual Studio-only requirements to the maintained path.
-
-### T2.3 Wine Runtime Stabilization
-
-The Linux-hosted Windows cross-build is useful, but Wine execution is still a
-compatibility path. Continue diagnosing the mipmap/font/audio issues behind
-`run-egoboo-windows.sh` compatibility defaults until the Windows artifact is a
-credible runtime verification target.
-
-### T2.4 Retire Legacy CI/Project Artifacts
-
-Remaining legacy Visual Studio/AppVeyor artifacts should be removed or clearly
-quarantined when they stop serving an active compatibility purpose.
-
-## Tier 3: Deeper Design Work
-
-### T3.1 `shared_ptr<Object>` Discipline
-
-`ObjectHandler` is the practical owner, but many APIs still traffic in
-`shared_ptr<Object>`. Treat this as incremental refcount and ownership clarity
-work, not as a rewrite. Prefer non-owning references or `ObjectRef` where the
-lifetime is already guaranteed by the handler.
-
-### T3.2 Script Runtime Shape
-
-Function dispatch already uses a registry/X-macro table, so a "switch to
-registry" rewrite is obsolete. The remaining value is in tests around dispatch
-coverage and in narrowing helper dependencies as role surfaces improve.
-
-### T3.3 Rendering And GUI Characterization
-
-GUI base-class tests exist, but rendering correctness and concrete game-state
-transition behavior remain thin. Add focused characterization before changing
-render passes, camera behavior, HUD widgets, or state-stack transitions.
-
-### T3.4 Content Pipeline Separation
-
-Object profile parsing, model loading, script compilation, and validator startup
-still need runtime services. Continue separating pure data parsing from runtime
-service access where the tests and validator can prove behavior.
-
-### T3.5 Cartman Follow-Ups
-
-`cartman` now builds and launches behind `EGOBOO_BUILD_CARTMAN=OFF`, and
-`run-cartman.sh` builds it on demand. Keep it off the default build until the
-legacy editor has broader module smoke coverage and the pre-existing
-no-argument/bad-argument shutdown crash is fixed.
-
-## Recently Completed Fronts To Treat As Closed
-
-- Runtime globals retired through `EngineContext` and `GameSessionContext`.
+- Runtime globals retired through `EngineContext` / `GameSessionContext`.
 - `egolib/egolib.h` uber-header deleted.
-- `cartman` is wired into CMake behind `EGOBOO_BUILD_CARTMAN`.
-- `vfs.c`, script dispatch files, collision response, `GameEngine`, and object
-  profile loading have been split below the old monolithic sizes.
-- glTF/GLB object model loading has landed behind the current static-mesh subset.
-- Public object enumeration and most gameplay ownership edges are ref-first
-  through `ObjectRef`; remaining shared handles are intentional ownership or
-  weak-storage paths.
-- The full validator baseline remains 42 modules, 10 warnings, 245 known content
-  errors.
+- Nine-archive acyclic link layout carved and verified.
+- Production monoliths split; zero runtime files over 1,000 lines.
+- glTF/GLB loading landed behind the current static-mesh subset.
+- Public object enumeration is ref-first through `ObjectRef`.
+- `cartman` wired into CMake behind `EGOBOO_BUILD_CARTMAN`.
+- Full validator baseline stable at 42 modules / 10 warnings / 245 known
+  legacy content errors.

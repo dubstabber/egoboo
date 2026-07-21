@@ -158,7 +158,7 @@ surfaces unless the task is explicitly to split test/tool code.
 Before large refactors, read:
 
 - `refactoring-documents/CODEBASE-HEALTH-STATUS.md`
-- `refactoring-documents/04-refactoring-strategy.md`
+- `refactoring-documents/19-refactoring-roadmap.md`
 - `refactoring-documents/06-validator-baseline.md`
 - relevant completed-pass notes in `refactoring-documents/71-completed-passes-log.md`
 

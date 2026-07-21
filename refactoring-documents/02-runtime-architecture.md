@@ -1,281 +1,131 @@
 # Runtime Architecture
 
+Last refreshed: 2026-07-21. Volatile counts live in
+`CODEBASE-HEALTH-STATUS.md`.
+
 ## 1. Boot path
 
-The executable itself is not the architecture center.
-
-Runtime startup is:
-
 1. `egoboo/src/game/Main.cpp`
-2. `Ego::Core::System::initialize(argv[0])`
-3. `EngineContext::get().setEngine(std::make_unique<GameEngine>())` — the engine is installed in the `EngineContext` (the former `_gameEngine` global is retired, 0 references)
-4. install the main-menu factory on the engine
-5. install the default script system from `egolib-scriptvm`
-6. install the default graphics bootstrap from `egolib-game-graphics`
-7. `engine().start()`, then `EngineContext::get().clearEngine()` on shutdown
-
-This means the executable layer is now the composition root for the systems that
-live above `egolib-library`. It installs those upper-layer services before
-handing control to `GameEngine`, while `GameEngine::initialize()` still triggers
-the graphics bootstrap at the original order-sensitive point.
-
-## 2. System initialization
-
-`egolib/library/src/egolib/Core/System.cpp` initializes:
-
-- VFS and search paths
-- logging
-- configuration (`setup.txt`)
-- SDL timer/events
-- SDL video/audio/input services
-
-Important architectural point:
-
-- Filesystem and configuration setup happen before most gameplay systems exist.
-- VFS mount points are part of core runtime identity, not just an IO detail.
-
-## 3. GameEngine as central orchestrator
-
-`GameEngine` in `egolib/library/src/egolib/game/Core/GameEngine.*` is the main runtime coordinator.
-
-### Responsibilities currently held by `GameEngine`
-
-- startup and shutdown sequencing
-- fixed-rate update/render loop
-- SDL event polling
-- game state stack management
-- preload UI rendering
-- subsystem initialization order
-- screenshot handling
-- saved-character and module profile loading
-
-### Why this matters
-
-This is a classic "god orchestrator" shape:
-
-- many systems are initialized here because they cannot initialize themselves safely
-- shutdown order is manual and fragile
-- newer systems coexist with legacy systems that still require imperative setup calls
-
-The code itself says this explicitly in places:
-
-- "crappy old systems do not pull their configuration"
-- "TODO: REMOVE THIS"
-- preload text rendering is described as a "small hacky function"
-
-## 4. Main loop structure
-
-The runtime loop is a fixed update / fixed render loop with frame skipping:
-
-- target FPS: 60
-- target UPS: 50
-- max frameskip: 10
-
-Flow per loop:
-
-1. panic-button check (`Ctrl+Q`)
-2. zero or more update frames
-3. one render frame if due
-4. sleep if idle
-5. FPS/UPS estimation
-
-This is reasonable in principle, but the implementation is tightly bound to global state and manual timing variables.
-
-## 5. Game states
-
-The game uses a stack of `GameState` instances:
-
-- `MainMenuState`
-- `PlayingState`
-- options and selection states
-- debug loading states
-- victory and in-game menu states
-
-The state stack itself is not the main problem. The problem is that states do not receive an isolated session object. They instead rely on globals and singleton-style services.
-
-## 6. Global runtime state
-
-The historical shape of the runtime was defined by three large mutable globals — `_currentModule`, `_gameEngine`, `update_wld` — reached by hundreds of call sites. Those boundaries have been dismantled. Current state (see `CODEBASE-HEALTH-STATUS.md` §4 for the authoritative numbers):
-
-- `_currentModule` — 0 direct references in active runtime code; all consumers go through `GameSessionContext` / `GameModule` accessor surfaces.
-- `_gameEngine` — 0 direct references in active runtime code; remaining mentions are in commented-out documentation.
-- `update_wld` — 4 residue references in `Script/script_driver.c`, `game/Graphics/ObjectGraphics.hpp`, and `Entities/Particle.hpp` as legacy debug/comment labels, not active global coupling.
-
-The old secondary session globals (`clock_chr_stat`, `clock_enc_stat`, `overrideslots`, `g_importList`) are no longer present under those names. Weather, fog, and animated-tile state are owned through module/session surfaces.
-
-### Remaining coupling risk
-
-The raw-global boundary is gone, but coupling was migrated, not eliminated.
-Subsystems now reach into session/engine context singletons
-(`GameSessionContext::get()`, `EngineContext::get()`) rather than
-`_currentModule` directly. A service-interface layer is partially in place for
-engine-owned services, but the context wrappers remain the dominant dependency
-boundary. Use `CODEBASE-HEALTH-STATUS.md` for the current singleton counts and
-service-coupling metrics.
-
-## 7. Module runtime
-
-`GameModule` in `egolib/library/src/egolib/game/Module/Module.cpp` is the live gameplay session model for one loaded module.
-
-### What `GameModule` currently owns
-
-- module profile metadata
-- object handler and player list
-- team list
-- water and damage tile state
-- passages
-- mesh
-- tile and water textures
-- import/export validity
-- random seed
-
-### Load sequence
-
-Module creation performs all of this in one constructor path:
-
-1. reconfigure module VFS mount points
-2. seed randomness
-3. initialize teams
-4. load textures
-5. load global sounds and particles
-6. load `wawalite.txt`
-7. load object profiles
-8. load mesh
-9. load passages
-10. load alliances
-11. spawn objects from `spawn.txt`
-12. compile/load profile AI scripts
-
-This is a very large amount of behavior for one constructor-driven lifecycle.
-
-## 8. Data and gameplay are still entangled inside runtime code
-
-The runtime still expects content conventions directly:
-
-- slot numbers from `data.txt`
-- object directories with hardcoded filenames
-- spawn entries that rely on legacy slot semantics
-- module VFS overlays
-- script loading from `script.txt`
-- implicit asset enumeration such as `sound0..29`, `part0..29`
-
-This means "content format refactor" is also "runtime architecture refactor".
-
-## 9. Mixed old and new subsystems
-
-`egolib` contains both older C-style systems and newer C++-style systems:
-
-- old-style C files such as `game.c`, `mesh.c`, and the fourteen `script_functions_*.c` files (split out of the former ~8,153-line `script_functions.c`)
-- newer C++ areas such as `GameModule`, GUI classes, render passes, players, camera system, and parts of profiles
-
-The result is not merely mixed language style. It is mixed ownership style:
-
-- some code uses classes and RAII
-- some code still depends on procedural sequencing and cross-subsystem reach
-- newer code still reaches for concrete singletons rather than role interfaces
-
-## 10. Major subsystem map
-
-### Core/runtime services
-
-- `Core/`
-- `Configuration/`
-- `Log/`
-- `VFS/`
-- platform-specific filesystem code
-
-### Gameplay runtime
-
-- `game/`
-- `Entities/`
-- `Profiles/`
-- `Logic/`
-- `Inventory`
-- `Shop`
-
-### Presentation/runtime IO
-
-- `Graphics/`
-- `Renderer/`
-- `Image/`
-- `Audio/`
-- `InputControl/`
-- `game/GUI/`
-
-### File and content formats
-
-- `FileFormats/`
-- `Script/`
-
-## 11. Architectural pain points worth fixing first
-
-### Pain point 1: singleton-mediated dependency graph
-
-Raw-global reach into `_currentModule` / `_gameEngine` is gone, but hundreds of
-`::get()` call sites still flatten the effective dependency graph. Most
-"dependencies" in `egolib` are implicit access to context or concrete
-singletons, not declared constructor parameters.
-
-### Pain point 2: initialization order as architecture
-
-The order in `GameEngine::initialize()` is effectively the architecture spec. If the order is wrong, the game breaks.
-
-### Pain point 3: engine/game split is incomplete
-
-`egolib` contains both platform/runtime services and game-specific behavior. The project already wants "separating technology from game logic", but that line is still blurred.
-
-### Pain point 4: gameplay logic is spread across multiple styles
-
-Gameplay is not only in `game/`. It is spread across:
-
-- `game/`
-- `Entities/`
-- `Profiles/`
-- `FileFormats/`
-- `Script/`
-- GUI states that directly manipulate runtime state
-
-### Pain point 5: content-driven semantics are not formalized
-
-Many rules live partly in file formats, partly in runtime code, and partly in old docs.
-
-## 12. Target architecture direction
-
-The next architecture should aim for these explicit boundaries:
-
-### Boundary A: platform/runtime services
-
-- logging
-- filesystem abstraction
-- window/audio/input bootstrap
-- renderer backend
-
-### Boundary B: content repositories
-
-- module metadata
-- object definitions
-- particle definitions
-- script assets
-- mesh/environment data
-
-### Boundary C: game session runtime
-
-- active module instance
-- players
-- objects
-- team state
-- quest/runtime state
-
-### Boundary D: presentation
-
-- menus
-- HUD
-- camera
-- render passes
-
-### Boundary E: script or rules execution
-
-- current EgoScript compatibility layer
-- future scripting engine adapter
-
-The first architectural move — replacing raw global access with explicit `GameSessionContext` / `EngineContext` wrappers — has been executed (see passes 11–51 in `71-completed-passes-log.md`). The next frontier is to replace those context singletons with constructor-injected service interfaces so subsystems receive their dependencies instead of reaching for a concrete wrapper.
+2. `Ego::Core::System::initialize(argv[0])` — VFS and search paths, logging,
+   configuration (`setup.txt`), SDL timer/event/video/audio/input services
+3. `EngineContext::get().setEngine(std::make_unique<GameEngine>())`
+4. install the main-menu factory, the default script system
+   (`egolib-scriptvm`), and the default graphics bootstrap
+   (`egolib-game-graphics`)
+5. `engine().start()`, then `EngineContext::get().clearEngine()` on shutdown
+
+The executable layer is the composition root for the systems that live above
+`egolib-library`: it installs upper-layer services before handing control to
+`GameEngine`, which still triggers the graphics bootstrap at the original
+order-sensitive point. Filesystem and configuration setup happen before most
+gameplay systems exist; VFS mount points are part of core runtime identity.
+
+## 2. GameEngine
+
+`egolib/game/Core/GameEngine.*` is the central orchestrator: startup/shutdown
+sequencing, the fixed-rate loop, SDL event polling, the game-state stack,
+preload UI rendering, screenshot handling, and saved-character/module profile
+loading.
+
+Ordered subsystem lifecycles are increasingly encapsulated in RAII
+composition-root members — `ContentRuntimeBootstrap` (profile/content),
+`GameplaySubsystemsBootstrap` (audio + particle), `ConsoleBootstrap`
+(developer console) — but `GameEngine::initialize()` still directly
+orchestrates the remaining concrete systems (gfx hook, collision), and
+initialization order is effectively the architecture spec: if the order is
+wrong, the game breaks.
+
+Main loop: fixed update at 50 UPS, fixed render at 60 FPS, max frameskip 10.
+Per iteration: panic-button check (`Ctrl+Q`), zero or more update frames, one
+render frame if due, idle sleep, FPS/UPS estimation.
+
+## 3. Game states
+
+A stack of `GameState` instances: `MainMenuState`, `PlayingState`,
+options/selection states, debug loading states, victory and in-game menu
+states. The stack itself is healthy; the weakness is that states resolve
+dependencies through context singletons and active seams rather than receiving
+an isolated session object.
+
+## 4. Global runtime state
+
+The historical architecture was defined by three large mutable globals —
+`_currentModule` (592 pre-refactor references), `_gameEngine` (266), and
+`update_wld` (65) — reached from everywhere. That boundary is dismantled:
+
+- `_currentModule`, `_gameEngine` — 0 active references; access routes through
+  `GameSessionContext`/`GameModule` and `EngineContext`.
+- `update_wld` — variable removed; 4 comment/debug-label artifacts remain.
+- The old secondary session globals (`clock_chr_stat`, `clock_enc_stat`,
+  `overrideslots`, `g_importList`) are gone; weather, fog, and animated-tile
+  state are owned through module/session surfaces.
+
+Remaining risk: coupling was migrated, not eliminated. Subsystems now reach
+into `EngineContext::get()` / `GameSessionContext::get()` and the active `I*`
+seams instead of raw globals. A service-interface layer is partially in place,
+but constructor injection does not exist broadly — see the roadmap.
+
+## 5. Module runtime
+
+`GameModule` (`egolib/game/Module/Module.cpp`) is the live gameplay session
+model for one loaded module. It owns module profile metadata, the object
+handler and player list, teams, water/damage-tile state, passages, mesh,
+tile/water textures, import/export validity, and the random seed.
+
+Constructor-driven load sequence (now orchestrated through the named
+`ModuleLoadPhase`/`ModuleLoadContext` boundary, with services provided by
+`GameModuleRuntime`): reconfigure module VFS mounts → seed RNG → init teams →
+load textures → global sounds/particles → `wawalite.txt` → object profiles →
+mesh → passages → alliances → spawn from `spawn.txt` → compile AI scripts.
+This is still a large amount of behavior for one constructor-driven lifecycle;
+continued decomposition into explicit phases is roadmap work.
+
+## 6. Content conventions are runtime assumptions
+
+The runtime expects legacy conventions directly: slot numbers from `data.txt`,
+hardcoded object filenames, legacy spawn-slot semantics, module VFS overlays,
+`script.txt` loading, and implicit asset enumeration (`sound0..29`,
+`part0..29`). Any content-format refactor is therefore also a runtime
+refactor.
+
+## 7. Mixed subsystem styles
+
+`egolib` mixes older C-style systems (`game.c` descendants, `mesh.c`, the
+fourteen `script_functions_*.c` files split from the former 8,153-line
+`script_functions.c`) with newer C++ systems (`GameModule`, GUI, render
+passes, players, camera, profiles). The deeper issue is mixed *ownership*
+style: RAII classes coexist with procedural sequencing and cross-subsystem
+reach, and newer code still often reaches for concrete singletons rather than
+role interfaces.
+
+Subsystem map:
+
+| Area | Directories |
+| --- | --- |
+| Core/runtime services | `Core/`, `Configuration/`, `Log/`, `VFS/`, platform filesystem code |
+| Gameplay runtime | `game/`, `Entities/`, `Profiles/`, `Logic/`, `Inventory`, `Shop` |
+| Presentation / IO | `Graphics/`, `Renderer/`, `Image/`, `Audio/`, `InputControl/`, `game/GUI/` |
+| File and content formats | `FileFormats/`, `Script/` |
+
+Gameplay logic is spread across `game/`, `Entities/`, `Profiles/`,
+`FileFormats/`, `Script/`, and GUI states that manipulate runtime state
+directly.
+
+## 8. Target boundaries
+
+The architecture is converging on five explicit boundaries:
+
+- **A. Platform/runtime services** — logging, filesystem, window/audio/input
+  bootstrap, renderer backend.
+- **B. Content repositories** — module metadata, object/particle definitions,
+  script assets, mesh data.
+- **C. Game session runtime** — active module, players, objects, teams,
+  quest/runtime state.
+- **D. Presentation** — menus, HUD, camera, render passes.
+- **E. Script/rules execution** — EgoScript compatibility layer now, adapter
+  for a future engine.
+
+The first move — replacing raw global access with `GameSessionContext` /
+`EngineContext` wrappers — is complete. The next frontier is replacing those
+context singletons with constructor-injected service interfaces so subsystems
+receive dependencies instead of reaching for a wrapper.
