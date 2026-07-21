@@ -27,13 +27,16 @@
 
 GameplaySubsystemsBootstrap::GameplaySubsystemsBootstrap()
 {
-    // Initialize the audio system.
-    AudioSystem::initialize();
-    EngineContext::get().installAudioSystem(AudioSystem::get());
+    EngineContext& engineContext = EngineContext::get();
+
+    // Initialize the audio system, wiring it to the installed config and log
+    // target (both outlive this bootstrap on every engine teardown path).
+    AudioSystem::initialize(engineContext.config(), engineContext.logTarget());
+    engineContext.installAudioSystem(AudioSystem::get());
 
     // Initialize the particle handler.
     ParticleHandler::initialize();
-    EngineContext::get().installParticleHandler(ParticleHandler::get());
+    engineContext.installParticleHandler(ParticleHandler::get());
 }
 
 GameplaySubsystemsBootstrap::~GameplaySubsystemsBootstrap()

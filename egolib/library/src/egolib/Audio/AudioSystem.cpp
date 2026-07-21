@@ -23,7 +23,7 @@
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/Graphics/ICameraSystem.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
-#include "egolib/game/Core/EngineContext.hpp"  // EngineContext (audio service access) — was transitively via game.h
+#include "egolib/Log/_Include.hpp"
 #include "egolib/Zeitgeist.hpp"  // Zeitgeist::CheckTime (seasonal theme selection) — was game.h
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/fileutil.h"
@@ -32,8 +32,8 @@
 #include <cstring>
 #include <stdexcept>
 
-AudioSystem *AudioSystemCreateFunctor::operator()() const
-{ return new AudioSystem(); }
+AudioSystem *AudioSystemCreateFunctor::operator()(egoboo_config_t& config, Log::Target& logTarget) const
+{ return new AudioSystem(config, logTarget); }
 
 void AudioSystemDestroyFunctor::operator()(AudioSystem *p) const
 { delete p; }
@@ -76,11 +76,6 @@ static const std::array<const char*, GSND_COUNT> wavenames =
 
 namespace {
 
-egoboo_config_t& config()
-{
-    return EngineContext::get().config();
-}
-
 bool is_audio_disabled_by_environment()
 {
     const char *value = std::getenv("EGOBOO_DISABLE_AUDIO");
@@ -113,7 +108,9 @@ Object* tryOwnerObject(ObjectRef ownerRef)
 
 } // namespace
 
-AudioSystem::AudioSystem() :
+AudioSystem::AudioSystem(egoboo_config_t& config, Log::Target& logTarget) :
+    _config(config),
+    _logTarget(logTarget),
     _musicLoaded(),
     _musicIDToNameMap(),
     _soundsLoaded(),
@@ -126,37 +123,37 @@ AudioSystem::AudioSystem() :
 
     if (is_audio_disabled_by_environment())
     {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+        _logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
                                          "audio disabled by EGOBOO_DISABLE_AUDIO",
                                          Log::EndOfEntry);
         return;
     }
 
     // Initialize SDL mixer.
-    if (config().sound_effects_enable.getValue() || config().sound_music_enable.getValue())
+    if (_config.sound_effects_enable.getValue() || _config.sound_music_enable.getValue())
     {
         const SDL_version* link_version = Mix_Linked_Version();
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer audio service version ",
+		_logTarget << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer audio service version ",
                                          link_version->major, ".", link_version->minor, ".", link_version->patch, Log::EndOfEntry);
-        if (Mix_OpenAudio(config().sound_highQuality_enable.getValue() ? MIX_HIGH_QUALITY : MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, config().sound_outputBuffer_size.getValue()) < 0)
+        if (Mix_OpenAudio(_config.sound_highQuality_enable.getValue() ? MIX_HIGH_QUALITY : MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, _config.sound_outputBuffer_size.getValue()) < 0)
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize SDL mixer audio service version ",
                                         link_version->major, ".", link_version->minor, ".", link_version->patch, ": ", Mix_GetError(),
                                         Log::EndOfEntry);
-            EngineContext::get().logTarget() << e;
+            _logTarget << e;
             throw std::runtime_error(e.getText());
         }
         else
         {
-            setMusicVolume(config().sound_music_volume.getValue());
-            Mix_AllocateChannels(config().sound_channel_count.getValue());
+            setMusicVolume(_config.sound_music_volume.getValue());
+            Mix_AllocateChannels(_config.sound_channel_count.getValue());
 
             // Check if we can load OGG Vorbis music (this is non-fatal, game runs fine without music).
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer OGG audio services", Log::EndOfEntry);
+            _logTarget << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing SDL mixer OGG audio services", Log::EndOfEntry);
 
             if (!Mix_Init(MIX_INIT_OGG))
             {
-				EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize SDL mixer OGG audio service: ", Mix_GetError(), Log::EndOfEntry);
+				_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to initialize SDL mixer OGG audio service: ", Mix_GetError(), Log::EndOfEntry);
             }
         }
     }
@@ -185,7 +182,7 @@ void AudioSystem::loadGlobalSounds()
         _globalSounds[i] = loadSound(std::string("mp_data/") + wavenames[i]);
         if (_globalSounds[i] == INVALID_SOUND_ID)
         {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "global sound ",
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "global sound ",
                                              "`", wavenames[i], "`", " not loaded", Log::EndOfEntry);
         }
     }
@@ -229,15 +226,15 @@ void AudioSystem::download(egoboo_config_t& cfg)
     _loopingSounds.clear();
 
     // Restore audio if needed
-    if (config().sound_effects_enable.getValue() || config().sound_music_enable.getValue())
+    if (cfg.sound_effects_enable.getValue() || cfg.sound_music_enable.getValue())
     {
-        if (-1 != Mix_OpenAudio(config().sound_highQuality_enable.getValue() ? MIX_HIGH_QUALITY : MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, config().sound_outputBuffer_size.getValue()))
+        if (-1 != Mix_OpenAudio(cfg.sound_highQuality_enable.getValue() ? MIX_HIGH_QUALITY : MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, cfg.sound_outputBuffer_size.getValue()))
         {
-            Mix_AllocateChannels(config().sound_channel_count.getValue());
+            Mix_AllocateChannels(cfg.sound_channel_count.getValue());
         }
         else
         {
-            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to start audio system: ", Mix_GetError(), Log::EndOfEntry);
+            _logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to start audio system: ", Mix_GetError(), Log::EndOfEntry);
         }
     }
 
@@ -245,7 +242,7 @@ void AudioSystem::download(egoboo_config_t& cfg)
     _maxSoundDistance = DEFAULT_MAX_DISTANCE;
 
     // Do we restart the music?
-    if (config().sound_music_enable.getValue())
+    if (cfg.sound_music_enable.getValue())
     {
         // Load music if required.
         loadAllMusic();
@@ -266,7 +263,7 @@ void AudioSystem::upload(egoboo_config_t& cfg) {
 
 void AudioSystem::stopMusic()
 {
-    if (config().sound_music_enable.getValue())
+    if (_config.sound_music_enable.getValue())
     {
         Mix_FadeOutMusic(2000);
         //Mix_HaltMusic();
@@ -281,7 +278,7 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
         return INVALID_SOUND_ID;
     }
 
-    if (!config().sound_effects_enable.getValue())
+    if (!_config.sound_effects_enable.getValue())
     {
         return INVALID_SOUND_ID;
     }
@@ -289,7 +286,7 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
     // Valid filename?
     if (fileName.empty())
     {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "sound file name is empty", Log::EndOfEntry);
+		_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "sound file name is empty", Log::EndOfEntry);
         return INVALID_SOUND_ID;
     }
 
@@ -321,7 +318,7 @@ SoundID AudioSystem::loadSound(const std::string &fileName)
     {
         // there is an error only if the file exists and can't be loaded
         if (fileExists) {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load sound file ", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load sound file ", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
         }
 
         return INVALID_SOUND_ID;
@@ -348,7 +345,7 @@ MusicID AudioSystem::loadMusic(const std::string &fileName)
 
     if (!loadedMusic)
     {
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load music file", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
+		_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load music file", "`", fileName, "`: ", Mix_GetError(), Log::EndOfEntry);
         return INVALID_SOUND_ID;
     }
 
@@ -376,24 +373,24 @@ void AudioSystem::playMusic(const std::string& songName, const uint16_t fadetime
     // Remember desired music.
    _currentSongPlaying = songName;
 
-    if (!config().sound_music_enable.getValue()) {
+    if (!_config.sound_music_enable.getValue()) {
         return;
     }
 
     //Set music volume
-    Mix_VolumeMusic(config().sound_music_volume.getValue());
+    Mix_VolumeMusic(_config.sound_music_volume.getValue());
 
     //Get the actual music data from the name of the song
     const auto& result = _musicLoaded.find(songName);
     if(result == _musicLoaded.end()) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
+        _logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
                                          "song name ", "`", songName, "`", " does not exist", Log::EndOfEntry);        
         return;
     }
 
     // Mix_FadeOutMusic(fadetime);      // Stops the game too
     if (Mix_FadeInMusic(result->second, -1, fadetime) == -1) {
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
+        _logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to play music ", "`", songName, "`", ": ",
                                          Mix_GetError(), Log::EndOfEntry);
     }
 }
@@ -414,7 +411,7 @@ void AudioSystem::loadAllMusic()
         return;
     }
 
-    if (!_musicLoaded.empty() || !config().sound_music_enable.getValue()) return;
+    if (!_musicLoaded.empty() || !_config.sound_music_enable.getValue()) return;
 
     // Open the playlist listing all music files
     ReadContext ctxt("mp_data/music/playlist.txt");
@@ -533,7 +530,7 @@ int AudioSystem::playSoundFull(SoundID soundID)
         return INVALID_SOUND_CHANNEL;
     }
 
-    if (!config().sound_effects_enable.getValue())
+    if (!_config.sound_effects_enable.getValue())
     {
         return INVALID_SOUND_CHANNEL;
     }
@@ -546,7 +543,7 @@ int AudioSystem::playSoundFull(SoundID soundID)
         Mix_SetPosition(channel, 0, 0);
 
         // we are still limited by the global sound volume
-        Mix_Volume(channel, (128 * config().sound_effects_volume.getValue()) / 100);
+        Mix_Volume(channel, (128 * _config.sound_effects_volume.getValue()) / 100);
     }
 
     return channel;
@@ -588,7 +585,7 @@ void AudioSystem::mixAudioPosition3D(const int channel, float distance, const Eg
     angle += idlib::semantic_cast<Ego::Radians>(averageRotation);
 
     //limited global sound volume
-    Mix_Volume(channel, (128 * config().sound_effects_volume.getValue()) / 100);
+    Mix_Volume(channel, (128 * _config.sound_effects_volume.getValue()) / 100);
 
     //Do 3D sound mixing
     Mix_SetPosition(channel, float(idlib::semantic_cast<Ego::Degrees>(angle)), distance);
@@ -634,7 +631,7 @@ int AudioSystem::playSound(const Ego::Vector3f& snd_pos, const SoundID soundID)
     }
 
     // If sound is not enabled ...
-    if (!config().sound_effects_enable.getValue())
+    if (!_config.sound_effects_enable.getValue())
     {
         // ... return invalid channel.
         return INVALID_SOUND_CHANNEL;

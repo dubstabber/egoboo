@@ -51,7 +51,7 @@ protected:
         s_runtime = std::make_unique<ContentRuntimeBootstrap>(opts);
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
-        AudioSystem::initialize();
+        AudioSystem::initialize(EngineContext::get().config(), EngineContext::get().logTarget());
         EngineContext::get().installAudioSystem(AudioSystem::get());
         ParticleHandler::initialize();
         EngineContext::get().installParticleHandler(ParticleHandler::get());

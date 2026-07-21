@@ -459,7 +459,7 @@ protected:
 
         setenv("EGOBOO_DISABLE_AUDIO", "1", 1);
         EngineContext::get().setEngine(std::make_unique<GameEngine>());
-        AudioSystem::initialize();
+        AudioSystem::initialize(EngineContext::get().config(), EngineContext::get().logTarget());
         ParticleHandler::initialize();
         EngineContext::get().installParticleHandler(ParticleHandler::get());
     }

@@ -270,6 +270,28 @@ throughout.
   `config()` wrapper, the `logTarget()` error-path fetches in the three
   render functions, the `render_all_prt_attachment/bbox` iterator roots,
   and the debug-only `inputSystem` F7 check.
+- Pass 318 (2026-07-21) constructor-injected `egoboo_config_t&` and
+  `Log::Target&` into `AudioSystem` — the first engine service moved from
+  per-call service-locator fetches to constructor injection. A teardown
+  characterization established safety first: both referents outlive the
+  audio system on every path (`SystemService` installs log/config before
+  any engine exists and tears them down after `clearEngine()`;
+  `egoboo_config_t::_singleton` is process-lifetime; `~AudioSystem` is
+  Mix-only and never logs), no code swaps the active log target
+  mid-lifetime, and all 22 test fixtures uninitialize audio strictly
+  before their `ContentRuntimeBootstrap`. `AudioSystemCreateFunctor` takes
+  the two services via `idlib::singleton::initialize` argument forwarding;
+  `GameplaySubsystemsBootstrap` resolves them once at the composition
+  root. Bonus fix: `AudioSystem::download(cfg)` previously ignored its
+  parameter and re-fetched the global config — it now uses `cfg` (same
+  object in production, passed by `config_synch`). The anonymous-namespace
+  `config()` wrapper and the `EngineContext.hpp` include are gone from
+  `AudioSystem.cpp` entirely (13 → 0 sites, file no longer names
+  `EngineContext`); accepted semantic delta: services are captured at
+  `initialize()` instead of resolved per call, observable only if a seam
+  were re-pointed mid-lifetime, which nothing does. `EngineContext::get()`
+  330 → 316 (total `::get()` 409 → 397). 22 test files updated to pass the
+  installed services at their existing `AudioSystem::initialize()` sites.
 
 ## Documentation Passes
 

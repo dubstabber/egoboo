@@ -26,6 +26,8 @@
 #include "egolib/egoboo_setup.h"
 #include "egolib/Math/_Include.hpp"
 
+namespace Log { struct Target; }
+
 static constexpr int INVALID_SOUND_CHANNEL = -1;
 
 /// Data needed to store and manipulate a looped sound
@@ -75,7 +77,7 @@ class AudioSystem;
 
 struct AudioSystemCreateFunctor
 {
-	AudioSystem *operator()() const;
+	AudioSystem *operator()(egoboo_config_t& config, Log::Target& logTarget) const;
 };
 
 struct AudioSystemDestroyFunctor
@@ -97,7 +99,10 @@ public:
 protected:
     friend AudioSystemCreateFunctor;
     friend AudioSystemDestroyFunctor;
-    AudioSystem();
+    /// Both injected services must outlive the audio system; this holds on all
+    /// paths because the singleton lives inside GameplaySubsystemsBootstrap,
+    /// which is torn down before the log/config services are.
+    AudioSystem(egoboo_config_t& config, Log::Target& logTarget);
     virtual ~AudioSystem();
 
 public:
@@ -265,6 +270,9 @@ private:
     void updateLoopingSound(const std::shared_ptr<LoopingSound>& sound);
 
 private:
+    egoboo_config_t& _config;
+    Log::Target& _logTarget;
+
     std::unordered_map<std::string, Mix_Music*> _musicLoaded;    //Maps song names to music data
     std::unordered_map<MusicID, std::string> _musicIDToNameMap;   //Maps MusicID to song names
     std::vector<Mix_Chunk*> _soundsLoaded;
