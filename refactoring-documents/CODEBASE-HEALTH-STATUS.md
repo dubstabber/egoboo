@@ -71,7 +71,7 @@ validation tooling.
 What this progress has **not** yet bought — the remaining gap to "done" — is
 listed in `19-refactoring-roadmap.md`. In one paragraph: coupling was migrated
 into `EngineContext`/`GameSessionContext` service locators rather than
-eliminated (443 `::get()` sites), `Object` is still the broadest interface in
+eliminated (435 `::get()` sites), `Object` is still the broadest interface in
 the runtime, `GameModule` still mixes ownership with loading and update logic,
 content is still the legacy positional-text format (the glTF loader accepts
 only a static-mesh subset and virtually all shipped models remain MD2), EgoScript
@@ -89,8 +89,8 @@ native.
 | Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
 | ctest cases | 955 | `ctest --test-dir build -N` |
 | ctest baseline | 955 / 955 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
-| `::get()` call sites | 443 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
-| `EngineContext::get()` | 364 | Dominant intentional engine seam; Passes 313-314 threaded the renderer and `IGFX` through the world/entity render chains |
+| `::get()` call sites | 435 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
+| `EngineContext::get()` | 356 | Dominant intentional engine seam; Passes 313-315 threaded the renderer, `IGFX`, and the HUD debug services through the render/HUD chains |
 | `GameSessionContext::get()` | 23 | Dominant intentional session seam; Pass 309 moved the last gamestates read-only module accesses onto lower-layer seams |
 | `TODO`/`FIXME`/`HACK` markers | 59 | `egolib/library/src` + `egoboo/src` |
 | `throw` references | 622 | Broad grep count, not semantic classification |

@@ -227,6 +227,19 @@ throughout.
   changes. The `draw_hud` half was deliberately left: its 11 sites split
   across three services (input, camera-system, particle-handler), so the
   churn-to-visibility trade is worse and it needs its own call.
+- Pass 315 (2026-07-21) executed the `draw_hud` half after that call was
+  made: `draw_hud()` now fetches `Ego::Input::IInputSystem&`,
+  `ICameraSystem&`, and `IParticleHandler&` once and passes them to the
+  file-local `draw_help`/`draw_debug` helpers as reference parameters
+  (`draw_debug` takes all three; the other helpers were untouched — they
+  had no sites). `graphic_hud.c` dropped 16 → 8 sites and
+  `EngineContext::get()` 364 → 356; zero external signature changes
+  (`draw_hud()` keeps its `graphic.h` declaration). The root fetch is now
+  unconditional where the debug branches previously fetched lazily; safe
+  because `draw_hud` only runs from the `PlayingState` render path, where
+  all three services are installed and already used unconditionally each
+  frame. Still on the singleton by design: the local `config()` wrapper,
+  multi-caller `draw_blip`, and the separate `draw_mouse_cursor` root.
 
 ## Documentation Passes
 

@@ -78,9 +78,9 @@ float draw_fps(float y)
     return y;
 }
 
-float draw_help(float y)
+float draw_help(float y, Ego::Input::IInputSystem& inputSystem)
 {
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F1))
+    if (inputSystem.isKeyDown(SDLK_F1))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!MOUSE HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change");
@@ -91,14 +91,14 @@ float draw_help(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~A and S keys do stuff");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Right Drag to move camera");
     }
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F2))
+    if (inputSystem.isKeyDown(SDLK_F2))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!JOYSTICK HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Hit the buttons");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~You'll figure it out");
     }
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F3))
+    if (inputSystem.isKeyDown(SDLK_F3))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!KEYBOARD HELP!!!");
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "~~Go to input settings to change.");
@@ -112,21 +112,21 @@ float draw_help(float y)
     return y;
 }
 
-float draw_debug(float y)
+float draw_debug(float y, Ego::Input::IInputSystem& inputSystem, ICameraSystem& cameraSystem, IParticleHandler& particleHandler)
 {
     if (!config().debug_developerMode_enable.getValue())
     {
         return y;
     }
 
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F5))
+    if (inputSystem.isKeyDown(SDLK_F5))
     {
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-5!!!");
         std::ostringstream os;
         os << "~~CAM"
-           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kX]
-           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kY]
-           << " " << EngineContext::get().cameraSystem().getMainCamera()->getPosition()[kZ];
+           << " " << cameraSystem.getMainCamera()->getPosition()[kX]
+           << " " << cameraSystem.getMainCamera()->getPosition()[kY]
+           << " " << cameraSystem.getMainCamera()->getPosition()[kZ];
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
         if (sessionState().playerList().size() > 0)
         {
@@ -164,12 +164,12 @@ float draw_debug(float y)
         }
     }
 
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F6))
+    if (inputSystem.isKeyDown(SDLK_F6))
     {
         std::ostringstream os;
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-6!!!");
 
-        os.str(std::string()); os << "~~FREEPRT: " << EngineContext::get().particleHandler().getFreeCount();
+        os.str(std::string()); os << "~~FREEPRT: " << particleHandler.getFreeCount();
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
 
         os.str(std::string()); os << "~~FREECHR: " << OBJECTS_MAX - Ego::Entities::activeObjectHandler().getObjectCount();
@@ -182,9 +182,9 @@ float draw_debug(float y)
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), os.str(), 0, 1.0f);
     }
 
-    if (EngineContext::get().inputSystem().isKeyDown(SDLK_F7))
+    if (inputSystem.isKeyDown(SDLK_F7))
     {
-        std::shared_ptr<Camera> camera = EngineContext::get().cameraSystem().getMainCamera();
+        std::shared_ptr<Camera> camera = cameraSystem.getMainCamera();
 
         std::ostringstream os;
         y = uiManager().drawBitmapFontString(Ego::Vector2f(0, y), "!!!DEBUG MODE-7!!!");
@@ -388,11 +388,15 @@ float draw_game_icon(const std::shared_ptr<const Ego::Texture>& icontype, float 
 
 void draw_hud()
 {
+    auto& inputSystem = EngineContext::get().inputSystem();
+    auto& cameraSystem = EngineContext::get().cameraSystem();
+    auto& particleHandler = EngineContext::get().particleHandler();
+
     uiManager().beginRenderUI();
     {
         int y = draw_fps(0);
-        y = draw_help(y);
-        y = draw_debug(y);
+        y = draw_help(y, inputSystem);
+        y = draw_debug(y, inputSystem, cameraSystem, particleHandler);
         y = draw_timer(y);
         y = draw_game_status(y);
     }
