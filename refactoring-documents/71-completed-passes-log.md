@@ -240,6 +240,19 @@ throughout.
   all three services are installed and already used unconditionally each
   frame. Still on the singleton by design: the local `config()` wrapper,
   multi-caller `draw_blip`, and the separate `draw_mouse_cursor` root.
+- Pass 316 (2026-07-21) consolidated the `graphic.c` per-function fetch
+  clusters the render-chain passes had scoped around: `reinitClocks()` now
+  fetches `IGFX&` once (12 sites → 1; local named `igfx` because the
+  file-scope `gfx_config_t` global is already named `gfx`),
+  `gfx_system_load_assets()` fetches `Ego::Renderer&` once (4 → 1), and
+  `TileRenderer::get_texture`/`TileRenderer::bind` fetch the atlas manager
+  and renderer once per call (2 → 1 and 3 → 1; `bind` is a per-frame hot
+  path). Pure within-function consolidation — zero signature changes and no
+  parameter threading. `graphic.c` dropped 28 → 11 sites and
+  `EngineContext::get()` 356 → 339 (total `::get()` 435 → 418). Still on
+  the singleton by design: the init/teardown singles
+  (`gfx_system_release_all_graphics`, `gfx_system_reload_all_textures`,
+  `gfx_do_flip_pages`) and the single-site `GFX::update_particle_instances`.
 
 ## Documentation Passes
 

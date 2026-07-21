@@ -81,19 +81,21 @@ void reinitClocks() {
 	gfx_make_entityList_timer.reinit();
 	do_grid_lighting_timer.reinit();
 	light_fans_timer.reinit();
-	EngineContext::get().gfx().updateObjectInstancesTimer().reinit();
-	EngineContext::get().gfx().updateParticleInstancesTimer().reinit();
+	// Named igfx: the file-scope gfx_config_t global is already called gfx.
+	IGFX& igfx = EngineContext::get().gfx();
+	igfx.updateObjectInstancesTimer().reinit();
+	igfx.updateParticleInstancesTimer().reinit();
 
-	EngineContext::get().gfx().getEntityReflections().clock.reinit();
-    EngineContext::get().gfx().getEntityShadows().clock.reinit();
-	EngineContext::get().gfx().getOpaqueEntities().clock.reinit();
-    EngineContext::get().gfx().getNonOpaqueEntities().clock.reinit();
-    EngineContext::get().gfx().getWater().clock.reinit();
-    EngineContext::get().gfx().getReflective0().clock.reinit();
-    EngineContext::get().gfx().getReflective1().clock.reinit();
-    EngineContext::get().gfx().getNonReflective().clock.reinit();
-    EngineContext::get().gfx().getForeground().clock.reinit();
-    EngineContext::get().gfx().getBackground().clock.reinit();
+	igfx.getEntityReflections().clock.reinit();
+	igfx.getEntityShadows().clock.reinit();
+	igfx.getOpaqueEntities().clock.reinit();
+	igfx.getNonOpaqueEntities().clock.reinit();
+	igfx.getWater().clock.reinit();
+	igfx.getReflective0().clock.reinit();
+	igfx.getReflective1().clock.reinit();
+	igfx.getNonReflective().clock.reinit();
+	igfx.getForeground().clock.reinit();
+	igfx.getBackground().clock.reinit();
 }
 
 // GFX / GameAppImpl construction and GFX::renderBillboards were relocated to
@@ -105,14 +107,15 @@ void gfx_system_load_assets()
 {
     /// @author ZF
     /// @details This function loads all the graphics based on the game settings
+    auto& renderer = EngineContext::get().renderer();
     // Enable prespective correction?
-    EngineContext::get().renderer().setPerspectiveCorrectionEnabled(gfx.perspective);
+    renderer.setPerspectiveCorrectionEnabled(gfx.perspective);
     // Enable dithering?
-    EngineContext::get().renderer().setDitheringEnabled(gfx.dither);
+    renderer.setDitheringEnabled(gfx.dither);
     // Enable Gouraud shading?
-    EngineContext::get().renderer().setGouraudShadingEnabled(gfx.gouraudShading_enable);
+    renderer.setGouraudShadingEnabled(gfx.gouraudShading_enable);
     // Enable antialiasing (via multisamples)?
-    EngineContext::get().renderer().setMultisamplesEnabled(gfx.antialiasing);
+    renderer.setMultisamplesEnabled(gfx.antialiasing);
 }
 
 //--------------------------------------------------------------------------------------------
@@ -313,10 +316,11 @@ uint8_t TileRenderer::size = 0xFF;
 
 std::shared_ptr<Ego::Texture> TileRenderer::get_texture(uint8_t image, uint8_t size)
 {
+	auto& textureAtlasManager = EngineContext::get().textureAtlasManager();
 	if (0 == size) {
-		return EngineContext::get().textureAtlasManager().getSmall(image);
+		return textureAtlasManager.getSmall(image);
 	} else if (1 == size) {
-		return EngineContext::get().textureAtlasManager().getBig(image);
+		return textureAtlasManager.getBig(image);
 	}  else {
         return nullptr;
     }
@@ -357,12 +361,13 @@ void TileRenderer::bind(const ego_tile_info_t& tile)
 
 	if (needsBinding)
 	{
-		EngineContext::get().renderer().getTextureUnit().setActivated(texture.get());
+		auto& renderer = EngineContext::get().renderer();
+		renderer.getTextureUnit().setActivated(texture.get());
 		if (texture && texture->hasAlpha())
 		{
 			// MH: Enable alpha blending if the texture requires it.
-			EngineContext::get().renderer().setBlendingEnabled(true);
-			EngineContext::get().renderer().setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one_minus_source0_alpha);
+			renderer.setBlendingEnabled(true);
+			renderer.setBlendFunction(idlib::color_blend_parameter::one, idlib::color_blend_parameter::one_minus_source0_alpha);
 		}
 	}
 }
