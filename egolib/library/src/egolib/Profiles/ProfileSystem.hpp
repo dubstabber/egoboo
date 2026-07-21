@@ -35,6 +35,7 @@ class ParticleProfile;
 class EnchantProfile;
 class LoadPlayerElement;
 namespace Ego { class DeferredTexture; }
+namespace Log { struct Target; }
 
 /// Placeholders used while importing profiles
 struct pro_import_t
@@ -58,12 +59,24 @@ struct pro_import_t
 #include "egolib/Profiles/EnchantProfile.hpp"
 #include "egolib/Profiles/ParticleProfile.hpp"
 
-class ProfileSystem : public idlib::singleton<ProfileSystem>, public IProfileSystem {
-protected:
-    friend idlib::default_new_functor<ProfileSystem>;
-    friend idlib::default_delete_functor<ProfileSystem>;
+class ProfileSystem;
 
-    ProfileSystem();
+struct ProfileSystemCreateFunctor
+{
+    ProfileSystem *operator()(Log::Target& logTarget) const;
+};
+
+struct ProfileSystemDestroyFunctor
+{
+    void operator()(ProfileSystem *p) const;
+};
+
+class ProfileSystem : public idlib::singleton<ProfileSystem, ProfileSystemCreateFunctor, ProfileSystemDestroyFunctor>, public IProfileSystem {
+protected:
+    friend ProfileSystemCreateFunctor;
+    friend ProfileSystemDestroyFunctor;
+
+    ProfileSystem(Log::Target& logTarget);
     ~ProfileSystem();
 
 public:
@@ -187,6 +200,8 @@ private:
     std::vector<std::shared_ptr<ModuleProfile>> _moduleProfilesLoaded;  // List of all valid game modules loaded
 
     std::vector<std::shared_ptr<LoadPlayerElement>> _loadPlayerList; // List of characters that can be loaded (lightweight)
+
+    Log::Target& _logTarget;
 };
 
 // TODO: Remove this.

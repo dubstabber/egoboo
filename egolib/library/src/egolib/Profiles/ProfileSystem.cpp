@@ -29,7 +29,7 @@
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
-#include "egolib/game/game.h"  // MAX_IMPORT_PER_PLAYER / MAX_IMPORT_OBJECTS macros + EngineContext conduit
+#include "egolib/game/game.h"  // MAX_IMPORT_PER_PLAYER / MAX_IMPORT_OBJECTS macros
 #include "egolib/game/script_compile.h"
 #include "egolib/fileutil.h"
 
@@ -41,11 +41,18 @@ pro_import_t import_data;
 
 static const std::shared_ptr<ObjectProfile> NULL_PROFILE = nullptr;
 
-ProfileSystem::ProfileSystem() :
+ProfileSystem *ProfileSystemCreateFunctor::operator()(Log::Target& logTarget) const
+{ return new ProfileSystem(logTarget); }
+
+void ProfileSystemDestroyFunctor::operator()(ProfileSystem *p) const
+{ delete p; }
+
+ProfileSystem::ProfileSystem(Log::Target& logTarget) :
     _profilesLoaded(),
     _profilesLoadedByName(),
     _moduleProfilesLoaded(),
     _loadPlayerList(),
+    _logTarget(logTarget),
     EnchantProfileSystem("enchant", "/debug/enchant_profile_usage.txt"),
     ParticleProfileSystem("particle", "/debug/particle_profile_usage.txt")
 {
@@ -156,11 +163,11 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
         // The data file wasn't found
         if (required)
         {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", pathName, "`", " was not found. Do you attempt to override a global object?", Log::EndOfEntry);
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", pathName, "`", " was not found. Do you attempt to override a global object?", Log::EndOfEntry);
         }
         else if (required && slot_override > 4 * MAX_IMPORT_PER_PLAYER)
         {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open file ", "`", pathName, "`", Log::EndOfEntry);
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open file ", "`", pathName, "`", Log::EndOfEntry);
         }
 
         return ObjectProfileRef::Invalid;
@@ -178,14 +185,14 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "object slot ", ObjectProfileRef(SPELLBOOK), " is a special "
                                         "reserved slot number and can not be used by ", "`", pathName, "`", Log::EndOfEntry);
-            EngineContext::get().logTarget() << e;
+            _logTarget << e;
 			throw std::runtime_error(e.getText());
         }
         else if (required && GameSessionContext::get().overrideSlots())
         {
             Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
             e << "object slot " << SPELLBOOK << " is already used by " << _profilesLoaded[iobj.get()]->getPathname() << " and cannot be used by " << pathName << Log::EndOfEntry;
-            EngineContext::get().logTarget() << e;
+            _logTarget << e;
 			throw std::runtime_error(e.getText());
         }
         else
@@ -200,7 +207,7 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
     {
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
         e << "failed to load " << pathName << " into slot number " << iobj << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        _logTarget << e;
         return ObjectProfileRef::Invalid;
     }
 
@@ -236,7 +243,7 @@ void ProfileSystem::loadModuleProfiles()
         }
         else
         {
-			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`", Log::EndOfEntry);
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`", Log::EndOfEntry);
         }
         ctxt->nextData();
     }
@@ -362,7 +369,7 @@ void ProfileSystem::loadGlobalParticleProfiles()
         if (INVALID_PIP_REF == ParticleProfileSystem.load(profile.first, profile.second))
         {
             auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "data file ", "`", profile.first, "`", " was not found", Log::EndOfEntry);
-            EngineContext::get().logTarget() << e;
+            _logTarget << e;
             throw std::runtime_error(e.getText());
         }
     }

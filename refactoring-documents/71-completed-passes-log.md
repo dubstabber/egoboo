@@ -318,6 +318,39 @@ throughout.
   sites are intentional residual: one-fetch-per-function singles, the
   teardown-guarded destructor accesses, and the anonymous-namespace
   `inputSystem()`/`audioSystem()` consolidators.
+- Pass 320 (2026-07-21) constructor-injected `Log::Target&` into
+  `ProfileSystem` — the second engine service moved to constructor
+  injection, reusing the Pass 318 pattern (characterize teardown → inject
+  via singleton create-functor args → composition root resolves).
+  Characterization: the referent outlives `ProfileSystem` on every path —
+  the game installs the active log target in `Ego::Core::System`
+  initialization before any engine exists and tears it down after
+  `clearEngine()`, while the validator and the 26 logging-enabled test
+  fixtures nest `ProfileSystem` strictly inside the log target within
+  `ContentRuntimeBootstrap` itself (install line precedes
+  `ProfileSystem::initialize`, clear follows `uninitialize`); the one
+  `initializeLogging = false` fixture (`PlayerQuestLog`) also disables the
+  profile system entirely; no code swaps the active target while a
+  `ProfileSystem` lives (installers are the two `System.cpp` boot
+  constructors plus CRB-with-logging only); `~ProfileSystem` is log-free
+  (`parser_state_t::uninitialize` only); all seven fetch sites are
+  `ProfileSystem` member functions (`loadOneProfile` ×5,
+  `loadModuleProfiles`, `loadAllSavedCharacters`). Implementation mirrors
+  `AudioSystem`: `ProfileSystemCreateFunctor`/`DestroyFunctor`,
+  three-parameter `idlib::singleton` base, protected
+  `ProfileSystem(Log::Target&)`, reference member `_logTarget`,
+  `namespace Log { struct Target; }` forward declaration in the header.
+  Unlike Pass 318's 22 fixture updates, `ProfileSystem::initialize` has
+  exactly one call site — `ContentRuntimeBootstrap`, which now resolves
+  `EngineContext::get().logTarget()` at the composition root (provably
+  populated there on every reachable path, so capture-at-initialize
+  cannot introduce a new throw). `ProfileSystem.cpp` 7 → 0 sites and no
+  longer names `EngineContext` (the `game.h` include comment dropped its
+  "EngineContext conduit" note); CRB 12 → 13 (intentional).
+  `EngineContext::get()` 294 → 288 (total `::get()` 375 → 369). Accepted
+  semantic delta: capture-at-initialize instead of per-call resolution,
+  observable only if a log-target seam were re-pointed mid-lifetime,
+  which nothing does.
 
 ## Documentation Passes
 

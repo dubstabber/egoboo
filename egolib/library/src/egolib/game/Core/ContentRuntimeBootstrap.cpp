@@ -67,7 +67,7 @@ ContentRuntimeBootstrap::ContentRuntimeBootstrap(const Options& options) :
 
     if (_options.initializeProfileSystem)
     {
-        ProfileSystem::initialize();
+        ProfileSystem::initialize(EngineContext::get().logTarget());
         EngineContext::get().installProfileSystem(ProfileSystem::get());
         _profileSystemInitialized = true;
     }
