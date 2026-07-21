@@ -69,7 +69,7 @@ float ParticleGraphicsRenderer::CALCULATE_PRT_V1(const Ego::Texture& texture, in
     return (((.95f + ((CNT) >> 4)) / 16.0f) * (w / h)*hscale);
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt, Ego::Renderer& renderer)
 {
     /// @author BB
     /// @details Render the solid version of the particle
@@ -93,7 +93,6 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
     // only render solid sprites
     if (SPRITE_SOLID != pprt->type) return gfx_fail;
 
-    auto& renderer = EngineContext::get().renderer();
     renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -135,7 +134,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt)
     return gfx_success;
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Ego::Renderer& renderer)
 {
     /// @author BB
     /// @details do all kinds of transparent sprites next
@@ -155,7 +154,6 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
 
     // if the particle instance data is not valid, do not continue
     if (!pprt->inst.valid) return gfx_fail;
-    auto& renderer = EngineContext::get().renderer();
     auto& inst = pprt->inst;
 
     {
@@ -256,7 +254,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt)
     return gfx_success;
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt, Ego::Renderer& renderer)
 {
     /// @author BB
     /// @details render one particle
@@ -279,7 +277,6 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt)
     fadeoff *= 0.5f;
     fadeoff = Ego::Math::constrain(fadeoff*idlib::fraction<float, 1, 255>(), 0.0f, 1.0f);
 
-    auto& renderer = EngineContext::get().renderer();
     if (fadeoff > 0.0f)
     {
         renderer.setWorldMatrix(idlib::identity<Ego::Matrix4f4f>());

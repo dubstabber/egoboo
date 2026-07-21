@@ -41,7 +41,7 @@ egoboo_config_t& config()
 }
 }
 
-gfx_rv ObjectGraphicsRenderer::render(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits)
+gfx_rv ObjectGraphicsRenderer::render(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer)
 {
     /// @author ZZ
     /// @details This function picks the actual function to use
@@ -55,11 +55,11 @@ gfx_rv ObjectGraphicsRenderer::render(Camera& cam, const IRenderable& object, GL
 
     if (object.isPhongMapped() || HAS_SOME_BITS(bits, CHR_PHONG))
     {
-        retval = render_enviro(cam, object, tint, bits);
+        retval = render_enviro(cam, object, tint, bits, renderer);
     }
     else
     {
-        retval = render_tex(cam, object, tint, bits);
+        retval = render_tex(cam, object, tint, bits, renderer);
     }
 
 #if defined(_DEBUG)
@@ -70,11 +70,11 @@ gfx_rv ObjectGraphicsRenderer::render(Camera& cam, const IRenderable& object, GL
     return retval;
 }
 
-gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object)
+gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object, Ego::Renderer& renderer)
 {
     //Does this object have a reflection?
     if (!object.hasReflection()) {
-        return gfx_fail;        
+        return gfx_fail;
     }
 
     if (object.isHidden()) return gfx_fail;
@@ -85,7 +85,6 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
         {
-            auto& renderer = EngineContext::get().renderer();
             // cull backward facing polygons
             // use couter-clockwise orientation to determine backfaces
             renderer.setCullingMode(idlib::culling_mode::back);
@@ -100,7 +99,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
                 GLXvector4f tint;
                 object.getTint(tint, true, CHR_ALPHA);
 
-                if (gfx_error == render(cam, object, tint, CHR_ALPHA | CHR_REFLECT)) {
+                if (gfx_error == render(cam, object, tint, CHR_ALPHA | CHR_REFLECT, renderer)) {
                     retval = gfx_error;
                 }
             }
@@ -113,7 +112,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
                 GLXvector4f tint;
                 object.getTint(tint, true, CHR_LIGHT);
 
-                if (gfx_error == ObjectGraphicsRenderer::render(cam, object, tint, CHR_LIGHT)) {
+                if (gfx_error == ObjectGraphicsRenderer::render(cam, object, tint, CHR_LIGHT, renderer)) {
                     retval = gfx_error;
                 }
                 Ego::OpenGL::Utilities::isError();
@@ -127,7 +126,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
                 GLXvector4f tint;
                 object.getTint(tint, true, CHR_PHONG);
 
-                if (gfx_error == ObjectGraphicsRenderer::render(cam, object, tint, CHR_PHONG)) {
+                if (gfx_error == ObjectGraphicsRenderer::render(cam, object, tint, CHR_PHONG, renderer)) {
                     retval = gfx_error;
                 }
                 Ego::OpenGL::Utilities::isError();
@@ -138,7 +137,7 @@ gfx_rv ObjectGraphicsRenderer::render_ref(Camera& cam, const IRenderable& object
     return retval;
 }
 
-gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& object)
+gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& object, Ego::Renderer& renderer)
 {
     if (object.isHidden()) return gfx_fail;
 
@@ -148,8 +147,6 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
         {
-            auto& renderer = EngineContext::get().renderer();
-
             if (object.getAlpha() < 0xFF) {
                 // most alpha effects will be messed up by
                 // skipping backface culling, so don't
@@ -169,7 +166,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
                 GLXvector4f tint;
                 object.getTint(tint, false, CHR_ALPHA);
 
-                if (render(cam, object, tint, CHR_ALPHA)) {
+                if (render(cam, object, tint, CHR_ALPHA, renderer)) {
                     rendered = true;
                 }
             }
@@ -187,7 +184,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
                 GLXvector4f tint;
                 object.getTint(tint, false, CHR_LIGHT);
 
-                if (render(cam, object, tint, CHR_LIGHT)) {
+                if (render(cam, object, tint, CHR_LIGHT, renderer)) {
                     rendered = true;
                 }
             }
@@ -200,7 +197,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
                 GLXvector4f tint;
                 object.getTint(tint, false, CHR_PHONG);
 
-                if (render(cam, object, tint, CHR_PHONG)) {
+                if (render(cam, object, tint, CHR_PHONG, renderer)) {
                     rendered = true;
                 }
             }
@@ -210,7 +207,7 @@ gfx_rv ObjectGraphicsRenderer::render_trans(Camera& cam, const IRenderable& obje
     return rendered ? gfx_success : gfx_fail;
 }
 
-gfx_rv ObjectGraphicsRenderer::render_solid(Camera& cam, const IRenderable& object)
+gfx_rv ObjectGraphicsRenderer::render_solid(Camera& cam, const IRenderable& object, Ego::Renderer& renderer)
 {
     if (object.isHidden()) return gfx_fail;
 
@@ -225,7 +222,6 @@ gfx_rv ObjectGraphicsRenderer::render_solid(Camera& cam, const IRenderable& obje
     {
         Ego::OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
         {
-            auto& renderer = EngineContext::get().renderer();
             // do not display the completely transparent portion
             // this allows characters that have "holes" in their
             // textures to display the solid portions properly
@@ -254,7 +250,7 @@ gfx_rv ObjectGraphicsRenderer::render_solid(Camera& cam, const IRenderable& obje
             GLXvector4f tint;
             object.getTint(tint, false, CHR_SOLID);
 
-            if (gfx_error == render(cam, object, tint, CHR_SOLID)) {
+            if (gfx_error == render(cam, object, tint, CHR_SOLID, renderer)) {
                 retval = gfx_error;
             }
         }

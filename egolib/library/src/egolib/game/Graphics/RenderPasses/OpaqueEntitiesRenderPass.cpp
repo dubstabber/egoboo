@@ -37,7 +37,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
                 Object* object = objectHandler.get(el.get(i).iobj);
                 if (object)
                 {
-                    ObjectGraphicsRenderer::render_solid(camera, *object);
+                    ObjectGraphicsRenderer::render_solid(camera, *object, renderer);
                 }
             }
             else if (ObjectRef::Invalid == el.get(i).iobj && EngineContext::get().particleHandler()[el.get(i).iprt] != nullptr)
@@ -45,7 +45,7 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
                 // draw draw front and back faces of polygons
                 renderer.setCullingMode(idlib::culling_mode::none);
 
-                ParticleGraphicsRenderer::render_one_prt_solid(el.get(i).iprt);
+                ParticleGraphicsRenderer::render_one_prt_solid(el.get(i).iprt, renderer);
             }
         }
     }

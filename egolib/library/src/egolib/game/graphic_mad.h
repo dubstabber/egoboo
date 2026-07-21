@@ -27,27 +27,28 @@
 class Camera;
 class IRenderable;
 class Object;
-namespace Ego { 
+namespace Ego {
+class Renderer;
 namespace Graphics {
-class ObjectGraphics; 
+class ObjectGraphics;
 } }
 
 struct ObjectGraphicsRenderer {
-	static gfx_rv render(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits);
-    
+	static gfx_rv render(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer);
+
 	/// @brief Draw object reflected in the floor.
-	static gfx_rv render_ref(Camera& cam, const IRenderable& object);
+	static gfx_rv render_ref(Camera& cam, const IRenderable& object, Ego::Renderer& renderer);
 
 	/// @brief Dispatch rendering of transparent objects to the correct function.
 	/// @remark Does not handle reflections in the floor.
-	static gfx_rv render_trans(Camera& cam, const IRenderable& object);
-	static gfx_rv render_solid(Camera& cam, const IRenderable& object);
+	static gfx_rv render_trans(Camera& cam, const IRenderable& object, Ego::Renderer& renderer);
+	static gfx_rv render_solid(Camera& cam, const IRenderable& object, Ego::Renderer& renderer);
 
 private:
 	/// Draw model with environment mapping.
-	static gfx_rv render_enviro(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits);
+	static gfx_rv render_enviro(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer);
 	/// Draw model with texturing.
-	static gfx_rv render_tex(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits);
+	static gfx_rv render_tex(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer);
 
 #if _DEBUG
     static void draw_chr_verts(const std::shared_ptr<Object>&pchr, int vrt_offset, int verts);

@@ -205,6 +205,19 @@ throughout.
   (`~GameEngine` without `uninitialize()`), the bootstraps now tear their
   subsystems down where they previously leaked; verified non-throwing and
   safely ordered by reverse member destruction.
+- Pass 313 (2026-07-21) started the T1.2 render-chain narrowing: the nine
+  `ObjectGraphicsRenderer`/`ParticleGraphicsRenderer` render functions
+  (`render`, `render_ref/trans/solid`, `render_enviro/tex`,
+  `render_one_prt_solid/trans/ref`) now take the `Ego::Renderer&` their three
+  render-pass callers already cache instead of re-fetching it from
+  `EngineContext`. `EngineContext::get()` dropped 388 → 380 with zero new
+  sites; debug-only helpers and non-renderer fetches were left as is. A scout
+  scoped the follow-on: the single-root closures under
+  `gfx_system_render_world` (`graphic_scene.c`, ~20 reducible sites) and
+  `draw_hud` (`graphic_hud.c`, ~11) are the next candidates, but need a
+  services-struct design decision; multi-root utilities (`draw_blip`,
+  `gfx_do_clear_screen/flip_pages`, init/teardown paths) stay on the
+  singleton.
 
 ## Documentation Passes
 

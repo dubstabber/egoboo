@@ -70,7 +70,7 @@ struct ModelVertexBufferRenderer {
 
 } // namespace
 
-gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits)
+gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer)
 {
     if (!object.hasModelDescriptor())
     {
@@ -80,7 +80,6 @@ gfx_rv ObjectGraphicsRenderer::render_enviro(Camera& cam, const IRenderable& obj
         return gfx_error;
     }
     const auto& model = object.getModelDescriptor()->getModel();
-    auto& renderer = EngineContext::get().renderer();
     auto& textureManager = EngineContext::get().textureManager();
     auto& modelVertexBuffer = EngineContext::get().gfx().getModelVertexBuffer();
 
@@ -221,7 +220,7 @@ else
 
 */
 
-gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits)
+gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& object, GLXvector4f tint, const BIT_FIELD bits, Ego::Renderer& renderer)
 {
     if (!object.hasModelDescriptor())
     {
@@ -231,7 +230,6 @@ gfx_rv ObjectGraphicsRenderer::render_tex(Camera& camera, const IRenderable& obj
         return gfx_error;
     }
 
-    auto& renderer = EngineContext::get().renderer();
     auto& modelVertexBuffer = EngineContext::get().gfx().getModelVertexBuffer();
     const auto& model = object.getModelDescriptor()->getModel();
 
