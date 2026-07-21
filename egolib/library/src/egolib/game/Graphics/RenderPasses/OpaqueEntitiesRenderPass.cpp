@@ -16,6 +16,7 @@ OpaqueEntitiesRenderPass::OpaqueEntitiesRenderPass() :
 void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
     auto& objectHandler = Ego::Entities::activeObjectHandler();
+    auto& particleHandler = EngineContext::get().particleHandler();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     {
         // scan for solid objects
@@ -40,12 +41,12 @@ void OpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const
                     ObjectGraphicsRenderer::render_solid(camera, *object, renderer);
                 }
             }
-            else if (ObjectRef::Invalid == el.get(i).iobj && EngineContext::get().particleHandler()[el.get(i).iprt] != nullptr)
+            else if (ObjectRef::Invalid == el.get(i).iobj && particleHandler[el.get(i).iprt] != nullptr)
             {
                 // draw draw front and back faces of polygons
                 renderer.setCullingMode(idlib::culling_mode::none);
 
-                ParticleGraphicsRenderer::render_one_prt_solid(el.get(i).iprt, renderer);
+                ParticleGraphicsRenderer::render_one_prt_solid(el.get(i).iprt, renderer, particleHandler);
             }
         }
     }

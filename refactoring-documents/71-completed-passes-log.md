@@ -253,6 +253,23 @@ throughout.
   the singleton by design: the init/teardown singles
   (`gfx_system_release_all_graphics`, `gfx_system_reload_all_textures`,
   `gfx_do_flip_pages`) and the single-site `GFX::update_particle_instances`.
+- Pass 317 (2026-07-21) extended the Pass 313 particle render chain to its
+  second service: `render_one_prt_solid/trans/ref` now take
+  `IParticleHandler&` as a trailing parameter after the `Ego::Renderer&`
+  they already receive, replacing the nine per-particle
+  `EngineContext::get().particleHandler()` fetches (particle lookup plus
+  transparent/light texture getters) inside the three functions. The three
+  render-pass callers (`OpaqueEntities`, `NonOpaqueEntities`,
+  `EntityReflections`) fetch the handler once at their `doRun` root next to
+  `objectHandler` — Opaque and Reflections previously re-fetched it inside
+  their entity loops, so this also hoists a per-entity singleton lookup out
+  of two hot loops; NonOpaque gains the one new root fetch. Same-file
+  cleanup: `render_prt_bbox` fetches the renderer once (2 → 1).
+  `graphic_prt.c` dropped 20 → 10 sites and `EngineContext::get()`
+  339 → 330 (total `::get()` 418 → 409). Still on the singleton: the local
+  `config()` wrapper, the `logTarget()` error-path fetches in the three
+  render functions, the `render_all_prt_attachment/bbox` iterator roots,
+  and the debug-only `inputSystem` F7 check.
 
 ## Documentation Passes
 

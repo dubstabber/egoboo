@@ -29,6 +29,7 @@ namespace Ego { class Texture; }  // used by const-reference only
 
 // Forward declaration
 class Camera;
+class IParticleHandler;
 class Object;
 namespace Ego {
 class Particle;
@@ -49,9 +50,9 @@ struct ParticleGraphicsRenderer
     static float CALCULATE_PRT_U1(const Ego::Texture& texture, int CNT);
     static float CALCULATE_PRT_V0(const Ego::Texture& texture, int CNT);
     static float CALCULATE_PRT_V1(const Ego::Texture& texture, int CNT);
-    static gfx_rv render_one_prt_solid(const ParticleRef iprt, Ego::Renderer& renderer);
-    static gfx_rv render_one_prt_trans(const ParticleRef iprt, Ego::Renderer& renderer);
-    static gfx_rv render_one_prt_ref(const ParticleRef iprt, Ego::Renderer& renderer);
+    static gfx_rv render_one_prt_solid(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler);
+    static gfx_rv render_one_prt_trans(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler);
+    static gfx_rv render_one_prt_ref(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler);
     static void render_all_prt_bbox();
     static void render_prt_bbox(const std::shared_ptr<Ego::Particle> &bdl_prt);
     static void render_all_prt_attachment();

@@ -30,6 +30,7 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
     }
 
     auto& objectHandler = Ego::Entities::activeObjectHandler();
+    auto& particleHandler = EngineContext::get().particleHandler();
 
     OpenGL::Utilities::isError();
     OpenGL::PushAttrib pa(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_CURRENT_BIT);
@@ -85,12 +86,12 @@ void EntityReflectionsRenderPass::doRun(::Camera& camera, const TileList& tl, co
                 // set the default particle blending
                 renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
                 ParticleRef iprt = el.get(i).iprt;
-                Index1D itile = EngineContext::get().particleHandler()[iprt]->getTile();
+                Index1D itile = particleHandler[iprt]->getTile();
 
                 if (mesh->grid_is_valid(itile) && (0 != mesh->test_fx(itile, MAPFX_REFLECTIVE)))
                 {
                     renderer.setColour(Colour4f::white());
-                    ParticleGraphicsRenderer::render_one_prt_ref(iprt, renderer);
+                    ParticleGraphicsRenderer::render_one_prt_ref(iprt, renderer, particleHandler);
                 }
             }
         }

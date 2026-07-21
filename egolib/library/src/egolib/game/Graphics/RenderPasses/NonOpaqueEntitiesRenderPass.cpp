@@ -16,6 +16,7 @@ NonOpaqueEntitiesRenderPass::NonOpaqueEntitiesRenderPass() :
 void NonOpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, const EntityList& el)
 {
     auto& objectHandler = Ego::Entities::activeObjectHandler();
+    auto& particleHandler = EngineContext::get().particleHandler();
     auto& renderer = EngineContext::get().renderer();
     // Set projection matrix.
     renderer.setProjectionMatrix(camera.getProjectionMatrix());
@@ -51,7 +52,7 @@ void NonOpaqueEntitiesRenderPass::doRun(::Camera& camera, const TileList& tl, co
             // A particle.
             else if (ObjectRef::Invalid == el.get(j).iobj && ParticleRef::Invalid != el.get(j).iprt)
             {
-                ParticleGraphicsRenderer::render_one_prt_trans(el.get(j).iprt, renderer);
+                ParticleGraphicsRenderer::render_one_prt_trans(el.get(j).iprt, renderer, particleHandler);
             }
         }
     }

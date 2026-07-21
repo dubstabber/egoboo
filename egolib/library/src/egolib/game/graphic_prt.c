@@ -69,12 +69,12 @@ float ParticleGraphicsRenderer::CALCULATE_PRT_V1(const Ego::Texture& texture, in
     return (((.95f + ((CNT) >> 4)) / 16.0f) * (w / h)*hscale);
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt, Ego::Renderer& renderer)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler)
 {
     /// @author BB
     /// @details Render the solid version of the particle
 
-    const auto& pprt = EngineContext::get().particleHandler()[iprt];
+    const auto& pprt = particleHandler[iprt];
     if (pprt == nullptr || pprt->isTerminated())
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
@@ -117,7 +117,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt, Eg
             renderer.setAlphaTestEnabled(true);
             renderer.setAlphaFunction(idlib::compare_function::equal, 1.0f);
 
-            texture = EngineContext::get().particleHandler().getTransparentParticleTexture();
+            texture = particleHandler.getTransparentParticleTexture();
             renderer.getTextureUnit().setActivated(texture.get());
 
             renderer.setColour(Ego::Colour4f(pinst.fintens, pinst.fintens, pinst.fintens, 1.0f));
@@ -134,12 +134,12 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_solid(const ParticleRef iprt, Eg
     return gfx_success;
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Ego::Renderer& renderer)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler)
 {
     /// @author BB
     /// @details do all kinds of transparent sprites next
 
-    const auto& pprt = EngineContext::get().particleHandler()[iprt];
+    const auto& pprt = particleHandler[iprt];
 
     if (pprt == nullptr || pprt->isTerminated())
     {
@@ -188,7 +188,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Eg
 
                     particleColour = Ego::Colour4f(inst.fintens, inst.fintens, inst.fintens, 1.0f);
 
-                    texture = EngineContext::get().particleHandler().getTransparentParticleTexture();
+                    texture = particleHandler.getTransparentParticleTexture();
                     renderer.getTextureUnit().setActivated(texture.get());
                 }
                 break;
@@ -207,7 +207,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Eg
 
                     particleColour = Ego::Colour4f(1.0f, 1.0f, 1.0f, inst.fintens * inst.falpha);
 
-                    texture = EngineContext::get().particleHandler().getLightParticleTexture();
+                    texture = particleHandler.getLightParticleTexture();
                     renderer.getTextureUnit().setActivated(texture.get());
                 }
                 break;
@@ -229,7 +229,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Eg
 
                     particleColour = Ego::Colour4f(inst.fintens, inst.fintens, inst.fintens, inst.falpha);
 
-                    texture = EngineContext::get().particleHandler().getTransparentParticleTexture();
+                    texture = particleHandler.getTransparentParticleTexture();
                     renderer.getTextureUnit().setActivated(texture.get());
                 }
                 break;
@@ -254,11 +254,11 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_trans(const ParticleRef iprt, Eg
     return gfx_success;
 }
 
-gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt, Ego::Renderer& renderer)
+gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt, Ego::Renderer& renderer, IParticleHandler& particleHandler)
 {
     /// @author BB
     /// @details render one particle
-    const auto& pprt = EngineContext::get().particleHandler()[iprt];
+    const auto& pprt = particleHandler[iprt];
     if(!pprt || pprt->isTerminated()) {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << iprt << "`" << Log::EndOfEntry;
@@ -317,7 +317,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt, Ego:
 
                         particle_colour = Ego::Colour4f(1.0f, 1.0f, 1.0f, alpha);
 
-                        texture = EngineContext::get().particleHandler().getLightParticleTexture();
+                        texture = particleHandler.getLightParticleTexture();
                         renderer.getTextureUnit().setActivated(texture.get());
                     }
                     break;
@@ -337,7 +337,7 @@ gfx_rv ParticleGraphicsRenderer::render_one_prt_ref(const ParticleRef iprt, Ego:
 
                         particle_colour = Ego::Colour4f(inst.fintens, inst.fintens, inst.fintens, alpha);
 
-                        texture = EngineContext::get().particleHandler().getTransparentParticleTexture();
+                        texture = particleHandler.getTransparentParticleTexture();
                         renderer.getTextureUnit().setActivated(texture.get());
                     }
                     break;
@@ -518,8 +518,9 @@ void ParticleGraphicsRenderer::render_prt_bbox(const std::shared_ptr<Ego::Partic
         // shift the source bounding boxes to be centered on the given positions
         auto loc_bb = idlib::translate(exp_bb, particle->getPosition());
 
-        EngineContext::get().renderer().getTextureUnit().setActivated(nullptr);
-        EngineContext::get().renderer().setColour(Ego::Colour4f::white());
+        auto& renderer = EngineContext::get().renderer();
+        renderer.getTextureUnit().setActivated(nullptr);
+        renderer.setColour(Ego::Colour4f::white());
         Renderer3D::renderOctBB(loc_bb, true, true, Ego::Colour4f::red(), Ego::Colour4f::yellow());
     }
 }
