@@ -126,7 +126,8 @@ void MapEditorState::update()
 
 void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 {
-    EngineContext::get().cameraSystem().renderAll(gfx_system_render_world);
+    auto& cameraSystem = EngineContext::get().cameraSystem();
+    cameraSystem.renderAll(gfx_system_render_world);
 
     // NOTE: deliberately do NOT call draw_hud() here. draw_hud() renders the in-game
     // PLAYER HUD (FPS / help / debug / timer / game-status), all anchored at the top-left
@@ -136,15 +137,16 @@ void MapEditorState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 
     //Draw passages?
     if(_editMode == EditorMode::MAP_EDIT_PASSAGES) {
-        draw_passages(*EngineContext::get().cameraSystem().getMainCamera());
+        draw_passages(*cameraSystem.getMainCamera());
     }
 }
 
 void MapEditorState::beginState()
 {
     // in-game settings
-    EngineContext::get().graphicsSystem().setCursorVisibility(true);
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
+    auto& graphicsSystem = EngineContext::get().graphicsSystem();
+    graphicsSystem.setCursorVisibility(true);
+    graphicsSystem.getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
 }
 
 bool MapEditorState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e)
@@ -172,8 +174,9 @@ void MapEditorState::loadModuleData(std::shared_ptr<ModuleProfile> module)
 
     // set up the cameras *after* game_begin_module() or the player devices will not be initialized
     // and camera_system_begin() will not set up the correct view
-    EngineContext::get().cameraSystem().setNumberOfCameras(1);
-    EngineContext::get().cameraSystem().getMainCamera()->setCameraMovementMode(CameraMovementMode::Free);
+    auto& cameraSystem = EngineContext::get().cameraSystem();
+    cameraSystem.setNumberOfCameras(1);
+    cameraSystem.getMainCamera()->setCameraMovementMode(CameraMovementMode::Free);
 
     // make sure the per-module configuration settings are correct
     config_synch(EngineContext::get().config(), true, false);

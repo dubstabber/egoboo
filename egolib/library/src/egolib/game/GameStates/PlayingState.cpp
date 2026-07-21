@@ -52,11 +52,6 @@
 
 namespace
 {
-IAudioSystem& audioSystem()
-{
-    return EngineContext::get().audioSystem();
-}
-
 Ego::Input::IInputSystem& inputSystem()
 {
     return EngineContext::get().inputSystem();
@@ -205,8 +200,10 @@ void PlayingState::drawContainer(Ego::GUI::DrawingContext& drawingContext)
 void PlayingState::beginState()
 {
     // in-game settings
-    EngineContext::get().graphicsSystem().setCursorVisibility(EngineContext::get().config().debug_hideMouse.getValue());
-    EngineContext::get().graphicsSystem().getWindow()->grab_enabled(EngineContext::get().config().debug_grabMouse.getValue());
+    auto& graphicsSystem = EngineContext::get().graphicsSystem();
+    auto& config = EngineContext::get().config();
+    graphicsSystem.setCursorVisibility(config.debug_hideMouse.getValue());
+    graphicsSystem.getWindow()->grab_enabled(config.debug_grabMouse.getValue());
 }
 
 bool PlayingState::notifyKeyboardKeyPressed(const Ego::Events::KeyboardKeyPressedEvent& e)

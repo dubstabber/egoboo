@@ -102,7 +102,8 @@ DebugModuleLoadingState::DebugModuleLoadingState() :
     _moduleList(),
     _toLoad()
 {
-    const auto &playerList = EngineContext::get().profileSystem().getSavedPlayers();
+    auto& profileSystem = EngineContext::get().profileSystem();
+    const auto &playerList = profileSystem.getSavedPlayers();
     if (!playerList.empty()) _playersToLoad.emplace_back(playerList[0]->getProfile()->getPathname());
     
     const int SCREEN_WIDTH = uiManager().getScreenWidth();
@@ -112,7 +113,7 @@ DebugModuleLoadingState::DebugModuleLoadingState() :
     _scrollableList->setPosition({ 8, 8 });
     _scrollableList->setSize({ SCREEN_WIDTH - 16, SCREEN_HEIGHT - 56 });
     
-    for (const auto &loadModule : EngineContext::get().profileSystem().getModuleProfiles())
+    for (const auto &loadModule : profileSystem.getModuleProfiles())
     {
         std::shared_ptr<ModuleGUIContainer> module = std::make_shared<ModuleGUIContainer>(loadModule);
         if (loadModule->getImportAmount()) module->setButtonEnabled(!_playersToLoad.empty());
@@ -237,6 +238,7 @@ bool DebugModuleLoadingState::loadPlayers()
 void DebugModuleLoadingState::loadModuleData()
 {
     auto &_loadModule = _toLoad.front()->_profile;
+    auto& logTarget = EngineContext::get().logTarget();
     try
     {
         singleThreadRedrawHack("Tidying some space...");
@@ -248,8 +250,8 @@ void DebugModuleLoadingState::loadModuleData()
         EngineContext::get().billboardSystem().reset();
 
         // Linking system
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing module linking", Log::EndOfEntry);
-        if (!link_build_vfs( "mp_data/link.txt", LinkList)) EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize module linking", Log::EndOfEntry);
+		logTarget << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "initializing module linking", Log::EndOfEntry);
+        if (!link_build_vfs( "mp_data/link.txt", LinkList)) logTarget << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to initialize module linking", Log::EndOfEntry);
 
         // initialize the collision system
         singleThreadRedrawHack("Beautifying graphics...");
@@ -289,31 +291,31 @@ void DebugModuleLoadingState::loadModuleData()
     {
         std::string out = std::string("Ego::Exception: ") + ex.to_string();
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
     }
     catch (std::exception &ex)
     {
         std::string out = std::string("std::exception: ") + ex.what();
         singleThreadRedrawHack(out);
-		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
+		logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
     }
     catch (std::string &ex)
     {
         std::string out = std::string("std::string: ") + ex;
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
     }
     catch (char *ex)
     {
         std::string out = std::string("C string: ") + ex;
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
     }
     catch (...)
     {
         std::string out = "unknown error";
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", "`", _loadModule->getFolderName(), "`", "... ", "`", out, "`", Log::EndOfEntry);
     }
     _toLoad.pop_front();
 }

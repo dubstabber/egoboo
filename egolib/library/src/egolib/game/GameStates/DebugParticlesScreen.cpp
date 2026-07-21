@@ -49,7 +49,10 @@ DebugParticlesScreen::DebugParticlesScreen()
     title->setPosition({ 10, 10 });
     addComponent(title);
 
-    auto usage = std::make_shared<Ego::GUI::Label>("Particle used: " + std::to_string(EngineContext::get().particleHandler().getCount()) + "/" + std::to_string(EngineContext::get().particleHandler().getDisplayLimit()));
+    auto& particleHandler = EngineContext::get().particleHandler();
+    auto& profileSystem = EngineContext::get().profileSystem();
+
+    auto usage = std::make_shared<Ego::GUI::Label>("Particle used: " + std::to_string(particleHandler.getCount()) + "/" + std::to_string(particleHandler.getDisplayLimit()));
     usage->setPosition({ 10, title->getY() + title->getHeight() });
     addComponent(usage);
 
@@ -62,9 +65,9 @@ DebugParticlesScreen::DebugParticlesScreen()
     std::unordered_map<PIP_REF, size_t> usageCount;
     std::unordered_map<PIP_REF, size_t> terminatedCount;
     size_t invalidParticles = 0;
-    for(const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
+    for(const std::shared_ptr<Ego::Particle> &particle : particleHandler.iterator())
     {
-        if(particle->getProfileID() == INVALID_PIP_REF || !EngineContext::get().profileSystem().isParticleProfileLoaded(particle->getProfileID())) {
+        if(particle->getProfileID() == INVALID_PIP_REF || !profileSystem.isParticleProfileLoaded(particle->getProfileID())) {
             invalidParticles++;
 			EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "invalid particle with particle profile reference ", particle->getProfileID(), " and spawner object profile reference ", particle->getSpawnerProfile());
             continue;
@@ -85,7 +88,7 @@ DebugParticlesScreen::DebugParticlesScreen()
 
     for(const auto &element : usageCount)
     {
-        const std::shared_ptr<ParticleProfile> &particleProfile = EngineContext::get().profileSystem().getParticleProfile(element.first);
+        const std::shared_ptr<ParticleProfile> &particleProfile = profileSystem.getParticleProfile(element.first);
 
         std::stringstream labelString;
         labelString << element.second << " particle" << ((element.second > 0) ? "s: " : ":");
@@ -98,7 +101,7 @@ DebugParticlesScreen::DebugParticlesScreen()
 
     for(const auto &element : terminatedCount)
     {
-        const std::shared_ptr<ParticleProfile> &particleProfile = EngineContext::get().profileSystem().getParticleProfile(element.first);
+        const std::shared_ptr<ParticleProfile> &particleProfile = profileSystem.getParticleProfile(element.first);
 
         std::stringstream labelString;
         labelString << element.second << " terminated particle" << ((element.second > 0) ? "s: " : ":");

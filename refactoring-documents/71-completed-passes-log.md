@@ -292,6 +292,32 @@ throughout.
   were re-pointed mid-lifetime, which nothing does. `EngineContext::get()`
   330 → 316 (total `::get()` 409 → 397). 22 test files updated to pass the
   installed services at their existing `AudioSystem::initialize()` sites.
+- Pass 319 (2026-07-21) consolidated EngineContext fetch clusters across the
+  six gamestate screens (`LoadingState`, `DebugModuleLoadingState`,
+  `DebugObjectLoadingState`, `MapEditorState`, `PlayingState`,
+  `DebugParticlesScreen`) — the Pass 316 within-function root idiom applied
+  to the gamestates archive. Design call recorded: this family cannot hold
+  service references as members (services are cleared before the state
+  stack is destroyed — the teardown ordering documented in
+  `PlayingState::~PlayingState`) and its virtual signatures come from the
+  gui-archive `GameState` base, so function-root locals are the endpoint
+  idiom here; deferred lambdas (the `LoadingState` start-button callback)
+  keep fetching at invoke time by design. The dominant clusters were the
+  loading screens' repeated `logTarget()` fetches spanning try/catch
+  handlers (7/5/4 → 1 each, hoisted above the `try`), `profileSystem` in
+  `DebugObjectLoadingState::loadObjectData` (3 → 1) and the
+  `DebugModuleLoadingState` ctor (2 → 1), `particleHandler` plus
+  `profileSystem` in the `DebugParticlesScreen` ctor, `cameraSystem` in
+  `MapEditorState::drawContainer`/`loadModuleData`, and the
+  `graphicsSystem`+`config` pairs in the `beginState` methods. Bonus:
+  removed `PlayingState`'s dead anonymous-namespace `audioSystem()` helper
+  (unused since the destructor moved to `tryAudioSystem`; eliminates a
+  pre-existing `-Wunused-function` warning). Zero signature changes;
+  behavior-identical singleton references. Family 65 → 44 lines;
+  `EngineContext::get()` 316 → 294 (total `::get()` 397 → 375). Remaining
+  sites are intentional residual: one-fetch-per-function singles, the
+  teardown-guarded destructor accesses, and the anonymous-namespace
+  `inputSystem()`/`audioSystem()` consolidators.
 
 ## Documentation Passes
 

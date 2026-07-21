@@ -337,13 +337,15 @@ void DebugObjectLoadingState::loadObjectData()
     }
     
     std::string objectPath = _toLoad.front()->_objectPath;
+    auto& profileSystem = EngineContext::get().profileSystem();
+    auto& logTarget = EngineContext::get().logTarget();
     try
     {
         singleThreadRedrawHack("Loading...");
         
-        ObjectProfileRef ref = EngineContext::get().profileSystem().loadOneProfile(objectPath, 0);
-        bool isValid = EngineContext::get().profileSystem().isLoaded(ref);
-        EngineContext::get().profileSystem().reset();
+        ObjectProfileRef ref = profileSystem.loadOneProfile(objectPath, 0);
+        bool isValid = profileSystem.isLoaded(ref);
+        profileSystem.reset();
         if (!isValid)
             throw std::string("Invalid profile ref returned, check log");
         
@@ -354,36 +356,36 @@ void DebugObjectLoadingState::loadObjectData()
     {
         std::string out = std::string("Ego::Exception: ") + ex.to_string();
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
-                                         "... ", out, Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+                  "... ", out, Log::EndOfEntry);
     }
     catch (std::exception &ex)
     {
         std::string out = std::string("std::exception: ") + ex.what();
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
-                                         "... ", out, Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+                  "... ", out, Log::EndOfEntry);
     }
     catch (std::string &ex)
     {
         std::string out = std::string("std::string: ") + ex;
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
-                                         "... ", out, Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+                  "... ", out, Log::EndOfEntry);
     }
     catch (char *ex)
     {
         std::string out = std::string("C string: ") + ex;
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
-                                         "... ", out, Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+                  "... ", out, Log::EndOfEntry);
     }
     catch (...)
     {
         std::string out = "unknown error";
         singleThreadRedrawHack(out);
-        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
-                                         "... ", out, Log::EndOfEntry);
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "error loading ", objectPath,
+                  "... ", out, Log::EndOfEntry);
     }
     _toLoad.pop_front();
 }
