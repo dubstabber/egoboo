@@ -26,7 +26,6 @@
 #include "egolib/game/game.h"
 #include "egolib/game/mesh.h"
 #include "egolib/Entities/_Include.hpp"
-#include "egolib/game/Module/Module.hpp"
 
 namespace
 {
@@ -38,8 +37,9 @@ void publishCrushedAlert(IScriptable& object)
 
 const ObjectRef Passage::SHOP_NOOWNER = ObjectRef::Invalid;
 
-Passage::Passage(GameModule &module, const int x0, const int y0, const int x1, const int y1, const uint8_t mask) :
-    _module(module),
+Passage::Passage(ego_mesh_t &mesh, ObjectHandler &objectHandler, const int x0, const int y0, const int x1, const int y1, const uint8_t mask) :
+    _mesh(mesh),
+    _objectHandler(objectHandler),
     _area(Ego::Point2f(x0 * Info<float>::Grid::Size(), y0 * Info<float>::Grid::Size()),
           Ego::Point2f((x1+1) * Info<float>::Grid::Size(), (y1+1) * Info<float>::Grid::Size())),
     _music(NO_MUSIC),
@@ -52,7 +52,7 @@ Passage::Passage(GameModule &module, const int x0, const int y0, const int x1, c
     //Build the list of all tiles contained within this passage
     for (int y = y0; y <= y1; ++y) {
         for (int x = x0; x <= x1; ++x) {
-            _passageFans.push_back(module.getTileIndex(Index2D(x, y)));
+            _passageFans.push_back(mesh.getTileIndex(Index2D(x, y)));
         }
     }
 }
@@ -72,7 +72,7 @@ void Passage::open()
 
     //clear impassable and wall bits
     for(const Index1D &fan : _passageFans) {
-        _module.getMeshPointer()->clear_fx(fan, MAPFX_WALL | MAPFX_IMPASS);
+        _mesh.clear_fx(fan, MAPFX_WALL | MAPFX_IMPASS);
     }
 }
 
@@ -91,7 +91,7 @@ bool Passage::close()
     // check to see if a wall can close
     if (0 != HAS_SOME_BITS(_mask, MAPFX_IMPASS | MAPFX_WALL))
     {
-        ObjectHandler& objectHandler = _module.getObjectHandler();
+        ObjectHandler& objectHandler = _objectHandler;
         std::vector<ObjectRef> crushedCharacters;
 
         // Make sure it isn't blocked
@@ -139,7 +139,7 @@ bool Passage::close()
     // Close it off
     _open = false;
     for(const Index1D &fan : _passageFans) {
-        _module.getMeshPointer()->add_fx(fan, _mask);
+        _mesh.add_fx(fan, _mask);
     }
  
     return true;    
@@ -153,7 +153,7 @@ bool Passage::objectIsInPassage(const IPhysical& object) const
 ObjectRef Passage::whoIsBlockingPassage( ObjectRef objRef, const IDSZ2& idsz, const BIT_FIELD targeting_bits, const IDSZ2& require_item ) const
 {
     // Skip if the one who is looking doesn't exist
-    ObjectHandler& objectHandler = _module.getObjectHandler();
+    ObjectHandler& objectHandler = _objectHandler;
     if ( !objectHandler.exists(objRef) ) return ObjectRef::Invalid;
     Object *psrc = objectHandler.get(objRef);
 
@@ -222,7 +222,7 @@ void Passage::flashColor(uint8_t color)
 {
     for(const Index1D &fan : _passageFans)
     {
-        ego_tile_info_t& ptile = _module.getMeshPointer()->getTileInfo(fan);
+        ego_tile_info_t& ptile = _mesh.getTileInfo(fan);
 
         for (size_t cnt = 0; cnt < 4; ++cnt)
         {
@@ -275,7 +275,7 @@ ObjectRef Passage::getShopOwner() const {
 
 void Passage::makeShop(ObjectRef owner)
 {
-    ObjectHandler& objectHandler = _module.getObjectHandler();
+    ObjectHandler& objectHandler = _objectHandler;
 
     //Make sure owner is valid
     const Object* powner = objectHandler.get(owner);

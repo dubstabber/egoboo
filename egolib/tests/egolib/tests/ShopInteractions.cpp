@@ -168,7 +168,7 @@ protected:
 
     std::shared_ptr<Passage> addShopPassage(GameModule& module, const std::shared_ptr<Object>& owner) const
     {
-        auto passage = std::make_shared<Passage>(module, 0, 0, 1, 1, EMPTY_BIT_FIELD);
+        auto passage = std::make_shared<Passage>(*module.getMeshPointer(), module.getObjectHandler(), 0, 0, 1, 1, EMPTY_BIT_FIELD);
         module._passages.push_back(passage);
         passage->makeShop(owner->getObjRef());
         return passage;
@@ -180,7 +180,7 @@ std::unique_ptr<ContentRuntimeBootstrap> ShopFixture::s_runtime;
 TEST_F(ShopFixture, MakeShopIgnoresInvalidOrMissingOwnerRefs)
 {
     auto& module = beginActiveTestModule();
-    Passage passage(module, 0, 0, 1, 1, EMPTY_BIT_FIELD);
+    Passage passage(*module.getMeshPointer(), module.getObjectHandler(), 0, 0, 1, 1, EMPTY_BIT_FIELD);
 
     passage.makeShop(ObjectRef::Invalid);
     EXPECT_FALSE(passage.isShop());
@@ -207,7 +207,7 @@ TEST_F(ShopFixture, MakeShopMarksInPassageItemsAsShopInventory)
     item->setNameKnown(false);
     flushObjectHandler(module);
 
-    Passage passage(module, 0, 0, 1, 1, EMPTY_BIT_FIELD);
+    Passage passage(*module.getMeshPointer(), module.getObjectHandler(), 0, 0, 1, 1, EMPTY_BIT_FIELD);
     passage.makeShop(owner->getObjRef());
 
     EXPECT_TRUE(passage.isShop());

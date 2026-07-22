@@ -264,7 +264,7 @@ TEST_F(GameplayAlertPublicationFixture, ClosingPassagePublishesCrushedAlert)
     occupant->setPosition(64.0f, 64.0f, 0.0f);
     flushObjectHandler(module);
 
-    Passage passage(module, 0, 0, 1, 1, MAPFX_IMPASS);
+    Passage passage(*module.getMeshPointer(), module.getObjectHandler(), 0, 0, 1, 1, MAPFX_IMPASS);
     EXPECT_TRUE(passage.close());
     EXPECT_TRUE(occupant->hasAnyAIAlertBits(ALERTIF_CRUSHED));
 }

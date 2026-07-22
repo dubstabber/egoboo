@@ -74,7 +74,7 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
         _fog,
         _animatedTilesState,
         _mesh,
-        *this,
+        _gameObjects,
         _passages
     };
 

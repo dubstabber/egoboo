@@ -89,7 +89,7 @@ void loadProfiles(GameModuleRuntime& runtime, const ModuleProfile& moduleProfile
     loadModuleProfiles(moduleProfile.getPath(), profileSystem);
 }
 
-void loadPassages(GameModule& module, const ego_mesh_t& mesh, std::vector<std::shared_ptr<Passage>>& passages)
+void loadPassages(ego_mesh_t& mesh, ObjectHandler& objectHandler, std::vector<std::shared_ptr<Passage>>& passages)
 {
     // Reset all of the old passages
     passages.clear();
@@ -119,7 +119,7 @@ void loadPassages(GameModule& module, const ego_mesh_t& mesh, std::vector<std::s
         if (ctxt->readBool()) mask = MAPFX_IMPASS;
         if (ctxt->readBool()) mask = MAPFX_SLIPPY;
 
-        std::shared_ptr<Passage> passage = std::make_shared<Passage>(module, x0, y0, x1, y1, mask);
+        std::shared_ptr<Passage> passage = std::make_shared<Passage>(mesh, objectHandler, x0, y0, x1, y1, mask);
 
         //check if we need to close the passage
         if (!open) {

@@ -31,7 +31,8 @@
 class IAudioSystem;
 class Object;
 class IPhysical;
-class GameModule;
+class ObjectHandler;
+class ego_mesh_t;
 
 class Passage
 {
@@ -57,8 +58,11 @@ public:
 
 	/**
 	* @brief Constructor
+	* @param mesh the mesh this passage queries and modifies (wall/impass bits, tile lighting)
+	* @param objectHandler the object world this passage checks for blockers and shop items
+	* The caller must guarantee both outlive this passage.
 	**/
-	Passage(GameModule& module, const int x0, const int y0, const int x1, const int y1, const uint8_t mask);
+	Passage(ego_mesh_t& mesh, ObjectHandler& objectHandler, const int x0, const int y0, const int x1, const int y1, const uint8_t mask);
 
 	/**
 	* @brief returns true if this passage is currently open (not impassable)
@@ -132,7 +136,8 @@ public:
     const Ego::AxisAlignedBox2f& getAxisAlignedBox2f() const;
 
 private:
-    GameModule& _module;			   ///< Reference to the module we are inside
+    ego_mesh_t& _mesh;				   ///< The mesh this passage queries and modifies
+    ObjectHandler& _objectHandler;	   ///< The object world this passage checks for blockers
 
     Ego::AxisAlignedBox2f _area;	   ///< Passage area
     int32_t _music;   				   ///< Music track appointed to the specific passage

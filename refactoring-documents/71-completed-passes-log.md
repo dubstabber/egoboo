@@ -467,6 +467,25 @@ throughout.
   955/955, validator full 42/10/245 + test.mod 0/0, nm clean — the
   module-construction fixtures (ModuleUpdate, ShopInteractions,
   ImportWorkflow, ScriptRuntime, …) exercise the real load path.
+- Pass 327 (2026-07-22) — T1.3 follow-on: narrowed `Passage`'s stored
+  dependency from `GameModule&` to `ego_mesh_t&` + `ObjectHandler&`.
+  All seven `_module` uses mapped to exactly those two members: mesh
+  (tile-index build in the constructor, `clear_fx`/`add_fx` in
+  open/close, `getTileInfo` in flashColor) and object handler
+  (close-blocker scan, `whoIsBlockingPassage`, `makeShop`). The
+  `ModuleLoadContext::module` field became `objectHandler`
+  (`GameModule::_gameObjects`), so no load step references the module
+  object anymore; `loadPassages` takes `(ego_mesh_t&, ObjectHandler&,
+  passages&)`. Lifetime envelope unchanged: both referents are
+  `GameModule` members that the passage list never outlives (and a
+  script-held `shared_ptr<Passage>` past module teardown was equally
+  dangling via the old `_module` reference). Six direct `Passage`
+  constructions in four test files updated to
+  `(*module.getMeshPointer(), module.getObjectHandler(), …)`.
+  **Scout lesson: construction-site sweeps must include `egolib/tests`
+  — the initial library-only grep missed all six test call sites.**
+  Gate: build green, ctest 955/955, validator full 42/10/245 +
+  test.mod 0/0, nm clean.
 
 ## Documentation Passes
 

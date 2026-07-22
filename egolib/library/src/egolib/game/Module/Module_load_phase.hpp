@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-class GameModule;
 class IProfileSystem;
 class ModuleProfile;
+class ObjectHandler;
 class Passage;
 class Team;
 class ego_mesh_t;
@@ -38,15 +38,13 @@ struct ModuleLoadContext
     fog_instance_t& fog;
     AnimatedTilesState& animatedTilesState;
     std::shared_ptr<ego_mesh_t>& mesh;
-    /// The module under construction. Needed only because Passage stores a reference to
-    /// its owning module; narrowing that Passage dependency would remove this field.
-    GameModule& module;
+    ObjectHandler& objectHandler;
     std::vector<std::shared_ptr<Passage>>& passages;
 };
 
 /// Content-loading steps with explicit inputs (bodies in Module_loading.cpp).
 void loadProfiles(GameModuleRuntime& runtime, const ModuleProfile& moduleProfile);
-void loadPassages(GameModule& module, const ego_mesh_t& mesh, std::vector<std::shared_ptr<Passage>>& passages);
+void loadPassages(ego_mesh_t& mesh, ObjectHandler& objectHandler, std::vector<std::shared_ptr<Passage>>& passages);
 void loadTeamAlliances(std::vector<Team>& teamList);
 void logSlotUsage(IProfileSystem& profileSystem, const std::string& savename);
 

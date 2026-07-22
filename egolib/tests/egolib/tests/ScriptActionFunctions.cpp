@@ -608,7 +608,7 @@ protected:
     std::pair<std::shared_ptr<Passage>, int> addPassage(GameModule& module,
                                                         uint8_t mask = EMPTY_BIT_FIELD) const
     {
-        auto passage = std::make_shared<Passage>(module, 0, 0, 4, 4, mask);
+        auto passage = std::make_shared<Passage>(*module.getMeshPointer(), module.getObjectHandler(), 0, 0, 4, 4, mask);
         module._passages.push_back(passage);
         return {passage, static_cast<int>(module._passages.size() - 1)};
     }

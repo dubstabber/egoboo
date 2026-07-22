@@ -115,7 +115,7 @@ void ModuleLoadPhase::loadContent()
     _context.mesh = meshLoader(_context.moduleProfile->getPath());
 
     // Load passage.txt.
-    loadPassages(_context.module, *_context.mesh, _context.passages);
+    loadPassages(*_context.mesh, _context.objectHandler, _context.passages);
 
     // Load alliance.txt.
     loadTeamAlliances(_context.teamList);
