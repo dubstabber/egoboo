@@ -38,7 +38,7 @@ The original phase plan, with where each phase actually stands:
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 Baseline freeze | Canonical build docs, source-scope rules, portability capture | **Done** — `doc/build-linux.md`, `doc/build-windows.md`, these docs |
-| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 968 ctest cases |
+| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 972 ctest cases |
 | 2 Context extraction | Retire raw globals behind explicit contexts | **Done** — `_gameEngine`/`_currentModule`/`update_wld` gone from active code |
 | 3 Engine/gameplay service split | Real boundaries between platform services, content, session, presentation | **Largely done** — nine-archive acyclic DAG, active `I*` seams, composition-root bootstraps; constructor injection is the remaining frontier |
 | 4 File/subsystem decomposition | Break oversized hotspots | **Done for production code** — zero runtime files over 1,000 lines; mechanical split fronts are substantially exhausted |
@@ -123,10 +123,15 @@ The original phase plan, with where each phase actually stands:
   and narrowing helper dependencies as role surfaces improve. Coverage gap
   measured 2026-07-22 at ~110 `scr_*` functions with zero test references;
   Pass 330 closed the entire 32-function alert-check family
-  (`script_functions_alerts.c`, `ScriptAlertFunctions.cpp`), leaving 78 —
-  continue in bounded family slices (locomotion family next: `scr_Run`/
-  `Walk`/`Sneak`/`Stop`/`KeepAction`/`UnkeepAction`) reusing the existing
-  script-function harnesses.
+  (`script_functions_alerts.c`, `ScriptAlertFunctions.cpp`) and Pass 331
+  closed the locomotion family (`scr_Run`/`Walk`/`Sneak`/`Stop` +
+  `scr_KeepAction`/`UnkeepAction`, `ScriptLocomotionFunctions.cpp`),
+  leaving 72 — continue in bounded family slices (next candidates: the
+  speech-set family in `script_functions_action.c` — `scr_SetSpeech`,
+  `SetMoveSpeech`, `SetSecondMoveSpeech`, `SetAttackSpeech`,
+  `SetAssistSpeech`, `SetTerrainSpeech`, `SetSelectSpeech` — plus
+  `CallForHelp`/`DoActionOverride`/`ShowTimer` to finish that TU) reusing
+  the existing script-function harnesses.
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler

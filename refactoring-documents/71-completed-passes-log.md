@@ -561,6 +561,20 @@ throughout.
   Test-only pass (no production sources touched), so the validator
   baseline is unaffected by construction. Gate: build green, ctest
   968/968 (963 + 5).
+- Pass 331 (2026-07-22) — T3.3 dispatch-coverage slice: the locomotion
+  family, in new `ScriptLocomotionFunctions.cpp` (4 tests, standard
+  fixture). The four maxSpeed setters
+  (`script_functions_movement_locomotion.c` — the TU's other 8 functions
+  were already covered) are pinned as exact fractions written to the
+  script runtime's `ai_state_t::maxSpeed`: Run 1.0, Walk 0.66, Sneak
+  0.33, Stop 0.0 — and as no-ops (false return, maxSpeed untouched) for
+  an unresolved self. `scr_KeepAction`/`scr_UnkeepAction`
+  (`script_functions_action.c`) are pinned against the object's
+  animation freeze flag (`ObjectGraphics::_freezeAtLastFrame`, read via
+  the existing `ObjectGraphicsTestAccess` helper): keep sets it, unkeep
+  clears it, and neither touches any object when self is unresolved.
+  Untested `scr_*` count: 78 → 72. Test-only pass; validator baseline
+  unaffected by construction. Gate: build green, ctest 972/972 (968 + 4).
 
 ## Documentation Passes
 
