@@ -28,7 +28,6 @@
 #include "egolib/Entities/_Include.hpp"
 #include "egolib/Entities/IObjectWorld.hpp"
 #include "egolib/game/Core/GameEngine.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/game/CharacterMatrix.h"
 #include "egolib/Graphics/VertexFormat.hpp"
@@ -114,7 +113,8 @@ std::shared_ptr<Billboard> BillboardSystem::makeBillboard(::Time::Seconds lifeti
     return billboard;
 }
 
-BillboardSystem::BillboardSystem() :
+BillboardSystem::BillboardSystem(Renderer& renderer) :
+    _renderer(renderer),
     _billboardList(),
     vertexDescriptor(Ego::descriptor_factory<idlib::vertex_format::P3FT2F>()()),
     vertexBuffer(Ego::activeVideoBufferManager().create_vertex_buffer(4, vertexDescriptor.get_size()))
@@ -187,12 +187,11 @@ bool BillboardSystem::render_one(Billboard& billboard, const Vector3f& cameraUp,
     }
 
     {
-        auto& renderer = EngineContext::get().renderer();
-        renderer.setColour(billboard._tint);
-        renderer.getTextureUnit().setActivated(texture);
+        _renderer.setColour(billboard._tint);
+        _renderer.getTextureUnit().setActivated(texture);
 
         // Go on and draw it
-        renderer.render(*vertexBuffer, vertexDescriptor, idlib::primitive_type::quadriliterals, 0, 4);
+        _renderer.render(*vertexBuffer, vertexDescriptor, idlib::primitive_type::quadriliterals, 0, 4);
     }
 
     return true;
@@ -204,7 +203,7 @@ void BillboardSystem::render_all(::Camera& camera)
     {
         OpenGL::PushAttrib pa(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
         {
-            auto& renderer = EngineContext::get().renderer();
+            auto& renderer = _renderer;
             // Do not write an incoming fragments depth value into the depth buffer.
             renderer.setDepthWriteEnabled(false);
 
@@ -245,13 +244,13 @@ std::shared_ptr<Billboard> BillboardSystem::makeBillboard(ObjectRef obj_ref, con
     std::shared_ptr<Texture> tex;
     try
     {
-        tex = EngineContext::get().renderer().createTexture();
+        tex = _renderer.createTexture();
     }
     catch (...)
     {
         return nullptr;
     }
-    EngineContext::get().uiManager().getFloatingTextFont()->drawTextToTexture(tex.get(), text, Ego::Colour3f(textColor.get_r(), textColor.get_g(), textColor.get_b()));
+    Ego::GUI::activeUIManager().getFloatingTextFont()->drawTextToTexture(tex.get(), text, Ego::Colour3f(textColor.get_r(), textColor.get_g(), textColor.get_b()));
     tex->setName("billboard text");
 
     // Create a new billboard.

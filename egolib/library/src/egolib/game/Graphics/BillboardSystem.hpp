@@ -32,8 +32,9 @@
 namespace Ego { class Texture; }
 class Object;
 class Camera;
-namespace Ego { 
-class Font; 
+namespace Ego {
+class Font;
+class Renderer;
 namespace Graphics {
 struct Billboard;
 }
@@ -45,7 +46,10 @@ namespace Graphics {
 class BillboardSystem : public IBillboardSystem
 {
 public:
-    BillboardSystem();
+    /// @brief Construct this billboard system.
+    /// @param renderer the renderer this system draws with; the caller must
+    /// guarantee it outlives this system
+    explicit BillboardSystem(Renderer& renderer);
     virtual ~BillboardSystem();
 public:
     bool render_one(Billboard& billboard, const Vector3f& cam_up, const Vector3f& cam_rgt);
@@ -55,6 +59,8 @@ public:
     bool hasBillboard(const Object& object) const;
 
 private:
+    // The renderer this billboard system draws with.
+    Renderer& _renderer;
     // List of used billboards.
     std::list<std::shared_ptr<Billboard>> _billboardList;
     // A vertex type used by the billboard system.

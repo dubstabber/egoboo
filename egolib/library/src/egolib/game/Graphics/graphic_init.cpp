@@ -89,7 +89,10 @@ void GFX::renderBillboards(Camera& camera)
 
 GameAppImpl::GameAppImpl() :
     dynalist(),
-    billboardSystem(std::make_unique<Ego::Graphics::BillboardSystem>()),
+    // The renderer is resolved here, at the composition root: the App base has already
+    // installed it by the time this GameApp member constructs, and it is uninitialized
+    // only after this member is destroyed (~GameAppImpl runs before ~AppImpl).
+    billboardSystem(std::make_unique<Ego::Graphics::BillboardSystem>(EngineContext::get().renderer())),
     modelVertexBuffer(std::make_unique<Ego::Graphics::DefaultModelVertexBuffer>())
 {
     // Initialize the texture atlas manager.

@@ -398,6 +398,26 @@ throughout.
   `cartman/CMakeLists.txt` still links only `egolib-library` — this pass
   neither caused nor fixed that. `EngineContext::get()` 285 → 278 (total
   `::get()` 366 → 359).
+- Pass 324 (2026-07-22) constructor-injected `Ego::Renderer&` into
+  `BillboardSystem` — the fourth injected engine service. Both blocker
+  checks pass: every test uses an `IBillboardSystem` stub (the real class
+  is never constructed in tests, so the signature change causes zero
+  fixture churn), and C++ base-before-member ordering bounds the
+  lifetime — the `App` base (`AppImpl`) installs the renderer before the
+  `GameApp` member (`GameAppImpl`) constructs the billboard system, and
+  destruction exactly reverses that, so the injected reference provably
+  outlives the system (contrast `CameraSystem`, whose singleton is never
+  uninitialized). The renderer is resolved once in the `GameAppImpl`
+  composition constructor. The fourth site —
+  `EngineContext::get().uiManager()` for the floating-text font — was
+  moved onto the GUI-layer `Ego::GUI::activeUIManager()` seam instead of
+  being injected, because the `UIManager` lifetime is *not* nested in the
+  billboard system's (created after the graphics bootstrap, destroyed
+  before its teardown); the seam header documents both paths resolve the
+  same instance in the running engine. `BillboardSystem.cpp` 4 → 0 sites
+  and no longer includes `game/Core/EngineContext.hpp`;
+  `graphic_init.cpp` 10 → 11 (intentional composition-root resolve).
+  `EngineContext::get()` 278 → 275 (total `::get()` 359 → 356).
 - Pass 323 (2026-07-22) repointed cartman's link from `egolib-library` to
   `egolib-game-graphics`, restoring the gated cartman build: the
   `Ego::App`/`AppImpl` application base that `Cartman::GFX` derives from
