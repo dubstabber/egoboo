@@ -32,6 +32,7 @@
 #include "egolib/game/mesh.h"
 #include "egolib/game/Module/AnimatedTiles.hpp"
 #include "egolib/game/Module/Fog.hpp"
+#include "egolib/game/Module/Pits.hpp"
 #include "egolib/game/Module/Water.hpp"
 #include "egolib/game/Module/Weather.hpp"
 #include "egolib/game/Module/module_spawn.h"
@@ -63,8 +64,6 @@ class GameModule : private idlib::non_copyable,
                    public IModuleStatus
 {
 public:
-    static constexpr float PITDEPTH = -60;  ///< Depth to kill character
-
     /**
      * @brief
      *  Prepeares a module to be played
@@ -311,30 +310,6 @@ private:
     void updateModuleSimulation();
     void finalizeModuleUpdate();
 
-    /// @author ZF
-    /// @details This function checks all passages if there is a player in it, if it is, it plays a specified
-    /// song set in by the AI script functions
-    void checkPassageMusic();
-
-    /**
-    * @brief
-    *   Update all active objects in the module
-    **/
-    void updateAllObjects();
-
-    /**
-    * @brief
-    *   This function kills any character in a deep pit...
-    **/
-    void updatePits();
-
-    /**
-    * @brief
-    *   This makes tiles flagged as damage tiles hurt any characters standing on 
-    *   top of them
-    **/
-    void updateDamageTiles();
-
     /**
     * @brief
     *   This function sets all of the character's starting tilt values
@@ -348,9 +323,6 @@ private:
     ObjectRef spawnObjectFromFileEntry(const spawn_file_info_t& psp_info, ObjectRef parentRef);
 
 private:
-    static constexpr uint32_t PIT_CLOCK_RATE = 20;  ///< How many game ticks between each pit check
-    static constexpr uint32_t DAMAGETILETIME = 32;  ///< Invincibility time
-
     GameModuleRuntime _runtime;
     bool _runtimeShutdown;
     const std::shared_ptr<ModuleProfile> _moduleProfile;
@@ -380,9 +352,5 @@ private:
     std::array<Ego::DeferredTexture, 4> _tileTextures;
     std::array<Ego::DeferredTexture, 2> _waterTextures;
 
-    //Pit Info
-    uint32_t _pitsClock;
-    bool _pitsKill;              ///< Do they kill?
-    bool _pitsTeleport;          ///< Do they teleport?
-    Ego::Vector3f _pitsTeleportPos;   ///< If they teleport, then where to?
+    PitsState _pits;             ///< Kill/teleport pit state.
 };

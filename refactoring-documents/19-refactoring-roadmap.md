@@ -62,15 +62,19 @@ The original phase plan, with where each phase actually stands:
   injection where a call path already has the dependency; do not add new
   hidden globals. Remove remaining low-count direct singleton calls where a
   service seam already exists.
-- **T1.3 `GameModule` ownership.** `GameModule` still mixes world ownership
-  with loading and update logic. `ModuleLoadPhase`/`ModuleLoadContext` and the
-  `GameModuleRuntime` provider are in place, and as of Passes 326-327 the load
-  context carries only explicit narrow inputs — the four `std::function`
-  callbacks were converted to `module_loading` free functions, the load
-  helpers left `GameModule` entirely, and `Passage` now stores
-  `ego_mesh_t&` + `ObjectHandler&` instead of `GameModule&` (no load step
-  references the module object anymore). Update logic (`Module_update.cpp`)
-  is the remaining half still on the class.
+- **T1.3 `GameModule` ownership.** `GameModule` now owns the world and
+  orchestrates; the logic halves have left the class.
+  `ModuleLoadPhase`/`ModuleLoadContext` and the `GameModuleRuntime` provider
+  are in place; as of Passes 326-327 the load helpers are `module_loading`
+  free functions with explicit narrow inputs and `Passage` stores
+  `ego_mesh_t&` + `ObjectHandler&` (no load step references the module
+  object); as of Pass 328 the per-update steps are `module_update` free
+  functions and a `PitsState` env-state struct with explicit inputs (no
+  update step references the module object either — only the object
+  handler, mesh, damage-tile config, and services). Remaining on the class
+  beyond ownership/orchestration: the spawn realization family
+  (`Module_spawn*.cpp`), a candidate for the same treatment if it proves
+  narrower than the class.
 - **T1.4 Error-handling policy.** `doc/error-handling-policy.md` is the active
   target. New code must not add silent failures; migrate the mixed
   exception/boolean/null-return styles only in bounded subsystem passes with

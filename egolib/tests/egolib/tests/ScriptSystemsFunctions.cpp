@@ -789,11 +789,11 @@ TEST_F(ScriptSystemsFunctionsFixture, PitsFallEnablesTeleportInsidePitBounds)
     module.enablePitsKill();
 
     EXPECT_TRUE(scr_PitsFall(state, self));
-    EXPECT_TRUE(module._pitsTeleport);
-    EXPECT_FALSE(module._pitsKill);
-    EXPECT_FLOAT_EQ(module._pitsTeleportPos.x(), static_cast<float>(state.x));
-    EXPECT_FLOAT_EQ(module._pitsTeleportPos.y(), static_cast<float>(state.y));
-    EXPECT_FLOAT_EQ(module._pitsTeleportPos.z(), static_cast<float>(state.distance));
+    EXPECT_TRUE(module._pits.teleport);
+    EXPECT_FALSE(module._pits.kill);
+    EXPECT_FLOAT_EQ(module._pits.teleportPos.x(), static_cast<float>(state.x));
+    EXPECT_FLOAT_EQ(module._pits.teleportPos.y(), static_cast<float>(state.y));
+    EXPECT_FLOAT_EQ(module._pits.teleportPos.z(), static_cast<float>(state.distance));
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, PitsFallEnablesKillOutsidePitBounds)
@@ -812,8 +812,8 @@ TEST_F(ScriptSystemsFunctionsFixture, PitsFallEnablesKillOutsidePitBounds)
     module.enablePitsTeleport(Ego::Vector3f(1.0f, 2.0f, 3.0f));
 
     EXPECT_TRUE(scr_PitsFall(state, self));
-    EXPECT_FALSE(module._pitsTeleport);
-    EXPECT_TRUE(module._pitsKill);
+    EXPECT_FALSE(module._pits.teleport);
+    EXPECT_TRUE(module._pits.kill);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, FollowLinkReturnsFalseForInvalidMessageIdWithoutInvokingLinkFollow)
@@ -1133,8 +1133,8 @@ TEST_F(ScriptSystemsFunctionsFixture, ModuleEnvironmentHelpersPreserveWaterFogAn
 
     module.enablePitsTeleport(Ego::Vector3f(1.0f, 2.0f, 3.0f));
     EXPECT_TRUE(scr_PitsKill(state, self));
-    EXPECT_FALSE(module._pitsTeleport);
-    EXPECT_TRUE(module._pitsKill);
+    EXPECT_FALSE(module._pits.teleport);
+    EXPECT_TRUE(module._pits.kill);
 }
 
 TEST_F(ScriptSystemsFunctionsFixture, AddIDSZPublishesExpansionToActiveModuleMenu)

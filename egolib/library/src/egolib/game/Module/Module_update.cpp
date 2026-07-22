@@ -18,9 +18,10 @@
 //********************************************************************************************
 
 /// @file egolib/game/Module/Module_update.cpp
-/// @brief GameModule per-frame services, simulation, and terrain update helpers.
+/// @brief Per-update simulation steps with explicit inputs, and the GameModule update orchestrator.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Module/Module_update.hpp"
 #include "egolib/Audio/IAudioSystem.hpp"
 #include "egolib/Entities/IParticleHandler.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
@@ -55,10 +56,15 @@ int applyTerrainDamage(IDamageable& target, const IPair& damage, DamageType dama
 }
 }
 
-void GameModule::checkPassageMusic()
+namespace module_update
+{
+
+void checkPassageMusic(const std::vector<std::shared_ptr<Ego::Player>>& players,
+                       const std::vector<std::shared_ptr<Passage>>& passages,
+                       IAudioSystem& audioSystem)
 {
     // Look at each player
-    for (const std::shared_ptr<Ego::Player> &player : _playerList)
+    for (const std::shared_ptr<Ego::Player> &player : players)
     {
         Object* pchr = tryObservedPlayerObject(player);
         if (!pchr) continue;
@@ -69,9 +75,9 @@ void GameModule::checkPassageMusic()
         if (pchr->isBeingHeld()) continue;
 
         //Loop through every passage
-        for (const std::shared_ptr<Passage>& passage : _passages)
+        for (const std::shared_ptr<Passage>& passage : passages)
         {
-            if (passage->checkPassageMusic(*pchr, _runtime.audioSystem()))
+            if (passage->checkPassageMusic(*pchr, audioSystem))
             {
                 return;
             }
@@ -79,11 +85,9 @@ void GameModule::checkPassageMusic()
     }
 }
 
-void GameModule::updateAllObjects()
+void updateAllObjects(ObjectHandler& objectHandler, uint32_t currentUpdateFrame,
+                      uint32_t& characterStatClock)
 {
-    const uint32_t currentUpdateFrame = _runtime.worldUpdateCount();
-    ObjectHandler& objectHandler = getObjectHandler();
-
     for (const ObjectRef& objectRef : objectHandler.objectRefIterator())
     {
         Object* object = objectHandler.get(objectRef);
@@ -111,108 +115,18 @@ void GameModule::updateAllObjects()
     }
 
     // Reset the clock
-    if (_runtime.characterStatClock() >= ONESECOND) {
-        _runtime.characterStatClock() -= ONESECOND;
+    if (characterStatClock >= ONESECOND) {
+        characterStatClock -= ONESECOND;
     }
 }
 
-void GameModule::updatePits()
+void updateDamageTiles(ObjectHandler& objectHandler, const ego_mesh_t& mesh,
+                       const damagetile_instance_t& damageTile,
+                       IParticleHandler& particleHandler, uint32_t currentUpdateFrame)
 {
-    //Are pits enabled?
-    if (!_pitsKill && !_pitsTeleport) {
-        return;
-    }
-
-    //Decrease the timer
-    if (_pitsClock > 0) {
-        _pitsClock--;
-    }
-
-    if (0 == _pitsClock)
-    {
-        //Reset timer
-        _pitsClock = PIT_CLOCK_RATE;
-
-        // Kill any particles that fell in a pit, if they die in water...
-        for (const std::shared_ptr<Ego::Particle> &particle : _runtime.particleHandler().iterator()) {
-            if (particle->getPosZ() < PITDEPTH && particle->getProfile()->end_water)
-            {
-                particle->requestTerminate();
-            }
-        }
-
-        // Kill or teleport any characters that fell in a pit...
-        for (const ObjectRef& objectRef : _gameObjects.objectRefIterator()) {
-            Object* pchr = _gameObjects.get(objectRef);
-            if (pchr == nullptr)
-            {
-                continue;
-            }
-
-            IDamageable& damageable = *pchr;
-
-            // Is it a valid character?
-            if (damageable.isInvincible() || !damageable.isAlive()) continue;
-            if (pchr->isBeingHeld()) continue;
-
-            // Do we kill it?
-            if (_pitsKill && pchr->getPosZ() < PITDEPTH)
-            {
-                // Got one!
-                damageable.kill(ObjectAttribution(), false);
-                pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
-            }
-
-            // Do we teleport it?
-            else if (_pitsTeleport && pchr->getPosZ() < PITDEPTH * 4)
-            {
-                // Teleport them back to a "safe" spot
-                if (!pchr->teleport(_pitsTeleportPos, pchr->getFacingZ())) {
-                    // Kill it instead
-                    damageable.kill(ObjectAttribution(), false);
-                    pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
-                }
-                else {
-                    // Stop movement
-                    pchr->setVelocity(idlib::zero<Ego::Vector3f>());
-
-                    // Play sound effect
-                    if (pchr->isPlayer()) {
-                        _runtime.audioSystem().playSoundFull(_runtime.audioSystem().getGlobalSound(GSND_PITFALL));
-                    }
-                    else {
-                        _runtime.audioSystem().playSound(pchr->getPosition(), _runtime.audioSystem().getGlobalSound(GSND_PITFALL));
-                    }
-
-                    // Do some damage (same as damage tile)
-                    applyTerrainDamage(damageable, _damageTile.amount, static_cast<DamageType>(_damageTile.damagetype),
-                                       terrainDamageAttribution(_gameObjects, pchr->getAIBumped()), false);
-                }
-            }
-        }
-    }
-}
-
-void GameModule::enablePitsTeleport(const Ego::Vector3f &location)
-{
-    _pitsTeleportPos = location;
-    _pitsTeleport = true;
-    _pitsKill = false;
-}
-
-void GameModule::enablePitsKill()
-{
-    _pitsTeleport = false;
-    _pitsKill = true;
-}
-
-void GameModule::updateDamageTiles()
-{
-    const uint32_t currentUpdateFrame = _runtime.worldUpdateCount();
-
     // do the damage tile stuff
-    for (const ObjectRef& objectRef : _gameObjects.objectRefIterator()) {
-        Object* pchr = _gameObjects.get(objectRef);
+    for (const ObjectRef& objectRef : objectHandler.objectRefIterator()) {
+        Object* pchr = objectHandler.get(objectRef);
         if (pchr == nullptr)
         {
             continue;
@@ -228,8 +142,8 @@ void GameModule::updateDamageTiles()
         if (pchr->isInsideInventory()) continue;
 
         // are we on a damage tile?
-        if (!_mesh->grid_is_valid(pchr->getTile())) continue;
-        if (0 == _mesh->test_fx(pchr->getTile(), MAPFX_DAMAGE)) continue;
+        if (!mesh.grid_is_valid(pchr->getTile())) continue;
+        if (0 == mesh.test_fx(pchr->getTile(), MAPFX_DAMAGE)) continue;
 
         // are we low enough?
         if (pchr->getPosZ() > pchr->getFloorElevation() + DAMAGERAISE) continue;
@@ -238,7 +152,7 @@ void GameModule::updateDamageTiles()
         // but make the tolerance closer so that books won't burn so easily
         if (!pchr->isBeingHeld() || pchr->getPosZ() < pchr->getFloorElevation() + DAMAGERAISE)
         {
-            if (constDamageable.getReaffirmDamageType() == _damageTile.damagetype)
+            if (constDamageable.getReaffirmDamageType() == damageTile.damagetype)
             {
                 if (0 == (currentUpdateFrame & TILE_REAFFIRM_AND))
                 {
@@ -255,17 +169,120 @@ void GameModule::updateDamageTiles()
 
         if (0 == constDamageable.getDamageTimer())
         {
-            int actual_damage = applyTerrainDamage(damageable, _damageTile.amount,
-                                                   static_cast<DamageType>(_damageTile.damagetype),
+            int actual_damage = applyTerrainDamage(damageable, damageTile.amount,
+                                                   static_cast<DamageType>(damageTile.damagetype),
                                                    ObjectAttribution(static_cast<TEAM_REF>(Team::TEAM_DAMAGE)), false);
 
             damageable.setDamageTimer(DAMAGETILETIME);
 
-            if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != _damageTile.part_gpip) && 0 == (currentUpdateFrame & _damageTile.partand)) {
-                _runtime.particleHandler().spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, _damageTile.part_gpip, 0);
+            if ((actual_damage > 0) && (LocalParticleProfileRef::Invalid != damageTile.part_gpip) && 0 == (currentUpdateFrame & damageTile.partand)) {
+                particleHandler.spawnGlobalParticle(pchr->getPosition(), ATK_FRONT, damageTile.part_gpip, 0);
             }
         }
     }
+}
+
+} // namespace module_update
+
+void PitsState::enableTeleport(const Ego::Vector3f& location)
+{
+    teleportPos = location;
+    teleport = true;
+    kill = false;
+}
+
+void PitsState::enableKill()
+{
+    teleport = false;
+    kill = true;
+}
+
+void PitsState::update(ObjectHandler& objectHandler, IParticleHandler& particleHandler,
+                       IAudioSystem& audioSystem, const damagetile_instance_t& damageTile)
+{
+    //Are pits enabled?
+    if (!kill && !teleport) {
+        return;
+    }
+
+    //Decrease the timer
+    if (clock > 0) {
+        clock--;
+    }
+
+    if (0 == clock)
+    {
+        //Reset timer
+        clock = CLOCK_RATE;
+
+        // Kill any particles that fell in a pit, if they die in water...
+        for (const std::shared_ptr<Ego::Particle> &particle : particleHandler.iterator()) {
+            if (particle->getPosZ() < DEPTH && particle->getProfile()->end_water)
+            {
+                particle->requestTerminate();
+            }
+        }
+
+        // Kill or teleport any characters that fell in a pit...
+        for (const ObjectRef& objectRef : objectHandler.objectRefIterator()) {
+            Object* pchr = objectHandler.get(objectRef);
+            if (pchr == nullptr)
+            {
+                continue;
+            }
+
+            IDamageable& damageable = *pchr;
+
+            // Is it a valid character?
+            if (damageable.isInvincible() || !damageable.isAlive()) continue;
+            if (pchr->isBeingHeld()) continue;
+
+            // Do we kill it?
+            if (kill && pchr->getPosZ() < DEPTH)
+            {
+                // Got one!
+                damageable.kill(ObjectAttribution(), false);
+                pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
+            }
+
+            // Do we teleport it?
+            else if (teleport && pchr->getPosZ() < DEPTH * 4)
+            {
+                // Teleport them back to a "safe" spot
+                if (!pchr->teleport(teleportPos, pchr->getFacingZ())) {
+                    // Kill it instead
+                    damageable.kill(ObjectAttribution(), false);
+                    pchr->setVelocity({0.0f, 0.0f, pchr->getVelocity().z()});
+                }
+                else {
+                    // Stop movement
+                    pchr->setVelocity(idlib::zero<Ego::Vector3f>());
+
+                    // Play sound effect
+                    if (pchr->isPlayer()) {
+                        audioSystem.playSoundFull(audioSystem.getGlobalSound(GSND_PITFALL));
+                    }
+                    else {
+                        audioSystem.playSound(pchr->getPosition(), audioSystem.getGlobalSound(GSND_PITFALL));
+                    }
+
+                    // Do some damage (same as damage tile)
+                    applyTerrainDamage(damageable, damageTile.amount, static_cast<DamageType>(damageTile.damagetype),
+                                       terrainDamageAttribution(objectHandler, pchr->getAIBumped()), false);
+                }
+            }
+        }
+    }
+}
+
+void GameModule::enablePitsTeleport(const Ego::Vector3f &location)
+{
+    _pits.enableTeleport(location);
+}
+
+void GameModule::enablePitsKill()
+{
+    _pits.enableKill();
 }
 
 void GameModule::update()
@@ -295,10 +312,11 @@ void GameModule::updateModuleServices()
     _runtime.billboardSystem().update();
     _animatedTilesState.update();
     getWater().update();
-    updateDamageTiles();
-    updatePits();
+    module_update::updateDamageTiles(_gameObjects, *_mesh, _damageTile,
+                                     _runtime.particleHandler(), _runtime.worldUpdateCount());
+    _pits.update(_gameObjects, _runtime.particleHandler(), _runtime.audioSystem(), _damageTile);
     _weatherState.update(_playerList, _runtime.particleHandler(), *this);
-    checkPassageMusic();
+    module_update::checkPassageMusic(_playerList, _passages, _runtime.audioSystem());
 }
 
 void GameModule::updateModuleSimulation()
@@ -314,7 +332,8 @@ void GameModule::updateModuleSimulation()
     chr_stoppedby_tests = 0;
     chr_pressure_tests  = 0;
 
-    updateAllObjects();
+    module_update::updateAllObjects(_gameObjects, _runtime.worldUpdateCount(),
+                                    _runtime.characterStatClock());
     _runtime.particleHandler().updateAllParticles();
     MainLoop::move_all_objects();
     Ego::Physics::CollisionSystem::get().update();

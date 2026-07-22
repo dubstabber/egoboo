@@ -486,6 +486,33 @@ throughout.
   — the initial library-only grep missed all six test call sites.**
   Gate: build green, ctest 955/955, validator full 42/10/245 +
   test.mod 0/0, nm clean.
+- Pass 328 (2026-07-22) — T1.3 update half: moved the per-update world
+  steps off `GameModule`, mirroring the Pass 326 load-side pattern. The
+  four private helpers became explicit-input code: `checkPassageMusic`,
+  `updateAllObjects`, and `updateDamageTiles` are now `module_update`
+  free functions (declared in new `Module_update.hpp` with the
+  `DAMAGETILETIME` constant), and the pit logic plus its four loose
+  fields (`_pitsClock`/`_pitsKill`/`_pitsTeleport`/`_pitsTeleportPos`)
+  were aggregated into a `PitsState` value struct (new `Pits.hpp`,
+  bodies in `Module_update.cpp`) with `enableKill`/`enableTeleport`/
+  `update(ObjectHandler&, IParticleHandler&, IAudioSystem&, const
+  damagetile_instance_t&)` — the same env-state idiom as
+  `WeatherState`/`AnimatedTilesState`. `GameModule` keeps only the
+  `update()` orchestrators (which resolve services through
+  `GameModuleRuntime` once per step and pass them down) and the
+  `IModuleCommands` pit overrides delegating to `_pits`; the
+  `PITDEPTH`/`PIT_CLOCK_RATE` constants moved to
+  `PitsState::DEPTH`/`CLOCK_RATE`. Real dependencies again proved
+  narrower than the class: no update step needs the module object —
+  only the handler, mesh, damage-tile config, and two services. Test
+  sweep (per the Pass 327 lesson) updated three files: `ModuleUpdate`
+  calls the free functions/`_pits.update` with explicit services,
+  `ScriptActionFunctions` passes its `StubAudioSystem` directly to
+  `checkPassageMusic`, `ScriptSystemsFunctions` reads `_pits.*`.
+  Both new headers registered in the master `EGOLIB_GAME_MODULE_SOURCES`
+  list (header-only: archive membership unchanged, 0 stray `.h.o`).
+  Gate: build green, ctest 955/955, validator full 42/10/245 +
+  test.mod 0/0, all nine archive counts unchanged.
 
 ## Documentation Passes
 

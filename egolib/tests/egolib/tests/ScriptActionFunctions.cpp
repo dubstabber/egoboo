@@ -28,6 +28,7 @@
 #undef protected
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/game/Module/Module_update.hpp"
 #include "TestGraphicsSystem.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/Graphics/IBillboardSystem.hpp"
@@ -750,7 +751,7 @@ TEST_F(ScriptActionFunctionsFixture, CheckPassageMusicUsesLivePlayerObservation)
     EXPECT_EQ(passageId, 0);
 
     passage->setMusic(11);
-    module.checkPassageMusic();
+    module_update::checkPassageMusic(module.getPlayerList(), module._passages, audioSystem);
 
     ASSERT_EQ(audioSystem.playedMusicIds.size(), 1u);
     EXPECT_EQ(audioSystem.playedMusicIds.front().musicID, 11);
@@ -758,7 +759,7 @@ TEST_F(ScriptActionFunctionsFixture, CheckPassageMusicUsesLivePlayerObservation)
 
     audioSystem.reset();
     player->requestTerminate();
-    module.checkPassageMusic();
+    module_update::checkPassageMusic(module.getPlayerList(), module._passages, audioSystem);
     EXPECT_TRUE(audioSystem.playedMusicIds.empty());
 }
 

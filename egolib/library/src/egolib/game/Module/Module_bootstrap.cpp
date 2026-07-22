@@ -53,11 +53,7 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
     _mesh(std::make_shared<ego_mesh_t>()),
     _tileTextures(),
     _waterTextures(),
-
-    _pitsClock(PIT_CLOCK_RATE),
-    _pitsKill(false),
-    _pitsTeleport(false),
-    _pitsTeleportPos()
+    _pits()
 {
     _runtime.logTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "loading module ", "`", profile->getPath(), "`", Log::EndOfEntry);
 

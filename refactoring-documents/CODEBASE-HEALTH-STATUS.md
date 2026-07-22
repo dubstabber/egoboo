@@ -27,8 +27,9 @@ since the April 2026 baseline are still intact:
 
 The main remaining debt is not raw file size anymore. It is interface,
 ownership, and dependency-visibility coupling: `Object` is still broad by
-interface, `GameModule` still mixes world ownership with loading and update
-logic, session and engine access still route through context singletons, script
+interface, `GameModule` still combines world ownership with spawn realization
+(loading and per-update steps are now free functions with explicit inputs),
+session and engine access still route through context singletons, script
 dispatch remains procedural, and the Windows runtime path remains unstable under
 Wine.
 
@@ -72,7 +73,7 @@ What this progress has **not** yet bought — the remaining gap to "done" — is
 listed in `19-refactoring-roadmap.md`. In one paragraph: coupling was migrated
 into `EngineContext`/`GameSessionContext` service locators rather than
 eliminated (353 `::get()` sites), `Object` is still the broadest interface in
-the runtime, `GameModule` still mixes ownership with loading and update logic,
+the runtime, `GameModule` still combines world ownership with spawn logic,
 content is still the legacy positional-text format (the glTF loader accepts
 only a static-mesh subset and virtually all shipped models remain MD2), EgoScript
 is untouched by design, and Windows support is still cross-build-plus-Wine, not

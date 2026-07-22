@@ -18,6 +18,7 @@
 #include "egolib/game/Module/Module.hpp"
 #undef private
 #include "egolib/Entities/IObjectWorld.hpp"
+#include "egolib/game/Module/Module_update.hpp"
 #include "egolib/Script/IScriptSystem.hpp"
 #include "egolib/vfs.h"
 
@@ -387,11 +388,13 @@ TEST_F(ModuleUpdateFixture, UpdateAllObjectsTerminatesObjectAtPoofBoundary)
     object->setAIPoofTime(11);
 
     session.worldUpdateCount() = 10;
-    module.updateAllObjects();
+    module_update::updateAllObjects(module.getObjectHandler(), session.worldUpdateCount(),
+                                    session.characterStatClock());
     EXPECT_FALSE(object->isTerminated());
 
     session.worldUpdateCount() = 11;
-    module.updateAllObjects();
+    module_update::updateAllObjects(module.getObjectHandler(), session.worldUpdateCount(),
+                                    session.characterStatClock());
     EXPECT_TRUE(object->isTerminated());
 }
 
@@ -399,9 +402,9 @@ TEST_F(ModuleUpdateFixture, UpdatePitsKillsLiveObjectBelowPitDepthAndSkipsInvinc
 {
     auto& module = beginActiveTestModule();
     auto fallen = makeObject(module, "mp_objects/follower.obj", 4102,
-                             Ego::Vector3f(64.0f, 64.0f, GameModule::PITDEPTH - 8.0f));
+                             Ego::Vector3f(64.0f, 64.0f, PitsState::DEPTH - 8.0f));
     auto invincible = makeObject(module, "mp_objects/follower.obj", 4103,
-                                 Ego::Vector3f(96.0f, 64.0f, GameModule::PITDEPTH - 8.0f));
+                                 Ego::Vector3f(96.0f, 64.0f, PitsState::DEPTH - 8.0f));
 
     ASSERT_NE(fallen, nullptr);
     ASSERT_NE(invincible, nullptr);
@@ -411,13 +414,14 @@ TEST_F(ModuleUpdateFixture, UpdatePitsKillsLiveObjectBelowPitDepthAndSkipsInvinc
     flushObjectHandler(module);
 
     module.enablePitsKill();
-    module._pitsClock = 1;
+    module._pits.clock = 1;
 
-    module.updatePits();
+    module._pits.update(module.getObjectHandler(), EngineContext::get().particleHandler(),
+                        EngineContext::get().audioSystem(), module._damageTile);
 
     EXPECT_FALSE(fallen->isAlive());
     EXPECT_TRUE(invincible->isAlive());
-    EXPECT_EQ(module._pitsClock, GameModule::PIT_CLOCK_RATE);
+    EXPECT_EQ(module._pits.clock, PitsState::CLOCK_RATE);
 }
 
 TEST_F(ModuleUpdateFixture, UpdateDamageTilesDamagesEligibleObjectsAndSkipsInvincibleObjects)
@@ -447,10 +451,12 @@ TEST_F(ModuleUpdateFixture, UpdateDamageTilesDamagesEligibleObjectsAndSkipsInvin
     const float victimLifeBefore = victim->getLife();
     const float invincibleLifeBefore = invincible->getLife();
 
-    module.updateDamageTiles();
+    module_update::updateDamageTiles(module.getObjectHandler(), *module.getMeshPointer(),
+                                     module._damageTile, EngineContext::get().particleHandler(),
+                                     GameSessionContext::get().worldUpdateCount());
 
     EXPECT_FLOAT_EQ(victim->getLife(), victimLifeBefore - 2.0f);
-    EXPECT_EQ(victim->getDamageTimer(), static_cast<uint8_t>(GameModule::DAMAGETILETIME));
+    EXPECT_EQ(victim->getDamageTimer(), static_cast<uint8_t>(module_update::DAMAGETILETIME));
     EXPECT_FLOAT_EQ(invincible->getLife(), invincibleLifeBefore);
     EXPECT_EQ(invincible->getDamageTimer(), static_cast<uint8_t>(0));
 }
