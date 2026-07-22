@@ -398,6 +398,15 @@ throughout.
   `cartman/CMakeLists.txt` still links only `egolib-library` — this pass
   neither caused nor fixed that. `EngineContext::get()` 285 → 278 (total
   `::get()` 366 → 359).
+- Pass 323 (2026-07-22) repointed cartman's link from `egolib-library` to
+  `egolib-game-graphics`, restoring the gated cartman build: the
+  `Ego::App`/`AppImpl` application base that `Cartman::GFX` derives from
+  was relocated to `egolib-game-graphics` in the June App.cpp pass, which
+  silently broke the (default-OFF) cartman link with undefined `AppImpl`
+  references. One-line `target_link_libraries` change; the default build
+  is unaffected (the cartman directory returns early when gated off).
+  Verified with a `-DEGOBOO_BUILD_CARTMAN=ON` scratch build: cartman
+  compiles and links; the default build no-ops.
 
 ## Documentation Passes
 

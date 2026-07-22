@@ -44,9 +44,10 @@ list(APPEND SOURCE_FILES ${H_FILES})
 # Define product.
 add_executable(cartman ${SOURCE_FILES})
 
-# Link libraries. Cartman links only egolib-library, which transitively provides
-# SDL2, idlib, GLEW, PhysFS and OpenGL.
-target_link_libraries(cartman egolib-library)
+# Link libraries. Cartman needs egolib-game-graphics for the Ego::App/AppImpl
+# application base (relocated there from egolib-library); it transitively
+# provides egolib-library, SDL2, idlib, GLEW, PhysFS and OpenGL.
+target_link_libraries(cartman egolib-game-graphics)
 
 # Copy and install runtime dependencies (e.g. SDL2 DLLs) with the executable.
 if (WIN32)
