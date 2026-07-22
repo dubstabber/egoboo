@@ -398,6 +398,15 @@ throughout.
   `cartman/CMakeLists.txt` still links only `egolib-library` — this pass
   neither caused nor fixed that. `EngineContext::get()` 285 → 278 (total
   `::get()` 366 → 359).
+- Pass 323 (2026-07-22) repointed cartman's link from `egolib-library` to
+  `egolib-game-graphics`, restoring the gated cartman build: the
+  `Ego::App`/`AppImpl` application base that `Cartman::GFX` derives from
+  was relocated to `egolib-game-graphics` in the June App.cpp pass, which
+  silently broke the (default-OFF) cartman link with undefined `AppImpl`
+  references. One-line `target_link_libraries` change; the default build
+  is unaffected (the cartman directory returns early when gated off).
+  Verified with a `-DEGOBOO_BUILD_CARTMAN=ON` scratch build: cartman
+  compiles and links; the default build no-ops.
 - Pass 324 (2026-07-22) constructor-injected `Ego::Renderer&` into
   `BillboardSystem` — the fourth injected engine service. Both blocker
   checks pass: every test uses an `IBillboardSystem` stub (the real class
@@ -435,15 +444,29 @@ throughout.
   `Entities/IParticleHandler.hpp` + `Log/_Include.hpp` includes);
   `graphic.c` 11 → 12 (the added one-line log-target root fetch).
   `EngineContext::get()` 275 → 272 (total `::get()` 356 → 353).
-- Pass 323 (2026-07-22) repointed cartman's link from `egolib-library` to
-  `egolib-game-graphics`, restoring the gated cartman build: the
-  `Ego::App`/`AppImpl` application base that `Cartman::GFX` derives from
-  was relocated to `egolib-game-graphics` in the June App.cpp pass, which
-  silently broke the (default-OFF) cartman link with undefined `AppImpl`
-  references. One-line `target_link_libraries` change; the default build
-  is unaffected (the cartman directory returns early when gated off).
-  Verified with a `-DEGOBOO_BUILD_CARTMAN=ON` scratch build: cartman
-  compiles and links; the default build no-ops.
+- Pass 326 (2026-07-22) — T1.3: `ModuleLoadContext` now carries only
+  explicit inputs. The four `this`-capturing `std::function` callbacks
+  (`loadProfiles`, `loadAllPassages`, `loadTeamAlliances`,
+  `logSlotUsage`) were converted to `module_loading` free functions with
+  explicit parameters, and the four private `GameModule` member
+  functions were deleted (they had zero callers outside the constructor
+  lambdas). Real dependencies turned out narrower than the class:
+  `loadTeamAlliances(std::vector<Team>&)`,
+  `logSlotUsage(IProfileSystem&, savename)`,
+  `loadProfiles(GameModuleRuntime&, const ModuleProfile&)` (its
+  `isImportValid()` was just `getImportAmount() > 0`; the `import_data`
+  global is `pro_import_t`, ProfileSystem-owned, distinct from the
+  session `importList` — left as-is). Only
+  `loadPassages(GameModule&, const ego_mesh_t&, passages&)` still needs
+  the module, because `Passage`'s constructor stores a reference to its
+  owning module — that coupling is now a visible, documented context
+  field (`module`) instead of a hidden lambda capture, and is the next
+  narrowing target. `ModuleLoadPhase::finalizeInitialization` resolves
+  the profile system through the runtime provider at the call site.
+  No metric changes (structural pass). Gate: build green, ctest
+  955/955, validator full 42/10/245 + test.mod 0/0, nm clean — the
+  module-construction fixtures (ModuleUpdate, ShopInteractions,
+  ImportWorkflow, ScriptRuntime, …) exercise the real load path.
 
 ## Documentation Passes
 

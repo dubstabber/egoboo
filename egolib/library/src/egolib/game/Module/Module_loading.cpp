@@ -18,9 +18,10 @@
 //********************************************************************************************
 
 /// @file egolib/game/Module/Module_loading.cpp
-/// @brief GameModule content-loading helpers and debug load reporting.
+/// @brief Module content-loading steps with explicit inputs and debug load reporting.
 
 #include "egolib/game/Module/Module_internal.h"
+#include "egolib/game/Module/Module_load_phase.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
@@ -39,10 +40,13 @@ void loadModuleProfiles(const std::string& modulePath, IProfileSystem& profileSy
 }
 }
 
-void GameModule::loadProfiles()
+namespace module_loading
 {
-    IProfileSystem& profileSystem = _runtime.profileSystem();
-    OverrideSlotsScope moduleSlotOverride(_runtime.overrideSlots());
+
+void loadProfiles(GameModuleRuntime& runtime, const ModuleProfile& moduleProfile)
+{
+    IProfileSystem& profileSystem = runtime.profileSystem();
+    OverrideSlotsScope moduleSlotOverride(runtime.overrideSlots());
 
     //Load the spell book profile
     profileSystem.loadOneProfile("mp_data/globalobjects/book.obj", SPELLBOOK);
@@ -56,8 +60,8 @@ void GameModule::loadProfiles()
     import_data.slot   = -100;
 
     //Load any saved player characters from disk (if needed)
-    if (isImportValid()) {
-        for (int cnt = 0; cnt < getImportAmount() * MAX_IMPORT_PER_PLAYER; cnt++)
+    if (moduleProfile.getImportAmount() > 0) {
+        for (int cnt = 0; cnt < moduleProfile.getImportAmount() * MAX_IMPORT_PER_PLAYER; cnt++)
         {
             std::ostringstream pathFormat;
             pathFormat << "mp_import/temp" << std::setw(4) << std::setfill('0') << cnt << ".obj";
@@ -82,13 +86,13 @@ void GameModule::loadProfiles()
     }
 
     // load all module-specific object profiles
-    loadModuleProfiles(_moduleProfile->getPath(), profileSystem);
+    loadModuleProfiles(moduleProfile.getPath(), profileSystem);
 }
 
-void GameModule::loadAllPassages()
+void loadPassages(GameModule& module, const ego_mesh_t& mesh, std::vector<std::shared_ptr<Passage>>& passages)
 {
     // Reset all of the old passages
-    _passages.clear();
+    passages.clear();
 
     // Load the file
     std::unique_ptr<ReadContext> ctxt = nullptr;
@@ -102,10 +106,10 @@ void GameModule::loadAllPassages()
     while (ctxt->skipToColon(true))
     {
         //read passage area and constrain passage area within the level
-        int x0 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, _mesh->_info.getTileCountX() - 1);
-        int y0 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, _mesh->_info.getTileCountY() - 1);
-        int x1 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, _mesh->_info.getTileCountX() - 1);
-        int y1 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, _mesh->_info.getTileCountY() - 1);
+        int x0 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, mesh._info.getTileCountX() - 1);
+        int y0 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, mesh._info.getTileCountY() - 1);
+        int x1 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, mesh._info.getTileCountX() - 1);
+        int y1 = Ego::Math::constrain<int>(ctxt->readIntegerLiteral(), 0, mesh._info.getTileCountY() - 1);
 
         //Read if open by default
         bool open = ctxt->readBool();
@@ -115,7 +119,7 @@ void GameModule::loadAllPassages()
         if (ctxt->readBool()) mask = MAPFX_IMPASS;
         if (ctxt->readBool()) mask = MAPFX_SLIPPY;
 
-        std::shared_ptr<Passage> passage = std::make_shared<Passage>(*this, x0, y0, x1, y1, mask);
+        std::shared_ptr<Passage> passage = std::make_shared<Passage>(module, x0, y0, x1, y1, mask);
 
         //check if we need to close the passage
         if (!open) {
@@ -123,11 +127,11 @@ void GameModule::loadAllPassages()
         }
 
         //finished loading this one!
-        _passages.push_back(passage);
+        passages.push_back(passage);
     }
 }
 
-void GameModule::loadTeamAlliances()
+void loadTeamAlliances(std::vector<Team>& teamList)
 {
     std::unique_ptr<ReadContext> ctxt = nullptr;
     // Load the file if it exists
@@ -153,11 +157,11 @@ void GameModule::loadTeamAlliances()
                                                 "empty string literal");
         }
         TEAM_REF teamb = (buffer[0] - 'A') % Team::TEAM_MAX;
-        _teamList[teama].makeAlliance(_teamList[teamb]);
+        teamList[teama].makeAlliance(teamList[teamb]);
     }
 }
 
-void GameModule::logSlotUsage(const std::string& savename)
+void logSlotUsage(IProfileSystem& profileSystem, const std::string& savename)
 {
     /// @author ZZ
     /// @details This is a debug function for checking model loads
@@ -168,7 +172,6 @@ void GameModule::logSlotUsage(const std::string& savename)
         vfs_printf(hFileWrite, "Slot usage for objects in last module loaded...\n");
 
         ObjectProfileRef lastSlotNumber(0);
-        IProfileSystem& profileSystem = _runtime.profileSystem();
         for (const auto &element : profileSystem.getLoadedProfiles())
         {
             const std::shared_ptr<ObjectProfile> &profile = element.second;
@@ -189,3 +192,5 @@ void GameModule::logSlotUsage(const std::string& savename)
         vfs_close(hFileWrite);
     }
 }
+
+} // namespace module_loading

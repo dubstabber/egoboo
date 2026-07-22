@@ -64,8 +64,13 @@ The original phase plan, with where each phase actually stands:
   service seam already exists.
 - **T1.3 `GameModule` ownership.** `GameModule` still mixes world ownership
   with loading and update logic. `ModuleLoadPhase`/`ModuleLoadContext` and the
-  `GameModuleRuntime` provider are in place; continue moving load orchestration
-  toward named phases with explicit inputs.
+  `GameModuleRuntime` provider are in place, and as of Pass 326 the load
+  context carries only explicit inputs — the four `std::function` callbacks
+  were converted to `module_loading` free functions and the load helpers left
+  `GameModule` entirely. The remaining implicit load-time coupling is
+  `Passage`'s stored `GameModule&` (the context's `module` field documents
+  it); narrowing `Passage`'s dependency would remove that field. Update logic
+  (`Module_update.cpp`) is the other half still on the class.
 - **T1.4 Error-handling policy.** `doc/error-handling-policy.md` is the active
   target. New code must not add silent failures; migrate the mixed
   exception/boolean/null-return styles only in bounded subsystem passes with

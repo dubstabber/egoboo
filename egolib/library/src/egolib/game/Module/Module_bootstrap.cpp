@@ -74,10 +74,8 @@ GameModule::GameModule(const std::shared_ptr<ModuleProfile> &profile, const uint
         _fog,
         _animatedTilesState,
         _mesh,
-        [this]() { loadProfiles(); },
-        [this]() { loadAllPassages(); },
-        [this]() { loadTeamAlliances(); },
-        [this](const std::string& savename) { logSlotUsage(savename); }
+        *this,
+        _passages
     };
 
     module_loading::ModuleLoadPhase(std::move(loadContext)).run();

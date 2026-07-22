@@ -311,13 +311,6 @@ private:
     void updateModuleSimulation();
     void finalizeModuleUpdate();
 
-    /**
-    * @brief
-    *   Load all passages from file
-    **/
-    void loadAllPassages();
-
-
     /// @author ZF
     /// @details This function checks all passages if there is a player in it, if it is, it plays a specified
     /// song set in by the AI script functions
@@ -341,26 +334,6 @@ private:
     *   top of them
     **/
     void updateDamageTiles();
-
-    /**
-    * @brief
-    *   Load alliance.txt which tells which teams like which teams
-    *   and which ones hate each other
-    **/
-    void loadTeamAlliances();
-
-    /**
-    * @brief
-    *   Load all profiles required by this module into memory
-    **/
-    void loadProfiles();
-
-    /**
-    * @brief
-    *   Logs and lists all objects loaded by this module.
-    *   For module developers
-    **/
-    void logSlotUsage(const std::string& savename);
 
     /**
     * @brief

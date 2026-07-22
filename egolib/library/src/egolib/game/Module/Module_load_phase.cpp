@@ -108,24 +108,24 @@ void ModuleLoadPhase::loadEnvironment()
 void ModuleLoadPhase::loadContent()
 {
     // Load the profiles and world data in the same order as the legacy constructor.
-    _context.loadProfiles();
+    loadProfiles(_context.runtime, *_context.moduleProfile);
 
     // Load mesh.
     MeshLoader meshLoader;
     _context.mesh = meshLoader(_context.moduleProfile->getPath());
 
     // Load passage.txt.
-    _context.loadAllPassages();
+    loadPassages(_context.module, *_context.mesh, _context.passages);
 
     // Load alliance.txt.
-    _context.loadTeamAlliances();
+    loadTeamAlliances(_context.teamList);
 }
 
 void ModuleLoadPhase::finalizeInitialization()
 {
     // log debug info for every object loaded into the module
     if (_context.runtime.config().debug_developerMode_enable.getValue()) {
-        _context.logSlotUsage("/debug/slotused.txt");
+        logSlotUsage(_context.runtime.profileSystem(), "/debug/slotused.txt");
     }
 
     // Reset module-local runtime counters after load completes.
