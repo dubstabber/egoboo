@@ -575,6 +575,28 @@ throughout.
   clears it, and neither touches any object when self is unresolved.
   Untested `scr_*` count: 78 → 72. Test-only pass; validator baseline
   unaffected by construction. Gate: build green, ctest 972/972 (968 + 4).
+- Pass 332 (2026-07-22) — T3.3 dispatch-coverage slice completing
+  `script_functions_action.c` (now zero untested functions), in new
+  `ScriptActionSupportFunctions.cpp` (5 tests). The seven RTS speech
+  setters (`scr_SetSpeech`, `SetMoveSpeech`, `SetSecondMoveSpeech`,
+  `SetAttackSpeech`, `SetAssistSpeech`, `SetTerrainSpeech`,
+  `SetSelectSpeech`) are pinned as accepted no-ops — true for a resolved
+  self, false otherwise, no side effects — dispatch compatibility for
+  legacy scripts. `scr_CallForHelp` publishes the caller as the team's
+  caller-for-help and raises `ALERTIF_CALLEDFORHELP` on live non-hating
+  others but never on the caller itself. `scr_DoActionOverride` starts a
+  model-valid action even when the current animation is uninterruptible
+  (probed via the `findValidAction` candidate idiom from
+  `ObjectAccessors.cpp`; a wild out-of-range action index would probe
+  `_actionMap` out of bounds, so the invalid-action path is deliberately
+  not exercised). `scr_ShowTimer` sets the `timeron`/`timervalue`
+  globals (`egoboo.h`). **Fixture lesson: `Team::callForHelp` walks the
+  handler's ref iterator, and freshly spawned objects sit in the
+  pending-add list until an iterator is constructed — tests must flush
+  (the `flushObjectHandler` idiom from `ModuleUpdate.cpp`) before
+  exercising handler-iterating code.** Untested `scr_*` count: 72 → 62.
+  Test-only pass; validator baseline unaffected by construction.
+  Gate: build green, ctest 977/977 (972 + 5).
 
 ## Documentation Passes
 
