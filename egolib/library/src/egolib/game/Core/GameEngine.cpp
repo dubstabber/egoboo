@@ -219,7 +219,7 @@ void GameEngine::estimateFrameRate()
     _lastFrameEstimation = now;
 }
 
-void GameEngine::updateOneFrame()
+void GameEngine::advanceGameStateStack()
 {
     //Handle clearing the game state stack first. Should be done before any GUI components
     //become locked by the event or rendering loop
@@ -250,8 +250,13 @@ void GameEngine::updateOneFrame()
             _renderTimeout = getMicros() + DELAY_PER_RENDER_FRAME;
         }
     }
+}
 
-    // Handle all SDL events    
+void GameEngine::updateOneFrame()
+{
+    advanceGameStateStack();
+
+    // Handle all SDL events
     pollEvents();
 
     //Deferred loading for any textures requested by other threads

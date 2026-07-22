@@ -513,6 +513,33 @@ throughout.
   list (header-only: archive membership unchanged, 0 stray `.h.o`).
   Gate: build green, ctest 955/955, validator full 42/10/245 +
   test.mod 0/0, all nine archive counts unchanged.
+- Pass 329 (2026-07-22) — T3.5 opened: `GameEngine` state-stack transition
+  characterization. Scout first closed T1.3 (the spawn family is already at
+  its endpoint: `realizeSpawnEntry` is extracted pure logic with dedicated
+  tests, its `std::function` ops are a deliberate stub seam, and
+  `GameModuleRuntime`'s providers must stay call-time-resolving because
+  tests swap active services mid-module). A fresh five-axis re-scout then
+  ranked next fronts; #1 was the state-stack flow inlined in
+  `GameEngine::updateOneFrame` — no existing test exercised
+  push/pop/clear/fallback semantics. Implementation: pure code motion of
+  the stack-advance block into a new private
+  `GameEngine::advanceGameStateStack()` (updateOneFrame now calls it
+  first), plus new `GameStateStackTransitions.cpp` with 8 headless tests
+  (GameEngine's default ctor touches no services; a `StubGameState` must
+  override `draw` and `drawContainer` — `Component::draw` is also pure —
+  and never draws). Pinned semantics: push begins the state immediately;
+  fallthrough re-runs `beginState()` on each re-entered state (including
+  already-ended ones — legacy quirk, they are re-begun then popped again in
+  the same advance); `setGameState` clears lazily on the next advance and
+  the surviving state is NOT re-begun; the clear applies BEFORE ended-state
+  fallthrough; a drained stack calls the main-menu factory, or throws
+  `std::logic_error` if none is installed. Ranked runner-ups recorded in the
+  roadmap: scr_* dispatch coverage gap measured at 109/404 untested
+  (T3.3), hud-widgets 4/6 untested (T3.5 follow-on); T1.4 gfx_rv migration
+  rejected (GL-dependent, no harness), T3.6 rejected (LoadServices seam
+  already exists). Gate: build green, ctest 963/963 (955 + 8 new),
+  validator full 42/10/245 + test.mod 0/0, archive counts unchanged (no
+  CMake change; tests glob via CONFIGURE_DEPENDS).
 
 ## Documentation Passes
 

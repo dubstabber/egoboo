@@ -21,7 +21,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 955 ctest cases.
+  configures 963 ctest cases.
 - The content validator has a stable known legacy-content baseline: 42 modules,
   10 warnings, 245 errors.
 
@@ -57,7 +57,7 @@ commands on 2026-07-21 over the same runtime scope
 | `egolib` link layout | 1 monolithic archive | 9 archives, acyclic DAG |
 | `egolib/egolib.h` uber-header | present, 17 direct includers | deleted |
 | Test files / lines | 5 / 383 | 51 / 25,258 |
-| Test cases | 10 | 955 |
+| Test cases | 10 | 963 |
 | Content validation tooling | none | `egoboo-content-validator` with known full baseline |
 | Cartman map editor | not in the build graph | CMake-gated `EGOBOO_BUILD_CARTMAN` target, runtime-verified |
 | Windows story | Visual Studio + AppVeyor | Linux-hosted MinGW cross-build; VS/AppVeyor quarantined as legacy |
@@ -65,7 +65,7 @@ commands on 2026-07-21 over the same runtime scope
 Reading the table: raw size grew (splits add headers and seam interfaces, and
 the test suite is 66× larger), but every structural-debt metric collapsed. The
 three mutable globals that defined the old architecture are gone from active
-code, the 8,000-line monoliths are gone, and behavior is now pinned by 955
+code, the 8,000-line monoliths are gone, and behavior is now pinned by 963
 tests plus a content-validator baseline where the old tree had 10 tests and no
 validation tooling.
 
@@ -88,8 +88,8 @@ native.
 | Runtime source files | 795 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 288 `.cpp`, 73 `.h`, 331 `.hpp` |
 | Runtime source lines | 129,998 | Same scope as above |
 | Test files / lines | 51 / 25,258 | `egolib/tests`, source/header files only |
-| ctest cases | 955 | `ctest --test-dir build -N` |
-| ctest baseline | 955 / 955 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| ctest cases | 963 | `ctest --test-dir build -N` |
+| ctest baseline | 963 / 963 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | `::get()` call sites | 353 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 272 | Dominant intentional engine seam; Passes 313-317 narrowed the render/HUD chains and `graphic.c`/`graphic_prt.c`; Pass 318 constructor-injected config and log target into `AudioSystem` (first constructor-injected engine service); Pass 319 consolidated the gamestate-screen fetch clusters (family endpoint: no member refs due to teardown ordering, fixed base-class virtuals); Pass 320 constructor-injected the log target into `ProfileSystem` (second injected service, resolved once at the `ContentRuntimeBootstrap` composition root); Pass 321 threaded renderer/graphics-system through the `CameraSystem::renderAll` chain (injection ruled out: headless fixtures initialize the real singleton without a renderer, and the runtime never uninitializes it); Pass 322 constructor-injected input/renderer/graphics/font services into the developer `Console` (third injected service, resolved once in `ConsoleBootstrap`; `Console.cpp` no longer includes `game/Core/EngineContext.hpp`); Pass 324 constructor-injected the renderer into `BillboardSystem` (fourth injected service, resolved in the `GameAppImpl` composition constructor) and moved its floating-text-font access onto the GUI-layer `activeUIManager()` seam; Pass 325 threaded the particle handler and log target through the `ParticleGraphics::update` chain from its per-frame root (`GFX::update_particle_instances`, the Pass 313-315 trailing-parameter idiom — `ParticleGraphics` is a per-particle value type, not a service) |
 | `GameSessionContext::get()` | 23 | Dominant intentional session seam; Pass 309 moved the last gamestates read-only module accesses onto lower-layer seams |

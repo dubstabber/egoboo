@@ -38,7 +38,7 @@ The original phase plan, with where each phase actually stands:
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 Baseline freeze | Canonical build docs, source-scope rules, portability capture | **Done** — `doc/build-linux.md`, `doc/build-windows.md`, these docs |
-| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 955 ctest cases |
+| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 963 ctest cases |
 | 2 Context extraction | Retire raw globals behind explicit contexts | **Done** — `_gameEngine`/`_currentModule`/`update_wld` gone from active code |
 | 3 Engine/gameplay service split | Real boundaries between platform services, content, session, presentation | **Largely done** — nine-archive acyclic DAG, active `I*` seams, composition-root bootstraps; constructor injection is the remaining frontier |
 | 4 File/subsystem decomposition | Break oversized hotspots | **Done for production code** — zero runtime files over 1,000 lines; mechanical split fronts are substantially exhausted |
@@ -71,10 +71,14 @@ The original phase plan, with where each phase actually stands:
   object); as of Pass 328 the per-update steps are `module_update` free
   functions and a `PitsState` env-state struct with explicit inputs (no
   update step references the module object either — only the object
-  handler, mesh, damage-tile config, and services). Remaining on the class
-  beyond ownership/orchestration: the spawn realization family
-  (`Module_spawn*.cpp`), a candidate for the same treatment if it proves
-  narrower than the class.
+  handler, mesh, damage-tile config, and services). The spawn family was
+  scouted and is already at its endpoint: the realization core
+  (`module_spawn_realization::realizeSpawnEntry`) and spawn planning are
+  extracted pure logic with dedicated tests, and what remains on the class is
+  interface overrides (`spawnObjectRef`), by-design ops-wiring composition
+  (`spawnObjectFromFileEntry`), and orchestration. T1.3 is complete at
+  reasonable ROI; `GameModuleRuntime`'s `std::function` providers stay — they
+  are a deliberate swappable seam that tests rely on.
 - **T1.4 Error-handling policy.** `doc/error-handling-policy.md` is the active
   target. New code must not add silent failures; migrate the mixed
   exception/boolean/null-return styles only in bounded subsystem passes with
@@ -116,15 +120,22 @@ The original phase plan, with where each phase actually stands:
   jump to Lua. First: document the script API surface, an event/command model
   independent of EgoScript syntax, and a compatibility layer. Dispatch already
   uses a registry table; remaining near-term value is dispatch-coverage tests
-  and narrowing helper dependencies as role surfaces improve.
+  and narrowing helper dependencies as role surfaces improve. Measured
+  2026-07-22: 109 of 404 `scr_*` functions have zero references anywhere under
+  `egolib/tests/` — close the gap in bounded family slices (alert-bit family,
+  locomotion family) reusing the existing script-function harnesses.
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler
   guarantees lifetime.
-- **T3.5 Rendering and GUI characterization.** Rendering correctness and
-  concrete state-transition behavior remain thin on tests. Add focused
-  characterization before changing render passes, camera, HUD widgets, or
-  state-stack transitions.
+- **T3.5 Rendering and GUI characterization.** Rendering correctness remains
+  thin on tests. As of Pass 329 the `GameEngine` state-stack transition
+  semantics are pinned headless (`GameStateStackTransitions.cpp`: push/begin,
+  ended-state fallthrough with re-entry `beginState()`, deferred
+  `setGameState` clear, main-menu-factory fallback). Remaining: render
+  passes and camera (blocked on a GL-free harness that does not exist), and
+  the hud-widgets layer (4 of 6 widgets have zero test references; needs
+  live-object fixtures, a natural follow-on).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

@@ -221,6 +221,15 @@ private:
     *	contained in the current active GameState.
     **/
     void updateOneFrame();
+
+    /**
+    * @brief
+    *	Apply a pending state-stack clear request, then pop ended states until a live state is
+    *	current (re-running beginState() on each re-entered state), falling back to a fresh
+    *	main-menu state from the installed factory when the stack drains.
+    **/
+    void advanceGameStateStack();
+
     void updateScreenshotRequest();
 
     /**
