@@ -30,11 +30,21 @@
 
 ConsoleBootstrap::ConsoleBootstrap(std::function<bool()> isPlaying)
 {
-    // Initialize the console.
-    auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { EngineContext::get().graphicsSystem().getWindow()->drawable_size()(0),
-                                                                     EngineContext::get().graphicsSystem().getWindow()->drawable_size()(1) * 0.25 });
+    // Resolve the console's services once, at this composition root. The console is torn
+    // down by ~ConsoleBootstrap before any of these services are cleared (see
+    // GameEngine::uninitialize), so the injected references outlive the console.
+    auto& engineContext = EngineContext::get();
+    auto& graphicsSystem = engineContext.graphicsSystem();
 
-    Ego::Core::Console::initialize(rectangle);
+    // Initialize the console.
+    auto rectangle = Ego::Rectangle2f(idlib::zero<Ego::Point2f>(), { graphicsSystem.getWindow()->drawable_size()(0),
+                                                                     graphicsSystem.getWindow()->drawable_size()(1) * 0.25 });
+
+    Ego::Core::Console::initialize(rectangle,
+                                   engineContext.inputSystem(),
+                                   engineContext.renderer(),
+                                   graphicsSystem,
+                                   engineContext.fontManager());
     Ego::Core::Console::get().ExecuteCommand.subscribe([isPlaying = std::move(isPlaying)](std::string command) {
         if (command == "grog()" || command == "daze()")
         {

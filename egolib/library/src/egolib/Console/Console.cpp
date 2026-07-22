@@ -26,11 +26,11 @@
 #include "egolib/Graphics/VideoBufferManagerSeam.hpp"
 #include "egolib/strutil.h"
 #include "egolib/Graphics/Font.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
-#include "egolib/Graphics/GraphicsSystem.hpp"
+#include "egolib/Graphics/IFontManager.hpp"
+#include "egolib/Graphics/IGraphicsSystem.hpp"
 #include "egolib/Graphics/GraphicsWindow.hpp"
 #include "egolib/Renderer/Renderer.hpp"
-#include "egolib/InputControl/InputSystem.hpp"
+#include "egolib/InputControl/IInputSystem.hpp"
 
 namespace Ego { namespace Core {
 
@@ -110,7 +110,7 @@ SDL_Event *Console::handle_event(SDL_Event *event)
 		vkey = event->key.keysym.scancode;
 
 		// Get the key modifiers.
-		ModifierKeys modifierKeys = EngineContext::get().inputSystem().getModifierKeys();
+		ModifierKeys modifierKeys = m_inputSystem.getModifierKeys();
 
 		// Is alt or shift down?
 		is_alt = (ModifierKeys::LeftAlt == (modifierKeys & ModifierKeys::LeftAlt))
@@ -226,7 +226,7 @@ SDL_Event *Console::handle_event(SDL_Event *event)
 
 void Console::draw()
 {
-    auto& renderer = EngineContext::get().renderer();
+    auto& renderer = m_renderer;
 
     // don't worry about hidden surfaces
     renderer.setDepthTestEnabled(false);
@@ -237,11 +237,11 @@ void Console::draw()
     renderer.setBlendingEnabled(true);
     renderer.setBlendFunction(idlib::color_blend_parameter::source0_alpha, idlib::color_blend_parameter::one_minus_source0_alpha);
 
-    auto drawableSize = EngineContext::get().graphicsSystem().getWindow()->drawable_size();
+    auto drawableSize = m_graphicsSystem.getWindow()->drawable_size();
     renderer.setViewportRectangle(0, 0, drawableSize(0), drawableSize(1));
 
     // Set the projecton matrix.
-    auto windowSize = EngineContext::get().graphicsSystem().getWindow()->size();
+    auto windowSize = m_graphicsSystem.getWindow()->size();
     Matrix4f4f matrix = idlib::orthographic_projection_matrix(0, windowSize.x(), windowSize.y(), 0, -1, 1);
     renderer.setProjectionMatrix(matrix);
 
@@ -249,7 +249,7 @@ void Console::draw()
     renderer.setViewMatrix(idlib::identity<Matrix4f4f>());
     renderer.setWorldMatrix(idlib::identity<Matrix4f4f>());
 
-    int windowHeight = EngineContext::get().graphicsSystem().getWindow()->size().y();
+    int windowHeight = m_graphicsSystem.getWindow()->size().y();
 
     if (!windowHeight || !this->on)
     {
@@ -361,8 +361,13 @@ void Console::add_output(const std::string& text)
 	m_document.append_text(text);
 }
 
-Console::Console(const Rectangle2f& rectangle)
-    : history(), input(), m_document()
+Console::Console(const Rectangle2f& rectangle,
+                 Input::IInputSystem& inputSystem,
+                 Renderer& renderer,
+                 IGraphicsSystem& graphicsSystem,
+                 IFontManager& fontManager)
+    : m_inputSystem(inputSystem), m_renderer(renderer), m_graphicsSystem(graphicsSystem),
+      input(), m_document(), history()
 {
 	m_document.set_max_length(ConsoleSettings::OutputSettings::Length);
 	m_document.set_trim_policy(idlib::document_trim_policy::leading);
@@ -371,7 +376,7 @@ Console::Console(const Rectangle2f& rectangle)
     this->on = false;
 
     // set the console's font
-    this->pfont = EngineContext::get().fontManager().loadFont("mp_data/pc8x8.fon", 12);
+    this->pfont = fontManager.loadFont("mp_data/pc8x8.fon", 12);
 
     // set the console's rectangle
     this->rectangle = rectangle;
@@ -410,8 +415,12 @@ void Console::hide()
 ConsoleHistory& Console::getHistory()
 { return history; }
 
-Console *ConsoleCreateFunctor::operator()(const Rectangle2f& rectangle) const
-{ return new Console(rectangle); }
+Console *ConsoleCreateFunctor::operator()(const Rectangle2f& rectangle,
+                                          Input::IInputSystem& inputSystem,
+                                          Renderer& renderer,
+                                          IGraphicsSystem& graphicsSystem,
+                                          IFontManager& fontManager) const
+{ return new Console(rectangle, inputSystem, renderer, graphicsSystem, fontManager); }
 
 void ConsoleDestroyFunctor::operator()(Console *p) const
 { delete p; }

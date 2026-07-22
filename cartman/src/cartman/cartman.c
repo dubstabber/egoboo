@@ -26,6 +26,8 @@
 #include "cartman/cartman_gfx.h"
 #include "cartman/cartman_select.h"
 #include "egolib/FileFormats/Globals.hpp"
+#include "egolib/Graphics/FontManager.hpp"     // Ego::FontManager (console font loading)
+#include "egolib/InputControl/InputSystem.hpp" // Ego::Input::InputSystem (console modifier keys)
 #include "cartman/cartman_math.h"
 
 //--------------------------------------------------------------------------------------------
@@ -1817,11 +1819,17 @@ int main( int argcnt, char* argtext[] )
     Cartman::GFX::initialize();
     Resources::initialize();
 
-    // Initialize the console.
+    // Initialize the console. It needs the Ego input system for modifier-key queries;
+    // Cartman's own input layer does not provide that service.
+    Ego::Input::InputSystem::initialize();
 	auto rectangle = Rectangle2f(idlib::zero<Point2f>(), { Ego::GraphicsSystem::get().window->drawable_size()(0),
 		                                                Ego::GraphicsSystem::get().window->drawable_size()(1) * 0.25 });
 
-    Ego::Core::Console::initialize(rectangle);
+    Ego::Core::Console::initialize(rectangle,
+                                   Ego::Input::InputSystem::get(),
+                                   Ego::Renderer::get(),
+                                   Ego::GraphicsSystem::get(),
+                                   Ego::FontManager::get());
 
     // Load the module
     if (!load_module(modulename, &mesh))
@@ -1852,6 +1860,7 @@ int main( int argcnt, char* argtext[] )
     }
     Cartman::Gui::Manager::uninitialize();
     Ego::Core::Console::uninitialize();
+    Ego::Input::InputSystem::uninitialize();
     Resources::uninitialize();
     Cartman::GFX::uninitialize();
     Cartman::Input::uninitialize();

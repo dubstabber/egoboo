@@ -26,8 +26,14 @@
 #include "egolib/Math/Standard.hpp"
 
 namespace Ego {
-// Forward declaration.
+// Forward declarations.
 class Font;
+class IFontManager;
+class IGraphicsSystem;
+class Renderer;
+namespace Input {
+class IInputSystem;
+}
 }
 
 namespace Ego { namespace Core {
@@ -96,7 +102,11 @@ struct Console;
 
 struct ConsoleCreateFunctor
 {
-	Console *operator()(const Rectangle2f& rectangle) const;
+	Console *operator()(const Rectangle2f& rectangle,
+	                    Input::IInputSystem& inputSystem,
+	                    Renderer& renderer,
+	                    IGraphicsSystem& graphicsSystem,
+	                    IFontManager& fontManager) const;
 };
 
 struct ConsoleDestroyFunctor
@@ -181,7 +191,16 @@ public:
         }
     };
 
-	Console(const Rectangle2f& rectangle);
+	/// @brief Construct this console.
+	/// @param rectangle the console's on-screen rectangle
+	/// @param inputSystem, renderer, graphicsSystem the services this console uses;
+	/// the caller must guarantee they outlive this console
+	/// @param fontManager used to load the console font; not retained
+	Console(const Rectangle2f& rectangle,
+	        Input::IInputSystem& inputSystem,
+	        Renderer& renderer,
+	        IGraphicsSystem& graphicsSystem,
+	        IFontManager& fontManager);
 	virtual ~Console();
 
 	idlib::signal<void(std::string)> ExecuteCommand;
@@ -205,6 +224,12 @@ public:
 	SDL_Event *handle_event(SDL_Event *event);
 
 private:
+	Input::IInputSystem& m_inputSystem;
+
+	Renderer& m_renderer;
+
+	IGraphicsSystem& m_graphicsSystem;
+
 	Buffer<ConsoleSettings::LineSettings::Length> input;
 
 	idlib::document m_document;

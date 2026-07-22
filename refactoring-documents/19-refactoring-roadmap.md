@@ -56,7 +56,7 @@ The original phase plan, with where each phase actually stands:
   not mechanical line trimming. A by-value state-aggregate extraction was
   scoped and deliberately banked as flag-day-scale. Avoid broad `Object&`
   parameters in new code.
-- **T1.2 Service-locator narrowing.** `EngineContext::get()` (285 sites) and
+- **T1.2 Service-locator narrowing.** `EngineContext::get()` (278 sites) and
   `GameSessionContext::get()` (23 sites) are intentional seams but still
   flatten dependency visibility. The frontier is constructor/parameter
   injection where a call path already has the dependency; do not add new

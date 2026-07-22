@@ -371,6 +371,33 @@ throughout.
   camera loop. `autoFormatTargets` keeps its single load-time fetch
   (one-per-function residual). `CameraSystem.cpp` 7 → 4 sites;
   `EngineContext::get()` 288 → 285 (total `::get()` 369 → 366).
+- Pass 322 (2026-07-22) constructor-injected `Ego::Input::IInputSystem&`,
+  `Ego::Renderer&`, `Ego::IGraphicsSystem&`, and `Ego::IFontManager&` into
+  the developer `Console` — the third injected engine service. Both
+  Pass 321 blocker checks pass here: no test initializes the `Console`
+  singleton (zero fixture churn), and its lifetime is strictly bounded —
+  `ConsoleBootstrap` constructs it after the input-system install and
+  graphics bootstrap and `~ConsoleBootstrap` uninitializes it before the
+  graphics teardown and input-system clear in `GameEngine::uninitialize`,
+  so the injected references provably outlive the console. The font
+  manager is used only to load the console font in the constructor and is
+  not retained; the other three become reference members. The
+  `ConsoleCreateFunctor` forwards the wider signature through
+  `idlib::singleton::initialize`. `Console.cpp` 6 → 0 sites and no longer
+  includes `game/Core/EngineContext.hpp` (its only remaining includes of
+  concrete service headers were replaced with the `I*` seam headers);
+  `ConsoleBootstrap` resolves the services once at the composition root,
+  2 → 1 sites. Cartman's gated call site was updated to pass its concrete
+  singletons and now initializes `Ego::Input::InputSystem` around the
+  console lifetime — previously its console threw on every keydown
+  because cartman never installs the `EngineContext` input service
+  (cartman modifiers still read as none since nothing pumps
+  `InputSystem::update()` there). Note: the gated cartman link was found
+  already broken at baseline — `Ego::AppImpl` moved to
+  `egolib-game-graphics` in the June App.cpp relocate but
+  `cartman/CMakeLists.txt` still links only `egolib-library` — this pass
+  neither caused nor fixed that. `EngineContext::get()` 285 → 278 (total
+  `::get()` 366 → 359).
 
 ## Documentation Passes
 
