@@ -540,6 +540,27 @@ throughout.
   already exists). Gate: build green, ctest 963/963 (955 + 8 new),
   validator full 42/10/245 + test.mod 0/0, archive counts unchanged (no
   CMake change; tests glob via CONFIGURE_DEPENDS).
+- Pass 330 (2026-07-22) — T3.3 dispatch-coverage slice: the entire
+  32-function alert-check family (`script_functions_alerts.c`) went from
+  zero test references to full characterization in new
+  `ScriptAlertFunctions.cpp` (5 tests, standard ContentRuntimeBootstrap +
+  test.mod fixture). Data-driven over three shapes: (1) the 27 one-bit
+  `ALERTIF_*` checks pinned as exact one-bit tests (false on empty alert,
+  true on own bit, false on all-other-bits; `ALERTIF_TAKENOUT` is
+  `1 << 31`, a negative int — needs a cast into a `uint32_t` table field);
+  (2) the four `IfHitFrom*` checks pinned as raw-value windows
+  `[ATK_* - 8192, ATK_* + 8192)` over `Facing`'s unnormalized `int32_t` —
+  including two legacy quirks: raw `-8192` is inside the front window
+  while the canonically equal `57344` is not, and canonical facings in
+  `[57344, 65535]` are a dead zone no quadrant accepts (Facing comparisons
+  are raw-int comparisons; `Facing(int32_t)` deliberately does not
+  normalize); (3) `IfSomeoneIsStealing` requires the
+  `order_value == SHOP_STOLEN && order_counter == SHOP_THEFT` pair.
+  A resolved-self guard test sweeps all 32 with every predicate satisfied
+  and an invalid self ref. Untested `scr_*` count: ~110 → 78.
+  Test-only pass (no production sources touched), so the validator
+  baseline is unaffected by construction. Gate: build green, ctest
+  968/968 (963 + 5).
 
 ## Documentation Passes
 
