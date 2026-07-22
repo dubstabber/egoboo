@@ -6,9 +6,13 @@
 
 // Forward declarations.
 class Camera;
+class IParticleHandler;
 namespace Ego {
 class Particle;
 } // namespace Ego
+namespace Log {
+struct Target;
+} // namespace Log
 
 namespace Ego {
 namespace Graphics {
@@ -53,11 +57,14 @@ struct ParticleGraphics
 
     ParticleGraphics();
     void reset();
-    static gfx_rv update(::Camera& camera, const ParticleRef particle, Uint8 trans, bool do_lighting);
+    static gfx_rv update(::Camera& camera, const ParticleRef particle, Uint8 trans, bool do_lighting,
+                         IParticleHandler& particleHandler, Log::Target& logTarget);
 protected:
-    static gfx_rv update_vertices(ParticleGraphics& inst, ::Camera& camera, Ego::Particle *pprt);
+    static gfx_rv update_vertices(ParticleGraphics& inst, ::Camera& camera, Ego::Particle *pprt,
+                                  Log::Target& logTarget);
     static Matrix4f4f make_matrix(ParticleGraphics& inst);
-    static gfx_rv update_lighting(ParticleGraphics& inst, Ego::Particle *pprt, Uint8 trans, bool do_lighting);
+    static gfx_rv update_lighting(ParticleGraphics& inst, Ego::Particle *pprt, Uint8 trans, bool do_lighting,
+                                  Log::Target& logTarget);
 };
 
 } // namespace Graphics

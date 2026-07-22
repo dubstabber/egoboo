@@ -418,6 +418,23 @@ throughout.
   and no longer includes `game/Core/EngineContext.hpp`;
   `graphic_init.cpp` 10 → 11 (intentional composition-root resolve).
   `EngineContext::get()` 278 → 275 (total `::get()` 359 → 356).
+- Pass 325 (2026-07-22) threaded `IParticleHandler&` and `Log::Target&`
+  through the `ParticleGraphics::update` chain — the Pass 313-315
+  trailing-parameter idiom, chosen because `ParticleGraphics` is a
+  per-particle value type embedded in every `Particle` (`pprt->inst`),
+  not a service: constructor injection would relocate reference members
+  into thousands of instances. The chain is perfectly closed:
+  `update` has exactly one caller — the per-frame root
+  `GFX::update_particle_instances` in `graphic.c`, which already fetched
+  the particle handler for its iteration loop — and the protected
+  `update_vertices`/`update_lighting` are called only from `update`, so
+  the widened signatures have no other callers (none in tests).
+  The root resolves both services once and threads them down.
+  `ParticleGraphics.cpp` 4 → 0 sites and no longer includes
+  `game/Core/EngineContext.hpp` (gains explicit
+  `Entities/IParticleHandler.hpp` + `Log/_Include.hpp` includes);
+  `graphic.c` 11 → 12 (the added one-line log-target root fetch).
+  `EngineContext::get()` 275 → 272 (total `::get()` 356 → 353).
 - Pass 323 (2026-07-22) repointed cartman's link from `egolib-library` to
   `egolib-game-graphics`, restoring the gated cartman build: the
   `Ego::App`/`AppImpl` application base that `Cartman::GFX` derives from

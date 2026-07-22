@@ -1,5 +1,6 @@
 #include "egolib/game/Graphics/ParticleGraphics.hpp"
-#include "egolib/game/Core/EngineContext.hpp"
+#include "egolib/Entities/IParticleHandler.hpp"
+#include "egolib/Log/_Include.hpp"
 #include "egolib/game/Graphics/Camera.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/lighting.h"
@@ -53,7 +54,8 @@ void ParticleGraphics::reset()
     (*this) = ParticleGraphics();
 }
 
-gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camera, Particle *pprt)
+gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camera, Particle *pprt,
+                                         Log::Target& logTarget)
 {
     inst.valid = false;
     inst.ref_valid = false;
@@ -62,7 +64,7 @@ gfx_rv ParticleGraphics::update_vertices(ParticleGraphics& inst, ::Camera& camer
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << pprt->getParticleID() << "`" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        logTarget << e;
         return gfx_error;
     }
 
@@ -352,13 +354,14 @@ Matrix4f4f ParticleGraphics::make_matrix(ParticleGraphics& pinst)
     return mat;
 }
 
-gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt, Uint8 trans, bool do_lighting)
+gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt, Uint8 trans, bool do_lighting,
+                                         Log::Target& logTarget)
 {
     if (!pprt)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "nullptr == particle" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        logTarget << e;
         return gfx_error;
     }
 
@@ -411,14 +414,15 @@ gfx_rv ParticleGraphics::update_lighting(ParticleGraphics& pinst, Particle *pprt
     return gfx_success;
 }
 
-gfx_rv ParticleGraphics::update(::Camera& camera, const ParticleRef particle, uint8_t trans, bool do_lighting)
+gfx_rv ParticleGraphics::update(::Camera& camera, const ParticleRef particle, uint8_t trans, bool do_lighting,
+                                IParticleHandler& particleHandler, Log::Target& logTarget)
 {
-    const auto& pprt = EngineContext::get().particleHandler()[particle];
+    const auto& pprt = particleHandler[particle];
     if (!pprt)
     {
         Log::Entry e(Log::Level::Error, __FILE__, __LINE__);
         e << "invalid particle `" << particle << "`" << Log::EndOfEntry;
-        EngineContext::get().logTarget() << e;
+        logTarget << e;
         return gfx_error;
     }
 
@@ -428,13 +432,13 @@ gfx_rv ParticleGraphics::update(::Camera& camera, const ParticleRef particle, ui
     gfx_rv retval = gfx_success;
 
     // make sure that the vertices are interpolated
-    if (gfx_error == ParticleGraphics::update_vertices(pinst, camera, pprt.get()))
+    if (gfx_error == ParticleGraphics::update_vertices(pinst, camera, pprt.get(), logTarget))
     {
         retval = gfx_error;
     }
 
     // do the lighting
-    if (gfx_error == ParticleGraphics::update_lighting(pinst, pprt.get(), trans, do_lighting))
+    if (gfx_error == ParticleGraphics::update_lighting(pinst, pprt.get(), trans, do_lighting, logTarget))
     {
         retval = gfx_error;
     }

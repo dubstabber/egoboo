@@ -382,7 +382,11 @@ gfx_rv GFX::update_particle_instances(Camera& camera)
     // assume the best
     gfx_rv retval = gfx_success;
 
-    for (const std::shared_ptr<Ego::Particle> &particle : EngineContext::get().particleHandler().iterator())
+    // Resolve the per-frame services once at this root and thread them down the chain.
+    auto& particleHandler = EngineContext::get().particleHandler();
+    auto& logTarget = EngineContext::get().logTarget();
+
+    for (const std::shared_ptr<Ego::Particle> &particle : particleHandler.iterator())
     {
         if (particle->isTerminated()) continue;
 
@@ -399,7 +403,8 @@ gfx_rv GFX::update_particle_instances(Camera& camera)
         else
         {
             // calculate the "billboard" for this particle
-            if (gfx_error == Ego::Graphics::ParticleGraphics::update(camera, particle->getParticleID(), 255, true))
+            if (gfx_error == Ego::Graphics::ParticleGraphics::update(camera, particle->getParticleID(), 255, true,
+                                                                     particleHandler, logTarget))
             {
                 retval = gfx_error;
             }
