@@ -135,10 +135,18 @@ The original phase plan, with where each phase actually stands:
   content/state accessors, timer arithmetic, `SetWeatherTime`,
   `DebugMessage`, `End`/`DoNothing`, and the platform-operator checks,
   `ScriptStateControlFunctions.cpp` — both state TUs now have zero
-  untested functions), leaving 27 by direct re-measure — continue in
-  bounded family slices reusing the existing script-function harnesses
-  (re-derive the gap list with the `rg -o`/`comm -23` recipe in the pass
-  log).
+  untested functions), and Pass 334 closed the movement family — the 9
+  remaining waypoint/compass and storage/speed functions across
+  `script_functions_movement.c` and
+  `script_functions_movement_physics.c`
+  (`ScriptMovementSupportFunctions.cpp` — both TUs now have zero
+  untested functions), leaving 18: the 12-function target family
+  (`target.c` 3, `target_orders.c` 6, `target_select.c` 3),
+  `spawn_particle.c`'s Disaffirm/ReaffirmCharacter pair, and four
+  singles (`SetVolumeNearestTeammate`, `EndModule`,
+  `FindTileInPassage`, `IfLeaderKilled`) — continue in bounded family
+  slices reusing the existing script-function harnesses (re-derive the
+  gap list with the `rg -o`/`comm -23` recipe in the pass log).
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler

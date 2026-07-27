@@ -625,6 +625,36 @@ throughout.
   re-measure (the logged 62 chain had drifted by one incidental test
   reference). Test-only pass; validator baseline unaffected by
   construction. Gate: build green, ctest 1001/1001 (977 + 24).
+- Pass 334 (2026-07-27) — T3.3 dispatch-coverage slice closing the
+  movement family: the 9 remaining functions across
+  `script_functions_movement.c` (AddWaypoint, ClearWaypoints, Compass,
+  IfAtWaypoint, IfAtLastWaypoint) and
+  `script_functions_movement_physics.c` (AddXY, GetXY, SetXY,
+  SetSpeedPercent), in new `ScriptMovementSupportFunctions.cpp` (9
+  tests, standard fixture). Both TUs now have zero untested functions.
+  Pinned behaviors: `AddWaypoint`'s cached `wp`/`wp_valid` refresh via
+  `get_wp()` always reports the tail (oldest) waypoint, not the newest
+  push, and once the list is full (`MAXWAY` 8) it silently overwrites
+  the final slot forever while still returning true; `ClearWaypoints`
+  resets `_head`/`_tail` but leaves the cached `wp`/`wp_valid` stale;
+  `IfAtWaypoint`/`IfAtLastWaypoint` are pure alert-bit predicates
+  independent of the waypoint list, and `ALERTIF_PUTAWAY` aliases the
+  `ALERTIF_ATLASTWAYPOINT` bit; `Compass` subtracts a
+  `facing >> 2`-quantized trig offset and truncates toward zero, and
+  `Facing` canonicalization wraps by 65535 rather than 65536 (turn
+  65536 reproduces turn 0's bucket; turn −1 and unwrapped turn 65535
+  land in the same bucket); the "8-slot" STOR storage is actually 16
+  slots addressed by `argument & 15` with plain signed masking (−1 →
+  slot 15); `SetSpeedPercent` divides by 100 with a zero floor and no
+  upper clamp. All nine leave state untouched behind the unresolved-self
+  guard (sentinel-verified, non-vacuous operands). A source-comment
+  hypothesis that `AddWaypoint`'s entry guard and `get_wp`'s internal
+  liveness guard could diverge was investigated and debunked — both
+  bottom out in the same `ObjectHandler::exists()` check for any real
+  spawned object, so the non-diverging behavior is what got pinned.
+  Untested `scr_*` count: 27 → 18. Test-only pass; validator baseline
+  unaffected by construction. Gate: build green, ctest 1010/1010
+  (1001 + 9), zero adversarial-review findings.
 
 ## Documentation Passes
 
