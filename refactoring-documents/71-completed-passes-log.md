@@ -597,6 +597,34 @@ throughout.
   exercising handler-iterating code.** Untested `scr_*` count: 72 → 62.
   Test-only pass; validator baseline unaffected by construction.
   Gate: build green, ctest 977/977 (972 + 5).
+- Pass 333 (2026-07-27) — T3.3 dispatch-coverage slice closing the state
+  family: all 34 remaining functions across `script_functions_state.c`
+  (21) and `script_functions_state_inventory.c` (13), in new
+  `ScriptStateControlFunctions.cpp` (24 tests, standard fixture). Both
+  state TUs now have zero untested functions. Pinned behaviors: the
+  `IfStateIs0..15` literal ladder ignores `script_state_t` entirely
+  (unlike the generic `IfStateIs`/`IfStateIsNot`, which compare
+  `tmpargument` against `state` with plain signed equality);
+  `IfTimeOut` is a strict raw unsigned `>` against
+  `worldUpdateCount()` (equal counts do not time out); `SetTime` is a
+  silent no-op that still returns TRUE for non-positive delay, and
+  wraps in `uint32_t` for positive delay; `SetWeatherTime` writes both
+  `timer_reset` and `time`, and its resolved-self guard runs before
+  `activeModuleEnvironment()` (headless call with no module returns
+  false instead of throwing); `scr_End` returns FALSE even on success
+  while setting `terminate`; `scr_DoNothing` is the family's only
+  guard-free function; the platform-operator checks report "not this
+  platform" for an unresolved self even on the build's own platform;
+  `IfStateIsOdd` pins C++ truncating modulo (`-3` is odd → TRUE, `-2` →
+  FALSE). **Review lesson: guard characterization tests must choose
+  operands that satisfy the underlying predicate — the first draft had
+  four unresolved-self assertions whose comparison was false anyway
+  (e.g. `x == y` while testing `IfXIsLessThanY`'s guard), passing
+  regardless of whether the guard ran; an adversarial review round
+  caught all four.** Untested `scr_*` count: 61 → 27 by direct
+  re-measure (the logged 62 chain had drifted by one incidental test
+  reference). Test-only pass; validator baseline unaffected by
+  construction. Gate: build green, ctest 1001/1001 (977 + 24).
 
 ## Documentation Passes
 

@@ -129,9 +129,16 @@ The original phase plan, with where each phase actually stands:
   Pass 332 closed the rest of `script_functions_action.c` (the seven
   legacy speech-set no-ops plus `CallForHelp`/`DoActionOverride`/
   `ShowTimer`, `ScriptActionSupportFunctions.cpp` — that TU now has zero
-  untested functions), leaving 62 — continue in bounded family slices
-  reusing the existing script-function harnesses (re-derive the gap list
-  with the `rg -o`/`comm -23` recipe in the pass log).
+  untested functions), and Pass 333 closed the state-control family — all
+  34 remaining functions across `script_functions_state.c` and
+  `script_functions_state_inventory.c` (the `IfStateIs0..15` ladder,
+  content/state accessors, timer arithmetic, `SetWeatherTime`,
+  `DebugMessage`, `End`/`DoNothing`, and the platform-operator checks,
+  `ScriptStateControlFunctions.cpp` — both state TUs now have zero
+  untested functions), leaving 27 by direct re-measure — continue in
+  bounded family slices reusing the existing script-function harnesses
+  (re-derive the gap list with the `rg -o`/`comm -23` recipe in the pass
+  log).
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler
