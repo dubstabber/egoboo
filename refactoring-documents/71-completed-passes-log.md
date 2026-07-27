@@ -655,6 +655,49 @@ throughout.
   Untested `scr_*` count: 27 → 18. Test-only pass; validator baseline
   unaffected by construction. Gate: build green, ctest 1010/1010
   (1001 + 9), zero adversarial-review findings.
+- Pass 335 (2026-07-27) — T3.3 dispatch-coverage slice closing the
+  target family: the 12 remaining functions across
+  `script_functions_target.c` (IfDistanceIsMoreThanTurn,
+  IfTargetIsOldTarget, IfTargetIsSelf), `script_functions_target_orders.c`
+  (CreateOrder, GetAttackTurn, GetDamageType, IssueOrder,
+  OrderSpecialID, SetOldTarget), and `script_functions_target_select.c`
+  (SetOwnerToTarget, SetTargetToNearestLifeform, SetTargetToSelf), in
+  new `ScriptTargetSupportFunctions.cpp` (22 tests, standard fixture).
+  All three TUs now have zero untested functions. Pinned behaviors:
+  `IfDistanceIsMoreThanTurn` is a raw strict signed compare of the two
+  registers (no Facing wrap, target ignored entirely);
+  `IfTargetIsOldTarget` compares raw refs with no liveness check
+  (never-set target and old-target read as equal — vacuous truth);
+  **`CreateOrder` bug pinned as-is: the packed order accumulates in a
+  `uint16_t`, so the target byte (`(ref & 0xFF) << 24`) is entirely
+  lost and the x field keeps only the low 2 bits of `x >> 6` — the
+  packed result is independent of the target ref**; `GetAttackTurn`
+  publishes `directionlast` verbatim and returns true even for zero
+  (unlike the GrogTime/DazeTime siblings); `GetDamageType` publishes
+  the 0xFF "never hit" sentinel verbatim; `IssueOrder` broadcasts to
+  live same-team members including the caller itself, overwrites
+  already-ordered recipients (add_order's "was new" return is
+  discarded), and skips terminated objects; `OrderSpecialID` matches
+  the profile [SPEC] IDSZ with no team filter and no self-exclusion;
+  `SetOldTarget`/`SetOwnerToTarget` copy the target ref verbatim with
+  zero validation (Invalid and terminated refs included);
+  `SetTargetToNearestLifeform` internally sets TARGET_ITEMS so ground
+  items and invincible candidates are eligible "lifeforms", skips held
+  items and dead candidates, fails while preserving the current target
+  when nothing visible exists, and cannot see pending (unflushed)
+  spawns. Fixture notes: order broadcasts iterate the handler — flush
+  pending spawns first; the headless fixture has no LOS terrain, so
+  the searching actor is made instance-invincible to take
+  `chr_find_target`'s documented invincible-source LOS bypass. One
+  adversarial-review fix round: a guard-test comment falsely claimed
+  the nearest-lifeform sub-case distinguishes the resolveSelfContext
+  guard (both that guard and `chr_find_target`'s internal source
+  lookup derive from the same self ref, so they are forced to agree —
+  second confirmed instance of the guard-divergence-is-unreachable
+  pattern); assertions were already correct, comment rewritten
+  honestly. Untested `scr_*` count: 18 → 6. Test-only pass; validator
+  baseline unaffected by construction. Gate: build green, ctest
+  1032/1032 (1010 + 22).
 
 ## Documentation Passes
 

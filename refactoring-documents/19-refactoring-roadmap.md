@@ -140,13 +140,15 @@ The original phase plan, with where each phase actually stands:
   `script_functions_movement.c` and
   `script_functions_movement_physics.c`
   (`ScriptMovementSupportFunctions.cpp` — both TUs now have zero
-  untested functions), leaving 18: the 12-function target family
-  (`target.c` 3, `target_orders.c` 6, `target_select.c` 3),
-  `spawn_particle.c`'s Disaffirm/ReaffirmCharacter pair, and four
+  untested functions), and Pass 335 closed the 12-function target
+  family across `target.c`, `target_orders.c`, and `target_select.c`
+  (`ScriptTargetSupportFunctions.cpp`, including the `CreateOrder`
+  packed-order truncation bug pinned as-is), leaving 6:
+  `spawn_particle.c`'s Disaffirm/ReaffirmCharacter pair and four
   singles (`SetVolumeNearestTeammate`, `EndModule`,
-  `FindTileInPassage`, `IfLeaderKilled`) — continue in bounded family
-  slices reusing the existing script-function harnesses (re-derive the
-  gap list with the `rg -o`/`comm -23` recipe in the pass log).
+  `FindTileInPassage`, `IfLeaderKilled`) — one final straggler slice
+  reaches full `scr_*` dispatch coverage (re-derive the gap list with
+  the `rg -o`/`comm -23` recipe in the pass log).
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler
