@@ -747,6 +747,8 @@ set(EGOLIB_GAME_GUI_SOURCES
 
 # -- game/Logic --------------------------------------------------------------
 set(EGOLIB_GAME_LOGIC_SOURCES
+    src/egolib/game/Logic/LevelUp.cpp
+    src/egolib/game/Logic/LevelUp.hpp
     src/egolib/game/Logic/Player.cpp
     src/egolib/game/Logic/Player.hpp
 )

@@ -11,6 +11,7 @@
 #include "egolib/Time/Time.hpp"  // ::Time::now
 #include "egolib/game/Core/ISessionState.hpp"
 #include "egolib/game/Logic/Player.hpp"
+#include "egolib/game/Logic/LevelUp.hpp"
 
 namespace
 {
@@ -261,119 +262,8 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         return;
     }
 
-    //Set random seed for deterministic level ups (no aborting or re-loading game for better results)
-    Random::setSeed(character->getLevelUpSeed());
-
-    //Calculate attribute improvements
-    std::array<float, Attribute::NR_OF_PRIMARY_ATTRIBUTES> increase;
-    for (uint8_t i = 0; i < Attribute::NR_OF_PRIMARY_ATTRIBUTES; ++i) {
-        const Attribute::AttributeType type = static_cast<Attribute::AttributeType>(i);
-        increase[i] = Random::next(character->getProfile()->getAttributeGain(type));
-    }
-
-    //Gain new Perk
-    character->addPerk(selectedPerk->getPerk().getID());
-
-    //Gain attribute bonus from perks
-    increase[selectedPerk->getPerk().getType()] += 1.0f;
-
-    //Some perks give flat attribute bonuses
-    switch (selectedPerk->getPerk().getID()) {
-        case Perks::TOUGHNESS:
-            increase[Attribute::MAX_LIFE] += 2.0f;
-            break;
-
-        case Perks::SOLDIERS_FORTITUDE:
-            increase[Attribute::LIFE_REGEN] += 0.15f;
-            break;
-
-        case Perks::TROLL_BLOOD:
-            increase[Attribute::LIFE_REGEN] += 0.25f;
-            break;
-
-        case Perks::GIGANTISM:
-            increase[Attribute::MIGHT] += 2.00f;
-            increase[Attribute::AGILITY] -= 2.00f;
-            break;
-
-        case Perks::BRUTE:
-            increase[Attribute::MIGHT] += 1.00f;
-            increase[Attribute::INTELLECT] -= 2.00f;
-            break;
-
-        case Perks::DRAGON_BLOOD:
-            increase[Attribute::MANA_REGEN] += 0.25f;
-            break;
-
-        case Perks::ACROBATIC:
-            character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
-            break;
-
-        case Perks::MASTER_ACROBAT:
-            character->increaseBaseAttribute(Attribute::NUMBER_OF_JUMPS, 1.0f);
-            break;
-
-        case Perks::POWER:
-            increase[Attribute::MAX_MANA] += 2.00f;
-            break;
-
-        case Perks::PERFECTION:
-            increase[Attribute::INTELLECT] += 1.00f;
-            increase[Attribute::AGILITY] += 1.00f;
-            break;
-
-        case Perks::ANCIENT_BLUD:
-            increase[Attribute::LIFE_REGEN] += 0.25f;
-            break;
-
-        case Perks::SPELL_MASTERY:
-            increase[Attribute::SPELL_POWER] += 1.0f;
-            break;
-
-        case Perks::MYSTIC_INTELLECT:
-            increase[Attribute::MAX_MANA] += 1.0f;
-            increase[Attribute::MANA_REGEN] += 0.1f;
-            break;
-
-        case Perks::MEDITATION:
-            increase[Attribute::MANA_REGEN] += 0.15f;
-            break;
-
-        case Perks::BOOKWORM:
-            increase[Attribute::INTELLECT] += 2.00f;
-            increase[Attribute::MIGHT] -= 2.00f;
-            break;
-
-        case Perks::NIGHT_VISION:
-            character->increaseBaseAttribute(Attribute::DARKVISION, 1.0f);
-            break;
-
-        case Perks::SENSE_KURSES:
-            character->increaseBaseAttribute(Attribute::SENSE_KURSES, 1.0f);
-            break;
-
-        case Perks::SENSE_INVISIBLE:
-            character->increaseBaseAttribute(Attribute::SEE_INVISIBLE, 1.0f);
-            break;
-
-        default:
-            //nothing
-            break;
-    }
-
-    //Increase character level by 1
-    character->setExperienceLevelIndex(character->getExperienceLevelIndex() + 1);
-    character->addAIAlertBits(ALERTIF_LEVELUP);
-    activeSessionState().playerList()[character->getPlayerNumber()]->setLevelUpIndicator(false);
-
-    //Generate random seed for next level increase
-    character->randomizeLevelUpSeed();
-
-    //Might slightly increases character size
-    if (increase[Attribute::MIGHT] != 0) {
-        character->setTargetFat(character->getTargetFat() + character->getProfile()->getSizeGainPerMight() * 0.1f * increase[Attribute::MIGHT]);
-        character->setResizeTimeRemaining(character->getResizeTimeRemaining() + Object::SIZETIME);
-    }
+    //Apply the level up (RNG draws, perk grant, level bump, alerts, size growth, attribute increases)
+    const Ego::LevelUpReport report = Ego::applyCharacterLevelUp(*character, selectedPerk->getPerk(), activeSessionState().playerList());
 
     //Clear away all GUI components
     for (const std::shared_ptr<Component> &component : iterator()) {
@@ -447,10 +337,10 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         std::shared_ptr<Label> value = std::make_shared<Label>();
         if (type == Attribute::MANA_REGEN || type == Attribute::LIFE_REGEN) { //special case for regen values (2 decimals)
             std::stringstream valueString;
-            valueString << std::setprecision(2) << std::fixed << character->getAttribute(type);
+            valueString << std::setprecision(2) << std::fixed << report.displayedValue[i];
             value->setText(valueString.str());
         } else {
-            value->setText(std::to_string(std::lround(character->getAttribute(type))));
+            value->setText(std::to_string(std::lround(report.displayedValue[i])));
         }
         value->setFont(uiManager().getFont(UIManager::FONT_GAME));
         value->setPosition(Point2f(x + attributeWidthSpacing, y));
@@ -460,20 +350,17 @@ void LevelUpWindow::doLevelUp(PerkButton *selectedPerk) {
         addComponent(value);
 
         //Change in attribute
-        if (std::abs(increase[i]) > std::numeric_limits<float>::epsilon()) {
+        if (std::abs(report.increase[i]) > std::numeric_limits<float>::epsilon()) {
             _attributeIncrease[type] = std::make_shared<Label>();
             std::stringstream valueString;
-            valueString << (increase[i] > 0 ? "+" : "") << std::setprecision(2) << std::fixed << increase[i];
+            valueString << (report.increase[i] > 0 ? "+" : "") << std::setprecision(2) << std::fixed << report.increase[i];
             _attributeIncrease[type]->setText(valueString.str());
             _attributeIncrease[type]->setFont(uiManager().getFont(UIManager::FONT_GAME));
             _attributeIncrease[type]->setPosition(Point2f(x + attributeWidthSpacing + 50, y));
-            _attributeIncrease[type]->setColour(increase[i] > 0 ? Colour4f::yellow() : Colour4f::red());
+            _attributeIncrease[type]->setColour(report.increase[i] > 0 ? Colour4f::yellow() : Colour4f::red());
             _attributeIncrease[type]->setVisible(false);
             addComponent(_attributeIncrease[type]);
         }
-
-        //Actually give attributes to character
-        character->increaseBaseAttribute(type, increase[i]);
     }
 
     //Make sure the animation is drawn above other GUI components inside this window

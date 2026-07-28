@@ -167,12 +167,20 @@ The original phase plan, with where each phase actually stands:
   construction-requires-a-manager failure and documents the trace). The
   real unlock for ModuleSelector's wheel-clamp `size_t` underflow quirk
   (<3 modules) and the rest of the family is a headlessly-constructible
-  UIManager or an injectable text-layout engine; extracting
-  `LevelUpWindow::doLevelUp`'s seeded perk/attribute-gain computation
-  into a pure function remains the other high-value move.
-  `CharacterWindow` (enchant merging) stays blocked until a real font
-  seam exists. Remaining otherwise: render passes and camera (blocked on
-  a GL-free harness that does not exist).
+  UIManager or an injectable text-layout engine. Pass 339 landed the
+  other high-value move: `LevelUpWindow::doLevelUp`'s gameplay half
+  (seeded attribute draws, perk grant + flat-bonus table, level bump,
+  `ALERTIF_LEVELUP`, indicator clear, anti-save-scum reseed, might→fat
+  growth, attribute application) moved verbatim into the GUI-free
+  `Ego::applyCharacterLevelUp` (`game/Logic/LevelUp.{hpp,cpp}`,
+  egolib-library — RNG stream and mutation order provably identical;
+  the widget formats a returned report), characterized by
+  `CharacterLevelUp.cpp` with an RNG-replay oracle. Two latent hazards
+  documented, not fixed: the unguarded `playerList[getPlayerNumber()]`
+  index for non-players, and the profile `[SEED]` override being parsed
+  but never applied. `CharacterWindow` (enchant merging) stays blocked
+  until a real font seam exists. Remaining otherwise: render passes and
+  camera (blocked on a GL-free harness that does not exist).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

@@ -802,6 +802,46 @@ throughout.
   full 42/10/245 + test.mod 0/0, nm back-edge check clean (9 archives,
   zero back-edges). Adversarial reviews: zero critical findings (six
   minor notes; the `setFont` pending-flag clear was applied).
+- Pass 339 (2026-07-28) — T3.5 extraction: the level-up gameplay
+  computation moved out of the GUI. `LevelUpWindow::doLevelUp`'s
+  gameplay half (~110 lines) moved VERBATIM — statement order and
+  global-Random consumption order preserved — into the new GUI-free
+  `Ego::applyCharacterLevelUp(Object&, const Perks::Perk&, playerList)`
+  in `game/Logic/LevelUp.{hpp,cpp}` (egolib-library, beside
+  `Player.cpp`; library archive 84 → 85 members): seed from
+  `getLevelUpSeed()` first, the 8 float-interval attribute draws in
+  `AttributeType` order, unconditional perk grant, +1 perk-type bonus,
+  the 19-case flat-bonus switch (including the five
+  immediate secondary-attribute mutations), level-index bump,
+  `ALERTIF_LEVELUP`, player level-up-indicator clear, anti-save-scum
+  `randomizeLevelUpSeed()`, the might→fat/size growth block (exact
+  `!= 0` float compare), then the per-attribute
+  read-displayed-value-then-apply loop. The function returns a
+  `LevelUpReport { increase[8], displayedValue[8] }`; the widget makes
+  one call and formats the report (the GUI displays pre-increase
+  values — preserved via `displayedValue`). The unguarded
+  `playerList[getPlayerNumber()]` index is preserved with a hazard
+  comment (pre-existing; UB for non-players); the profile `[SEED]`
+  override is parsed but never applied (dead code) — both flagged as
+  candidate follow-up bugs. New `CharacterLevelUp.cpp` (9 tests,
+  fixture registers the spawned follower as a player via `addPlayer` —
+  mandatory for the indicator path) pins the computation with an
+  RNG-replay oracle (never hardcoded mt19937 values): seeded
+  determinism robust to generator pollution, the follower's
+  profile gain intervals (LIFE_REGEN exactly [0,0] → SOLDIERS_FORTITUDE
+  yields exactly +0.15), TOUGHNESS/GIGANTISM/BRUTE/POWER/ACROBATIC/
+  NIGHT_VISION/default-case table rows, MAX_LIFE/MAX_MANA
+  current-value coupling, level +1 with XP untouched, alert bit,
+  indicator true→false, deterministic new seed, and fat delta exactly
+  `getSizeGainPerMight() * 0.1f * increase[MIGHT]` + SIZETIME.
+  **Scout-correction: the testplan's claim that follower's `[LEVL] 3`
+  auto-levels through `checkLevelUp` at spawn (consuming RNG) is
+  false — spawn does a plain `setExperienceLevelIndex` assignment;
+  the oracle methodology was robust to this either way.** Full runtime
+  gate: build green, ctest 1077/1077 (1068 + 9), validator 42/10/245 +
+  test.mod 0/0, `ar t` 85 members no stray `.h.o`, nm back-edge clean.
+  Adversarial reviews (old-vs-new statement walk + independent
+  value re-derivation): zero critical findings, zero fix rounds.
 
 ## Documentation Passes
 
