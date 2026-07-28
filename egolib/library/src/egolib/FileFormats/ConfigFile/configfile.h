@@ -26,6 +26,8 @@
 #include "egolib/Script/Traits.hpp"
 #include "egolib/Script/Scanner.hpp"
 #include "idlib/hll.hpp"
+#include <cstddef>
+#include <iterator>
 
 //--------------------------------------------------------------------------------------------
 
@@ -90,10 +92,16 @@ public:
     using ConstMapIteratorTy = MapTy::const_iterator;
 
     /// @internal Custom iterator.
-    struct EntryIterator : std::iterator<std::forward_iterator_tag, const std::shared_ptr<ConfigEntry>>
+    struct EntryIterator
     {
     public:
+        // The std::iterator base class was deprecated in C++17; the typedefs it used
+        // to provide are declared explicitly here instead.
         using iterator_category = std::forward_iterator_tag;
+        using value_type = const std::shared_ptr<ConfigEntry>;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type&;
 
         using OuterIteratorTy = ConstMapIteratorTy;
 

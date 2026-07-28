@@ -92,6 +92,10 @@ public:
     angle(const angle& other) : angle(other.m_angle) {
         /* Intentionally left empty. */
     }
+    angle& operator=(const angle& other) {
+        m_angle = other.m_angle;
+        return *this;
+    }
     // Explicit cast. Canonicalizes angles. 
     explicit operator uint16_t() const {
         int32_t x = m_angle;

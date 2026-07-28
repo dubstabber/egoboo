@@ -48,6 +48,10 @@ public:
     {}
 
 public:
+    Index(const MyType& other) :
+        _x(other._x), _y(other._y)
+    {}
+
     MyType& operator=(const MyType& other)
     {
         _x = other._x;

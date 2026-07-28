@@ -27,6 +27,8 @@
 #include "egolib/Image/IImageManager.hpp"
 #include <SDL.h>
 #undef main
+#include <cstddef>
+#include <iterator>
 
 namespace Ego {
 
@@ -45,10 +47,17 @@ private:
     /// Vector of available image loaders, ordered by priority from highest to lowest.
     Loaders loaders;
 
-    struct Iterator : public std::iterator<std::forward_iterator_tag, ImageLoader>,
-                      public idlib::increment_expr<Iterator>,
+    struct Iterator : public idlib::increment_expr<Iterator>,
                       public idlib::equal_to_expr<Iterator>
     {
+        // The std::iterator base class was deprecated in C++17; the typedefs it used
+        // to provide are declared explicitly here instead.
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = ImageLoader;
+        using difference_type = std::ptrdiff_t;
+        using pointer = ImageLoader*;
+        using reference = ImageLoader&;
+
         ImageManager::Loaders::const_iterator m_inner;
     public:
         Iterator(const ImageManager::Loaders::const_iterator& inner);
