@@ -121,7 +121,7 @@ public:
      *  the colour of the text (default white)
      */
     void drawTextToTexture(Texture *tex, const std::string &text,
-                           const Ego::Colour3f &color = Ego::Colour3f::white());
+                           const Ego::Colour3f &color = Ego::Colour3f::white()) override;
 
     /**
      * @brief

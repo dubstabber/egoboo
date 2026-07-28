@@ -24,7 +24,7 @@ struct egoboo_config_t;
 namespace idlib { class video_buffer_manager; }
 namespace Log { struct Target; }
 namespace Ego { class Renderer; }
-namespace Ego { namespace GUI { class UIManager; } }
+namespace Ego { namespace GUI { class IUIManager; } }
 
 class EngineContext : private idlib::non_copyable
 {
@@ -40,11 +40,11 @@ public:
     GameEngine& engine();
     const GameEngine& engine() const;
 
-    Ego::GUI::UIManager* tryUIManager();
-    const Ego::GUI::UIManager* tryUIManager() const;
+    Ego::GUI::IUIManager* tryUIManager();
+    const Ego::GUI::IUIManager* tryUIManager() const;
 
-    Ego::GUI::UIManager& uiManager();
-    const Ego::GUI::UIManager& uiManager() const;
+    Ego::GUI::IUIManager& uiManager();
+    const Ego::GUI::IUIManager& uiManager() const;
 
     void installAudioSystem(IAudioSystem& audioSystem);
     void clearAudioSystem();

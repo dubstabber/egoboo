@@ -106,7 +106,7 @@ const GameEngine& EngineContext::engine() const
     return *currentEngine;
 }
 
-Ego::GUI::UIManager* EngineContext::tryUIManager()
+Ego::GUI::IUIManager* EngineContext::tryUIManager()
 {
     GameEngine* currentEngine = tryEngine();
     if (!currentEngine)
@@ -116,7 +116,7 @@ Ego::GUI::UIManager* EngineContext::tryUIManager()
     return currentEngine->getUIManager().get();
 }
 
-const Ego::GUI::UIManager* EngineContext::tryUIManager() const
+const Ego::GUI::IUIManager* EngineContext::tryUIManager() const
 {
     const GameEngine* currentEngine = tryEngine();
     if (!currentEngine)
@@ -126,9 +126,9 @@ const Ego::GUI::UIManager* EngineContext::tryUIManager() const
     return currentEngine->getUIManager().get();
 }
 
-Ego::GUI::UIManager& EngineContext::uiManager()
+Ego::GUI::IUIManager& EngineContext::uiManager()
 {
-    Ego::GUI::UIManager* currentUIManager = tryUIManager();
+    Ego::GUI::IUIManager* currentUIManager = tryUIManager();
     if (!currentUIManager)
     {
         throw std::logic_error("no active ui manager");
@@ -136,9 +136,9 @@ Ego::GUI::UIManager& EngineContext::uiManager()
     return *currentUIManager;
 }
 
-const Ego::GUI::UIManager& EngineContext::uiManager() const
+const Ego::GUI::IUIManager& EngineContext::uiManager() const
 {
-    const Ego::GUI::UIManager* currentUIManager = tryUIManager();
+    const Ego::GUI::IUIManager* currentUIManager = tryUIManager();
     if (!currentUIManager)
     {
         throw std::logic_error("no active ui manager");

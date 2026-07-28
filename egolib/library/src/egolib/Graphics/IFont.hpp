@@ -30,6 +30,8 @@
 #include <string>
 #include "egolib/integrations/color.hpp"
 
+namespace Ego { class Texture; }
+
 namespace Ego {
 
 /// @brief Interface for a container and renderer of laid out text.
@@ -66,6 +68,19 @@ public:
      *  the height of the text box (may be nullptr)
      */
     virtual void getTextSize(const std::string &text, int *width, int *height) = 0;
+
+    /**
+     * @brief
+     *  Draw text that only has one line to a texture.
+     * @param tex
+     *  the texture object to draw to
+     * @param text
+     *  the text to draw
+     * @param colour
+     *  the colour of the text (default white)
+     */
+    virtual void drawTextToTexture(Texture *tex, const std::string &text,
+                                   const Colour3f &color = Colour3f::white()) = 0;
 
     /**
      * @brief

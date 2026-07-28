@@ -117,7 +117,7 @@ void MapEditorSelectModuleState::setSelectedModule(const std::shared_ptr<ModuleP
         buffer << line << '\n';;
     }
 
-    const std::shared_ptr<Ego::Font> &font = uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG);
+    const std::shared_ptr<Ego::IFont> font = uiManager().getFont(Ego::GUI::UIManager::FONT_DEBUG);
     _moduleDescription = font->layoutTextBox(buffer.str(), uiManager().getScreenWidth() / 2 - 20, 0, font->getLineSpacing(), nullptr, nullptr);
 }
 

@@ -16,7 +16,7 @@ ICameraSystem& cameraSystem()
     return activeCameraSystem();
 }
 
-Ego::GUI::UIManager* tryUIManager()
+Ego::GUI::IUIManager* tryUIManager()
 {
     return Ego::GUI::tryActiveUIManager();
 }
@@ -429,7 +429,7 @@ uint8_t scr_TakePicture( script_state_t& state, ai_state_t& self )
 
     if (!resolveSelfContext(self).isResolved()) return false;
 
-    Ego::GUI::UIManager* uiManager = tryUIManager();
+    Ego::GUI::IUIManager* uiManager = tryUIManager();
     if (uiManager == nullptr)
     {
         return false;

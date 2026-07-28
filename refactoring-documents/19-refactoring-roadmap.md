@@ -178,9 +178,25 @@ The original phase plan, with where each phase actually stands:
   `CharacterLevelUp.cpp` with an RNG-replay oracle. Two latent hazards
   documented, not fixed: the unguarded `playerList[getPlayerNumber()]`
   index for non-players, and the profile `[SEED]` override being parsed
-  but never applied. `CharacterWindow` (enchant merging) stays blocked
-  until a real font seam exists. Remaining otherwise: render passes and
-  camera (blocked on a GL-free harness that does not exist).
+  but never applied. Pass 342 extracted `Ego::IFont`/`ILaidTextRenderer`
+  (the real font seam) from `Font`. Pass 343 finished the ModuleSelector
+  unlock: extracted `Ego::GUI::IUIManager` from `UIManager` (`UIManager`
+  now the sole production implementation, resolved through the same
+  `activeUIManager()`/`Component::uiManager()` seam; `GameEngine`
+  ownership of the concrete `UIManager` is unchanged — only the seam
+  publishes the interface) and added `Ego::Test::HeadlessUIManager`, a
+  properly-constructed, GL/SDL_ttf-free `IUIManager` stub serving a
+  deterministic-metrics `IFont`. This retired the raw-storage,
+  never-constructed fake `UIManager` idiom (UB if `getFont` ran) from both
+  `ScriptSystemsFunctions.cpp` and `ScriptActionFunctions.cpp`, and made
+  `ModuleSelector` — previously constructible in *no* manager-installed
+  state without throwing — fully constructible headlessly with a manager
+  installed (`GuiHeadlessUIManagerStub.cpp`; `ModuleSelectorWidget.cpp`
+  keeps the no-manager-throws variant). `CharacterWindow` (enchant
+  merging) is the next candidate now that both a real font seam and a
+  headlessly-constructible `IUIManager` exist, but has not been
+  attempted. Remaining otherwise: render passes and camera (blocked on a
+  GL-free harness that does not exist).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

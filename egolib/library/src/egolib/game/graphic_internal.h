@@ -18,7 +18,7 @@ inline GameEngine& engine()
     return EngineContext::get().engine();
 }
 
-inline Ego::GUI::UIManager& uiManager()
+inline Ego::GUI::IUIManager& uiManager()
 {
     return *engine().getUIManager();
 }

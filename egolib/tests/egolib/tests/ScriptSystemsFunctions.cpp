@@ -32,6 +32,7 @@
 #include "egolib/game/Core/ContentRuntimeBootstrap.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "TestGraphicsSystem.hpp"
+#include "HeadlessUIManager.hpp"
 #include "egolib/game/Core/GameSessionContext.hpp"
 #include "egolib/game/Module/IModuleEnvironment.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
@@ -288,17 +289,14 @@ public:
         _fakeCoreSystem(static_cast<Ego::Core::System*>(::operator new(sizeof(Ego::Core::System)))),
         _fakeSystemService(static_cast<Ego::Core::SystemService*>(::operator new(sizeof(Ego::Core::SystemService)))),
         _fakeGraphicsSystem(static_cast<Ego::GraphicsSystem*>(::operator new(sizeof(Ego::GraphicsSystem)))),
-        _fakeUiManager(static_cast<Ego::GUI::UIManager*>(::operator new(sizeof(Ego::GUI::UIManager))))
+        _headlessUiManager(640, 480),
+        _uiManagerGuard(_headlessUiManager)
     {
         auto& context = EngineContext::get();
         context.setEngine(std::make_unique<GameEngine>());
         context.clearCameraSystem();
 
         GameEngine& engine = context.engine();
-        engine._uiManager.reset(_fakeUiManager);
-        // Publish the fake through the GUI-layer seam so widget uiManager() access (Component::uiManager()
-        // -> activeUIManager()) resolves it, mirroring how EngineContext::uiManager() reads engine._uiManager.
-        Ego::GUI::installActiveUIManager(*_fakeUiManager);
 
         _fakeCoreSystem->systemService = _fakeSystemService;
         _fakeCoreSystem->videoService = nullptr;
@@ -324,11 +322,9 @@ public:
     ~ScopedPlayingStateHarness()
     {
         auto& context = EngineContext::get();
-        Ego::GUI::clearActiveUIManager();
         if (GameEngine* engine = EngineContext::get().tryEngine())
         {
             engine->_currentGameState.reset();
-            engine->_uiManager.release();
         }
 
         context.clearBillboardSystem();
@@ -345,7 +341,6 @@ public:
         ::operator delete(_fakeCoreSystem);
         ::operator delete(_fakeSystemService);
         ::operator delete(_fakeGraphicsSystem);
-        ::operator delete(_fakeUiManager);
         _mockGraphicsSystem.reset();
     }
 
@@ -377,7 +372,8 @@ private:
     Ego::Core::SystemService* _fakeSystemService = nullptr;
     Ego::GraphicsSystem* _fakeGraphicsSystem = nullptr;
     Ego::GraphicsSystem* _previousGraphicsSystem = nullptr;
-    Ego::GUI::UIManager* _fakeUiManager = nullptr;
+    Ego::Test::HeadlessUIManager _headlessUiManager;
+    Ego::Test::ScopedActiveUIManager _uiManagerGuard;
     StubBillboardSystem _billboardSystem;
     std::shared_ptr<PlayingState> _playingState;
 };

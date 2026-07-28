@@ -8,7 +8,7 @@ namespace Ego {
 namespace GUI {
 
 class Container;
-class UIManager;
+class IUIManager;
 
 class Component : public InputListener, public std::enable_shared_from_this<Component>, private idlib::non_copyable {
 public:
@@ -93,8 +93,8 @@ public:
     void bringToFront();
 
 protected:
-    UIManager& uiManager();
-    const UIManager& uiManager() const;
+    IUIManager& uiManager();
+    const IUIManager& uiManager() const;
 
 private:
     bool _destroyed;

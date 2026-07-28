@@ -126,11 +126,11 @@ bool Component::isVisible() const {
     return _visible && !_destroyed;
 }
 
-UIManager& Component::uiManager() {
+IUIManager& Component::uiManager() {
     return activeUIManager();
 }
 
-const UIManager& Component::uiManager() const {
+const IUIManager& Component::uiManager() const {
     return activeUIManager();
 }
 

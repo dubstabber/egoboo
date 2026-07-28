@@ -930,6 +930,36 @@ throughout.
   Gate: build green, ctest 1085/1085 (total verified), validator
   42/10/245 + test.mod 0/0, nm clean, zero submodule drift, zero
   critical review findings.
+- Pass 343 (2026-07-28) — headless-GUI arc 2 of 3: `Ego::GUI::IUIManager`
+  extracted (`GUI/IUIManager.hpp`, pure abstract; carries the nested
+  `UIFontType` enum, the consumed method surface with byte-identical
+  defaults, non-virtual getXxxFont conveniences, and two new accessors
+  replacing UIManager's public `_vertexDescriptor`/`_vertexBuffer`
+  members). `UIManager final : public IUIManager`; the
+  install/clear/try/activeUIManager seam, `Component::uiManager()`,
+  `EngineContext::uiManager()`, `graphic_internal.h`'s resolver, and
+  `scr_TakePicture`'s local all retype to the interface — production
+  behavior byte-identical (GameEngine still owns and installs the
+  concrete UIManager; only the seam publishes the interface). `IFont`
+  gained `drawTextToTexture` so BillboardSystem's floating-text path
+  compiles through the interface. **The raw-storage never-constructed
+  fake-UIManager idiom (UB if `getFont` ran) is RETIRED**: both
+  `ScopedPlayingStateHarness` fixtures migrate to the new
+  `Ego::Test::HeadlessUIManager` (header-only test stub: deterministic
+  text metrics 8 px/char × 16 px/line, no-op draws, 640×480) with a
+  `ScopedActiveUIManager` RAII installer. Proof tests
+  (`GuiHeadlessUIManagerStub.cpp`, 4): Label lays out "Hello" to
+  exactly (40,16) and Button to 16×16 through the real seam with no
+  SDL_ttf/GL anywhere; **`ModuleSelector`'s full constructor — which
+  segfaulted under the raw fake and threw with no manager — now
+  completes headlessly for the first time** with the expected
+  640×480-derived geometry; `ModuleSelectorWidget.cpp` keeps the
+  no-manager-throws pin alongside a new construction-succeeds test.
+  Implemented in an isolated worktree and fast-forwarded onto master;
+  gates re-verified on the merged tree directly. Gate: build green,
+  ctest 1090/1090 (1085 + 5), validator 42/10/245 + test.mod 0/0,
+  nm clean (archive counts unchanged — header-only additions), zero
+  critical review findings, zero fix rounds.
 
 ## Documentation Passes
 

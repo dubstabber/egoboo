@@ -41,10 +41,10 @@ namespace Ego {
 namespace GUI {
 
 namespace {
-UIManager* g_activeUIManager = nullptr;
+IUIManager* g_activeUIManager = nullptr;
 }
 
-void installActiveUIManager(UIManager& uiManager)
+void installActiveUIManager(IUIManager& uiManager)
 {
     g_activeUIManager = &uiManager;
 }
@@ -54,12 +54,12 @@ void clearActiveUIManager()
     g_activeUIManager = nullptr;
 }
 
-UIManager* tryActiveUIManager()
+IUIManager* tryActiveUIManager()
 {
     return g_activeUIManager;
 }
 
-UIManager& activeUIManager()
+IUIManager& activeUIManager()
 {
     if (!g_activeUIManager)
     {

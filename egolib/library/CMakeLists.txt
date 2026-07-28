@@ -714,6 +714,7 @@ set(EGOLIB_GAME_GUI_SOURCES
     src/egolib/game/GUI/InternalWindow.hpp
     src/egolib/game/GUI/InventorySlot.cpp
     src/egolib/game/GUI/InventorySlot.hpp
+    src/egolib/game/GUI/IUIManager.hpp
     src/egolib/game/GUI/JoinBounds.hpp
     src/egolib/game/GUI/Label.cpp
     src/egolib/game/GUI/Label.hpp

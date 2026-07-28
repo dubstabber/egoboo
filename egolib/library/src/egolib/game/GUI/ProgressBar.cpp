@@ -18,8 +18,8 @@ void ProgressBar::draw(DrawingContext& drawingContext) {
     };
 
     auto &renderer = Ego::activeRenderer();
-    const auto &vd = uiManager()._vertexDescriptor;
-    const auto &vb = uiManager()._vertexBuffer;
+    const auto &vd = uiManager().componentVertexDescriptor();
+    const auto &vb = uiManager().componentVertexBuffer();
     renderer.getTextureUnit().setActivated(nullptr);
 
     // Draw the bar background

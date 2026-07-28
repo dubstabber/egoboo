@@ -20,47 +20,37 @@
 /// @file ModuleSelectorWidget.cpp
 /// @brief Characterization coverage for Ego::GUI::ModuleSelector.
 ///
-/// PLANNING NOTE (deviation from the original design): a fixture that installs a raw-storage,
-/// never-constructed fake UIManager (the pattern used by ScopedPlayingStateHarness in
-/// ScriptSystemsFunctions.cpp and by CameraTrackingFixture) and then constructs a real
-/// ModuleSelector was attempted first and reproducibly SEGFAULTS. Root cause, confirmed with
-/// a debugger:
+/// HISTORY (superseded by Pass 343's Ego::GUI::IUIManager seam + Ego::Test::HeadlessUIManager
+/// stub): a fixture that installed a raw-storage, never-constructed fake UIManager (the pattern
+/// used at the time by ScopedPlayingStateHarness in ScriptSystemsFunctions.cpp and by
+/// CameraTrackingFixture) and then constructed a real ModuleSelector was attempted first and
+/// reproducibly SEGFAULTED. Root cause, confirmed with a debugger:
 ///
 ///  - ModuleSelector's constructor builds its two navigation Buttons ("->" / "<-",
 ///    ModuleSelector.cpp ~48-49) in its MEMBER-INITIALIZER LIST, which runs to completion
-///    before the constructor BODY executes. The body then calls the throwing
-///    `uiManager().getScreenWidth()/getScreenHeight()` (ModuleSelector.cpp ~51-53). Because
-///    member-initializers and the body run inside one continuous constructor call, the
-///    installed-UIManager state is FIXED for both: there is no way for a test to have "no
-///    manager" while the Buttons construct and "a manager" by the time the body runs.
-///  - If no manager is installed at all: the Buttons construct fine via this pass's new
-///    headless-deferred path (see GuiTextLayoutHeadless.cpp), but the constructor body's
-///    `uiManager()` call throws std::logic_error before any navigation/selection logic runs
-///    (see the one test below that pins exactly this).
-///  - If ANY manager is installed -- even the raw, never-constructed fake this recipe called
-///    for -- Button::setText() takes the seam's manager-present branch, which is BYTE-FOR-BYTE
-///    the pre-existing eager path (Button.cpp: `ui->getFont(...)`, then an unconditional
-///    `font->layoutText(...)`). A raw/never-constructed UIManager's `_fonts` array is
-///    unformed, so the returned Font pointer is garbage or null, and dereferencing it inside
-///    `Font::layoutText()` segfaults deep in SDL_ttf. This is NOT a regression introduced by
-///    the tryActiveUIManager() seam: the pre-seam code called `uiManager().getFont(...)`
-///    completely unconditionally whenever text was non-empty, so the exact same fake manager
-///    would have crashed identically before this pass. It reproduces because
-///    Font::layoutText()/layoutTextBox() are unconditionally GL-bound (Font_layout.cpp:
-///    `Ego::activeRenderer()`, `Ego::activeVideoBufferManager()`) -- no test in this suite
-///    installs a working Renderer or video buffer manager, and building one (idlib's
-///    video_buffer_manager is a thin 2-method interface, but Font's internal FontAtlas/Texture
-///    plumbing is not) was judged disproportionate to this pass and too tightly coupled to
-///    Font's private implementation to be a good characterization investment.
+///    before the constructor BODY executes. The body then calls `uiManager().getScreenWidth()
+///    /getScreenHeight()` (ModuleSelector.cpp ~51-53).
+///  - If no manager is installed at all: the Buttons construct fine via the headless-deferred
+///    path (see GuiTextLayoutHeadless.cpp), but the constructor body's `uiManager()` call
+///    throws std::logic_error before any navigation/selection logic runs (see the test below
+///    that pins exactly this).
+///  - If a manager IS installed, Button::setText() takes the seam's manager-present branch,
+///    which unconditionally calls `ui->getFont(...)` then `font->layoutText(...)`. A raw,
+///    never-constructed UIManager's `_fonts` array is unformed, so the returned Font pointer is
+///    garbage or null, and dereferencing it inside `Font::layoutText()` segfaults deep in
+///    SDL_ttf. This was never a defect in ModuleSelector or the seam itself -- it was purely an
+///    artifact of the raw-storage fake being an UNFORMED object, not a real UIManager.
 ///
-/// Net effect: ModuleSelector cannot be constructed via its public constructor in this
-/// headless (no live OpenGL renderer) test tier, in ANY manager-installed state, so the
-/// mouse-wheel/navigation-button arithmetic that a real instance would exercise is not
-/// characterizable here. What IS safely characterizable -- and pinned below -- is that
-/// ModuleSelector requires an active UI manager to construct at all, and that its two
-/// navigation Buttons are safely destroyed during the resulting exception unwind (standard
-/// C++ guarantee, but worth pinning: it means a headless caller gets a clean, catchable
-/// failure rather than a crash, as long as no manager was ever installed).
+/// Pass 343 retired the raw-storage-fake idiom in favor of Ego::Test::HeadlessUIManager, a
+/// properly-constructed (if GL/SDL_ttf-free) Ego::GUI::IUIManager implementation. With a real
+/// object installed, ModuleSelector's full constructor -- navigation Buttons AND the
+/// screen-size-derived layout arithmetic -- now runs to completion headlessly; see
+/// GuiHeadlessUIManagerStub.cpp for that coverage (including the mouse-wheel/navigation-button
+/// geometry this file's introduction originally judged uncharacterizable). What remains here is
+/// the no-manager-at-all case: ModuleSelector still requires an active UI manager to construct,
+/// and its two navigation Buttons are safely destroyed during the resulting exception unwind
+/// (standard C++ guarantee, but worth pinning: a headless caller with no manager installed gets
+/// a clean, catchable failure rather than a crash).
 
 #include "gtest/gtest.h"
 
@@ -71,6 +61,7 @@
 #include "egolib/game/GUI/ModuleSelector.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 #include "egolib/Profiles/_Include.hpp"
+#include "HeadlessUIManager.hpp"
 
 namespace {
 
@@ -98,6 +89,23 @@ TEST(ModuleSelectorWidget, ConstructionRequiresAnActiveUIManager) {
     // already-constructed Button members are destroyed by normal stack unwinding -- this is a
     // safe, catchable failure, not a crash.
     EXPECT_THROW(std::make_shared<ModuleSelector>(mods), std::logic_error);
+}
+
+TEST(ModuleSelectorWidget, ConstructionSucceedsWithAHeadlessUIManagerInstalled) {
+    ASSERT_EQ(Ego::GUI::tryActiveUIManager(), nullptr);   // precondition: no manager installed
+
+    Ego::Test::HeadlessUIManager uiManager;
+    Ego::Test::ScopedActiveUIManager guard(uiManager);
+
+    auto mods = makeModules(2);
+
+    // Unlike the raw-storage, never-constructed fake this file's introduction documented as
+    // segfaulting, a properly-constructed HeadlessUIManager lets ModuleSelector's constructor
+    // -- navigation Buttons AND the constructor body's screen-size arithmetic -- run to
+    // completion. See GuiHeadlessUIManagerStub.cpp for the resulting geometry assertions.
+    std::shared_ptr<ModuleSelector> selector;
+    EXPECT_NO_THROW(selector = std::make_shared<ModuleSelector>(mods));
+    EXPECT_NE(selector, nullptr);
 }
 
 } // namespace
