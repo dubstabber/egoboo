@@ -206,7 +206,7 @@ void Font::drawTextBox(const std::string &text, int x, int y, int width, int hei
     cache->lastUseInTicks = ::Time::now<::Time::Unit::Ticks>();
 }
 
-std::shared_ptr<Font::LaidTextRenderer> Font::layoutText(const std::string &text, int *textWidth, int *textHeight) {
+std::shared_ptr<ILaidTextRenderer> Font::layoutText(const std::string &text, int *textWidth, int *textHeight) {
     LayoutOptions options;
     options.textWidth = textWidth;
     options.textHeight = textHeight;
@@ -215,8 +215,8 @@ std::shared_ptr<Font::LaidTextRenderer> Font::layoutText(const std::string &text
     return layoutToBuffer(text, options);
 }
 
-std::shared_ptr<Font::LaidTextRenderer> Font::layoutTextBox(const std::string &text, int width, int height, int spacing,
-                                                            int *textWidth, int *textHeight) {
+std::shared_ptr<ILaidTextRenderer> Font::layoutTextBox(const std::string &text, int width, int height, int spacing,
+                                                        int *textWidth, int *textHeight) {
     LayoutOptions options;
     options.textWidth = textWidth;
     options.textHeight = textHeight;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/Graphics/Font.hpp"  // Ego::Font (complete; LaidTextRenderer member)
+#include "egolib/Graphics/IFont.hpp"  // Ego::IFont, Ego::ILaidTextRenderer
 #include "egolib/game/GUI/Component.hpp"
 #include "egolib/game/GUI/UIManager.hpp"
 
@@ -37,11 +37,11 @@ public:
 
     /// @brief Get the font of this label.
     /// @return the font of this label
-    const std::shared_ptr<Font>& getFont() const;
+    const std::shared_ptr<IFont>& getFont() const;
 
     /// @brief Set the font of this label.
     /// @param textFont the font of this label
-    void setFont(const std::shared_ptr<Font>& font);
+    void setFont(const std::shared_ptr<IFont>& font);
 
     /**@}*/
 
@@ -73,10 +73,10 @@ public:
 
 private:
     std::string _text;
-    std::shared_ptr<Font> _font;
+    std::shared_ptr<IFont> _font;
     Colour4f _colour;
 private:
-    std::shared_ptr<Font::LaidTextRenderer> _textRenderer;
+    std::shared_ptr<ILaidTextRenderer> _textRenderer;
 private:
     /// @brief The font type requested for this label, kept so a font can be fetched
     ///        once a UI manager becomes available.

@@ -26,7 +26,7 @@
 #include "egolib/Renderer/DeferredTexture.hpp"
 
 namespace Ego {
-class Font;
+class IFont;
 namespace GUI {
 // Forward declarations.
 class Image;
@@ -49,7 +49,7 @@ protected:
     protected:
         DeferredTexture _titleBarTexture;
         DeferredTexture _titleSkullTexture;
-        std::shared_ptr<Font> _font;
+        std::shared_ptr<IFont> _font;
         std::string _title;
         int _textWidth;
         int _textHeight;

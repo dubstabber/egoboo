@@ -33,7 +33,6 @@ namespace Ego { class Texture; }
 class Object;
 class Camera;
 namespace Ego {
-class Font;
 class Renderer;
 namespace Graphics {
 struct Billboard;

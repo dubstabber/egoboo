@@ -22,6 +22,7 @@
 /// @author Johan Jansen
 
 #include "egolib/game/GUI/InternalDebugWindow.hpp"
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/GUI/Label.hpp"
 #include "egolib/game/GUI/JoinBounds.hpp"
 

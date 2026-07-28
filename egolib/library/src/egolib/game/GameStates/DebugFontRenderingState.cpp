@@ -53,7 +53,7 @@ public:
         _textRenderer->render(getX(), getY());
     }
     
-    void setFont(const std::shared_ptr<Ego::Font> &font) {
+    void setFont(const std::shared_ptr<Ego::IFont> &font) {
         _font = font;
         redraw();
     }
@@ -82,8 +82,8 @@ private:
     }
     
     std::string _text;
-    std::shared_ptr<Ego::Font> _font;
-    std::shared_ptr<Ego::Font::LaidTextRenderer> _textRenderer;
+    std::shared_ptr<Ego::IFont> _font;
+    std::shared_ptr<Ego::ILaidTextRenderer> _textRenderer;
     Ego::Colour4f _maxColor, _textColor;
     int _maxWidth, _maxHeight;
     int _textWidth, _textHeight;

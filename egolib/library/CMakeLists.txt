@@ -178,6 +178,7 @@ set(EGOLIB_GRAPHICS_SOURCES
     src/egolib/Graphics/Font_utf8.cpp
     src/egolib/Graphics/Font.hpp
     src/egolib/Graphics/Font_internal.hpp
+    src/egolib/Graphics/IFont.hpp
     src/egolib/Graphics/FontManager.cpp
     src/egolib/Graphics/FontManager.hpp
     src/egolib/Graphics/IFontManager.cpp

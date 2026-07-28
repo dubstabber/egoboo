@@ -1,6 +1,6 @@
 #pragma once
 
-#include "egolib/Graphics/Font.hpp"  // Ego::Font (complete; LaidTextRenderer member)
+#include "egolib/Graphics/IFont.hpp"  // Ego::ILaidTextRenderer
 #include "egolib/game/Core/GameEngine.hpp"
 #include "egolib/game/GUI/Component.hpp"
 
@@ -42,7 +42,7 @@ protected:
 
 protected:
     bool _mouseOver;
-    std::shared_ptr<Font::LaidTextRenderer> _buttonTextRenderer;
+    std::shared_ptr<ILaidTextRenderer> _buttonTextRenderer;
     int _buttonTextWidth;
     int _buttonTextHeight;
     /// @brief Set if setText() ran headlessly (no active UI manager) and the text

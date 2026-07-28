@@ -23,7 +23,7 @@
 #pragma once
 
 #include "egolib/game/GameStates/GameState.hpp"
-#include "egolib/Graphics/Font.hpp"
+#include "egolib/Graphics/IFont.hpp"
 
 // Forward declarations.
 class ModuleProfile;
@@ -63,7 +63,7 @@ private:
 	std::shared_ptr<Ego::GUI::Button> _selectedButton;
 	std::shared_ptr<Ego::GUI::Label> _moduleName;
 
-    std::shared_ptr<Ego::Font::LaidTextRenderer> _moduleDescription;
+    std::shared_ptr<Ego::ILaidTextRenderer> _moduleDescription;
 };
 
 } //GameStates

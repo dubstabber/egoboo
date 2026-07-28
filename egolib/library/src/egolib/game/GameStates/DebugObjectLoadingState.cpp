@@ -23,6 +23,7 @@
 /// @author Johan Jansen, penguinflyer5234
 
 #include "egolib/game/GameStates/DebugObjectLoadingState.hpp"
+#include "egolib/Graphics/Font.hpp"
 #include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/GameStates/PlayingState.hpp"
 #include "egolib/game/GameStates/LoadPlayerElement.hpp"
@@ -87,8 +88,8 @@ private:
     }
     
     std::string _text;
-    std::shared_ptr<Ego::Font> _font;
-    std::shared_ptr<Ego::Font::LaidTextRenderer> _textRenderer;
+    std::shared_ptr<Ego::IFont> _font;
+    std::shared_ptr<Ego::ILaidTextRenderer> _textRenderer;
 };
 
 struct DebugObjectLoadingState::ObjectGUIContainer : public Container

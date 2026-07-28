@@ -10,7 +10,6 @@
 namespace Ego { class Texture; }
 class Object;
 class Camera;
-namespace Ego { class Font; }
 
 namespace Ego {
 namespace Graphics {

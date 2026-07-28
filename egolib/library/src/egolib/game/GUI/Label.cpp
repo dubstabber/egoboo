@@ -59,11 +59,11 @@ void Label::setText(const std::string& text) {
     _textLayoutPending = false;
 }
 
-const std::shared_ptr<Font>& Label::getFont() const {
+const std::shared_ptr<IFont>& Label::getFont() const {
     return _font;
 }
 
-void Label::setFont(const std::shared_ptr<Font>& font) {
+void Label::setFont(const std::shared_ptr<IFont>& font) {
     _font = font;
 
     // Recalculate our size.

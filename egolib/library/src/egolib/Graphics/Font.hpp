@@ -27,6 +27,7 @@
 #include "egolib/integrations/color.hpp"
 #include "egolib/integrations/video.hpp"
 #include "egolib/Math/_Include.hpp"
+#include "egolib/Graphics/IFont.hpp"
 #include <memory>
 
 namespace Ego {
@@ -41,13 +42,13 @@ class FontManager;
  * @brief
  *  A representation of a TrueType font.
  */
-class Font final : private idlib::non_copyable {
+class Font final : public IFont, private idlib::non_copyable {
 public:
 
     /**
      * @brief A container and renderer for laid out text.
      */
-    class LaidTextRenderer final : private idlib::non_copyable {
+    class LaidTextRenderer final : public ILaidTextRenderer, private idlib::non_copyable {
     public:
         /**
          * @brief
@@ -57,7 +58,7 @@ public:
          * @param colour
          *  The colour of the rendered text; default is white
          */
-        void render(int x, int y, const Colour4f &colour = Colour4f::white());
+        void render(int x, int y, const Colour4f &colour = Colour4f::white()) override;
 
     protected:
         LaidTextRenderer(const std::shared_ptr<Texture> &atlas, 
@@ -92,7 +93,7 @@ public:
      * @param[out] height
      *  the height of the text box (may be nullptr)
      */
-    void getTextSize(const std::string &text, int *width, int *height);
+    void getTextSize(const std::string &text, int *width, int *height) override;
 
     /**
      * @brief
@@ -155,7 +156,7 @@ public:
      *  the colour of the text (default white)
      */
     void drawText(const std::string &text, int x, int y,
-                  const Colour4f &colour = Colour4f::white());
+                  const Colour4f &colour = Colour4f::white()) override;
 
     /**
      * @brief
@@ -176,7 +177,7 @@ public:
      *  the colour of the text (default white)
      */
     void drawTextBox(const std::string &text, int x, int y, int width, int height, int spacing,
-                     const Colour4f &colour = Colour4f::white());
+                     const Colour4f &colour = Colour4f::white()) override;
 
     /**
      * @brief
@@ -188,7 +189,7 @@ public:
      * @sa
      *  drawText
      */
-    std::shared_ptr<LaidTextRenderer> layoutText(const std::string &text, int *textWidth, int *textHeight);
+    std::shared_ptr<ILaidTextRenderer> layoutText(const std::string &text, int *textWidth, int *textHeight) override;
 
     /**
      * @brief
@@ -204,8 +205,8 @@ public:
      * @sa
      *  drawTextBox
      */
-    std::shared_ptr<LaidTextRenderer> layoutTextBox(const std::string &text, int width, int height, int spacing,
-                                                    int *textWidth, int *textHeight);
+    std::shared_ptr<ILaidTextRenderer> layoutTextBox(const std::string &text, int width, int height, int spacing,
+                                                     int *textWidth, int *textHeight) override;
 
     /**
      * @brief
@@ -213,7 +214,7 @@ public:
      * @return
      *  number of pixels suggested for line spacing
      */
-    int getLineSpacing() const;
+    int getLineSpacing() const override;
 
     /**
     * @brief

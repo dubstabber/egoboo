@@ -49,8 +49,8 @@ commands on 2026-07-21 over the same runtime scope
 
 | Metric | Pre-refactoring (`backup-copy/`) | Current |
 | --- | --- | --- |
-| Runtime source files | 556 | 799 |
-| Runtime source lines | 111,495 | 130,345 |
+| Runtime source files | 556 | 800 |
+| Runtime source lines | 111,495 | 130,527 |
 | Runtime files over 1,000 lines | 15 (largest: `game/script_functions.c`, 8,153) | 0 (largest: `Entities/Object.hpp`, 998) |
 | `_currentModule` references | 592 | 0 |
 | `_gameEngine` references | 266 | 0 |
@@ -86,8 +86,8 @@ native.
 | --- | ---: | --- |
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 168 / 6 / 28 / 24 / 85 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
-| Runtime source files | 799 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 289 `.cpp`, 73 `.h`, 334 `.hpp` |
-| Runtime source lines | 130,379 | Same scope as above |
+| Runtime source files | 800 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 289 `.cpp`, 73 `.h`, 335 `.hpp` |
+| Runtime source lines | 130,527 | Same scope as above |
 | Test files / lines | 64 / 30,870 | `egolib/tests`, source/header files only |
 | ctest cases | 1,085 | `ctest --test-dir build -N` |
 | ctest baseline | 1,085 / 1,085 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |

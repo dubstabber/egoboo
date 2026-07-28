@@ -32,7 +32,7 @@
 namespace Ego {
 
 struct Font::RenderedTextCache : private idlib::non_copyable {
-    std::shared_ptr<Font::LaidTextRenderer> cache;
+    std::shared_ptr<ILaidTextRenderer> cache;
     uint32_t lastUseInTicks;
     std::string text;
     int width;

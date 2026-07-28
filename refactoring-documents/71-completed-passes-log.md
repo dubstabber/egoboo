@@ -898,6 +898,38 @@ throughout.
   OWN body for transitive reliance first.** Gate: build green, ctest
   1085/1085 (total verified, not just percentage), validator 42/10/245
   + test.mod 0/0, nm clean, zero submodule drift.
+- Pass 342 (2026-07-28) — headless-GUI arc 1 of 3: `Ego::IFont` /
+  `Ego::ILaidTextRenderer` extracted (`Graphics/IFont.hpp`, header-only
+  pure-abstract, beside the IFontManager seam). IFont carries exactly
+  the 6 externally-consumed Font methods with byte-identical
+  signatures and defaults (getTextSize, drawText, drawTextBox,
+  layoutText, layoutTextBox, getLineSpacing); ILaidTextRenderer is
+  namespace-scope (forward-declarable — the nested name was the root
+  of Font.hpp's include fan-out) with just `render()`.
+  `Font final : public IFont`; `LaidTextRenderer final :
+  public ILaidTextRenderer`; layout methods now return
+  `shared_ptr<ILaidTextRenderer>` (no smart-pointer covariance), and
+  `Font_internal.hpp`'s RenderedTextCache field retyped to match.
+  Retyped this pass (the headless-relevant holders): `Label` (_font →
+  IFont, getFont/setFont, _textRenderer; Label.hpp now includes
+  IFont.hpp instead of complete Font.hpp), `Button`
+  (_buttonTextRenderer), `InternalWindow::TitleBar`,
+  DebugFontRenderingState/DebugObjectLoadingState label helpers,
+  MapEditorSelectModuleState. Deliberately left concrete for arc pass
+  2+: UIManager's Font-typed accessors and `_fonts`,
+  `IFontManager::loadFont`, Console, cartman, and
+  `drawTextToTexture` (GL-texture path; excluded from the interface
+  along with drawTextBoxToTexture/getTextBoxSize/getFontHeight — zero
+  headless consumers). **Verify-first catch #4: dropping Label.hpp's
+  transitive Font.hpp broke 4 TUs calling
+  `setFont(uiManager().getFont(...))` with Font incomplete — the
+  shared_ptr converting-ctor SFINAEs away silently on incomplete
+  types, a failure mode invisible to grep scouting; fixed with
+  explicit Font.hpp includes (CharacterWindow, LevelUpWindow,
+  DebugParticlesScreen, InternalDebugWindow, DebugObjectLoadingState).**
+  Gate: build green, ctest 1085/1085 (total verified), validator
+  42/10/245 + test.mod 0/0, nm clean, zero submodule drift, zero
+  critical review findings.
 
 ## Documentation Passes
 
