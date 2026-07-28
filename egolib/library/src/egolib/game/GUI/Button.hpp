@@ -45,6 +45,11 @@ protected:
     std::shared_ptr<Font::LaidTextRenderer> _buttonTextRenderer;
     int _buttonTextWidth;
     int _buttonTextHeight;
+    /// @brief Set if setText() ran headlessly (no active UI manager) and the text
+    ///        layout still needs to be computed once a manager becomes available.
+    /// @remark Protected (not private) so subclasses overriding draw() (e.g. IconButton)
+    ///         can self-heal the deferred layout too.
+    bool _textLayoutPending;
 
     static const Colour4f DEFAULT_BUTTON_COLOUR;
     static const Colour4f HOVER_BUTTON_COLOUR;

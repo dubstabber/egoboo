@@ -151,14 +151,28 @@ The original phase plan, with where each phase actually stands:
   constructible (its constructor deadlocks in `TextureManager` without a GL
   context and font atlases need the renderer), and the raw-storage fake
   UIManager idiom is pointer-identity-only (UB if `getFont` runs). Cheapest
-  unlocks, in order: (1) a lazy text-layout seam in `Button`/`Label`
-  (defer `font->layoutText` to first draw) frees `ModuleSelector` — whose
-  mouse-wheel clamping hides a latent `size_t` underflow with fewer than 3
-  modules, worth pinning; (2) extracting `LevelUpWindow::doLevelUp`'s
-  seeded perk/attribute-gain computation into a pure function frees the
-  highest-value logic in the family; `CharacterWindow` (enchant merging)
-  stays blocked until a real font seam exists. Remaining otherwise: render
-  passes and camera (blocked on a GL-free harness that does not exist).
+  unlocks were assessed in that order, and Pass 338 landed the first: a
+  `tryActiveUIManager()` presence guard with a pending-layout flag and
+  draw-time self-heal in `Button`/`Label` (production path provably
+  unchanged — the sole UIManager install precedes the earliest possible
+  text-widget construction in the boot order), making every text-bearing
+  widget headlessly *constructible* with no manager installed
+  (`GuiTextLayoutHeadless.cpp` pins the guarantees). Pass 338 also
+  discovered the seam is NOT sufficient for `ModuleSelector`: its ctor
+  body calls `uiManager().getScreenWidth()` (throws with no manager),
+  while installing the raw-storage fake manager re-enables the eager
+  `getFont`→`Font::layoutText` path, which is unconditionally GL-bound
+  and segfaults on the never-constructed fake (gdb-verified,
+  pre-existing hazard; `ModuleSelectorWidget.cpp` pins the clean
+  construction-requires-a-manager failure and documents the trace). The
+  real unlock for ModuleSelector's wheel-clamp `size_t` underflow quirk
+  (<3 modules) and the rest of the family is a headlessly-constructible
+  UIManager or an injectable text-layout engine; extracting
+  `LevelUpWindow::doLevelUp`'s seeded perk/attribute-gain computation
+  into a pure function remains the other high-value move.
+  `CharacterWindow` (enchant merging) stays blocked until a real font
+  seam exists. Remaining otherwise: render passes and camera (blocked on
+  a GL-free harness that does not exist).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

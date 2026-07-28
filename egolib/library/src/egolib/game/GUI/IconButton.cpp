@@ -37,6 +37,11 @@ _iconTint(Colour4f::white()) {
 }
 
 void IconButton::draw(DrawingContext& drawingContext) {
+    // Self-heal a text layout deferred by a headless setText() call.
+    if (_textLayoutPending) {
+        setText(getText());
+    }
+
     //Update slidy button effect
     updateSlidyButtonEffect();
 

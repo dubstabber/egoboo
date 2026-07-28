@@ -25,6 +25,7 @@ Button::Button(int hotkey) :
     _buttonTextRenderer(),
     _buttonTextWidth(),
     _buttonTextHeight(),
+    _textLayoutPending(false),
     _buttonText(),
     _hotkey(hotkey),
     _slidyButtonTargetX(0.0f),
@@ -42,9 +43,15 @@ void Button::setText(const std::string &text) {
     _buttonText = text;
     if (_buttonText.empty()) {
         _buttonTextRenderer = nullptr;
-    } else {
-        auto font = uiManager().getFont(UIManager::UIFontType::FONT_DEFAULT);
+        _textLayoutPending = false;
+    } else if (auto *ui = tryActiveUIManager()) {
+        auto font = ui->getFont(UIManager::UIFontType::FONT_DEFAULT);
         _buttonTextRenderer = font->layoutText(_buttonText, &_buttonTextWidth, &_buttonTextHeight);
+        _textLayoutPending = false;
+    } else {
+        // No UI manager yet (headless construction): defer layout until draw() self-heals it.
+        _buttonTextRenderer = nullptr;
+        _textLayoutPending = true;
     }
 }
 
@@ -60,6 +67,11 @@ void Button::updateSlidyButtonEffect() {
 }
 
 void Button::draw(DrawingContext& drawingContext) {
+    // Self-heal a text layout deferred by a headless setText() call.
+    if (_textLayoutPending) {
+        setText(_buttonText);
+    }
+
     //Update slidy button effect
     updateSlidyButtonEffect();
 

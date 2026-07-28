@@ -77,6 +77,14 @@ private:
     Colour4f _colour;
 private:
     std::shared_ptr<Font::LaidTextRenderer> _textRenderer;
+private:
+    /// @brief The font type requested for this label, kept so a font can be fetched
+    ///        once a UI manager becomes available.
+    UIManager::UIFontType _fontType;
+    /// @brief Set if construction/setText() ran headlessly (no active UI manager and no
+    ///        font yet) and the text layout still needs to be computed once a manager
+    ///        becomes available.
+    bool _textLayoutPending;
 };
 
 } // namespace GUI

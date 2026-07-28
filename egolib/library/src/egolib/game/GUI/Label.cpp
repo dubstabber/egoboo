@@ -9,15 +9,25 @@ Label::Label() : Label(std::string()) {
 
 Label::Label(const std::string &text, const UIManager::UIFontType font) :
     _text(text),
-    _font(uiManager().getFont(font)),
+    _font(),
+    _colour(Colour4f::white()),
     _textRenderer(),
-    _colour(Colour4f::white()) {
+    _fontType(font),
+    _textLayoutPending(false) {
+    // No UI manager yet (headless construction): leave _font null, fetched lazily by setText().
+    if (auto *ui = tryActiveUIManager()) {
+        _font = ui->getFont(font);
+    }
     if (!text.empty()) {
         setText(text);
     }
 }
 
 void Label::draw(DrawingContext& drawingContext) {
+    // Self-heal a text layout deferred by a headless construction/setText() call.
+    if (_textLayoutPending) {
+        setText(_text);
+    }
     // Draw text.
     if (_textRenderer)
         _textRenderer->render(getDerivedPosition().x(), getDerivedPosition().y(), _colour);
@@ -30,10 +40,23 @@ const std::string& Label::getText() const {
 void Label::setText(const std::string& text) {
     _text = text;
 
+    // Fetch the font lazily if a UI manager has appeared since construction.
+    auto *ui = tryActiveUIManager();
+    if (!_font && ui) {
+        _font = ui->getFont(_fontType);
+    }
+    if (!_font && !ui) {
+        // Still headless: defer layout until draw() self-heals it.
+        _textRenderer = nullptr;
+        _textLayoutPending = true;
+        return;
+    }
+
     // Recalculate our size.
     int textWidth, textHeight;
     _textRenderer = _font->layoutTextBox(_text, 0, 0, _font->getLineSpacing(), &textWidth, &textHeight);
     setSize(Vector2f(textWidth, textHeight));
+    _textLayoutPending = false;
 }
 
 const std::shared_ptr<Font>& Label::getFont() const {
@@ -47,6 +70,7 @@ void Label::setFont(const std::shared_ptr<Font>& font) {
     int textWidth, textHeight;
     _textRenderer = _font->layoutTextBox(_text, 0, 0, _font->getLineSpacing(), &textWidth, &textHeight);
     setSize(Vector2f(textWidth, textHeight));
+    _textLayoutPending = false;
 }
 
 const Colour4f& Label::getColour() const {

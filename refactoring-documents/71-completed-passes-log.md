@@ -767,6 +767,41 @@ throughout.
   `LevelUpWindow::doLevelUp` into a pure function. Test-only pass;
   validator baseline unaffected by construction. Gate: build green,
   ctest 1061/1061 (1056 + 5), zero adversarial-review findings.
+- Pass 338 (2026-07-28) — T3.5 runtime seam: headless text-widget
+  construction. `Button::setText` and `Label`'s ctor/`setText` gained a
+  `tryActiveUIManager()` presence guard with a `_textLayoutPending`
+  flag and a draw()-time self-heal (`Button::draw`, `Label::draw`,
+  `IconButton::draw`); `Label` keeps its requested font type so the
+  font is fetched lazily once a manager appears, and `Label::setFont`
+  clears the pending flag. With a manager installed the code path is
+  behaviorally identical to the old eager path (same `getFont` /
+  `layoutText` / `layoutTextBox` / `setSize` calls, same
+  unconditional-font-deref crash semantics on a broken install), and
+  the design scout PROVED the headless branch unreachable in
+  production: the sole UIManager install (GameEngine initialization)
+  precedes the earliest possible text-widget construction
+  (`MainMenuState`), with a ~35-site census confirming `Label` sizes
+  are read in state ctors (layout must stay eager under a manager) and
+  Button text metrics are draw-only. New `GuiTextLayoutHeadless.cpp`
+  (6 tests) pins the headless guarantees — Button/Label/default-Label/
+  `OptionsButton` (by-value Label)/`ScrollableList` all construct
+  without a manager; a deferred Label keeps Component's default 32×32
+  bounds (not 0×0). **Finding that reshaped the pass: the planned
+  ModuleSelector characterization is infeasible even with the seam.
+  Its ctor builds text Buttons in the member-init list and calls
+  `uiManager().getScreenWidth()` in the body — one continuous call, so
+  no-manager throws in the body, while installing the raw-storage fake
+  manager re-enables the eager `getFont`→`Font::layoutText` path,
+  which is unconditionally GL-bound and segfaults on the
+  never-constructed fake (gdb-verified; pre-existing hazard, not a
+  seam regression). `ModuleSelectorWidget.cpp` (1 test) pins the clean
+  `std::logic_error` construction failure and documents the full
+  trace; the wheel-clamp underflow pins wait for a headlessly-
+  constructible UIManager or an injectable layout engine.** Full
+  runtime gate: build green, ctest 1068/1068 (1061 + 7), validator
+  full 42/10/245 + test.mod 0/0, nm back-edge check clean (9 archives,
+  zero back-edges). Adversarial reviews: zero critical findings (six
+  minor notes; the `setFont` pending-flag clear was applied).
 
 ## Documentation Passes
 
