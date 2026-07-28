@@ -740,6 +740,33 @@ throughout.
   Test-only pass; validator baseline unaffected by construction.
   Gate: build green, ctest 1056/1056 (1032 + 24), zero
   adversarial-review findings.
+- Pass 337 (2026-07-28) — T3.5 hud-widgets slice: `CharacterStatus`
+  characterized in new `CharacterStatusWidget.cpp` (5 tests) after a
+  two-agent feasibility scout over all four untested widgets. Pinned:
+  construction is completely service-free (stores the ref,
+  `make_shared<ProgressBar>`, default 32×32 Component bounds — the only
+  widget of the four buildable with zero GUI infrastructure); the
+  self-destroying lifecycle contract `PlayingState` relies on — `draw()`
+  destroys the widget and detaches it from its parent `Container` when
+  no session state is active or when the observed object does not
+  resolve — and the deterministic headless wall: with a live object and
+  no installed UIManager, `draw()` throws `std::logic_error` from
+  `activeUIManager()` strictly before any `TextureManager` access
+  (which would deadlock headless), leaving the widget undestroyed.
+  **Finding: `tryObservedObject`'s `isTerminated()` re-check is
+  unreachable dead code through this chain — `Object::requestTerminate()`
+  synchronously erases the handler map entry
+  (`ObjectHandler.cpp` `remove()`), so a "terminated but still
+  resolvable" object cannot exist via ref lookup; missing and
+  terminated refs collapse to the same nullptr path. The two draw()
+  gates are also not black-box orderable (documented, not asserted).**
+  Scout verdict recorded in the roadmap: the other three widgets are
+  blocked at the constructor font/UIManager wall; cheapest unlocks are
+  a `Button`/`Label` lazy text-layout seam (frees `ModuleSelector` and
+  its latent <3-modules `size_t` underflow quirk) and extracting
+  `LevelUpWindow::doLevelUp` into a pure function. Test-only pass;
+  validator baseline unaffected by construction. Gate: build green,
+  ctest 1061/1061 (1056 + 5), zero adversarial-review findings.
 
 ## Documentation Passes
 

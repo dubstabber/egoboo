@@ -140,10 +140,25 @@ The original phase plan, with where each phase actually stands:
   thin on tests. As of Pass 329 the `GameEngine` state-stack transition
   semantics are pinned headless (`GameStateStackTransitions.cpp`: push/begin,
   ended-state fallthrough with re-entry `beginState()`, deferred
-  `setGameState` clear, main-menu-factory fallback). Remaining: render
-  passes and camera (blocked on a GL-free harness that does not exist), and
-  the hud-widgets layer (4 of 6 widgets have zero test references; needs
-  live-object fixtures, a natural follow-on).
+  `setGameState` clear, main-menu-factory fallback). Pass 337 characterized
+  `CharacterStatus` (`CharacterStatusWidget.cpp`): the self-destroying HUD
+  widget lifecycle (destroy + parent detach on lost session or unresolvable
+  observed object) and the deterministic `std::logic_error` headless wall at
+  `activeUIManager()`. The other three untested widgets are blocked at a
+  common wall (scouted, Pass 337): any text-bearing widget fetches a font
+  from the active UIManager in its constructor
+  (`TitleBar`/`Label`/`Button`), a real UIManager is not headlessly
+  constructible (its constructor deadlocks in `TextureManager` without a GL
+  context and font atlases need the renderer), and the raw-storage fake
+  UIManager idiom is pointer-identity-only (UB if `getFont` runs). Cheapest
+  unlocks, in order: (1) a lazy text-layout seam in `Button`/`Label`
+  (defer `font->layoutText` to first draw) frees `ModuleSelector` — whose
+  mouse-wheel clamping hides a latent `size_t` underflow with fewer than 3
+  modules, worth pinning; (2) extracting `LevelUpWindow::doLevelUp`'s
+  seeded perk/attribute-gain computation into a pure function frees the
+  highest-value logic in the family; `CharacterWindow` (enchant merging)
+  stays blocked until a real font seam exists. Remaining otherwise: render
+  passes and camera (blocked on a GL-free harness that does not exist).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data
