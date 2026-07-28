@@ -558,7 +558,7 @@ struct script_state_t : private idlib::non_copyable
     /// Writes a warning log messages and raises an idlib::runtime_error.
     /// @param variableIndex the variable index
     /// @throw idlib::runtime_error
-    void onVariableNotDefinedError(uint8_t variableIndex);
+    [[noreturn]] void onVariableNotDefinedError(uint8_t variableIndex);
 	// protected
 	uint8_t run_function(ai_state_t& aiState, script_info_t& script);
     int32_t loadVariable(uint8_t variableIndex, ai_state_t& aiState, const Ego::Script::ScriptOperandContext& context);

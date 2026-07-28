@@ -842,6 +842,43 @@ throughout.
   test.mod 0/0, `ar t` 85 members no stray `.h.o`, nm back-edge clean.
   Adversarial reviews (old-vs-new statement walk + independent
   value re-derivation): zero critical findings, zero fix rounds.
+- Pass 340 (2026-07-28) — warning-debt strike, two commits. Fresh
+  scratch-build measurement: 2,030 → 735 warnings (−64%).
+  Commit 1 (noise, behavior-preserving): the `angle<uint16_t,facings>`
+  specialization in `_math.h` gained the missing copy-assignment
+  operator (had a user-provided copy ctor; the implicit deprecated
+  assign fired ~1,208 lines across the build); `Grid::Index`'s 2D
+  specialization gained the missing copy ctor (opposite gap, ~568
+  lines incl. `Mesh/Info.hpp` fan-out); `configfile.h` EntryIterator
+  and `ImageManager.hpp` Iterator moved off the C++17-deprecated
+  `std::iterator` base onto explicit typedefs (~303 lines).
+  Commit 2 (latent bugs + 8 tests, `ScriptScannerAndConstantFixes.cpp`):
+  (1) `Script/Constant.cpp` `operator==` could fall off the end (UB)
+  for an out-of-range Kind — added a throwing default matching the
+  house `unhandled_switch_case_error` convention; (2)
+  `script_state_t::onVariableNotDefinedError` marked `[[noreturn]]`
+  (pure annotation; it always threw — the `-Wreturn-type` in
+  `loadVariable` was a false positive); (3) **real bug**:
+  `Scanner::ERROR()` routed the full-width extended-symbol error
+  sentinel (0xee8083) through a char-typed `make_sym`, truncating it
+  to −125 — so every `ise(ERROR())` caller (ReadContext, fileutil,
+  configfile, SpawnFileReader) could never detect a genuine decode
+  error and could spuriously match an input byte equal to −125; fixed
+  by constructing the symbol expression over the untruncated value
+  (full validator baseline unchanged — no shipped content triggers the
+  path). **New finding, characterized not fixed: `Variables.in`
+  declares 83 script variables but `loadVariable` handles 82 —
+  `VARSELFWIS`/`VARTARGETWIS` ("selfwis"/"targetwis") have no load
+  case and throw today (2 tests pin the throw); follow-up decision
+  needed: implement or formally retire them.** Residual warning debt
+  is submodule-owned (~470 from idlib `<cstdbool>`) plus ~24 scattered
+  deprecated-copy singles. **Process lesson: a newly Written test file
+  may be missed by the first `cmake --build` (CONFIGURE_DEPENDS glob
+  verify skipped); force `ninja CMakeFiles/cmake.verify_globs` and
+  always check the ctest TOTAL count delta, not just "100% passed".**
+  Gate: build green, ctest 1085/1085 (1077 + 8), validator 42/10/245 +
+  test.mod 0/0, nm clean, zero submodule drift, zero critical review
+  findings.
 
 ## Documentation Passes
 

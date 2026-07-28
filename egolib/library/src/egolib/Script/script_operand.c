@@ -240,7 +240,7 @@ void script_state_t::storeVariable(uint8_t variableIndex)
 //--------------------------------------------------------------------------------------------
 
 
-void script_state_t::onVariableNotDefinedError(uint8_t variableIndex)
+[[noreturn]] void script_state_t::onVariableNotDefinedError(uint8_t variableIndex)
 {
     auto variableName = getVariableName(variableIndex);
     Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);

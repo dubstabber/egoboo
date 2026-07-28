@@ -109,6 +109,8 @@ bool Constant::operator==(const Constant& other) const
             return m_string == other.m_string;
         case Kind::Void:
             return true;
+        default:
+            throw idlib::unhandled_switch_case_error(__FILE__, __LINE__, "unknown constant kind");
     };
 }
 	

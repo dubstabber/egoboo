@@ -271,7 +271,14 @@ public:
     }
 
     static decltype(auto) ERROR()
-    { return make_sym(Traits::error()); }
+    {
+        // Traits::error() yields the full-width extended-symbol sentinel (an ExtendedSymbolType,
+        // e.g. 0xee8083 for Traits<char>). Do *not* route it through make_sym(char), which would
+        // narrow it to a single char and corrupt the sentinel (observed: truncated to -125, which
+        // could then collide with an ordinary input byte). Construct the symbol expression
+        // directly over the untruncated extended value instead.
+        return idlib::parsing_expression::sym<ExtendedSymbolType>(Traits::error());
+    }
 
     template <typename T>
     bool ise(const T& e) const
