@@ -119,36 +119,19 @@ The original phase plan, with where each phase actually stands:
 - **T3.3 Scripting replacement preparation** (Phase 6, unstarted). Do not
   jump to Lua. First: document the script API surface, an event/command model
   independent of EgoScript syntax, and a compatibility layer. Dispatch already
-  uses a registry table; remaining near-term value is dispatch-coverage tests
-  and narrowing helper dependencies as role surfaces improve. Coverage gap
-  measured 2026-07-22 at ~110 `scr_*` functions with zero test references;
-  Pass 330 closed the entire 32-function alert-check family
-  (`script_functions_alerts.c`, `ScriptAlertFunctions.cpp`) and Pass 331
-  closed the locomotion family (`scr_Run`/`Walk`/`Sneak`/`Stop` +
-  `scr_KeepAction`/`UnkeepAction`, `ScriptLocomotionFunctions.cpp`), and
-  Pass 332 closed the rest of `script_functions_action.c` (the seven
-  legacy speech-set no-ops plus `CallForHelp`/`DoActionOverride`/
-  `ShowTimer`, `ScriptActionSupportFunctions.cpp` — that TU now has zero
-  untested functions), and Pass 333 closed the state-control family — all
-  34 remaining functions across `script_functions_state.c` and
-  `script_functions_state_inventory.c` (the `IfStateIs0..15` ladder,
-  content/state accessors, timer arithmetic, `SetWeatherTime`,
-  `DebugMessage`, `End`/`DoNothing`, and the platform-operator checks,
-  `ScriptStateControlFunctions.cpp` — both state TUs now have zero
-  untested functions), and Pass 334 closed the movement family — the 9
-  remaining waypoint/compass and storage/speed functions across
-  `script_functions_movement.c` and
-  `script_functions_movement_physics.c`
-  (`ScriptMovementSupportFunctions.cpp` — both TUs now have zero
-  untested functions), and Pass 335 closed the 12-function target
-  family across `target.c`, `target_orders.c`, and `target_select.c`
-  (`ScriptTargetSupportFunctions.cpp`, including the `CreateOrder`
-  packed-order truncation bug pinned as-is), leaving 6:
-  `spawn_particle.c`'s Disaffirm/ReaffirmCharacter pair and four
-  singles (`SetVolumeNearestTeammate`, `EndModule`,
-  `FindTileInPassage`, `IfLeaderKilled`) — one final straggler slice
-  reaches full `scr_*` dispatch coverage (re-derive the gap list with
-  the `rg -o`/`comm -23` recipe in the pass log).
+  uses a registry table. **The dispatch-coverage campaign is COMPLETE:
+  Passes 330–336 closed the measured gap from ~110 untested `scr_*`
+  functions to zero — every one of the 404 `scr_*` dispatch functions now
+  has test references** (family slices: alerts Pass 330, locomotion 331,
+  action-support 332, state-control 333, movement-support 334,
+  target-support 335, and the final residual grab-bag Pass 336,
+  `ScriptResidualFunctions.cpp`; per-pass detail and pinned legacy quirks
+  are in the pass log — notable pinned bugs include the `CreateOrder`
+  packed-order truncation and the `FindTileInPassage` docstring
+  contradiction). Remaining near-term value here: narrowing helper
+  dependencies as role surfaces improve, and keeping the gap at zero for
+  new functions (re-derive with the `rg -o`/`comm -23` recipe in the pass
+  log).
 - **T3.4 `shared_ptr<Object>` discipline.** Public enumeration is ref-first;
   remaining shared handles are intentional ownership or weak-storage paths.
   Continue preferring `ObjectRef`/non-owning references where the handler

@@ -698,6 +698,48 @@ throughout.
   honestly. Untested `scr_*` count: 18 → 6. Test-only pass; validator
   baseline unaffected by construction. Gate: build green, ctest
   1032/1032 (1010 + 22).
+- Pass 336 (2026-07-28) — T3.3 dispatch-coverage FINAL slice: the last
+  6 untested `scr_*` functions, a residual grab-bag across five TUs, in
+  new `ScriptResidualFunctions.cpp` (24 tests, standard fixture, plus
+  a `ScopedTestEngine` RAII and stub Controller/NonController game
+  states). **Every one of the 404 `scr_*` dispatch functions now has
+  test references — the coverage gap measured at ~110 on 2026-07-22 is
+  closed.** Pinned behaviors: `ReaffirmCharacter` spawns into the
+  particle handler's PENDING list (invisible to active-only counts
+  until a flush) and raises `ALERTIF_REAFFIRMED` whenever below the
+  profile's attached amount, but suppresses the alert at capacity;
+  double-reaffirm before any flush double-spawns; `DisaffirmCharacter`
+  raises `ALERTIF_DISAFFIRMED` unconditionally on any resolved self and
+  synchronously terminates only ACTIVE attached particles —
+  still-pending particles survive and get promoted to active by the
+  call's own iterator teardown; `EndModule` is a silent true-returning
+  no-op with no engine or a non-`IPlayingStateController` current
+  state, and calls `endModuleInVictory()` exactly once on a controller
+  state; `FindTileInPassage`'s docstring ("x/y set to 0 on failure")
+  is false — registers are untouched on failure; its scan overscans
+  one row/column past the passage's nominal span, honors `state.x`
+  only on the first scanned row, re-finds the same tile when re-called
+  with the returned center, and ignores the tile's upper `_img` bits;
+  `SetVolumeNearestTeammate` is an empty stub beyond the guard (no
+  registers, no audio call — the guard test documents that the guard
+  is architecturally indistinguishable from a downstream failure
+  because there is no downstream); `IfLeaderKilled` is a pure
+  non-consuming alert-bit test (exactly `1<<13`), independent of
+  actual team-leader state. **Fixture lessons (bit during authoring):
+  (1) merely READING particle counts via
+  `number_of_attached_particles()`/`iterator()` promotes pending
+  particles to active (iterator destructor side effect) — raw
+  `_activeParticles`/`_pendingParticles` peeks are needed to observe
+  pending state; (2) `Object::respawn()` (part of normal spawn)
+  already auto-reaffirms attached particles, so a freshly spawned
+  torch has 1 pending particle and `ALERTIF_REAFFIRMED` set — clear
+  both for an isolated baseline; (3) `EngineContext::clearEngine()`
+  also clears ImageManager/PerkHandler/ProfileSystem/Audio/Particle —
+  a scoped test engine must reinstall all five afterward to survive
+  single-process (non-ctest) runs.** Untested `scr_*` count: 6 → 0.
+  Test-only pass; validator baseline unaffected by construction.
+  Gate: build green, ctest 1056/1056 (1032 + 24), zero
+  adversarial-review findings.
 
 ## Documentation Passes
 
