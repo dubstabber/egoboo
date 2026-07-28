@@ -26,7 +26,6 @@
 #include "egolib/strutil.h"                    // add_linebreak_cpp
 #include "egolib/Zeitgeist.hpp"                 // namespace Zeitgeist (special-time checks, split out of game.h)
 #include "egolib/game/CharacterParticleOps.h"  // character/particle ops the Entities layer calls back into (split out of game.h)
-#include "egolib/game/Core/EngineContext.hpp"
 #include "egolib/game/mesh.h"
 #include "egolib/game/Inventory.hpp"
 #include "egolib/game/Shop.hpp"
@@ -41,6 +40,7 @@
 
 struct prt_bundle_t;
 struct script_state_t;   // used by-reference in expandEscapeCodes() declaration
+class ModuleProfile;     // used by-shared_ptr in game_begin_module() declaration
 
 //--------------------------------------------------------------------------------------------
 //Public Functions

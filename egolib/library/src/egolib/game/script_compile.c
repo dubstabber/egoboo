@@ -22,8 +22,8 @@
 /// @details
 
 #include "egolib/game/script_compile.h"
-#include "egolib/game/game.h"
 #include "egolib/game/egoboo.h"
+#include "egolib/strutil.h"  // CSTR_END
 #include "egolib/Log/_Include.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
 #include "egolib/Script/CLogEntry.hpp"

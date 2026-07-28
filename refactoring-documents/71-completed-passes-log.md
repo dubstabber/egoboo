@@ -879,6 +879,25 @@ throughout.
   Gate: build green, ctest 1085/1085 (1077 + 8), validator 42/10/245 +
   test.mod 0/0, nm clean, zero submodule drift, zero critical review
   findings.
+- Pass 341 (2026-07-28) — `game.h` conduit cut (include-graph surgery,
+  two files, zero behavior change). `game.h` included
+  `Core/EngineContext.hpp` while referencing zero EngineContext
+  symbols — a pure conduit feeding its ~54 includers; removed, with a
+  local `class ModuleProfile;` forward declaration added (game.h's own
+  `game_begin_module` declaration had leaned on the transitive
+  IProfileSystem forward-decl). `script_compile.c` included `game.h`
+  while using none of its symbol families — removed, with a direct
+  `strutil.h` include for `CSTR_END` (previously transitive). Direct
+  `EngineContext.hpp` includers 112 → 111; zero consumers needed new
+  EngineContext includes. **Two scout claims corrected by
+  verification: (1) no gamestates TU needed a new direct include (the
+  predicted 5 all already had the real headers they use); (2)
+  `script_compile_parser.c` is NOT a dead includer — it uses
+  `MAX_IMPORT_PER_PLAYER` (line 116), so its `game.h` include stays.
+  Lesson: when cutting a conduit include, check the edited header's
+  OWN body for transitive reliance first.** Gate: build green, ctest
+  1085/1085 (total verified, not just percentage), validator 42/10/245
+  + test.mod 0/0, nm clean, zero submodule drift.
 
 ## Documentation Passes
 
