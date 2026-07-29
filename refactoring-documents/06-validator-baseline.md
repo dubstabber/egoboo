@@ -8,7 +8,7 @@ or fail on stale references while remaining partially playable.
 **Read this before treating validator failures as regressions.** The shipped
 legacy content set is not internally consistent; the full run exits nonzero by
 design. Treat parser crashes, new error categories, or baseline count changes
-as suspicious — not the standing 243 legacy errors themselves.
+as suspicious — not the standing 240 legacy errors themselves.
 
 ## 1. Scope
 
@@ -53,12 +53,14 @@ baseline dates to 2026-04-12 with a spawn-reference repair batch to
 | Modules validated | 42 |
 | Passing modules | 10 |
 | Warnings | 10 |
-| Errors | 243 |
+| Errors | 240 |
 
-### Baseline change 2026-07-29: 245 -> 243
+### Baseline change 2026-07-29: 245 -> 240
 
-Both removed errors were the same content defect. `wizard.obj/script.txt` and
-`archwizard.obj/script.txt` wrote a five-character IDSZ literal, `[STAFF]`; an
+Five errors were removed, in two content fixes plus an engine change.
+
+**Two** were the same defect: `wizard.obj/script.txt` and
+`archwizard.obj/script.txt` wrote a five-character IDSZ literal, `[STAFF]`. An
 IDSZ is exactly four characters, so the lexer threw `invalid IDSZ` and the
 engine silently substituted the default do-nothing script, leaving both wizard
 classes with no working script at all. Fixed to `[STAF]`, the Parent ID that
@@ -66,6 +68,17 @@ classes with no working script at all. Fixed to `[STAF]`, the Parent ID that
 malformed IDSZ literals in the content tree. The same pass made
 `load_ai_script_vfs0` log compilation errors at WARNING instead of letting them
 masquerade as "unable to load script file", so a recurrence is visible.
+
+**Three more** were a second instance of the same class: `marcus.obj` and
+`archghost.obj` (both live content in `bishopiacity.mod`) and `santa.obj` called
+`AddTargetQuest`, which is not an opcode. The intended function is `AddQuest`,
+whose `tmpargument` = quest IDSZ / `tmpdistance` = level signature every call
+site already set up. No script in the content tree fails to compile any more.
+
+Compilation is now transactional: it builds into a local script and publishes it
+only after `parse_jumps` has run, so a partially compiled stream with unresolved
+fail-jumps can never reach a caller, and a present-but-broken script is reported
+at WARNING rather than sharing the "unable to load" wording used for an absent one.
 
 Passing modules (`errors=0`): `archaeologist.mod`, `imprisoned2–5.mod`,
 `palshad.mod`, `palwater.mod`, `rcars.mod`, `test.mod`, `valkyrie.mod`.
