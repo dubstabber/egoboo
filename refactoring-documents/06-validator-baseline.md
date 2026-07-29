@@ -8,7 +8,7 @@ or fail on stale references while remaining partially playable.
 **Read this before treating validator failures as regressions.** The shipped
 legacy content set is not internally consistent; the full run exits nonzero by
 design. Treat parser crashes, new error categories, or baseline count changes
-as suspicious — not the standing 245 legacy errors themselves.
+as suspicious — not the standing 243 legacy errors themselves.
 
 ## 1. Scope
 
@@ -53,7 +53,19 @@ baseline dates to 2026-04-12 with a spawn-reference repair batch to
 | Modules validated | 42 |
 | Passing modules | 10 |
 | Warnings | 10 |
-| Errors | 245 |
+| Errors | 243 |
+
+### Baseline change 2026-07-29: 245 -> 243
+
+Both removed errors were the same content defect. `wizard.obj/script.txt` and
+`archwizard.obj/script.txt` wrote a five-character IDSZ literal, `[STAFF]`; an
+IDSZ is exactly four characters, so the lexer threw `invalid IDSZ` and the
+engine silently substituted the default do-nothing script, leaving both wizard
+classes with no working script at all. Fixed to `[STAF]`, the Parent ID that
+`qstaff`/`mstaff`/`blackstaff` already declare. These were the only two
+malformed IDSZ literals in the content tree. The same pass made
+`load_ai_script_vfs0` log compilation errors at WARNING instead of letting them
+masquerade as "unable to load script file", so a recurrence is visible.
 
 Passing modules (`errors=0`): `archaeologist.mod`, `imprisoned2–5.mod`,
 `palshad.mod`, `palwater.mod`, `rcars.mod`, `test.mod`, `valkyrie.mod`.

@@ -90,7 +90,7 @@ data, VFS behavior, script compilation, model loading, or object profiles.
 ```
 
 The legacy content set is not internally consistent. The current full baseline
-is 42 modules, 10 warnings, 245 pre-existing errors. See
+is 42 modules, 10 warnings, 243 pre-existing errors. See
 `refactoring-documents/06-validator-baseline.md` before treating validator
 failures as new regressions.
 

@@ -28,7 +28,7 @@ since the April 2026 baseline are still intact:
   of Pass 336. Passes 345-347 closed the last zero-test gameplay surfaces
   (treasure tables, controls.txt, A* pathfinding, the latch/attack chain).
 - The content validator has a stable known legacy-content baseline: 42 modules,
-  10 warnings, 245 errors.
+  10 warnings, 243 errors.
 
 The main remaining debt is not raw file size anymore. It is interface,
 ownership, and dependency-visibility coupling: `Object` is still broad by
@@ -303,11 +303,11 @@ Full validator baseline, last rechecked 2026-07-15:
 | --- | ---: |
 | Modules validated | 42 |
 | Warnings | 10 |
-| Errors | 245 |
+| Errors | 243 |
 
 The full validator exits nonzero because the shipped legacy content has
 pre-existing integrity errors. Treat parser crashes, new error categories, or
-baseline count changes as suspicious; do not treat the current 245 legacy
+baseline count changes as suspicious; do not treat the current 243 legacy
 content errors as a new regression by themselves.
 
 ## Build And Platform Status
