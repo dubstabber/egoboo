@@ -516,6 +516,15 @@ static bool load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname,
 
         // determine the correct jumps
         parser_state_t::parse_jumps(script);
+    } catch (const idlib::hll::compilation_error& e) {
+        // A syntax error in a present, readable file. Report it: the caller only
+        // says "unable to load", which reads like a missing file and has hidden
+        // real content defects (a five-character IDSZ silently cost the wizard
+        // classes their entire script).
+        Log::Entry entry(Log::Level::Warning, __FILE__, __LINE__, __FUNCTION__);
+        entry << "unable to compile script file `" << loadname << "`: " << e.to_string() << Log::EndOfEntry;
+        Log::activeTarget() << entry;
+        return false;
     } catch (...) {
         return false;
     }
