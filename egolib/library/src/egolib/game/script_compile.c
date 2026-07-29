@@ -504,18 +504,21 @@ static bool load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname,
             return false;
         }
     }
+    // Compile into a scratch script and only publish it once parse_jumps has run.
+    // Compiling in place would leave the caller holding a half-built instruction
+    // stream whose function fail-jumps were never resolved if the parse throws
+    // part way through, and such a stream is executable — every conditional in it
+    // would fall through instead of skipping its body.
+    script_info_t compiled;
     try {
         // save the filename for error logging
-        script._name = loadname;
-
-        // we have parsed nothing yet
-        script._instructions.clear();
+        compiled._name = loadname;
 
         // parse/compile the scripts
-        ps.parse_line_by_line(ppro, script);
+        ps.parse_line_by_line(ppro, compiled);
 
         // determine the correct jumps
-        parser_state_t::parse_jumps(script);
+        parser_state_t::parse_jumps(compiled);
     } catch (const idlib::hll::compilation_error& e) {
         // A syntax error in a present, readable file. Report it: the caller only
         // says "unable to load", which reads like a missing file and has hidden
@@ -529,6 +532,8 @@ static bool load_ai_script_vfs0(parser_state_t& ps, const std::string& loadname,
         return false;
     }
 
+    // Fully compiled and jump-resolved: publish it.
+    script = std::move(compiled);
 	return true;
 }
 bool load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectProfile *ppro, script_info_t& script)
@@ -537,10 +542,21 @@ bool load_ai_script_vfs(parser_state_t& ps, const std::string& loadname, ObjectP
 	/// @details This function loads a script to memory
 
 	if (!load_ai_script_vfs0(ps, loadname, ppro, script)) {
-		Log::Entry e(Log::Level::Info, __FILE__, __LINE__, __FUNCTION__);
-		e << "unable to load script file `" << loadname << "` - loading default script `" << "mp_data/script.txt" << "` instead" << Log::EndOfEntry;
+		// A file that is present but does not compile is a content defect, not a
+		// benign absence; say which case this is, because the two used to be
+		// indistinguishable here and that hid a broken script for years.
+		const bool present = vfs_exists(loadname);
+		Log::Entry e(present ? Log::Level::Warning : Log::Level::Info, __FILE__, __LINE__, __FUNCTION__);
+		e << (present ? "script file `" : "no script file `") << loadname
+		  << (present ? "` did not compile" : "`")
+		  << " - loading default script `" << "mp_data/script.txt" << "` instead" << Log::EndOfEntry;
 		Log::activeTarget() << e;
 		if (!load_ai_script_vfs0(ps, "mp_data/script.txt", ppro, script)) {
+			// Neither source produced a runnable script. Leave nothing behind: an
+			// empty script is inert, whereas whatever a caller might otherwise
+			// inherit here is not guaranteed to be jump-resolved.
+			script._name = loadname;
+			script._instructions.clear();
 			return false;
 		}
 	}

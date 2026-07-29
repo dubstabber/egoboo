@@ -151,6 +151,55 @@ TEST_F(ScriptLoaderFixture, ReturnsFalseWhenPrimaryAndFallbackScriptsBothFail)
     parser_state_t& parser = parser_state_t::get();
 
     EXPECT_FALSE(load_ai_script_vfs(parser, "script-loader-tests/missing-script.txt", profile.get(), script));
+
+    // Nothing runnable was produced, so nothing may be left behind. A partially
+    // compiled stream never reaches parse_jumps, so its conditionals have no
+    // resolved fail-jump and would fall through into their own bodies if executed.
+    EXPECT_TRUE(script._instructions.isEmpty());
+}
+
+// A script that fails to compile PART WAY THROUGH must never leave the caller holding
+// the instructions emitted before the error. Those instructions never reached
+// parse_jumps, so their conditionals have no resolved fail-jump and would fall through
+// into their own bodies if executed.
+//
+// The fallback normally hides this by overwriting the stream, so this test breaks BOTH
+// sources: a primary that compiles part way and then throws on a five-character IDSZ
+// (exactly the defect that cost the wizard classes their scripts, [STAFF] vs [STAF]),
+// and a corrupt default. Without the transactional publish in script_compile.c the
+// caller would be left holding the partial stream here.
+TEST_F(ScriptLoaderFixture, PartiallyCompiledScriptIsNeverPublishedToTheCaller)
+{
+    const auto profile = loadFollowerProfile(6105);
+    ASSERT_NE(profile, nullptr);
+
+    if (!vfs_exists("script-loader-tests"))
+    {
+        ASSERT_TRUE(vfs_mkdir("script-loader-tests"));
+    }
+
+    // A compilable prefix — including a conditional whose body would run if its
+    // fail-jump were never resolved — followed by the invalid IDSZ.
+    const std::string partial =
+        "IfSpawned\n"
+        "  tmpargument = 0\n"
+        "  SetState\n"
+        "IfUsed\n"
+        "  tmpargument = [STAFF]\n"
+        "  IfTargetHasID\n"
+        "    SetState\n";
+    const std::string partialPath = "script-loader-tests/partial-script.txt";
+    ASSERT_TRUE(vfs_writeEntireFile(partialPath, partial.data(), partial.size()));
+
+    // Deny the fallback so it cannot mask what the primary left behind.
+    static constexpr char invalidFallback[] = {'n', 'o', '\0', 'p', 'e'};
+    ASSERT_TRUE(vfs_writeEntireFile("mp_data/script.txt", invalidFallback, sizeof(invalidFallback)));
+
+    script_info_t script;
+    parser_state_t& parser = parser_state_t::get();
+
+    EXPECT_FALSE(load_ai_script_vfs(parser, partialPath, profile.get(), script));
+    EXPECT_TRUE(script._instructions.isEmpty());
 }
 
 } // namespace
