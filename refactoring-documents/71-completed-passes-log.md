@@ -960,6 +960,39 @@ throughout.
   ctest 1090/1090 (1085 + 5), validator 42/10/245 + test.mod 0/0,
   nm clean (archive counts unchanged — header-only additions), zero
   critical review findings, zero fix rounds.
+- Pass 344 (2026-07-28) — headless-GUI arc 3 of 3 (test-only): the
+  three previously-blocked widgets characterized under
+  `HeadlessUIManager`; the hud-widgets layer now has zero untested
+  widgets. `ModuleSelectorWidget.cpp` (extended to 13 tests) pins the
+  wheel/click machine: **the <3-modules `size_t` underflow defeats the
+  blocking gate and `_startIndex` is rescued to 0 only by
+  implementation-defined size_t→int narrowing in `Math::constrain`
+  (gnu++17/GCC caveat documented in-test), with the "next" button
+  spuriously enabled**; fresh selectors have both nav buttons
+  anomalously enabled; a zero-delta wheel event is claimed as handled;
+  wheel at index 0 with exactly 3 modules is a strict no-op; N=4
+  clamping and cross-enabling; `notifyModuleListUpdated` normalization
+  vs the wheel path's underflow-prone formula (agreeing exactly at the
+  N=3 boundary); prev-click underflows `_startIndex` to `SIZE_MAX`
+  (and a subsequent offset-1 module click wraps selection to module
+  0); the N=7 next-click ladder; the per-button selection guard with
+  selection null until a valid click. `CharacterWindowWidget.cpp` (11
+  tests): construction with the Character tab active, title
+  resolution, the statistic tab's labels + exactly six InventorySlots,
+  known-perks tab listing only learned perks with click-reveal,
+  **the active-enchants merge-by-name with count prefix and underscore
+  replacement**, player-vs-non-player level-up button visibility, its
+  tracking of unspent-level changes and unresolvable-player forcing,
+  window self-destroy when the observed character is removed, the
+  level-up click's no-parent self-destroy branch, and the sibling
+  LevelUpWindow open/hide/close lifecycle. `LevelUpWindowWidget.cpp`
+  (5 tests): headless construction centered on screen, immediate
+  destroy for an invalid character, **perk-offer consuming exactly 3
+  seeded draws (5 with JACK_OF_ALL_TRADES) oracle-replayed**, and the
+  `setHoverPerk` prompt/description state machine. One real review
+  round added 8 missing pins. Gate (re-verified directly on the tree
+  after the workflow's gate agents hit a session limit): build green,
+  ctest 1117/1117 (1090 + 27), validator 42/10/245 + test.mod 0/0.
 
 ## Documentation Passes
 

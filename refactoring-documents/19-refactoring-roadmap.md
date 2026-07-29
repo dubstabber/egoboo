@@ -192,11 +192,23 @@ The original phase plan, with where each phase actually stands:
   `ModuleSelector` — previously constructible in *no* manager-installed
   state without throwing — fully constructible headlessly with a manager
   installed (`GuiHeadlessUIManagerStub.cpp`; `ModuleSelectorWidget.cpp`
-  keeps the no-manager-throws variant). `CharacterWindow` (enchant
-  merging) is the next candidate now that both a real font seam and a
-  headlessly-constructible `IUIManager` exist, but has not been
-  attempted. Remaining otherwise: render passes and camera (blocked on a
-  GL-free harness that does not exist).
+  keeps the no-manager-throws variant). Pass 344 completed the arc:
+  all three previously-blocked widgets are now characterized under
+  `HeadlessUIManager` — `ModuleSelectorWidget.cpp` pins the full
+  wheel/click interaction machine including the <3-modules `size_t`
+  underflow that defeats the blocking gate (rescued only by
+  implementation-defined narrowing, with the "next" button spuriously
+  enabled), the fresh-state both-buttons-enabled anomaly, the
+  prev-click underflow to `SIZE_MAX`, and the
+  `notifyModuleListUpdated`-vs-wheel enable-condition asymmetry;
+  `CharacterWindowWidget.cpp` pins construction, the tab machine, the
+  enchant merge-by-name/xN-prefix/underscore logic, and the level-up
+  button lifecycle (including the no-parent self-destroy branch);
+  `LevelUpWindowWidget.cpp` pins the shell — perk-offer seeded draws
+  (3 vs 5 for JACK_OF_ALL_TRADES) and the `setHoverPerk` state
+  machine. The hud-widgets layer now has zero untested widgets.
+  Remaining otherwise: render passes and camera (blocked on a GL-free
+  harness that does not exist).
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data
