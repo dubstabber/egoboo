@@ -22,15 +22,18 @@
 /// "QUIRK PIN") pin behavior that looks like a defect; they cite the exact source
 /// lines and must not be "fixed" by editing the assertion.
 ///
-/// This TU doubles as the reproduction harness for the OPEN wizard.mod play-test bug
-/// ("player fires homing missiles continuously without input"). The engine-side
-/// mechanism is pinned by
-/// `DanceResolvedActionRepublishesUsedEveryCallAndTickWithoutCooldown_WizardBugHarness`
-/// (the ACTION_DA arm: unconditional IfUsed, no timer) and
-/// `UnarmedZapSetsNoReloadAndOnlyAnimationGateThrottles_Quirk` (a successful attack whose
-/// action family is absent from the reload table, so only the animation gate throttles);
-/// the DISABLED `StuckLatchRepro_PlayerFlaggedObjectIsResetByNobody` drives the two
-/// together for 300 ticks and counts charge/fire cycles.
+/// This TU was written partly to investigate the OPEN wizard.mod play-test bug ("player
+/// fires projectiles continuously without input"). IT DOES NOT EXPLAIN THAT BUG and must
+/// not be cited as doing so — a headless boot of the real module across nine driven arms
+/// failed to reproduce continuous fire, and a registered player's latches are level-set
+/// from the input device every tick (Player.cpp:152-198), so they cannot stick.
+/// What the TU does pin, and what is still relevant to that investigation, is that the
+/// ACTION_DA arm has NO cooldown whatsoever
+/// (`DanceResolvedActionRepublishesUsedEveryCallAndTickWithoutCooldown_WizardBugHarness`:
+/// unconditional IfUsed publication, no timer, returns before the reload table) and that a
+/// successful attack whose action family is absent from that table is throttled only by the
+/// animation gate (`UnarmedZapSetsNoReloadAndOnlyAnimationGateThrottles_Quirk`). Something
+/// still has to trigger the first attack; that trigger is unidentified.
 ///
 /// WIZARD CONTENT NOTE (checked against the shipped data, do not "simplify" this):
 /// data/modules/wizard.mod/gamedat/spawn.txt:9 puts Missile in the player's LEFT grip, and
@@ -498,7 +501,8 @@ TEST_F(LatchAttackChainFixture, DanceResolvedActionRepublishesUsedEveryCallAndTi
     // This is the engine mechanism that delivers IfUsed to a held item's (or, unarmed, the
     // actor's own) script at the full 50 UPS with zero engine cooldown.
     //
-    // Read it as the CHARGING half of the wizard bug, not the firing half. The ACTION_DA arm
+    // Relevant to the open wizard.mod investigation as the CHARGING half only — this does not
+    // by itself produce continuous fire, and the trigger remains unidentified. The ACTION_DA arm
     // publishes ALERTIF_USED *before* the animation gate at game_combat.c:268 and never fails,
     // so while it is the only arm taken the item script sees IfUsed on every single tick. For
     // missile.obj that means its IfUsed branch runs forever (selfcontent += 16, capped at
@@ -1523,17 +1527,31 @@ TEST_F(LatchAttackChainFixture, AnimationActLeftFrameEffectIsTheOnlyEdgeIntoChar
 }
 
 //--------------------------------------------------------------------------------------------
-// T16 — DISABLED documenting reproduction of the OPEN wizard.mod play-test bug.
+// T16 — DISABLED documenting test: a SYNTHETIC never-reset latch state.
 //--------------------------------------------------------------------------------------------
 //
-// This test is DISABLED on purpose. It pins the MECHANISM of an open BUG, not desired
-// behavior, so it must never gate CI. Run it manually with:
+// This test is DISABLED on purpose. It pins engine behavior under a hand-built state, not
+// desired behavior, so it must never gate CI. Run it manually with:
 //
 //     ./build/products/x64/bin/egolib-tests-executable
 //         --gtest_also_run_disabled_tests
 //         --gtest_filter='*StuckLatchRepro*'
 //
-// The stuck-latch gap, in three parts:
+// SCOPE CORRECTION (2026-07-29). This test was originally written as a reproduction of the
+// open wizard.mod "fires continuously without input" report. IT IS NOT ONE, and must not be
+// cited as the explanation for that bug. Ego::Player::updateLatches (Player.cpp:152-198)
+// calls resetInputCommands() and then LEVEL-SETS every latch from the input device on every
+// tick — assignment, not OR — so for a REGISTERED player a latch physically cannot stay set
+// against the device. The state below is reachable only by setting the islocalplayer flag by
+// hand without a resolving Ego::Player, which no production path does (module_player_startup
+// creates the Player, the playerList entry and the flag together). What the test genuinely
+// documents is the engine's behavior IF an object ever reaches that split state.
+//
+// The real wizard.mod report is still unexplained: a headless boot of the real module across
+// nine driven arms did not reproduce continuous fire. See refactoring-documents/ and the
+// playtest notes for current status.
+//
+// The split, in three parts:
 //
 //  1. Latch RESET ownership is split by the `islocalplayer` flag. The script driver refuses
 //     to reset anything flagged as a player (script_driver.c:173-179), deferring to the

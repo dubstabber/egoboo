@@ -219,13 +219,18 @@ The original phase plan, with where each phase actually stands:
   crash is fixed.
 - **T3.8 Playtesting discipline.** The plan in
   `05-playtesting-and-bug-hunt-plan.md` is still mostly unexecuted. The
-  wizard.mod continuous-firing latch bug is no longer one of the findings
-  needing live debugging: Pass 347 reproduced it headlessly and pinned the
-  mechanism (`egolib/tests/egolib/tests/LatchAttackChain.cpp`, including a
-  DISABLED repro). It is now a **fix-design decision awaiting the maintainer**
-  — the latch reset-ownership split, the missing D/Z reload-table entries, and
-  the level-triggered latch bits are each a plausible place to intervene, and
-  each changes gameplay feel. Remaining open findings still need live runs.
+  wizard.mod continuous-firing bug is **still open and its mechanism is not
+  confirmed**. Pass 347 built a latch/attack characterization harness
+  (`egolib/tests/egolib/tests/LatchAttackChain.cpp`), but its DISABLED test
+  documents a synthetic never-reset latch state, NOT this bug — a registered
+  player's latches are level-set from the device every tick
+  (`Player::updateLatches`), so they cannot stick. A headless boot of the real
+  module across nine driven arms did not reproduce continuous fire. Confirmed
+  nearby and likely load-bearing: `missile.obj` declares `Attack type : WALK`,
+  which falls through `charToAction` to `ACTION_DA`, an arm that publishes
+  `ALERTIF_USED` before the reload table is consulted — a path with no cooldown
+  at all. Next evidence needed is a user-side log captured after a
+  reproduction. Remaining open findings still need live runs.
 
 ### Deferred By Design
 
