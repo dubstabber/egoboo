@@ -218,9 +218,14 @@ The original phase plan, with where each phase actually stands:
   module smoke coverage exists and the pre-existing no-argument shutdown
   crash is fixed.
 - **T3.8 Playtesting discipline.** The plan in
-  `05-playtesting-and-bug-hunt-plan.md` is still mostly unexecuted; known
-  open runtime findings (for example the wizard.mod continuous-firing latch
-  bug) need runtime debugging, not static fixes.
+  `05-playtesting-and-bug-hunt-plan.md` is still mostly unexecuted. The
+  wizard.mod continuous-firing latch bug is no longer one of the findings
+  needing live debugging: Pass 347 reproduced it headlessly and pinned the
+  mechanism (`egolib/tests/egolib/tests/LatchAttackChain.cpp`, including a
+  DISABLED repro). It is now a **fix-design decision awaiting the maintainer**
+  — the latch reset-ownership split, the missing D/Z reload-table entries, and
+  the level-triggered latch bits are each a plausible place to intervene, and
+  each changes gameplay feel. Remaining open findings still need live runs.
 
 ### Deferred By Design
 

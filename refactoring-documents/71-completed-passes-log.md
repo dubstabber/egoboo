@@ -994,6 +994,72 @@ throughout.
   after the workflow's gate agents hit a session limit): build green,
   ctest 1117/1117 (1090 + 27), validator 42/10/245 + test.mod 0/0.
 
+- Passes 345-347 (2026-07-29) — zero-test gameplay slices closed
+  (test-only; no production code touched). **Pass 345** (`fb9a0c889`,
+  29 tests): `TreasureTables` and `ControlSettingsFile`. Pins the
+  reference-following defect at `TreasureTables.cpp:64`, which looks up
+  the ORIGINAL table name inside the follow loop instead of the current
+  entry, so `%ref` entries re-roll the original table and referenced
+  tables are never consulted (four pins, one a 100-iteration membership
+  check that fails at P = 1-2^-100 on a silent fix); plus duplicate
+  table declarations merging, `END` being special only in element
+  position, and **a colon inside a comment hijacking the whole parse**
+  (why shipped `randomtreasure.txt` comments must stay colon-free). For
+  controls.txt: a missing file throws instead of returning false,
+  partial loads apply with no rollback, an unknown key name unbinds
+  while an empty value preserves, `$FILE_VERSION` is never validated,
+  and colon-counting is format-blind so a stray colon shifts every
+  binding. **Pass 346** (`e73ef6156`, 12 tests): the A* pathfinder —
+  **which is not A***. The `priority_queue` comparator
+  (`AStar.cpp:101-103`) builds a MAX-heap, so the search expands the
+  node FARTHEST from the goal first, and no accumulated g-cost is
+  tracked. Pinned mutation-detectably: a 30x30 open field with the goal
+  two tiles away returns false today because the frontier floods until
+  the 512-key budget fires; the budget counts closed keys inserted at
+  generation before validity checks, capping straight-corridor range near
+  170 tiles. Also: the MAXWAY guard drops the promised destination
+  waypoint while `push` clamps `_head` to 7, the 128-node chain walk
+  emits a PHANTOM corner where the real path runs straight, entry-check
+  failures return before `reset()` so a failed search replays the
+  previous path and appends, fan-off destinations are reachable while
+  intermediates block, and `src == dst` fails on 1x1 but succeeds via
+  out-and-back on 2x1. `get_path` after a search that failed HAVING
+  PASSED BOTH ENTRY CHECKS is a nullptr dereference; it is pinned by
+  omission and every preceding `find_path` uses `ASSERT_TRUE` so a
+  regression fails cleanly instead of segfaulting. `StubTerrain` was
+  extracted verbatim into a shared `StubTerrain.hpp`. **Pass 347**
+  (`5064d7cda`, 23 tests + 1 DISABLED repro): the latch/attack chain,
+  which also identifies the mechanism of the OPEN wizard.mod
+  "fires missiles without input" play-test bug. Three things compound:
+  nobody resets a stuck latch (`updateLatchButtons` consumes bits but
+  never clears them, and the script driver skips `islocalplayer` objects
+  while `Player::updateLatches` only reaches resolving `playerList`
+  entries); the attack has no engine cooldown (the reload table covers
+  U/T/C/S/B/L/X/F, and the D family the wizard content actually lands on
+  is absent, as is Z — the `ACTION_DA` arm publishes `ALERTIF_USED` and
+  returns before the table is consulted, leaving the animation gate as
+  the only throttle); and each attack republishes `ALERTIF_USED` into two
+  scripts that consume it oppositely — `wizard.obj` spawns a missile
+  directly on `IfUsed`, while the held `missile.obj` wand charges on
+  `IfUsed` and fires on its ABSENCE. **The wizard weapon resolves to
+  `ACTION_DA`, not ZAP**: `missile.obj` declares `Attack type : WALK` and
+  `charToAction` has no 'W' case, so it falls to the default; the visible
+  ZAP animation comes from the item script's `TargetDoAction`, bypassing
+  the latch chain. Further quirk pins: the kursed gate reads the same
+  slot it is using though its comment says "other hand"; unarmed mana
+  cost is truncated into FP8 so a 1.0-point cost deducts 1/256 point; a
+  refused attack still breaks stealth; a grab latch in the same tick
+  silently suppresses the attack; forbidding mounts swallow the rider's
+  attack on every axis; and unarmed swipes mutate the character's own
+  ammo. Review lesson (earned three times): the adversarial and coverage
+  lenses found four FALSE CLAIMS IN COMMENTS in the first 347 draft, and
+  the adversarial reviewer correctly REFUTED the orchestrator's own
+  Z-family premise from content evidence — a characterization suite whose
+  comments lie is worse than none, so every citation was re-verified
+  before commit. Gate: build green, ctest 1,117 -> 1,181 (plus the
+  DISABLED repro, which passes when run manually), validator untouched by
+  construction.
+
 ## Documentation Passes
 
 - The 2026-04-18 consolidation collapsed the directory from 65 files to 14:
