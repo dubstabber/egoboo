@@ -1060,6 +1060,239 @@ throughout.
   DISABLED repro, which passes when run manually), validator untouched by
   construction.
 
+- Passes 348-349 (2026-08-05) — script compilation stopped hiding content
+  defects. **Pass 348** (`75773fe2d`): `load_ai_script_vfs0` caught every
+  exception and returned false, so a syntax error in a present, readable
+  script was indistinguishable from a missing file, and the caller logged
+  "unable to load script file ... loading default script instead" — phrasing
+  that reads like an absent file. **That wording hid a real content defect
+  for a long time: a five-character IDSZ cost both wizard classes their
+  entire script and the engine said nothing beyond that misleading INFO
+  line.** Compilation errors now log at WARNING with the script path and the
+  error idlib already formats; other exceptions keep the old silent path and
+  the fallback is unchanged. Shipped with the `[STAFF]` -> `[STAF]` data fix.
+  Validator 42/10/245 -> 42/10/243. **Pass 349** (`318e20ef6`): compilation
+  was not transactional — a script that threw part way through left the
+  caller holding whatever instructions had been emitted, which never reached
+  `parse_jumps`, so every conditional fell through into its own body instead
+  of skipping it. The fallback normally overwrote it, so the hazard only
+  surfaced when the default script was also unavailable, which the content
+  validator hits on every run. Compilation now builds into a local
+  `script_info_t` and move-assigns only after `parse_jumps` returns, making a
+  half-built stream unrepresentable; if the fallback also fails the script is
+  explicitly emptied. Regression test breaks both sources at once so the
+  fallback cannot mask what the primary left behind (verified by reverting
+  the fix). Shipped with the `AddTargetQuest` opcode data fix. Gate: ctest
+  1,181 -> 1,182, validator 42/10/243 -> **42/10/240**, recorded in
+  `46513436f`/`085e61270`.
+
+- Passes 350-353 (2026-08-06) — the failure-contract front. Theme: the
+  mechanical fronts are closed, so this batch went after places where the
+  code's *declared* failure behavior and its *actual* failure behavior
+  disagree. Selected by an eight-lens scout over the runtime, judged on
+  architectural value, tractability and maintainer value.
+
+  **Pass 350** (`76b073f27`, 12 tests) — the `setup.txt` load/save contract.
+  `egoboo_setup.h` promises that a failed load is "equivalent to the case in
+  which that file is empty"; that contract was unreachable in both directions
+  and crashed when reached. An **absent** file threw out of `begin()`, because
+  `ConfigFileParser` was constructed outside the `try` and its
+  `Ego::Script::Scanner` base reads the file in its constructor — and
+  `SystemService`'s constructors call `begin()` and ignore its result, so the
+  throw surfaced from engine startup. A **malformed** file segfaulted:
+  `file->getFileName()` inside its own `if (!file)` test. `end()` had the same
+  shape and `~SystemService` calls it unconditionally. And `started` was set
+  before the fallback was attempted, so a failed fallback returned false while
+  advertising a loaded configuration. **The defect was self-reinforcing:**
+  `unparse` rewrites `setup.txt` through a truncating `vfs_openWrite` on every
+  clean shutdown, so a crash mid-save leaves a truncated file, and the next
+  boot then crashes on the exact path meant to keep the game bootable — which
+  prevents the rewrite that would repair it. `started` is now maintained as the
+  documented invariant `started == (file != nullptr)`. In `configfile.c` the
+  six `fprintf(stderr, ...)` diagnostics moved to the log target and the
+  swallowing `catch (...)` in `parse()` now reports first, both through
+  `Log::tryActiveTarget()` because the parser signals failure by return value
+  only, with the report inside the catch additionally guarded so `parse()`
+  still cannot throw. **All 12 tests fail against the unfixed code, every one
+  by SIGSEGV** (re-verified independently after the pass by reverting only the
+  production `.c` files). Gate: ctest 1,182 -> 1,194, validator 42/10/240.
+
+  **Pass 351** (`ae38e739f`, 65 tests, ZERO production change) — the CPU
+  lighting-cache math, `egolib/game/lighting.c`. See the T3.5 note in the
+  roadmap for why this was reachable at all. Method worth reusing: every test
+  was checked against a deliberate mutation of a *scratch copy* of
+  `lighting.c` in an isolated rig, so "this test would catch a change" is
+  measured, not asserted. **Three of the twenty mutations killed nothing,
+  which meant a comment was claiming tripwire power the assertions did not
+  have; those comments were corrected rather than the tests padded.** The
+  pass also refuted its own scouting hypothesis: the unguarded divide by a
+  degenerate mesh bbox does *not* produce NaN, because `Math::constrain` is
+  `max(lo, min(n, hi))` and every NaN comparison is false, so it launders
+  NaN to 0 — the real defect is a silent endpoint bias, and a test written to
+  the original hypothesis would have failed. Fourteen defects pinned and
+  deliberately not fixed; the follow-up queue is in the roadmap under T3.5.
+  One behavior is pinned as a *tripwire rather than a defect*:
+  `sum_dyna_lighting` making dynalights purely ambient is deliberate, restored
+  in `31f4fd1a2` to keep torches usable in zero-ambient modules such as
+  `palshad.mod`. Gate: ctest 1,194 -> 1,259, validator 42/10/240 (both
+  unchanged by construction).
+
+  **Pass 352** (`0921db5c4`, 4 tests) — one broken module folder could wipe
+  the module list. `ProfileSystem::loadModuleProfiles` clears
+  `_moduleProfilesLoaded` and then loads each discovered `.mod`. Its
+  "unable to load module" `else` branch was **unreachable**:
+  `ModuleProfile::loadFromFile` has exactly one return statement and never
+  returns nullptr — it reports failure by throwing, and the throw escaped the
+  whole scan *after* the clear had run. Users install modules by dropping
+  folders into the user directory, which is mounted into `mp_modules`, so one
+  bad drop truncated the list. Demonstrated end to end: a single truncated
+  `gamedat/menu.txt` made the content validator print `fatal: unknown
+  exception` and validate **zero** modules; it now warns about that folder by
+  name and validates the other 42. The same function allocated its
+  `SearchContext` with `new` and freed it after the loop, so any throw in
+  between leaked it, and the `if (!ctxt)` guarding a non-placement `new` was
+  unreachable. **All seven `SearchContext` sites** converted to stack objects,
+  five copies of the dead null check removed; three had a real exception
+  window with a throwing content parser inside. `SearchContext` itself is
+  unchanged — its user-declared destructor suppresses the implicit moves while
+  leaving the implicit copy silently wrong, so every conversion is
+  direct-initialization only, and the `DebugObjectLoadingState` constructor
+  site is explicitly scoped so the context still dies before the loop that
+  remounts the VFS. All 4 tests fail against the pre-change code (verified
+  independently). Noted for follow-up: `game_load_module_profiles` (`game.c`)
+  is dead code with no callers, its live replacement being the
+  `Module_loading.cpp` helper that already used a stack context. Gate: ctest
+  1,259 -> 1,263, validator 42/10/240.
+
+  **Pass 353** (11 tests) — the generalization of Pass 352: `catch (const
+  std::exception&)` is blind to every exception the engine's own parsers
+  throw. `idlib::exception` (`idlib/exception/exception.hpp:64`) is declared
+  with **no base class**, and both of its only two direct subclasses —
+  `idlib::runtime_error` (`runtime_error.hpp:41`) and
+  `idlib::hll::compilation_error` (`hll/compilation_error.hpp:60`, base of
+  `Ego::Script::MissingDelimiterError`, `Script/Errors.hpp:29`) — are what
+  `vfs_readEntireFile` (`vfs_bulk.c:56`), `ReadContext`, the script compiler
+  and IDSZ parsing actually raise. A std-only handler there looks like fault
+  isolation and is decoration. The root cause is in the `idlib/` submodule and
+  was deliberately **not** touched; the artifact of this pass is a documented
+  idiom (idlib arm first, std arm second, both `const&` because
+  `idlib::exception`'s copy ctor and dtor are protected, `to_string()`
+  flattened because it is multi-line by design) plus a `static_assert` pin.
+
+  Sites, each judged separately rather than swept. **Widened**:
+  `ObjectProfile_load.cpp:233` (`data.txt`; the one high-value runtime site —
+  the lone `std::runtime_error` arm caught *nothing* `loadDataFile` throws, so
+  a malformed `data.txt` escaped past `ProfileSystem::loadOneProfile` into
+  whatever was running) and `:139` (model load, for a malformed `copy.txt`
+  reaching `collectHealAliases`' unguarded loop); the six validator handlers
+  (`egoboo-content-validator.cpp:1252`, `:1368`, `:1390`, `:1422`, `:1489`,
+  `:1628`); `FontManager.cpp:121` (symmetry — an idlib throw from a *fallback*
+  font replaced the original failure and skipped the remaining fallbacks).
+  **Found and fixed, not in the original brief**: `LoadingState.cpp:281`, the
+  entry point of `_loadingThread`, caught idlib only, so a `std::exception` —
+  the plain `std::runtime_error` `ModelDescriptor` raises at four points, or
+  `std::bad_alloc` — reached the top of a `std::thread` and called
+  `std::terminate`, contradicting the handler's own comment. **Rejected as
+  already correct** (the brief was wrong on both): `Main.cpp:84` — an idlib
+  arm has been at `:72` since 2018 (`a2e87c0ecd`); and `FontManager.cpp:80`
+  and `:89`, which are the std second nets of the idlib arms at `:50`/`:75` added in
+  `a01ac2f2fb`. Only the `"Unhandled asException"` title typo was fixed there.
+  **Left alone with reasons recorded at the sites**: the 23 cleanup-then-
+  rethrow `catch (...)` handlers, the 8 "optional file" `catch (...)` sites
+  where the blanket catch is what makes them idlib-aware, `egoboo_setup.c`'s
+  two documented `catch (...)`, and `map_file.c:284` (pure binary I/O, no
+  idlib throw site in the try).
+
+  The band-aid: `script_functions_state_inventory.c` wrapped
+  `ModuleProfile::moduleHasIDSZ` in `catch (...) { return false; }` while
+  feeding it a **content-supplied** module name out of an object's message
+  table. `moduleHasIDSZ` now carries an explicit miss contract
+  (`ModuleProfile.hpp:116`): a module that cannot be found, opened or parsed
+  simply does not have the IDSZ. It catches `idlib::hll::compilation_error`
+  and `idlib::runtime_error` specifically — **not** the base and **not**
+  `catch (...)` — so `std::bad_alloc` keeps propagating; the diagnostic goes
+  through `Log::tryActiveTarget()` because `activeTarget()` throws when
+  logging is uninitialized. The blanket handler is gone, which matters because
+  nothing on the script-VM dispatch path catches anything. Documented
+  corollary: the scan is linear, so a malformed expansion hides every
+  expansion after it. Accompanying fix in `moduleAddIDSZ`
+  (`ModuleProfile.cpp:363`): its `vfs_copyFile` return was discarded, harmless
+  only while `moduleHasIDSZ` *threw*; now that it reports a miss, the guard is
+  explicit, otherwise the function would fabricate a user-directory `menu.txt`
+  holding nothing but the appended expansion line — manufacturing exactly the
+  broken module Pass 352 exists to survive. Known residual, recorded at the
+  site: `vfs_copyFile` never parses, so a source that opens but does not parse
+  is still copied and appended to.
+
+  Deliberately **not** widened: `ObjectProfile_load.cpp`'s two second arms stay
+  at `std::runtime_error`. Widening them to `std::exception` would have added
+  reach for `std::bad_alloc` and nothing else (`ObjectProfile_data.cpp` has no
+  `throw` of its own), and an allocation failure reported as "failed to parse
+  data.txt" is a fabricated content fault.
+
+  Verification. Both new contracts are mutation-tested: deleting the `"NONE"`
+  sentinel and deleting the `vfs_copyFile` guard each fail exactly one test.
+  Validator **unchanged at 42/10/240** with per-module rows byte-identical —
+  provable rather than merely observed, since `parse_failure` and
+  `scan_failure` are the only categories those six handlers emit and both are
+  absent from `category_counts`, so nothing in those try blocks throws on
+  shipped content at all. Positive proof the widening is not a no-op, by
+  injection through `EGOBOO_USER_DIR` (never the `data/` submodule): an empty
+  `wawalite.txt` used to print `fatal: unknown exception` and abandon the run
+  after 35 of 42 module rows with no summary line; it now reports `[fail]
+  test.mod ... errors=1` and completes. Untested by design and disclosed:
+  the six validator handlers, `FontManager.cpp:114`, the `LoadingState` arms,
+  and the model-load idlib arm (unreachable from the tests, which all pass
+  `lightWeight=true`). Gate: ctest 1,263 -> 1,274, validator 42/10/240.
+
+  Side-finding, deliberately deferred out of this pass because acting on it
+  moves the measured baseline: `ScriptLoader.cpp:148`/`:196` write a 5-byte
+  invalid `mp_data/script.txt` fixture into the user directory and never remove
+  it. It shadows the real default AI script, which is why the documented
+  baseline read 42/10/**240** while a fresh user directory measures
+  42/**20**/**230**. Acted on immediately afterwards as Pass 354.
+
+  **Pass 354** (2026-08-06) — the validator baseline was measuring the machine,
+  not the content. Following up the side-finding above: `vfs_writeEntireFile`
+  writes to the PhysFS write directory, which is the user directory, and
+  `setup_init_base_vfs_paths` mounts the user directory *ahead* of the data
+  directory. So the corrupt fixture shadowed
+  `data/basicdat/mp_data/script.txt` for every later run against that user
+  directory, including every run of `egoboo-content-validator`. Ten objects
+  that fall back to the default script are `script_fallback` **warnings** with
+  a valid default and `script_compile_failure` **errors** with a corrupt one,
+  so the long-documented **42/10/240 was the polluted measurement and
+  42/20/230 is the true one**. Proven by set-aside rather than argued: moving
+  the leaked file flips the numbers and moving it back flips them again.
+  `ctest` contained the damage, because each test process gets a per-PID
+  `EGOBOO_USER_DIR` that is removed afterwards; it escaped whenever
+  `egolib-tests-executable` was run directly, which is an ordinary thing to do
+  while debugging one case, and then persisted indefinitely. Note the leak
+  cannot reach a player — players do not run the test binary — but the
+  *mechanism* (any corrupt `mp_data/script.txt` in the user directory
+  shadowing the shipped default) would degrade a real install.
+
+  This also retroactively explains the note `06-validator-baseline.md` had
+  carried for months, that "a transient alternate classification (25 warnings /
+  230 errors) has been observed from the console path in some environments".
+  It was neither transient nor environmental: it was whether the machine had a
+  leaked `script.txt`. **A documented anomaly that gets labelled "transient" or
+  "environment-dependent" and left alone is usually a real mechanism nobody
+  chased.**
+
+  Fixed with a `ScopedUncompilableDefaultScript` RAII guard in
+  `ScriptLoader.cpp` that installs the fixture and removes it again, verified
+  by running the suite directly against a scratch user directory and
+  confirming nothing is left behind. Baseline corrected across `AGENTS.md`,
+  `CODEBASE-HEALTH-STATUS.md`, `19-refactoring-roadmap.md` and
+  `06-validator-baseline.md` §3.1 — including passing modules 10 -> **11**
+  (`spiderlair.mod`'s errors were entirely the artifact), the §4 composition
+  table, and the highest-error module list. **Rule earned: a test that writes
+  outside a test-owned subdirectory can silently move a project-wide
+  measurement, because the user directory shadows `mp_data`. Treat any such
+  write as a scoped resource.** Compare `--json` `category_counts` rather than
+  the totals; the totals can move with no content change at all.
+
 ## Documentation Passes
 
 - The 2026-04-18 consolidation collapsed the directory from 65 files to 14:

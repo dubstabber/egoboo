@@ -86,6 +86,55 @@ protected:
 
 std::unique_ptr<ContentRuntimeBootstrap> ScriptLoaderFixture::s_runtime;
 
+/// Installs a deliberately uncompilable `mp_data/script.txt` for as long as it is in scope,
+/// so a test can deny the default-script fallback, and removes it again afterwards.
+///
+/// The removal is not tidiness. `mp_data` resolves through the user directory first
+/// (setup_init_base_vfs_paths mounts it ahead of the data directory), and vfs_writeEntireFile
+/// writes to the PhysFS write directory, which is the user directory. A copy left behind there
+/// therefore SHADOWS the real default AI script at data/basicdat/mp_data/script.txt for every
+/// later run against that user directory - including runs of other programs, notably
+/// egoboo-content-validator. That is not hypothetical: it silently moved the project's
+/// documented validator baseline, because ten objects whose own script fails to compile fall
+/// back to the default and are reported as `script_fallback` warnings when the default is
+/// valid, but as `script_compile_failure` errors when it is not.
+///
+/// Under ctest the damage is contained, because each test process gets its own EGOBOO_USER_DIR
+/// which is removed afterwards. It escapes when egolib-tests-executable is run directly, which
+/// is an ordinary thing to do while debugging a single case.
+///
+/// vfs_delete_file removes the file from the write directory only, so the read-only copy in the
+/// data directory is untouched and the fallback resolves to it again once this goes out of scope.
+class ScopedUncompilableDefaultScript
+{
+public:
+    ScopedUncompilableDefaultScript()
+    {
+        // Embedded NUL, so the lexer fails: 'n', 'o', '\0', 'p', 'e'.
+        static constexpr char invalidFallback[] = {'n', 'o', '\0', 'p', 'e'};
+        m_installed = vfs_writeEntireFile(defaultScriptPath, invalidFallback, sizeof(invalidFallback));
+        EXPECT_TRUE(m_installed) << "could not install the uncompilable default script";
+    }
+
+    ~ScopedUncompilableDefaultScript()
+    {
+        if (!m_installed) return;
+        // ADD_FAILURE rather than an assertion: this runs in a destructor.
+        if (!vfs_delete_file(defaultScriptPath))
+        {
+            ADD_FAILURE() << "could not remove `" << defaultScriptPath
+                          << "` from the user directory; it will shadow the real default script";
+        }
+    }
+
+    ScopedUncompilableDefaultScript(const ScopedUncompilableDefaultScript&) = delete;
+    ScopedUncompilableDefaultScript& operator=(const ScopedUncompilableDefaultScript&) = delete;
+
+private:
+    static constexpr const char* defaultScriptPath = "mp_data/script.txt";
+    bool m_installed = false;
+};
+
 TEST_F(ScriptLoaderFixture, LoadsValidPrimaryScriptWithoutFallingBack)
 {
     const auto profile = loadFollowerProfile(6101);
@@ -144,8 +193,7 @@ TEST_F(ScriptLoaderFixture, ReturnsFalseWhenPrimaryAndFallbackScriptsBothFail)
     const auto profile = loadFollowerProfile(6104);
     ASSERT_NE(profile, nullptr);
 
-    static constexpr char invalidFallback[] = {'n', 'o', '\0', 'p', 'e'};
-    ASSERT_TRUE(vfs_writeEntireFile("mp_data/script.txt", invalidFallback, sizeof(invalidFallback)));
+    const ScopedUncompilableDefaultScript noFallback;
 
     script_info_t script;
     parser_state_t& parser = parser_state_t::get();
@@ -192,8 +240,7 @@ TEST_F(ScriptLoaderFixture, PartiallyCompiledScriptIsNeverPublishedToTheCaller)
     ASSERT_TRUE(vfs_writeEntireFile(partialPath, partial.data(), partial.size()));
 
     // Deny the fallback so it cannot mask what the primary left behind.
-    static constexpr char invalidFallback[] = {'n', 'o', '\0', 'p', 'e'};
-    ASSERT_TRUE(vfs_writeEntireFile("mp_data/script.txt", invalidFallback, sizeof(invalidFallback)));
+    const ScopedUncompilableDefaultScript noFallback;
 
     script_info_t script;
     parser_state_t& parser = parser_state_t::get();

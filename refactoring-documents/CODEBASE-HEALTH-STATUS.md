@@ -4,10 +4,12 @@ Current-state health snapshot for the Egoboo workspace. This document is the
 canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
-Snapshot date: 2026-07-29 (test-suite counts; the archive, source-size, warning
-and `::get()` measurements below still date from 2026-07-21 — Passes 345-347 were
-test-only and did not touch production code). Measurements below were taken from
-the live tree and the existing `build/products/x64/lib/libegolib-*.a` archives.
+Snapshot date: 2026-08-06 (test-suite, source-size and validator numbers
+re-measured after Passes 350-354; the archive, warning and `::get()`
+measurements date from 2026-07-21 and were re-checked on 2026-08-06 as
+unchanged — that batch was failure-contract work, not coupling work).
+Measurements below were taken from the live tree and the existing
+`build/products/x64/lib/libegolib-*.a` archives.
 
 ## Executive Summary
 
@@ -23,12 +25,13 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 1,183 ctest cases (1,182 run plus one DISABLED documenting test).
+  configures 1,275 ctest cases (1,274 run plus one DISABLED documenting test).
   Every one of the 404 `scr_*` script dispatch functions has test references as
   of Pass 336. Passes 345-347 closed the last zero-test gameplay surfaces
-  (treasure tables, controls.txt, A* pathfinding, the latch/attack chain).
+  (treasure tables, controls.txt, A* pathfinding, the latch/attack chain), and
+  Pass 351 closed the CPU lighting math.
 - The content validator has a stable known legacy-content baseline: 42 modules,
-  10 warnings, 240 errors.
+  20 warnings, 230 errors, measured on a clean user directory.
 
 The main remaining debt is not raw file size anymore. It is interface,
 ownership, and dependency-visibility coupling: `Object` is still broad by
@@ -61,8 +64,8 @@ commands on 2026-07-21 over the same runtime scope
 | `update_wld` references | 65 | 4 comment/debug-label artifacts |
 | `egolib` link layout | 1 monolithic archive | 9 archives, acyclic DAG |
 | `egolib/egolib.h` uber-header | present, 17 direct includers | deleted |
-| Test files / lines | 5 / 383 | 73 / 35,444 |
-| Test cases | 10 | 1,183 |
+| Test files / lines | 5 / 383 | 77 / 38,526 |
+| Test cases | 10 | 1,275 |
 | Content validation tooling | none | `egoboo-content-validator` with known full baseline |
 | Cartman map editor | not in the build graph | CMake-gated `EGOBOO_BUILD_CARTMAN` target, runtime-verified |
 | Windows story | Visual Studio + AppVeyor | Linux-hosted MinGW cross-build; VS/AppVeyor quarantined as legacy |
@@ -70,7 +73,7 @@ commands on 2026-07-21 over the same runtime scope
 Reading the table: raw size grew (splits add headers and seam interfaces, and
 the test suite is 92× larger), but every structural-debt metric collapsed. The
 three mutable globals that defined the old architecture are gone from active
-code, the 8,000-line monoliths are gone, and behavior is now pinned by 1,183
+code, the 8,000-line monoliths are gone, and behavior is now pinned by 1,275
 tests plus a content-validator baseline where the old tree had 10 tests and no
 validation tooling.
 
@@ -91,10 +94,10 @@ native.
 | `egolib` archives | 9 | `foundation-base`, `physics`, `renderer`, `gui`, `library`, `game-graphics`, `hud-widgets`, `scriptvm`, `gamestates` |
 | Archive members | 168 / 6 / 28 / 24 / 85 / 21 / 6 / 33 / 19 | In the archive order above, measured with `ar t` |
 | Runtime source files | 801 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 289 `.cpp`, 73 `.h`, 336 `.hpp` |
-| Runtime source lines | 130,710 | Same scope as above |
-| Test files / lines | 73 / 35,444 | `egolib/tests`, source/header files only |
-| ctest cases | 1,183 | `ctest --test-dir build -N`; one is a DISABLED documenting test, so 1,182 run |
-| ctest baseline | 1,182 / 1,182 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| Runtime source lines | 131,112 | Same scope as above |
+| Test files / lines | 77 / 38,526 | `egolib/tests`, source/header files only |
+| ctest cases | 1,275 | `ctest --test-dir build -N`; one is a DISABLED documenting test, so 1,274 run |
+| ctest baseline | 1,274 / 1,274 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | Build warnings (fresh scratch build) | 735 | GCC + Ninja, full from-scratch build; 2,030 before Pass 340; residual is dominated by submodule-owned loci (~470 lines from idlib's `<cstdbool>`) plus ~24 scattered 1-2-line `-Wdeprecated-copy` sites |
 | `::get()` call sites | 353 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 272 | Dominant intentional engine seam; Passes 313-317 narrowed the render/HUD chains and `graphic.c`/`graphic_prt.c`; Pass 318 constructor-injected config and log target into `AudioSystem` (first constructor-injected engine service); Pass 319 consolidated the gamestate-screen fetch clusters (family endpoint: no member refs due to teardown ordering, fixed base-class virtuals); Pass 320 constructor-injected the log target into `ProfileSystem` (second injected service, resolved once at the `ContentRuntimeBootstrap` composition root); Pass 321 threaded renderer/graphics-system through the `CameraSystem::renderAll` chain (injection ruled out: headless fixtures initialize the real singleton without a renderer, and the runtime never uninitializes it); Pass 322 constructor-injected input/renderer/graphics/font services into the developer `Console` (third injected service, resolved once in `ConsoleBootstrap`; `Console.cpp` no longer includes `game/Core/EngineContext.hpp`); Pass 324 constructor-injected the renderer into `BillboardSystem` (fourth injected service, resolved in the `GameAppImpl` composition constructor) and moved its floating-text-font access onto the GUI-layer `activeUIManager()` seam; Pass 325 threaded the particle handler and log target through the `ParticleGraphics::update` chain from its per-frame root (`GFX::update_particle_instances`, the Pass 313-315 trailing-parameter idiom — `ParticleGraphics` is a per-particle value type, not a service) |
@@ -297,18 +300,22 @@ ctest --test-dir build -j20 --output-on-failure
 The test runner is parallel-safe in the current harness. Each test process gets
 its own `EGOBOO_USER_DIR` through per-PID isolation.
 
-Full validator baseline, last rechecked 2026-07-15:
+Full validator baseline, last rechecked 2026-08-06. **Measure it on a clean
+user directory** — see `06-validator-baseline.md` §3.1, where a leaked test
+artifact is shown to have been reporting this as 42/10/240:
 
 | Metric | Value |
 | --- | ---: |
 | Modules validated | 42 |
-| Warnings | 10 |
-| Errors | 240 |
+| Warnings | 20 |
+| Errors | 230 |
 
 The full validator exits nonzero because the shipped legacy content has
 pre-existing integrity errors. Treat parser crashes, new error categories, or
-baseline count changes as suspicious; do not treat the current 240 legacy
-content errors as a new regression by themselves.
+baseline count changes as suspicious; do not treat the current 230 legacy
+content errors as a new regression by themselves. Compare the `--json`
+`category_counts` rather than the totals — the totals can move without any
+content change if the measuring machine's user directory is dirty.
 
 ## Build And Platform Status
 

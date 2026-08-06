@@ -38,7 +38,7 @@ The original phase plan, with where each phase actually stands:
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 Baseline freeze | Canonical build docs, source-scope rules, portability capture | **Done** — `doc/build-linux.md`, `doc/build-windows.md`, these docs |
-| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; 977 ctest cases |
+| 1 Observability | Validator, parser smoke tests, regression harness | **Done** — `egoboo-content-validator` with known baseline; ctest case count in `CODEBASE-HEALTH-STATUS.md` |
 | 2 Context extraction | Retire raw globals behind explicit contexts | **Done** — `_gameEngine`/`_currentModule`/`update_wld` gone from active code |
 | 3 Engine/gameplay service split | Real boundaries between platform services, content, session, presentation | **Largely done** — nine-archive acyclic DAG, active `I*` seams, composition-root bootstraps; constructor injection is the remaining frontier |
 | 4 File/subsystem decomposition | Break oversized hotspots | **Done for production code** — zero runtime files over 1,000 lines; mechanical split fronts are substantially exhausted |
@@ -83,6 +83,35 @@ The original phase plan, with where each phase actually stands:
   target. New code must not add silent failures; migrate the mixed
   exception/boolean/null-return styles only in bounded subsystem passes with
   tests.
+
+  **Know this before writing any handler: `idlib::exception` has no base
+  class.** It is declared `class exception` at
+  `idlib/library/src/idlib/exception/exception.hpp:64` and does *not* derive
+  from `std::exception`. `idlib::runtime_error` derives from it
+  (`runtime_error.hpp:41`), as does `idlib::hll::compilation_error` and its
+  subclass `Ego::Script::MissingDelimiterError`
+  (`egolib/Script/Errors.hpp:29`). These are what the engine's own parsers
+  throw — `vfs_readEntireFile` (`vfs_bulk.c:56`), `ReadContext`, the script
+  compiler, IDSZ and qualified-name parsing. Therefore **every
+  `catch (const std::exception&)` and `catch (const std::runtime_error&)` in
+  this codebase is blind to them**, and a handler that looks like fault
+  isolation is decoration. This was demonstrated at runtime: dropping a
+  truncated `gamedat/menu.txt` into the user directory made the content
+  validator print `fatal: unknown exception` and validate zero modules,
+  because its own `catch (const std::exception&)` did not match.
+
+  The established idiom (Pass 352, `ProfileSystem::loadModuleProfiles`) is
+  `catch (const idlib::exception&)` first and `catch (const std::exception&)`
+  second, **both by reference** — `idlib::exception`'s copy constructor and
+  destructor are `protected`, so a by-value handler will not compile. Use
+  `to_string()` for the message, and flatten it if one log record per event
+  matters: `idlib::runtime_error::to_string()` is deliberately multi-line.
+  Two further consequences are worth remembering: `catch (...)` is sometimes
+  load-bearing rather than lazy (`Ego::Setup::begin` needs it precisely
+  because narrowing to `std::exception` would reintroduce a defect), and a
+  handler being unreachable can make a *sibling* branch unreachable too —
+  `ModuleProfile::loadFromFile` never returns nullptr, so the "unable to load
+  module" branch below it was dead code for as long as it existed.
 - **T1.5 Future file splits** only when they improve ownership, navigation, or
   archive boundaries — the routine size-driven split queue is exhausted.
   Verify symbol ownership after archive moves; never let private headers
@@ -109,7 +138,7 @@ The original phase plan, with where each phase actually stands:
   define schemas/IR → build importers+validators+exporters → dual-load and
   compare representative modules → only then retire legacy parsers.
   Precondition surfaced by the validator: a spawn-reference reconciliation
-  pass (229 of 245 baseline errors are `missing_spawn_object`) and a
+  pass (the large majority of the baseline errors are `missing_spawn_object`) and a
   per-module triage list. See `03-data-and-content-audit.md` §7–8 for design
   guidance.
 - **T3.2 Model asset migration.** The glTF/GLB loader v1 accepts only a
@@ -207,8 +236,35 @@ The original phase plan, with where each phase actually stands:
   `LevelUpWindowWidget.cpp` pins the shell — perk-offer seeded draws
   (3 vs 5 for JACK_OF_ALL_TRADES) and the `setHoverPerk` state
   machine. The hud-widgets layer now has zero untested widgets.
-  Remaining otherwise: render passes and camera (blocked on a GL-free
-  harness that does not exist).
+
+  Pass 351 corrected this item's own framing. "Blocked on a GL-free harness
+  that does not exist" was true of render passes and the camera, but it had
+  been over-applied: `egolib/game/lighting.c` is the CPU lighting-cache math
+  under mesh, model and particle lighting, it lives in
+  `libegolib-foundation-base.a` and nowhere else, and its only include is
+  `lighting.h`, whose only include is `Math/_Include.hpp`. It needed no
+  harness at all — 65 tests, bare `TEST()`, no fixture. **Before writing off
+  a rendering-adjacent file as GL-blocked, check its actual include closure
+  and archive membership rather than its subject matter.** Remaining
+  genuinely blocked: render passes and camera rendering.
+
+  That pass also left a queue of *pinned but deliberately unfixed* lighting
+  defects. They are now safe to fix — the tests are in place — but each
+  changes rendering, so each wants its own deliberate pass and a look at the
+  result on screen. In rough priority order: the uninitialized-read chain
+  (`graphic_lighting.c:180` declares `low_delta`/`hgh_delta` uninitialized
+  and passes them to `lighting_cache_test`, whose reference parameters are
+  accumulated into rather than assigned, then divided in place — and `:189`
+  discards the clean return value in favour of the contaminated
+  combination, which lands in the persistent per-tile `_d1_cache` and gates
+  the per-frame relight; live in shipped builds because `CLIP_LIGHT_FANS` is
+  defined); `lighting_project_cache` throwing `std::domain_error` out of a
+  per-frame render path on a collapsed basis axis, where the non-throwing
+  `get_vector_or_default()` sits unused next to the throwing accessor;
+  `_max_light` being a manually-maintained cache that neither `blend`
+  overload refreshes; and `dyna_lighting_intensity`'s falloff being
+  cylindrical, which silently makes the low/hgh height split a no-op for
+  dynamic lights. Full list with file:line in the Pass 351 log entry.
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data
@@ -270,5 +326,7 @@ replacement.
 - glTF/GLB loading landed behind the current static-mesh subset.
 - Public object enumeration is ref-first through `ObjectRef`.
 - `cartman` wired into CMake behind `EGOBOO_BUILD_CARTMAN`.
-- Full validator baseline stable at 42 modules / 10 warnings / 245 known
-  legacy content errors.
+- Full validator baseline stable at 42 modules / 20 warnings / 230 known
+  legacy content errors, measured on a clean user directory (see
+  `06-validator-baseline.md` §3.1 — a leaked test artifact used to report
+  this as 10/240).
