@@ -131,20 +131,16 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
 
     // copy every file that does not already exist in the todir
     {
-        SearchContext *ctxt = new SearchContext(Ego::VfsPath(fromdir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
-        if (!ctxt) return ExportCharacterResult::Exported;
-        while (ctxt->hasData()) {
-            auto searchResult = ctxt->getData();
+        SearchContext ctxt(Ego::VfsPath(fromdir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
+        while (ctxt.hasData()) {
+            auto searchResult = ctxt.getData();
             fromfile = fromdir + "/" + searchResult.string();
             tofile = todir + "/" + searchResult.string();
             if (!vfs_exists(tofile)) {
                 vfs_copyFile(fromfile, tofile);
             }
-            ctxt->nextData();
+            ctxt.nextData();
         }
-
-        delete ctxt;
-        ctxt = nullptr;
     }
 
     return ExportCharacterResult::Exported;

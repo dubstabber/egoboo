@@ -62,16 +62,13 @@ void game_load_module_profiles( const std::string& modname )
     import_data.slot = -100;
     std::string folderPath = modname + "/objects";
 
-    SearchContext* ctxt = new SearchContext(Ego::VfsPath(folderPath), Ego::Extension("obj"), VFS_SEARCH_DIR);
-    if (!ctxt) return;
+    SearchContext ctxt(Ego::VfsPath(folderPath), Ego::Extension("obj"), VFS_SEARCH_DIR);
 
-    while (ctxt->hasData()) {
-        auto searchResult = ctxt->getData();
+    while (ctxt.hasData()) {
+        auto searchResult = ctxt.getData();
         EngineContext::get().profileSystem().loadOneProfile(searchResult.string());
-        ctxt->nextData();
+        ctxt.nextData();
     }
-    delete ctxt;
-    ctxt = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------

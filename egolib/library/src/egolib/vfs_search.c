@@ -213,8 +213,6 @@ int vfs_copyDirectory( const char *sourceDir, const char *destDir )
     /// @details This function copies all files in a directory
     VFS_PATH srcPath = EMPTY_CSTR, destPath = EMPTY_CSTR;
 
-    SearchContext *ctxt;
-
     BAIL_IF_NOT_INIT();
 
     if ( INVALID_CSTR( sourceDir ) || INVALID_CSTR( destDir ) )
@@ -233,11 +231,10 @@ int vfs_copyDirectory( const char *sourceDir, const char *destDir )
     //real_dst = szDst;
 
     // List all the files in the directory
-    ctxt = new SearchContext(vfs_convert_fname(sourceDir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
-    if (!ctxt) return VFS_FALSE;
-    while (ctxt->hasData())
+    SearchContext ctxt(vfs_convert_fname(sourceDir), VFS_SEARCH_FILE | VFS_SEARCH_BARE );
+    while (ctxt.hasData())
     {
-        auto fileName = ctxt->getData();
+        auto fileName = ctxt.getData();
         // Ignore files that begin with a .
         if ( '.' != fileName.string()[0] )
         {
@@ -251,10 +248,8 @@ int vfs_copyDirectory( const char *sourceDir, const char *destDir )
                                                  Log::EndOfEntry);
             }
         }
-        ctxt->nextData();
+        ctxt.nextData();
     }
-    delete ctxt;
-    ctxt = nullptr;
 
     return VFS_TRUE;
 }

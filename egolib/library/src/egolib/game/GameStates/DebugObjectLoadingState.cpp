@@ -168,14 +168,12 @@ public:
     void loadObjectList() {
         auto self = shared_from_this();
         setupPaths();
-        SearchContext *ctxt = new SearchContext(Ego::VfsPath(_objectLocationPath), Ego::Extension("obj"), VFS_SEARCH_DIR | VFS_SEARCH_BARE);
-        while (ctxt->hasData()) {
-            auto objName = ctxt->getData();
+        SearchContext ctxt(Ego::VfsPath(_objectLocationPath), Ego::Extension("obj"), VFS_SEARCH_DIR | VFS_SEARCH_BARE);
+        while (ctxt.hasData()) {
+            auto objName = ctxt.getData();
             _objects.emplace_back(new ObjectGUIContainer(objName.string(), self));
-            ctxt->nextData();
+            ctxt.nextData();
         }
-        delete ctxt;
-        ctxt = nullptr;
     }
     
     void setupPaths() {
@@ -227,18 +225,20 @@ _currentLoader()
     
     _moduleList.emplace_back(new GlobalLoader());
     
-    SearchContext *context = new SearchContext(Ego::VfsPath("/modules"), Ego::Extension("mod"), VFS_SEARCH_DIR | VFS_SEARCH_BARE);
-    
-    while (context->hasData())
+    // Scoped so the context is destroyed exactly where the previous `delete` stood, i.e.
+    // before the loop below, which remounts the VFS and builds its own SearchContext.
     {
-        auto moduleName = context->getData();
-        auto module = std::make_shared<ModuleLoader>(moduleName.string());
-        _moduleList.emplace_back(module);
-        context->nextData();
+        SearchContext context(Ego::VfsPath("/modules"), Ego::Extension("mod"), VFS_SEARCH_DIR | VFS_SEARCH_BARE);
+
+        while (context.hasData())
+        {
+            auto moduleName = context.getData();
+            auto module = std::make_shared<ModuleLoader>(moduleName.string());
+            _moduleList.emplace_back(module);
+            context.nextData();
+        }
     }
-    delete context;
-    context = nullptr;
-    
+
     for (const auto &loader : _moduleList) {
         auto button = std::make_shared<Ego::GUI::Button>(loader->getModuleName());
         std::weak_ptr<ModuleLoader> loaderPtr = loader;

@@ -32,6 +32,7 @@
 #include "egolib/game/game.h"  // MAX_IMPORT_PER_PLAYER / MAX_IMPORT_OBJECTS macros
 #include "egolib/game/script_compile.h"
 #include "egolib/fileutil.h"
+#include "idlib/exception.hpp"                 // idlib::exception (base of the parser exceptions)
 
 AbstractProfileSystem<EnchantProfile, EnchantProfileRef> EnchantProfileSystem("enchant", "/debug/enchant_profile_usage.txt");
 AbstractProfileSystem<ParticleProfile, ParticleProfileRef> ParticleProfileSystem("particle", "/debug/particle_profile_usage.txt");
@@ -229,26 +230,69 @@ void ProfileSystem::loadModuleProfiles()
     _moduleProfilesLoaded.clear();
 
     // Search for all .mod directories and load the module info
-    SearchContext *ctxt = new SearchContext(Ego::VfsPath("mp_modules"), Ego::Extension("mod"), VFS_SEARCH_DIR);
-    if (!ctxt) return;
-    
-    while (ctxt->hasData())
+    SearchContext ctxt(Ego::VfsPath("mp_modules"), Ego::Extension("mod"), VFS_SEARCH_DIR);
+
+    while (ctxt.hasData())
     {
-        auto vfs_ModPath = ctxt->getData();
-        //Try to load menu.txt
-        std::shared_ptr<ModuleProfile> module = ModuleProfile::loadFromFile(vfs_ModPath.string());
+        auto vfs_ModPath = ctxt.getData();
+
+        // A module that fails to load must be skipped, not allowed to abort the whole scan.
+        // Users install modules by dropping folders into the user directory (which is mounted
+        // into `mp_modules` by setup_init_base_vfs_paths, egoboo_setup.c), so one bad drop
+        // would otherwise leave the caller with a truncated module list: the throw escapes
+        // after _moduleProfilesLoaded.clear() above has already run.
+        //
+        // ModuleProfile::loadFromFile never returns nullptr - it reports failure by throwing.
+        // Note that `catch (const std::exception&)` alone would catch NOTHING that the engine's
+        // own parsers raise: idlib::exception (idlib/exception/exception.hpp:64) is declared
+        // with no base class at all, and both idlib::runtime_error (runtime_error.hpp:41 -
+        // thrown by vfs_readEntireFile at vfs_bulk.c:56 via the ReadContext/Scanner ctor when
+        // gamedat/menu.txt is missing or unreadable) and idlib::hll::compilation_error
+        // (compilation_error.hpp:60, plus its subclass Ego::Script::MissingDelimiterError at
+        // Script/Errors.hpp:29, raised for a malformed or truncated menu.txt) derive from it.
+        // The std::exception arm is therefore a second net for the remaining failures on this
+        // path, chiefly std::bad_alloc. Catch by reference only - idlib::exception's copy
+        // constructor and destructor are protected, so a by-value handler would not compile.
+        //
+        // The try deliberately covers only loadFromFile: a throw out of the SearchContext
+        // constructor or out of nextData() means the VFS itself failed, which must keep
+        // propagating rather than be misreported as a per-module problem. Keeping nextData()
+        // outside the handler also guarantees the loop always advances.
+        std::shared_ptr<ModuleProfile> module;
+        std::string reason;
+        try
+        {
+            //Try to load menu.txt
+            module = ModuleProfile::loadFromFile(vfs_ModPath.string());
+        }
+        catch (const idlib::exception& ex)
+        {
+            reason = ex.to_string();
+        }
+        catch (const std::exception& ex)
+        {
+            reason = ex.what();
+        }
+
         if (module)
         {
             _moduleProfilesLoaded.push_back(module);
         }
         else
         {
-			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`", Log::EndOfEntry);
+            // idlib::runtime_error::to_string() is deliberately multi-line (runtime_error.hpp
+            // emits "runtime error:", the raise site, and the message on separate lines), and
+            // that is the shape produced by the likeliest bad drop: a folder with no
+            // gamedat/menu.txt. Flatten it so one skipped module stays one log record.
+            for (char& c : reason)
+            {
+                if (c == '\n' || c == '\r') c = ' ';
+            }
+			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load module ", "`", vfs_ModPath.string(), "`",
+			                                 reason.empty() ? std::string() : (": " + reason), Log::EndOfEntry);
         }
-        ctxt->nextData();
+        ctxt.nextData();
     }
-    delete ctxt;
-    ctxt = nullptr;
 }
 
 
@@ -297,23 +341,22 @@ void ProfileSystem::loadAllSavedCharacters(const std::string &saveGameDirectory)
     _loadPlayerList.clear();
 
     // Search for all objects
-    SearchContext *ctxt = new SearchContext(Ego::VfsPath(saveGameDirectory), Ego::Extension("obj"), VFS_SEARCH_DIR);
-    if (!ctxt) return;
+    SearchContext ctxt(Ego::VfsPath(saveGameDirectory), Ego::Extension("obj"), VFS_SEARCH_DIR);
 
-    while (ctxt->hasData())
+    while (ctxt.hasData())
     {
-        auto foundFile = ctxt->getData();
+        auto foundFile = ctxt.getData();
         auto folderPath = foundFile;
 
         // is it a valid filename?
         if (folderPath.empty()) {
-            ctxt->nextData();
+            ctxt.nextData();
             continue;
         }
 
         // does the directory exist?
         if (!vfs_exists(folderPath.string())) {
-            ctxt->nextData();
+            ctxt.nextData();
             continue;
         }
 
@@ -323,7 +366,7 @@ void ProfileSystem::loadAllSavedCharacters(const std::string &saveGameDirectory)
         // try to load the character profile (do a lightweight load, we don't need all data)
         std::shared_ptr<ObjectProfile> profile = ObjectProfile::loadFromFile(folderPath.string(), slot, true);
         if (!profile) {
-            ctxt->nextData();
+            ctxt.nextData();
             continue;
         }
 
@@ -331,10 +374,8 @@ void ProfileSystem::loadAllSavedCharacters(const std::string &saveGameDirectory)
         _loadPlayerList.push_back(std::make_shared<LoadPlayerElement>(profile));
 
         //Get next player object
-        ctxt->nextData();
+        ctxt.nextData();
     }
-    delete ctxt;
-    ctxt = nullptr;
 }
 
 void ProfileSystem::loadGlobalParticleProfiles()
