@@ -204,25 +204,50 @@ bool Setup::begin() {
         return true;
     }
     // Parse the configuration file.
-    ConfigFileParser parser(fileName);
+    //
+    // The parser must be constructed *inside* the try block: `ConfigFileParser` derives from
+    // `Ego::Script::Scanner`, whose constructor reads the whole file via `vfs_readEntireFile`,
+    // and that throws `idlib::runtime_error` when the file cannot be opened
+    // (egolib/vfs_bulk.c). Constructing the parser outside the try would let that exception
+    // escape `begin()` and skip the default-configuration fallback that the header contract
+    // promises for a failed load.
+    //
+    // `catch (...)` is load-bearing: `idlib::runtime_error` derives from `idlib::exception`,
+    // which has no `std::exception` base, so `catch (const std::exception&)` would not catch it.
     try {
+        ConfigFileParser parser(fileName);
         file = parser.parse();
     } catch (...) {
+        file = nullptr;
     }
     // If parsing the configuration file failed:
     if (!file) {
         // Revert to default configuration.
+        // Report `fileName`, not `file->getFileName()`: `file` is null in this branch by
+        // definition. (`ConfigFile` is in any case constructed from `fileName`, so the two
+        // would name the same string on every reachable path.)
+        //
+        // Consequence worth knowing: the unreadable file is not preserved. The default
+        // configuration built below is an ordinary loaded configuration, so the normal
+        // shutdown path (`GameEngine::uninitialize` -> `config_synch` -> `upload`, then
+        // `~SystemService` -> `end()`) serializes it over the unreadable file through the
+        // truncating `vfs_openWrite` in `ConfigFileUnParser::unparse`. That is what the
+        // header contract asks for - the outcome must equal an empty file - but it does mean
+        // a partially-corrupt setup.txt is replaced rather than left for hand repair.
         Log::Entry e(Log::Level::Warning, __FILE__, __LINE__);
-        e << "unable to load setup file `" << file->getFileName() << "` - reverting to default configuration" << Log::EndOfEntry;
+        e << "unable to load setup file `" << fileName << "` - reverting to default configuration" << Log::EndOfEntry;
         Log::activeTarget() << e;
-        started = true;
         try {
             file = std::make_shared<ConfigFile>(fileName);
         } catch (...) {
+            file = nullptr;
         }
         // If reverting to default configuration failed:
         if (!file) {
-            // Fail.
+            // Fail. `started` is deliberately left alone here: it advertises "a configuration
+            // file is loaded", and no configuration file is loaded. `begin()` must never
+            // return false while leaving `started == true`, because a later `begin()` would
+            // then short-circuit to true and `download()` would throw on the null file.
             Log::activeTarget() << Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "unable to revert to default "
                                              "configuration", Log::EndOfEntry);
             return false;
@@ -237,14 +262,34 @@ bool Setup::begin() {
 }
 
 bool Setup::end() {
+    // Contract: the return value answers "was a configuration file written?".
+    //
+    // With no loaded configuration there is nothing to save, so this is not an error and not
+    // a write: log it and report false. This state is reachable in normal operation - a
+    // `begin()` that could not even build a default configuration returns with `file ==
+    // nullptr`, `end()` itself leaves `file == nullptr`, and `SystemService::~SystemService`
+    // calls `end()` unconditionally - so `file` must never be dereferenced here.
+    if (!file) {
+        Log::activeTarget() << Log::Entry::create(Log::Level::Info, __FILE__, __LINE__, "no setup file loaded - nothing to save",
+                                         Log::EndOfEntry);
+        started = false;
+        return false;
+    }
     ConfigFileUnParser unparser;
     if (unparser.unparse(file)) {
         file = nullptr;
+        // `started` advertises "a configuration file is loaded"; `file` was just released,
+        // so clearing it keeps that invariant and lets a later `begin()` re-load instead of
+        // short-circuiting to true with a null `file`.
+        started = false;
         return true;
     } else {
+        // Report `fileName` rather than `file->getFileName()` so that this branch stays
+        // consistent with the null-file branch above; they are the same string.
         Log::activeTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save setup file ", "`",
-                                         file->getFileName(), "`", Log::EndOfEntry);
+                                         fileName, "`", Log::EndOfEntry);
         file = nullptr;
+        started = false;
         return false;
     }
 }

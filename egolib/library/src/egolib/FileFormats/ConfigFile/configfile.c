@@ -58,9 +58,42 @@
  *  one will be looked for value. Should not load sections with same name.
  */
 #include "egolib/FileFormats/ConfigFile/configfile.h"
+#include "egolib/Log/_Include.hpp"
 
 #pragma push_macro("ERROR")
 #undef ERROR
+
+//--------------------------------------------------------------------------------------------
+
+namespace {
+
+/// @brief Report a configuration-file diagnostic.
+/// @param file, line the C/C++ source location of the failing check
+/// @param fileName the name of the configuration file the diagnostic refers to
+/// @param detail the diagnostic text
+/// @remark
+///  These diagnostics used to be written to @a stderr. They are routed through the log target
+///  instead, but via Log::tryActiveTarget() rather than Log::activeTarget(): the latter throws
+///  std::logic_error when no log target exists, and the parser/unparser are expected to signal
+///  failure by return value only. Same guarded idiom as egolib/Graphics/GltfModel.cpp.
+/// @remark
+///  The source location is taken as a parameter rather than read from __FILE__/__LINE__ here:
+///  Log::Entry renders it as the "<file>:<line>:" prefix of the entry, so evaluating it inside
+///  this helper would make every diagnostic claim to come from this one line.
+void logConfigFileWarning(const char *file, int line, const std::string& fileName, const char *detail)
+{
+    if (Log::Target* target = Log::tryActiveTarget())
+    {
+        *target << Log::Entry::create(Log::Level::Warning, file, line,
+                                      fileName, ": ", detail, Log::EndOfEntry);
+    }
+}
+
+} // namespace
+
+/// @brief Report a configuration-file diagnostic from the calling source location.
+#define LOG_CONFIG_FILE_WARNING(FILE_NAME, DETAIL) \
+    logConfigFileWarning(__FILE__, __LINE__, (FILE_NAME), (DETAIL))
 
 //--------------------------------------------------------------------------------------------
 
@@ -153,7 +186,7 @@ bool ConfigFileParser::parseEntry(std::shared_ptr<ConfigFile> target)
     }
     if (!is(':'))
     {
-        fprintf(stderr, "%s: invalid key-value pair\n", get_file_name().c_str());
+        LOG_CONFIG_FILE_WARNING(get_file_name(), "invalid key-value pair");
         return false;
     }
     next();
@@ -178,7 +211,7 @@ bool ConfigFileParser::parseComment(std::string& comment)
     next();
     if (!is('/'))
     {
-        fprintf(stderr, "%s: invalid comment\n", get_file_name().c_str());
+        LOG_CONFIG_FILE_WARNING(get_file_name(), "invalid comment");
         return false;
     }
     next();
@@ -190,7 +223,7 @@ bool ConfigFileParser::parseComment(std::string& comment)
     new_lines(nullptr);
     if (ise(ERROR()))
     {
-        fprintf(stderr, "%s: error while reading file\n", get_file_name().c_str());
+        LOG_CONFIG_FILE_WARNING(get_file_name(), "error while reading file");
         return false;
     }
     comment = get_lexeme_text();
@@ -206,7 +239,7 @@ bool ConfigFileParser::parseName()
     }
     if (!ise(ALPHA()))
     {
-        fprintf(stderr, "%s: invalid name\n", get_file_name().c_str());
+        LOG_CONFIG_FILE_WARNING(get_file_name(), "invalid name");
         return false;
     }
     do
@@ -248,7 +281,7 @@ bool ConfigFileParser::parseValue()
     }
     if (!is('"'))
     {
-        fprintf(stderr, "%s: invalid value\n", get_file_name().c_str());
+        LOG_CONFIG_FILE_WARNING(get_file_name(), "invalid value");
         return false;
     }
     next();
@@ -276,6 +309,27 @@ std::shared_ptr<ConfigFile> ConfigFileParser::parse()
     }
     catch (...)
     {
+        // Report before discarding: without this entry the caller sees nothing but a null
+        // result. What is caught and what is returned are unchanged.
+        //
+        // The routes that reach here are allocation failures - from std::make_shared<ConfigFile>
+        // above, from AbstractConfigFile::set, or from the lexeme buffer. The
+        // idlib::hll::compilation_error that idlib::hll::qualified_name's constructor raises for
+        // a malformed name is NOT among them: parseName accepts `'_'* alpha (alpha|digit|'_')*`
+        // joined by '.', a strict subset of the qualified_name grammar
+        // `('_'|alpha)('_'|alpha|digit)*` joined by '.', so every lexeme that reaches that
+        // constructor validates.
+        //
+        // The report itself allocates (Log::Entry holds an std::ostringstream), so it is
+        // guarded: parse() must return nullptr on every failure, including an std::bad_alloc
+        // that would otherwise be replaced by a fresh one thrown out of the handler.
+        try
+        {
+            LOG_CONFIG_FILE_WARNING(get_file_name(), "aborted by an exception while parsing");
+        }
+        catch (...)
+        {
+        }
         return nullptr;
     }
 }
@@ -305,7 +359,7 @@ bool ConfigFileUnParser::unparse(std::shared_ptr<ConfigFile> source)
         _target = vfs_openWrite(_source->getFileName().c_str());
         if (!_target)
         {
-            fprintf(stderr, "%s: unable to open file for writing\n", _source->getFileName().c_str());
+            LOG_CONFIG_FILE_WARNING(_source->getFileName(), "unable to open file for writing");
             _source = nullptr;
             return false;
         }

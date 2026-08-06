@@ -477,17 +477,30 @@ private:
     static std::shared_ptr<ConfigFile> file;
     /// The filename of the configuration file.
     static const std::string fileName;
-    /// If the setup has started.
+    /// If a configuration is loaded.
+    /// @invariant <tt>started == (file != nullptr)</tt>.
     static bool started;
 
 public:
     /// @brief Load the local <tt>"setup.txt"</tt>.
+    /// @return @a true if a configuration is available afterwards, @a false otherwise
+    /// @pre A log target must be installed: this function reports through Log::activeTarget(),
+    /// which throws std::logic_error while the logging system is uninitialized.
+    /// @post On @a true a configuration is loaded and a subsequent begin() short-circuits to
+    /// @a true without re-reading the file. On @a false no configuration is loaded and
+    /// download()/upload() throw; a subsequent begin() retries the load.
     /// @remark
     /// This will initialize a represention fromload the configuration from the local <tt>"setup.txt"</tt>.
     /// If loading fails, the outcome of this function is equivalent to the case in which that file is empty.
+    /// Note that the unreadable file itself is not preserved: the next successful end()
+    /// truncates it and writes the replacement configuration over it.
     static bool begin();
 
     /// @brief Save the local <tt>"setup.txt"</tt>.
+    /// @return @a true if a configuration file was written, @a false otherwise - including when
+    /// no configuration was loaded, in which case there was nothing to write and nothing failed
+    /// @post No configuration is loaded, whatever the return value, so a subsequent begin()
+    /// re-reads the file.
     /// @remark This will write the configuration to the local <tt>"setup.txt"</tt>.
     static bool end();
 
