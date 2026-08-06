@@ -111,6 +111,18 @@ std::shared_ptr<Font> FontManager::loadFont(const std::string &fileName, int poi
                                                  fallbackFont, "` for `", fileName, "`",
                                                  Log::EndOfEntry);
                 return font;
+            // Mirrors the pair in the idlib arm above. Reaching this arm means the *primary*
+            // font failed with a std::exception, but a fallback can still fail with an idlib one:
+            // Font's constructor throws idlib::environment_error (an idlib::runtime_error, and so
+            // an idlib::exception, which has no std::exception base) when TTF_OpenFontRW returns
+            // null, which is the dominant failure for a missing or corrupt .ttf. Without this arm
+            // that fallback exception escaped loadFont, replacing the original failure and
+            // skipping the remaining fallbacks.
+            } catch (const idlib::exception& fallbackError) {
+                Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                                                 "[font manager]: fallback font `", fallbackFont,
+                                                 "` also failed: ", fallbackError.to_string(),
+                                                 Log::EndOfEntry);
             } catch (const std::exception& fallbackError) {
                 Log::activeTarget() << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
                                                  "[font manager]: fallback font `", fallbackFont,

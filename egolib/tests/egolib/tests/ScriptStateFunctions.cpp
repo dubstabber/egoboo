@@ -1444,9 +1444,16 @@ TEST_F(ScriptStateFunctionsFixture, IfModuleHasIDSZUsesMessageSelectedModuleAndR
     state.distance = static_cast<int>(missingIdsz.toUint32());
     EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
 
+    // A message-table entry naming a module that does not exist. The EXPECT_NO_THROW is the
+    // load-bearing half: ModuleProfile::moduleHasIDSZ reaches vfs_readEntireFile through the
+    // ReadContext/Scanner constructor, which raises idlib::runtime_error for an unreadable
+    // menu.txt, and nothing on the script-VM dispatch path catches it. This used to be papered
+    // over by a catch (...) in activeModuleHasIdszWithValidMessage; the miss is now part of
+    // moduleHasIDSZ's documented contract (Profiles/ModuleProfile.hpp). Without the wrapper
+    // this case would pass for the wrong reason, or take the process down.
     state.argument = invalidModuleMessageId;
     state.distance = static_cast<int>(presentIdsz.toUint32());
-    EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self));
+    EXPECT_NO_THROW({ EXPECT_FALSE(scr_IfModuleHasIDSZ(state, self)); });
 
     state.argument = 9999;
     ASSERT_FALSE(actor->getProfile()->isValidMessageID(state.argument));

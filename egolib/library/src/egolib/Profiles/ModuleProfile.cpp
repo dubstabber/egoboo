@@ -33,6 +33,9 @@
 #include "egolib/fileutil.h"
 #include "egolib/platform.h"
 
+#include "idlib/exception.hpp"  // idlib::runtime_error
+#include "idlib/hll.hpp"        // idlib::hll::compilation_error
+
 const uint8_t ModuleProfile::RESPAWN_ANYTIME;
 static const size_t SUMMARYLINES = 8;
 
@@ -198,50 +201,130 @@ std::shared_ptr<ModuleProfile> ModuleProfile::loadFromFile(const std::string &fo
     return result;
 }
 
+namespace {
+
+/// @brief Log one skipped module for ModuleProfile::moduleHasIDSZ.
+/// @remark Goes through Log::tryActiveTarget() rather than Log::activeTarget(): the latter
+///         falls through to Log::get(), which throws std::logic_error when the logging system
+///         is not initialized (Log/_Include.cpp). moduleHasIDSZ promises never to throw for a
+///         content fault, so its own diagnostic must not be able to throw either.
+void logIdszMiss(const std::string& moduleName, const std::string& pathname, std::string reason)
+{
+    Log::Target* logTarget = Log::tryActiveTarget();
+    if (!logTarget) return;
+
+    // idlib::runtime_error::to_string() is deliberately multi-line (runtime_error.hpp emits
+    // "runtime error:", the raise site and the message on separate lines), so flatten it to
+    // keep one skipped module to one log record.
+    for (char& c : reason)
+    {
+        if (c == '\n' || c == '\r') c = ' ';
+    }
+
+    *logTarget << Log::Entry::create(Log::Level::Debug, __FILE__, __LINE__,
+                                     "module ", "`", moduleName, "`",
+                                     " does not have the requested IDSZ: unable to read ",
+                                     "`", pathname, "`", ": ", reason, Log::EndOfEntry);
+}
+
+} // namespace
+
 bool ModuleProfile::moduleHasIDSZ(const std::string& szModName, const IDSZ2& idsz)
 {
     /// @author ZZ
     /// @details This function returns true if the named module has the required IDSZ
+    ///          See ModuleProfile.hpp for the miss contract this implements.
     bool foundidsz;
 
+    // These two answers need no I/O at all, so they are settled before the try below:
+    // a "no requirement" query is vacuously satisfied, and the sentinel name never is.
+    // (IDSZ2::None is IDSZ2('N','O','N','E') - see IDSZ.cpp - not a zero value.)
     if ( idsz == IDSZ2::None ) return true;
 
     if ( szModName == "NONE" ) return false;
 
     std::string newLoadName = "mp_modules/" + szModName + "/gamedat/menu.txt";
 
-    ReadContext ctxt(newLoadName);
-
-    // Read basic data
-    ctxt.skipToColon(false);  // Name of module...  Doesn't matter
-    ctxt.skipToColon(false);  // Reference directory...
-    ctxt.skipToColon(false);  // Reference IDSZ...
-    ctxt.skipToColon(false);  // Import...
-    ctxt.skipToColon(false);  // Export...
-    ctxt.skipToColon(false);  // Min players...
-    ctxt.skipToColon(false);  // Max players...
-    ctxt.skipToColon(false);  // Respawn...
-    ctxt.skipToColon(false);  // BAD! NOT USED
-    ctxt.skipToColon(false);  // Rank...
-
-    // Summary...
-    for (size_t cnt = 0; cnt < SUMMARYLINES; cnt++)
+    try
     {
-        ctxt.skipToColon(false);
-    }
+        ReadContext ctxt(newLoadName);
 
-    // Now check expansions
-    foundidsz = false;
-    while (ctxt.skipToColon(true))
-    {
-        if ( ctxt.readIDSZ() == idsz )
+        // Read basic data
+        ctxt.skipToColon(false);  // Name of module...  Doesn't matter
+        ctxt.skipToColon(false);  // Reference directory...
+        ctxt.skipToColon(false);  // Reference IDSZ...
+        ctxt.skipToColon(false);  // Import...
+        ctxt.skipToColon(false);  // Export...
+        ctxt.skipToColon(false);  // Min players...
+        ctxt.skipToColon(false);  // Max players...
+        ctxt.skipToColon(false);  // Respawn...
+        ctxt.skipToColon(false);  // BAD! NOT USED
+        ctxt.skipToColon(false);  // Rank...
+
+        // Summary...
+        for (size_t cnt = 0; cnt < SUMMARYLINES; cnt++)
         {
-            foundidsz = true;
-            break;
+            ctxt.skipToColon(false);
         }
-    }
 
-    return foundidsz;
+        // Now check expansions
+        foundidsz = false;
+        while (ctxt.skipToColon(true))
+        {
+            if ( ctxt.readIDSZ() == idsz )
+            {
+                foundidsz = true;
+                break;
+            }
+        }
+
+        return foundidsz;
+    }
+    // These are the only two types raised anywhere inside the try above, and the header
+    // documents both as a miss rather than a fault:
+    //
+    //  - idlib::runtime_error (idlib/exception/runtime_error.hpp:41) is raised by
+    //    vfs_readEntireFile (vfs_bulk.c:56) through the Ego::Script::Scanner constructor
+    //    (Script/Scanner.hpp, whose @throw documents it), which ReadContext derives from
+    //    (fileutil.h:56). This is the common case: the named module is not installed, has no
+    //    gamedat/menu.txt, or the file cannot be read.
+    //
+    //  - idlib::hll::compilation_error (idlib/hll/compilation_error.hpp:60) and its subclass
+    //    Ego::Script::MissingDelimiterError (Script/Errors.hpp:29) come out of the fixed
+    //    skipToColon(false) sequence above on a menu.txt that is shorter than the header
+    //    plus summary block, and out of readIDSZ on a malformed expansion. Those two files -
+    //    ReadContext.cpp and ReadContext_literals.cpp - raise nothing else.
+    //
+    // Note what these arms do NOT buy, so nobody mistakes them for a narrowing they are not:
+    // idlib::runtime_error and idlib::hll::compilation_error are today the ONLY two direct
+    // subclasses of idlib::exception in the tree, so this pair is currently equivalent in
+    // reach to catching the base. Worse, idlib files its programming-error types UNDER
+    // runtime_error - invalid_argument_error -> argument_null_error /
+    // argument_out_of_bounds_error, unhandled_switch_case_error, and idlib's assertion type
+    // itself (idlib::debug_assertion_failed_error, idlib/debug/debug_assertion_failed_error.hpp,
+    // raised by IDLIB_DEBUG_ASSERT when _DEBUG is defined). So this pair cannot separate a
+    // programming error from a read failure either, and no rearrangement of these two arms
+    // would: that would take a typeid check or a change inside idlib, both out of scope here.
+    // What the form does buy is a tripwire for a future branch that hangs off idlib::exception
+    // directly rather than off runtime_error. catch (...) is avoided for the same reason, and
+    // so that std::bad_alloc keeps propagating.
+    //
+    // The tree of idlib types this reasoning depends on is asserted, not just asserted-in-a-
+    // comment, in ContentFaultMissContracts.cpp (ExceptionHierarchyIsUnrelatedToStdException).
+    //
+    // The reason an explicit arm is needed at all: idlib::exception
+    // (idlib/exception/exception.hpp:64) is declared with no base class, so none of this is
+    // visible to a catch (const std::exception&).
+    catch (const idlib::hll::compilation_error& ex)
+    {
+        logIdszMiss(szModName, newLoadName, ex.to_string());
+        return false;
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        logIdszMiss(szModName, newLoadName, ex.to_string());
+        return false;
+    }
 }
 
 bool ModuleProfile::moduleAddIDSZ(const std::string& szModName, const IDSZ2& idsz)
@@ -258,7 +341,29 @@ bool ModuleProfile::moduleAddIDSZ(const std::string& szModName, const IDSZ2& ids
         // make sure that the file exists in the user data directory since we are WRITING to it
         std::string source_file = "mp_modules/" + szModName + "/gamedat/menu.txt";
         std::string target_file = "/modules/" + szModName + "/gamedat/menu.txt";
-        vfs_copyFile( source_file, target_file );
+        // The copy is what makes the append meaningful: vfs_openAppend does not create the
+        // target's directory (only vfs_openWrite calls _vfs_ensure_write_directory), so on a
+        // first append the copy is what puts a populated menu.txt in the user directory. This
+        // return value used to be discarded, which was harmless only because moduleHasIDSZ
+        // *threw* for an unreadable menu.txt and so never reached this branch. It now reports
+        // that case as a miss (see the contract in ModuleProfile.hpp), so the guard has to be
+        // explicit here instead.
+        //
+        // The guard covers exactly one of the two miss modes: a source menu.txt that cannot be
+        // OPENED. It does not cover a source that opens but does not PARSE, because vfs_copyFile
+        // goes through the char**/size_t* overload of vfs_readEntireFile (vfs_bulk.c), which
+        // fails only on vfs_openRead and never parses anything. A truncated or malformed
+        // menu.txt is therefore copied verbatim and appended to, leaving a target that
+        // ProfileSystem::loadModuleProfiles still cannot parse - and, because moduleHasIDSZ
+        // keeps reporting a miss for it, a repeated scr_AddIDSZ appends the same expansion
+        // again. Closing that would take a tri-state result from moduleHasIDSZ distinguishing a
+        // miss from a fault; it is not attempted here, and it is not a regression: before this
+        // pass the same input threw out of the script VM and took the process down. No shipped
+        // module has a malformed expansion (all 42 checked).
+        if ( !vfs_copyFile( source_file, target_file ) )
+        {
+            return false;
+        }
 
         // Try to open the file in append mode
         filewrite = vfs_openAppend(target_file);

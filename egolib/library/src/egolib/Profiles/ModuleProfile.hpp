@@ -112,7 +112,32 @@ public:
     }
 
     static std::shared_ptr<ModuleProfile> loadFromFile(const std::string &filePath);
+
+    /// @brief Test whether a module declares an IDSZ expansion in its gamedat/menu.txt.
+    /// @param szModName the module folder name, e.g. "advent.mod"; typically content-supplied
+    /// @param idsz the IDSZ to look for
+    /// @return @a true if the module declares @a idsz, @a false otherwise
+    /// @remark Two answers are given without reading anything: a requirement of IDSZ2::None is
+    ///         always satisfied (@a true), and the sentinel name "NONE" never is (@a false).
+    /// @remark <b>Miss contract.</b> A module that cannot be found, opened, or parsed simply
+    ///         "does not have the IDSZ" and yields @a false. The name reaches this function from
+    ///         an object's message table by way of scr_IfModuleHasIDSZ, so an absent or malformed
+    ///         module is ordinary input, not a precondition violation. As a corollary of reading
+    ///         the file linearly, a malformed expansion line also ends the scan, so an IDSZ
+    ///         listed after it is not found.
+    /// @remark The contract covers the two exception families the parsers raise for bad input:
+    ///         idlib::runtime_error for a file that cannot be read, and
+    ///         idlib::hll::compilation_error for one that does not parse. Anything outside those
+    ///         - std::bad_alloc in particular - still propagates, so do not wrap calls to this
+    ///         function in catch (...).
+    /// @throw std::bad_alloc if a string allocation fails
     static bool moduleHasIDSZ(const std::string& szModName, const IDSZ2& idsz);
+
+    /// @brief Append an IDSZ expansion to a module's gamedat/menu.txt in the user directory.
+    /// @param szModName the module folder name
+    /// @param idsz the IDSZ to append
+    /// @return @a true if the expansion was written, @a false if it was already present or if the
+    ///         module's menu.txt could not be copied into the user directory or opened
     static bool moduleAddIDSZ(const std::string& szModName, const IDSZ2& idsz);
 
 private:

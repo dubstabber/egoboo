@@ -48,14 +48,15 @@ bool activeModuleHasIdszWithValidMessage(const ObjectProfile& profile,
         return false;
     }
 
-    try
-    {
-        return ModuleProfile::moduleHasIDSZ(moduleName, idsz);
-    }
-    catch (...)
-    {
-        return false;
-    }
+    // No handler here on purpose. moduleHasIDSZ carries an explicit miss contract (see its
+    // declaration in Profiles/ModuleProfile.hpp): a module that cannot be found, opened or
+    // parsed reports false rather than throwing, which is the right answer for a name that
+    // came out of an object's message table. The blanket catch (...) that used to stand here
+    // also swallowed std::bad_alloc and any genuine programming error inside moduleHasIDSZ,
+    // and nothing on the script-VM execution path would have caught those instead: Script/script.c,
+    // Script/script_driver.c, Script/script_operand.c and Script/ScriptSystemAdapter.cpp contain no
+    // handler at all, so anything escaping a scr_* function runs all the way to main.
+    return ModuleProfile::moduleHasIDSZ(moduleName, idsz);
 }
 }
 

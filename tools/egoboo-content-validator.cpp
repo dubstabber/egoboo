@@ -17,6 +17,7 @@
 #include "egolib/game/script_compile.h"
 #include "egolib/file_common.h"
 #include "egolib/vfs.h"
+#include "idlib/exception.hpp"  // idlib::exception (base of the parser exceptions)
 
 #include <SDL.h>
 
@@ -360,6 +361,23 @@ private:
     int stderrCopy = -1;
     int nullFd = -1;
 };
+
+/// @brief Reduce an exception message to a single line so it fits one reporter event.
+/// @remark idlib::runtime_error::to_string() is deliberately multi-line: runtime_error.hpp emits
+///         "runtime error:", the raise site and the message on separate lines. The reporter emits
+///         one record per event and the --json writer expects a single-line detail, so every
+///         idlib message has to be flattened before it is handed over.
+std::string flattenMessage(std::string message)
+{
+    for (char& character : message)
+    {
+        if (character == '\n' || character == '\r')
+        {
+            character = ' ';
+        }
+    }
+    return message;
+}
 
 std::string baseName(const std::string& path)
 {
@@ -1216,6 +1234,26 @@ bool validateObjectProfile(const std::string& moduleName,
             }
         }
     }
+    // Every handler in this file needs the idlib arm, and this is the comment the others refer to.
+    // The content this tool exists to check is parsed through ReadContext, which derives from
+    // Ego::Script::Scanner (fileutil.h). Scanner's constructor raises idlib::runtime_error by way
+    // of vfs_readEntireFile (vfs_bulk.c:56) when a file cannot be read, and the ReadContext parse
+    // helpers raise idlib::hll::compilation_error - plus its subclass
+    // Ego::Script::MissingDelimiterError (Script/Errors.hpp:29) - on malformed input. Both derive
+    // from idlib::exception, which is declared with NO base class at all
+    // (idlib/exception/exception.hpp:64), so a std::exception handler alone catches nothing this
+    // tool's own parsers raise. Such an exception used to travel all the way to main's
+    // catch (...), printing "fatal: unknown exception" and abandoning the run: no [fail] row for
+    // the offending module, no rows for the modules after it, and no summary line at all. Catching
+    // it here isolates the offending item instead, exactly like the std::exception arm below,
+    // which stays as a second net (chiefly std::bad_alloc). Catch by reference only -
+    // idlib::exception's copy constructor and destructor are protected, so a by-value handler
+    // would not compile.
+    catch (const idlib::exception& ex)
+    {
+        reporter.error(moduleName, "parse_failure", virtualObjectPath, flattenMessage(ex.to_string()), &summary, virtualObjectPath);
+        success = false;
+    }
     catch (const std::exception& ex)
     {
         reporter.error(moduleName, "parse_failure", virtualObjectPath, ex.what(), &summary, virtualObjectPath);
@@ -1322,6 +1360,16 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
             reporter.info("  wawalite ok");
         }
     }
+    // idlib arm first - see the comment on validateObjectProfile's handler. wawalite_data_read
+    // builds a ReadContext over the environment file (wawalite_file.c:254), so this is the same
+    // exception family; a bad wawalite.txt should fail one module, not the run. Verified by
+    // injection: an empty wawalite.txt dropped into a scratch EGOBOO_USER_DIR used to print
+    // "fatal: unknown exception" and end the run after 35 of 42 module rows, with no summary line.
+    catch (const idlib::exception& ex)
+    {
+        reporter.error(moduleName, "parse_failure", environmentPath, flattenMessage(ex.to_string()), &summary, environmentPath);
+        success = false;
+    }
     catch (const std::exception& ex)
     {
         reporter.error(moduleName, "parse_failure", environmentPath, ex.what(), &summary, environmentPath);
@@ -1334,6 +1382,15 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
         spawnEntries = SpawnFileReaderImpl().read(spawnPath);
         summary.spawnEntries = spawnEntries.size();
         reporter.info("  spawn ok");
+    }
+    // idlib arm first - see the comment on validateObjectProfile's handler. SpawnFileReaderImpl::read
+    // builds a ReadContext over spawn.txt (SpawnFileReaderImpl.cpp:160) and pulls comments and string
+    // literals through it, so a malformed spawn.txt raises idlib::hll::compilation_error rather than
+    // anything derived from std::exception.
+    catch (const idlib::exception& ex)
+    {
+        reporter.error(moduleName, "parse_failure", spawnPath, flattenMessage(ex.to_string()), &summary, spawnPath);
+        success = false;
     }
     catch (const std::exception& ex)
     {
@@ -1358,6 +1415,19 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
             success = validateObjectProfile(moduleName, virtualPath, reporter, options, validatedObjects, summary) && success;
             moduleObjects.nextData();
         }
+    }
+    // idlib arm first - see the comment on validateObjectProfile's handler. This is the outer net
+    // for the module-local object scan; validateObjectProfile now handles its own parse faults, so
+    // what remains here is a fault in the SearchContext enumeration itself.
+    catch (const idlib::exception& ex)
+    {
+        reporter.error(moduleName,
+                       "scan_failure",
+                       module->getPath() + "/objects",
+                       flattenMessage(ex.to_string()),
+                       &summary,
+                       module->getPath() + "/objects");
+        success = false;
     }
     catch (const std::exception& ex)
     {
@@ -1407,6 +1477,19 @@ bool validateModule(const std::shared_ptr<ModuleProfile>& module,
 
             success = validateObjectProfile(moduleName, virtualPath, reporter, options, validatedObjects, summary) && success;
         }
+    }
+    // idlib arm first - see the comment on validateObjectProfile's handler. This one covers the
+    // widest try block in the file: Ego::TreasureTables' constructor is nothing but
+    // `ReadContext ctxt(filePath); parse(read(ctxt));` (Logic/TreasureTables.cpp), and unlike
+    // environmentPath above, treasurePath is never checked with vfs_exists. The spawn-reference
+    // loop under it calls validateObjectProfile again. Today no shipped module carries its own
+    // gamedat/randomtreasure.txt, so every module resolves the path to the single global
+    // data/basicdat/randomtreasure.txt and this cannot fire; if it ever could, the throw would
+    // have ended the whole run rather than one module.
+    catch (const idlib::exception& ex)
+    {
+        reporter.error(moduleName, "parse_failure", treasurePath, flattenMessage(ex.to_string()), &summary, treasurePath);
+        success = false;
     }
     catch (const std::exception& ex)
     {
@@ -1536,6 +1619,16 @@ int main(int argc, char** argv)
         }
 
         return exitCode;
+    }
+    // Top-level: report and exit cleanly. This arm is what "fatal: unknown exception" used to be -
+    // every fault raised by the engine's own parsers (idlib::runtime_error,
+    // idlib::hll::compilation_error) reached the catch (...) below instead, because idlib::exception
+    // has no std::exception base. The per-module handlers above now isolate those, so anything that
+    // still arrives here is a setup or VFS failure, and it deserves to be named.
+    catch (const idlib::exception& ex)
+    {
+        std::cerr << "fatal: " << flattenMessage(ex.to_string()) << std::endl;
+        return EXIT_FAILURE;
     }
     catch (const std::exception& ex)
     {

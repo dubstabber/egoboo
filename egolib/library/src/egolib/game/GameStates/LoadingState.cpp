@@ -270,6 +270,38 @@ void LoadingState::loadModuleData()
         //Abort loading module and return to main menu
         this->endState();
     }
+    // The idlib arm above cannot stand alone. This function is the entry point of
+    // _loadingThread (started in LoadingState::beginState), and an exception that escapes the
+    // top of a std::thread calls std::terminate: the process dies with no log record and no
+    // message box, which is the opposite of what the comment at the top of this try promises.
+    // idlib::exception has no std::exception base (idlib/exception/exception.hpp:64) and vice
+    // versa, so neither arm subsumes the other. Ego::ModelDescriptor's constructor throws plain
+    // std::runtime_error at four points, and std::bad_alloc is reachable from most of the loading
+    // steps above, so this arm is load-bearing rather than decorative.
+    catch (const std::exception& ex)
+    {
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "module loading error (", ex.what(), ")", Log::EndOfEntry);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                                 "Module Load Error",
+                                 ex.what(),
+                                 nullptr);
+
+        //Abort loading module and return to main menu
+        this->endState();
+    }
+    // Last resort. Nothing in the engine is expected to throw a type outside those two
+    // hierarchies, but std::terminate is the alternative, so it is not worth the gamble.
+    catch (...)
+    {
+        logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "module loading error (unknown exception type)", Log::EndOfEntry);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                                 "Module Load Error",
+                                 "Unknown exception type while loading the module.",
+                                 nullptr);
+
+        //Abort loading module and return to main menu
+        this->endState();
+    }
 }
 
 static void loadGameTips(std::shared_ptr<ReadContext>& ctxt, std::vector<std::string>& tips)

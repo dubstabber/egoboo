@@ -23,6 +23,7 @@
 #include "egolib/Profiles/ObjectProfile_internal.h"
 #include "egolib/fileutil.h"
 #include "egolib/Image/ImageManager.hpp"
+#include "idlib/exception.hpp"  // idlib::exception (base of the parser exceptions)
 
 void ObjectProfile::loadTextures(const std::string &folderPath, const LoadServices& services)
 {
@@ -120,10 +121,35 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
     //Don't load 3d model, enchant, messages, sounds or particle effects for lightweight profiles
     if (!lightWeight)
     {
-        // Load the model for this profile
+        // Load the model for this profile.
+        //
+        // The std::runtime_error arm below is correct for the primary failures: ModelDescriptor's
+        // constructor throws std::runtime_error at each of its four rejection points (unsupported
+        // format, no model file found, model failed to load, glTF metadata missing). But the MD2
+        // branch of that constructor also calls initializeFromLegacyFrames, whose collectHealAliases
+        // (ModelAnimationMetadata_legacy.cpp) guards only the ReadContext construction - the
+        // skipToColon/vfs_read_string_lit loop that follows can raise idlib::hll::compilation_error
+        // on a copy.txt that opens but is malformed. idlib::exception has no std::exception base
+        // (idlib/exception/exception.hpp:64), so that escaped this handler entirely. Same disposition
+        // as the data.txt handler further down: one bad object is skipped, not fatal.
         try
         {
             profile->_model = std::make_shared<Ego::ModelDescriptor>(folderPath.c_str());
+        }
+        catch (const idlib::exception &ex)
+        {
+            // The message is the whole point of this arm: a compilation_error out of
+            // collectHealAliases names copy.txt and the line and column that failed, none of
+            // which the folder path alone conveys. Flattened because
+            // idlib::runtime_error::to_string() is multi-line by design (runtime_error.hpp emits
+            // "runtime error:", the raise site and the message on separate lines).
+            std::string reason = ex.to_string();
+            for (char& c : reason)
+            {
+                if (c == '\n' || c == '\r') c = ' ';
+            }
+            services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load model ", "`", folderPath, "`", ": ", reason, Log::EndOfEntry);
+            return nullptr;
         }
         catch (const std::runtime_error &ex)
         {
@@ -174,6 +200,28 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
 
     // Finally load the character profile
     // Do after loading particle and sound profiles
+    // One unparsable object must not abort the caller's whole scan, so this reports the object
+    // as unloadable (nullptr) rather than letting the throw out. Every caller already treats
+    // nullptr as "skip this object": ProfileSystem::loadOneProfile logs and returns
+    // ObjectProfileRef::Invalid, ProfileSystem::loadAllSavedCharacters continues its search,
+    // and the content validator records a parse_failure for the object.
+    //
+    // The idlib arm is the one that matters here. loadDataFile opens `ReadContext ctxt(filePath)`
+    // as its first statement (ObjectProfile_data.cpp) and then runs ~200 vfs_get_next_* calls
+    // over it, and everything on that path raises idlib types: idlib::runtime_error from
+    // vfs_readEntireFile (vfs_bulk.c:56) by way of the Ego::Script::Scanner constructor when
+    // data.txt is missing or unreadable, and idlib::hll::compilation_error - plus its subclass
+    // Ego::Script::MissingDelimiterError (Script/Errors.hpp:29) - from the ReadContext parse
+    // helpers on a malformed or truncated one. idlib::exception (idlib/exception/exception.hpp:64)
+    // is declared with NO base class, so the std::runtime_error arm that used to stand alone here
+    // caught nothing loadDataFile actually throws. That arm is left exactly as it was, and
+    // deliberately NOT widened to std::exception: ObjectProfile_data.cpp contains no throw of its
+    // own, so widening would add reach for std::bad_alloc and nothing else, and an allocation
+    // failure reported as "failed to parse data.txt" is a fabricated content fault. It keeps
+    // propagating instead, out to LoadingState::loadModuleData or the validator's top level. The
+    // same disposition as the model-load handler above and as ModuleProfile::moduleHasIDSZ.
+    // Catch by reference only - idlib::exception's copy constructor and destructor are protected,
+    // so a by-value handler would not compile.
     try
     {
         if (!profile->loadDataFile(folderPath + "/data.txt", services))
@@ -181,6 +229,19 @@ std::shared_ptr<ObjectProfile> ObjectProfile::loadFromFile(const std::string& fo
             services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to load data.txt for profile ", "`", folderPath, "`", Log::EndOfEntry);
             return nullptr;
         }
+    }
+    catch (const idlib::exception &ex)
+    {
+        // idlib::runtime_error::to_string() is multi-line by design (runtime_error.hpp emits
+        // "runtime error:", the raise site and the message on separate lines). Flatten it so one
+        // rejected object stays one log record.
+        std::string reason = ex.to_string();
+        for (char& c : reason)
+        {
+            if (c == '\n' || c == '\r') c = ' ';
+        }
+        services.logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "failed to parse ", "`", folderPath, "/data.txt", "`", ": ", reason, Log::EndOfEntry);
+        return nullptr;
     }
     catch (const std::runtime_error &ex)
     {

@@ -87,7 +87,7 @@ int main(int argc, char **argv)
                   << ex.what() << std::endl;
 
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-                                 "Unhandled asException",
+                                 "Unhandled Exception",
                                  ex.what(),
                                  nullptr);
 
