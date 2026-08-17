@@ -249,22 +249,30 @@ The original phase plan, with where each phase actually stands:
   genuinely blocked: render passes and camera rendering.
 
   That pass also left a queue of *pinned but deliberately unfixed* lighting
-  defects. They are now safe to fix — the tests are in place — but each
+  defects. They are safe to fix once the tests are in place, but each
   changes rendering, so each wants its own deliberate pass and a look at the
-  result on screen. In rough priority order: the uninitialized-read chain
-  (`graphic_lighting.c:180` declares `low_delta`/`hgh_delta` uninitialized
-  and passes them to `lighting_cache_test`, whose reference parameters are
-  accumulated into rather than assigned, then divided in place — and `:189`
-  discards the clean return value in favour of the contaminated
-  combination, which lands in the persistent per-tile `_d1_cache` and gates
-  the per-frame relight; live in shipped builds because `CLIP_LIGHT_FANS` is
-  defined); `lighting_project_cache` throwing `std::domain_error` out of a
-  per-frame render path on a collapsed basis axis, where the non-throwing
-  `get_vector_or_default()` sits unused next to the throwing accessor;
-  `_max_light` being a manually-maintained cache that neither `blend`
-  overload refreshes; and `dyna_lighting_intensity`'s falloff being
-  cylindrical, which silently makes the low/hgh height split a no-op for
-  dynamic lights. Full list with file:line in the Pass 351 log entry.
+  result on screen. The lighting-queue-r12 pass fixed the top two: both
+  `lighting_cache_base_t::blend` and `lighting_cache_t::blend` now refresh
+  their own `_max_light` cache by calling `self.max_light()` at the end
+  (`lighting.c:158-165` and `:185-198`; see
+  `LightingCacheBase.BlendRefreshesMaxLight` and
+  `LightingCacheT.BlendPropagatesMaxDeltaAndRefreshesMaxLight`), and
+  `lighting_project_cache` now uses the non-throwing `get_vector_or_default()`
+  instead of the throwing `get_vector()` on the normalized basis vectors
+  (`lighting.c:225-227`; see
+  `LightingCacheProjection.CollapsedBasisAxisNoLongerThrowsAndContributesNothing`),
+  so a collapsed basis axis on the per-frame model/particle lighting path no
+  longer aborts the render loop. Remaining, in rough priority order: the
+  uninitialized-read chain (`graphic_lighting.c:180` declares
+  `low_delta`/`hgh_delta` uninitialized and passes them to
+  `lighting_cache_test`, whose reference parameters are accumulated into
+  rather than assigned, then divided in place — and `:189` discards the
+  clean return value in favour of the contaminated combination, which lands
+  in the persistent per-tile `_d1_cache` and gates the per-frame relight;
+  live in shipped builds because `CLIP_LIGHT_FANS` is defined); and
+  `dyna_lighting_intensity`'s falloff being cylindrical, which silently
+  makes the low/hgh height split a no-op for dynamic lights. Full list with
+  file:line in the Pass 351 log entry.
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

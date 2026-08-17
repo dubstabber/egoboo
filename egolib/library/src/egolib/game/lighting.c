@@ -156,6 +156,15 @@ void lighting_cache_base_t::blend( lighting_cache_base_t& self, const lighting_c
     }
 
 	self._max_delta = max_delta;
+
+	// Keep the manually-maintained _max_light cache current. evaluate()
+	// (:449) gates on this field directly, rather than on the contents of
+	// _lighting, so leaving it stale silently drops directional light;
+	// lighting_project_cache (:210) gates on the aggregate
+	// lighting_cache_t::_max_light, which lighting_cache_t::max_light()
+	// derives from this field. Reuse max_light()'s own formula instead of
+	// duplicating it here.
+	self.max_light();
 }
 
 //--------------------------------------------------------------------------------------------
@@ -183,6 +192,12 @@ void lighting_cache_t::blend(lighting_cache_t& self, lighting_cache_t& other, fl
 
     // find the absolute maximum delta
 	self._max_delta = std::max(self.low._max_delta, self.hgh._max_delta);
+
+	// Same reasoning as lighting_cache_base_t::blend: keep _max_light fresh
+	// rather than leaving it for the caller to remember. self.low and
+	// self.hgh already refreshed their own _max_light above, so this mirrors
+	// lighting_cache_t::max_light()'s reduction over the two halves.
+	self.max_light();
 }
 
 void lighting_cache_t::lighting_project_cache( lighting_cache_t& dst, const lighting_cache_t& src, const Ego::Matrix4f4f& mat )
@@ -203,9 +218,15 @@ void lighting_cache_t::lighting_project_cache( lighting_cache_t& dst, const ligh
     Ego::Vector3f right = mat_getChrRight(mat);
     Ego::Vector3f up = mat_getChrUp(mat);
 
-    fwd = Ego::normalize(fwd).get_vector();
-    right = Ego::normalize(right).get_vector();
-    up = Ego::normalize(up).get_vector();
+    // Use the non-throwing accessor: this runs on the per-frame model and
+    // particle lighting paths, and a degenerate matrix (a collapsed basis
+    // axis) must not turn into an uncaught std::domain_error out of the
+    // render loop. get_vector_or_default() returns the zero vector for a
+    // collapsed axis; lighting_sum_project's branches all test vec[k] > 0 /
+    // < 0, so a zero component simply contributes nothing along that axis.
+    fwd = Ego::normalize(fwd).get_vector_or_default();
+    right = Ego::normalize(right).get_vector_or_default();
+    up = Ego::normalize(up).get_vector_or_default();
 
     // split the lighting cache up
     lighting_sum_project( dst, src, right, 0 );
