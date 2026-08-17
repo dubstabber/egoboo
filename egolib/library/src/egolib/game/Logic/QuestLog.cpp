@@ -24,8 +24,40 @@
 #include "egolib/Log/_Include.hpp"
 #include "egolib/fileutil.h"  // ReadContext, make_unique<ReadContext>
 
+#include "idlib/exception.hpp"  // idlib::runtime_error
+#include "idlib/hll.hpp"        // idlib::hll::compilation_error
+
 namespace Ego
 {
+
+namespace {
+
+/// @brief Log one skipped quest.txt for QuestLog::loadFromFile.
+/// @remark Goes through Log::tryActiveTarget() rather than Log::activeTarget(): the latter
+///         falls through to Log::get(), which throws std::logic_error when the logging system
+///         is not initialized (Log/_Include.cpp). loadFromFile promises never to throw for a
+///         malformed file, so its own diagnostic must not be able to throw either.
+void logQuestParseFailure(const std::string& filePath, std::string reason)
+{
+    Log::Target* logTarget = Log::tryActiveTarget();
+    if (!logTarget) return;
+
+    // Flatten the message to one line so a single malformed file yields a single log record.
+    // idlib::runtime_error::to_string() is deliberately multi-line (runtime_error.hpp emits
+    // "runtime error:", the raise site, and the message on separate lines); this arm is also
+    // reached for idlib::hll::compilation_error, whose to_string() is already single-line
+    // (compilation_error.hpp), so the flatten is a harmless no-op there.
+    for (char& c : reason)
+    {
+        if (c == '\n' || c == '\r') c = ' ';
+    }
+
+    *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                     "unable to parse quest file ", "`", filePath, "/quest.txt", "`",
+                                     ": ", reason, Log::EndOfEntry);
+}
+
+} // namespace
 
 QuestLog::QuestLog() :
     _questLog()
@@ -77,14 +109,48 @@ bool QuestLog::loadFromFile(const std::string& filePath)
         return false;
     }
 
-    // Load each IDSZ
-    while (ctxt->skipToColon(true))
+    // Load each IDSZ.
+    //
+    // readIDSZ() and readIntegerLiteral() raise idlib::hll::compilation_error
+    // (ReadContext.cpp/ReadContext_literals.cpp) on a truncated or malformed quest.txt -
+    // e.g. a colon with nothing after it, a missing '[' where an IDSZ is expected, or a
+    // non-numeric quest level. skipToColon(true) does not throw Ego::Script::MissingDelimiterError
+    // on end-of-input (it is called with optional=true, so skipToDelimiter returns false instead
+    // - see ReadContext.cpp); its remaining throw path, a scanner read error, raises the same
+    // idlib::hll::compilation_error caught below. A malformed file is ordinary, player-editable
+    // content, not a precondition violation, so it gets the same cleared-and-false outcome as a
+    // missing file above, plus a log record, rather than letting the exception escape into
+    // loadPlayerQuestLog -> LoadPlayerElement's constructor -> ProfileSystem::loadAllSavedCharacters,
+    // which has no try around that construction.
+    try
     {
-        IDSZ2 idsz = ctxt->readIDSZ();
-        int  level = ctxt->readIntegerLiteral();
+        while (ctxt->skipToColon(true))
+        {
+            IDSZ2 idsz = ctxt->readIDSZ();
+            int  level = ctxt->readIntegerLiteral();
 
-        // Try to add a single quest to the map
-        _questLog[idsz] = level;
+            // Try to add a single quest to the map
+            _questLog[idsz] = level;
+        }
+    }
+    // idlib::hll::compilation_error (and its subclass Ego::Script::MissingDelimiterError) is
+    // the only idlib type the parse calls above can raise - the ReadContext construction that
+    // can raise idlib::runtime_error (see vfs_readEntireFile via the Scanner constructor, and
+    // ModuleProfile::moduleHasIDSZ for the fuller rationale) sits above in its own guard, not
+    // in this try. The runtime_error arm below mirrors moduleHasIDSZ's pair as a defensive
+    // tripwire: idlib declares idlib::exception with no base class, so a std::exception handler
+    // would not see either type, and catch (...) is avoided so std::bad_alloc keeps propagating.
+    catch (const idlib::hll::compilation_error& ex)
+    {
+        logQuestParseFailure(filePath, ex.to_string());
+        _questLog.clear();
+        return false;
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        logQuestParseFailure(filePath, ex.to_string());
+        _questLog.clear();
+        return false;
     }
 
     return true;

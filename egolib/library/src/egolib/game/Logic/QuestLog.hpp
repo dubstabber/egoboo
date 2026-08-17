@@ -73,6 +73,12 @@ public:
     *   The path of the quest.txt file
     * @return
     *   true if the file was found and successfully parsed
+    * @remark <b>Miss contract.</b> A missing quest.txt is silently treated as "no quests":
+    *   this quest log is left cleared and the function returns @a false, with no log record
+    *   (the pre-existing missing-file behavior). A quest.txt that is present but truncated
+    *   or otherwise malformed (e.g. a colon with nothing after it, a missing IDSZ delimiter,
+    *   or a non-numeric quest level) gets the same cleared-and-@a-false outcome, plus a
+    *   report through the active log target when one is available. Neither case throws.
     **/
     bool loadFromFile(const std::string& filePath);
 
