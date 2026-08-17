@@ -158,9 +158,9 @@ void lighting_cache_base_t::blend( lighting_cache_base_t& self, const lighting_c
 	self._max_delta = max_delta;
 
 	// Keep the manually-maintained _max_light cache current. evaluate()
-	// (:449) gates on this field directly, rather than on the contents of
+	// (:460) gates on this field directly, rather than on the contents of
 	// _lighting, so leaving it stale silently drops directional light;
-	// lighting_project_cache (:210) gates on the aggregate
+	// lighting_project_cache (:212) gates on the aggregate
 	// lighting_cache_t::_max_light, which lighting_cache_t::max_light()
 	// derives from this field. Reuse max_light()'s own formula instead of
 	// duplicating it here.
@@ -319,6 +319,15 @@ float lighting_cache_test( const lighting_cache_t * src[], const float u, const 
     float loc_u, loc_v;
 
     delta = 0.0f;
+
+    // Zero both reference out-params before any early return, so that every
+    // path (NULL src, all-corners-null, or the normal accumulate+divide path)
+    // leaves the caller's low_delta/hgh_delta well-defined regardless of what
+    // they held on entry. Without this, a caller with uninitialized locals
+    // (see graphic_lighting.c's grid_lighting_test/test_one_corner) folds
+    // stack garbage into the accumulation below.
+    low_delta = 0.0f;
+    hgh_delta = 0.0f;
 
     if ( NULL == src ) return delta;
 

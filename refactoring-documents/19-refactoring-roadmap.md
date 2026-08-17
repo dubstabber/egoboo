@@ -254,25 +254,39 @@ The original phase plan, with where each phase actually stands:
   result on screen. The lighting-queue-r12 pass fixed the top two: both
   `lighting_cache_base_t::blend` and `lighting_cache_t::blend` now refresh
   their own `_max_light` cache by calling `self.max_light()` at the end
-  (`lighting.c:158-165` and `:185-198`; see
+  (`lighting.c:158-167` and `:185-200`; see
   `LightingCacheBase.BlendRefreshesMaxLight` and
   `LightingCacheT.BlendPropagatesMaxDeltaAndRefreshesMaxLight`), and
   `lighting_project_cache` now uses the non-throwing `get_vector_or_default()`
   instead of the throwing `get_vector()` on the normalized basis vectors
-  (`lighting.c:225-227`; see
+  (`lighting.c:227-229`; see
   `LightingCacheProjection.CollapsedBasisAxisNoLongerThrowsAndContributesNothing`),
   so a collapsed basis axis on the per-frame model/particle lighting path no
-  longer aborts the render loop. Remaining, in rough priority order: the
-  uninitialized-read chain (`graphic_lighting.c:180` declares
-  `low_delta`/`hgh_delta` uninitialized and passes them to
-  `lighting_cache_test`, whose reference parameters are accumulated into
-  rather than assigned, then divided in place — and `:189` discards the
-  clean return value in favour of the contaminated combination, which lands
-  in the persistent per-tile `_d1_cache` and gates the per-frame relight;
-  live in shipped builds because `CLIP_LIGHT_FANS` is defined); and
-  `dyna_lighting_intensity`'s falloff being cylindrical, which silently
-  makes the low/hgh height split a no-op for dynamic lights. Full list with
-  file:line in the Pass 351 log entry.
+  longer aborts the render loop. The lighting-queue-r3 pass fixed the next
+  item: `graphic_lighting.c:180` declares `low_delta`/`hgh_delta`
+  uninitialized and passes them to `lighting_cache_test`, whose reference
+  out-params used to be accumulated into rather than assigned, then divided
+  in place. `lighting_cache_test` now zeroes both out-params at
+  `lighting.c:329-330`, before its early `NULL == src` rejection at `:332`,
+  so every path through the function leaves them well-defined regardless of
+  what the caller's storage held on entry (see
+  `LightingCacheTestFn.OutParamsAreZeroedAtEntryRegardlessOfCallerSeed`,
+  `.CallerGarbageNoLongerSurvivesWhenCornersAreMissing`,
+  `.NullArrayPointerReturnsZeroAndZeroesBothOutParams`, and
+  `.SentinelOutParamsAreWellDefinedOnBothTheNormalAndRejectionPaths`).
+  `graphic_lighting.c:189` still discards the clean return value in favour of
+  the (now well-defined) `low_delta`/`hgh_delta` combination that lands in
+  the persistent per-tile `_d1_cache` and gates the per-frame relight — that
+  discarded-return-value structure was deliberately left untouched, since the
+  fix alone makes its inputs well-defined. The lighting values themselves
+  were always recomputed cleanly through the separate interpolate path, so
+  the only observable effect of this fix is relight cadence, bounded by the
+  existing checkerboard forced-update fallback (`graphic_lighting.c:292-299`)
+  on both sides of the fix; live in shipped builds because `CLIP_LIGHT_FANS`
+  is defined. Remaining: `dyna_lighting_intensity`'s falloff being
+  cylindrical, which silently makes the low/hgh height split a no-op for
+  dynamic lights — blocked on on-screen verification, deliberately excluded
+  from this pass. Full list with file:line in the Pass 351 log entry.
 - **T3.6 Content-pipeline/runtime separation.** Profile parsing, model
   loading, script compilation, and validator startup still require runtime
   services (`ImageManager`, `PerkHandler`, config). Keep separating pure data

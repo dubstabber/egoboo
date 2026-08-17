@@ -27,10 +27,10 @@
 //
 //   (1) _max_light is a manually-maintained cache and TWO functions gate on it
 //       rather than on the contents of _lighting:
-//         lighting_cache_base_t::evaluate    (lighting.c:449)
-//         lighting_cache_t::lighting_project_cache (lighting.c:210)
+//         lighting_cache_base_t::evaluate    (lighting.c:460)
+//         lighting_cache_t::lighting_project_cache (lighting.c:212)
 //       FIXED in the lighting-queue-r12 pass: both blend() overloads now
-//       refresh _max_light themselves (lighting.c:158-165 and :185-198) by
+//       refresh _max_light themselves (lighting.c:158-167 and :185-200) by
 //       calling self.max_light() at the end -- see
 //       LightingCacheBase.BlendRefreshesMaxLight and
 //       LightingCacheT.BlendPropagatesMaxDeltaAndRefreshesMaxLight. The trap
@@ -186,7 +186,7 @@ std::array<float, 13> purityProbe()
 TEST(LightingLayout, DirectionSlotsArePairedAndAmbientIsLast)
 {
     // The (plus, minus) pairing on consecutive even/odd indices is load-bearing:
-    // lighting_sum_project (lighting.c:384) indexes dir+0 / dir+1 and only ever
+    // lighting_sum_project (lighting.c:395) indexes dir+0 / dir+1 and only ever
     // receives 0, 2 or 4, so each call must land on a pair boundary.
     EXPECT_EQ(LVEC_PX, 0);
     EXPECT_EQ(LVEC_MX, 1);
@@ -271,9 +271,13 @@ TEST(LightingGlobals, LightingFunctionsDoNotReadLightALightDOrLightNrm)
 TEST(LightingVectorEvaluate, AssignsBothOutParamsRatherThanAccumulating)
 {
     // lighting.c:40-41 sets dir = 0 and amb = 0 before doing anything, so both
-    // out-params are ASSIGN semantics. Contrast lighting_cache_test in the
-    // QUIRK 1 section, whose out-params are accumulate-only -- that asymmetry
-    // inside one header is the root of the caller bug pinned there.
+    // out-params are ASSIGN semantics. lighting_cache_test in the QUIRK 1
+    // section used to be a contrasting accumulate-only discipline -- that
+    // asymmetry was the root of the graphic_lighting.c:180 caller bug pinned
+    // there. lighting-queue-r3 closed that gap by zeroing lighting_cache_test's
+    // out-params at entry too, so a caller's seed no longer survives either
+    // function, even though lighting_cache_test still technically accumulates
+    // from that zero rather than assigning one computed value at the end.
     LightingVector lvec{{1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f}};
 
     float dir = -999.0f, amb = -999.0f;
@@ -545,7 +549,7 @@ TEST(LightingCacheBase, BlendFastPathDispatchIsExactFloatEqualityNotAnEpsilon)
 
 TEST(LightingCacheBase, BlendRefreshesMaxLight)
 {
-    // FIXED (lighting.c:158-165): blend() used to rewrite _lighting and only
+    // FIXED (lighting.c:158-167): blend() used to rewrite _lighting and only
     // set _max_delta, leaving _max_light stale until a caller separately
     // called max_light() -- exactly what the one production caller did (and
     // still does) on the line right after the blend
@@ -553,7 +557,7 @@ TEST(LightingCacheBase, BlendRefreshesMaxLight)
     // site was never visibly wrong. blend() now calls self.max_light() itself
     // at the end, so _max_light is correct immediately, with no caller
     // discipline required. Because evaluate() gates on _max_light
-    // (lighting.c:449), this closes the "blend then forget to refresh"
+    // (lighting.c:460), this closes the "blend then forget to refresh"
     // trap for every future caller, not just the current one.
     lighting_cache_base_t self, other;
     setHalf(self, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -572,7 +576,7 @@ TEST(LightingCacheBase, BlendRefreshesMaxLight)
 TEST(LightingCacheBase, EvaluateGatesOnStaleMaxLightNotOnContents)
 {
     // FINDING: evaluate() branches on the CACHED _max_light field
-    // (lighting.c:449), not on the contents of _lighting. With a stale zero it
+    // (lighting.c:460), not on the contents of _lighting. With a stale zero it
     // returns ambient only and SILENTLY DISCARDS every directional slot -- no
     // error, no clamp, no log. This is the single most likely way for a
     // renderer refactor to lose all directional light on some code path.
@@ -612,13 +616,13 @@ TEST(LightingCacheBase, EvaluateShortPathAgreesWithTheLongPathForAmbientOnlyCach
 {
     // Because max_light() excludes LVEC_AMB, an ambient-only cache ALWAYS has
     // _max_light == 0 and therefore always takes the short path at
-    // lighting.c:449-453 -- even right after a correct max_light() call. That
+    // lighting.c:460-464 -- even right after a correct max_light() call. That
     // is benign only because the two paths agree when every directional slot
     // is zero.
     //
     // evaluate() cannot be made to take the long path on such a cache, so the
     // agreement is checked by calling the long path's implementation
-    // (lighting_vector_evaluate, lighting.c:457) directly on the same data and
+    // (lighting_vector_evaluate, lighting.c:468) directly on the same data and
     // comparing. If the short path ever stopped forwarding LVEC_AMB, or the
     // long path started treating an all-zero directional set differently, the
     // two would part company here.
@@ -683,9 +687,9 @@ TEST(LightingCacheT, MaxLightIsTheMaximumOverBothHalves)
 
 TEST(LightingCacheT, BlendPropagatesMaxDeltaAndRefreshesMaxLight)
 {
-    // FIXED (lighting.c:185-198): same fix as
+    // FIXED (lighting.c:185-200): same fix as
     // LightingCacheBase.BlendRefreshesMaxLight, one level up. _max_delta was
-    // already assigned here (lighting.c:192); _max_light was not touched by
+    // already assigned here (lighting.c:194); _max_light was not touched by
     // either blend overload until now. self.low and self.hgh each refresh
     // their own _max_light inside lighting_cache_base_t::blend, and
     // lighting_cache_t::blend now also calls self.max_light() itself, which
@@ -730,19 +734,19 @@ TEST(LightingCacheT, BlendPropagatesMaxDeltaAndRefreshesMaxLight)
 // also the ONLY way to characterize the file-static lighting_sum_project.
 //
 // QUIRK 5, resolved honestly: lighting_sum_project rejects any `dir` outside
-// {0, 2, 4} (lighting.c:386). That guard is UNREACHABLE and its bool return is
+// {0, 2, 4} (lighting.c:397). That guard is UNREACHABLE and its bool return is
 // DEAD. The function is forward-declared `static` at lighting.c:34 (the
-// definition at :384 omits the keyword, but the earlier declaration governs),
+// definition at :395 omits the keyword, but the earlier declaration governs),
 // so it has internal linkage -- `nm` reports it as a local `t` symbol in
 // libegolib-foundation-base.a and no test can name it. Its only three call
-// sites are lighting.c:230-232, which pass the integer literals 0, 2 and 4 and
+// sites are lighting.c:232-234, which pass the integer literals 0, 2 and 4 and
 // discard the result. There is therefore nothing to assert about the guard;
 // what CAN be pinned is the axis permutation the three calls produce, below.
 //============================================================================
 
 TEST(LightingCacheProjection, IdentityMatrixPermutesAxesRatherThanPreservingThem)
 {
-    // Hand-derived from Math/Standard.cpp:77-90 plus lighting.c:230-232.
+    // Hand-derived from Math/Standard.cpp:77-90 plus lighting.c:232-234.
     // For the identity matrix:
     //   right = mat_getChrRight   = column 1          = ( 0, 1, 0) -> slot pair 0
     //   fwd   = mat_getChrForward = NEGATED column 0  = (-1,-0,-0) -> slot pair 2
@@ -767,7 +771,7 @@ TEST(LightingCacheProjection, IdentityMatrixPermutesAxesRatherThanPreservingThem
     expectVector(dst.hgh._lighting,
                  30.0f, 40.0f, 20.0f, 10.0f, 50.0f, 60.0f, 70.0f);
 
-    // max_light() is re-derived on the destination (lighting.c:235) and still
+    // max_light() is re-derived on the destination (lighting.c:237) and still
     // excludes ambient, so 70 does not win.
     EXPECT_FLOAT_EQ(dst._max_light, 60.0f);
     // _max_delta is zeroed by dst.init() and never derived from src.
@@ -778,16 +782,16 @@ TEST(LightingCacheProjection, NegatedBasisExercisesTheOppositeSignArmsOfTheProje
 {
     // Companion to the identity case above, and the reason it exists: the
     // identity basis is right = (0,1,0), fwd = (-1,-0,-0), up = (0,0,1), so it
-    // only ever runs lighting_sum_project's `vec[kY] > 0` (lighting.c:406),
-    // `vec[kX] < 0` (:397) and `vec[kZ] > 0` (:423) arms. Half of the function
+    // only ever runs lighting_sum_project's `vec[kY] > 0` (lighting.c:417),
+    // `vec[kX] < 0` (:408) and `vec[kZ] > 0` (:434) arms. Half of the function
     // -- the three opposite-sign arms, which carry the REVERSED P/M mapping --
     // would otherwise never execute in this suite, and swapping their dir+0 /
     // dir+1 targets would go unnoticed.
     //
     // Negating the 3x3 block flips all three basis vectors:
-    //   right = column 1          = ( 0,-1, 0) -> :414 (kY < 0), slot pair 0
-    //   fwd   = NEGATED column 0  = ( 1, 0, 0) -> :389 (kX > 0), slot pair 2
-    //   up    = column 2          = ( 0, 0,-1) -> :431 (kZ < 0), slot pair 4
+    //   right = column 1          = ( 0,-1, 0) -> :425 (kY < 0), slot pair 0
+    //   fwd   = NEGATED column 0  = ( 1, 0, 0) -> :400 (kX > 0), slot pair 2
+    //   up    = column 2          = ( 0, 0,-1) -> :442 (kZ < 0), slot pair 4
     // Each still has unit length, so nothing throws. The negative arms use
     // `-=` against the OPPOSITE source slot, so with src.low = 1..7:
     //   PX <- -(-1)*MY = 4   MX <- -(-1)*PY = 3     (from right)
@@ -816,7 +820,7 @@ TEST(LightingCacheProjection, NegatedBasisExercisesTheOppositeSignArmsOfTheProje
 
 TEST(LightingCacheProjection, DestinationIsFullyWipedBeforeAnythingIsWritten)
 {
-    // lighting.c:204 calls dst.init() first, so dst is a pure output parameter,
+    // lighting.c:206 calls dst.init() first, so dst is a pure output parameter,
     // never an accumulator -- even on the early-return path below.
     lighting_cache_t src, dst;
     setHalf(dst.low, 999.0f, 999.0f, 999.0f, 999.0f, 999.0f, 999.0f, 999.0f);
@@ -830,7 +834,7 @@ TEST(LightingCacheProjection, DestinationIsFullyWipedBeforeAnythingIsWritten)
 
     lighting_cache_t::lighting_project_cache(dst, src, idlib::identity<Ego::Matrix4f4f>());
 
-    // Ambient is copied verbatim BEFORE the early return (lighting.c:207-208),
+    // Ambient is copied verbatim BEFORE the early return (lighting.c:209-210),
     // and is never rotated by the matrix.
     EXPECT_FLOAT_EQ(dst.low._lighting[LVEC_AMB], 7.0f);
     EXPECT_FLOAT_EQ(dst.hgh._lighting[LVEC_AMB], 8.0f);
@@ -842,7 +846,7 @@ TEST(LightingCacheProjection, DestinationIsFullyWipedBeforeAnythingIsWritten)
 TEST(LightingCacheProjection, StaleSourceMaxLightSilentlyDegradesToAmbientOnly)
 {
     // FINDING: lighting_project_cache early-returns on src._max_light == 0.0f
-    // (lighting.c:210), the CACHED field again. Populate src._lighting and
+    // (lighting.c:212), the CACHED field again. Populate src._lighting and
     // forget max_light() and every directional slot is dropped without a word.
     lighting_cache_t src, dst;
     src.low._lighting[LVEC_PX] = 50.0f;
@@ -861,7 +865,7 @@ TEST(LightingCacheProjection, StaleSourceMaxLightSilentlyDegradesToAmbientOnly)
 
 TEST(LightingCacheProjection, UniformScaleIsErasedBecauseTheBasisIsNormalized)
 {
-    // lighting.c:225-227 normalize all three basis vectors, so any uniform
+    // lighting.c:227-229 normalize all three basis vectors, so any uniform
     // scale baked into the object matrix contributes nothing. A five-times
     // larger object is not five times brighter.
     lighting_cache_t src, identityDst, scaledDst;
@@ -885,7 +889,7 @@ TEST(LightingCacheProjection, UniformScaleIsErasedBecauseTheBasisIsNormalized)
 
 TEST(LightingCacheProjection, CollapsedBasisAxisNoLongerThrowsAndContributesNothing)
 {
-    // FIXED (lighting.c:225-227): lighting_project_cache used to call
+    // FIXED (lighting.c:227-229): lighting_project_cache used to call
     // Ego::normalize(v).get_vector(), and idlib::normalization_result::get_vector()
     // throws std::domain_error("unable to normalize zero vector") when the
     // length is zero (idlib/idlib-math/library/src/idlib/math/vector.hpp:557).
@@ -897,7 +901,7 @@ TEST(LightingCacheProjection, CollapsedBasisAxisNoLongerThrowsAndContributesNoth
     // lighting.c now calls get_vector_or_default() (vector.hpp:560) instead,
     // which returns the zero vector rather than throwing. A zero basis vector
     // then feeds lighting_sum_project, whose six branches all test
-    // `vec[k] > 0` / `vec[k] < 0` (lighting.c:389-431) -- a zero component
+    // `vec[k] > 0` / `vec[k] < 0` (lighting.c:400-442) -- a zero component
     // takes NEITHER branch, so the collapsed axis contributes exactly nothing
     // to dst rather than substituting some other value. Non-degenerate axes
     // are unaffected.
@@ -938,7 +942,7 @@ TEST(LightingCacheProjection, CollapsedUpAxisOnlyZeroesTheVerticalSlotPairAndDoe
     // Companion to CollapsedBasisAxisNoLongerThrowsAndContributesNothing,
     // exercising a different single collapsed axis (up, column 2) so that the
     // fix is pinned against more than one of lighting_project_cache's three
-    // get_vector_or_default() call sites (lighting.c:225-227), not just the
+    // get_vector_or_default() call sites (lighting.c:227-229), not just the
     // "right" one. Before the fix this also threw std::domain_error.
     lighting_cache_t src, dst;
     setHalf(src.low, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f);
@@ -960,8 +964,8 @@ TEST(LightingCacheProjection, CollapsedUpAxisOnlyZeroesTheVerticalSlotPairAndDoe
 
 TEST(LightingCacheProjection, EarlyReturnOrderingIsWhatKeepsAmbientOnlyObjectsFromRunningTheProjectionAtAll)
 {
-    // The src._max_light == 0 early return at lighting.c:210 sits ABOVE the
-    // normalize calls at :225-227. Before the get_vector_or_default() fix
+    // The src._max_light == 0 early return at lighting.c:212 sits ABOVE the
+    // normalize calls at :227-229. Before the get_vector_or_default() fix
     // above, that ordering was the ONLY thing that stopped an ambient-only
     // (unlit) object with a degenerate matrix from throwing out of the render
     // loop. It is no longer the only thing -- get_vector_or_default() also
@@ -1043,7 +1047,7 @@ TEST(LightingCacheInterpolation, ClampsUAndVIntoTheUnitSquare)
     FourCorners f;
     lighting_cache_t dst;
 
-    // lighting.c:242-243 constrain both to [0,1], so (-5, 7) behaves as (0, 1).
+    // lighting.c:244-245 constrain both to [0,1], so (-5, 7) behaves as (0, 1).
     const bool ok = lighting_cache_t::lighting_cache_interpolate(dst, f.ptr, -5.0f, 7.0f);
     EXPECT_TRUE(ok);
     EXPECT_FLOAT_EQ(dst.low._lighting[LVEC_PX], 3.0f);   // == the (0,1) corner
@@ -1051,12 +1055,12 @@ TEST(LightingCacheInterpolation, ClampsUAndVIntoTheUnitSquare)
 
 TEST(LightingCacheInterpolation, RenormalizesWhenSomeCornersAreMissing)
 {
-    // The only interesting line in the function (lighting.c:291-300): partial
+    // The only interesting line in the function (lighting.c:293-306): partial
     // weight coverage is scaled back up to full strength, so a mesh-edge tile
     // does not go dark.
     //
     // (The source also skips the division outright when wt_sum is EXACTLY
-    // 1.0f, at lighting.c:293. That is a real branch but it is an optimization
+    // 1.0f, at lighting.c:295. That is a real branch but it is an optimization
     // only -- dividing by 1.0f is a numeric no-op -- so no assertion in this
     // file can distinguish its presence from its absence. Verified by mutation:
     // replacing the condition with `true` leaves every test in this file
@@ -1080,7 +1084,7 @@ TEST(LightingCacheInterpolation, ReturnsFalseAndLeavesDestinationZeroedWhenAllCo
     const bool ok = lighting_cache_t::lighting_cache_interpolate(dst, none, 0.5f, 0.5f);
 
     EXPECT_FALSE(ok);
-    // dst.init() at lighting.c:240 runs before the null checks, so the 42 is
+    // dst.init() at lighting.c:242 runs before the null checks, so the 42 is
     // gone even though nothing was interpolated into its place.
     EXPECT_FLOAT_EQ(dst.low._lighting[LVEC_PX], 0.0f);
     EXPECT_FLOAT_EQ(dst._max_light, 0.0f);
@@ -1126,45 +1130,64 @@ TEST(LightingCacheInterpolation, InterpolatesAmbientButDoesNotPropagateMaxDelta)
 }
 
 //============================================================================
-// SECTION 7 -- lighting_cache_test  ***QUIRK 1***
+// SECTION 7 -- lighting_cache_test  ***QUIRK 1, FIXED by lighting-queue-r3***
 //
 // This is the important section. lighting_cache_test estimates how much the
 // lighting at (u,v) has changed, by bilinearly blending the four corners'
 // cached _max_delta values.
 //
-//   The RETURN value is computed into a fresh local zeroed at lighting.c:319 --
-//   it is well defined no matter what the caller does.
+//   The RETURN value is computed into a fresh local zeroed at lighting.c:321 --
+//   it is well defined no matter what the caller does. It always was.
 //
-//   The two REFERENCE out-params are NEVER zeroed. They are `+=`-accumulated at
-//   lighting.c:334-335, 345-346, 356-357 and 367-368, and then DIVIDED IN PLACE
-//   by wt_sum at :376-377. Whatever the caller passes in is folded into the
-//   result AND renormalized along with it.
+//   The two REFERENCE out-params used to be NEVER zeroed. They were
+//   `+=`-accumulated at lighting.c:345-346, 356-357, 367-368 and 378-379, and
+//   then DIVIDED IN PLACE by wt_sum at :387-388, folding in and renormalizing
+//   whatever the caller happened to pass in. lighting-queue-r3 fixed this:
+//   both out-params are now zeroed at lighting.c:329-330, BEFORE the early
+//   `NULL == src` rejection at :332, so every path through this function --
+//   the NULL-src rejection, the all-corners-null wt_sum-stays-0 path, and the
+//   normal accumulate+divide path -- leaves low_delta/hgh_delta well-defined
+//   regardless of what the caller's storage held on entry. Zeroing happens
+//   before the early return specifically so the rejection path is covered
+//   too, not just the paths that reach the accumulation loop.
 //
-// FINDING -- LIVE UNINITIALIZED READ IN A DIFFERENT FILE. DO NOT FIX HERE.
+// FORMER FINDING, NOW CLOSED -- LIVE UNINITIALIZED READ IN A DIFFERENT FILE.
 //   graphic_lighting.c:180 declares `float low_delta, hgh_delta;` with no
 //   initializer and passes them straight into this function at :181 (through
-//   GridIllumination::grid_lighting_test, which forwards them verbatim). So the
-//   uninitialized stack values are what gets accumulated into and scaled.
-//   graphic_lighting.c:181 does assign the clean return value to `pdelta`, but
-//   :189 OVERWRITES pdelta with `low_wt*low_delta + hgh_wt*hgh_delta` -- the
-//   one well-defined number is discarded and the contaminated one kept. From
-//   there it flows into test_corners, is divided by the corner light and
-//   constrain-clamped to [0,10] (which bounds but does not remove the
-//   corruption), accumulates into the PERSISTENT per-tile field
+//   GridIllumination::grid_lighting_test, which forwards them verbatim). Those
+//   locals are no longer read while uninitialized: this function now assigns
+//   them on every path before anything else can observe them.
+//   graphic_lighting.c:189 still OVERWRITES the clean `pdelta` value assigned
+//   at :181 with `low_wt*low_delta + hgh_wt*hgh_delta` -- that
+//   discarded-return-value structure is untouched, a separate, non-safety
+//   design wart -- but the two numbers it combines are now always
+//   well-defined rather than stack garbage. From there the value still flows
+//   into test_corners, is divided by the corner light and constrain-clamped
+//   to [0,10], accumulates into the PERSISTENT per-tile field
 //   tile._vertexLightingCache._d1_cache[corner] at :220, and drives the
 //   `pdelta > threshold` test at :222 that sets retval at :224. That retval
-//   reaches light_fans_throttle_update at :289, which is
-//   compiled in for shipped builds -- egolib_config.h:194-195 does
-//   `#define CLIP_LIGHT_FANS` and `#undef CLIP_ALL_LIGHT_FANS`. It gates the
-//   per-frame "should I relight this tile" decision.
+//   reaches light_fans_throttle_update at :289, which is compiled in for
+//   shipped builds -- egolib_config.h:194-195 does `#define CLIP_LIGHT_FANS`
+//   and `#undef CLIP_ALL_LIGHT_FANS` -- and gates the per-frame "should I
+//   relight this tile" decision. The lighting VALUES themselves were always
+//   recomputed cleanly through the separate interpolate path (grid_lighting_
+//   interpolate / lighting_cache_interpolate); only the relight-gating cadence
+//   was contaminated, and the checkerboard forced-update fallback
+//   (graphic_lighting.c:292-299) bounded how stale any one tile could get in
+//   the meantime. So the only observable effect of this fix is relight
+//   cadence, not lighting correctness.
 //
-//   Contributing factor: lighting.h:140 names the parameters `low_max_diff` /
-//   `hgh_max_diff`, which reads like an assign-out contract, while the
-//   definition at lighting.c:310 names them `low_delta` / `hgh_delta`. A caller
-//   reading only the header would write exactly the bug at graphic_lighting.c:180.
+//   Contributing factor, still present: lighting.h:140 names the parameters
+//   `low_max_diff` / `hgh_max_diff`, which reads like an assign-out contract,
+//   while the definition at lighting.c:312 names them `low_delta` /
+//   `hgh_delta`. That mismatch is cosmetic now that both disciplines agree
+//   (well-defined on every path), but it is still worth cleaning up
+//   separately.
 //
 //   The tests below pin the lighting.c half of this, which needs no mesh. The
-//   caller-side fix belongs to a separate, deliberate behavior-changing pass.
+//   caller-side `:189` discarded-return-value structure was deliberately left
+//   untouched by this pass; it is a separate design wart, not a correctness
+//   bug now that its inputs are well-defined.
 //============================================================================
 
 namespace
@@ -1193,7 +1216,7 @@ struct FourDeltas
 TEST(LightingCacheTestFn, ReturnValueIsACleanLocalAndTracksTheCornerMaxDeltas)
 {
     // The return value alone is trustworthy: `delta` is zeroed at
-    // lighting.c:319 regardless of the caller. Sweep the four corners.
+    // lighting.c:321 regardless of the caller. Sweep the four corners.
     FourDeltas f;
 
     struct { float u, v, expected; } cases[] = {
@@ -1211,14 +1234,15 @@ TEST(LightingCacheTestFn, ReturnValueIsACleanLocalAndTracksTheCornerMaxDeltas)
     }
 }
 
-TEST(LightingCacheTestFn, QUIRK1_OutParamsAccumulateIntoTheCallersValueAndAreNeverZeroed)
+TEST(LightingCacheTestFn, OutParamsAreZeroedAtEntryRegardlessOfCallerSeed)
 {
-    // ***QUIRK 1, the core pin.*** Seed the two reference parameters with
-    // sentinels and watch them survive into the result. If a future version
-    // ever assigned instead of accumulating, both numbers below drop by exactly
-    // the seed -- which is precisely the change that would fix
-    // graphic_lighting.c:180's uninitialized read, and precisely the change
-    // this test is here to make visible rather than silent.
+    // ***Former QUIRK 1, now the fix pin.*** Seed the two reference
+    // parameters with sentinels and confirm they do NOT survive into the
+    // result. lighting-queue-r3 added the zeroing at lighting.c:329-330,
+    // before anything can accumulate into either out-param -- so a
+    // zero-seeded call and a garbage-seeded call at the same (u,v) now land
+    // on the identical answer. Pre-fix, the seeded case would have differed
+    // by exactly the seed (1025.0f/5250.0f instead of 25.0f/250.0f below).
     FourDeltas f;
 
     // Control: zero-seeded, the "intended" answer at the tile midpoint.
@@ -1228,63 +1252,105 @@ TEST(LightingCacheTestFn, QUIRK1_OutParamsAccumulateIntoTheCallersValueAndAreNev
     EXPECT_FLOAT_EQ(lowClean, 25.0f);                  // 0.25*(10+20+30+40)
     EXPECT_FLOAT_EQ(hghClean, 250.0f);                 // 0.25*(100+200+300+400)
 
-    // Same call, seeded references. wt_sum is exactly 1 here, so the seed is
-    // added straight through.
+    // Same call, seeded with sentinels standing in for uninitialized stack
+    // storage. wt_sum is exactly 1 here, so pre-fix the seed would have been
+    // added straight through; post-fix it is discarded by the entry zeroing.
     float lowSeeded = 1000.0f, hghSeeded = 5000.0f;
     const float deltaSeeded = lighting_cache_test(f.ptr, 0.5f, 0.5f, lowSeeded, hghSeeded);
     EXPECT_FLOAT_EQ(deltaSeeded, 2.5f);                // return value unaffected
-    EXPECT_FLOAT_EQ(lowSeeded, 1025.0f);               // 1000 + 25
-    EXPECT_FLOAT_EQ(hghSeeded, 5250.0f);               // 5000 + 250
+    EXPECT_FLOAT_EQ(lowSeeded, 25.0f);                 // seed discarded, matches clean
+    EXPECT_FLOAT_EQ(hghSeeded, 250.0f);                // seed discarded, matches clean
 }
 
-TEST(LightingCacheTestFn, QUIRK1_CallerGarbageIsAmplifiedWhenCornersAreMissing)
+TEST(LightingCacheTestFn, CallerGarbageNoLongerSurvivesWhenCornersAreMissing)
 {
-    // ***QUIRK 1, the part that makes it worse than "the garbage passes
-    // through".*** The `/= wt_sum` at lighting.c:376-377 divides the WHOLE
-    // accumulator, caller seed included. On a mesh-edge tile some of
-    // graphic_lighting.c's four fan[] lookups come back Index1D::Invalid and
-    // the corresponding cache pointers are null, so wt_sum < 1 and the
-    // caller's uninitialized stack value is SCALED UP by 1/wt_sum -- by up to
-    // 4x at a tile midpoint with a single valid corner.
+    // Companion to the former amplification quirk: the `/= wt_sum` at
+    // lighting.c:386-388 still divides the whole accumulator, but since
+    // lighting-queue-r3 that accumulator always starts from the zeroing at
+    // :329-330. On a mesh-edge tile some of graphic_lighting.c's four fan[]
+    // lookups come back Index1D::Invalid and the corresponding cache pointers
+    // are null, so wt_sum < 1 -- pre-fix, a caller's uninitialized stack value
+    // would have been SCALED UP by 1/wt_sum (by up to 4x at a tile midpoint
+    // with a single valid corner); post-fix there is nothing left to scale.
     FourDeltas f;
     const lighting_cache_t *oneCorner[4] = {f.ptr[0], nullptr, nullptr, nullptr};
 
     // wt_sum = (1-0.5)*(1-0.5) = 0.25.
-    float low = 8.0f;    // stand-in for uninitialized stack
-    float hgh = 0.0f;    // control: correctly zeroed
+    float low = 8.0f;    // stand-in for uninitialized stack -- now irrelevant
+    float hgh = 0.0f;    // control: correctly zeroed either way
     const float delta = lighting_cache_test(oneCorner, 0.5f, 0.5f, low, hgh);
 
     EXPECT_FLOAT_EQ(delta, 1.0f);     // (0.25 * 1) / 0.25 -- return still clean
     EXPECT_FLOAT_EQ(hgh, 100.0f);     // (0 + 0.25*100) / 0.25 -- correct
-    EXPECT_FLOAT_EQ(low, 42.0f);      // (8 + 0.25*10) / 0.25 -- should be 40
+    EXPECT_FLOAT_EQ(low, 10.0f);      // (0 + 0.25*10) / 0.25 -- seed no longer added,
+                                       // and the single wt factor cancels out of
+                                       // numerator and denominator, landing exactly
+                                       // on the one valid corner's own low._max_delta
 }
 
-TEST(LightingCacheTestFn, NullArrayPointerReturnsZeroAndLeavesOutParamsCompletelyUntouched)
+TEST(LightingCacheTestFn, NullArrayPointerReturnsZeroAndZeroesBothOutParams)
 {
-    // lighting.c:321 returns before touching either reference. Note this is a
-    // THIRD out-param discipline in the same function: assigned nowhere,
-    // accumulated on the normal path, untouched on the rejection paths.
+    // lighting.c:329-330 zero both out-params BEFORE the `NULL == src` check
+    // at :332, so even the rejection path leaves them well-defined instead of
+    // untouched. Pre-fix this was a THIRD out-param discipline in the same
+    // function (assigned nowhere, accumulated on the normal path, untouched
+    // on the rejection paths); post-fix all three paths agree: zeroed at
+    // entry, left there unless the normal path's accumulation overwrites them.
     float low = 111.0f, hgh = 222.0f;
     const float delta = lighting_cache_test(nullptr, 0.5f, 0.5f, low, hgh);
 
     EXPECT_FLOAT_EQ(delta, 0.0f);
-    EXPECT_FLOAT_EQ(low, 111.0f);
-    EXPECT_FLOAT_EQ(hgh, 222.0f);
+    EXPECT_FLOAT_EQ(low, 0.0f);
+    EXPECT_FLOAT_EQ(hgh, 0.0f);
 }
 
 TEST(LightingCacheTestFn, AllFourCornersNullReturnsZeroAndSkipsTheDivisionEntirely)
 {
-    // wt_sum stays 0, so the `if (wt_sum > 0.0f)` block at lighting.c:373 never
-    // runs and the seeds are not even divided. There is no length check on the
-    // array -- only the pointer itself and its four elements are tested -- so
-    // passing anything shorter than four entries is undefined behavior.
+    // wt_sum stays 0, so the `if (wt_sum > 0.0f)` block at lighting.c:384
+    // never runs and nothing is divided. Pre-fix the seeds would have
+    // survived completely untouched (777.0f/888.0f in, unchanged out) since
+    // nothing on this path ever assigned or accumulated into them. Post-fix
+    // they still land on 0.0f, but because of the unconditional zeroing at
+    // :329-330, not because of anything specific to this path. There is no
+    // length check on the array -- only the pointer itself and its four
+    // elements are tested -- so passing anything shorter than four entries is
+    // undefined behavior.
     const lighting_cache_t *none[4] = {nullptr, nullptr, nullptr, nullptr};
     float low = 777.0f, hgh = 888.0f;
     const float delta = lighting_cache_test(none, 0.5f, 0.5f, low, hgh);
 
     EXPECT_FLOAT_EQ(delta, 0.0f);
-    EXPECT_FLOAT_EQ(low, 777.0f);
-    EXPECT_FLOAT_EQ(hgh, 888.0f);
+    EXPECT_FLOAT_EQ(low, 0.0f);
+    EXPECT_FLOAT_EQ(hgh, 0.0f);
+}
+
+TEST(LightingCacheTestFn, SentinelOutParamsAreWellDefinedOnBothTheNormalAndRejectionPaths)
+{
+    // Direct regression pin for lighting-queue-r3: feed both out-params an
+    // obviously-poisoned sentinel and confirm it does not survive, on BOTH
+    // the normal accumulate+divide path and the early NULL-src rejection
+    // path. Pre-fix, the sentinel would have survived on both paths (scaled
+    // into the normal-path result, or left completely untouched on the
+    // rejection path); post-fix neither path lets it through.
+    constexpr float kSentinel = -123456.0f;
+
+    // Normal path: four valid corners, wt_sum == 1 at the tile midpoint.
+    FourDeltas f;
+    float lowNormal = kSentinel, hghNormal = kSentinel;
+    const float deltaNormal = lighting_cache_test(f.ptr, 0.5f, 0.5f, lowNormal, hghNormal);
+    EXPECT_FLOAT_EQ(deltaNormal, 2.5f);
+    EXPECT_FLOAT_EQ(lowNormal, 25.0f);
+    EXPECT_FLOAT_EQ(hghNormal, 250.0f);
+    EXPECT_NE(lowNormal, kSentinel);
+    EXPECT_NE(hghNormal, kSentinel);
+
+    // Early-rejection path: NULL src array short-circuits before the corner
+    // loop even runs.
+    float lowRejected = kSentinel, hghRejected = kSentinel;
+    const float deltaRejected = lighting_cache_test(nullptr, 0.5f, 0.5f, lowRejected, hghRejected);
+    EXPECT_FLOAT_EQ(deltaRejected, 0.0f);
+    EXPECT_FLOAT_EQ(lowRejected, 0.0f);
+    EXPECT_FLOAT_EQ(hghRejected, 0.0f);
 }
 
 TEST(LightingCacheTestFn, ClampsUAndVIntoTheUnitSquare)
@@ -1346,7 +1412,7 @@ TEST(LightingEvaluateCache, LerpsLinearlyBetweenTheLowAndHighHalvesAndClampsOuts
 
 TEST(LightingEvaluateCache, HeightWeightIsRelativeToTheBoxMinimumNotToAbsoluteZero)
 {
-    // lighting.c:475 is
+    // lighting.c:486 is
     //     hgh_wt = (z - bbox.min.z) / (bbox.max.z - bbox.min.z)
     // and the `- bbox.min.z` terms only matter when the box does not start at
     // zero. Production always passes mesh->_tmem._bbox (graphic_lighting.c,
@@ -1382,10 +1448,15 @@ TEST(LightingEvaluateCache, HeightWeightIsRelativeToTheBoxMinimumNotToAbsoluteZe
 
 TEST(LightingEvaluateCache, BothOutParamsAreAssignedNotAccumulated)
 {
-    // lighting.c:481-482 zero both before use, so pre-seeded sentinels vanish.
-    // This is the direct contrast with lighting_cache_test in SECTION 7: two
-    // functions in the same header, both taking "delta/light" out-params, with
-    // opposite disciplines and no naming to tell them apart.
+    // lighting.c:492-493 zero both before use, so pre-seeded sentinels vanish.
+    // lighting_cache_test in SECTION 7 used to have the opposite discipline
+    // (accumulate-only, never zeroed); lighting-queue-r3 closed that gap by
+    // zeroing its out-params at entry as well, so a caller's seed no longer
+    // survives either function. The disciplines still differ in one respect:
+    // `*light_dir` is assigned once at the end (lighting.c:509), while
+    // `*light_amb` -- like post-fix lighting_cache_test -- is zeroed then
+    // accumulated (lighting.c:492, 499, 506). The observable contract (well-
+    // defined on every path, regardless of caller seed) is identical for both.
     const lighting_cache_t c = makeHeightCache();
     const Ego::AxisAlignedBox3f box(Ego::Point3f(0.0f, 0.0f, 0.0f), Ego::Point3f(1.0f, 1.0f, 10.0f));
 
@@ -1400,7 +1471,7 @@ TEST(LightingEvaluateCache, BothOutParamsAreAssignedNotAccumulated)
 
 TEST(LightingEvaluateCache, LightDirIsADerivedResidualAndMayGoNegative)
 {
-    // *light_dir is NOT summed independently -- lighting.c:498 computes it as
+    // *light_dir is NOT summed independently -- lighting.c:509 computes it as
     // light_tot - *light_amb, once, at the end. The identity therefore holds
     // exactly, including when the directed term is negative. A future change
     // that clamps light_dir at zero (a plausible "fix" for negative light)
@@ -1449,7 +1520,7 @@ TEST(LightingEvaluateCache, TheTwoHalvesGateOnMaxLightIndependently)
 
 TEST(LightingEvaluateCache, NullOutParamsAreRedirectedToLocalsAndAreSafe)
 {
-    // lighting.c:471-472. Both out-params are optional.
+    // lighting.c:482-483. Both out-params are optional.
     const lighting_cache_t c = makeHeightCache();
     const Ego::AxisAlignedBox3f box(Ego::Point3f(0.0f, 0.0f, 0.0f), Ego::Point3f(1.0f, 1.0f, 10.0f));
 
@@ -1478,11 +1549,11 @@ TEST(LightingEvaluateCache, DoesNotNormalizeTheNormal)
 
 TEST(LightingEvaluateCache, QUIRK2_DegenerateBoxDividesByZeroButConstrainLaundersTheResult)
 {
-    // ***QUIRK 2.*** lighting.c:475 divides by
+    // ***QUIRK 2.*** lighting.c:486 divides by
     // (bbox.max.z - bbox.min.z) with NO zero guard, so a zero-height box really
     // does produce NaN (z == min) or +/-Inf (z != min).
     //
-    // BUT the predicted "NaN/Inf light" does NOT reach the caller. :476 pipes
+    // BUT the predicted "NaN/Inf light" does NOT reach the caller. :487 pipes
     // the weight through Ego::Math::constrain, which is
     // `std::max(lower, std::min(n, upper))` (egolib/Math/Math.hpp). std::min and
     // std::max are single-`<` templates and every comparison against NaN is
@@ -1490,8 +1561,8 @@ TEST(LightingEvaluateCache, QUIRK2_DegenerateBoxDividesByZeroButConstrainLaunder
     //     constrain(NaN,  0, 1) == 0
     //     constrain(+Inf, 0, 1) == 1
     //     constrain(-Inf, 0, 1) == 0
-    // The clamp at :476 is the ONLY thing that sanitizes the weight; by the
-    // time the `if (low_wt > 0.0f)` / `if (hgh_wt > 0.0f)` guards at :485/:492
+    // The clamp at :487 is the ONLY thing that sanitizes the weight; by the
+    // time the `if (low_wt > 0.0f)` / `if (hgh_wt > 0.0f)` guards at :496/:503
     // run, hgh_wt is already a clean 0 or 1 and low_wt = 1 - hgh_wt is finite
     // too, so those guards are not doing any NaN defence. The result is always
     // finite.
@@ -1551,7 +1622,7 @@ TEST(LightingEvaluateCache, QUIRK2_ConstrainLaunderingIsItselfPinned)
 // `diff` is a position delta in world units (light position minus sample
 // position). The falloff is the bell-shaped curve documented at
 // lighting.h:145-176: f(y) = 1 - y^2*(3 - y^4)/2 with y^2 = r^2*2/765/falloff.
-// The implementation at lighting.c:514 evaluates exactly that with y2 == y^2,
+// The implementation at lighting.c:525 evaluates exactly that with y2 == y^2,
 // so the docstring and the code agree.
 //
 // The expected values below are MEASURED outputs, deliberately not a
@@ -1563,7 +1634,7 @@ TEST(DynaLightingIntensity, InitGivesTheDocumentedDefaults)
 {
     // dynalight_data_t is a plain aggregate with no constructor, so this static
     // init is the only thing that makes a light well-formed. falloff = 255 is
-    // what keeps the unguarded division at lighting.c:510 safe in practice.
+    // what keeps the unguarded division at lighting.c:521 safe in practice.
     dynalight_data_t d;
     dynalight_data_t::init(d);
 
@@ -1623,7 +1694,7 @@ TEST(DynaLightingIntensity, IsRadiallySymmetricInXY)
 
 TEST(DynaLightingIntensity, FINDING_FalloffIsCylindricalBecauseTheZDeltaIsIgnored)
 {
-    // FINDING: lighting.c:509 computes rho_sqr from diff[kX] and diff[kY] only.
+    // FINDING: lighting.c:520 computes rho_sqr from diff[kX] and diff[kY] only.
     // diff[kZ] is never read, so the falloff volume is an infinite vertical
     // cylinder rather than a sphere: a dynamic light one million world units
     // overhead is exactly as bright as one at the sample point.
@@ -1651,10 +1722,10 @@ TEST(DynaLightingIntensity, FINDING_FalloffIsCylindricalBecauseTheZDeltaIsIgnore
 
 TEST(DynaLightingIntensity, QUIRK4_ReturnFalseInAFloatFunctionIsObservablyZeroAndTheCurveIsContinuous)
 {
-    // ***QUIRK 4.*** lighting.c:512 is `if (y2 > 1.0f) return false;` inside a
+    // ***QUIRK 4.*** lighting.c:523 is `if (y2 > 1.0f) return false;` inside a
     // function whose return type is float. `false` converts to 0.0f, so the
     // behavior is correct by accident and matches the explicit `return 0.0f` at
-    // :507. It is a type/readability defect, not a behavioral one, and it does
+    // :518. It is a type/readability defect, not a behavioral one, and it does
     // not warn under -Wall -Wextra because the conversion is legal.
     // FINDING -- reported, not fixed.
     //
@@ -1666,7 +1737,7 @@ TEST(DynaLightingIntensity, QUIRK4_ReturnFalseInAFloatFunctionIsObservablyZeroAn
     // through this API at every input. Do not add a comment claiming
     // otherwise. What IS pinned against mutation is the cutoff constant
     // itself, by the measured falloff curve in the sibling test above.
-    // Verified by mutation: rewriting :512 as `return 0.0f` leaves this file
+    // Verified by mutation: rewriting :523 as `return 0.0f` leaves this file
     // green, which is the evidence for calling the defect behaviour-neutral.
     dynalight_data_t d;
     dynalight_data_t::init(d);
@@ -1683,7 +1754,7 @@ TEST(DynaLightingIntensity, QUIRK4_ReturnFalseInAFloatFunctionIsObservablyZeroAn
     // sqrt(382.5f) squared is 382.500031f -- y2 = 1.00000012f, which is
     // strictly GREATER than 1 and takes the guard, not the polynomial. So
     // build the falloff from the radial distance instead, with the same
-    // operation order lighting.c:510 uses; then y2 is x/x == 1.0f exactly and
+    // operation order lighting.c:521 uses; then y2 is x/x == 1.0f exactly and
     // the polynomial branch is the one that runs.
     const float rhoSqr = 16.0f * 16.0f;              // diff = (16, 0, 0)
     d.falloff = rhoSqr * 2.0f / 765.0f;              // makes y2 == 1.0f exactly
@@ -1699,7 +1770,7 @@ TEST(DynaLightingIntensity, QUIRK4_ReturnFalseInAFloatFunctionIsObservablyZeroAn
 
 TEST(DynaLightingIntensity, RejectsNullAndZeroLevelAndPassesNegativeLevelThrough)
 {
-    // lighting.c:507 -- both rejections return an explicit 0.0f.
+    // lighting.c:518 -- both rejections return an explicit 0.0f.
     EXPECT_FLOAT_EQ(dyna_lighting_intensity(nullptr, Ego::Vector3f(0.0f, 0.0f, 0.0f)), 0.0f);
 
     dynalight_data_t d;
@@ -1716,12 +1787,12 @@ TEST(DynaLightingIntensity, RejectsNullAndZeroLevelAndPassesNegativeLevelThrough
 
 TEST(DynaLightingIntensity, FINDING_ZeroFalloffDividesByZeroAndTheNaNEscapesTheRangeGuard)
 {
-    // FINDING: lighting.c:510 divides by pdyna->falloff with no guard.
+    // FINDING: lighting.c:521 divides by pdyna->falloff with no guard.
     //   falloff == 0 and rho_sqr == 0  ->  0/0  ->  y2 is NaN. The range check
-    //   at :512 is `y2 > 1.0f`, which is FALSE for NaN, so the guard does not
+    //   at :523 is `y2 > 1.0f`, which is FALSE for NaN, so the guard does not
     //   fire and NaN flows through the polynomial and out of the function.
     //   sum_dyna_lighting then fails its `0.0f == level` test at
-    //   lighting.c:526 (every comparison against NaN is false) and accumulates
+    //   lighting.c:537 (every comparison against NaN is false) and accumulates
     //   NaN straight into LVEC_AMB at :104 -- asserted below rather than
     //   merely claimed, so the propagation is pinned and not argued.
     //   falloff == 0 and rho_sqr > 0   ->  +Inf, which DOES trip the guard -> 0.
@@ -1792,17 +1863,17 @@ TEST(SumDynaLighting, QUIRK3_ContributionIsPurelyAmbientAndNeverDirectional)
     // ***QUIRK 3 -- the load-bearing tripwire in this file.***
     //
     // sum_dyna_lighting names its third parameter `nrm`, but it is a POSITION
-    // DELTA, not a normal: lighting.c:525 forwards it as the `diff` argument of
+    // DELTA, not a normal: lighting.c:536 forwards it as the `diff` argument of
     // dyna_lighting_intensity, and the sole caller
     // (graphic_lighting_dynalist.c) builds it as pdyna->pos minus the grid
-    // point. Having computed the intensity, :532 calls
+    // point. Having computed the intensity, :543 calls
     //     lighting_vector_sum(lighting, idlib::zero<Ego::Vector3f>(), 0.0f, level)
     // -- a ZERO direction vector with direct == 0 and ambient == level. Only
     // `lighting[LVEC_AMB] += level` executes. All six directional slots are
     // untouched. (The zero vector is doubly redundant: every directional add is
     // multiplied by direct == 0, and a zero component takes no branch anyway.)
     //
-    // This is DELIBERATE, and the in-code comment at lighting.c:528-531 says
+    // This is DELIBERATE, and the in-code comment at lighting.c:539-542 says
     // so. Git backs it up: commit 31f4fd1a2b5c3a3b2f423e760d5dc7229a15ab6b
     // ("Update lighting logic to restore ambient contribution from dynalights",
     // 2026-04-16) replaced a purely directional
@@ -1845,7 +1916,7 @@ TEST(SumDynaLighting, QUIRK3_AccumulatesAcrossCallsAndScalesTheIntensityBy255)
     LightingVector lvec{};
     lvec.fill(0.0f);
 
-    // rho_sqr == 0 -> intensity is exactly 1 -> lighting.c:525 contributes
+    // rho_sqr == 0 -> intensity is exactly 1 -> lighting.c:536 contributes
     // exactly 255. Two calls accumulate to 510, pinning both the 255 scale
     // factor and the accumulate (not assign) semantics inherited from
     // lighting_vector_sum.
@@ -1880,7 +1951,7 @@ TEST(SumDynaLighting, QUIRK3_TheZComponentOfTheDeltaIsIgnoredSoDistanceCanBeMisl
 TEST(SumDynaLighting, ReturnValueCannotDistinguishAppliedFromOutOfRange)
 {
     // FINDING (API-level): the bool is false ONLY for a null light
-    // (lighting.c:523). The out-of-range early return at :526 returns TRUE with
+    // (lighting.c:534). The out-of-range early return at :537 returns TRUE with
     // the lighting vector untouched, so a caller cannot use the return value to
     // learn whether any light was actually applied. Both production call sites
     // discard it.
@@ -1897,7 +1968,7 @@ TEST(SumDynaLighting, ReturnValueCannotDistinguishAppliedFromOutOfRange)
     EXPECT_TRUE(outOfRange);
     expectVector(lvec, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-    // A zero-level light also short-circuits at :526 and still returns true.
+    // A zero-level light also short-circuits at :537 and still returns true.
     d.level = 0.0f;
     EXPECT_TRUE(sum_dyna_lighting(&d, lvec, idlib::zero<Ego::Vector3f>()));
     expectVector(lvec, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
