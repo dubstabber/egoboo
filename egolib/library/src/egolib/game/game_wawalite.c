@@ -23,6 +23,9 @@
 #include "egolib/game/game_internal.h"
 #include "egolib/game/Core/EngineContext.hpp"
 
+#include "idlib/exception.hpp"  // idlib::runtime_error
+#include "idlib/hll.hpp"        // idlib::hll::compilation_error
+
 void Upload::upload_light_data(const wawalite_data_t& data)
 {
     // Upload the lighting data.
@@ -109,7 +112,66 @@ void upload_wawalite(fog_instance_t& fog, WeatherState& weatherState, AnimatedTi
 //--------------------------------------------------------------------------------------------
 wawalite_data_t *read_wawalite_vfs()
 {
-    wawalite_data_t *data = wawalite_data_read("mp_data/wawalite.txt", &wawalite_data);
+    static const char *WAWALITE_PATH = "mp_data/wawalite.txt";
+
+    wawalite_data_t *data = nullptr;
+    try
+    {
+        data = wawalite_data_read(WAWALITE_PATH, &wawalite_data);
+    }
+    // wawalite_data_read (wawalite_file.c:241) resets *profile to a clean default before doing
+    // any I/O (wawalite_file.c:252), then constructs a ReadContext over WAWALITE_PATH and runs
+    // through nine fixed-position sub-struct ::read() helpers. A missing/unreadable
+    // mp_data/wawalite.txt raises idlib::runtime_error out of the ReadContext constructor
+    // (vfs_readEntireFile via the Ego::Script::Scanner base, vfs_bulk.c) before any field is
+    // touched, so `wawalite_data` is already the clean reset from the line above when that
+    // happens. A truncated or malformed file instead raises idlib::hll::compilation_error (or
+    // its subclass Ego::Script::MissingDelimiterError) from partway through one of the
+    // sub-struct reads - eight of which do their OWN reset-then-assign before touching a field
+    // (the ninth, wawalite_fog_t::read, only conditionally assigns when its colon-delimited
+    // block is present, and relies entirely on the whole-struct reset above) - so a throw there
+    // can leave `wawalite_data` holding a mix of real fields already read (e.g. `seed`, read before
+    // the water block) and default fields for everything the parse never reached. Reset again
+    // below so a caller that goes on to use the global regardless of this call's outcome (see
+    // upload_wawalite, which always reads `wawalite_data`) sees a fully clean default set, never
+    // a partial one. Caught by const& only: idlib::exception's copy constructor and destructor
+    // are protected. catch (...) is avoided so std::bad_alloc keeps propagating; neither idlib
+    // type derives from std::exception (idlib/exception/exception.hpp:64 has no base at all).
+    //
+    // Both arms leave `data` null and fall through to the pre-existing `if (!data)` guard below,
+    // rather than returning directly, so that guard - previously unreachable, since
+    // wawalite_data_read itself never returns null - does the actual early return.
+    catch (const idlib::hll::compilation_error& ex)
+    {
+        if (Log::Target *logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to load environment file ", "`", WAWALITE_PATH, "`",
+                                             ": ", ex.to_string(), Log::EndOfEntry);
+        }
+        wawalite_data = wawalite_data_t::getDefaults();
+        data = nullptr;
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        // Unlike the arm above, runtime_error::to_string() (idlib/exception/runtime_error.hpp)
+        // is multi-line by design (embedded std::endl), so flatten it to keep one failed load to
+        // one log record.
+        std::string reason = ex.to_string();
+        for (char& c : reason)
+        {
+            if (c == '\n' || c == '\r') c = ' ';
+        }
+        if (Log::Target *logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to load environment file ", "`", WAWALITE_PATH, "`",
+                                             ": ", reason, Log::EndOfEntry);
+        }
+        wawalite_data = wawalite_data_t::getDefaults();
+        data = nullptr;
+    }
+
     if (!data)
     {
         return nullptr;
