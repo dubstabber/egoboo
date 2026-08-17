@@ -61,6 +61,24 @@ class IWallet;
 /// AI targeting
 #define NEARBY      3*Info<float>::Grid::Size()    ///< 3 tiles away
 #define WIDE        6*Info<float>::Grid::Size()    ///< 6 tiles away
+/// @brief Acquisition radius for the script-level "wide" target selectors
+///        (SetTargetToWideEnemy / SetTargetToWideBlahID) ONLY.
+/// @details 2.6.8's get_wide_target() searched the character's own 512-unit fanblock plus its
+///          8 neighbors (a 3x3 block neighborhood) with no circular distance cutoff, so its
+///          effective reach was position-dependent: as little as ~512 units when the character
+///          sat at the edge of its own block, up to ~1448 units (diagonal, 1024*sqrt(2)) when
+///          it sat at a corner. WIDE (768) is narrower than most of that range -- in
+///          particular it is well below the ~922-unit westward reach 2.6.8 had at this
+///          turret's own spawn position, which is the approach direction where the reported
+///          shrunken range is visible -- which is why gnome.mod's static gatling gun
+///          (bosslump.obj, crewed by a sitting Lumpkin) started firing at a much shorter
+///          distance than in 2.6.8. WIDE_CLASSIC (8 tiles = 1024 units) brackets the classic
+///          block search with a single circular radius instead of reproducing its
+///          block-shaped, position-dependent footprint exactly.
+/// @remark Deliberately NOT used by prt_find_target() (particle homing retargeting) -- widening
+///         homing acquisition interacts with the still-open wizard.mod continuous-homing-missile
+///         bug, so that consumer stays on WIDE.
+#define WIDE_CLASSIC 8*Info<float>::Grid::Size()   ///< 8 tiles away
 #define NEAREST     0                              ///< unlimited range
 
 //Max size of an compiled AI script

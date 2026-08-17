@@ -218,7 +218,9 @@ uint8_t scr_SetTargetToWideEnemy( script_state_t& state, ai_state_t& self )
     if (!resolveSelfContext(self).isResolved()) return false;
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
-    return trySetResolvedTarget(self, findTargetForSelf(selfContext, WIDE, IDSZ2::None, TARGET_ENEMIES));
+    // WIDE_CLASSIC (not WIDE) -- see script.h: brackets 2.6.8's get_wide_target() block-search
+    // reach so "wide" enemy acquisition isn't narrower than the classic engine.
+    return trySetResolvedTarget(self, findTargetForSelf(selfContext, WIDE_CLASSIC, IDSZ2::None, TARGET_ENEMIES));
 }
 
 
@@ -280,8 +282,10 @@ uint8_t scr_SetTargetToWideBlahID( script_state_t& state, ai_state_t& self )
 
     const SelfTargetSelectorContext selfContext = makeSelfTargetSelectorContext(self);
     // Try to find one
+    // WIDE_CLASSIC (not WIDE) -- see script.h: SetTargetToWideEnemy's classic-engine sibling
+    // (both compiled to get_wide_target() in 2.6.8), so both widen together.
     const auto ichr = findTargetForSelf(selfContext,
-                                        WIDE,
+                                        WIDE_CLASSIC,
                                         IDSZ2(state.argument),
                                         state.distance);
     return trySetResolvedTarget(self, ichr);

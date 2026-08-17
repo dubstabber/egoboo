@@ -647,6 +647,176 @@ TEST_F(ScriptTargetFunctionsFixture, SetTargetSearchHelpersPreserveExistingTarge
     EXPECT_EQ(self.getTarget(), existingTarget->getObjRef());
 }
 
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWideEnemyAcquiresWithinSharedClassicAndModernRadius)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53500, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto enemy = makeObject(module, "mp_objects/follower.obj", 53501, Ego::Vector3f(824.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(enemy, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    enemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    enemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    // test.mod's real mesh is installed as the terrain query by beginActiveTestModule() (via
+    // GameSessionContext::beginModule -> Ego::Mesh::installTerrainQuery), and its LOS check
+    // blocks this map-edge path, so make the actor instance-invincible to take
+    // chr_find_target's production LOS bypass for invincible sources (game_targeting.c:
+    // `if (!psrc->isInvincible())` guards the LOS check). LOS behavior is deliberately out of
+    // scope for these radius pins (Part-3 deferral) -- same bypass used by the sibling
+    // ScriptTargetSupportFunctions radius tests.
+    actor->setInvincible(true);
+    enemy->setInvincible(false);
+    enemy->setAlpha(200);
+    enemy->setLight(200);
+
+    flushObjectHandler(module);
+    // chr_find_target's WIDE/NEARBY branch (any max_dist != NEAREST) queries the
+    // quad-tree-backed ObjectHandler::findObjectRefs, unlike the NEAREST branch's flat
+    // objectRefIterator() loop. Production code rebuilds the quad-tree every frame via
+    // GameModule::updateModuleServices(); this headless fixture never runs that loop, so the
+    // radius pins below must rebuild it explicitly (same as ObjectHandlerQueries.cpp's
+    // refreshQuadTree helper).
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, 4096.0f, 4096.0f);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    // 760 units is inside both the pre-fix WIDE (768) acquisition sphere and the post-fix
+    // WIDE_CLASSIC (1024) sphere -- this pin must stay green across the engine half of the
+    // gnome.mod gatling-gun range fix below.
+    EXPECT_TRUE(scr_SetTargetToWideEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), enemy->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWideEnemyAcquiresAtClassicGatlingGonneRangeAfterEngineWidening)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53502, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto enemy = makeObject(module, "mp_objects/follower.obj", 53503, Ego::Vector3f(964.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(enemy, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    enemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    enemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    actor->setInvincible(true);
+    enemy->setInvincible(false);
+    enemy->setAlpha(200);
+    enemy->setLight(200);
+
+    flushObjectHandler(module);
+    // chr_find_target's WIDE/NEARBY branch (any max_dist != NEAREST) queries the
+    // quad-tree-backed ObjectHandler::findObjectRefs, unlike the NEAREST branch's flat
+    // objectRefIterator() loop. Production code rebuilds the quad-tree every frame via
+    // GameModule::updateModuleServices(); this headless fixture never runs that loop, so the
+    // radius pins below must rebuild it explicitly (same as ObjectHandlerQueries.cpp's
+    // refreshQuadTree helper).
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, 4096.0f, 4096.0f);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    // Defect pin: 900 units is outside the pre-fix WIDE (768) sphere that
+    // scr_SetTargetToWideEnemy uses today. This reproduces the shrunken gnome.mod gatling-gun
+    // engagement range vs. the 2.6.8 block search (get_wide_target), which reached roughly
+    // 512-1448 units position-dependently for a 3x3 neighborhood of 512-unit fanblocks. After
+    // WIDE_CLASSIC (1024) lands for this function, 900 units must be acquired. This EXPECT_TRUE
+    // must fail before the engine half of the fix is implemented.
+    EXPECT_TRUE(scr_SetTargetToWideEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), enemy->getObjRef());
+
+    // NEARBY (384) is untouched by this pass -- SetTargetToNearbyEnemy must still fail to find
+    // an enemy 900 units away, both before and after the engine fix.
+    self.setTarget(ObjectRef::Invalid);
+    EXPECT_FALSE(scr_SetTargetToNearbyEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWideBlahIDAcquiresAtClassicGatlingGonneRangeAfterEngineWidening)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53504, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto enemy = makeObject(module, "mp_objects/follower.obj", 53505, Ego::Vector3f(964.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(enemy, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    enemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    enemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    actor->setInvincible(true);
+    enemy->setInvincible(false);
+    enemy->setAlpha(200);
+    enemy->setLight(200);
+
+    flushObjectHandler(module);
+    // chr_find_target's WIDE/NEARBY branch (any max_dist != NEAREST) queries the
+    // quad-tree-backed ObjectHandler::findObjectRefs, unlike the NEAREST branch's flat
+    // objectRefIterator() loop. Production code rebuilds the quad-tree every frame via
+    // GameModule::updateModuleServices(); this headless fixture never runs that loop, so the
+    // radius pins below must rebuild it explicitly (same as ObjectHandlerQueries.cpp's
+    // refreshQuadTree helper).
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, 4096.0f, 4096.0f);
+
+    script_state_t state;
+    // scr_SetTargetToWideBlahID is the "wide, by IDSZ" sibling of scr_SetTargetToWideEnemy --
+    // in 2.6.8 both FSETTARGETTOWIDEENEMY and FSETTARGETTOWIDEBLAHID compiled down to the same
+    // get_wide_target() block search, so both must widen together.
+    state.argument = static_cast<int>(IDSZ2::None.toUint32());
+    constexpr int kTargetEnemies = (1 << 1);
+    state.distance = kTargetEnemies;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    // Defect pin, mirrors the SetTargetToWideEnemy case above.
+    EXPECT_TRUE(scr_SetTargetToWideBlahID(state, self));
+    EXPECT_EQ(self.getTarget(), enemy->getObjRef());
+}
+
+TEST_F(ScriptTargetFunctionsFixture, SetTargetToWideEnemyDoesNotAcquireBeyondClassicGatlingGonneRange)
+{
+    auto& module = beginActiveTestModule();
+    auto actor = makeObject(module, "mp_objects/follower.obj", 53506, Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto enemy = makeObject(module, "mp_objects/follower.obj", 53507, Ego::Vector3f(1164.0f, 64.0f, 0.0f));
+
+    ASSERT_NE(actor, nullptr);
+    ASSERT_NE(enemy, nullptr);
+
+    actor->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    actor->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_GOOD));
+    enemy->setTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+    enemy->setBaseTeamRef(static_cast<TEAM_REF>(Team::TEAM_EVIL));
+
+    actor->setInvincible(true);
+    enemy->setInvincible(false);
+    enemy->setAlpha(200);
+    enemy->setLight(200);
+
+    flushObjectHandler(module);
+    // chr_find_target's WIDE/NEARBY branch (any max_dist != NEAREST) queries the
+    // quad-tree-backed ObjectHandler::findObjectRefs, unlike the NEAREST branch's flat
+    // objectRefIterator() loop. Production code rebuilds the quad-tree every frame via
+    // GameModule::updateModuleServices(); this headless fixture never runs that loop, so the
+    // radius pins below must rebuild it explicitly (same as ObjectHandlerQueries.cpp's
+    // refreshQuadTree helper).
+    module.getObjectHandler().updateQuadTree(0.0f, 0.0f, 4096.0f, 4096.0f);
+
+    script_state_t state;
+    ai_state_t self = makeScriptSelf(actor, nullptr);
+
+    // Upper bound: 1100 units is outside even the post-fix WIDE_CLASSIC (1024) sphere.
+    EXPECT_FALSE(scr_SetTargetToWideEnemy(state, self));
+    EXPECT_EQ(self.getTarget(), ObjectRef::Invalid);
+}
+
 TEST_F(ScriptTargetFunctionsFixture, NearbyMeleeWeaponSelectionFindsGroundWeaponByRefIterator)
 {
     auto& module = beginActiveTestModule();

@@ -736,10 +736,10 @@ TEST_F(ScriptTargetSupportFunctionsFixture, SetTargetToNearestLifeformSelectsStr
     ASSERT_NE(farCharacter, nullptr);
     ASSERT_NE(nearItem, nullptr);
 
-    // The headless test fixture has no real terrain/LOS data available, so make the actor
-    // instance-invincible to bypass chr_find_target's line-of-sight veto (production code
-    // grants the same bypass to any invincible source) -- this does not affect any of the
-    // exclusion rules being pinned below.
+    // test.mod's real mesh is installed as the terrain query by beginActiveTestModule(), and
+    // its LOS check blocks this map-edge path, so make the actor instance-invincible to take
+    // chr_find_target's production LOS bypass for invincible sources -- this does not affect
+    // any of the exclusion rules being pinned below.
     actor->setInvincible(true);
     farCharacter->setInvincible(false);
     farCharacter->setAlpha(200);
@@ -777,10 +777,10 @@ TEST_F(ScriptTargetSupportFunctionsFixture, SetTargetToNearestLifeformExcludesHe
     auto invincibleCandidate = makeObject(module, "mp_objects/follower.obj", 6742, Ego::Vector3f(128.0f, 64.0f, 0.0f));
     ASSERT_NE(invincibleCandidate, nullptr);
 
-    // The headless test fixture has no real terrain/LOS data available, so make the actor
-    // instance-invincible to bypass chr_find_target's line-of-sight veto (production code
-    // grants the same bypass to any invincible source) -- this is unrelated to the candidate's
-    // own instance-invincible flag being pinned below.
+    // test.mod's real mesh is installed as the terrain query by beginActiveTestModule(), and
+    // its LOS check blocks this map-edge path, so make the actor instance-invincible to take
+    // chr_find_target's production LOS bypass for invincible sources -- this is unrelated to
+    // the candidate's own instance-invincible flag being pinned below.
     actor->setInvincible(true);
     deadCandidate->setInvincible(false);
     deadCandidate->setAlpha(200);
@@ -817,10 +817,10 @@ TEST_F(ScriptTargetSupportFunctionsFixture, SetTargetToNearestLifeformIgnoresUnf
     auto& module = beginActiveTestModule();
     auto actor = makeObject(module, "mp_objects/follower.obj", 6743, Ego::Vector3f(64.0f, 64.0f, 0.0f));
     ASSERT_NE(actor, nullptr);
-    // The headless test fixture has no real terrain/LOS data available, so make the actor
-    // instance-invincible to bypass chr_find_target's line-of-sight veto (production code
-    // grants the same bypass to any invincible source) -- unrelated to the flush behavior
-    // being pinned below.
+    // test.mod's real mesh is installed as the terrain query by beginActiveTestModule(), and
+    // its LOS check blocks this map-edge path, so make the actor instance-invincible to take
+    // chr_find_target's production LOS bypass for invincible sources -- unrelated to the flush
+    // behavior being pinned below.
     actor->setInvincible(true);
     flushObjectHandler(module);
 
