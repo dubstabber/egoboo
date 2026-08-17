@@ -65,6 +65,7 @@
 #include "egolib/Logic/Damage.hpp"
 #include "egolib/Logic/ObjectSlot.hpp"
 #include "egolib/Logic/Team.hpp"
+#include "egolib/Physics/PhysicalConstants.hpp"  // Ego::Physics::CHR_INFINITE_WEIGHT
 #include "egolib/Script/script.h"
 #include "egolib/typedef.h"
 #include "egolib/vfs.h"
@@ -781,6 +782,272 @@ TEST_F(CollisionPipelineFixture, ChrChr_BumpAlert_ThrottledWithinWindow_DoesNotR
     cs.handleCollision(*a, *b, tmin, tmax);
 
     EXPECT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: a dead object takes no recoil at all from contact with a living object -- neither a
+// velocity impulse nor a positional displacement -- while the living party absorbs the full
+// interaction and is repelled. This is the corpse-pushing defect fix: do_chr_chr_collision
+// previously had no alive/dead gate anywhere, so sustained contact with a corpse kept shoving it
+// every tick, unlike the reference engine (2.6.8 char.c:3373-3404), which never displaced the
+// bumped party's position at all and instead hard-stopped the pusher.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_DeadObjectTakesNoRecoil)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6530),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6531),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setItem(false);
+    b->setItem(false);
+
+    // Kill B in place: set only the two kill() fields (Object_combat.cpp:562-568) that affect
+    // this test's asserted outcomes -- kill() also halves bumpdampen and sets canuseplatforms,
+    // which scale magnitudes/classification here but not the zero-vs-nonzero assertions below --
+    // skipping kill()'s script/experience/billboard side effects, which this headless fixture is
+    // not set up to exercise.
+    b->_isAlive = false;
+    b->setPlatform(true);
+    ASSERT_FALSE(b->isAlive());
+
+    // Stationary corpse.
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    // Living mover walking into the corpse (-X); old velocity equals current velocity, as a
+    // movement controller that regenerates the same walk setpoint every tick would produce (same
+    // PRESSURE-branch shape as ChrChr_BumpAlert_OverlapWithRelativeMotion_SetsAlert above).
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    a->setVelocity(walkVelocity);
+    a->setOldVelocity(walkVelocity);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    // Pins the PRESSURE-branch classification: it is the only branch that also accumulates a
+    // positional displacement (acoll), so this exercises both accumulator kinds in one call.
+    ASSERT_LE(tmin, 0.0f);
+
+    ASSERT_FLOAT_EQ(idlib::euclidean_norm(a->phys.avel), 0.0f);
+    ASSERT_FLOAT_EQ(idlib::euclidean_norm(a->phys.acoll.sum), 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+
+    // Discriminates a platform-attach early return (B is now a platform, mirroring a real corpse)
+    // from the recoil-gating fix under test: if A were resolved onto B as a platform,
+    // do_chr_chr_collision would skip entirely and this test would pass for the wrong reason.
+    ASSERT_EQ(a->onwhichplatform_ref, ObjectRef::Invalid);
+
+    // The dead object accumulated nothing: no velocity impulse, no positional displacement.
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.avel), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.acoll.sum), 0.0f);
+
+    // The living pusher absorbed the full interaction and was repelled.
+    EXPECT_GT(idlib::euclidean_norm(a->phys.avel), 0.0f);
+    EXPECT_GT(idlib::euclidean_norm(a->phys.acoll.sum), 0.0f);
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: guard against over-gating -- a pair of living objects still both accumulate recoil
+// (velocity impulse and positional displacement) exactly as before the fix.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_LivingPair_BothAccumulateRecoil)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6532),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6533),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setItem(false);
+    b->setItem(false);
+    ASSERT_TRUE(a->isAlive());
+    ASSERT_TRUE(b->isAlive());
+
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    a->setVelocity(walkVelocity);
+    a->setOldVelocity(walkVelocity);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    ASSERT_LE(tmin, 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+    ASSERT_EQ(a->onwhichplatform_ref, ObjectRef::Invalid);
+    ASSERT_EQ(b->onwhichplatform_ref, ObjectRef::Invalid);
+
+    EXPECT_GT(idlib::euclidean_norm(a->phys.avel), 0.0f);
+    EXPECT_GT(idlib::euclidean_norm(b->phys.avel), 0.0f);
+    EXPECT_GT(idlib::euclidean_norm(a->phys.acoll.sum), 0.0f);
+    EXPECT_GT(idlib::euclidean_norm(b->phys.acoll.sum), 0.0f);
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: a dead object in walk-in contact with a living object still publishes ALERTIF_BUMPED
+// on both parties. Guards the interplay with the bump-alert pass: the alive-recoil gate zeroes B's
+// physical recoil but must not zero A's recoil (need_velocity/bump still key off A's nonzero
+// recoil), so the alert path this pass relies on stays intact.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_DeadObjectContact_StillPublishesBumpAlert)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6534),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6535),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setItem(false);
+    b->setItem(false);
+    b->_isAlive = false;
+    b->setPlatform(true);
+    ASSERT_FALSE(b->isAlive());
+
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    a->setVelocity(walkVelocity);
+    a->setOldVelocity(walkVelocity);
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    ASSERT_LE(tmin, 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+    ASSERT_EQ(a->onwhichplatform_ref, ObjectRef::Invalid);
+
+    EXPECT_TRUE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(a->getAIBumped(), b->getObjRef());
+    EXPECT_TRUE(b->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(b->getAIBumped(), a->getObjRef());
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: design-decision pin -- when BOTH objects in contact are dead, neither takes any recoil
+// (full immobility) and no bump alert is published (need_velocity requires at least one nonzero
+// recoil factor, and both are zero here). The alternative considered -- a faint bumpdampen-scaled
+// creep on both corpses, matching the reference engine's per-corpse damping -- was rejected as
+// unneeded complexity for content that should just stay put.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_BothDead_NoRecoilNoBumpAlert)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6536),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6537),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setItem(false);
+    b->setItem(false);
+    a->_isAlive = false;
+    b->_isAlive = false;
+    a->setPlatform(true);
+    b->setPlatform(true);
+    ASSERT_FALSE(a->isAlive());
+    ASSERT_FALSE(b->isAlive());
+
+    // Give the pair a nonzero relative velocity anyway (as if flung apart by an explosion after
+    // dying): need_velocity must stay false purely because both recoil factors are zero, not
+    // because the relative-velocity gate happens to be zero too.
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    a->setVelocity(walkVelocity);
+    a->setOldVelocity(walkVelocity);
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    ASSERT_LE(tmin, 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+    ASSERT_EQ(a->onwhichplatform_ref, ObjectRef::Invalid);
+    ASSERT_EQ(b->onwhichplatform_ref, ObjectRef::Invalid);
+
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(a->phys.avel), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.avel), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(a->phys.acoll.sum), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.acoll.sum), 0.0f);
+    EXPECT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_FALSE(b->hasAnyAIAlertBits(ALERTIF_BUMPED));
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: a living infinite-mass object (immovable scenery -- weight == CHR_INFINITE_WEIGHT,
+// what doors/pillars/tents/trees rely on) is NOT displaced by contact with a dead object. Guards
+// the alive-recoil gate above against blindly promoting any still-alive party to full recoil:
+// doing so without checking whether that party was actually movable would clobber the
+// pre-existing infinite-mass recoil-0 protection and displace the "immovable" side instead of the
+// corpse -- the same corpse-pushing defect this pass fixes, just transferred onto scenery. Same
+// walk-in geometry/velocity as ChrChr_DeadObjectTakesNoRecoil, but A is given infinite mass
+// instead of being a normal living pusher.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_LivingInfiniteMassScenery_NotDisplacedByCorpse)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6538),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6539),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setItem(false);
+    b->setItem(false);
+
+    // A is living, infinite-mass content (a door/pillar/tent/tree all rely on this exact field).
+    a->phys.weight = Ego::Physics::CHR_INFINITE_WEIGHT;
+    ASSERT_TRUE(a->isAlive());
+
+    // Kill B in place, mirroring ChrChr_DeadObjectTakesNoRecoil.
+    b->_isAlive = false;
+    b->setPlatform(true);
+    ASSERT_FALSE(b->isAlive());
+
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    a->setVelocity(walkVelocity);
+    a->setOldVelocity(walkVelocity);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    // Pins the PRESSURE-branch classification: it is the only branch that also accumulates a
+    // positional displacement (acoll), so this exercises both accumulator kinds in one call.
+    ASSERT_LE(tmin, 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+    ASSERT_EQ(a->onwhichplatform_ref, ObjectRef::Invalid);
+
+    // Neither party moved: the "immovable" object stayed immovable, and the corpse stayed put.
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(a->phys.avel), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(a->phys.acoll.sum), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.avel), 0.0f);
+    EXPECT_FLOAT_EQ(idlib::euclidean_norm(b->phys.acoll.sum), 0.0f);
 }
 
 } // namespace

@@ -204,6 +204,31 @@ bool do_chr_chr_collision(Object& objectA, Object& objectB, const float tmin, co
     // determine the relative effect of impulses, given the known weights
     get_recoil_factors( wta, wtb, &recoil_a, &recoil_b );
 
+    // A dead object must not be shoved by contact: give it zero recoil (no velocity impulse, no
+    // positional displacement below) exactly like the existing infinite-mass-scenery treatment
+    // above, and hand its full recoil share to a still-alive counterpart so the living side is the
+    // one that gets blocked. This matches the reference engine (2.6.8 char.c:3373-3404), which
+    // never displaced the bumped party's position at all -- only the pusher was hard-stopped
+    // (velocity reversed, position restored) -- so sustained contact with a corpse could not push
+    // it. If both parties are dead, neither moves (full immobility; the reference engine's fainter
+    // bumpdampen-scaled creep on both corpses was considered and rejected here as unnecessary
+    // complexity for content that should just stay put).
+    //
+    // A still-alive party is only promoted to full recoil if it was actually movable to begin
+    // with. wta/wtb are the same getMass() values fed to get_recoil_factors() above, and
+    // ObjectPhysics::getMass() reports a NEGATIVE "mass" for infinite-mass content (weight ==
+    // CHR_INFINITE_WEIGHT or bumpdampen == 0.0 -- doors, pillars, tents, trees). Blindly promoting
+    // any living party to recoil 1.0 (regardless of mass) would clobber that infinite-mass zero
+    // and displace "immovable" scenery on contact with a corpse -- the same corpse-pushing defect
+    // this block exists to fix, just transferred onto the other party.
+    const bool aliveA = objectA.isAlive();
+    const bool aliveB = objectB.isAlive();
+    if ( !aliveA || !aliveB )
+    {
+        recoil_a = (aliveA && wta >= 0.0f) ? 1.0f : 0.0f;
+        recoil_b = (aliveB && wtb >= 0.0f) ? 1.0f : 0.0f;
+    }
+
     //---- calculate the character-character interactions
     {
         const float max_pressure_strength = 0.25f;//1.0f - std::min(objectA.phys.dampen, objectB.phys.dampen);
@@ -289,8 +314,19 @@ bool do_chr_chr_collision(Object& objectA, Object& objectB, const float tmin, co
                 distance /= std::max(objectA.getCurrentBump().size, objectB.getCurrentBump().size);
                 if(distance > 0.0f)
                 {
-                    objectA.phys.sum_avel(nrm * distance * recoil_a * interaction_strength);
-                    objectB.phys.sum_avel(-nrm * distance * recoil_b * interaction_strength);
+                    // Gated on recoil > 0 for consistency with the other recoil-gated applications
+                    // in this function (the COLLISION-branch sum_avel pair above and the sum_acoll
+                    // pair below); functionally a no-op here since a zero recoil factor already
+                    // zeroes the summed vector, but this keeps a zero-recoil (e.g. dead) party
+                    // visibly untouched rather than relying on multiplying by zero.
+                    if (recoil_a > 0.0f)
+                    {
+                        objectA.phys.sum_avel(nrm * distance * recoil_a * interaction_strength);
+                    }
+                    if (recoil_b > 0.0f)
+                    {
+                        objectB.phys.sum_avel(-nrm * distance * recoil_b * interaction_strength);
+                    }
 
                     // This is genuine contact (depth_min > 0, guaranteed by the early-return above)
                     // with genuine relative motion (need_velocity, guaranteed by the enclosing "if"):
