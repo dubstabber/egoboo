@@ -22,6 +22,10 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/fileutil.h"
+#include "egolib/Log/_Include.hpp"
+
+#include "idlib/exception.hpp"  // idlib::runtime_error
+#include "idlib/hll.hpp"        // idlib::hll::compilation_error
 
 particle_direction_t prt_direction[256] =
 {
@@ -171,256 +175,311 @@ std::shared_ptr<ParticleProfile> ParticleProfile::readFromFile(const std::string
         return nullptr;
     }
     std::shared_ptr<ParticleProfile> profile = std::make_shared<ParticleProfile>();
-
-    // set up the EGO_PROFILE_STUFF
-    profile->_name = pathname;
-
-    // read the 1 line comment at the top of the file
-    profile->_comment = ctxt->readSingleLineComment();
-
-    // General data
-    profile->force = vfs_get_next_bool(*ctxt);
-
-    switch(idlib::to_upper(vfs_get_next_printable(*ctxt)))
+    // part0.txt..part29.txt are OPTIONAL per-object particle profiles: _AbstractProfileSystem.hpp:141
+    // documents "InvalidRef on failure" and ObjectProfile_load.cpp:172 loads each one with the
+    // comment "(optional)". The parse body below - the fixed-position vfs_get_next_*/
+    // readXLiteral header fields, then an unbounded free-form expansion loop ending in an
+    // explicit `throw idlib::hll::compilation_error(...)` on any unrecognized token - runs over
+    // hand-edited content. Every one of its throw sites (ReadContext.cpp,
+    // ReadContext_literals.cpp, fileutil.c/fileutil.h - including vfs_get_ufp8's throw at
+    // fileutil.c:379, reached below through manaDrain/lifeDrain's vfs_get_next_ufp8 calls -
+    // DDLTokenDecoder.hpp, and the explicit throw in the expansion loop itself) raises
+    // idlib::hll::compilation_error, or its subclass Ego::Script::MissingDelimiterError
+    // (Script/Errors.hpp:29), on a truncated, malformed, or unknown token - never
+    // idlib::runtime_error, which is what vfs_readEntireFile (through the
+    // Scanner constructor that ReadContext derives from) raises for a file that cannot be
+    // opened, and that path is already isolated by the `catch (...)` immediately above. The
+    // idlib::runtime_error arm below is kept anyway for parity with the general idiom
+    // (ModuleProfile::moduleHasIDSZ, ModuleProfile.cpp:232, whose single try DOES wrap
+    // construction and so needs both) and as a tripwire should a ReadContext helper start
+    // raising it directly; it is not reachable from any content this pass could construct.
+    // Neither idlib type derives from std::exception (idlib/exception/exception.hpp:64 has no
+    // base at all), so this parse body used to run bare between the construction guard above
+    // and the caller - one malformed-but-present part file could abort the whole object load.
+    // Caught by const& only: idlib::exception's copy constructor and destructor are protected.
+    try
     {
-        case 'L': profile->type = SPRITE_LIGHT; break;
-        case 'S': profile->type = SPRITE_SOLID; break;
-        case 'T': profile->type = SPRITE_ALPHA; break;
-    }
 
-    profile->image_stt = vfs_get_next_int(*ctxt);
-    profile->image_max = vfs_get_next_int(*ctxt);
-    profile->image_add.base = vfs_get_next_int(*ctxt);
-    profile->image_add.rand = vfs_get_next_int(*ctxt);
-    profile->image_add.base /= EGO_ANIMATION_FRAMERATE_SCALING;
-    profile->image_add.rand /= EGO_ANIMATION_FRAMERATE_SCALING;
-    profile->rotate_pair.base = vfs_get_next_int(*ctxt);
-    profile->rotate_pair.rand = vfs_get_next_int(*ctxt);
-    profile->rotate_add = vfs_get_next_int(*ctxt);
-    profile->size_base = vfs_get_next_int(*ctxt);
-    profile->size_add = vfs_get_next_int(*ctxt);
-    profile->spdlimit = vfs_get_next_float(*ctxt);
-    profile->facingadd = vfs_get_next_int(*ctxt);
+        // set up the EGO_PROFILE_STUFF
+        profile->_name = pathname;
 
-    // override the base rotation
-    if (profile->image_stt < EGO_ANIMATION_MULTIPLIER && prt_u != prt_direction[profile->image_stt])
-    {
-        profile->rotate_pair.base = prt_direction[profile->image_stt];
-    }
+        // read the 1 line comment at the top of the file
+        profile->_comment = ctxt->readSingleLineComment();
 
-    // Ending conditions
-    profile->end_water = vfs_get_next_bool(*ctxt);
-    profile->end_bump = vfs_get_next_bool(*ctxt);
-    profile->end_ground = vfs_get_next_bool(*ctxt);
-    profile->end_lastframe = vfs_get_next_bool(*ctxt);
-    profile->end_time = vfs_get_next_int(*ctxt);
+        // General data
+        profile->force = vfs_get_next_bool(*ctxt);
 
-    // Collision data
-    profile->dampen = vfs_get_next_float(*ctxt);
-    profile->bump_money = vfs_get_next_int(*ctxt);
-    profile->bump_size = vfs_get_next_int(*ctxt);
-    profile->bump_height = vfs_get_next_int(*ctxt);
-
-    profile->damage = vfs_get_next_range(*ctxt);
-    profile->damageType = vfs_get_next_damage_type(*ctxt);
-
-    // Lighting data
-    cTmp = vfs_get_next_printable(*ctxt);
-    if ('T' == idlib::to_upper(cTmp)) profile->dynalight.mode = DYNA_MODE_ON;
-    else if ('L' == idlib::to_upper(cTmp)) profile->dynalight.mode = DYNA_MODE_LOCAL;
-    else profile->dynalight.mode = DYNA_MODE_OFF;
-
-    profile->dynalight.level = vfs_get_next_float(*ctxt);
-    profile->dynalight.falloff = vfs_get_next_int(*ctxt);
-
-    // Initial spawning of this particle
-    profile->_spawnFacing.base = vfs_get_next_int(*ctxt);
-    profile->_spawnFacing.rand = vfs_get_next_int(*ctxt);
-
-    profile->_spawnPositionOffsetXY.base = vfs_get_next_int(*ctxt);
-    profile->_spawnPositionOffsetXY.rand = vfs_get_next_int(*ctxt);
-
-    profile->_spawnPositionOffsetZ.base = vfs_get_next_int(*ctxt);
-    profile->_spawnPositionOffsetZ.rand = vfs_get_next_int(*ctxt);
-
-    profile->_spawnVelocityOffsetXY.base = vfs_get_next_int(*ctxt);
-    profile->_spawnVelocityOffsetXY.rand = vfs_get_next_int(*ctxt);
-
-    profile->_spawnVelocityOffsetZ.base = vfs_get_next_int(*ctxt);
-    profile->_spawnVelocityOffsetZ.rand = vfs_get_next_int(*ctxt);
-
-    // Continuous spawning of other particles
-    profile->contspawn._delay = vfs_get_next_int(*ctxt);
-    profile->contspawn._amount = vfs_get_next_int(*ctxt);
-    profile->contspawn._facingAdd = vfs_get_next_int(*ctxt);
-    profile->contspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
-
-    // End spawning of other particles
-    profile->endspawn._amount = vfs_get_next_int(*ctxt);
-    profile->endspawn._facingAdd = vfs_get_next_int(*ctxt);
-    profile->endspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
-
-    // Bump spawning of attached particles
-    profile->bumpspawn._amount = vfs_get_next_int(*ctxt);
-    profile->bumpspawn._facingAdd = 0; // @to add.
-    profile->bumpspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
-
-    // Random stuff  !!!BAD!!! Not complete
-    profile->dazeTime = vfs_get_next_nat(*ctxt);
-    profile->grogTime = vfs_get_next_nat(*ctxt);
-    profile->spawnenchant = vfs_get_next_bool(*ctxt);
-
-    profile->cause_roll = vfs_get_next_bool(*ctxt);  // !!Cause roll
-    profile->cause_pancake = vfs_get_next_bool(*ctxt);
-
-    profile->needtarget = vfs_get_next_bool(*ctxt);
-    profile->targetcaster = vfs_get_next_bool(*ctxt);
-    profile->startontarget = vfs_get_next_bool(*ctxt);
-    profile->onlydamagefriendly = vfs_get_next_bool(*ctxt);
-
-    profile->soundspawn = vfs_get_next_int(*ctxt);
-
-    profile->end_sound = vfs_get_next_int(*ctxt);
-
-    profile->friendlyfire = vfs_get_next_bool(*ctxt);
-
-    profile->hateonly = vfs_get_next_bool(*ctxt);
-
-    profile->newtargetonspawn = vfs_get_next_bool(*ctxt);
-
-    profile->targetangle = vfs_get_next_int(*ctxt) >> 1;
-    profile->homing = vfs_get_next_bool(*ctxt);
-
-    profile->homingfriction = vfs_get_next_float(*ctxt);
-    profile->homingaccel = vfs_get_next_float(*ctxt);
-    profile->rotatetoface = vfs_get_next_bool(*ctxt);
-
-    ctxt->skipToColon(false);  // !!Respawn on hit is unused
-
-    profile->manaDrain = vfs_get_next_ufp8(*ctxt);
-    profile->lifeDrain = vfs_get_next_ufp8(*ctxt);
-
-    // assume default end_wall
-    profile->end_wall = profile->end_ground;
-
-    // assume default damfx
-    if (profile->homing) profile->_particleEffectBits.reset();
-
-    // Read expansions
-    while (!ctxt->ise(ctxt->END_OF_INPUT()))
-    {
-        if (ctxt->ise(ctxt->WHITE_SPACE())) {
-            ctxt->skipWhiteSpaces();
-            continue;
-        } else if (ctxt->ise(ctxt->NEW_LINE())) {
-            ctxt->new_lines(nullptr);
-            continue;
-        } else if (ctxt->is('/')) {
-            ctxt->readSingleLineComment(); /// @todo Add and use ReadContext::skipSingleLineComment().
-            continue;
-        } else  if (ctxt->is(':')) {
-            ctxt->next();
-            IDSZ2 idsz = ctxt->readIDSZ();
-
-            switch(idsz.toUint32())
-            {
-                case IDSZ2::caseLabel('N', 'O', 'N', 'E'):
-                    profile->_particleEffectBits[DAMFX_NONE] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('T', 'U', 'R', 'N'):
-                    profile->_particleEffectBits[DAMFX_TURN] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('A', 'R', 'M', 'O'):
-                    profile->_particleEffectBits[DAMFX_ARMO] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('B', 'L', 'O', 'C'):
-                    profile->_particleEffectBits[DAMFX_NBLOC] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('A', 'R', 'R', 'O'):
-                    profile->_particleEffectBits[DAMFX_ARRO] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('T', 'I', 'M', 'E'):
-                    profile->_particleEffectBits[DAMFX_TIME] = ctxt->readIntegerLiteral() != 0;
-                break;
-
-                case IDSZ2::caseLabel('Z', 'S', 'P', 'D'):  
-                    profile->zaimspd = ctxt->readRealLiteral();
-                break;
-
-                case IDSZ2::caseLabel('F', 'S', 'N', 'D'):  
-                    profile->end_sound_floor = ctxt->readIntegerLiteral();
-                break;
-
-                case IDSZ2::caseLabel('W', 'S', 'N', 'D'):  
-                    profile->end_sound_wall = ctxt->readIntegerLiteral();
-                break;
-
-                case IDSZ2::caseLabel('W', 'E', 'N', 'D'):  
-                    profile->end_wall = (0 != ctxt->readIntegerLiteral());
-                break;
-
-                case IDSZ2::caseLabel('P', 'U', 'S', 'H'):  
-                    profile->allowpush = (0 != ctxt->readIntegerLiteral());
-                break;
-
-                case IDSZ2::caseLabel('D', 'L', 'E', 'V'):  
-                    profile->dynalight.level_add = ctxt->readIntegerLiteral() / 1000.0f;
-                break;
-
-                case IDSZ2::caseLabel('D', 'R', 'A', 'D'):  
-                    profile->dynalight.falloff_add = ctxt->readIntegerLiteral() / 1000.0f;
-                break;
-
-                case IDSZ2::caseLabel('I', 'D', 'A', 'M'):  
-                    profile->_intellectDamageBonus = (0 != ctxt->readIntegerLiteral());
-                break;
-
-                case IDSZ2::caseLabel('G', 'R', 'A', 'V'):  
-                    profile->ignore_gravity = (0 != ctxt->readIntegerLiteral());
-                break;
-
-                case IDSZ2::caseLabel('O', 'R', 'N', 'T'):
-                    switch (idlib::to_upper(ctxt->readPrintable()))
-                    {
-                        case 'X': profile->orientation = prt_ori_t::ORIENTATION_X; break;  // put particle up along the world or body-fixed x-axis
-                        case 'Y': profile->orientation = prt_ori_t::ORIENTATION_Y; break;  // put particle up along the world or body-fixed y-axis
-                        case 'Z': profile->orientation = prt_ori_t::ORIENTATION_Z; break;  // put particle up along the world or body-fixed z-axis
-                        case 'V': profile->orientation = prt_ori_t::ORIENTATION_V; break;  // vertical, like a candle
-                        case 'H': profile->orientation = prt_ori_t::ORIENTATION_H; break;  // horizontal, like a plate
-                        case 'B': profile->orientation = prt_ori_t::ORIENTATION_B; break;  // billboard
-                    }
-                    while (ctxt->ise(ctxt->ALPHA())) {
-                        ctxt->next();
-                    }
-                break;
-
-                case IDSZ2::caseLabel('P', 'U', 'L', 'L'):
-                    profile->_gravityPull = ctxt->readRealLiteral();
-                break;
-
-                default:
-                    throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::lexical, ctxt->get_location(),
-                                                        std::string("Unknown IDSZ type parsed: ") + idsz.toString());
-                break;
-            }
-        } else {
-            throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::lexical, ctxt->get_location(),
-                                                "expected `:`, comment, whitespace, newline or end of input");
+        switch(idlib::to_upper(vfs_get_next_printable(*ctxt)))
+        {
+            case 'L': profile->type = SPRITE_LIGHT; break;
+            case 'S': profile->type = SPRITE_SOLID; break;
+            case 'T': profile->type = SPRITE_ALPHA; break;
         }
+
+        profile->image_stt = vfs_get_next_int(*ctxt);
+        profile->image_max = vfs_get_next_int(*ctxt);
+        profile->image_add.base = vfs_get_next_int(*ctxt);
+        profile->image_add.rand = vfs_get_next_int(*ctxt);
+        profile->image_add.base /= EGO_ANIMATION_FRAMERATE_SCALING;
+        profile->image_add.rand /= EGO_ANIMATION_FRAMERATE_SCALING;
+        profile->rotate_pair.base = vfs_get_next_int(*ctxt);
+        profile->rotate_pair.rand = vfs_get_next_int(*ctxt);
+        profile->rotate_add = vfs_get_next_int(*ctxt);
+        profile->size_base = vfs_get_next_int(*ctxt);
+        profile->size_add = vfs_get_next_int(*ctxt);
+        profile->spdlimit = vfs_get_next_float(*ctxt);
+        profile->facingadd = vfs_get_next_int(*ctxt);
+
+        // override the base rotation
+        if (profile->image_stt < EGO_ANIMATION_MULTIPLIER && prt_u != prt_direction[profile->image_stt])
+        {
+            profile->rotate_pair.base = prt_direction[profile->image_stt];
+        }
+
+        // Ending conditions
+        profile->end_water = vfs_get_next_bool(*ctxt);
+        profile->end_bump = vfs_get_next_bool(*ctxt);
+        profile->end_ground = vfs_get_next_bool(*ctxt);
+        profile->end_lastframe = vfs_get_next_bool(*ctxt);
+        profile->end_time = vfs_get_next_int(*ctxt);
+
+        // Collision data
+        profile->dampen = vfs_get_next_float(*ctxt);
+        profile->bump_money = vfs_get_next_int(*ctxt);
+        profile->bump_size = vfs_get_next_int(*ctxt);
+        profile->bump_height = vfs_get_next_int(*ctxt);
+
+        profile->damage = vfs_get_next_range(*ctxt);
+        profile->damageType = vfs_get_next_damage_type(*ctxt);
+
+        // Lighting data
+        cTmp = vfs_get_next_printable(*ctxt);
+        if ('T' == idlib::to_upper(cTmp)) profile->dynalight.mode = DYNA_MODE_ON;
+        else if ('L' == idlib::to_upper(cTmp)) profile->dynalight.mode = DYNA_MODE_LOCAL;
+        else profile->dynalight.mode = DYNA_MODE_OFF;
+
+        profile->dynalight.level = vfs_get_next_float(*ctxt);
+        profile->dynalight.falloff = vfs_get_next_int(*ctxt);
+
+        // Initial spawning of this particle
+        profile->_spawnFacing.base = vfs_get_next_int(*ctxt);
+        profile->_spawnFacing.rand = vfs_get_next_int(*ctxt);
+
+        profile->_spawnPositionOffsetXY.base = vfs_get_next_int(*ctxt);
+        profile->_spawnPositionOffsetXY.rand = vfs_get_next_int(*ctxt);
+
+        profile->_spawnPositionOffsetZ.base = vfs_get_next_int(*ctxt);
+        profile->_spawnPositionOffsetZ.rand = vfs_get_next_int(*ctxt);
+
+        profile->_spawnVelocityOffsetXY.base = vfs_get_next_int(*ctxt);
+        profile->_spawnVelocityOffsetXY.rand = vfs_get_next_int(*ctxt);
+
+        profile->_spawnVelocityOffsetZ.base = vfs_get_next_int(*ctxt);
+        profile->_spawnVelocityOffsetZ.rand = vfs_get_next_int(*ctxt);
+
+        // Continuous spawning of other particles
+        profile->contspawn._delay = vfs_get_next_int(*ctxt);
+        profile->contspawn._amount = vfs_get_next_int(*ctxt);
+        profile->contspawn._facingAdd = vfs_get_next_int(*ctxt);
+        profile->contspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
+
+        // End spawning of other particles
+        profile->endspawn._amount = vfs_get_next_int(*ctxt);
+        profile->endspawn._facingAdd = vfs_get_next_int(*ctxt);
+        profile->endspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
+
+        // Bump spawning of attached particles
+        profile->bumpspawn._amount = vfs_get_next_int(*ctxt);
+        profile->bumpspawn._facingAdd = 0; // @to add.
+        profile->bumpspawn._lpip = vfs_get_next_local_particle_profile_ref(*ctxt);
+
+        // Random stuff  !!!BAD!!! Not complete
+        profile->dazeTime = vfs_get_next_nat(*ctxt);
+        profile->grogTime = vfs_get_next_nat(*ctxt);
+        profile->spawnenchant = vfs_get_next_bool(*ctxt);
+
+        profile->cause_roll = vfs_get_next_bool(*ctxt);  // !!Cause roll
+        profile->cause_pancake = vfs_get_next_bool(*ctxt);
+
+        profile->needtarget = vfs_get_next_bool(*ctxt);
+        profile->targetcaster = vfs_get_next_bool(*ctxt);
+        profile->startontarget = vfs_get_next_bool(*ctxt);
+        profile->onlydamagefriendly = vfs_get_next_bool(*ctxt);
+
+        profile->soundspawn = vfs_get_next_int(*ctxt);
+
+        profile->end_sound = vfs_get_next_int(*ctxt);
+
+        profile->friendlyfire = vfs_get_next_bool(*ctxt);
+
+        profile->hateonly = vfs_get_next_bool(*ctxt);
+
+        profile->newtargetonspawn = vfs_get_next_bool(*ctxt);
+
+        profile->targetangle = vfs_get_next_int(*ctxt) >> 1;
+        profile->homing = vfs_get_next_bool(*ctxt);
+
+        profile->homingfriction = vfs_get_next_float(*ctxt);
+        profile->homingaccel = vfs_get_next_float(*ctxt);
+        profile->rotatetoface = vfs_get_next_bool(*ctxt);
+
+        ctxt->skipToColon(false);  // !!Respawn on hit is unused
+
+        profile->manaDrain = vfs_get_next_ufp8(*ctxt);
+        profile->lifeDrain = vfs_get_next_ufp8(*ctxt);
+
+        // assume default end_wall
+        profile->end_wall = profile->end_ground;
+
+        // assume default damfx
+        if (profile->homing) profile->_particleEffectBits.reset();
+
+        // Read expansions
+        while (!ctxt->ise(ctxt->END_OF_INPUT()))
+        {
+            if (ctxt->ise(ctxt->WHITE_SPACE())) {
+                ctxt->skipWhiteSpaces();
+                continue;
+            } else if (ctxt->ise(ctxt->NEW_LINE())) {
+                ctxt->new_lines(nullptr);
+                continue;
+            } else if (ctxt->is('/')) {
+                ctxt->readSingleLineComment(); /// @todo Add and use ReadContext::skipSingleLineComment().
+                continue;
+            } else  if (ctxt->is(':')) {
+                ctxt->next();
+                IDSZ2 idsz = ctxt->readIDSZ();
+
+                switch(idsz.toUint32())
+                {
+                    case IDSZ2::caseLabel('N', 'O', 'N', 'E'):
+                        profile->_particleEffectBits[DAMFX_NONE] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('T', 'U', 'R', 'N'):
+                        profile->_particleEffectBits[DAMFX_TURN] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('A', 'R', 'M', 'O'):
+                        profile->_particleEffectBits[DAMFX_ARMO] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('B', 'L', 'O', 'C'):
+                        profile->_particleEffectBits[DAMFX_NBLOC] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('A', 'R', 'R', 'O'):
+                        profile->_particleEffectBits[DAMFX_ARRO] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('T', 'I', 'M', 'E'):
+                        profile->_particleEffectBits[DAMFX_TIME] = ctxt->readIntegerLiteral() != 0;
+                    break;
+
+                    case IDSZ2::caseLabel('Z', 'S', 'P', 'D'):  
+                        profile->zaimspd = ctxt->readRealLiteral();
+                    break;
+
+                    case IDSZ2::caseLabel('F', 'S', 'N', 'D'):  
+                        profile->end_sound_floor = ctxt->readIntegerLiteral();
+                    break;
+
+                    case IDSZ2::caseLabel('W', 'S', 'N', 'D'):  
+                        profile->end_sound_wall = ctxt->readIntegerLiteral();
+                    break;
+
+                    case IDSZ2::caseLabel('W', 'E', 'N', 'D'):  
+                        profile->end_wall = (0 != ctxt->readIntegerLiteral());
+                    break;
+
+                    case IDSZ2::caseLabel('P', 'U', 'S', 'H'):  
+                        profile->allowpush = (0 != ctxt->readIntegerLiteral());
+                    break;
+
+                    case IDSZ2::caseLabel('D', 'L', 'E', 'V'):  
+                        profile->dynalight.level_add = ctxt->readIntegerLiteral() / 1000.0f;
+                    break;
+
+                    case IDSZ2::caseLabel('D', 'R', 'A', 'D'):  
+                        profile->dynalight.falloff_add = ctxt->readIntegerLiteral() / 1000.0f;
+                    break;
+
+                    case IDSZ2::caseLabel('I', 'D', 'A', 'M'):  
+                        profile->_intellectDamageBonus = (0 != ctxt->readIntegerLiteral());
+                    break;
+
+                    case IDSZ2::caseLabel('G', 'R', 'A', 'V'):  
+                        profile->ignore_gravity = (0 != ctxt->readIntegerLiteral());
+                    break;
+
+                    case IDSZ2::caseLabel('O', 'R', 'N', 'T'):
+                        switch (idlib::to_upper(ctxt->readPrintable()))
+                        {
+                            case 'X': profile->orientation = prt_ori_t::ORIENTATION_X; break;  // put particle up along the world or body-fixed x-axis
+                            case 'Y': profile->orientation = prt_ori_t::ORIENTATION_Y; break;  // put particle up along the world or body-fixed y-axis
+                            case 'Z': profile->orientation = prt_ori_t::ORIENTATION_Z; break;  // put particle up along the world or body-fixed z-axis
+                            case 'V': profile->orientation = prt_ori_t::ORIENTATION_V; break;  // vertical, like a candle
+                            case 'H': profile->orientation = prt_ori_t::ORIENTATION_H; break;  // horizontal, like a plate
+                            case 'B': profile->orientation = prt_ori_t::ORIENTATION_B; break;  // billboard
+                        }
+                        while (ctxt->ise(ctxt->ALPHA())) {
+                            ctxt->next();
+                        }
+                    break;
+
+                    case IDSZ2::caseLabel('P', 'U', 'L', 'L'):
+                        profile->_gravityPull = ctxt->readRealLiteral();
+                    break;
+
+                    default:
+                        throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::lexical, ctxt->get_location(),
+                                                            std::string("Unknown IDSZ type parsed: ") + idsz.toString());
+                    break;
+                }
+            } else {
+                throw idlib::hll::compilation_error(__FILE__, __LINE__, idlib::hll::compilation_error_kind::lexical, ctxt->get_location(),
+                                                    "expected `:`, comment, whitespace, newline or end of input");
+            }
+        }
+
+        // Limit the end_sound index.
+        profile->end_sound = Ego::Math::constrain<int8_t>(profile->end_sound, INVALID_SOUND_ID, MAX_WAVE);
+
+        // Limit the soundspawn index.
+        profile->soundspawn = Ego::Math::constrain<int8_t>(profile->soundspawn, INVALID_SOUND_ID, MAX_WAVE);
+
+        return profile;
     }
-
-    // Limit the end_sound index.
-    profile->end_sound = Ego::Math::constrain<int8_t>(profile->end_sound, INVALID_SOUND_ID, MAX_WAVE);
-
-    // Limit the soundspawn index.
-    profile->soundspawn = Ego::Math::constrain<int8_t>(profile->soundspawn, INVALID_SOUND_ID, MAX_WAVE);
-
-    return profile;
+    catch (const idlib::hll::compilation_error& ex)
+    {
+        // compilation_error::to_string() (idlib/hll/compilation_error.hpp:114) builds its
+        // message with `<< ": "` throughout and never emits std::endl - it is already one line.
+        if (Log::Target* logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to parse particle profile ", "`", pathname, "`",
+                                             ": ", ex.to_string(), Log::EndOfEntry);
+        }
+        return nullptr;
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        // Unlike the arm above, runtime_error::to_string() (idlib/exception/runtime_error.hpp:66)
+        // is multi-line by design (two embedded std::endl), so it is flattened here to keep one
+        // rejected particle profile to one log record.
+        std::string reason = ex.to_string();
+        for (char& c : reason)
+        {
+            if (c == '\n' || c == '\r') c = ' ';
+        }
+        if (Log::Target* logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to parse particle profile ", "`", pathname, "`",
+                                             ": ", reason, Log::EndOfEntry);
+        }
+        return nullptr;
+    }
 }
 
 bool ParticleProfile::hasBit(const ParticleDamageEffectBits bit) const

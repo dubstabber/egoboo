@@ -161,12 +161,23 @@ ObjectProfileRef ProfileSystem::loadOneProfile(const std::string &pathName, int 
     // throw an error code if the slot is invalid of if the file doesn't exist
     if (islot < 0 || islot >= INVALID_PRO_REF)
     {
-        // The data file wasn't found
-        if (required)
-        {
-			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "`", pathName, "`", " was not found. Do you attempt to override a global object?", Log::EndOfEntry);
-        }
-        else if (required && slot_override > 4 * MAX_IMPORT_PER_PLAYER)
+        // This whole block only ever runs when `required` is false. getProfileSlotNumber's
+        // first branch returns slot_override verbatim whenever slot_override is in the range
+        // `required` demands (>= 0 and < INVALID_PRO_REF), so islot == slot_override and stays
+        // in bounds - the `if (islot < 0 || islot >= INVALID_PRO_REF)` guard above can never be
+        // true for a `required` call. Consequently every call that reaches here is either the
+        // common miss (no override, a name that does not resolve via data.txt, slot_override
+        // defaults to -1) or a caller-supplied override so far out of range it lands at or past
+        // INVALID_PRO_REF, which is the one case `slot_override > 4 * MAX_IMPORT_PER_PLAYER` can
+        // be true here. This used to be an `if (required) {...} else if (required && ...) {...}`
+        // pair; both diagnostics were dead, since `required` is provably false throughout this
+        // block. The `required`-labelled "was not found" diagnostic has been removed rather than
+        // kept as unreachable code; the out-of-range-override diagnostic below is kept, with the
+        // stale "required &&" dropped so it can actually fire. The common miss stays silent here
+        // on purpose: `loadFromFile`'s own nullptr path a few lines below (the `if (!profile)`
+        // block) already reports the ordinary "not found" case with the slot number attached, so
+        // this diagnostic only needs to cover the out-of-range case, not be exhaustive.
+        if (slot_override > 4 * MAX_IMPORT_PER_PLAYER)
         {
 			_logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to open file ", "`", pathName, "`", Log::EndOfEntry);
         }
@@ -409,7 +420,18 @@ void ProfileSystem::loadGlobalParticleProfiles()
     {
         if (INVALID_PIP_REF == ParticleProfileSystem.load(profile.first, profile.second))
         {
-            auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "data file ", "`", profile.first, "`", " was not found", Log::EndOfEntry);
+            // ParticleProfile::readFromFile now reports two different misses through this same
+            // InvalidRef: the file could not be opened at all (its own construction-guard
+            // `catch (...)`, which logs nothing), or it opened but failed to parse (its
+            // compilation_error/runtime_error arms, which log a Warning naming the exact
+            // location and reason before returning). "was not found" was only ever accurate for
+            // the first case; for the second it now sits right below a Warning that already
+            // explains the real cause, so this message is reworded to cover both instead of
+            // contradicting the more specific one above it. These particle profiles are global
+            // and required (mp_data content, not player-supplied), so failing either way still
+            // aborts the caller - only the wording changed.
+            auto e = Log::Entry::create(Log::Level::Error, __FILE__, __LINE__, "data file ", "`", profile.first, "`",
+                                        " could not be loaded (see the preceding warning for the specific reason, if any)", Log::EndOfEntry);
             _logTarget << e;
             throw std::runtime_error(e.getText());
         }

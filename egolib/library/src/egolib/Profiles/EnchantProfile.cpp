@@ -22,6 +22,10 @@
 #include "egolib/Audio/AudioSystem.hpp"
 #include "egolib/Core/StringUtilities.hpp"
 #include "egolib/fileutil.h"
+#include "egolib/Log/_Include.hpp"
+
+#include "idlib/exception.hpp"  // idlib::runtime_error
+#include "idlib/hll.hpp"        // idlib::hll::compilation_error
 
 EnchantProfile::EnchantProfile() : AbstractProfile(),
 
@@ -94,183 +98,235 @@ std::shared_ptr<EnchantProfile> EnchantProfile::readFromFile(const std::string& 
         return nullptr;
     }
 
-    // true/false values
-    profile->retarget = vfs_get_next_bool(*ctxt);
-    profile->_override = vfs_get_next_bool(*ctxt);
-    profile->remove_overridden = vfs_get_next_bool(*ctxt);
-    profile->killtargetonend = vfs_get_next_bool(*ctxt);
-
-    profile->poofonend = vfs_get_next_bool(*ctxt);
-
-    // More stuff
-    profile->lifetime = vfs_get_next_int(*ctxt);
-    profile->endmessage = vfs_get_next_int(*ctxt);
-
-    // Drain stuff
-    profile->_owner._manaDrain = vfs_get_next_float(*ctxt);
-    profile->_target._manaDrain = vfs_get_next_float(*ctxt);
-    profile->endIfCannotPay = vfs_get_next_bool(*ctxt);
-    profile->_owner._lifeDrain = vfs_get_next_float(*ctxt);
-    profile->_target._lifeDrain = vfs_get_next_float(*ctxt);
-
-    // Specifics
-    profile->required_damagetype = vfs_get_next_damage_type(*ctxt);
-    profile->require_damagetarget_damagetype = vfs_get_next_damage_type(*ctxt);
-    profile->removedByIDSZ = vfs_get_next_idsz(*ctxt);
-
-    // Now the set values
-    profile->_set[EnchantProfile::SETDAMAGETYPE].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETDAMAGETYPE].value = vfs_get_damage_type(*ctxt);
-
-    profile->_set[EnchantProfile::SETNUMBEROFJUMPS].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETNUMBEROFJUMPS].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETLIFEBARCOLOR].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETLIFEBARCOLOR].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETMANABARCOLOR].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETMANABARCOLOR].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETSLASHMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETSLASHMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDSLASHRESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETCRUSHMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETCRUSHMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDCRUSHRESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETPOKEMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETPOKEMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDPOKERESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETHOLYMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETHOLYMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDHOLYRESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETEVILMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETEVILMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDEVILRESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETFIREMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETFIREMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDFIRERESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETICEMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETICEMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDICERESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETZAPMODIFIER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETZAPMODIFIER].value = vfs_get_damage_modifier(*ctxt);
-    profile->_add[EnchantProfile::ADDZAPRESIST].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETFLASHINGAND].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETFLASHINGAND].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETLIGHTBLEND].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETLIGHTBLEND].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETALPHABLEND].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETALPHABLEND].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETSHEEN].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETSHEEN].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETFLYTOHEIGHT].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETFLYTOHEIGHT].value = ctxt->readIntegerLiteral();
-
-    profile->_set[EnchantProfile::SETWALKONWATER].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETWALKONWATER].value = ctxt->readBool();
-
-    profile->_set[EnchantProfile::SETCANSEEINVISIBLE].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETCANSEEINVISIBLE].value = ctxt->readBool();
-
-    Ego::Script::EnumDescriptor<MissileTreatment> enumDescriptor
-        (
-            "MissileTreatment",
-            {
-                // Normal.
-                {"Normal", MissileTreatment_Normal},
-                {"NORMAL", MissileTreatment_Normal},
-                {"N", MissileTreatment_Normal},
-            // Reflect.
-                {"Reflect", MissileTreatment_Reflect},
-                {"REFLECT", MissileTreatment_Reflect},
-                {"R", MissileTreatment_Reflect},
-            // Deflect.
-                {"Deflect", MissileTreatment_Deflect},
-                {"DEFLECT", MissileTreatment_Deflect},
-                {"D", MissileTreatment_Deflect},
-            }
-    );
-
-    profile->_set[EnchantProfile::SETMISSILETREATMENT].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETMISSILETREATMENT].value = ctxt->readEnum(enumDescriptor);
-
-    profile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].value = ctxt->readRealLiteral();
-
-    profile->_set[EnchantProfile::SETMORPH].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETMORPH].value = true;  // vfs_get_bool( fileread );        //ZF> huh? why always channel and morph?
-
-    profile->_set[EnchantProfile::SETCHANNEL].apply = vfs_get_next_bool(*ctxt);
-    profile->_set[EnchantProfile::SETCHANNEL].value = true;  // vfs_get_bool( fileread );
-
-    // Now read in the add values
-    profile->_add[EnchantProfile::ADDJUMPPOWER].value = vfs_get_next_float(*ctxt);
-    profile->_add[EnchantProfile::ADDBUMPDAMPEN].value = vfs_get_next_int(*ctxt) / 256.0f;    // Stored as 8.8-fixed, used as float
-    profile->_add[EnchantProfile::ADDBOUNCINESS].value = vfs_get_next_int(*ctxt) / 256.0f;    // Stored as 8.8-fixed, used as float
-    profile->_add[EnchantProfile::ADDDAMAGE].value = vfs_get_next_float(*ctxt);            // Stored as float, used as 8.8-fixed
-    profile->_add[EnchantProfile::ADDSIZE].value = vfs_get_next_float(*ctxt);           // Stored as float, used as float
-    profile->_add[EnchantProfile::ADDACCEL].value = vfs_get_next_int(*ctxt) / 80.0f;   // Stored as int, used as float
-    profile->_add[EnchantProfile::ADDRED].value = vfs_get_next_int(*ctxt);
-    profile->_add[EnchantProfile::ADDGRN].value = vfs_get_next_int(*ctxt);
-    profile->_add[EnchantProfile::ADDBLU].value = vfs_get_next_int(*ctxt);
-    profile->_add[EnchantProfile::ADDDEFENSE].value = vfs_get_next_int(*ctxt);
-    profile->_add[EnchantProfile::ADDMANA].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
-    profile->_add[EnchantProfile::ADDLIFE].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
-    profile->_add[EnchantProfile::ADDSTRENGTH].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
-    profile->_add[EnchantProfile::ADDWISDOM].value = vfs_get_next_float(*ctxt);    // Deprecated (not used)
-    profile->_add[EnchantProfile::ADDINTELLIGENCE].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
-    profile->_add[EnchantProfile::ADDDEXTERITY].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
-
-    // Determine which entries are not important
-    for (size_t cnt = 0; cnt < EnchantProfile::MAX_ENCHANT_ADD; cnt++)
+    // enchant.txt is an OPTIONAL per-object file: _AbstractProfileSystem.hpp:141 documents
+    // "InvalidRef on failure" and ObjectProfile_load.cpp:161 loads it with the comment
+    // "(optional)". The parse body below - dozens of fixed-position vfs_get_next_*/
+    // readXLiteral calls (including a `ctxt->readEnum(...)` for SETMISSILETREATMENT), then a
+    // bounded `skipToColon(true)` expansion loop - runs over hand-edited content. Every one of
+    // its throw sites (ReadContext.cpp, ReadContext_literals.cpp, fileutil.c/fileutil.h,
+    // DDLTokenDecoder.hpp) raises idlib::hll::compilation_error, or its subclass
+    // Ego::Script::MissingDelimiterError (Script/Errors.hpp:29), on a truncated or
+    // malformed field - never idlib::runtime_error, which is what vfs_readEntireFile (through
+    // the Scanner constructor that ReadContext derives from) raises for a file that cannot be
+    // opened, and that path is already isolated by the `catch (...)` immediately above. The
+    // idlib::runtime_error arm below is kept anyway for parity with the general idiom
+    // (ModuleProfile::moduleHasIDSZ, ModuleProfile.cpp:232, whose single try DOES wrap
+    // construction and so needs both) and as a tripwire should a ReadContext helper start
+    // raising it directly; it is not reachable from any content this pass could construct.
+    // Neither idlib type derives from std::exception (idlib/exception/exception.hpp:64 has no
+    // base at all), so this parse body used to run bare between the construction guard above
+    // and the caller - one malformed-but-present enchant.txt could abort the whole object load.
+    // Caught by const& only: idlib::exception's copy constructor and destructor are protected.
+    try
     {
-        profile->_add[cnt].apply = (0.0f != profile->_add[cnt].value);
-    }
-    profile->_add[EnchantProfile::ADDFIRERESIST].apply = profile->_set[EnchantProfile::SETFIREMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDEVILRESIST].apply = profile->_set[EnchantProfile::SETEVILMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDZAPRESIST].apply = profile->_set[EnchantProfile::SETZAPMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDICERESIST].apply = profile->_set[EnchantProfile::SETICEMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDHOLYRESIST].apply = profile->_set[EnchantProfile::SETHOLYMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDPOKERESIST].apply = profile->_set[EnchantProfile::SETPOKEMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDSLASHRESIST].apply = profile->_set[EnchantProfile::SETSLASHMODIFIER].apply;
-    profile->_add[EnchantProfile::ADDCRUSHRESIST].apply = profile->_set[EnchantProfile::SETCRUSHMODIFIER].apply;
+        // true/false values
+        profile->retarget = vfs_get_next_bool(*ctxt);
+        profile->_override = vfs_get_next_bool(*ctxt);
+        profile->remove_overridden = vfs_get_next_bool(*ctxt);
+        profile->killtargetonend = vfs_get_next_bool(*ctxt);
 
-    // Read expansions
-    while (ctxt->skipToColon(true))
-    {
-        switch(ctxt->readIDSZ().toUint32())
+        profile->poofonend = vfs_get_next_bool(*ctxt);
+
+        // More stuff
+        profile->lifetime = vfs_get_next_int(*ctxt);
+        profile->endmessage = vfs_get_next_int(*ctxt);
+
+        // Drain stuff
+        profile->_owner._manaDrain = vfs_get_next_float(*ctxt);
+        profile->_target._manaDrain = vfs_get_next_float(*ctxt);
+        profile->endIfCannotPay = vfs_get_next_bool(*ctxt);
+        profile->_owner._lifeDrain = vfs_get_next_float(*ctxt);
+        profile->_target._lifeDrain = vfs_get_next_float(*ctxt);
+
+        // Specifics
+        profile->required_damagetype = vfs_get_next_damage_type(*ctxt);
+        profile->require_damagetarget_damagetype = vfs_get_next_damage_type(*ctxt);
+        profile->removedByIDSZ = vfs_get_next_idsz(*ctxt);
+
+        // Now the set values
+        profile->_set[EnchantProfile::SETDAMAGETYPE].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETDAMAGETYPE].value = vfs_get_damage_type(*ctxt);
+
+        profile->_set[EnchantProfile::SETNUMBEROFJUMPS].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETNUMBEROFJUMPS].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETLIFEBARCOLOR].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETLIFEBARCOLOR].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETMANABARCOLOR].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETMANABARCOLOR].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETSLASHMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETSLASHMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDSLASHRESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETCRUSHMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETCRUSHMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDCRUSHRESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETPOKEMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETPOKEMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDPOKERESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETHOLYMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETHOLYMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDHOLYRESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETEVILMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETEVILMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDEVILRESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETFIREMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETFIREMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDFIRERESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETICEMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETICEMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDICERESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETZAPMODIFIER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETZAPMODIFIER].value = vfs_get_damage_modifier(*ctxt);
+        profile->_add[EnchantProfile::ADDZAPRESIST].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETFLASHINGAND].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETFLASHINGAND].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETLIGHTBLEND].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETLIGHTBLEND].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETALPHABLEND].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETALPHABLEND].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETSHEEN].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETSHEEN].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETFLYTOHEIGHT].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETFLYTOHEIGHT].value = ctxt->readIntegerLiteral();
+
+        profile->_set[EnchantProfile::SETWALKONWATER].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETWALKONWATER].value = ctxt->readBool();
+
+        profile->_set[EnchantProfile::SETCANSEEINVISIBLE].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETCANSEEINVISIBLE].value = ctxt->readBool();
+
+        Ego::Script::EnumDescriptor<MissileTreatment> enumDescriptor
+            (
+                "MissileTreatment",
+                {
+                    // Normal.
+                    {"Normal", MissileTreatment_Normal},
+                    {"NORMAL", MissileTreatment_Normal},
+                    {"N", MissileTreatment_Normal},
+                // Reflect.
+                    {"Reflect", MissileTreatment_Reflect},
+                    {"REFLECT", MissileTreatment_Reflect},
+                    {"R", MissileTreatment_Reflect},
+                // Deflect.
+                    {"Deflect", MissileTreatment_Deflect},
+                    {"DEFLECT", MissileTreatment_Deflect},
+                    {"D", MissileTreatment_Deflect},
+                }
+        );
+
+        profile->_set[EnchantProfile::SETMISSILETREATMENT].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETMISSILETREATMENT].value = ctxt->readEnum(enumDescriptor);
+
+        profile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETCOSTFOREACHMISSILE].value = ctxt->readRealLiteral();
+
+        profile->_set[EnchantProfile::SETMORPH].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETMORPH].value = true;  // vfs_get_bool( fileread );        //ZF> huh? why always channel and morph?
+
+        profile->_set[EnchantProfile::SETCHANNEL].apply = vfs_get_next_bool(*ctxt);
+        profile->_set[EnchantProfile::SETCHANNEL].value = true;  // vfs_get_bool( fileread );
+
+        // Now read in the add values
+        profile->_add[EnchantProfile::ADDJUMPPOWER].value = vfs_get_next_float(*ctxt);
+        profile->_add[EnchantProfile::ADDBUMPDAMPEN].value = vfs_get_next_int(*ctxt) / 256.0f;    // Stored as 8.8-fixed, used as float
+        profile->_add[EnchantProfile::ADDBOUNCINESS].value = vfs_get_next_int(*ctxt) / 256.0f;    // Stored as 8.8-fixed, used as float
+        profile->_add[EnchantProfile::ADDDAMAGE].value = vfs_get_next_float(*ctxt);            // Stored as float, used as 8.8-fixed
+        profile->_add[EnchantProfile::ADDSIZE].value = vfs_get_next_float(*ctxt);           // Stored as float, used as float
+        profile->_add[EnchantProfile::ADDACCEL].value = vfs_get_next_int(*ctxt) / 80.0f;   // Stored as int, used as float
+        profile->_add[EnchantProfile::ADDRED].value = vfs_get_next_int(*ctxt);
+        profile->_add[EnchantProfile::ADDGRN].value = vfs_get_next_int(*ctxt);
+        profile->_add[EnchantProfile::ADDBLU].value = vfs_get_next_int(*ctxt);
+        profile->_add[EnchantProfile::ADDDEFENSE].value = vfs_get_next_int(*ctxt);
+        profile->_add[EnchantProfile::ADDMANA].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
+        profile->_add[EnchantProfile::ADDLIFE].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
+        profile->_add[EnchantProfile::ADDSTRENGTH].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
+        profile->_add[EnchantProfile::ADDWISDOM].value = vfs_get_next_float(*ctxt);    // Deprecated (not used)
+        profile->_add[EnchantProfile::ADDINTELLIGENCE].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
+        profile->_add[EnchantProfile::ADDDEXTERITY].value = vfs_get_next_float(*ctxt);    // Stored as float, used as 8.8-fixed
+
+        // Determine which entries are not important
+        for (size_t cnt = 0; cnt < EnchantProfile::MAX_ENCHANT_ADD; cnt++)
         {
-            case IDSZ2::caseLabel('A', 'M', 'O', 'U'): profile->contspawn._amount = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('T', 'Y', 'P', 'E'): profile->contspawn._lpip = vfs_get_local_particle_profile_ref(*ctxt); break;
-            case IDSZ2::caseLabel('T', 'I', 'M', 'E'): profile->contspawn._delay = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('F', 'A', 'C', 'E'): profile->contspawn._facingAdd = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('S', 'E', 'N', 'D'): profile->endsound_index = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('S', 'T', 'A', 'Y'): profile->_owner._stay = (0 != ctxt->readIntegerLiteral()); break;
-            case IDSZ2::caseLabel('O', 'V', 'E', 'R'): profile->spawn_overlay = (0 != ctxt->readIntegerLiteral()); break;
-            case IDSZ2::caseLabel('D', 'E', 'A', 'D'): profile->_target._stay = (0 != ctxt->readIntegerLiteral()); break;
-            case IDSZ2::caseLabel('C', 'K', 'U', 'R'): profile->seeKurses = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('D', 'A', 'R', 'K'): profile->darkvision = ctxt->readIntegerLiteral(); break;
-            case IDSZ2::caseLabel('N', 'A', 'M', 'E'): profile->setEnchantName(ctxt->readName()); break;
-            default: /*TODO: log error*/ break;
+            profile->_add[cnt].apply = (0.0f != profile->_add[cnt].value);
         }
+        profile->_add[EnchantProfile::ADDFIRERESIST].apply = profile->_set[EnchantProfile::SETFIREMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDEVILRESIST].apply = profile->_set[EnchantProfile::SETEVILMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDZAPRESIST].apply = profile->_set[EnchantProfile::SETZAPMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDICERESIST].apply = profile->_set[EnchantProfile::SETICEMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDHOLYRESIST].apply = profile->_set[EnchantProfile::SETHOLYMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDPOKERESIST].apply = profile->_set[EnchantProfile::SETPOKEMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDSLASHRESIST].apply = profile->_set[EnchantProfile::SETSLASHMODIFIER].apply;
+        profile->_add[EnchantProfile::ADDCRUSHRESIST].apply = profile->_set[EnchantProfile::SETCRUSHMODIFIER].apply;
+
+        // Read expansions
+        while (ctxt->skipToColon(true))
+        {
+            switch(ctxt->readIDSZ().toUint32())
+            {
+                case IDSZ2::caseLabel('A', 'M', 'O', 'U'): profile->contspawn._amount = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('T', 'Y', 'P', 'E'): profile->contspawn._lpip = vfs_get_local_particle_profile_ref(*ctxt); break;
+                case IDSZ2::caseLabel('T', 'I', 'M', 'E'): profile->contspawn._delay = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('F', 'A', 'C', 'E'): profile->contspawn._facingAdd = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('S', 'E', 'N', 'D'): profile->endsound_index = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('S', 'T', 'A', 'Y'): profile->_owner._stay = (0 != ctxt->readIntegerLiteral()); break;
+                case IDSZ2::caseLabel('O', 'V', 'E', 'R'): profile->spawn_overlay = (0 != ctxt->readIntegerLiteral()); break;
+                case IDSZ2::caseLabel('D', 'E', 'A', 'D'): profile->_target._stay = (0 != ctxt->readIntegerLiteral()); break;
+                case IDSZ2::caseLabel('C', 'K', 'U', 'R'): profile->seeKurses = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('D', 'A', 'R', 'K'): profile->darkvision = ctxt->readIntegerLiteral(); break;
+                case IDSZ2::caseLabel('N', 'A', 'M', 'E'): profile->setEnchantName(ctxt->readName()); break;
+                default: /*TODO: log error*/ break;
+            }
+        }
+
+        profile->_name = pathname;
+
+        // Limit the endsound_index.
+        profile->endsound_index = Ego::Math::constrain<int16_t>(profile->endsound_index, INVALID_SOUND_ID, MAX_WAVE);
+
+        return profile;
     }
-
-    profile->_name = pathname;
-
-    // Limit the endsound_index.
-    profile->endsound_index = Ego::Math::constrain<int16_t>(profile->endsound_index, INVALID_SOUND_ID, MAX_WAVE);
-
-    return profile;
+    catch (const idlib::hll::compilation_error& ex)
+    {
+        // compilation_error::to_string() (idlib/hll/compilation_error.hpp:114) builds its
+        // message with `<< ": "` throughout and never emits std::endl - it is already one line.
+        if (Log::Target* logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to parse enchant profile ", "`", pathname, "`",
+                                             ": ", ex.to_string(), Log::EndOfEntry);
+        }
+        return nullptr;
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        // Unlike the arm above, runtime_error::to_string() (idlib/exception/runtime_error.hpp:66)
+        // is multi-line by design (two embedded std::endl), so it is flattened here to keep one
+        // rejected enchant profile to one log record.
+        std::string reason = ex.to_string();
+        for (char& c : reason)
+        {
+            if (c == '\n' || c == '\r') c = ' ';
+        }
+        if (Log::Target* logTarget = Log::tryActiveTarget())
+        {
+            *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                             "failed to parse enchant profile ", "`", pathname, "`",
+                                             ": ", reason, Log::EndOfEntry);
+        }
+        return nullptr;
+    }
 }

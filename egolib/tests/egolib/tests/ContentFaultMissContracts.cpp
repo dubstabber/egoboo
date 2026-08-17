@@ -1,12 +1,17 @@
 /// @file ContentFaultMissContracts.cpp
-/// @brief Characterization tests for the two content-fault miss contracts that replaced
-///        exception band-aids: ModuleProfile::moduleHasIDSZ and ObjectProfile::loadFromFile.
+/// @brief Characterization tests for the content-fault miss contracts that replaced exception
+///        band-aids: ModuleProfile::moduleHasIDSZ, ObjectProfile::loadFromFile, and - added in
+///        the optional-profile-miss-contract pass - EnchantProfile::readFromFile and
+///        ParticleProfile::readFromFile (both reached through ProfileSystem::loadEnchantProfile
+///        / loadParticleProfile).
 ///
-/// Both functions are handed paths that come out of content.  moduleHasIDSZ gets a module
-/// folder name read from an object's message table (scr_IfModuleHasIDSZ), and loadFromFile
-/// gets an object folder discovered on disk.  A name that does not resolve, or a file that
-/// does not parse, is ordinary input for them - not a precondition violation - so both
-/// report the miss rather than throwing.
+/// All four functions are handed paths that come out of content.  moduleHasIDSZ gets a module
+/// folder name read from an object's message table (scr_IfModuleHasIDSZ); loadFromFile gets an
+/// object folder discovered on disk; readFromFile (both flavours) get the optional enchant.txt
+/// or partN.txt inside such a folder, loaded through ObjectProfile_load.cpp:161/:172 with the
+/// comment "(optional)" at both call sites.  A name that does not resolve, or a file that does
+/// not parse, is ordinary input for them - not a precondition violation - so all four report
+/// the miss rather than throwing.
 ///
 /// The reason this needs pinning rather than being obvious: the parsers underneath raise
 /// idlib exceptions (idlib::runtime_error for an unreadable file, by way of
@@ -124,6 +129,30 @@ const char* const kTruncatedDataTxt =
     "Slot number    : 0\n"
     "Class name     : Miss_Contract_Broken\n";
 
+/// An enchant.txt that stops after the second of EnchantProfile::readFromFile's leading
+/// vfs_get_next_bool fields.  The third (remove_overridden) calls skipToColon(false), finds no
+/// further colon before end of input, and raises Ego::Script::MissingDelimiterError.
+const char* const kTruncatedEnchantTxt =
+    "Retarget enchant ( TRUE or FALSE )        :FALSE\n"
+    "Override previous enchantments ( T/F )    :FALSE\n";
+
+/// A part file that stops after its leading comment, the `force` flag and the sprite-type
+/// field.  The next field (image_stt) calls skipToColon(false) and runs out of input the same
+/// way kTruncatedEnchantTxt does, exercising the same throw site
+/// (Ego::Script::MissingDelimiterError) from ParticleProfile::readFromFile instead.
+const char* const kTruncatedPart0Txt =
+    "// A truncated particle fixture\n"
+    "Displace particle ( TRUE or FALSE )    :FALSE\n"
+    "Particle type ( L, S or T )            :L\n";
+
+/// A part file whose very first byte is not `/`.  ParticleProfile::readFromFile's first call is
+/// ctxt->readSingleLineComment(), which requires the file to open on two slashes and otherwise
+/// raises idlib::hll::compilation_error directly (ReadContext.cpp:223) - a different throw site
+/// than skipToColon's MissingDelimiterError, and reached before any field is read.
+const char* const kMalformedCommentPart0Txt =
+    "This part file forgot its leading comment slashes\n"
+    "Displace particle ( TRUE or FALSE )    :FALSE\n";
+
 /// Writes a fixture file, failing the suite rather than silently producing an absent or
 /// empty file - a fixture that failed to materialise would turn every negative assertion
 /// below into a false green.
@@ -180,6 +209,38 @@ protected:
         writeFile(userModules / kObjectHost / "objects" / "zzmc-broken.obj" / "data.txt", kTruncatedDataTxt);
         // An object folder with no data.txt at all.
         std::filesystem::create_directories(userModules / kObjectHost / "objects" / "zzmc-nodata.obj");
+
+        // Standalone enchant/particle fixtures, loaded directly through
+        // ProfileSystem::loadEnchantProfile/loadParticleProfile rather than through an object
+        // folder scan - the direct seam these two functions parse.
+        writeFile(userModules / kObjectHost / "zzmc-enchant-truncated.txt", kTruncatedEnchantTxt);
+        writeFile(userModules / kObjectHost / "zzmc-part-truncated.txt", kTruncatedPart0Txt);
+        writeFile(userModules / kObjectHost / "zzmc-part-malformed-comment.txt", kMalformedCommentPart0Txt);
+
+        // A full, working copy of a shipped object (model, textures, sounds, data.txt - the
+        // works) with only its enchant.txt swapped for the truncated fixture above. This is
+        // what ProfileSystem::loadOneProfile actually needs to reach the enchant-loading line
+        // (ObjectProfile_load.cpp:161): that line only runs when lightWeight is false, which
+        // means loadFromFile has to get all the way through a real model load first. Building a
+        // model fixture by hand is not attempted; copying a shipped one is the reachable seam
+        // the task brief asks to disclose if a hand-built model is not practical.
+        {
+            const std::filesystem::path stilettoSrc = Ego::Test::findRepositoryRoot() / "data"
+                / "basicdat" / "globalobjects" / "weapons" / "stiletto.obj";
+            ASSERT_TRUE(std::filesystem::is_directory(stilettoSrc))
+                << "fixture template object missing: " << stilettoSrc.string();
+
+            const std::filesystem::path dst = userModules / kObjectHost / "objects" / "zzmc-badenchant.obj";
+            std::error_code ec;
+            std::filesystem::create_directories(dst, ec);
+            std::filesystem::copy(stilettoSrc, dst, std::filesystem::copy_options::recursive, ec);
+            ASSERT_FALSE(ec) << "unable to copy fixture template object: " << ec.message();
+
+            // Overwrite only the enchant.txt - everything else (data.txt, tris.md2, textures,
+            // sounds, part*.txt) stays the genuine, well-formed shipped content, so the model
+            // load and every other optional load ahead of the enchant.txt line succeeds.
+            writeFile(dst / "enchant.txt", kTruncatedEnchantTxt);
+        }
 
         ContentRuntimeBootstrap::Options opts;
         opts.initializeVirtualFileSystem   = true;
@@ -402,4 +463,124 @@ TEST_F(ContentFaultMissContractsFixture, LoadFromFileIsolatesAMissingDataFile)
     std::shared_ptr<ObjectProfile> profile;
     EXPECT_NO_THROW(profile = ObjectProfile::loadFromFile(objectPath, ObjectProfileRef(1), true));
     EXPECT_EQ(profile, nullptr);
+}
+
+//--------------------------------------------------------------------------------------------
+// EnchantProfile::readFromFile (via ProfileSystem::loadEnchantProfile)
+//--------------------------------------------------------------------------------------------
+//
+// Both new arms in EnchantProfile::readFromFile only ever raise idlib::hll::compilation_error
+// (or its subclass Ego::Script::MissingDelimiterError) for content this suite can construct -
+// the idlib::runtime_error arm is defensive parity with the general idiom, not something a
+// truncated or malformed-but-present file reaches here, because the file-cannot-be-opened case
+// is already isolated by the separate `catch (...)` around ReadContext construction. That arm
+// is intentionally left untested, the same disclosure Pass 353 made for the validator handlers
+// and the model-load idlib arm.
+
+/// Positive control. Without it, EnchantProfileReaderIsolatesATruncatedFile below would pass
+/// against a function that unconditionally returned InvalidRef.
+TEST_F(ContentFaultMissContractsFixture, EnchantProfileReaderAcceptsAWellFormedFile)
+{
+    EVE_REF ref = INVALID_EVE_REF;
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadEnchantProfile(
+        "mp_data/globalobjects/weapons/stiletto.obj/enchant.txt", INVALID_EVE_REF));
+    EXPECT_NE(ref, INVALID_EVE_REF);
+}
+
+/// The truncated fixture: present, opens fine, fails mid-parse. loadEnchantProfile must report
+/// InvalidRef instead of letting the throw escape - _AbstractProfileSystem.hpp:141 documents
+/// exactly that contract, and ObjectProfile_load.cpp:161 depends on it to keep one malformed
+/// enchant.txt from aborting the whole object load.
+TEST_F(ContentFaultMissContractsFixture, EnchantProfileReaderIsolatesATruncatedFile)
+{
+    const std::string path = std::string("mp_modules/") + kObjectHost + "/zzmc-enchant-truncated.txt";
+
+    // The file exists and opens; only the parse fails.
+    EXPECT_NO_THROW(ReadContext ctxt(path));
+
+    EVE_REF ref = static_cast<EVE_REF>(0);
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadEnchantProfile(path, INVALID_EVE_REF));
+    EXPECT_EQ(ref, INVALID_EVE_REF);
+}
+
+//--------------------------------------------------------------------------------------------
+// ParticleProfile::readFromFile (via ProfileSystem::loadParticleProfile)
+//--------------------------------------------------------------------------------------------
+//
+// Same disclosure as the enchant section above: only the compilation_error arm is reachable
+// from content here, and the runtime_error arm is left untested for the same reason.
+
+/// Positive control for the two negative particle tests below.
+TEST_F(ContentFaultMissContractsFixture, ParticleProfileReaderAcceptsAWellFormedFile)
+{
+    PIP_REF ref = INVALID_PIP_REF;
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadParticleProfile(
+        "mp_data/globalobjects/weapons/stiletto.obj/part0.txt", INVALID_PIP_REF));
+    EXPECT_NE(ref, INVALID_PIP_REF);
+}
+
+/// The truncated fixture, driving the same skipToColon(false)/MissingDelimiterError throw site
+/// kTruncatedEnchantTxt drives above, from ParticleProfile::readFromFile instead.
+TEST_F(ContentFaultMissContractsFixture, ParticleProfileReaderIsolatesATruncatedFile)
+{
+    const std::string path = std::string("mp_modules/") + kObjectHost + "/zzmc-part-truncated.txt";
+
+    EXPECT_NO_THROW(ReadContext ctxt(path));
+
+    PIP_REF ref = static_cast<PIP_REF>(0);
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadParticleProfile(path, INVALID_PIP_REF));
+    EXPECT_EQ(ref, INVALID_PIP_REF);
+}
+
+/// The other throw site: readSingleLineComment() (ReadContext.cpp:223) raises
+/// idlib::hll::compilation_error directly when the file does not open on `//`, before any
+/// field is read - distinct from the skipToColon(false)/MissingDelimiterError path the two
+/// truncated-fixture tests above exercise.
+TEST_F(ContentFaultMissContractsFixture, ParticleProfileReaderIsolatesAMalformedCommentFile)
+{
+    const std::string path = std::string("mp_modules/") + kObjectHost + "/zzmc-part-malformed-comment.txt";
+
+    // The file exists and opens; readSingleLineComment() itself is what throws, proven directly
+    // against the raw ReadContext rather than inferred from the miss contract's return value.
+    EXPECT_NO_THROW(ReadContext ctxt(path));
+    {
+        ReadContext ctxt(path);
+        EXPECT_THROW(ctxt.readSingleLineComment(), idlib::hll::compilation_error);
+    }
+
+    PIP_REF ref = static_cast<PIP_REF>(0);
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadParticleProfile(path, INVALID_PIP_REF));
+    EXPECT_EQ(ref, INVALID_PIP_REF);
+}
+
+//--------------------------------------------------------------------------------------------
+// ProfileSystem::loadOneProfile - enchant.txt fault isolation end to end
+//--------------------------------------------------------------------------------------------
+
+/// The integration shape the task brief asks for: a full (non-lightweight) object load, so
+/// loadFromFile actually reaches the enchant.txt line (ObjectProfile_load.cpp:161), with every
+/// file except enchant.txt genuine shipped content copied from stiletto.obj. The object must
+/// still load - loadOneProfile returns a valid ref - and its enchant reference must be Invalid
+/// rather than pointing at a fabricated or partially-parsed enchant profile.
+TEST_F(ContentFaultMissContractsFixture, LoadOneProfileSurvivesATruncatedEnchantFile)
+{
+    const std::string objectPath = std::string("mp_modules/") + kObjectHost + "/objects/zzmc-badenchant.obj";
+    ASSERT_TRUE(vfs_exists(objectPath + "/data.txt"))
+        << "fixture setup must have copied the template object's data.txt";
+
+    // The swapped-in enchant.txt really does fail to parse - same probe shape as
+    // EnchantProfileReaderIsolatesATruncatedFile above, repeated here so this test does not
+    // depend on that one to prove its own fixture is doing what it claims.
+    EVE_REF directRef = static_cast<EVE_REF>(0);
+    EXPECT_NO_THROW(directRef = EngineContext::get().profileSystem().loadEnchantProfile(
+        objectPath + "/enchant.txt", INVALID_EVE_REF));
+    EXPECT_EQ(directRef, INVALID_EVE_REF);
+
+    ObjectProfileRef ref = ObjectProfileRef::Invalid;
+    EXPECT_NO_THROW(ref = EngineContext::get().profileSystem().loadOneProfile(objectPath, 900));
+    ASSERT_NE(ref, ObjectProfileRef::Invalid);
+
+    const std::shared_ptr<ObjectProfile>& profile = EngineContext::get().profileSystem().getProfile(ref);
+    ASSERT_NE(profile, nullptr);
+    EXPECT_EQ(profile->getEnchantRef(), INVALID_EVE_REF);
 }
