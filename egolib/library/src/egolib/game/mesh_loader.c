@@ -91,7 +91,13 @@ std::shared_ptr<ego_mesh_t> MeshLoader::operator()(const std::string& moduleName
 {
 	map_t map;
 	// Load the map data.
-	tile_dictionary_load_vfs("mp_data/fans.txt", tile_dict);
+	if (!tile_dictionary_load_vfs("mp_data/fans.txt", tile_dict))
+	{
+        Log::Entry entry(Log::Level::Error, __FILE__, __LINE__);
+	    entry << "unable to load tile dictionary of module `" << moduleName << "`" << Log::EndOfEntry;
+        Log::activeTarget() << entry;
+		throw idlib::runtime_error(__FILE__, __LINE__, entry.getText());
+	}
 	if (!map.load("mp_data/level.mpd"))
 	{
         Log::Entry entry(Log::Level::Error, __FILE__, __LINE__);
