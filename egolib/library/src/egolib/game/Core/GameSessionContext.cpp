@@ -332,7 +332,17 @@ bool GameSessionContext::finishModule()
 {
     if (activeModule().isExportValid())
     {
-        export_all_players(false);
+        // export_all_players() itself already logs a per-file Warning for every
+        // character/item it fails to export (game_export.c); this is a summary Warning naming
+        // the module so a failed export is visible to a caller that only watches this
+        // function's own return value, which reflects import-copy success, not export success.
+        if (!export_all_players(false))
+        {
+            EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                                     "failed to export one or more players for module ",
+                                                                     "`", activeModule().getName(), "`",
+                                                                     Log::EndOfEntry);
+        }
         import_list_t::from_players(importList());
     }
 

@@ -50,6 +50,8 @@
 #include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Module.hpp"
 #include "egolib/Profiles/IProfileSystem.hpp"
+#include "egolib/Profiles/ModuleProfile.hpp"
+#include "egolib/Log/_Include.hpp"
 
 namespace
 {
@@ -144,8 +146,23 @@ PlayingState::~PlayingState()
     IProfileSystem* profileSystem = EngineContext::get().tryProfileSystem();
     if (shouldExportPlayersOnShutdown(moduleStatus, profileSystem))
     {
-        // export the players
-        export_all_players(false);
+        // export the players. export_all_players() itself already logs a per-file Warning for
+        // every character/item it fails to export (game_export.c); this is a summary Warning so
+        // a failed export is visible even to callers that only watch the aggregate result. Uses
+        // the try-accessor (not the logTarget() access above, which the class comment already
+        // established is safe here) because this is new code added specifically for this
+        // destructor corridor -- match the house teardown rule rather than lean on the existing
+        // analysis for a call this pass is introducing.
+        if (!export_all_players(false))
+        {
+            if (Log::Target* logTarget = Log::tryActiveTarget())
+            {
+                *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                  "failed to export one or more players for module ",
+                                                  "`", moduleStatus->moduleProfile()->getName(), "`",
+                                                  Log::EndOfEntry);
+            }
+        }
 
         //Reload list of loadable characters
         profileSystem->loadAllSavedCharacters("mp_players");

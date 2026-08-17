@@ -122,11 +122,26 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
         return ExportCharacterResult::Error;
     }
 
+    // Continue-and-report: keep exporting everything this character has rather than bailing
+    // out on the first failure below, so a partial export is as complete as possible, but any
+    // failure still downgrades the overall result to Error instead of reporting Exported over
+    // silently missing files (naming.txt, or one or more of the copied model/script/icon files).
+    bool exportSucceeded = true;
+
     // Build the NAMING.TXT file
     tofile = todir + "/naming.txt"; /*NAMING.TXT*/
-    export_one_character_name_vfs( tofile.c_str(), character );
+    if (!export_one_character_name_vfs( tofile.c_str(), character )) {
+		EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to save ", "`", tofile, "`", Log::EndOfEntry);
+        exportSucceeded = false;
+    }
 
-    // Build the QUEST.TXT file
+    // Build the QUEST.TXT file. export_one_character_quest_vfs() returns false by design for
+    // any non-player object (it has no Ego::Player to source a quest log from) -- that is not
+    // a failure and must not be folded into exportSucceeded, or every exported item/inventory
+    // entry would manufacture a spurious Error. Known residual: this also means a genuine
+    // player quest.txt write failure (Ego::QuestLog::exportToFile() itself failing) is still
+    // unreported here, since its false return is indistinguishable from the by-design cases
+    // without checking object->isPlayer() first.
     export_one_character_quest_vfs( todir.c_str(), character );
 
     // copy every file that does not already exist in the todir
@@ -137,13 +152,16 @@ ExportCharacterResult export_one_character( ObjectRef character, ObjectRef owner
             fromfile = fromdir + "/" + searchResult.string();
             tofile = todir + "/" + searchResult.string();
             if (!vfs_exists(tofile)) {
-                vfs_copyFile(fromfile, tofile);
+                if (!vfs_copyFile(fromfile, tofile)) {
+					EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__, "unable to copy exported file ", "`", fromfile, "`", " to ", "`", tofile, "`", Log::EndOfEntry);
+                    exportSucceeded = false;
+                }
             }
             ctxt.nextData();
         }
     }
 
-    return ExportCharacterResult::Exported;
+    return exportSucceeded ? ExportCharacterResult::Exported : ExportCharacterResult::Error;
 }
 } // namespace
 
@@ -221,7 +239,16 @@ bool export_all_players( bool require_local )
             {
                 exportedAllPlayers = false;
             }
-            else if ( ExportCharacterResult::Exported == exportResult )
+
+            // Consume the slot number for any attempted export (Exported or Error), not just
+            // Exported: export_one_character only creates/clears an item directory for a fresh
+            // chr_obj_index, and its per-file copy loop skips any file that already exists at
+            // the destination. If a failed item's slot number were left unconsumed, the very
+            // next inventory item would be exported into that same, already-populated
+            // directory -- interleaving the two items' files into one "chimera" directory that
+            // reports Exported even though it never holds a complete, self-consistent object.
+            // Skipped items never touch a directory at all, so they must not consume a slot.
+            if ( ExportCharacterResult::Skipped != exportResult )
             {
                 number++;
             }
@@ -235,7 +262,9 @@ bool export_all_players( bool require_local )
 bool export_one_character_quest_vfs( const char *szSaveName, ObjectRef character )
 {
     /// @author ZZ
-    /// @details This function makes the naming.txt file for the character
+    /// @details This function makes the quest.txt file for the character's quest log.
+    ///          Returns false (by design, not a failure) for any non-player object, since
+    ///          only players have a quest log to export.
 
     Object* object = Ego::Entities::activeObjectHandler().get(character);
     if(!object) {

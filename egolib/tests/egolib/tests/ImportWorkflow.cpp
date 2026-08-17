@@ -16,12 +16,43 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 namespace
 {
+
+// Releases a gtest stdout capture even if the code under test escapes via an exception (or an
+// ASSERT_* failure) before the test body reaches its own GetCapturedStdout() call. Mirrors
+// WawaliteReadContract.cpp's ScopedStdoutCapture -- without this, a capture left open by an
+// early ASSERT_* failure would leak into every later test's own CaptureStdout() call.
+class ScopedStdoutCapture
+{
+public:
+    ScopedStdoutCapture() { testing::internal::CaptureStdout(); }
+    ~ScopedStdoutCapture()
+    {
+        if (!released)
+        {
+            testing::internal::GetCapturedStdout();
+        }
+    }
+
+    std::string release()
+    {
+        released = true;
+        return testing::internal::GetCapturedStdout();
+    }
+
+private:
+    bool released = false;
+};
 
 constexpr char kImportTestRoot[] = "import-workflow-tests";
 
@@ -408,6 +439,266 @@ TEST_F(ImportWorkflowFixture, ExportAllPlayersTreatsNoPlayersAsSuccessfulNoOp)
     module.setExportValid(true);
 
     EXPECT_TRUE(export_all_players(false));
+}
+
+//--------------------------------------------------------------------------------------------
+// export_all_players / export_one_character: silent-drop defects
+//--------------------------------------------------------------------------------------------
+
+/// The per-file copy loop inside export_one_character (game_export.c) used to discard
+/// vfs_copyFile's return value, so a character exported with one or more uncopyable files
+/// (missing/unreadable model, script, icon, ...) still reported ExportCharacterResult::Exported.
+/// This forces a deterministic, filesystem-level vfs_copyFile failure without racing the
+/// loop's own `if (!vfs_exists(tofile))` existence guard: data.txt and naming.txt are
+/// pre-written as ordinary, writable files directly into the item's export directory (the
+/// per-character export writes both unconditionally, and on POSIX, opening an *existing* file
+/// for write does not require write permission on its containing directory -- only *creating*
+/// a new directory entry does), and then that directory's own write permission is stripped.
+/// Every other file the copy loop tries to create there is new, so vfs_copyFile fails for each
+/// one, and export_one_character's own aggregate must report Error.
+/// @remark POSIX-only trigger: a stripped directory-write bit is bypassed by CAP_DAC_OVERRIDE
+/// when running as root, and does not block new-file creation on Windows/NTFS semantics
+/// either. Skips itself under a root effective UID rather than failing outright.
+TEST_F(ImportWorkflowFixture, ExportAllPlayersReportsErrorWhenAHeldItemFileCannotBeCopied)
+{
+    namespace fs = std::filesystem;
+
+#ifndef _WIN32
+    if (geteuid() == 0)
+    {
+        GTEST_SKIP() << "directory write-permission trick does not block root (CAP_DAC_OVERRIDE)";
+    }
+#endif
+
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 220);
+    auto leftItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 221);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+
+    player->setName("Copy Failure Hero");
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    player->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
+
+    const std::string exportRoot = playerExportRoot(*player);
+    const std::string itemDir = exportRoot + "/" + std::to_string(SLOT_LEFT) + ".obj";
+
+    ASSERT_TRUE(fs::create_directories(itemDir));
+    {
+        std::ofstream dataFile(itemDir + "/data.txt");
+        ASSERT_TRUE(dataFile.good());
+        dataFile << "pre-existing\n";
+    }
+    {
+        std::ofstream namingFile(itemDir + "/naming.txt");
+        ASSERT_TRUE(namingFile.good());
+        namingFile << ":pre-existing\n:STOP\n\n";
+    }
+    ASSERT_TRUE(fs::exists(itemDir + "/data.txt"));
+    ASSERT_TRUE(fs::exists(itemDir + "/naming.txt"));
+    ASSERT_FALSE(fs::exists(itemDir + "/script.txt"))
+        << "precondition: script.txt must not already exist, or the copy loop's own "
+           "vfs_exists() guard would skip it and this test would prove nothing";
+
+    fs::permissions(itemDir, fs::perms::owner_read | fs::perms::owner_exec, fs::perm_options::replace);
+
+    // Always restore write permission before TearDown() tries to remove the directory tree,
+    // even if an assertion below fails first.
+    struct RestorePermissions
+    {
+        std::string path;
+        ~RestorePermissions()
+        {
+            std::filesystem::permissions(path, std::filesystem::perms::owner_all,
+                                          std::filesystem::perm_options::replace);
+        }
+    } restore{itemDir};
+
+    EXPECT_FALSE(export_all_players(false));
+
+    // The directory really was write-blocked: script.txt (a real file in stiletto.obj that the
+    // copy loop would otherwise pick up) could not be created.
+    EXPECT_FALSE(fs::exists(itemDir + "/script.txt"));
+}
+
+/// export_one_character_name_vfs()'s bool return (RandomName::exportName, which refuses to
+/// write naming.txt for an empty name) used to be discarded too. An item with its name field
+/// explicitly known-but-empty is the only headlessly-reachable, filesystem-trick-free trigger
+/// for that specific false return.
+/// @remark Deliberately does NOT assert that naming.txt is absent afterward: the per-file copy
+/// loop that runs later in the same export_one_character call sees that the character-specific
+/// naming.txt was never written and (correctly, and unrelated to this defect) falls back to
+/// copying the source item's own template naming.txt over it, since that file also does not
+/// yet exist at the destination. The Warning is the only reliable signal that the name export
+/// itself failed.
+TEST_F(ImportWorkflowFixture, ExportAllPlayersReportsErrorWhenAHeldItemHasNoExportableName)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 224);
+    auto leftItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 225);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+
+    player->setName("Naming Failure Hero");
+    leftItem->setName("");
+    leftItem->setNameKnown(true);
+    ASSERT_EQ(leftItem->getName(), "");
+
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    player->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
+
+    const std::string exportRoot = playerExportRoot(*player);
+    const std::string itemDir = exportRoot + "/" + std::to_string(SLOT_LEFT) + ".obj";
+
+    ScopedStdoutCapture capture;
+    const bool exportedAll = export_all_players(false);
+    const std::string out = capture.release();
+
+    EXPECT_FALSE(exportedAll);
+    EXPECT_TRUE(std::filesystem::exists(itemDir + "/data.txt"));
+    EXPECT_NE(out.find("WARNING: "), std::string::npos) << out;
+    EXPECT_NE(out.find("unable to save"), std::string::npos) << out;
+    // The Warning logs the VFS-relative path, not the absolute filesystem path itemDir uses, so
+    // match on the tail both share.
+    EXPECT_NE(out.find(std::to_string(SLOT_LEFT) + ".obj/naming.txt"), std::string::npos) << out;
+}
+
+/// The trap: export_one_character_quest_vfs() returns false BY DESIGN for a non-player object
+/// (an inventory item has no Ego::Player to source a quest log from). That false must not be
+/// folded into export_one_character's aggregate, or every carryable item export would
+/// manufacture a spurious Error even though every file it touches was written successfully.
+TEST_F(ImportWorkflowFixture, ExportAllPlayersDoesNotTreatNonPlayerQuestExportFalseAsAnError)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 228);
+    auto item = makeObject(module, "mp_data/globalobjects/weapons/xbow.obj", 229);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(item, nullptr);
+
+    player->setName("Quest Trap Hero");
+    item->setName("Quest Trap Item");
+    item->getProfile()->_isItem = true;
+    item->getProfile()->_canCarryToNextModule = true;
+
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    player->setInventoryItemRef(0, item->getObjRef());
+
+    const std::string exportRoot = playerExportRoot(*player);
+    const std::string itemDir = exportRoot + "/" + std::to_string(SLOT_COUNT) + ".obj";
+
+    EXPECT_TRUE(export_all_players(false));
+    EXPECT_TRUE(std::filesystem::exists(itemDir + "/data.txt"));
+    // export_one_character_quest_vfs() only ever writes quest.txt for a player; confirms the
+    // false it returned here for a non-player was not mistaken for a failure.
+    EXPECT_FALSE(std::filesystem::exists(itemDir + "/quest.txt"));
+}
+
+/// Repairer regression: the inventory loop's `number` used to advance only on
+/// ExportCharacterResult::Exported, so an Error'd inventory item never consumed its slot
+/// number. export_one_character only creates/clears a directory for a *fresh* chr_obj_index,
+/// and its per-file copy loop skips any file that already exists at the destination -- so the
+/// very next inventory item was exported into the failed item's already-populated directory,
+/// interleaving both items' files into one "chimera" that reported Exported even though it was
+/// never a complete, self-consistent object. Confirms the failed item keeps its own directory
+/// (with only its own files) and the following item gets its own, separate directory.
+TEST_F(ImportWorkflowFixture, ExportAllPlayersDoesNotReuseAFailedInventoryItemsSlotDirectory)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 236);
+    auto namingFailureItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 237);
+    auto followingItem = makeObject(module, "mp_data/globalobjects/weapons/xbow.obj", 238);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(namingFailureItem, nullptr);
+    ASSERT_NE(followingItem, nullptr);
+
+    player->setName("Slot Reuse Hero");
+    // An empty-but-known name makes export_one_character_name_vfs() fail deterministically
+    // (RandomName::exportName refuses to write naming.txt for an empty name), which downgrades
+    // this item's export to Error without needing any filesystem trickery.
+    namingFailureItem->setName("");
+    namingFailureItem->setNameKnown(true);
+    followingItem->setName("Following Item");
+
+    namingFailureItem->getProfile()->_isItem = true;
+    namingFailureItem->getProfile()->_canCarryToNextModule = true;
+    followingItem->getProfile()->_isItem = true;
+    followingItem->getProfile()->_canCarryToNextModule = true;
+
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    player->setInventoryItemRef(0, namingFailureItem->getObjRef());
+    player->setInventoryItemRef(1, followingItem->getObjRef());
+
+    const std::string exportRoot = playerExportRoot(*player);
+    const std::string firstInventoryExport = exportRoot + "/" + std::to_string(SLOT_COUNT) + ".obj";
+    const std::string secondInventoryExport = exportRoot + "/" + std::to_string(SLOT_COUNT + 1) + ".obj";
+
+    EXPECT_FALSE(export_all_players(false));
+
+    // The naming-failure item's own directory still holds its own (stiletto-only) file...
+    EXPECT_TRUE(std::filesystem::exists(firstInventoryExport + "/enchant.txt"));
+    // ...and must NOT also contain the following item's (xbow-only) file: that would mean the
+    // following item's export landed inside the naming-failure item's directory instead of its
+    // own -- the chimera-directory regression this test guards against.
+    EXPECT_FALSE(std::filesystem::exists(firstInventoryExport + "/part2.txt"));
+
+    // The following item gets its own, separate directory with its own (xbow-only) file.
+    ASSERT_TRUE(std::filesystem::exists(secondInventoryExport + "/data.txt"));
+    EXPECT_TRUE(std::filesystem::exists(secondInventoryExport + "/part2.txt"));
+}
+
+//--------------------------------------------------------------------------------------------
+// GameSessionContext::finishModule: discarded export_all_players() aggregate
+//--------------------------------------------------------------------------------------------
+
+/// finishModule() (GameSessionContext.cpp) used to call export_all_players(false) and drop its
+/// return value entirely -- the function's own bool return reflects only game_copy_imports(),
+/// so a failed player export was invisible to every caller. Confirms the new summary Warning
+/// (naming the module) is now logged when export fails, and is silent when it does not.
+TEST_F(ImportWorkflowFixture, FinishModuleLogsAWarningNamingTheModuleWhenPlayerExportFails)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 230);
+    auto leftItem = makeObject(module, "mp_data/globalobjects/weapons/stiletto.obj", 231);
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(leftItem, nullptr);
+
+    player->setName("Finish Module Hero");
+    leftItem->setName("");
+    leftItem->setNameKnown(true);
+
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+    player->setHeldObject(SLOT_LEFT, leftItem->getObjRef());
+
+    const std::string moduleName = module.getName();
+
+    ScopedStdoutCapture capture;
+    const bool finished = GameSessionContext::get().finishModule();
+    const std::string out = capture.release();
+
+    // finishModule()'s own return value is driven by game_copy_imports(), not by export
+    // success -- unchanged by this fix, and asserted here so the Warning check below cannot be
+    // mistaken for a change to that contract.
+    EXPECT_TRUE(finished);
+    EXPECT_NE(out.find("WARNING: "), std::string::npos) << out;
+    EXPECT_NE(out.find("failed to export"), std::string::npos) << out;
+    EXPECT_NE(out.find(moduleName), std::string::npos) << out;
+}
+
+TEST_F(ImportWorkflowFixture, FinishModuleDoesNotLogAWarningWhenPlayerExportSucceeds)
+{
+    GameModule& module = beginActiveTestModule();
+    auto player = makeObject(module, "mp_objects/follower.obj", 232);
+    ASSERT_NE(player, nullptr);
+
+    player->setName("Finish Module Success Hero");
+    ASSERT_TRUE(module.addPlayer(player->getObjRef(), Ego::Input::InputDevice::DeviceList[0]));
+
+    ScopedStdoutCapture capture;
+    const bool finished = GameSessionContext::get().finishModule();
+    const std::string out = capture.release();
+
+    EXPECT_TRUE(finished);
+    EXPECT_EQ(out.find("failed to export"), std::string::npos) << out;
 }
 
 } // namespace
