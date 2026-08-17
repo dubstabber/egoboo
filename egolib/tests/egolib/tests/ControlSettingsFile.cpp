@@ -19,6 +19,38 @@
 namespace
 {
 
+// DefaultTarget::writev (Log/DefaultTarget.cpp) writes each record to both the log file (opened
+// once for the whole target's lifetime and not flushed until the target is destroyed at
+// TearDownTestSuite) and stdout (plain fputs, no fflush - DefaultTarget.cpp:91-92). Capturing
+// stdout is therefore the reliable way to observe a single call's log output; reading the log
+// file mid-test would race PhysFS's/libc's write buffering. The capture is reliable even though
+// fputs itself is buffered because gtest's GetCapturedStdout flushes all streams before reading
+// the capture back (external/googletest/googletest/src/gtest-port.cc,
+// CapturedStream::GetCapturedString). Same idiom as WawaliteReadContract.cpp's
+// ScopedStdoutCapture - always release() (or let the destructor drain) so a later test doesn't
+// inherit an open capture.
+class ScopedStdoutCapture
+{
+public:
+    ScopedStdoutCapture() { testing::internal::CaptureStdout(); }
+    ~ScopedStdoutCapture()
+    {
+        if (!released)
+        {
+            testing::internal::GetCapturedStdout();
+        }
+    }
+
+    std::string release()
+    {
+        released = true;
+        return testing::internal::GetCapturedStdout();
+    }
+
+private:
+    bool released = false;
+};
+
 /// Characterization suite for input_settings_load_vfs / input_settings_save_vfs
 /// (egolib/InputControl/ControlSettingsFile.cpp).
 ///
@@ -187,26 +219,60 @@ TEST_F(ControlSettingsFileFixture, SaveAfterTemplateLoadIsByteIdenticalToTemplat
     EXPECT_EQ(saved, shipped);
 }
 
-// PIN OF A SUSPECTED BUG — characterizes current behavior, do not fix silently.
-// The bool contract suggests "return false" was intended for a missing file, but the
-// ReadContext constructor throws idlib::runtime_error from vfs_readEntireFile
-// (vfs_bulk.c:56) before the loop ever runs — and the boot caller
-// (GameEngine_lifecycle.cpp:136) does not catch. Do not change this to `false`
-// without updating boot expectations. idlib::runtime_error is NOT a std::exception.
-TEST_F(ControlSettingsFileFixture, LoadMissingFileThrowsRuntimeErrorNotFalse)
+// Contract (fixed from a formerly-pinned bug — see the completed-passes log, Pass 365
+// "controls-txt-contract"): a missing/unopenable file returns false instead of letting
+// ReadContext's idlib::runtime_error (vfs_readEntireFile, vfs_bulk.c:56) escape uncaught out of
+// the boot caller (GameEngine_lifecycle.cpp). ControlSettingsFile.cpp's construction guard
+// catches exactly this. No mappings are applied before construction, so every device's bindings
+// stay exactly as they were before the call — here, the fixture's SetUp() all-unbound default
+// plus the one deliberate Q binding the test plants below, proving no reset occurs.
+TEST_F(ControlSettingsFileFixture, LoadMissingFileReturnsFalseAndLeavesBindingsUntouched)
 {
-    EXPECT_THROW(input_settings_load_vfs("/controls-missing-xyz.txt"), idlib::runtime_error);
+    using Ego::Input::InputDevice;
+    InputDevice::DeviceList[0].setInputMapping(Button::MOVE_UP, SDLK_q);
+
+    EXPECT_NO_THROW({
+        const bool ok = input_settings_load_vfs("/controls-missing-xyz.txt");
+        EXPECT_FALSE(ok);
+    });
+
+    // Untouched: still whatever was bound before the call, not reset to SDLK_UNKNOWN either.
+    EXPECT_EQ(name(0, Button::MOVE_UP), "Q");
+}
+
+// The construction-failure branch reports through the log (ControlSettingsFile.cpp
+// logControlsLoadFailure), matching the QuestLog::loadFromFile idiom for a loader that promises
+// never to throw. Log::initialize was pointed at opts.logPath by SetUpTestSuite.
+TEST_F(ControlSettingsFileFixture, LoadMissingFileLogsAWarningNamingTheFile)
+{
+    ScopedStdoutCapture capture;
+    const bool ok = input_settings_load_vfs("/controls-missing-xyz.txt");
+    const std::string out = capture.release();
+
+    ASSERT_FALSE(ok);
+    EXPECT_NE(out.find("WARNING: "), std::string::npos) << out;
+    EXPECT_NE(out.find("controls-missing-xyz.txt"), std::string::npos) << out;
 }
 
 // PIN OF A SUSPECTED BUG — characterizes current behavior, do not fix silently.
 // A short file returns false, but the mappings read so far are already applied — no
-// rollback (ControlSettingsFile.cpp:47-49 returns mid-loop, :55 stores as it goes).
+// rollback (ControlSettingsFile.cpp:107-109 returns mid-loop, :115 stores as it goes).
+// Observability: unlike a missing/unopenable file (LoadMissingFileLogsAWarningNamingTheFile),
+// this path is a plain `return false;` outside the try (the try covers only ReadContext
+// construction, ControlSettingsFile.cpp:76-84), reached via skipToColon(true)'s optional=true
+// END_OF_INPUT branch — not an exception — so logControlsLoadFailure never runs and nothing is
+// logged. This is deliberate, not a gap: the exact same quirk already applies to
+// input_settings_load_vfs's caller (GameEngine_lifecycle.cpp), which now logs its own single
+// summary Warning whenever this function returns false, covering both cases at the boot level.
 TEST_F(ControlSettingsFileFixture, LoadShortFileReturnsFalseWithPartialMappingsApplied)
 {
     writeVfsFile("/controls-short.txt", "Move Up\t\t: Q\nMove Right\t\t: W\n");
 
+    ScopedStdoutCapture capture;
     const bool ok = input_settings_load_vfs("/controls-short.txt");
+    const std::string out = capture.release();
     EXPECT_FALSE(ok);
+    EXPECT_EQ(out.find("WARNING: "), std::string::npos) << out;
 
     EXPECT_EQ(name(0, Button::MOVE_UP), "Q");
     EXPECT_EQ(name(0, Button::MOVE_RIGHT), "W");
@@ -223,8 +289,8 @@ TEST_F(ControlSettingsFileFixture, LoadShortFileReturnsFalseWithPartialMappingsA
 
 // PIN OF A SUSPECTED BUG — characterizes current behavior, do not fix silently.
 // The asymmetry: an unknown key NAME silently unbinds the slot (SDL_GetKeyFromName's
-// failure value 0 is stored unconditionally, ControlSettingsFile.cpp:52-56), while an
-// EMPTY value skips the store and preserves the existing binding (:52 empty check).
+// failure value 0 is stored unconditionally, ControlSettingsFile.cpp:112-116), while an
+// EMPTY value skips the store and preserves the existing binding (:112 empty check).
 TEST_F(ControlSettingsFileFixture, UnknownNameClearsBindingButEmptyValuePreservesIt)
 {
     using Ego::Input::InputDevice;
@@ -260,8 +326,8 @@ TEST_F(ControlSettingsFileFixture, TrailingWhitespaceInValueUnbindsKey)
     EXPECT_EQ(name(0, Button::MOVE_UP), "SDLK_UNKNOWN");
 }
 
-// Nothing validates $FILE_VERSION: the loader doc says v3 (ControlSettingsFile.cpp:35),
-// the writer emits v4 (:76), and the read loop (:40-57) never checks. The version line
+// Nothing validates $FILE_VERSION: the loader doc says v3 (ControlSettingsFile.cpp:65),
+// the writer emits v4 (:136), and the read loop (:99-118) never checks. The version line
 // survives only because it contains no ':'.
 TEST_F(ControlSettingsFileFixture, FileVersionIsNeverValidated)
 {
@@ -310,7 +376,7 @@ TEST_F(ControlSettingsFileFixture, StrayColonShiftsAllSubsequentBindings)
 }
 
 // Pins the writer's exact header, the mixed label style ("CAMERA_LEFT" vs
-// "Camera Control", ControlSettingsFile.cpp:125-149), and the 'SDLK_UNKNOWN' literal
+// "Camera Control", ControlSettingsFile.cpp:185-205), and the 'SDLK_UNKNOWN' literal
 // emitted for unbound slots (InputDevice.cpp:54-56).
 TEST_F(ControlSettingsFileFixture, SaveDefaultDeviceListWritesExactHeaderAndAllUnknown)
 {

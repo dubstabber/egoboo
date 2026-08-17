@@ -133,7 +133,22 @@ bool GameEngine::initialize()
     config_synch(EngineContext::get().config(), false, false);
 
     // load input
-    input_settings_load_vfs("/controls.txt");
+    if (!input_settings_load_vfs("/controls.txt"))
+    {
+        // input_settings_load_vfs never throws for a missing/unreadable/malformed file
+        // (ControlSettingsFile.cpp), it returns false instead - so this is a warning, not a
+        // fatal boot condition. Neither failure mode it covers leaves a clean "default" state
+        // though: a missing/unopenable file applies no mappings at all, leaving every device
+        // exactly as InputDevice's constructor left it (all-unbound, InputDevice.cpp), while a
+        // truncated file applies mappings up to the failure point with no rollback (pinned in
+        // ControlSettingsFile.cpp's test suite) - so bindings can be entirely unbound or only
+        // partially loaded.
+        EngineContext::get().logTarget() << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                                                 "unable to load input settings from ",
+                                                                 "`", "/controls.txt", "`",
+                                                                 "; control bindings may be missing or incomplete",
+                                                                 Log::EndOfEntry);
+    }
 
     ContentRuntimeBootstrap::Options contentBootstrapOptions;
     contentBootstrapOptions.initializePerkHandler = true;

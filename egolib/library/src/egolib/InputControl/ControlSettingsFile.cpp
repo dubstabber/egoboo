@@ -25,7 +25,37 @@
 
 #include "egolib/fileutil.h"
 
+#include "idlib/exception.hpp"  // idlib::runtime_error
+
 static std::string controlInputToString(const Ego::Input::InputDevice::InputButton &button);
+
+namespace {
+
+/// @brief Log one failed controls.txt load (unreadable file) for input_settings_load_vfs.
+/// @remark Goes through Log::tryActiveTarget() rather than Log::activeTarget(): the latter
+///         falls through to Log::get(), which throws std::logic_error when the logging system
+///         is not initialized (Log/_Include.cpp). input_settings_load_vfs promises never to
+///         throw for a missing/unreadable file, so its own diagnostic must not be able to
+///         throw either.
+void logControlsLoadFailure(const std::string& filename, std::string reason)
+{
+    Log::Target* logTarget = Log::tryActiveTarget();
+    if (!logTarget) return;
+
+    // Flatten the message to one line so a single failed load yields a single log record.
+    // idlib::runtime_error::to_string() is deliberately multi-line (runtime_error.hpp emits
+    // "runtime error:", the raise site, and the message on separate lines).
+    for (char& c : reason)
+    {
+        if (c == '\n' || c == '\r') c = ' ';
+    }
+
+    *logTarget << Log::Entry::create(Log::Level::Warning, __FILE__, __LINE__,
+                                     "unable to load input settings from ", "`", filename, "`",
+                                     ": ", reason, Log::EndOfEntry);
+}
+
+} // namespace
 
 //--------------------------------------------------------------------------------------------
 
@@ -34,7 +64,47 @@ bool input_settings_load_vfs(const std::string& filename)
     /// @author ZZ
     /// @details This function reads the controls.txt file, version 3
 
-    ReadContext ctxt(filename);
+    // ReadContext's constructor (Scanner(const std::string&), Script/Scanner.hpp) reads the
+    // whole file up front and raises idlib::runtime_error if it cannot be opened or read
+    // (vfs_readEntireFile, vfs_bulk.c:56) - the common case being a missing/uninstalled
+    // controls.txt. Guarded below so that case reports false through the same contract as a
+    // truncated file (see below), rather than escaping uncaught into GameEngine::initialize()
+    // (GameEngine_lifecycle.cpp), which before this fix also discarded this function's bool -
+    // it now checks the bool and logs a boot-level Warning instead. No mappings are applied yet
+    // at this point, so a construction failure leaves every device's bindings exactly as the
+    // caller had them.
+    //
+    // Only idlib::runtime_error is caught here, matching the promise in
+    // ControlSettingsFile.hpp. vfs_openRead's BAIL_IF_NOT_INIT guard (vfs.c:200,
+    // vfs_internal.h) throws a plain std::runtime_error - unrelated to idlib::runtime_error,
+    // since idlib::exception has no base class at all (idlib/exception/exception.hpp) - if the
+    // VFS is not initialized when this function runs. That path is unreachable through the
+    // documented boot flow (GameEngine_lifecycle.cpp initializes the VFS well before calling
+    // this function) and is deliberately left uncaught here rather than widened into a
+    // catch (...), which would also swallow std::bad_alloc.
+    std::unique_ptr<ReadContext> ctxt = nullptr;
+    try
+    {
+        ctxt = std::make_unique<ReadContext>(filename);
+    }
+    catch (const idlib::runtime_error& ex)
+    {
+        logControlsLoadFailure(filename, ex.to_string());
+        return false;
+    }
+
+    // The parse loop below is deliberately NOT inside a try: it is provably throw-proof for any
+    // content it can be given, by the same reasoning already documented at LoadingState.cpp's
+    // loadGameTips (egolib/game/GameStates/LoadingState.cpp). skipToColon(true) is the optional
+    // form - it returns false at end-of-input (the ordinary truncated-file case, handled below
+    // without an exception) instead of throwing; its remaining throw path, ReadContext.cpp
+    // skipToDelimiter's `ise(ERROR())` branch, and readToEndOfLine's own skipWhiteSpaces()
+    // `ise(ERROR())` branches, all compare the current symbol against Traits<char>::error()
+    // (Script/Traits.hpp), a Unicode private-use-area code point (0xee8083) outside the range any
+    // byte read through this Traits<char> scanner can produce - the transform from `char` to that
+    // extended type is a plain widening conversion, never a real UTF-8 decode. readToEndOfLine has
+    // no throw of its own once past skipWhiteSpaces(). So idlib::hll::compilation_error cannot
+    // reach this function at all today, and is deliberately not caught here.
 
     // Read input for each player
     for (size_t i = 0; i < Ego::Input::InputDevice::DeviceList.size(); i++)
@@ -44,11 +114,11 @@ bool input_settings_load_vfs(const std::string& filename)
 
         //Read each input control button
         for (size_t icontrol = 0; icontrol < static_cast<size_t>(Ego::Input::InputDevice::InputButton::COUNT); ++icontrol) {
-            if(!ctxt.skipToColon(true)) {
+            if(!ctxt->skipToColon(true)) {
                 return false;
             }
 
-            currenttag = ctxt.readToEndOfLine();
+            currenttag = ctxt->readToEndOfLine();
             if (!currenttag.empty())
             {
                 const SDL_Keycode keyCode = SDL_GetKeyFromName(currenttag.c_str());

@@ -1293,6 +1293,49 @@ throughout.
   write as a scoped resource.** Compare `--json` `category_counts` rather than
   the totals; the totals can move with no content change at all.
 
+  **Pass 365** (`controls-txt-contract`) — closed the last item of the
+  failure-contract front's scouted slate (Passes 350-364 covered `setup.txt`,
+  lighting-cache math, module-folder isolation, the content-fault catch-arm
+  audit, the validator baseline correction, `quest.txt`, teardown ordering,
+  `enchant.txt`/`part*.txt`, the `wawalite.txt` fallback, `exception_ptr`
+  laundering, `fans.txt` bounds, character export, and the MD2 loader — none
+  yet have their own entries in this log). `input_settings_load_vfs`
+  constructed its `ReadContext` outside any `try`, so a missing/unopenable
+  `controls.txt` let `idlib::runtime_error` (raised inside the `Scanner`
+  base's file read, `vfs_bulk.c:56`) escape uncaught out of
+  `GameEngine::initialize()` (`GameEngine_lifecycle.cpp`), which also
+  discarded the function's `bool`. A truncated file already returned `false`
+  gracefully but silently, into that same discarded `bool`. Construction is
+  now guarded with the house `catch (const idlib::runtime_error&)` arm (the
+  `QuestLog.cpp`/Pass 355 shape); the parse loop stays outside the `try`
+  because it is provably throw-proof for this scanner, by the same reasoning
+  already documented at `LoadingState.cpp`'s `loadGameTips`. On a
+  construction failure no mappings have been applied yet, so device bindings
+  are left exactly as the caller had them - not reset. The caller
+  (`GameEngine_lifecycle.cpp:136`) now checks the `bool` and logs a single
+  boot-level `Warning` naming the file for either failure mode, since neither
+  actually lands on a clean "default" state (a missing file leaves bindings
+  fully unbound; a truncated file leaves a partial, un-rolled-back mix).
+  Pass 345's "a missing file throws instead of returning false" pin (this
+  log, above) is now stale; the pin itself was flipped in place plus a
+  second test added for the new boot-level log record. Two tests
+  (`LoadMissingFileReturnsFalseAndLeavesBindingsUntouched`,
+  `LoadMissingFileLogsAWarningNamingTheFile`) fail with an escaped exception
+  against the unfixed loader; the other 11 pins in the suite are unaffected.
+  One reviewer observed both new tests fail once, unreproducibly, with a
+  signature consistent with an escaped exception; 35 follow-up runs (455
+  test invocations) across two review rounds did not reproduce it, and the
+  mechanism was not confirmed. One real, if currently unreachable, gap is
+  disclosed at the fix site: `vfs_openRead`'s `BAIL_IF_NOT_INIT` guard
+  (`vfs.c:200`, `vfs_internal.h`) throws a plain `std::runtime_error` - a
+  type wholly unrelated to `idlib::runtime_error`, since `idlib::exception`
+  has no base class at all - if the VFS is not initialized when this
+  function runs; that path is unreachable through the documented boot flow
+  and is deliberately left uncaught rather than widened into a `catch (...)`,
+  which would also swallow `std::bad_alloc`. ctest 1,326/1,326 (1,327
+  configured, 1 pre-existing `DISABLED`); validator 42/20/230 unchanged
+  (`controls.txt` is not part of module validation).
+
 ## Documentation Passes
 
 - The 2026-04-18 consolidation collapsed the directory from 65 files to 14:
