@@ -180,10 +180,22 @@ ImageManager::ImageManager() :
     }
     catch (...)
     {
+        // registerImageLoaders can throw idlib::environment_error (mandatory PNG support
+        // missing), std::bad_alloc (loader/vector allocation failure), or std::logic_error
+        // via Log::activeTarget() (Log/_Include.cpp) if this constructor runs before the
+        // logging system has been installed or initialized - the first statement in either
+        // branch of registerImageLoaders logs through that call. In a correctly ordered boot
+        // (logging initializes before the image manager, e.g. AppImpl/ContentRuntimeBootstrap)
+        // that path is unreachable, but it is real and has been observed headlessly (see
+        // ExceptionPtrLaundering.cpp). Whichever exception surfaces, the manager is only
+        // partially constructed; quit SDL_image so its ref count doesn't leak, then let the
+        // failure reach the caller instead of finishing construction silently with a
+        // truncated loader list.
         if (0 != IMG_Init(0))
         {
             IMG_Quit();
         }
+        throw;
     }
 }
 
@@ -193,27 +205,6 @@ ImageManager::~ImageManager()
     {
         IMG_Quit();
     }
-}
-
-ImageManager::Iterator ImageManager::find(std::unordered_set<std::string> extensions, Iterator start) const
-{
-    auto it = start;
-    while (it != end())
-    {
-        auto supportedExtensions = (*it).getExtensions();
-        auto found = std::find_first_of(extensions.cbegin(), extensions.cend(),
-                                        supportedExtensions.cbegin(), supportedExtensions.cend());
-        if (found != extensions.end())
-        {
-            return it;
-        }
-    }
-    return end();
-}
-
-ImageManager::Iterator ImageManager::find(std::unordered_set<std::string> extensions)
-{
-    return find(extensions, begin());
 }
 
 ImageManager::Iterator ImageManager::begin() const

@@ -97,15 +97,6 @@ private:
 public:
     friend idlib::default_new_functor<ImageManager>;
     friend idlib::default_delete_functor<ImageManager>;
-    
-    /// @brief Get an iterator pointing to the first loader supporting one of the specified extensions
-    /// if such a loader exists, <tt>end()</tt> otherwise. The search range is <tt>[start, end())</tt>.
-    Iterator find(std::unordered_set<std::string> extensions, Iterator start) const;
-
-    /// @brief Get an iterator pointing to the first loader supporting one of the specified extensions
-    /// if such a loader exists, <tt>end()</tt> otherwise. The search range is <tt>[start(), end())</tt>.
-    /// @remark <tt>o.find(s)</tt> is equivalent to <tt>o.find(s,o.begin())</tt>.
-    Iterator find(std::unordered_set<std::string> extensions);
 
     /// @brief Get an iterator pointing to the beginning of the loader list.
     /// @return an iterator pointing to the beginning of the loader list
@@ -116,10 +107,14 @@ public:
     Iterator end() const;
 
     /// @brief Get a cute default software(!) surface.
-    /// @return a pointer to the surface on success, a null pointer on failure
+    /// @return a pointer to the surface; this implementation never returns a null pointer
+    /// @throw std::runtime_error if the default image could not be created
     /// @remark The default image is a checkerboard texture consisting of
     /// 8 x 8 checkers each of a width and height of 16 x 16 pixels.
     /// The x,y-the checker is black if z = x + y * 8 is odd and is white otherwise.
+    /// @remark This diverges from Ego::Test::StubImageManager (egolib/tests/egolib/tests/EngineContext.cpp),
+    /// the headless test double, which returns a null pointer unconditionally instead of throwing.
+    /// Callers that only exercise the stub should not assume the throwing behaviour, and vice versa.
 	std::shared_ptr<SDL_Surface> getDefaultImage() const override;
 
     /// @brief Create a software(!) surface of the specified width, height, and pixel format.

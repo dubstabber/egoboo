@@ -108,7 +108,7 @@ std::shared_ptr<Image> Image::clone() const
     catch (...)
     {
         SDL_FreeSurface(cloned_surface);
-        throw std::current_exception();
+        throw;
     }
     return cloned_image;
 }
@@ -139,7 +139,7 @@ std::shared_ptr<Image> convert_functor<Image>::operator()(const std::shared_ptr<
     catch (...)
     {
         SDL_FreeSurface(newSurface);
-        throw std::current_exception();
+        throw;
     }
 }
 
@@ -226,7 +226,7 @@ std::shared_ptr<Image> pad_functor<Image>::operator()(const std::shared_ptr<Imag
     catch (...)
     {
         SDL_FreeSurface(newSurface);
-        throw std::current_exception();
+        throw;
     }
 }
 

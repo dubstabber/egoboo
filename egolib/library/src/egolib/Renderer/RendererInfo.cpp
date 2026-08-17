@@ -47,7 +47,7 @@ RendererInfo::RendererInfo()
         {
             connection.disconnect();
         }
-        throw std::current_exception();
+        throw;
     }
     try
     {
@@ -63,7 +63,7 @@ RendererInfo::RendererInfo()
         {
             connection.disconnect();
         }
-        throw std::current_exception();
+        throw;
     }
 }
 
