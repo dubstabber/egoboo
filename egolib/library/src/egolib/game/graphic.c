@@ -128,14 +128,29 @@ void gfx_system_init_all_graphics()
 //--------------------------------------------------------------------------------------------
 void gfx_system_release_all_graphics()
 {
+    // GFX::is_initialized() / Ego::TextureManager::is_initialized() are the concrete-singleton
+    // liveness flags (idlib::singleton<GFX>/<TextureManager>), independent of whether the
+    // EngineContext billboardSystem()/textureManager() registries are currently installed. On the
+    // abnormal teardown corridor (Main.cpp's catch(...) calling EngineContext::clearEngine()
+    // directly, bypassing GameEngine::uninitialize() and the graphics-bootstrap teardown that
+    // uninitializes these singletons), the singletons stay "initialized" while clearEngine() has
+    // already cleared the EngineContext registries -- so use the try-accessors here rather than
+    // the throwing ones, which used to raise std::logic_error out of this function's callers in
+    // ~GameModule (see Module_bootstrap.cpp) during that corridor.
     if (GFX::is_initialized())
     {
-        EngineContext::get().billboardSystem().reset();
+        if (Ego::Graphics::IBillboardSystem* billboardSystem = EngineContext::get().tryBillboardSystem())
+        {
+            billboardSystem->reset();
+        }
     }
 
     if (Ego::TextureManager::is_initialized())
     {
-        EngineContext::get().textureManager().release_all();
+        if (Ego::ITextureManager* textureManager = EngineContext::get().tryTextureManager())
+        {
+            textureManager->release_all();
+        }
     }
 }
 

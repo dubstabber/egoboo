@@ -49,6 +49,7 @@
 #include "egolib/game/Module/IModuleStatus.hpp"
 #include "egolib/game/Module/IModuleCommands.hpp"
 #include "egolib/game/Module/Module.hpp"
+#include "egolib/Profiles/IProfileSystem.hpp"
 
 namespace
 {
@@ -62,6 +63,11 @@ Object* tryObservedUiObject(ObjectRef objectRef)
     Object* object = Ego::Entities::tryActiveObject(objectRef);
     return object != nullptr && !object->isTerminated() ? object : nullptr;
 }
+}
+
+bool shouldExportPlayersOnShutdown(const IModuleStatus* moduleStatus, const IProfileSystem* profileSystem)
+{
+    return moduleStatus != nullptr && moduleStatus->isExportValid() && profileSystem != nullptr;
 }
 
 PlayingState::PlayingState() :
@@ -125,20 +131,34 @@ PlayingState::PlayingState() :
 
 PlayingState::~PlayingState()
 {
-    //Check for player exports
-    if (IModuleStatus* status = tryActiveModuleStatus();
-        status && status->isExportValid())
+    //Check for player exports. export_all_players() itself reads through the module-status,
+    //module-commands, object-handler, and session-state registries, all installed/cleared together
+    //as one block by GameSessionContext::beginModule()/quitModule(), so a live moduleStatus
+    //guarantees those are too; its warning paths also read EngineContext::get().logTarget(), which
+    //is safe for a different reason -- it is Log-owned (installed/cleared by System::initialize()/
+    //uninitialize()) and Main.cpp's abnormal corridor calls EngineContext::clearEngine() before
+    //System::uninitialize() runs. The profile system reloaded afterward is a separate,
+    //EngineContext-owned registry that can already be gone on that same abnormal teardown corridor
+    //(see shouldExportPlayersOnShutdown()).
+    IModuleStatus* moduleStatus = tryActiveModuleStatus();
+    IProfileSystem* profileSystem = EngineContext::get().tryProfileSystem();
+    if (shouldExportPlayersOnShutdown(moduleStatus, profileSystem))
     {
         // export the players
         export_all_players(false);
 
         //Reload list of loadable characters
-        EngineContext::get().profileSystem().loadAllSavedCharacters("mp_players");
+        profileSystem->loadAllSavedCharacters("mp_players");
     }
 
-    //Stop music. Guard against teardown ordering: on shutdown the engine clears the
-    //audio system (GameEngine::uninitialize) before the game-state stack is destroyed,
-    //so the throwing accessor would raise during destruction and terminate the process.
+    //Stop music. Guard against the abnormal teardown corridor: if an exception escaping the main
+    //loop makes Main.cpp call EngineContext::clearEngine() directly (bypassing
+    //GameEngine::uninitialize()), the audio-system registry is cleared before the game-state stack
+    //is destroyed (activeEngine.reset() is clearEngine()'s last step), so the throwing accessor
+    //would raise during destruction and terminate the process. On normal shutdown the guard never
+    //has to skip: GameEngine::uninitialize() destroys the game-state stack before tearing down the
+    //gameplay audio/particle subsystems (GameEngine_lifecycle.cpp), so audio is still installed here
+    //and the fade below runs.
     if (IAudioSystem* audio = EngineContext::get().tryAudioSystem())
     {
         audio->fadeAllSounds();

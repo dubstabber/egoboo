@@ -29,13 +29,29 @@
 
 //Forward declarations
 class Object;
+class IModuleStatus;
+class IProfileSystem;
 
-namespace Ego { namespace GUI { 
+namespace Ego { namespace GUI {
 class CharacterWindow;
 class MiniMap;
 class CharacterStatus;
 class MessageLog;
 } }
+
+/// @brief Decision logic for PlayingState::~PlayingState()'s player-export-on-shutdown branch,
+/// extracted so it is testable without constructing the (UIManager/GL-dependent) PlayingState
+/// itself. True only when @a moduleStatus reports an export-valid module AND @a profileSystem
+/// (used afterward to reload the saved-character list) is still installed.
+///
+/// These two can diverge on the abnormal teardown corridor: an exception escaping the main loop
+/// makes Main.cpp call EngineContext::clearEngine() directly (bypassing GameEngine::uninitialize()),
+/// which clears the EngineContext-owned profile-system registry (EngineContext.cpp's
+/// clearProfileSystem()) before the game-state stack is destroyed (activeEngine.reset() is
+/// clearEngine()'s last step). @a moduleStatus is a separate, GameSessionContext-owned registry
+/// (installed/cleared only by beginModule()/quitModule(), never touched by clearEngine()), so it
+/// stays live on that same corridor.
+bool shouldExportPlayersOnShutdown(const IModuleStatus* moduleStatus, const IProfileSystem* profileSystem);
 
 class PlayingState : public GameState, public IPlayingStateController
 {
