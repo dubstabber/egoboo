@@ -5,7 +5,8 @@ canonical place for volatile size, archive, and test-count numbers; other
 Markdown files should link here instead of carrying duplicate copies.
 
 Snapshot date: 2026-08-17 (test-suite and source-size numbers re-measured
-after Passes 355-365, the failure-contract front's second batch; the archive,
+after Passes 355-365, the failure-contract front's second batch, and the
+Passes 366-369 gameplay bug fixes; the archive,
 warning and `::get()` measurements date from 2026-07-21 and were last
 re-checked on 2026-08-06 as unchanged — both failure-contract batches were
 contract work, not coupling work).
@@ -26,7 +27,7 @@ since the April 2026 baseline are still intact:
   production runtime files over 1,000 lines under `egolib/library/src` or
   `egoboo/src`.
 - The test suite is substantially larger than the April baseline and currently
-  configures 1,327 ctest cases (1,326 run plus one DISABLED documenting test).
+  configures 1,344 ctest cases (1,343 run plus one DISABLED documenting test).
   Every one of the 404 `scr_*` script dispatch functions has test references as
   of Pass 336. Passes 345-347 closed the last zero-test gameplay surfaces
   (treasure tables, controls.txt, A* pathfinding, the latch/attack chain),
@@ -71,7 +72,7 @@ rows track the current suite (last re-measured 2026-08-17).
 | `egolib` link layout | 1 monolithic archive | 9 archives, acyclic DAG |
 | `egolib/egolib.h` uber-header | present, 17 direct includers | deleted |
 | Test files / lines | 5 / 383 | 83 / 41,029 |
-| Test cases | 10 | 1,327 |
+| Test cases | 10 | 1,344 |
 | Content validation tooling | none | `egoboo-content-validator` with known full baseline |
 | Cartman map editor | not in the build graph | CMake-gated `EGOBOO_BUILD_CARTMAN` target, runtime-verified |
 | Windows story | Visual Studio + AppVeyor | Linux-hosted MinGW cross-build; VS/AppVeyor quarantined as legacy |
@@ -79,7 +80,7 @@ rows track the current suite (last re-measured 2026-08-17).
 Reading the table: raw size grew (splits add headers and seam interfaces, and
 the test suite is 92× larger), but every structural-debt metric collapsed. The
 three mutable globals that defined the old architecture are gone from active
-code, the 8,000-line monoliths are gone, and behavior is now pinned by 1,327
+code, the 8,000-line monoliths are gone, and behavior is now pinned by 1,344
 tests plus a content-validator baseline where the old tree had 10 tests and no
 validation tooling.
 
@@ -102,8 +103,8 @@ native.
 | Runtime source files | 801 | `egolib/library/src` + `egoboo/src`; 103 `.c`, 289 `.cpp`, 73 `.h`, 336 `.hpp` |
 | Runtime source lines | 131,801 | Same scope as above |
 | Test files / lines | 83 / 41,029 | `egolib/tests`, source/header files only |
-| ctest cases | 1,327 | `ctest --test-dir build -N`; one is a DISABLED documenting test, so 1,326 run |
-| ctest baseline | 1,326 / 1,326 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
+| ctest cases | 1,344 | `ctest --test-dir build -N`; one is a DISABLED documenting test, so 1,343 run |
+| ctest baseline | 1,343 / 1,343 | Last recorded green baseline in the pass log; use `ctest -j20 --output-on-failure` |
 | Build warnings (fresh scratch build) | 735 | GCC + Ninja, full from-scratch build; 2,030 before Pass 340; residual is dominated by submodule-owned loci (~470 lines from idlib's `<cstdbool>`) plus ~24 scattered 1-2-line `-Wdeprecated-copy` sites |
 | `::get()` call sites | 353 | `rg "::get\\(" egolib/library/src`; includes intentional context seams |
 | `EngineContext::get()` | 272 | Dominant intentional engine seam; Passes 313-317 narrowed the render/HUD chains and `graphic.c`/`graphic_prt.c`; Pass 318 constructor-injected config and log target into `AudioSystem` (first constructor-injected engine service); Pass 319 consolidated the gamestate-screen fetch clusters (family endpoint: no member refs due to teardown ordering, fixed base-class virtuals); Pass 320 constructor-injected the log target into `ProfileSystem` (second injected service, resolved once at the `ContentRuntimeBootstrap` composition root); Pass 321 threaded renderer/graphics-system through the `CameraSystem::renderAll` chain (injection ruled out: headless fixtures initialize the real singleton without a renderer, and the runtime never uninitializes it); Pass 322 constructor-injected input/renderer/graphics/font services into the developer `Console` (third injected service, resolved once in `ConsoleBootstrap`; `Console.cpp` no longer includes `game/Core/EngineContext.hpp`); Pass 324 constructor-injected the renderer into `BillboardSystem` (fourth injected service, resolved in the `GameAppImpl` composition constructor) and moved its floating-text-font access onto the GUI-layer `activeUIManager()` seam; Pass 325 threaded the particle handler and log target through the `ParticleGraphics::update` chain from its per-frame root (`GFX::update_particle_instances`, the Pass 313-315 trailing-parameter idiom — `ParticleGraphics` is a per-particle value type, not a service) |

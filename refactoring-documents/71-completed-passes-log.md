@@ -1571,6 +1571,96 @@ throughout.
   configured, 1 pre-existing `DISABLED`); validator 42/20/230 unchanged
   (`controls.txt` is not part of module validation).
 
+- Passes 366-369 (2026-08-17) — user-reported gameplay bug fixes against
+  in-tree reference versions. The user added two references at the repo root:
+  `Egoboo-2.9.0-old/` (2.9.0 RC1 binary install with content, no source) and
+  the pre-existing `egoboo-2.6.8-crossplatform/` (FULL 2.6.8 source under
+  `source/game/` plus content) — the 2.6.8 tree is the behavioral oracle for
+  physics/AI, the 2.9.0 tree for lighting. Four parallel read-only
+  investigations pinned root causes before any edit; each fix then ran the
+  established implement -> 3-lens adversarial review -> repair -> orchestrator
+  gate cycle. All four are DELIBERATE behavior changes; each records that the
+  definitive verification is on-screen and remains the user's manual step.
+  ctest 1,326 -> 1,343 over the batch; validator 42/20/230 byte-identical
+  throughout.
+
+  **Pass 366** (`7bfc956f8`, 4 tests) — outdoor "Far Edge" modules rendered
+  near-black (user-observed on rogue.mod vs the 2.9.0 reference). Root cause
+  is upstream c5c1bdcf7 (2015): the faredge arm of `upload_light_data` became
+  `{light_d = light_a*length; light_a = 0}` while the same commit pointed the
+  consumer's outdoor ambient at `light_a` and then starved it — ambient
+  collapsed to the INVISIBLE/4 floor (5/255) and sunlight was scaled by the
+  module's own ambient setting. Rogue.mod: ~12% brightness where 2.9.0 gave
+  ~47%. Content byte-equivalent across trees; 13 of 42 modules affected; the
+  2026 campaign's lighting passes were separately exonerated. The arm now
+  restores the oracle recovered from this repo's own history (61eb8c885,
+  2010): `light_d = 1.0f; light_a = constrain(light_a/length, 0, 1)` — the
+  three consumers (glob_amb, sunlight vector, the background intensity
+  formula, which is verbatim pre-2015 code) already expect exactly these
+  values. Indoor arm byte-identical, pinned by two tests; outdoor pins carry
+  rogue.mod's real wawalite values and fail against the old code with the old
+  numbers.
+
+  **Pass 367** (`65d20799e`, 4 tests) — the chest mimic did not attack when
+  touched (2.6.8: instant). ALERTIF_BUMPED had been redefined in the
+  2.7/2.9 lineage from 2.6.8's positional alert (any unresolved octagon
+  overlap alerts both parties every tick, char.c:3407-3408) to a
+  velocity-event alert (swept tmin>0 or a contact-normal velocity sign flip)
+  — and a walking touch produces neither, since broadphase only yields
+  already-overlapping pairs (every contact classifies as PRESSURE) and the
+  movement controller regenerates the walk velocity every tick. The PRESSURE
+  branch now sets `bump` on genuine contact with genuine relative motion
+  (both already guaranteed by the enclosing control flow — the change is one
+  assignment); resting overlapped pairs stay silent (disclosed narrowing of
+  2.6.8's every-tick alert); the existing ~5/sec per-bumper throttle bounds
+  spam; a survey of all 318 shipped IfBumped scripts found no misbehavior
+  candidates. Disclosed side effect: the stealth-deactivation block
+  downstream of `bump` now runs on ordinary hostile contact — and review
+  found a pre-existing copy-paste bug inside it (B's stealth gated on A's
+  SHADE perk; each side now checks its own). One unreproducible early test
+  failure was chased through 1,325+ re-runs and the tests hardened (tmin<=0
+  and no-platform-attach pins) so any recurrence is diagnosable.
+
+  **Pass 368** (`bce7c753e`, 5 tests) — corpses were bulldozed by walking
+  into them (2.6.8: they stay put). The modern symmetric mass-ratio recoil
+  has no alive gate; 2.6.8 never displaced the bumped party's position (only
+  a bumpdampen-scaled velocity nudge, with the pusher hard-stopped), and
+  death's `bumpdampen /= 2` is semantically INVERTED in the modern
+  `interaction_strength = 0.1 + (0.9-bdA)*(0.9-bdB)` — lower dampen means a
+  STRONGER push. After `get_recoil_factors`, a dead party's recoil is now
+  zeroed and a living MOVABLE counterpart promoted to the full share. The
+  movability gate exists because adversarial review caught a blocker in the
+  first draft, proven with a live probe: unconditional promotion clobbered
+  the infinite-mass zero, so a corpse in contact with a living weight-255
+  door displaced the DOOR permanently. Both-dead pairs: zero recoil both
+  sides, alert suppressed (recorded decision; 2.6.8's faint creep was the
+  alternative). Single-dead contact still publishes the Pass 367 bump alert
+  on both parties. Items were NEVER on this path (already excluded at the
+  item gate) — the user's "items pushed" observation likely comes from
+  melee-particle knockback and needs a named repro (recorded residual).
+
+  **Pass 369** (`e9c9a016e` + data submodule `67b6f729`, 4 tests) — the
+  gnome.mod static gatling gun fired at roughly half its 2.6.8 distance. Two
+  stacked causes. CONTENT: the 2.9 script lineage's rewritten gunner AI
+  added a per-tick `targetdistance < 600` fire gate that 2.6.8's fire path
+  never had — removed in the data submodule, with the two fire lines
+  de-indented one level and the nesting hand-traced (EgoScript nesting is
+  indentation-defined and mis-indents compile silently, so the validator
+  alone cannot gate this). ENGINE: 2.6.8's `get_wide_target` searched a 3x3
+  neighborhood of 512-unit fanblocks (no distance metric, no LOS; reach
+  ~512-1448, ~922 westward at this turret), while the modern selectors
+  passed WIDE = 768 into an LOS-gated Euclidean sphere. A dedicated
+  `WIDE_CLASSIC` (8 tiles = 1024) now feeds exactly the two script
+  wide-acquisition primitives — both compiled to `get_wide_target` in 2.6.8,
+  so they widen in lockstep. Every other WIDE consumer was enumerated and
+  deliberately left unchanged, most importantly `prt_find_target` (particle
+  homing) because widening homing interacts with the still-open wizard.mod
+  continuous-homing bug. The LOS check stays as a recorded deferral — if the
+  turret still seems blind in play, that is the next knob. Radius pins at
+  760/900/1100 plus a NEARBY guard; review corrected a false
+  "fixture has no terrain/LOS data" comment at its three pre-existing sites
+  and removed a fabricated `ZF>` author tag from the new script comment.
+
 ## Documentation Passes
 
 - The 2026-04-18 consolidation collapsed the directory from 65 files to 14:
