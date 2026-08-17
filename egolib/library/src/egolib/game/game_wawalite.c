@@ -39,10 +39,23 @@ void Upload::upload_light_data(const wawalite_data_t& data)
         // Get the extra magnitude of the direct light.
         if (gfx.usefaredge)
         {
-            // We are outside, do the direct light as sunlight.
-            light_d = light_a * length;
-            light_a = 0.0f;
-            //light_a = Ego::Math::constrain( light_a, 0.0f, 1.0f );
+            // We are outside, do the direct light as sunlight: full-strength directional light,
+            // with light_a (now normalized by the vector's own length) carrying the residual
+            // ambient contribution.
+            //
+            // Restores the pre-2015 semantics (recoverable at commit 61eb8c885,
+            // game/game.c:4473-4501): light_d = 1.0f; light_a = light_a / length (clamped).
+            // Upstream commit c5c1bdcf7 ("Lighting: Improve lighting engine", 2015-12-26)
+            // replaced this with light_d = light_a * length; light_a = 0.0f; without updating the
+            // consumer (get_ambient_level / sum_global_lighting in
+            // graphic_lighting_dynalist.c:48-59,95-98), which still expects glob_amb = light_a*255
+            // and the sunlight peak at light_d*255. With light_a pinned to 0.0f outdoors, ambient
+            // outdoor light collapsed to the INVISIBLE/4 floor and directional light was scaled
+            // down by the module's own ambient setting instead of being full-strength - darkening
+            // every Far Edge (outdoor) module; user-reported as far too dark versus the 2.9.0 RC1
+            // reference (observed on rogue.mod).
+            light_d = 1.0f;
+            light_a = Ego::Math::constrain( light_a / length, 0.0f, 1.0f );
         }
         else
         {
