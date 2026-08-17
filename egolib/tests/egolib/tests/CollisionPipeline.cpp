@@ -587,4 +587,200 @@ TEST_F(CollisionPipelineFixture, ChrChr_PlainFollowers_NoMountOrPlatform)
     EXPECT_EQ(a->getHolderRef(), ObjectRef::Invalid);
 }
 
+// ---------------------------------------------------------------------------
+// chr-chr: an overlapping, non-platform-attached pair with genuine relative motion (one object
+// walking into a stationary one) publishes ALERTIF_BUMPED. This is the chest-mimic regression:
+// a player walking into a stationary, non-item, platform-flagged object (the mimic's shape) must
+// alert its script even though nobody's velocity flips sign across the contact normal.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_BumpAlert_OverlapWithRelativeMotion_SetsAlert)
+{
+    auto& module = beginActiveTestModule();
+    // "A" mirrors the mimic's collidable shape: a platform, non-item, stationary object.
+    auto a = spawnFollower(module, loadFollowerProfile(6520),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    // "B" mirrors a player walking into it.
+    auto b = spawnFollower(module, loadFollowerProfile(6521),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setPlatform(true);
+    a->setItem(false);
+    b->setItem(false);
+
+    // Stationary A: velocity and old-velocity both zero.
+    a->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    a->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    // Mover B: walking toward A (-X). Old velocity equals the current velocity, as a movement
+    // controller that regenerates the same walk setpoint every tick would produce. This makes the
+    // pre-fix sign-flip predicate provably false regardless of the contact normal's orientation:
+    // dot(v, n) * dot(v, n) == dot(v, n)^2 is never < 0.
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    b->setVelocity(walkVelocity);
+    b->setOldVelocity(walkVelocity);
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    // Pins the PRESSURE-branch classification this test claims to exercise: if geometry drift
+    // ever made this a swept (tmin > 0) collision, the pre-existing unconditional COLLISION-branch
+    // bump would set the alert regardless of the fix under test, silently stopping coverage of the
+    // changed predicate.
+    ASSERT_LE(tmin, 0.0f);
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+
+    // Discriminates a platform-attach early return from a predicate failure: if B were resolved
+    // onto A as a platform, do_chr_chr_collision would skip the bump predicate entirely (see
+    // ChrChr_PlatformAttachedPair_NoBumpAlert) and this test would pass for the wrong reason.
+    ASSERT_EQ(b->onwhichplatform_ref, ObjectRef::Invalid);
+
+    EXPECT_TRUE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(a->getAIBumped(), b->getObjRef());
+    // Symmetric: the mover is alerted too.
+    EXPECT_TRUE(b->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_EQ(b->getAIBumped(), a->getObjRef());
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: a pair already resolved as a platform attachment (the only alert path that survived
+// the walk-in gap: jumping on top) is skipped by do_chr_chr_collision's platform early-return, so
+// it never publishes ALERTIF_BUMPED. Parity guard for the fix above.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_PlatformAttachedPair_NoBumpAlert)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6522),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6523),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setPlatform(true);
+    a->setItem(false);
+    b->setItem(false);
+    // Simulate B already resolved onto A as a platform.
+    b->onwhichplatform_ref = a->getObjRef();
+
+    // Same overlap + relative-motion setup that sets the alert in the previous test, this time
+    // gated by the platform-attached early return at the top of do_chr_chr_collision.
+    a->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    a->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    b->setVelocity(walkVelocity);
+    b->setOldVelocity(walkVelocity);
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+
+    EXPECT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_FALSE(b->hasAnyAIAlertBits(ALERTIF_BUMPED));
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: a permanently-resting overlapped pair (zero relative velocity) stays silent. This is
+// the deliberate, disclosed deviation from the reference engine, which alerts on every overlapping
+// tick unconditionally; here need_velocity is false, so the new unconditional bump=true branch
+// never runs.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_RestingOverlap_ZeroRelativeVelocity_NoBumpAlert)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6524),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6525),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setPlatform(true);
+    a->setItem(false);
+    b->setItem(false);
+
+    // Both resting: identical (zero) velocity and old-velocity, so the relative velocity is zero.
+    a->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    a->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    b->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+
+    EXPECT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+    EXPECT_FALSE(b->hasAnyAIAlertBits(ALERTIF_BUMPED));
+}
+
+// ---------------------------------------------------------------------------
+// chr-chr: the recordAIBump throttle (~5 alerts/sec per bumper) suppresses a second publish of
+// ALERTIF_BUMPED from the same bumper within the same world-update tick, even though the fix makes
+// every handleCollision call with genuine relative motion a "bump" candidate.
+// ---------------------------------------------------------------------------
+
+TEST_F(CollisionPipelineFixture, ChrChr_BumpAlert_ThrottledWithinWindow_DoesNotRepublish)
+{
+    auto& module = beginActiveTestModule();
+    auto a = spawnFollower(module, loadFollowerProfile(6526),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(64.0f, 64.0f, 0.0f));
+    auto b = spawnFollower(module, loadFollowerProfile(6527),
+                          static_cast<TEAM_REF>(Team::TEAM_GOOD), Ego::Vector3f(76.0f, 64.0f, 0.0f));
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    a->setPlatform(true);
+    a->setItem(false);
+    b->setItem(false);
+
+    a->setVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    a->setOldVelocity(Ego::Vector3f(0.0f, 0.0f, 0.0f));
+    const Ego::Vector3f walkVelocity(-40.0f, 0.0f, 0.0f);
+    b->setVelocity(walkVelocity);
+    b->setOldVelocity(walkVelocity);
+
+    a->setAIAlertBits(0);
+    b->setAIAlertBits(0);
+
+    auto& cs = Ego::Physics::CollisionSystem::get();
+    float tmin = 0.0f, tmax = 0.0f;
+    ASSERT_TRUE(cs.detectCollision(*a, *b, &tmin, &tmax));
+    // Pins the PRESSURE-branch classification (see ChrChr_BumpAlert_OverlapWithRelativeMotion_SetsAlert
+    // for why this matters).
+    ASSERT_LE(tmin, 0.0f);
+
+    // First publish: same defect scenario as ChrChr_BumpAlert_OverlapWithRelativeMotion_SetsAlert.
+    cs.handleCollision(*a, *b, tmin, tmax);
+    // Discriminates a platform-attach early return from a predicate failure.
+    ASSERT_EQ(b->onwhichplatform_ref, ObjectRef::Invalid);
+    ASSERT_TRUE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+
+    // Clear only the alert bit; leave ai_state_t's bumped/bumplast_time throttle memory untouched
+    // and do not advance the world-update clock (no update step runs between these two calls), so
+    // shouldPublishBumpAlert's throttle window is still active for the same bumper.
+    a->clearAIAlertBits(ALERTIF_BUMPED);
+    ASSERT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+
+    cs.handleCollision(*a, *b, tmin, tmax);
+
+    EXPECT_FALSE(a->hasAnyAIAlertBits(ALERTIF_BUMPED));
+}
+
 } // namespace

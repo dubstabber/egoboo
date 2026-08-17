@@ -292,9 +292,20 @@ bool do_chr_chr_collision(Object& objectA, Object& objectB, const float tmin, co
                     objectA.phys.sum_avel(nrm * distance * recoil_a * interaction_strength);
                     objectB.phys.sum_avel(-nrm * distance * recoil_b * interaction_strength);
 
-                    // you could "bump" something if you changed your velocity, even if you were still touching
-                    bump = ((dot(objectA.getVelocity(), nrm) * dot(objectA.getOldVelocity(), nrm)) < 0) ||
-                           ((dot(objectB.getVelocity(), nrm) * dot(objectB.getOldVelocity(), nrm)) < 0);
+                    // This is genuine contact (depth_min > 0, guaranteed by the early-return above)
+                    // with genuine relative motion (need_velocity, guaranteed by the enclosing "if"):
+                    // that is enough to call it a "bump" for alerting purposes, without also requiring
+                    // a velocity sign-flip across the contact normal. A player walking into a
+                    // stationary object never produces a sign-flip (their velocity is regenerated
+                    // toward the same setpoint every tick), so the old sign-flip-only predicate left
+                    // scripts like a chest's IfBumped silent on ordinary walk-in contact.
+                    //
+                    // This is a deliberate, narrower deviation from the reference engine (2.6.8
+                    // char.c), which alerts on every overlapping tick not resolved as platform
+                    // stacking (gated only by nonzero bump height): a permanently-resting overlapped
+                    // pair has zero relative velocity, so need_velocity is false, this block never
+                    // runs, and the pair stays silent instead of alerting forever.
+                    bump = true;
                 }
             }
 
@@ -323,9 +334,16 @@ bool do_chr_chr_collision(Object& objectA, Object& objectB, const float tmin, co
         objectB.recordAIBump(ichr_a);
 
         //Destroy stealth for both objects if they are not friendly
+        //
+        // NOTE: this block used to only run on a velocity sign-flip (a "real" bump), so it was
+        // effectively unreachable for ordinary pressure contact. The widened `bump` predicate
+        // above now also drives this block on every pressure-contact tick with relative motion
+        // (not just swept collisions), so a stealthed character in sustained contact with a
+        // hostile now gets revealed on ordinary walk-in/rub contact where it previously did not.
+        // This is a real gameplay-frequency change beyond alert delivery, not just "alert-only".
         if(!objectA.isScenery() && !objectB.isScenery() && objectA.getTeam().hatesTeam(objectB.getTeam())) {
             if(!objectA.hasPerk(Ego::Perks::SHADE)) objectA.deactivateStealth();
-            if(!objectA.hasPerk(Ego::Perks::SHADE)) objectB.deactivateStealth();
+            if(!objectB.hasPerk(Ego::Perks::SHADE)) objectB.deactivateStealth();
         }
     }
 
