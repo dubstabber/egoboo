@@ -1293,13 +1293,248 @@ throughout.
   write as a scoped resource.** Compare `--json` `category_counts` rather than
   the totals; the totals can move with no content change at all.
 
-  **Pass 365** (`controls-txt-contract`) — closed the last item of the
-  failure-contract front's scouted slate (Passes 350-364 covered `setup.txt`,
-  lighting-cache math, module-folder isolation, the content-fault catch-arm
-  audit, the validator baseline correction, `quest.txt`, teardown ordering,
-  `enchant.txt`/`part*.txt`, the `wawalite.txt` fallback, `exception_ptr`
-  laundering, `fans.txt` bounds, character export, and the MD2 loader — none
-  yet have their own entries in this log). `input_settings_load_vfs`
+- Passes 355-365 (2026-08-17) — the failure-contract front, second batch.
+  Selected by a fresh eight-lens scout (catch-sites second sweep, return
+  contracts, resource safety, silent failures, dead code, the Pass 351
+  lighting-queue readiness assessment, doc-vs-impl contracts, teardown safety)
+  whose 37 raw findings were deduped into a 10-candidate slate and scored by a
+  3-judge panel with veto power — zero vetoes, all ten executed in rank order.
+  Every pass ran as implement -> 3-lens adversarial review (correctness,
+  scope/behavior, comment-and-test honesty) -> repair, with the orchestrator
+  independently gating build/ctest/validator and re-running one mutation check
+  per pass. Two review catches were production-grade: the export pass's
+  chimera-slot regression and the MD2 pass's glcmds-loop gap (both below).
+  The mutation-check discipline held throughout: every defect test was proven
+  to fail against the reverted production code before its pass was committed.
+  ctest 1,274 -> 1,326 over the batch; validator 42/20/230 with byte-identical
+  `category_counts` after every pass.
+
+  **Pass 355** (`609f98405`, 6 tests) — a truncated `quest.txt` bricked boot.
+  `QuestLog::loadFromFile` guarded only ReadContext construction; the parse
+  loop threw `idlib::hll::compilation_error` (readIDSZ, "premature end of
+  input") through `loadPlayerQuestLog` -> `LoadPlayerElement`'s ctor ->
+  `ProfileSystem::loadAllSavedCharacters` (no try) -> `GameEngine::initialize`
+  — unbootable until the player hand-deletes a file inside their own save
+  data. Self-reinforcing in the Pass 350 mold: `exportToFile` rewrites
+  `quest.txt` through a truncating `vfs_openWrite` on every module exit, so a
+  crash mid-export manufactured the file that bricked every later boot; the
+  same load also ran from `~PlayingState`, where the escape became
+  `std::terminate`. Fixed with the `moduleHasIDSZ` arm pair; malformed files
+  get the missing-file miss contract (cleared, `false`) plus one flattened
+  Warning. The empty-file case was honestly pinned as a control — it was
+  never a defect (`skipToColon(true)` returns false at end of input). Five of
+  the six tests fail by escaped exception against the unfixed code.
+
+  **Pass 356** (`72acb27a5`, 5 tests) — the abnormal-teardown terminate
+  corridor, third instance of the bit-twice teardown pattern. `~PlayingState`
+  guarded its audio call with `tryAudioSystem()` under a comment naming the
+  hazard, then called the throwing `profileSystem()` a few lines up: on
+  Main.cpp's `catch (...)` -> `clearEngine()` corridor the module-status
+  registry stays live (GameSessionContext owns it), the export branch is
+  taken, and the throw inside an implicitly-noexcept dtor terminated INSIDE
+  the crash handler, before its message box. The export decision is now the
+  testable free function `shouldExportPlayersOnShutdown`. Disclosed
+  trade-off: the old corridor completed the on-disk export before aborting;
+  the new one skips exporting mid-exception state and reaches the diagnostic.
+  `gfx_system_release_all_graphics` gated on singleton liveness then
+  dereferenced the throwing registry accessors — divergent exactly on that
+  corridor, reached from `~GameModule` inside the Meyers-static
+  GameSessionContext at process exit; both branches now use try-accessors.
+  The old audio comment had the shutdown order backwards (states die before
+  audio, not after); corrected. Disclosed gap: the billboard half of the
+  graphic.c fix has no independent test (constructing GFX pulls the whole
+  App<T> stack) and rests on code-shape identity with the mutation-tested
+  TextureManager half.
+
+  **Pass 357** (`6f8e605ed`, 6 tests) — one malformed `enchant.txt` or
+  `part*.txt` aborted the whole module load. Both optional per-object readers
+  guarded only construction; their parse bodies threw through call sites that
+  sit OUTSIDE both of `ObjectProfile_load.cpp`'s containment trys,
+  contradicting the header's "InvalidRef on failure" and the file's own
+  "one unparsable object must not abort the caller's whole scan" comment.
+  Parse bodies now sit under the Pass 353 arm pair (`git diff -w` proves zero
+  parse statements changed); the `runtime_error` arm is documented as
+  currently unreachable (every parse-body throw is `compilation_error`;
+  `runtime_error` is construction-only) and kept as the idiom's tripwire.
+  Required globals still abort, with the message reworded so a
+  parsed-but-malformed file is no longer called "not found". In
+  `loadOneProfile` the out-of-bounds diagnostic pair was dead BOTH ways
+  (`getProfileSlotNumber`'s fast path returns any required override
+  verbatim), not just the `else if (required && ...)` arm the scout named;
+  the dead arm is deleted with the reachability argument recorded. The
+  scouted LoadingState hints rider was ruled throw-proof rather than fixed
+  (ERROR-sentinel reasoning, disposition comment only). Integration test:
+  `loadOneProfile` survives a real object folder (shipped stiletto.obj
+  copied into the scratch user dir) with a truncated `enchant.txt`. The
+  validator loads profiles lightWeight and never reaches this block —
+  verified anyway with byte-identical `category_counts`.
+
+  **Pass 358** (`1343cc369`, 6 tests) — the `wawalite.txt` warn-and-default
+  fallback was unreachable dead code. `wawalite_data_read` has exactly one
+  return and reports every failure by throwing, so `read_wawalite_vfs`'s
+  `!data` guard and `ModuleLoadPhase::loadEnvironment`'s else branch (the
+  Pass 352 unreachable-else class) could never run; a bad `wawalite.txt`
+  aborted the whole module. `read_wawalite_vfs` now wraps the call in the arm
+  pair — both arms genuinely reachable here (construction is inside the try:
+  missing -> `runtime_error`, truncated -> `compilation_error`, both verified
+  empirically) — restores the file-scope global to `getDefaults()` (the
+  reader resets-then-assigns, so a mid-parse throw left a partial mix that
+  `upload_wawalite` would consume), and falls through to the now-live guard.
+  Missing is treated like malformed, matching the dead branch's own generic
+  phrasing. Consumer defaults spot-checked safe (fog off, weather's default
+  particle ref Invalid, zero water layers, camera try-accessor). The
+  validator calls `wawalite_data_read` directly with its own idlib arm and
+  depends on the throw — deliberately untouched. Known residual, recorded:
+  the fallback path returns before `wawalite_finalize`, so `g_environment`
+  wind/water speeds keep the previous module's values — the dead branch's
+  own semantics. The defaults-restore assertion was mutation-checked by
+  deleting only the two restore lines: exactly one test fails.
+
+  **Pass 359** (`31f1c98ab`, 3 tests) — five sites threw the
+  `std::exception_ptr` OBJECT instead of the exception:
+  `throw std::current_exception();` in Image.cpp's clone/convert/pad functors
+  and RendererInfo's two ctor failure paths. Nothing in the tree catches
+  exception_ptr, so any exception crossing those sites became uncatchable by
+  every typed arm this campaign built and read as "unknown exception". All
+  five are now plain `throw;` with cleanup byte-identical. Riders, each
+  verified separately: ImageManager's ctor caught-and-swallowed a
+  registerImageLoaders failure, finishing construction with a silently
+  partial loader list — now cleanup-then-rethrow, with a headless pin via the
+  `Log::activeTarget()` `std::logic_error` trigger that review added after
+  disproving the implementer's "no deterministic headless trigger exists"
+  disclosure; `ImageManager::find` never advanced its iterator (infinite
+  loop on a non-matching first loader) and had zero callers — deleted, with
+  the Iterator plumbing kept because ConfigReadMostly iterates begin()..end()
+  live; `getDefaultImage`'s doc promised nullptr-on-failure where production
+  throws and the headless stub returns nullptr unconditionally — both now
+  documented truthfully. A std::filesystem source-scan test pins zero
+  occurrences of the antipattern under both runtime roots, proven to bite by
+  planting the needle in each.
+
+  **Pass 360** (`da8da0080`, 7 tests) — the `fans.txt` tile dictionary had
+  six empty "@todo Implement diagnostics" range checks (one a copy-paste
+  re-test of the wrong variable) feeding unbounded copies into fixed global
+  arrays: a 17-vertex definition wrote past `vertices[16]` into the same
+  struct's command fields — silent intra-struct corruption from a
+  user-shadowable content file. Real rejections now throw location-bearing
+  `compilation_error`: >16 vertices, >4 index lists, and — the subtle one —
+  >32 TOTAL indices accumulated across all of a definition's lists
+  (`command_verts[32]` is filled by a running total; a per-list cap would
+  still overflow on two 20-index lists). Shipped content sits exactly at
+  16/4 (type 5), pinned by a characterization test written before any
+  production change. One scouted bound was FALSIFIED rather than
+  implemented: vertex position has no upper limit (shipped file contains 48;
+  the format documents an unbounded integer decoded mod-4; the value never
+  indexes an array) — that check rejects negatives only, falsification
+  recorded at the site. `mesh_loader.c` also discarded the load's bool, so
+  the one pre-existing rejection silently degraded into building the mesh
+  against a freshly-reset EMPTY dictionary; it now throws the same
+  location-bearing `idlib::runtime_error` as its sibling paths. The
+  definition-count overflow test documents a float-precision quirk: 32
+  definitions compute `floor(log2(32.0f)) == 4` due to the double/float mix,
+  so 33 is the tripping count. Residuals recorded: per-index VALUES are only
+  checked for negativity (a huge index truncates into uint16 and reaches
+  `glDrawElements` as an element index — pre-existing render-path READ
+  hazard, out of this write-focused scope), and `cartman_map.c` still
+  discards the load bool in the CMake-gated editor.
+
+  **Pass 361** (`d7c60ceb3`, 6 tests) — character export reported success
+  while dropping files. `export_one_character` returned Error for mkdir and
+  `data.txt` failures but discarded every `vfs_copyFile` return and the
+  naming export's bool; and the aggregate was moot anyway because BOTH call
+  sites discarded `export_all_players`' bool — `~PlayingState` (which then
+  re-imports the possibly-broken folder) and
+  `GameSessionContext::finishModule`. The save path was manufacturing
+  exactly the corrupt content directories Passes 352/353/357 hardened the
+  loaders against. Copy and naming failures now fold into Error
+  (continue-and-report, per-file Warnings); both call sites log a Warning
+  naming the module (try-accessor inside the dtor). The quest helper's bool
+  stays deliberately unconsumed — it returns false BY DESIGN for non-player
+  objects — and its docstring, which described `naming.txt`, now describes
+  `quest.txt`; the residual (a real player's quest-write failure is still
+  unreported) is recorded at the site. **Adversarial review caught a genuine
+  regression in the first draft and proved it with a probe**: with Error no
+  longer counted, the dense inventory numbering (`number++` only on
+  Exported) let the item AFTER a failed export reuse the failed item's slot
+  directory — the copy loop's `vfs_exists` guard preserved the failed item's
+  files, producing a chimera object directory that itself reported Exported
+  while the second item's own directory was never created. The slot is now
+  consumed for any non-Skipped result (gaps are safe: `game_copy_imports`
+  probes each slot directory independently), with a two-item regression
+  test. The deterministic copy-failure fixture uses a write-protected item
+  directory (root runs skip via `geteuid()`; the task's suggested
+  dest-is-a-directory idiom provably cannot reach `vfs_copyFile` — the
+  loop's own `vfs_exists` guard skips it first).
+
+  **Pass 362** (`a814fd493`, 10 tests) — the MD2 loader trusted hostile
+  headers and leaked its file handle. `loadFromFile` closed its `vfs_FILE`
+  manually at two sites (any throw leaked the handle), never checked the
+  header read's return (truncated file -> stack-garbage header), and sized
+  five containers directly from int32 header fields — a negative count wraps
+  to ~1.8e19 and throws `std::length_error`, which derives from
+  `std::logic_error` and therefore escaped BOTH Pass 353 model-load arms,
+  turning one bad `tris.md2` into a whole-module abort on the format all
+  ~950 shipped assets use. The handle is now a shared_ptr with a vfs_close
+  deleter (script.c/wawalite_file.c precedent); short header reads,
+  out-of-range counts, and past-EOF offsets reject through the existing
+  nullptr+warning invalid-header contract. Caps were derived by scanning
+  every shipped `tris.md2` (956 files, ~10x the shipped max per field) —
+  key finding: num_st's classic MD2 limit of 2048 is LOWER than the shipped
+  maximum of 2448 (swampplant.obj), so the classic limits alone would have
+  rejected real content. **Review closed the same class one level deeper**:
+  the glcmds loop read an int32 command word per iteration unchecked, so a
+  file passing every header guard could still drive an unbounded allocation
+  (INT32_MIN negation — signed-overflow UB — demonstrated escaping as
+  `length_error` by a live probe); the word's read is now checked, INT32_MIN
+  rejected before negation, and the count capped against the remaining
+  `size_glcmds` word budget. Fixtures are hand-crafted binary MD2s; the
+  absurd-count test pins `bad_alloc` deterministically under a 512MiB
+  RLIMIT_AS; an fd-leak test counts `/proc/self/fd`; positive controls are a
+  hand-built minimal MD2 and the smallest shipped model (acidrain.obj,
+  184 bytes). Pre-fix, two fixtures were accepted as silent garbage models
+  rather than throwing — a defect variant the scout had not predicted.
+
+  **Pass 363** (`ed94be336`, 66 lighting tests, 3 pins flipped + 1 added) —
+  lighting fix-queue ranks 1-2, the two provably-invisible retirements. The
+  roadmap's blanket "each wants a look on screen" was measurably wrong for
+  these: rank 1 (both `blend` overloads now refresh `_max_light` via
+  `self.max_light()`) is bit-identical by construction because the sole
+  production caller called `pcache_old.max_light()` three lines after
+  `blend` anyway; rank 2 (`get_vector_or_default()` replacing the throwing
+  `get_vector()` on all three axis reads in `lighting_project_cache`) only
+  changes behavior that previously threw `std::domain_error` out of a
+  per-frame render path — idlib's normalize stores the pre-divide vector on
+  a zero norm, so a collapsed axis contributes nothing through
+  `lighting_sum_project`'s strict-sign branches. Pins flipped with rewritten
+  contracts and mutation-checked; the blend trap is only partially closed
+  (direct `_lighting` pokes still need an explicit `max_light()` call) and
+  the header note plus two still-live FINDING pins say so. The +20-line
+  shift's ~70 test-file line citations were renumbered and re-verified.
+
+  **Pass 364** (`68dcd0643`, 4 pins flipped + 1 sentinel test) — lighting
+  fix-queue rank 3, landed separately because it has a real disclosed
+  behavior change: relight cadence. `lighting_cache_test` zeroed only its
+  local while its reference out-params were accumulated into and divided,
+  never assigned; the production caller passed UNINITIALIZED floats, and the
+  contaminated combination — the clean return value is discarded at
+  `graphic_lighting.c:189` — landed in the persistent per-tile `_d1_cache`
+  that gates the per-frame relight decision (live: `CLIP_LIGHT_FANS`).
+  Garbage could spuriously force relights (wasted work) or suppress them
+  (staleness, bounded by the checkerboard fallback that force-relights every
+  tile once per four rendered frames); lighting VALUES were always computed
+  on the separate clean interpolate path. Both out-params are now zeroed at
+  entry, before the NULL-src early return — the one placement covering all
+  THREE paths, including the all-corners-null path the brief did not name
+  (zeroing after the NULL check would have left a real mesh-edge tile
+  garbage forever). The caller's discarded-return wart is deliberately
+  untouched and recorded: with defined inputs its math is now well-defined
+  height-lerped gating. Review also flushed ~64 accumulated stale line
+  citations across the test file (two passes of line shifts). The roadmap's
+  T3.5 queue now holds a single item: the cylindrical dyna falloff, still
+  blocked on on-screen verification.
+
+  **Pass 365** (`d7217e343`, `controls-txt-contract`) — closed the last,
+  lowest-severity item of the scouted slate. `input_settings_load_vfs`
   constructed its `ReadContext` outside any `try`, so a missing/unopenable
   `controls.txt` let `idlib::runtime_error` (raised inside the `Scanner`
   base's file read, `vfs_bulk.c:56`) escape uncaught out of
